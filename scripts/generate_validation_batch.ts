@@ -1,7 +1,6 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// No Supabase client needed in the script itself for now, will handle via tool
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 async function aiFetch(body: any) {
@@ -12,7 +11,7 @@ async function aiFetch(body: any) {
       "Authorization": `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o", // Using a strong model for gold standard validation
+      model: "gpt-4o",
       messages: body.messages,
       response_format: { type: "json_object" },
     }),
@@ -25,12 +24,14 @@ const SYSTEM_PROMPT = `Você é um gerador de questões de ELITE absoluta para R
 REGRAS CRÍTICAS DE QUALIDADE (PADRÃO OURO):
 1. IDIOMA: TUDO em PORTUGUÊS BRASILEIRO. NUNCA use inglês.
 2. NÍVEL: ALTO (Residência Médica). Evite conceitos triviais.
-3. ENUNCIADO (statement): Deve ser um CASO CLÍNICO COMPLETO e REALISTA.
-   - Nome, idade, sexo, profissão, queixa principal com tempo de evolução.
-   - Antecedentes pertinentes (medicações, hábitos).
+3. ENUNCIADO (statement): Deve ser um CASO CLÍNICO COMPLETO, EXTENSO e REALISTA.
+   - Nome fictício, idade EXATA, sexo, profissão/ocupação.
+   - Queixa principal com tempo de evolução preciso.
+   - Antecedentes pessoais detalhados (medicações, cirurgias, hábitos).
    - EXAME FÍSICO DETALHADO: PA, FC, FR, Temp, SpO2 (sempre com valores numéricos).
-   - EXAMES COMPLEMENTARES: Apresentar resultados com valores de referência quando necessário.
-   - Mínimo 450 caracteres. Termine sempre com a pergunta direta.
+   - EXAMES COMPLEMENTARES: Apresentar resultados com valores de referência e unidades.
+   - OBRIGATÓRIO: Mínimo 500 caracteres para o enunciado. Se for menor, adicione mais detalhes clínicos.
+   - Termine sempre com a pergunta direta.
 4. ALTERNATIVAS: Exatamente 4 opções (A-D) plausíveis.
 5. EXPLICAÇÃO (explanation): Analise individualmente cada alternativa (por que correta/errada).
    - Inclua "🧑‍⚕️ Explicação Simplificada" ao final.
@@ -62,7 +63,7 @@ async function generateForArea(area: string) {
   const result = await aiFetch({
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `Gere 5 questões inéditas e de alto nível de ${area}. Varie os subtemas entre os mais cobrados em provas de residência.` }
+      { role: "user", content: `Gere 5 questões inéditas e de alto nível de ${area}. Varie os subtemas entre os mais cobrados em provas de residência. GARANTA que cada enunciado clínico tenha pelo menos 500 caracteres de texto rico em detalhes médicos.` }
     ]
   });
 
