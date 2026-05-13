@@ -1987,6 +1987,165 @@ export type Database = {
         }
         Relationships: []
       }
+      archived_questions_bank: {
+        Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          classification_confidence: number | null
+          classification_method: string | null
+          classification_reviewed_by_human: boolean
+          classified_at: string | null
+          correct_index: number | null
+          created_at: string
+          difficulty: number | null
+          exam_bank_id: string | null
+          explanation: string | null
+          id: string
+          image_url: string | null
+          is_global: boolean | null
+          language: string | null
+          microtopic_id: string | null
+          options: Json | null
+          organization_id: string | null
+          original_question_id: string | null
+          permission_type: string | null
+          quality_tier: string
+          question_order: number | null
+          review_status: string | null
+          source: string | null
+          source_map_id: string | null
+          source_type: string | null
+          source_url: string | null
+          specialty_id: string | null
+          statement: string
+          subtopic: string | null
+          subtopic_id: string | null
+          topic: string | null
+          topic_id: string | null
+          user_id: string
+        }
+        Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          classification_confidence?: number | null
+          classification_method?: string | null
+          classification_reviewed_by_human?: boolean
+          classified_at?: string | null
+          correct_index?: number | null
+          created_at?: string
+          difficulty?: number | null
+          exam_bank_id?: string | null
+          explanation?: string | null
+          id?: string
+          image_url?: string | null
+          is_global?: boolean | null
+          language?: string | null
+          microtopic_id?: string | null
+          options?: Json | null
+          organization_id?: string | null
+          original_question_id?: string | null
+          permission_type?: string | null
+          quality_tier?: string
+          question_order?: number | null
+          review_status?: string | null
+          source?: string | null
+          source_map_id?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          specialty_id?: string | null
+          statement: string
+          subtopic?: string | null
+          subtopic_id?: string | null
+          topic?: string | null
+          topic_id?: string | null
+          user_id: string
+        }
+        Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          classification_confidence?: number | null
+          classification_method?: string | null
+          classification_reviewed_by_human?: boolean
+          classified_at?: string | null
+          correct_index?: number | null
+          created_at?: string
+          difficulty?: number | null
+          exam_bank_id?: string | null
+          explanation?: string | null
+          id?: string
+          image_url?: string | null
+          is_global?: boolean | null
+          language?: string | null
+          microtopic_id?: string | null
+          options?: Json | null
+          organization_id?: string | null
+          original_question_id?: string | null
+          permission_type?: string | null
+          quality_tier?: string
+          question_order?: number | null
+          review_status?: string | null
+          source?: string | null
+          source_map_id?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          specialty_id?: string | null
+          statement?: string
+          subtopic?: string | null
+          subtopic_id?: string | null
+          topic?: string | null
+          topic_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      archived_simulation_sessions: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          difficulty: string
+          final_score: number | null
+          finished_at: string | null
+          id: string
+          scenario_id: string | null
+          session_data: Json
+          session_origin: string
+          specialty: string
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          difficulty?: string
+          final_score?: number | null
+          finished_at?: string | null
+          id?: string
+          scenario_id?: string | null
+          session_data?: Json
+          session_origin?: string
+          specialty: string
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          difficulty?: string
+          final_score?: number | null
+          finished_at?: string | null
+          id?: string
+          scenario_id?: string | null
+          session_data?: Json
+          session_origin?: string
+          specialty?: string
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       asset_quality_audit_logs: {
         Row: {
           asset_id: string
