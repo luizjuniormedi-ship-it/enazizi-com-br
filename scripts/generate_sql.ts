@@ -1,5 +1,5 @@
 
-const data = JSON.parse(Deno.readTextFileSync("validation_batch.json"));
+const data = JSON.parse(Deno.readTextFileSync("validation_batch_2.json"));
 
 function escapeSql(str) {
   if (typeof str !== 'string') return str;
