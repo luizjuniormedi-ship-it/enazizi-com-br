@@ -156,8 +156,8 @@ INSTRUÇÕES CRÍTICAS:
    - Exame físico com achados positivos E negativos relevantes
    - Sinais vitais completos (PA, FC, FR, Temp, SpO2)
    - Pelo menos um exame complementar com valores numéricos e unidades
-4. MÍNIMO 400 caracteres no enunciado (padrão ENAMED)
-5. 4 alternativas (A, B, C, D), apenas 1 correta — TODAS clinicamente plausíveis
+1. MÍNIMO 450 caracteres no enunciado (Padrão Ouro)
+2. 4 alternativas (A, B, C, D), apenas 1 correta — TODAS clinicamente plausíveis
 6. Explicação detalhada com raciocínio clínico passo a passo
 7. Dificuldade MÍNIMA: 3/5 (padrão REVALIDA). Distribua: 50% nível 3, 50% nível 4-5
 8. PROIBIDO: questões puramente conceituais ("O que é X?", "Defina Y", "Qual a função de Z?")
