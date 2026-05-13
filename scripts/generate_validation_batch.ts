@@ -1,10 +1,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const supabase = createClient(supabaseUrl, serviceRoleKey);
-
+// No Supabase client needed in the script itself for now, will handle via tool
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 async function aiFetch(body: any) {
