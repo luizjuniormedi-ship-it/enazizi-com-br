@@ -674,7 +674,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
               ? "ESTA QUESTÃO DEVE REFERENCIAR UMA IMAGEM. Use termos como 'Observe a imagem', 'A radiografia mostra', 'O ECG evidencia'. A questão DEVE ser impossível de responder sem a imagem."
               : "NUNCA referencie imagens, figuras, gráficos ou radiografias (ex: 'observe a imagem abaixo'). Todas as informações devem estar no texto.";
 
-            return `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+            return `Gere exatamente ${needed} questões de múltipla escolha (A-D) para residência médica.
 IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).
 
 NÍVEL DE DIFICULDADE: ${desc}
@@ -690,7 +690,7 @@ ${imageInstruction}
 Retorne APENAS um array JSON puro:
 [{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
-REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, ${imagePercent && imagePercent > 0 ? "REFERENCIE A IMAGEM" : "NUNCA imagens/figuras"}, NUNCA inglês.
+REGRAS: mínimo 450 chars no enunciado (Padrão Ouro), 4 alternativas (A-D), caso clínico completo, NUNCA LaTeX, ${imagePercent && imagePercent > 0 ? "REFERENCIE A IMAGEM" : "NUNCA imagens/figuras"}, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
           };
 
