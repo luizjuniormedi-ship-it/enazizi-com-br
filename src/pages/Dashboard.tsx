@@ -30,6 +30,10 @@ import { useMascotState } from "@/components/mascot/useMascotState";
 
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
+const PendingReviewsCard = lazy(() => import("@/components/dashboard/PendingReviewsCard"));
+const ErrorReviewCard = lazy(() => import("@/components/dashboard/ErrorReviewCard"));
+const DailyPlanWidget = lazy(() => import("@/components/dashboard/DailyPlanWidget"));
+const DashboardMetricsGrid = lazy(() => import("@/components/dashboard/DashboardMetricsGrid"));
 
 const Dashboard = () => {
   const mountTimeRef = useRef(Date.now());
@@ -279,7 +283,23 @@ const Dashboard = () => {
            </EnaflixCinematicCard>
         </EnaflixRow>
 
-        {/* Analysis Section */}
+        {/* Dashboard Modules Grid */}
+        <div className="px-4 sm:px-8 lg:px-14">
+          <EnaflixSectionTitle kicker="PAINEL DE CONTROLE" title="Módulos de Estudo" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <PendingReviewsCard />
+            </Suspense>
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <ErrorReviewCard />
+            </Suspense>
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <DailyPlanWidget />
+            </Suspense>
+          </div>
+        </div>
+
+        {/* Analytics Section */}
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
           <div className="space-y-6">
             <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
@@ -292,6 +312,14 @@ const Dashboard = () => {
             <Suspense fallback={<LocalSectionSkeleton />}>
               <MedicalMasteryDashboard />
             </Suspense>
+          </div>
+        </div>
+
+        {/* Bottom Metrics Grid */}
+        <div className="px-4 sm:px-8 lg:px-14 pb-12">
+          <EnaflixSectionTitle kicker="MÉTRICAS DETALHADAS" title="Estatísticas de Estudo" />
+          <div className="mt-6">
+            {dashData && <DashboardMetricsGrid stats={dashData.stats} metrics={dashData.metrics} />}
           </div>
         </div>
       </div>
