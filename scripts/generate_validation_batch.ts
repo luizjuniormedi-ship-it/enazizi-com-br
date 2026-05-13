@@ -73,11 +73,13 @@ async function generateForArea(area: string) {
 async function main() {
   const allQuestions = [];
   for (const area of AREAS) {
-    const questions = await generateForArea(area);
-    allQuestions.push(...questions);
+    try {
+      const questions = await generateForArea(area);
+      allQuestions.push(...questions);
+    } catch (e) {
+      console.error(`Erro ao gerar para ${area}:`, e);
+    }
   }
-
-  console.log(`Total de questões geradas: ${allQuestions.length}`);
 
   const adminId = "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023";
   
@@ -89,20 +91,11 @@ async function main() {
     explanation: q.explanation,
     topic: q.topic,
     is_global: true,
-    review_status: "approved", // Já aprovadas como lote de validação
+    review_status: "approved",
     quality_tier: "exam_standard"
   }));
 
-  const { data, error } = await supabase
-    .from("questions_bank")
-    .insert(rows)
-    .select();
-
-  if (error) {
-    console.error("Erro ao inserir questões:", error);
-  } else {
-    console.log(`Sucesso! ${data.length} questões inseridas no banco.`);
-  }
+  console.log(JSON.stringify(rows));
 }
 
 main();
