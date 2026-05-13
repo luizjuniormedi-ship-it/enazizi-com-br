@@ -707,7 +707,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             if (needed <= 0) return [] as any[];
             try {
               const resp = await aiFetch({
-                model: qualityProfile?.preferred_model || "openai/gpt-4o-mini",
+                model: qualityProfile?.preferred_model || "openai/gpt-5-mini",
                 messages: [
                   { role: "system", content: systemPrompt }, 
                   { role: "user", content: buildSlotPrompt(needed, [...globalPrev], slotTarget) }
