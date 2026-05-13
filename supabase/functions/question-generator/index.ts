@@ -323,7 +323,7 @@ Regras:
         facil: "Gere questões de nível FÁCIL: conceitos diretos, apresentações clássicas e típicas, sem pegadinhas. Foco em conhecimento básico e reconhecimento de padrões clínicos clássicos.",
         intermediario: "Gere questões de nível INTERMEDIÁRIO (padrão REVALIDA/ENAMED): diagnósticos diferenciais reais, pacientes com comorbidades.",
         dificil: "Gere questões de nível AVANÇADO (padrão ENAMED/ENARE com pegadinhas): apresentações ATÍPICAS, múltiplas comorbidades, dilemas de conduta.",
-        misto: "Mescle: 50% intermediárias (REVALIDA), 50% avançadas/expert (ENAMED/ENARE). PROIBIDO nível fácil.",
+        misto: "Mescle: 20% intermediárias (REVALIDA), 80% avançadas/expert (ENARE/USP). PROIBIDO nível fácil ou intermediário simples.",
       };
       systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
     }
