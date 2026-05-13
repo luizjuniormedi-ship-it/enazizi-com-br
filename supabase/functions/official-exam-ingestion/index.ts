@@ -34,6 +34,7 @@ serve(async (req) => {
         source_id,
         run_type: action,
         status: 'running',
+        started_at: new Date().toISOString(),
         stats: { start_time: new Date().toISOString() }
       })
       .select()

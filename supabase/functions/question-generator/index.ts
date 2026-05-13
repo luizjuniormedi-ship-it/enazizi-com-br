@@ -1009,7 +1009,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
     logAiUsage({
       userId: "system-question-gen",
       functionName: "question-generator",
-      modelUsed: "openai/gpt-5-mini",
+      modelUsed: "openai/gpt-4o-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",
