@@ -120,7 +120,7 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
    - Laudos de imagem descritivos quando pertinente
 
 2. **ALTERNATIVAS DE ALTO NÍVEL**:
-   - EXATAMENTE 5 alternativas (A-E), apenas 1 correta — TODAS clinicamente plausíveis
+   - EXATAMENTE 4 alternativas (A-D), apenas 1 correta — TODAS clinicamente plausíveis
    - Distratores baseados em diagnósticos diferenciais LEGÍTIMOS
    - Uma alternativa "quase correta" que testa nuance clínica
    - Extensão similar entre alternativas
@@ -181,7 +181,7 @@ Cada caso deve conter:
 FORMATO JSON PURO (sem markdown):
 {
   "questions": [
-    {"statement":"Caso clínico completo...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"Raciocínio clínico...","topic":"${specialty}","difficulty":3}
+    {"statement":"Caso clínico completo...","options":["A) ...","B) ...","C) ...","D) ..."],"correct_index":0,"explanation":"Raciocínio clínico...","topic":"${specialty}","difficulty":3}
   ],
   "flashcards": [
     {"question":"Pergunta?","answer":"Resposta completa.","topic":"${specialty}"}

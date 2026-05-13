@@ -108,7 +108,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   {
     label: "Vire pergunta de prova",
     icon: FileQuestion,
-    prompt: (ctx) => `Transforme ${ctx.topic || "o tema atual"} em uma questão de caso clínico estilo residência (A-E), com gabarito e explicação.`,
+    prompt: (ctx) => `Transforme ${ctx.topic || "o tema atual"} em uma questão de caso clínico estilo residência (A-D), com gabarito e explicação.`,
   },
 ];
 

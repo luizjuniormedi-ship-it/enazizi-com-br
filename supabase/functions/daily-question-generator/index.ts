@@ -173,7 +173,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
   "questions": [
     {
       "statement": "Caso clínico completo com ≥400 caracteres (padrão ENAMED)...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
       "correct_index": 0,
       "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",
@@ -222,7 +222,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const questions = parsed.questions.filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
+      q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 4 &&
       typeof q.correct_index === "number" &&
       String(q.statement).trim().length >= 400 &&
       (q.difficulty || 3) >= 3 &&
@@ -301,7 +301,7 @@ CALIBRAÇÃO OBRIGATÓRIA REVALIDA/ENAMED:
 REGRAS:
 - Nível de prova de residência médica real (REVALIDA INEP, ENAMED, ENARE, USP, UNICAMP)
 - Casos clínicos realistas com anamnese completa (nome, idade, sexo, profissão), exame físico com achados positivos e negativos, sinais vitais completos (PA, FC, FR, Temp, SpO2), exames complementares com valores numéricos e unidades
-- EXATAMENTE 5 alternativas (A, B, C, D, E), apenas 1 correta — todas clinicamente PLAUSÍVEIS
+- EXATAMENTE 4 alternativas (A, B, C, D), apenas 1 correta — todas clinicamente PLAUSÍVEIS
 - PROIBIDO: questões que referenciem imagens, figuras, fotos ou gráficos externos
 - Distribuição de dificuldade: 50% intermediário (padrão REVALIDA), 50% difícil (padrão ENAMED/ENARE com pegadinhas e apresentações atípicas)
 - NUNCA repita perfil de paciente (nome, idade, sexo, cenário)
@@ -316,7 +316,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
   "questions": [
     {
       "statement": "Caso clínico completo com ≥400 caracteres (padrão ENAMED)...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
       "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",
       "difficulty": 3

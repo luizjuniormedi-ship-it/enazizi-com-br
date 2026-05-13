@@ -23,7 +23,7 @@ export const PROFILES: Record<string, BancaProfile> = {
   enare: {
     key: "enare", label: "ENARE", difficulty: 4, osceEmphasis: false,
     specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 10, "Medicina de Emergência": 8, "Terapia Intensiva": 5, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 2 },
-    style: "Questões longas com caso clínico detalhado, 5 alternativas, foco em raciocínio clínico e conduta. Pegadinhas sutis baseadas em detalhes do caso.",
+    style: "Questões longas com caso clínico detalhado, 4 alternativas, foco em raciocínio clínico e conduta. Pegadinhas sutis baseadas em detalhes do caso.",
     tutorGuidance: "Explique com profundidade clínica, sempre incluindo diagnósticos diferenciais e critérios diagnósticos. Nível de residência médica.",
   },
   revalida: {

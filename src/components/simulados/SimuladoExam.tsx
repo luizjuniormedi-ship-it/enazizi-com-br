@@ -261,7 +261,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
                        String.fromCharCode(65 + i)}
                     </div>
                     <span className="text-[15px] font-medium leading-normal pt-0.5">
-                      {opt.replace(/^[A-Ea-e]\)\s*/, '')}
+                      {opt.replace(/^[A-Da-d]\)\s*/, '')}
                     </span>
                   </div>
                 </button>

@@ -12,8 +12,8 @@ export interface ParsedQuestion {
 }
 
 // Flexible option regex: a), A), **a)**, a., **A.** etc.
-const OPTION_LINE_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s+.+/gim;
-const OPTION_CLEAN_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s*/i;
+const OPTION_LINE_RE = /^\*{0,2}[a-dA-D][).]\*{0,2}\s+.+/gim;
+const OPTION_CLEAN_RE = /^\*{0,2}[a-dA-D][).]\*{0,2}\s*/i;
 
 export function parseQuestionsFromText(text: string): ParsedQuestion[] {
   const questions: ParsedQuestion[] = [];
@@ -91,7 +91,7 @@ function parseBlock(block: string): ParsedQuestion | null {
   const optionMatches = block.match(OPTION_LINE_RE);
   OPTION_LINE_RE.lastIndex = 0;
   if (optionMatches && optionMatches.length >= 2) {
-    const firstOptIdx = block.search(/^\*{0,2}[a-eA-E][).]\*{0,2}\s*/im);
+    const firstOptIdx = block.search(/^\*{0,2}[a-dA-D][).]\*{0,2}\s*/im);
     let statement = block.slice(0, firstOptIdx).trim();
     statement = cleanStatement(statement);
     const options = optionMatches.map((o) => o.replace(OPTION_CLEAN_RE, "").trim());

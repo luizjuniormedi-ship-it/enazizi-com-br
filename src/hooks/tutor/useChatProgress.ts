@@ -55,7 +55,7 @@ export function useChatProgress(userId: string | undefined) {
       5: { key: "leigo2", label: "Tradução Leiga 2", icon: "💡", desc: "Simplificação da fisiopatologia para fixação" },
       6: { key: "tecnico3", label: "Aplicação Clínica", icon: "🏥", desc: "Sinais, sintomas, exames, diagnóstico e tratamento" },
       7: { key: "leigo3", label: "Tradução Leiga 3", icon: "💡", desc: "Simplificação da aplicação clínica" },
-      8: { key: "questions", label: "Questão Objetiva", icon: "❓", desc: "Caso clínico com alternativas A-E para testar seu conhecimento" },
+      8: { key: "questions", label: "Questão Objetiva", icon: "❓", desc: "Caso clínico com alternativas A-D para testar seu conhecimento" },
       9: { key: "discussion", label: "Discussão", icon: "💬", desc: "Análise detalhada da questão com raciocínio clínico" },
       10: { key: "discursive", label: "Caso Discursivo", icon: "✍️", desc: "Caso clínico aberto para diagnóstico e conduta" },
       11: { key: "correction", label: "Correção", icon: "✅", desc: "Correção detalhada com nota e feedback" },

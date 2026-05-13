@@ -424,7 +424,7 @@ const StudySession = () => {
     if (!signal) {
       // No structured signal → don't fabricate a pedagogical signal from text.
       // We log the miss so we can audit prompt drift later.
-      const looksLikeAnswer = /^[A-Ea-e]$/.test(userAnswer.trim());
+      const looksLikeAnswer = /^[A-Da-d]$/.test(userAnswer.trim());
       if (looksLikeAnswer) {
         console.warn("[StudySession] missing SIGNAL block on correction message");
       }

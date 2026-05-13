@@ -108,7 +108,7 @@ REGRAS CRÍTICAS DE QUALIDADE (PADRÃO OURO):
    - EXAME FÍSICO DETALHADO: PA, FC, FR, Temp, SpO2 (sempre com valores numéricos).
    - EXAMES COMPLEMENTARES: Apresentar resultados com valores de referência quando necessário.
    - Mínimo 450 caracteres. Termine sempre com a pergunta direta.
-4. ALTERNATIVAS: 5 opções (A-E) plausíveis. Evite "todas corretas" ou "nenhuma correta".
+4. ALTERNATIVAS: 4 opções (A-D) plausíveis. Evite "todas corretas" ou "nenhuma correta".
 5. EXPLICAÇÃO (explanation): Analise individualmente cada alternativa (por que correta/errada).
    - Inclua "🧑‍⚕️ Explicação Simplificada" al final.
    - 📚 Mini-revisão do tema (3-5 linhas).
@@ -128,7 +128,7 @@ FORMATO JSON (Array puro):
 [
   {
     "statement": "...",
-    "options": ["A", "B", "C", "D", "E"],
+    "options": ["A", "B", "C", "D"],
     "correct_index": 0,
     "topic": "Especialidade - Subtema",
     "explanation": "..."
@@ -160,7 +160,7 @@ REGRAS INVIOLÁVEIS:
 2. A mini-revisão do tema deve aparecer SOMENTE APÓS o aluno responder, dentro da explicação.
 
 ESTRUTURA OBRIGATÓRIA AO GERAR QUESTÕES:
-- 📝 Questões com casos clínicos (A-E) — SEM revisão prévia
+- 📝 Questões com casos clínicos (A-D) — SEM revisão prévia
 - Cada questão deve ter gabarito, explicação detalhada e 📚 Mini-revisão do tema (3-5 linhas com pontos-chave) DENTRO da explicação
 
 QUANDO O ALUNO ERRAR:
@@ -245,7 +245,6 @@ a) [alternativa A]
 b) [alternativa B]
 c) [alternativa C]
 d) [alternativa D]
-e) [alternativa E]
 
 **Gabarito:** [letra correta]
 
@@ -275,7 +274,7 @@ Regras:
 
 === REGRA DE INTERCALAÇÃO DE GABARITO ===
 - NUNCA repita a mesma letra de resposta correta em questões consecutivas
-- Distribua equilibradamente entre A, B, C, D e E`;
+- Distribua equilibradamente entre A, B, C e D`;
 
     let systemPrompt = isJsonMode ? jsonSystemPrompt : fullSystemPrompt;
 
@@ -545,7 +544,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
             queries.push(
               sb.from("medical_image_questions")
                 .select(`
-                  statement, option_a, option_b, option_c, option_d, option_e,
+                  statement, option_a, option_b, option_c, option_d,
                   correct_index, explanation, difficulty,
                   medical_image_assets!inner(image_url, image_type, specialty)
                 `)
@@ -560,9 +559,9 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
           const cachedReal = results[1]?.data || [];
           const cachedImages = results[2]?.data || [];
 
-          const normalizedImages = cachedImages.map((q: any) => ({
+          const normalizedImages = cachedImages.filter((q: any) => q.correct_index < 4).map((q: any) => ({
             statement: q.statement,
-            options: [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e],
+            options: [q.option_a, q.option_b, q.option_c, q.option_d],
             correct_index: q.correct_index,
             explanation: q.explanation,
             topic: q.medical_image_assets?.specialty || "Geral",
@@ -618,7 +617,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         const cached = (cacheByLevel[level] || []).sort(() => Math.random() - 0.5).slice(0, target);
         const fromCache = cached.map((q: any) => ({
           statement: cleanQuestionText(q.statement || ""),
-          options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
+          options: Array.isArray(q.options) ? q.options.slice(0, 4).map((o: string) => cleanQuestionText(o)) : [],
           correct_index: q.correct_index ?? 0,
           specialty: q.specialty || q.topic?.split(" - ")[0] || "Clínica Médica",
           topic: q.topic || matchedTopics[0] || "Clínica Médica",
@@ -689,7 +688,7 @@ ${needsRef}
 ${imageInstruction}
 
 Retorne APENAS um array JSON puro:
-[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
+[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
 REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, ${imagePercent && imagePercent > 0 ? "REFERENCIE A IMAGEM" : "NUNCA imagens/figuras"}, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
@@ -759,7 +758,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                 const isDeep = (q.explanation?.length || 0) > 600;
                 
                 // Base metrics
-                const medical_accuracy = (q.correct_index === undefined || q.options?.length < 5 || q.explanation?.length < 100) ? 0.4 : 0.98;
+                const medical_accuracy = (q.correct_index === undefined || q.options?.length < 4 || q.explanation?.length < 100) ? 0.4 : 0.98;
                 const distractor_quality = (q.options?.some((o: string) => o.length < 5)) ? 0.5 : 0.92;
                 const explanation_quality = hasRef ? 0.95 : 0.70;
                 const exam_style = 0.90;
@@ -848,13 +847,14 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
       }
 
       // Fix consecutive repeated correct_index
+      allQuestions = allQuestions.filter(q => Array.isArray(q.options) && q.options.length === 4 && q.correct_index < 4);
       for (let i = 1; i < allQuestions.length; i++) {
         const prev = allQuestions[i - 1];
         const curr = allQuestions[i];
-        if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
+        if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 4) {
           const avoid = new Set([prev.correct_index]);
           if (i >= 2) avoid.add(allQuestions[i - 2].correct_index);
-          const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
+          const candidates = [0, 1, 2, 3].filter(x => !avoid.has(x));
           const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
           const oldIdx = curr.correct_index;
           const temp = curr.options[newIdx];

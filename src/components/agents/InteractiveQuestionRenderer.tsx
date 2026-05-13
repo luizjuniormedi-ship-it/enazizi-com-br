@@ -2,9 +2,9 @@ import ReactMarkdown from "react-markdown";
 import InteractiveQuestionCard, { type InteractiveQuestion } from "./InteractiveQuestionCard";
 
 // Flexible regex for options: a), A), **a)**, a., **A.** etc.
-const OPTION_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s+/;
-const OPTION_LINE_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s+.+/gim;
-const OPTION_CLEAN_RE = /^\*{0,2}[a-eA-E][).]\*{0,2}\s*/i;
+const OPTION_RE = /^\*{0,2}[a-dA-D][).]\*{0,2}\s+/;
+const OPTION_LINE_RE = /^\*{0,2}[a-dA-D][).]\*{0,2}\s+.+/gim;
+const OPTION_CLEAN_RE = /^\*{0,2}[a-dA-D][).]\*{0,2}\s*/i;
 
 export function parseQuestionsFromMarkdown(text: string): { questions: InteractiveQuestion[]; segments: Array<{ type: "text" | "question"; content?: string; question?: InteractiveQuestion }> } {
   const segments: Array<{ type: "text" | "question"; content?: string; question?: InteractiveQuestion }> = [];
@@ -66,7 +66,7 @@ function parseOneQuestion(block: string): InteractiveQuestion | null {
   OPTION_LINE_RE.lastIndex = 0;
   if (!optionMatches || optionMatches.length < 2) return null;
 
-  const firstOptIdx = block.search(/^\*{0,2}[a-eA-E][).]\*{0,2}\s*/im);
+  const firstOptIdx = block.search(/^\*{0,2}[a-dA-D][).]\*{0,2}\s*/im);
   let statement = block.slice(0, firstOptIdx).trim();
 
   // Clean statement
