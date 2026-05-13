@@ -164,7 +164,7 @@ const ChatGPT = () => {
       } else if (phase === "fixation") {
         msg = `MODO REVISÃO/FIXAÇÃO — Tema: ${activeTopic}. ` +
           `O aluno precisa consolidar este tema. Inicie com Active Recall: faça 5 perguntas sequenciais para testar a memorização, ` +
-          `depois proponha um caso clínico objetivo (A-E). Foque em pegadinhas de prova.`;
+          `depois proponha um caso clínico objetivo (A-D). Foque em pegadinhas de prova.`;
       } else {
         msg = `Quero estudar o tema: ${activeTopic}. ` +
           `Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). ` +
@@ -417,7 +417,7 @@ const ChatGPT = () => {
           if (user && currentTopic) {
             const errorPatterns = [
               /(?:incorret|errad|não está corret|resposta errada|infelizmente|não é essa)/i,
-              /alternativa correta[:\s]+([A-E])/i,
+              /alternativa correta[:\s]+([A-D])/i,
               /a resposta (?:correta|certa) (?:é|seria|era)/i,
             ];
             const hasError = errorPatterns.some(p => p.test(finalText));
@@ -540,7 +540,7 @@ Passos do protocolo (siga nesta ordem):
 6. **Crie analogias práticas** — Proponha 1-2 analogias clínicas ou cotidianas que ancorem o conceito na memória.
 7. **Reorganize a explicação** — Estruture o conteúdo em começo (definição), meio (mecanismo/clínica) e fim (conduta/relevância).
 8. **Ensine para alguém real** — Peça uma nova explicação completa do aluno, agora consolidada. Avalie de novo nos 4 critérios.
-9. **Revise os pontos fracos** — Liste os 2-3 pontos onde o aluno ainda falha e proponha um mini-quiz objetivo (A-E) sobre o mais crítico.
+9. **Revise os pontos fracos** — Liste os 2-3 pontos onde o aluno ainda falha e proponha um mini-quiz objetivo (A-D) sobre o mais crítico.
 10. **Repita o processo** — Resuma o aprendizado, ofereça flashcards FSRS dos pontos fracos identificados e sugira o próximo recorte do tema para repetir o ciclo.
 
 Regras:

@@ -250,7 +250,7 @@ const DiagnosticExam = ({ questions, onFinish, onGoToReview }: DiagnosticExamPro
                      answered && wasSelected && !isCorrectOpt ? <XCircle className="h-4 w-4" /> :
                      letter}
                   </span>
-                  <span className="pt-0.5">{opt.replace(/^[A-E]\)\s*/, "")}</span>
+                  <span className="pt-0.5">{opt.replace(/^[A-D]\)\s*/, "")}</span>
                 </button>
               );
             })}
