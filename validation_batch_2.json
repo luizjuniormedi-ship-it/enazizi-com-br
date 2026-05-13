@@ -1,0 +1,82 @@
+[
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Uma paciente de 32 anos, G2P1, com última menstruação há 12 semanas, apresenta-se ao consultório com queixas de náuseas intensas e vômitos que começaram há cerca de 6 semanas. Ela relata que os sintomas pioraram progressivamente, e que nas últimas duas semanas, quase não consegue reter líquidos ou alimentos. A paciente perdeu 4 kg no último mês. Durante o exame físico, a pressão arterial está em 110/70 mmHg e apresenta discreta taquicardia. Na inspeção, nota-se uma desidratação leve com mucosas secas. O ultra-som revela um saco gestacional intrauterino com embrião viável correspondente à idade gestacional. Qual é a conduta mais apropriada para este caso?",
+    "options": [
+      "Suplementação oral de vitamina B6 e acompanhamento ambulatorial.",
+      "Internação hospitalar para hidratação intravenosa e manejo de hiperêmese gravídica.",
+      "Prescrição de antiemético e liberação para casa com retorno em uma semana.",
+      "Início de tratamento com progesterona."
+    ],
+    "correct_index": 1,
+    "explanation": "Dada a severidade dos sintomas e a perda de peso significativa com comprometimento da qualidade de vida e risco nutricional da paciente, a internação para reposição de fluidos intravenosos e manejo medicamentoso de hiperêmese gravídica se faz necessária. O tratamento ambulatorial não seria suficiente no cenário descrito.",
+    "topic": "Obstetrícia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Uma mulher de 28 anos, nulípara, comparece ao serviço de emergência devido a dor súbita e intensa no abdome inferior do lado direito, iniciada há 6 horas. O ciclo menstrual é regular e a última menstruação foi há 3 semanas. Não há história de dismenorreia, mas relata episódios de dor pélvica ocasional. Ela não tem comorbidades conhecidas e não faz uso de medicamentos. Ao exame físico, a paciente está afebril, com uma pressão arterial de 120/80 mmHg e frequência cardíaca de 88 bpm. Nota-se dor à palpação do quadrante inferior direito e sinal de Blumberg negativo. Os exames laboratoriais mostram leucocitose leve. A ultrassonografia revela massa ovariana cística de 5 cm no ovário direito com fluxo sanguíneo diminuído no Doppler. Qual é o diagnóstico mais provável?",
+    "options": [
+      "Apendicite aguda.",
+      "Cisto hemorrágico do corpo lúteo.",
+      "Torção de ovário.",
+      "Endometriose."
+    ],
+    "correct_index": 2,
+    "explanation": "Os sintomas de dor aguda e o achado de fluxo sanguíneo diminuído no ovário direito, juntamente com uma massa ovariana cística, são sugestivos de torção de ovário. Essa condição requer intervenção imediata devido ao risco de necrose tecidual.",
+    "topic": "Ginecologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Uma paciente de 45 anos, com história de menometrorragia nos últimos 6 meses, é encaminhada para consulta ginecológica. Ela é G3P3 e seu último parto ocorreu há 15 anos. Não faz uso de contraceptivos hormonais e está em boa saúde geral. Seu IMC é de 32 kg/m². Ela refere que a menstruação tem sido cada vez mais irregular e intensa, com episódios de sangramento intermenstrual. No exame ginecológico, o útero é palpável ao nível da sínfise púbica e não se identificam massas anexiais. Ultrassonografia transvaginal demonstra um útero aumentado de volume, com presença de múltiplos miomas submucosos e intramurais. Qual é a melhor opção de tratamento para esta paciente considerando a gravidade dos sintomas?",
+    "options": [
+      "Acompanhamento expectante.",
+      "Ablação endometrial.",
+      "Histerectomia.",
+      "Embolização das artérias uterinas."
+    ],
+    "correct_index": 2,
+    "explanation": "Dada a presença de múltiplos miomas sintomáticos e considerando a idade da paciente e a ausência de desejo reprodutivo, a histerectomia seria o tratamento definitivo e mais eficaz para aliviar os sintomas e garantir resolução da menometrorragia.",
+    "topic": "Ginecologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Uma gestante de 28 anos, com 30 semanas de gestação, procura atendimento obstétrico relatando prurido generalizado, especialmente nas mãos e pés, sem presença de exantema. Ela não tem história de doenças hepáticas prévias. O exame físico não revela anormalidades além do prurido. Os exames laboratoriais mostram elevação das transaminases hepáticas e dos ácidos biliares. Qual é a condição mais provável que está afetando esta gestante?",
+    "options": [
+      "Colestase intra-hepática da gravidez.",
+      "Hepatite viral aguda.",
+      "Dermatose gestacional.",
+      "Preeclâmpsia."
+    ],
+    "correct_index": 0,
+    "explanation": "A colestase intra-hepática da gravidez é caracterizada por prurido intenso, especificamente nas palmas das mãos e plantas dos pés, e elevação dos níveis de ácidos biliares e enzimas hepáticas. Esta condição é peculiar da gravidez e deve ser manejada cuidadosamente devido ao risco para o feto.",
+    "topic": "Obstetrícia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Uma mulher de 36 anos, G1P0, com 39 semanas de gestação, chega à maternidade em trabalho de parto ativo. Após 8 horas, com dilatação completa do colo do útero e esforços expulsivos eficazes, o período expulsivo se prolonga por 2 horas. A frequência cardíaca fetal no momento é de 140 bpm, e a paciente está exausta. A apresentação fetal é occipitoanterior e o polo cefálico encontra-se em +2 do plano de De Lee. Quais medidas devem ser tomadas para facilitar o parto com segurança?",
+    "options": [
+      "Continuar estimulando a puérpera a fazer esforços expulsivos por mais 2 horas.",
+      "Realizar extração usando fórceps.",
+      "Indicar cesariana emergencial.",
+      "Administrar ocitocina em maiores doses."
+    ],
+    "correct_index": 1,
+    "explanation": "Com a dilatação completa e o período expulsivo prolongado sem progresso adicional, e considerando a posição fetal e a exaustão da parturiente, a utilização de fórceps pode ser indicada para auxiliar o parto, caso o profissional esteja apto e a situação clínica permita o procedimento seguro.",
+    "topic": "Obstetrícia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  }
+]
