@@ -92,7 +92,7 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
 }> {
   const cleaned = normalizePdfExamText(text);
   const blocks = cleaned
-    .split(/(?=QUEST[ÃA]O\s+\d+\.)/i)
+    .split(/(?=QUEST[ÃA]O\s+\d+[\s\.:])/i)
     .map((block) => block.trim())
     .filter(Boolean);
 
@@ -105,9 +105,8 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
   }> = [];
 
   for (const rawBlock of blocks) {
-    let block = rawBlock.replace(/^QUEST[ÃA]O\s+\d+\.\s*/i, "").trim();
-    if (block.length < 400) continue;
-
+    let block = rawBlock.replace(/^QUEST[ÃA]O\s+\d+[\s\.:]*/i, "").trim();
+    
     const markerRegex = /(?:^|\s)([A-E])[\.)]\s/g;
     const markers = Array.from(block.matchAll(markerRegex)).map((match) => ({
       letter: match[1],
@@ -118,7 +117,7 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
     if (markers.length < 4) continue;
 
     const statement = block.slice(0, markers[0].rawIndex).trim();
-    if (statement.length < 100) continue;
+    if (statement.length < 50) continue; 
     if (IMAGE_REF_PATTERN.test(statement) || ENGLISH_PATTERN.test(statement)) continue;
 
     const options: string[] = [];
