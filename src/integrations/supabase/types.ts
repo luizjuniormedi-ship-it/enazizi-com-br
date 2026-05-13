@@ -14616,6 +14616,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_stress_logs: {
+        Row: {
+          anti_hallucination_score_avg: number | null
+          batch_id: string
+          created_at: string | null
+          duration_ms: number | null
+          error_details: string | null
+          id: string
+          operation_type: string
+          payload_size_kb: number | null
+          quality_score_avg: number | null
+          status: string
+        }
+        Insert: {
+          anti_hallucination_score_avg?: number | null
+          batch_id: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error_details?: string | null
+          id?: string
+          operation_type: string
+          payload_size_kb?: number | null
+          quality_score_avg?: number | null
+          status: string
+        }
+        Update: {
+          anti_hallucination_score_avg?: number | null
+          batch_id?: string
+          created_at?: string | null
+          duration_ms?: number | null
+          error_details?: string | null
+          id?: string
+          operation_type?: string
+          payload_size_kb?: number | null
+          quality_score_avg?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
       planner_extracted_topics: {
         Row: {
           coverage_stats: Json | null
@@ -16313,11 +16352,14 @@ export type Database = {
           classification_method: string | null
           classification_reviewed_by_human: boolean
           classified_at: string | null
+          clinical_reasoning_depth: number | null
+          cognitive_quality_score: number | null
           correct_index: number
           created_at: string
           difficulty: number
           exam_bank_id: string | null
           explanation: string
+          hallucination_risk_score: number | null
           id: string
           image_url: string | null
           is_global: boolean | null
@@ -16347,11 +16389,14 @@ export type Database = {
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
           classified_at?: string | null
+          clinical_reasoning_depth?: number | null
+          cognitive_quality_score?: number | null
           correct_index?: number
           created_at?: string
           difficulty?: number
           exam_bank_id?: string | null
           explanation: string
+          hallucination_risk_score?: number | null
           id?: string
           image_url?: string | null
           is_global?: boolean | null
@@ -16381,11 +16426,14 @@ export type Database = {
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
           classified_at?: string | null
+          clinical_reasoning_depth?: number | null
+          cognitive_quality_score?: number | null
           correct_index?: number
           created_at?: string
           difficulty?: number
           exam_bank_id?: string | null
           explanation?: string
+          hallucination_risk_score?: number | null
           id?: string
           image_url?: string | null
           is_global?: boolean | null
@@ -17313,6 +17361,53 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      shadow_adaptive_metrics: {
+        Row: {
+          created_at: string | null
+          decision_id: string | null
+          divergence_score: number | null
+          id: string
+          metadata: Json | null
+          metric_type: string
+          original_value: Json | null
+          session_id: string | null
+          shadow_value: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          decision_id?: string | null
+          divergence_score?: number | null
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          original_value?: Json | null
+          session_id?: string | null
+          shadow_value?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          decision_id?: string | null
+          divergence_score?: number | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          original_value?: Json | null
+          session_id?: string | null
+          shadow_value?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shadow_adaptive_metrics_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "orchestrator_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       simulado_question_analytics: {
         Row: {
