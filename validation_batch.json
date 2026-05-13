@@ -1,0 +1,322 @@
+[
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Carlos, 65 anos, aposentado, procura o pronto-socorro com queixa de dispneia progressiva há 2 dias. É hipertenso e diabético há mais de 10 anos, em uso de enalapril e metformina. No exame físico, encontra-se lúcido, com pressão arterial de 180/100 mmHg, frequência cardíaca de 110 bpm, frequência respiratória de 28 irpm, temperatura de 37,2°C e saturação de oxigênio em ar ambiente de 88%. Ressonância nuclear magnética revela uma fração de ejeção de 35%. Qual intervenção imediata é mais apropriada?",
+    "options": [
+      "Administração de diurético intravenoso",
+      "Início de heparina subcutânea",
+      "Intubação orotraqueal",
+      "Administração de broncodilatador"
+    ],
+    "correct_index": 0,
+    "explanation": "A administração de diurético intravenoso é correta, pois a dispneia e a baixa saturação sugerem congestão pulmonar devido à insuficiência cardíaca descompensada. A intubação orotraqueal é indicada se houver insuficiência respiratória aguda descompensada. Heparina é usada para tromboembolismo, não para congestão isolada. Bronchodilatadores são usados em quadros de asma ou DPOC exacerbado. 🧑‍⚕️ Explicação Simplificada: O diurético ajuda a reduzir a sobrecarga de volume, aliviando os sintomas. 📚 Harrison 21ed.",
+    "topic": "Clínica Médica - Insuficiência Cardíaca",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Laura, 32 anos, advogada, apresenta fadiga intensa e icterícia há 3 semanas. Não há uso de medicações ou histórico médico relevante. Ao exame: PA 110/70 mmHg, FC 90 bpm, FR 16 irpm, Temp 36,8°C, SpO2 97%. O hemograma mostra: hemoglobina 8,2 g/dL, VCM 110 fL, leucócitos 6.500/mm³, plaquetas 210.000/mm³. Bilirrubina indireta elevada. Teste de Coombs direto positivo. Qual é o diagnóstico mais provável?",
+    "options": [
+      "Anemia megaloblástica",
+      "Esferocitose hereditária",
+      "Anemia hemolítica autoimune",
+      "Síndrome hemolítico-urêmica"
+    ],
+    "correct_index": 2,
+    "explanation": "A presença de icterícia, Coombs positivo e bilirrubina indireta elevada sugere anemia hemolítica autoimune. Anemia megaloblástica tem VCM elevado mas não icterícia e Coombs positivo. Esferocitose é hereditária e, geralmente, tem diagnóstico desde a infância. Síndrome hemolítico-urêmica cursa com insuficiência renal e trombocitopenia. 🧑‍⚕️ Explicação Simplificada: O Coombs positivo confirma a autoimunidade na destruição das hemácias. 📚 Harrison 21ed.",
+    "topic": "Clínica Médica - Hematologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Fernando, 57 anos, artista plástico, apresenta dor súbita na panturrilha esquerda após um voo internacional, há 5 dias. Está em uso de simvastatina para dislipidemia. Ao exame: PA 125/80 mmHg, FC 92 bpm, FR 18 irpm, Temp 36,9°C, SpO2 99%. A panturrilha esquerda está edemaciada e dolorosa à palpação. Doppler venoso confirma trombose venosa profunda (TVP) na veia poplítea. Qual é a medida terapêutica inicial mais adequada?",
+    "options": [
+      "Início de heparina de baixo peso molecular",
+      "Aspirina em baixa dose",
+      "Filtro de veia cava",
+      "Compressão elástica"
+    ],
+    "correct_index": 0,
+    "explanation": "O início de heparina de baixo peso molecular é o tratamento padrão-ouro para TVP aguda. A aspirina não é eficaz na prevenção de complicações tromboembólicas agudas. O filtro de veia cava é reservado para pacientes com contraindicações à anticoagulação. A compressão elástica é adjuvante, não substitui a anticoagulação. 🧑‍⚕️ Explicação Simplificada: A anticoagulação é essencial para prevenir complicações como a embolia pulmonar. 📚 Sabiston 21ed.",
+    "topic": "Clínica Médica - Doenças Tromboembólicas",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Mariana, 29 anos, arquiteta, apresenta episódios recorrentes de diarreia, distensão abdominal e perda de peso nos últimos 6 meses. Exame físico: PA 118/72 mmHg, FC 76 bpm, FR 14 irpm, Temp 36,5°C, SpO2 98%. Exames laboratoriais mostram anemia por deficiência de ferro e anticorpos anti-transglutaminase IgA positivos. Qual é a principal suspeita diagnóstica?",
+    "options": [
+      "Doença de Crohn",
+      "Síndrome do intestino irritável",
+      "Doença celíaca",
+      "Colite ulcerativa"
+    ],
+    "correct_index": 2,
+    "explanation": "A presença de anticorpos anti-transglutaminase IgA positivos, junto com os sintomas, é altamente sugestiva de doença celíaca. Doença de Crohn e colite ulcerativa cursam com sintomas gastrointestinais, mas têm marcadores sorológicos diferentes. A síndrome do intestino irritável não causa alterações hematológicas típicas ou autoanticorpos. 🧑‍⚕️ Explicação Simplificada: A doença celíaca é uma resposta imune ao glúten. 📚 Nelson 21ed.",
+    "topic": "Clínica Médica - Gastroenterologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Ricardo, 43 anos, executivo de vendas, queixa-se de fraqueza muscular progressiva e ptose palpebral, que piora ao final do dia, há 4 meses. Não fuma, nega uso de álcool ou drogas ilícitas. Exame físico: PA 120/80 mmHg, FC 80 bpm, FR 16 irpm, Temp 36,7°C, SpO2 98%. Teste de estimulação repetitiva evidencia decremento do potencial de ação muscular. Qual o diagnóstico mais provável?",
+    "options": [
+      "Distrofia miotônica",
+      "Miastenia gravis",
+      "Esclerose lateral amiotrófica",
+      "Polimiosite"
+    ],
+    "correct_index": 1,
+    "explanation": "Ptose palpebral e fraqueza muscular que pioram ao longo do dia são típicas de miastenia gravis. O teste de estimulação repetitiva confirma a hipofunção muscular neuromuscular. Distrofia miotônica se caracteriza por miotonia, não ptose. ELA causa fraqueza, mas sem flutuação diária. Polimiosite envolve dor muscular e não apresenta sintomas flutuantes ao longo do dia. 🧑‍⚕️ Explicação Simplificada: A miastenia gravis ocorre devido a autoanticorpos contra receptores de acetilcolina. 📚 Harrison 21ed.",
+    "topic": "Clínica Médica - Neurologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Lucas, 28 anos, advogado, foi atendido no pronto-socorro com dor abdominal intensa e difusa há 6 horas, associada a náuseas e vômitos. Relata história prévia de cálculo renal, mas nega cirurgias abdominais. Ao exame físico, encontra-se em regular estado geral, desidratado, com PA 100/60 mmHg, FC 120 bpm, FR 22 irpm, Temp. 37,8°C, SpO2 96% em ar ambiente. Abdômen distendido, doloroso à palpação difusa, RHA diminuídos. Tomografia de abdômen mostra intestino delgado dilatado com transição em nível de válvula ileocecal, sem outras alterações. Qual é o diagnóstico mais provável?",
+    "options": [
+      "Apendicite aguda",
+      "Volvo de cólon",
+      "Obstrução intestinal por íleo biliar",
+      "Aderência intestinal"
+    ],
+    "correct_index": 3,
+    "explanation": "A 'Obstrução intestinal por íleo biliar' ocorre mais frequentemente em pacientes idosos com história de colelitíase. A 'apendicite aguda' geralmente não causa distensão abdominal significativa sem um quadro de peritonite. 'Volvo de cólon' tipicamente afeta regiões mais distais, como o sigmoid e o ceco. Em pacientes jovens sem cirurgia abdominal anterior, a hipótese de 'aderência intestinal', embora correta em alguns casos, é menos provável frente a ausência de cirurgia prévia e idade do paciente. A obstrução mais suspeitada pela história e exames é por aderências ou íleo biliar se fôssemos considerar cálculos biliares, mas sem evidência radiológica.",
+    "topic": "Cirurgia Geral - Abdome agudo obstrutivo",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Marina, 45 anos, enfermeira, lúcida e orientada, é trazida à emergência devido à dor abdominal intensa no quadrante superior direito com irradiação para escápula direita, associada a vômitos biliosos e febre há 8 horas. Relata episódios semelhantes de dor nos últimos meses. No exame físico: PA 140/90 mmHg, FC 110 bpm, FR 20 irpm, Temp. 38,5°C, icterícia 1+/4+, dor à palpação do quadrante superior direito com sinal de Murphy positivo. Ultrassonografia revela vesícula biliar distendida com múltiplos cálculos e espessamento da parede. Qual a melhor conduta cirúrgica?",
+    "options": [
+      "Colecistite aguda - laparotomia exploratória imediata",
+      "Colecistite crônica - colecistectomia eletiva",
+      "Colecistite aguda - colecistectomia laparoscópica precoce",
+      "Colecistite aguda - drenagem percutânea da vesícula biliar"
+    ],
+    "correct_index": 2,
+    "explanation": "A 'colecistectomia laparoscópica precoce' é o tratamento padrão em casos de colecistite aguda sem complicações. 'Laparotomia exploratória imediata' é reservada para casos complicados, como perfuração ou abscesso. A 'colecistectomia eletiva' se destina a casos crônicos sem inflamação aguda. 'Drenagem percutânea' é considerada em pacientes sem condições cirúrgicas.",
+    "topic": "Cirurgia Geral - Colecistite aguda",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "João, 65 anos, aposentado, portador de DPOC, ex-tabagista de 50 maços/ano, apresenta-se com queixa de disfagia progressiva para sólidos e perda ponderal de 8 kg nos últimos 3 meses. Nega dor torácica ou hematêmese. No exame físico, apresenta-se emagrecido, afebril, PA 130/80 mmHg, FC 78 bpm, FR 18 irpm, SpO2 92% em ar ambiente. Endoscopia digestiva alta mostra lesão vegetante esofágica na junção esofagogástrica, com estenose quase completa do lúmen. Biópsia confirma adenocarcinoma gástrico. Qual é o próximo passo no manejo deste paciente?",
+    "options": [
+      "Radioterapia paliativa",
+      "Quimioterapia neoadjuvante",
+      "Esofagectomia transhiatal",
+      "Colocação de endoprótese esofágica"
+    ],
+    "correct_index": 3,
+    "explanation": "Para pacientes com disfagia e estenose esofágica significativa, a 'colocação de endoprótese esofágica' é prioritária para alívio sintomático. A 'radioterapia paliativa' é usada em estágio avançado, mas não é prioritária para disfagia inicial grave. 'Quimioterapia neoadjuvante' visa reduzir o tumor antes de possibilitar cirurgia. 'Esofagectomia transhiatal' é possível, mas riscos cirúrgicos no cenário de DPOC grave e disfagia significativa priorizam procedimentos menos invasivos primeiro.",
+    "topic": "Cirurgia Geral - Carcinoma de esôfago",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Carlos, 34 anos, motorista de caminhão, é admitido na emergência após acidente automobilístico com queixa de dor abdominal. No exame inicial: PA 100/70 mmHg, FC 130 bpm, FR 28 irpm, Temp. 36,5°C, SpO2 94%. O FAST (Focused Assessment with Sonography for Trauma) é positivo no espaço hepatorenal e esplenorrenal. Radiografia de tórax mostra pneumotórax direito pequeno. Qual é a conduta mais imediata neste paciente?",
+    "options": [
+      "Drenagem torácica do pneumotórax",
+      "Laparotomia exploratória urgente",
+      "Observação vigilante na UTI",
+      "Tomografia de abdome com contraste"
+    ],
+    "correct_index": 1,
+    "explanation": "A 'laparotomia exploratória urgente' é indicada em pacientes com FAST positivo e sinais de instabilidade hemodinâmica ou choque hemorrágico. 'Drenagem torácica' é prioritária em pneumotórax significativo com compromisso respiratório, mas não é o foco imediato. 'Observação vigilante na UTI' é inadequada se a laparotomia está indicada. 'Tomografia de abdome' pode atrasar o tratamento necessário em caso de instabilidade significativa.",
+    "topic": "Cirurgia Geral - Trauma abdominal",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Fernanda, 50 anos, professora, consulta por sangramento anal intermitente há vários meses e sensação de massa na região perianal. Refere constipação crônica e perda de peso recente de 5 kg. No exame físico, apresenta-se normotensa, com FC 82 bpm, afebril e corada. O toque retal revela lesão polipoide a 6 cm da margem anal. Colonoscopia mostrou lesões sugestivas de adenoma na região proximal. Exame histopatológico revelou adenocarcinoma in situ. Qual é o manejo cirúrgico recomendado?",
+    "options": [
+      "Colectomia total",
+      "Ressecção transanal local",
+      "Ressecção anterior baixa",
+      "Eletrocoagulação endoscópica"
+    ],
+    "correct_index": 1,
+    "explanation": "Para adenocarcinoma in situ em região acessível via toque retal, a 'ressecção transanal local' é suficiente, proporcionando menor morbidade. 'Colectomia total' e 'ressecção anterior baixa' são invasivos demais para doença inicial. 'Eletrocoagulação endoscópica' é usada geralmente para pólipos benignos ou lesões muito pequenas, sem garantia de margens seguras.",
+    "topic": "Cirurgia Geral - Neoplasia colorretal",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "João, um menino de 4 anos, é levado ao pronto-socorro porque a mãe notou que ele tem apresentado dores abdominais intermitentes há duas semanas. A dor é periumbilical e alivia parcialmente com a flexão das pernas. Ele também teve episódios de náuseas e algumas evacuações urgentes, sem sangue ou muco. João não possui doenças prévias conhecidas e está atualizado com a vacinação. Ao exame físico, João está afebril (36,8°C), com PA 90/60 mmHg, FC 100 bpm, FR 20 ipm. O abdome está levemente distendido, doloroso à palpação profunda na região periumbilical. Os exames laboratoriais mostram Hb 12,5 g/dL, leucócitos 8000/mm³, PCR normal, e o exame de fezes é negativo para parasitas. Qual é o diagnóstico mais provável?",
+    "options": [
+      "Doença inflamatória intestinal",
+      "Apendicite aguda",
+      "Invaginação intestinal",
+      "Enterite infecciosa"
+    ],
+    "correct_index": 2,
+    "explanation": "A invaginação intestinal é mais comum em crianças pequenas e apresenta-se com dor abdominal intermitente e sinais de irritação intestinal, como náuseas e evacuações urgentes. A redução mecânica através de enema com ar ou cirurgia é geralmente aplicada. A apendicite aguda em crianças menores de cinco anos pode ser difícil de diferenciar, mas geralmente não apresenta a dor intermitente clássica da invaginação. 🧑‍⚕️ Explicação Simplificada: João tem uma tríade clássica de invaginação: dor intermitente, náusea e distensão. 📚 Mini-revisão: A invaginação é a entrada de um segmento do intestino dentro do segmento distal, causando obstrução. (Nelson 21ed)",
+    "topic": "Pediatria - Gastroenterologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Mariana, 2 anos, é trazida à consulta de rotina. A mãe está preocupada porque, apesar de já ter introduzido alimentos sólidos há 6 meses, Mariana só aceita alimentos pastosos e recentemente tem apresentado episódios de vômitos após alguns alimentos. No exame físico, Mariana tem altura e peso no percentil 10, sinais vitais normais, e não apresenta sinais de desidratação. O teste cutâneo de alergia alimentar demonstrou resposta negativa para leite e ovos. Que diagnóstico deve ser considerado?",
+    "options": [
+      "Doença do refluxo gastroesofágico",
+      "Alergia ao glúten",
+      "Transtorno alimentar seletivo",
+      "Esofagite eosinofílica"
+    ],
+    "correct_index": 3,
+    "explanation": "Esofagite eosinofílica deve ser considerada em crianças com problemas alimentares e sintomas gastrointestinais como vômitos, especialmente com testes cutâneos negativos para alergias comuns. Biopsia esofágica confirmaria o diagnóstico. Doença do refluxo gastroesofágico na infância frequentemente melhora com a idade e é menos associada à aversão alimentar. 🧑‍⚕️ Explicação Simplificada: A intolerância de Mariana aos sólidos e os vômitos podem indicar inflamação esofágica. 📚 Mini-revisão: A esofagite eosinofílica é uma condição alérgica inflamatória do esôfago. (Nelson 21ed)",
+    "topic": "Pediatria - Gastroenterologia e Nutrição",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Lucas, um recém-nascido de 3 dias, foi admitido na UTI neonatal devido a cianose progressiva desde o nascimento. Nas últimas 24 horas, ele apresenta dificuldades respiratórias. Ao exame, ele está taquipneico com 70 respirações por minuto, saturação de oxigênio em ar ambiente de 85%. Ausculta cardíaca revela um sopro sistólico em ejeção no segundo espaço intercostal esquerdo. A gasometria arterial indica hipoxemia com acentuada diferença entre o oxigênio arterial e venoso. Qual a condição provável de Lucas?",
+    "options": [
+      "Doença da membrana hialina",
+      "Persistência do canal arterial",
+      "Transposição das grandes artérias",
+      "Defeito do septo ventricular"
+    ],
+    "correct_index": 2,
+    "explanation": "A transposição das grandes artérias frequentemente se apresenta com cianose nos primeiros dias de vida, agravando-se com o fechamento do ducto arterioso. A gasometria reflete hipoxemia profunda. O sopro não é proeminente, mas revela o fluxo sanguíneo pelas anastomoses. O manejo inicial inclui prostaglandina para manter o ducto arterioso patente e possível septostomia atrial. 🧑‍⚕️ Explicação Simplificada: Lucas tem sintomas típicos de fluxo sanguíneo transposto entre as artérias. 📚 Mini-revisão: Transposição das grandes artérias é uma emergência neonatal. (Nelson 21ed)",
+    "topic": "Pediatria - Cardiologia Congênita",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Ana, de 8 anos, foi levada à emergência com febre alta há dois dias, dor de garganta e surgimento de manchas vermelhas em várias partes do corpo. Ao exame, ela tem temperatura de 39,5°C, PA 100/60 mmHg, FC 120 bpm. Linfonodos cervicais estão aumentados e dolorosos, com língua de morango visível na cavidade oral. Os familiares relatam que ela teve contato recente com uma amiga diagnosticada com escarlatina. Qual tratamento deve ser iniciado?",
+    "options": [
+      "Penicilina oral",
+      "Azitromicina",
+      "Ceftriaxona",
+      "Ibuprofeno"
+    ],
+    "correct_index": 0,
+    "explanation": "A escarlatina é causada por toxina estreptocócica e frequentemente surge após faringite. A penicilina é o tratamento de escolha, tanto para erradicação do estreptococo quanto para evitar complicações. Ibuprofeno alivia sintomas, mas não trata a causa. O uso de antibióticos alternativos como azitromicina é considerado apenas para alérgicos à penicilina. 🧑‍⚕️ Explicação Simplificada: Ana apresenta sintomas clássicos de escarlatina e contato conhecido. 📚 Mini-revisão: Escarlatina é uma reação à toxina do Streptococcus pyogenes. (Nelson 21ed)",
+    "topic": "Pediatria - Infectologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Mateus, um menino de 5 anos, apresenta falta de ar progressiva e perda de peso ao longo de 3 meses. Ele tem uma história de infecções respiratórias recorrentes. Durante o exame, ele está em leve desconforto respiratório com uso discreto de musculatura acessória. PA 95/55 mmHg, FC 110 bpm, FR 30 ipm, saturação de oxigênio de 92% em ar ambiente. Ausculta pulmonar revela crepitações inspiratórias bilaterais. Radiografia de tórax mostra infiltrado intersticial difuso. Qual condição crônica deve ser investigada?",
+    "options": [
+      "Fibrose cística",
+      "Asma não controlada",
+      "Pneumonia intersticial crônica",
+      "Tuberculose intratorácica"
+    ],
+    "correct_index": 0,
+    "explanation": "A fibrose cística é uma doença genética que resulta na produção de secreções espessas e pegajosas, causando obstrução e infecções recorrentes. Diagnóstico é confirmado por testes de suor, apresentando altas concentrações de cloreto. O padrão intersticial na radiografia pode ser comum. 🧑‍⚕️ Explicação Simplificada: Mateus tem sintomas progressivos, infecções e achados radiográficos consistentes com fibrose cística. 📚 Mini-revisão: Fibrose cística afeta pulmões, pâncreas e outros órgãos. (Nelson 21ed)",
+    "topic": "Pediatria - Pneumologia e Doenças Respiratórias",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Maria, 30 anos, enfermeira, primigesta, com 29 semanas de gestação, consulta devido a ganho ponderal excessivo. Nos últimos 2 meses, relatou crescimento rápido do abdome. Sem antecedentes de doenças crônicas, apenas hipertensão gestacional na família. Apresenta PA: 130/85 mmHg, FC: 82 bpm, FR: 16 ipm, Temp: 36,8°C, SpO2: 98%. Ultrassonografia obstétrica revela hidramnios severo com índice de líquido amniótico de 32 cm. Qual é a causa mais provável desse achado na gestação?",
+    "options": [
+      "Diabetes gestacional",
+      "Síndrome de Down",
+      "Infecção congênita por CMV",
+      "Insuficiência placentária"
+    ],
+    "correct_index": 0,
+    "explanation": "A principal causa de polidrâmnio é o diabetes gestacional, que leva a um aumento na diurese fetal. A síndrome de Down costuma não estar associada a polidrâmnio. Infecção congênita por CMV geralmente causa restrição de crescimento intrauterino e não polidrâmnio. Insuficiência placentária está associada à oligoidrâmnio. \n\n🧑‍⚕️ Explicação Simplificada: Polidrâmnio ocorre quando há excesso de líquido amniótico, frequentemente relacionado ao diabetes gestacional. \n\n📚 Revisão: Harrison 21ª Ed., Sabiston 21ª Ed.",
+    "topic": "Obstetrícia - Distúrbios do Líquido Amniótico",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Ana, 37 anos, advogada, G4P3, atualmente com 20 semanas de gestação. História prévia de três cesáreas. Apresenta sangramento vaginal indolor leve. Ultrassonografia evidencia placenta de inserção baixa cobrindo parcialmente o orifício interno cervical. Sinais vitais: PA: 120/75 mmHg, FC: 75 bpm, FR: 18 ipm, Temp: 36,7°C, SpO2: 99%. Considerando o quadro, qual é a melhor conduta neste momento?",
+    "options": [
+      "Internação imediata e preparo para cesariana",
+      "Repouso relativo e acompanhamento com ultrassonografia seriada",
+      "Indução do trabalho de parto",
+      "Administração de tocolíticos para prevenção de parto prematuro"
+    ],
+    "correct_index": 1,
+    "explanation": "A placenta prévia parcial é frequentemente manejada com acompanhamento e ultrassonografias seriadas, pois a placenta pode se deslocar naturalmente com o avanço da gestação. Internação imediata para cesariana está indicada somente em casos de sangramento ameaçador. Indução de parto é contraindicada na presença de placenta prévia. Tocolíticos não são indicados nesse contexto. \n\n🧑‍⚕️ Explicação Simplificada: Em placenta prévia sem sangramento significativo, o acompanhamento vigilante é a melhor conduta. \n\n📚 Atualização: Williams Obstetrics 26ª Ed.",
+    "topic": "Obstetrícia - Placenta Prévia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Luiza, 28 anos, professora, sem antecedentes patológicos, grávida de 34 semanas, se queixa de dor abdominal difusa e contrações uterinas dolorosas. Exame físico: PA: 135/90 mmHg, FC: 90 bpm, FR: 20 ipm, Temp: 37,0°C, SpO2: 98%. Toque vaginal revelou colo uterino dilatado com 3 cm e 50% de apagamento. Exame de ultrassom apresentou descolamento prematuro de placenta. Qual dos fatores de risco a seguir está mais associado a essa condição?",
+    "options": [
+      "Anemia materna",
+      "Multiparidade",
+      "Tabagismo",
+      "Pré-eclâmpsia"
+    ],
+    "correct_index": 3,
+    "explanation": "O descolamento prematuro de placenta está fortemente associado à hipertensão materna, incluindo pré-eclâmpsia. Anemia materna, multiparidade e tabagismo são fatores menos prevalentes ou indiretamente relacionados. A hipertensão causa alterações vasculares, levando ao descolamento. \n\n🧑‍⚕️ Explicação Simplificada: Pré-eclâmpsia aumenta o risco de descolamento pela modificação dos vasos sanguíneos placentários. \n\n📚 Revisão: Harrison 21ª Ed.",
+    "topic": "Obstetrícia - Descolamento Prematuro de Placenta",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Beatriz, 32 anos, secretária, sem patologias conhecidas, vem à consulta de rotina com 26 semanas de gestação gemelar dicoriônica diamniótica. Exame obstétrico sem alterações. Sinais vitais: PA 118/70 mmHg, FC 82 bpm, FR 16 ipm, Temp 36,6°C, SpO2 98%. Qual complicação é mais frequentemente associada a este tipo específico de gravidez gemelar?",
+    "options": [
+      "Síndrome da transfusão feto-fetal",
+      "Restrição de crescimento intrauterino",
+      "Parto prematuro",
+      "Malformações congênitas"
+    ],
+    "correct_index": 2,
+    "explanation": "Gravidezes gemelares dicoriônicas diamnióticas apresentam risco aumentado de complicações como parto prematuro devido à sobrecarga uterina, enquanto a síndrome da transfusão feto-fetal é exclusiva de gestações monocoriônicas. Restrição de crescimento e malformações, apesar de mais prevalentes que em gravidez única, não têm risco significativamente alterado comparado ao parto prematuro. \n\n🧑‍⚕️ Explicação Simplificada: O parto prematuro é a complicação mais frequente em gestações gemelares dicoriônicas. \n\n📚 Atualização: Williams Obstetrics 26ª Ed.",
+    "topic": "Obstetrícia - Gravidez Gemelar",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Carla, 45 anos, empresária, apresenta sangramento vaginal irregular e perda ponderal de 5 kg nos últimos dois meses. Menopausa há 3 anos. Antecedentes de miomas uterinos. Exame físico: PA: 125/80 mmHg, FC: 78 bpm, FR: 14 ipm, Temp: 36,8°C, SpO2: 97%. Exame pélvico: útero de volume aumentado, móvel, sem dor à palpação. Ultrassonografia pélvica mostra espessamento endometrial de 8 mm. Qual é a próxima etapa mais correta no manejo dessa paciente?",
+    "options": [
+      "Iniciar terapia com progesterona",
+      "Agendar histeroscopia com biópsia de endométrio",
+      "Solicitar ressonância magnética pélvica",
+      "Realizar crioterapia do útero"
+    ],
+    "correct_index": 1,
+    "explanation": "O espessamento endometrial em mulheres pós-menopáusicas deve levantar suspeita de possível hiperplasia ou carcinoma, justificando a realização de histeroscopia com biópsia para avaliação histopatológica. A terapia com progesterona é uma abordagem possível, mas não sem antes uma confirmação diagnóstica. Ressonância magnética é útil em casos de lesões indeterminadas após a biópsia. Crioterapia não é indicada para essa situação. \n\n🧑‍⚕️ Explicação Simplificada: Sangramento pós-menopausa e espessamento endometrial requerem biópsia para diagnóstico preciso. \n\n📚 Atualização: Williams Gynecology 2020.",
+    "topic": "Ginecologia - Sangramento Pós-Menopausa",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  }
+]
