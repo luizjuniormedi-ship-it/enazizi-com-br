@@ -16253,17 +16253,17 @@ export type Database = {
           classification_method: string | null
           classification_reviewed_by_human: boolean
           classified_at: string | null
-          correct_index: number | null
+          correct_index: number
           created_at: string
           difficulty: number | null
           exam_bank_id: string | null
-          explanation: string | null
+          explanation: string
           id: string
           image_url: string | null
           is_global: boolean | null
           language: string | null
           microtopic_id: string | null
-          options: Json | null
+          options: Json
           organization_id: string | null
           original_question_id: string | null
           permission_type: string | null
@@ -16287,17 +16287,17 @@ export type Database = {
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
           classified_at?: string | null
-          correct_index?: number | null
+          correct_index?: number
           created_at?: string
           difficulty?: number | null
           exam_bank_id?: string | null
-          explanation?: string | null
+          explanation: string
           id?: string
           image_url?: string | null
           is_global?: boolean | null
           language?: string | null
           microtopic_id?: string | null
-          options?: Json | null
+          options?: Json
           organization_id?: string | null
           original_question_id?: string | null
           permission_type?: string | null
@@ -16321,17 +16321,17 @@ export type Database = {
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
           classified_at?: string | null
-          correct_index?: number | null
+          correct_index?: number
           created_at?: string
           difficulty?: number | null
           exam_bank_id?: string | null
-          explanation?: string | null
+          explanation?: string
           id?: string
           image_url?: string | null
           is_global?: boolean | null
           language?: string | null
           microtopic_id?: string | null
-          options?: Json | null
+          options?: Json
           organization_id?: string | null
           original_question_id?: string | null
           permission_type?: string | null
