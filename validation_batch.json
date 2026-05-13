@@ -1,320 +1,240 @@
 [
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Mariana, 54 anos, professora, apresenta fadiga e mal-estar há cerca de 3 meses. Ela relata perda de peso não intencional de 5 kg no período. Há antecedente de diabetes tipo 2, em uso de metformina 850 mg/dia, e hipertensão controlada com losartana 50 mg/dia. Exame físico: PA 135/85 mmHg, FC 88 bpm, FR 14 ipm, Temp 36,8°C, SpO2 98%. Ao exame, observa-se palidez importante e baço palpável a 2 cm do RCE. Hemograma: Hb 7,2 g/dL (12-16 g/dL), Ht 22% (36-46%), leucócitos 5.000/mm³ (4.000-11.000/mm³), plaquetas 200.000/mm³ (150.000-450.000/mm³). A análise do esfregaço de sangue periférico revela anisocitose, poiquilocitose e eritroblastos. Qual é o provável diagnóstico?",
+    "statement": "Um homem de 64 anos, com histórico de hipertensão e diabetes mellitus tipo 2 controlados, apresenta-se ao pronto-socorro com dor torácica aguda iniciada há 2 horas. A dor é opressiva, irradia para o braço esquerdo e é acompanhada de dispneia e sudorese. No exame físico, encontra-se pálido, diaforético, com frequência cardíaca de 110 bpm, pressão arterial de 90/60 mmHg e saturação de oxigênio de 94% em ar ambiente. O eletrocardiograma mostra elevação do segmento ST nas derivações DII, DIII e aVF. Laboratorialmente, percebe-se elevação de troponina sérica. Qual é o tratamento inicial mais apropriado para este paciente?",
     "options": [
-      "Anemia hemolítica autoimune",
-      "Anemia aplástica",
-      "Anemia ferropriva",
-      "Anemia megaloblástica"
-    ],
-    "correct_index": 0,
-    "explanation": "A anemia hemolítica autoimune é sugerida pela presença de anemia com reticulocitose (indicada por eritroblastos no esfregaço) e esplenomegalia. A palidez e o baço aumentado reforçam essa hipótese. As outras opções apresentam diferentes características hematológicas. 🧑‍⚕️ Explicação Simplificada: A anemia hemolítica destrói os glóbulos vermelhos, causando anemia e pode aumentar o baço. 📚 Mini-revisão: Anemia hemolítica autoimune é causada por anticorpos que destroem os eritrócitos. (Harrison 21ed, cap. 105)",
-    "topic": "Hematologia - Anemias",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Carlos, 65 anos, aposentado, veio ao pronto-socorro com queixa de dor torácica intensa há 2 horas, irradiada para o braço esquerdo. Possui história de hipertensão, tabagismo e dislipidemia. Em uso de enalapril 10 mg/dia e simvastatina 20 mg/dia. Exame físico: PA 150/95 mmHg, FC 110 bpm, FR 18 ipm, Temp 37°C, SpO2 96%. ECG revela supradesnivelamento do segmento ST em DII, DIII e aVF. Os exames laboratoriais mostram troponina elevada. Qual é o tratamento inicial mais indicado para este paciente?",
-    "options": [
-      "Trombolíticos",
-      "Clopidogrel",
-      "Heparina não fracionada",
-      "Angioplastia coronariana primária"
+      "A. Administração de morfina",
+      "B. Administração de nitroglicerina",
+      "C. Realização de angioplastia coronária percutânea",
+      "D. Administração de ácido acetilsalicílico"
     ],
     "correct_index": 3,
-    "explanation": "A angioplastia coronariana primária é o tratamento de escolha para infarto com supradesnível ST, especialmente se realizada rapidamente. Trombolíticos são utilizados na ausência de possibilidade de angioplastia imediata. Clopidogrel e heparina são parte do tratamento, mas não substituem a intervenção coronariana. 🧑‍⚕️ Explicação Simplificada: A angioplastia abre a artéria bloqueada de forma mais eficaz e rápida. 📚 Mini-revisão: Angioplastia primária é o padrão-ouro em infarto com supradesnível do ST. (Harrison 21ed, cap. 252)",
-    "topic": "Cardiologia - Infarto Agudo do Miocárdio",
+    "explanation": "A administração de ácido acetilsalicílico é fundamental no manejo inicial de infarto agudo do miocárdio com supra de ST. Morfina e nitroglicerina podem ser administradas para controle de dor e sintomas, mas a prioridade é a trombólise ou intervenção coronária. A angioplastia é o tratamento definitivo, mas não é a primeira medida a ser tomada na cena inicial.",
+    "topic": "Cardiologia",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
   },
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Lúcia, 42 anos, advogada, apresenta cansaço muscular e queda de cabelos há 6 meses. Relata intolerância ao frio e constipação. História familiar de doença autoimune. Exame físico: PA 120/80 mmHg, FC 58 bpm, FR 12 ipm, Temp 36,2°C, SpO2 98%. Notam-se cabelos ralos e pele seca. TSH 12,5 mIU/L (0,4-4,0 mIU/L), T4 livre 0,7 ng/dL (0,8-1,8 ng/dL). A presença de anticorpos anti-TPO é positiva. Qual é o diagnóstico mais provável?",
+    "statement": "Uma mulher de 55 anos apresenta-se com fadiga crônica, perda de peso involuntária e febre intermitente há 2 meses. Ao exame físico, apresenta linfadenopatia cervical e axilar bilateral, hepatoesplenomegalia e palidez cutânea. Laboratorialmente, há anemia normocítica normocrômica e leucocitose com presença de linfócitos atípicos. A sorologia para HIV é positiva, enquanto culturas bacterianas resultaram negativas. Qual a hipótese diagnóstica mais provável?",
     "options": [
-      "Hipotireoidismo central",
-      "Doença de Graves",
-      "Tireoidite de Hashimoto",
-      "Hipotireoidismo subclínico"
+      "A. Tuberculose extrapulmonar",
+      "B. Linfoma não Hodgkin",
+      "C. Mononucleose infecciosa",
+      "D. Leucemia mieloide crônica"
+    ],
+    "correct_index": 1,
+    "explanation": "Dada a presença de linfadenopatia generalizada, hepatoesplenomegalia, anemia e a sorologia positiva para HIV, a hipótese de linfoma não Hodgkin é forte. A mononucleose é menos provável devido à estabilidade dos sintomas por meses. Tuberculose geralmente apresentaria cultura positiva, e a leucemia mieloide crônica mostra características laboratoriais distintas.",
+    "topic": "Hematologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Um paciente de 70 anos, tabagista e com histórico de DPOC, apresenta dispneia progressiva e tosse produtiva com expectoração amarelada há 3 dias. Ele relata uso de broncodilatadores conforme prescrição, mas sem melhora significativa. No exame físico, encontra-se em moderada insuficiência respiratória, com frequência respiratória de 28 irpm, frequência cardíaca de 100 bpm e saturação de oxigênio de 88% em ar ambiente. A ausculta pulmonar revela sibilos difusos e diminuição do murmúrio vesicular em ambos hemitórax. Qual a melhor conduta inicial?",
+    "options": [
+      "A. Iniciar antibióticoterapia de amplo espectro",
+      "B. Realizar ventilação não invasiva (VNI)",
+      "C. Aumentar a dosagem de broncodilatadores",
+      "D. Iniciar corticoterapia intravenosa"
+    ],
+    "correct_index": 1,
+    "explanation": "Este paciente com DPOC agudizada pela infecção bacteriana está em insuficiência respiratória. A ventilação não invasiva é adequada para melhorar a troca gasosa, prevenir intubação e estabilizar a insuficiência respiratória. A antibioticoterapia e corticoterapia são parte do manejo, mas VNI é crucial em crise aguda respiratória.",
+    "topic": "Pneumologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Uma paciente de 30 anos, previamente saudável, apresenta-se com dor abdominal periumbilical intensa que migra para o quadrante inferior direito. A dor, iniciada há cerca de 8 horas, é acompanhada de náuseas e febre de 38°C. No exame físico, nota-se defesa muscular e sinal de Blumberg positivo no quadrante inferior direito. Exames laboratoriais mostram leucocitose com desvio à esquerda. Ultrassonografia revela edema do ceco e líquido livre na cavidade abdominal. Qual é o diagnóstico mais provável?",
+    "options": [
+      "A. Colecistite aguda",
+      "B. Apendicite aguda",
+      "C. Diverticulite",
+      "D. Pancreatite aguda"
+    ],
+    "correct_index": 1,
+    "explanation": "O quadro clínico de dor iniciando periumbilical e migrando para o quadrante inferior direito, febre, defesa muscular e sinal de Blumberg positivo sugere fortemente apendicite aguda. A ultrassonografia apoiando o diagnóstico com edema e líquido livre é consistente com inflamação apendicular, enquanto os outros diagnósticos têm apresentações típicas diferentes.",
+    "topic": "Gastroenterologia",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Um homem de 47 anos apresenta episódios recorrentes de palpitações, sudorese e tremores, especialmente após esforço físico. Ele também relata perda de peso de aproximadamente 6 kg nos últimos 3 meses, apesar do aumento do apetite. No exame físico, apresenta bócio difuso e exoftalmia bilateral. Os sinais vitais mostram taquicardia com frequência cardíaca de 110 bpm, pressão arterial de 130/80 mmHg. As análises laboratoriais revelam TSH suprimido e T4 livre elevado. Qual é o tratamento mais adequado para esta condição?",
+    "options": [
+      "A. Propiltiouracil",
+      "B. Metoprolol",
+      "C. Iodo radioativo",
+      "D. Cirurgia de tireoidectomia"
     ],
     "correct_index": 2,
-    "explanation": "A tireoidite de Hashimoto é caracterizada por hipotireoidismo clínico (TSH elevado, T4 baixo) e frequente positividade para anticorpos anti-tireoperoxidase (anti-TPO). A presença de sintomas e história familiar de autoimunidade reforçam o diagnóstico. As outras opções apresentam padrões hormonais distintos. 🧑‍⚕️ Explicação Simplificada: A Hashimoto é uma causa comum de hipotireoidismo por ataque autoimune à tireoide. 📚 Mini-revisão: Hashimoto é a causa mais comum de hipotireoidismo em áreas com ingestão adequada de iodo. (Harrison 21ed, cap. 405)",
-    "topic": "Endocrinologia - Doenças da Tireoide",
+    "explanation": "O quadro é sugestivo de hipertireoidismo, possivelmente doença de Graves, evidenciado por bócio, exoftalmia e perda de peso. O iodo radioativo é uma escolha comum em adultos com hipertireoidismo para reduzir a atividade tiroideana. Enquanto anti-tireoidianos e beta-bloqueadores são usados para tratamento sintomático e preparação, o iodo proporciona tratamento mais definitivo.",
+    "topic": "Endocrinologia",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
   },
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "João, 30 anos, engenheiro, apresenta histórico de tosse persistente há 2 meses, acompanhada de perda de peso e episódios de febre vespertina. Negou tabagismo ou uso de drogas ilícitas. Exame físico: PA 120/75 mmHg, FC 92 bpm, FR 20 ipm, Temp 37,9°C, SpO2 95% em ar ambiente. Ausculta pulmonar revela estertores em ápice direito. Radiografia de tórax mostra opacidades heterogêneas em lobo superior direito. Teste tuberculínico (PPD) positivo com enduração de 18 mm. O que confirma o diagnóstico de tuberculose ativa neste paciente?",
+    "statement": "Um homem de 45 anos chega ao pronto-socorro com dor abdominal difusa que começou há cinco dias e piorou progressivamente. Relata febre e calafrios nas últimas 48 horas. Ele tem histórico de etilismo e um episódio prévio de pancreatite há dois anos. No exame físico, o paciente apresenta-se taquicárdico (110 bpm), febril (38,5°C), com pressão arterial de 100/70 mmHg. O abdome está tenso, com defesa à palpação profunda e dor difusa, sem localizações preferenciais. Exames laboratoriais mostram leucocitose marcante com desvio à esquerda e elevação discreta das enzimas pancreáticas. Um ultrassom abdominal revela líquido livre na cavidade peritoneal e uma coleção heterogênea na região do pâncreas. Qual é o diagnóstico mais provável?",
     "options": [
-      "Cultura de escarro positiva para Mycobacterium tuberculosis",
-      "Teste tuberculínico positivo",
-      "Presença de febre e perda de peso",
-      "Radiografia de tórax com lesões sugestivas"
+      "Peritonite bacteriana espontânea",
+      "Abscesso pancreático",
+      "Pseudoaneurisma da artéria esplênica",
+      "Pseudocisto pancreático infectado"
     ],
-    "correct_index": 0,
-    "explanation": "A cultura de escarro positiva é o padrão-ouro para confirmar tuberculose ativa. O teste tuberculínico e os sintomas são indicativos e sugerem infecção, mas não confirmam a doença ativa sem cultura positiva. A radiografia é sugestiva, mas não diagnóstica isoladamente. 🧑‍⚕️ Explicação Simplificada: A cultura confirma a presença do bacilo da tuberculose. 📚 Mini-revisão: Tuberculose ativa é confirmada com cultura de Mycobacterium tuberculosis e é uma infecção pulmonar comum. (Harrison 21ed, cap. 169)",
-    "topic": "Pneumologia - Tuberculose",
+    "correct_index": 3,
+    "explanation": "A presença de febre, leucocitose, e uma coleção heterogênea no exame de imagem, acoplados a um histórico de pancreatite, sugerem um pseudocisto pancreático infectado. A peritonite bacteriana espontânea seria mais esperada em um paciente cirrótico sem coleção pancreática. O abscesso pancreático é possível, mas a descrição mais precisa com 'coleção heterogênea' sugere pseudocisto, e o pseudoaneurisma geralmente se manifesta com choque hemorrágico, o que não é o caso inicial aqui.",
+    "topic": "Pancreatite e complicações",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
   },
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Ana, 27 anos, secretária, consulta com queixas de poliúria e polidipsia há 4 semanas. Ela perdeu 3 kg sem dieta e relata visão turva ocasional. Antecedentes pessoais sem relevância. Exame físico: PA 110/70 mmHg, FC 100 bpm, FR 16 ipm, Temp 36,5°C, SpO2 97%. Exames laboratoriais mostram: glicemia de jejum de 256 mg/dL, HbA1c 9,4%, sódio 140 mEq/L, potássio 4,3 mEq/L. Urina tipo 1: glicosúria +++ e cetonúria +. Não há episódios prévios semelhantes. Qual é o diagnóstico mais provável?",
+    "statement": "Um paciente de 70 anos vem ao consultório devido a dificuldades na deglutição, principalmente para sólidos, há seis meses, e uma perda de peso significativa durante esse período. Refere que a comida frequentemente 'fica presa' no meio do tórax. Não tem antecedentes de doenças gastrointestinais, mas tem história de tabagismo de 40 maços/ano. Exame físico: o paciente está emagrecido, mas sem outras alterações. A endoscopia digestiva alta revela uma estenose irregular na região distal do esôfago, com mucosa friável e nodular. A biópsia demonstra neoplasia maligna. Qual é o diagnóstico mais provável?",
     "options": [
-      "Diabetes tipo 1",
-      "Diabetes tipo 2",
-      "Síndrome metabólica",
-      "Diabetes insipidus"
+      "Acalásia",
+      "Carcinoma espinocelular de esôfago",
+      "Esofagite por refluxo",
+      "Estenose péptica"
     ],
-    "correct_index": 0,
-    "explanation": "A presença de hiperglicemia significativa, glicosúria, cetonúria e perda de peso rápida sugere diabetes tipo 1, especialmente em uma paciente jovem e saudável. Diabetes tipo 2 geralmente não apresenta cetonúria e ocorre em contextos de resistência insulínica. Síndrome metabólica e diabetes insipidus têm características distintas. 🧑‍⚕️ Explicação Simplificada: Diabetes tipo 1 ocorre por déficit absoluto de insulina e rápido início dos sintomas. 📚 Mini-revisão: O diabetes tipo 1 é uma doença autoimune que destrói células beta pancreáticas. (Harrison 21ed, cap. 396)",
-    "topic": "Endocrinologia - Diabetes Mellitus",
+    "correct_index": 1,
+    "explanation": "A história de disfagia progressiva, perda de peso e a descrição endoscópica com estenose irregular de mucosa friável sugere fortemente um carcinoma espinocelular de esôfago. O antecedente de tabagismo é um importante fator de risco. Acalásia tipicamente apresentaria um esôfago dilatado em imagem sem estenose nodular, e a esofagite por refluxo com estenose péptica tenderia a apresentar estenoses mais regulares e antecedentes de doença do refluxo gastroesofágico.",
+    "topic": "Neoplasias do trato gastrointestinal",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
   },
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Gabriel Silva, 45 anos, motorista de caminhão, apresenta-se com dor abdominal intensa no quadrante inferior direito há 24 horas, acompanhada de náuseas e febre de 38,5ºC. Ele relata que na última noite a dor intensificou-se com movimentos. Não possui histórico de cirurgias abdominais prévias. Nos antecedentes, é hipertenso em uso de enalapril 10 mg/dia e nega outros problemas de saúde. Ao exame físico: PA 130/80 mmHg, FC 100 bpm, FR 22 ipm, SpO2 98%, dor à palpação profunda no quadrante inferior direito, com sinal de Blumberg positivo. Exames laboratoriais mostram leucocitose com desvio à esquerda e PCR elevada. Qual é o diagnóstico mais provável?",
+    "statement": "Uma mulher de 52 anos, obesa, apresenta dor no quadrante superior direito há três dias. A dor é constante, intensa e piora à inspiração profunda. Relata náuseas e vômitos, mas não icterícia. Ela teve episódios semelhantes antes, mas nunca tão duradouros. No exame físico, está em moderado desconforto, febril (38°C), com pressão arterial de 120/80 mmHg. O abdome mostra dor e defesa à palpação em hipocôndrio direito com sinal de Murphy positivo. Exames laboratoriais indicam leucocitose e elevação discreta de bilirrubina. Ultrassom revela espessamento da parede vesicular e a presença de cálculos. O que é mais provável estar ocorrendo com esta paciente?",
     "options": [
-      "Apendicite aguda",
-      "Diverticulite",
       "Colecistite aguda",
-      "Pancreatite aguda"
+      "Coledocolitíase",
+      "Colangite aguda",
+      "Pancreatite aguda biliar"
     ],
     "correct_index": 0,
-    "explanation": "Apendicite aguda é a principal suspeita em um quadro de dor no quadrante inferior direito com febre e sinal de Blumberg positivo. Diverticulite geralmente envolve o quadrante inferior esquerdo e colecistite é mais comum no quadrante superior direito. Pancreatite, por outro lado, apresenta dor epigástrica. 🧑‍⚕️ Explicação Simplificada: Apendicite é a inflamação do apêndice, geralmente causada por obstrução, e é uma emergência cirúrgica comum. 📚 Referência: Sabiston 21ed.",
-    "topic": "Cirurgia Geral - Apendicite",
+    "explanation": "Os achados clínicos de dor em quadrante superior direito, febre, sinal de Murphy positivo e espessamento da parede da vesícula biliar apontam para colecistite aguda. A coledocolitíase frequentemente causaria icterícia significativa e alterações maiores nas enzimas hepáticas. A colangite aguda esperaria a tríade de Charcot (dor, febre e icterícia), e pancreatite aguda biliar usualmente se apresentaria com dor epigástrica em faixa, elevação de enzimas pancreáticas e sem sinal de Murphy positivo.",
+    "topic": "Doenças das vias biliares",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
   },
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Joana Pereira, 68 anos, professora aposentada, é trazida ao pronto-socorro com um quadro de dor abdominal intensa no quadrante superior direito, irradiando-se para o ombro direito, há 12 horas. Refere náuseas e vômitos biliosos. É diabética e faz uso de metformina. Ao exame: PA 145/95 mmHg, FC 95 bpm, FR 20 ipm, Temp. 38°C, SpO2 97%. Abdômen doloroso à palpação no hipocôndrio direito, sem icterícia. Ultrassonografia mostra presença de cálculos biliares e espessamento da parede da vesícula. Qual é o tratamento de escolha?",
+    "statement": "Um homem de 60 anos, ex-tabagista, é trazido ao pronto-socorro com dor abdominal súbita e severa que começou enquanto estava realizando exercícios físicos. Refere dor epigástrica que irradia para o dorso, acompanhada de náuseas. No exame físico, está em choque, com PA de 90/60 mmHg e taquicardia de 120 bpm. Tem abdome rígido e doloroso à percussão. Realizada tomografia de abdômen que revela líquido livre intraperitoneal e uma grande quantidade de ar subdiafragmático. Laboratório com leucocitose e acidose metabólica. Com base na história e achados, qual é o diagnóstico mais provável?",
     "options": [
-      "Colecistectomia laparoscópica",
-      "Antibioticoterapia isolada",
-      "Litotripsia biliar",
-      "Colecistostomia percutânea"
+      "Ruptura de aneurisma de aorta abdominal",
+      "Perfuração de úlcera péptica",
+      "Pancreatite aguda necrotizante",
+      "Infarto agudo do miocárdio"
     ],
-    "correct_index": 0,
-    "explanation": "O tratamento de escolha para colecistite aguda sintomática é a colecistectomia laparoscópica. Antibioticoterapia isolada pode ser usada inicialmente, mas não resolve o quadro obstrutivo. Litotripsia é raramente indicada para cálculos biliares. Colecistostomia percutânea é reservada para pacientes muito graves ou não candidatos à cirurgia. 🧑‍⚕️ Explicação Simplificada: A remoção cirúrgica da vesícula alivia sintomas e previne complicações. 📚 Referência: Sabiston 21ed.",
-    "topic": "Cirurgia Geral - Colecistite",
+    "correct_index": 1,
+    "explanation": "A apresentação clássica de dor súbita e severa com sinais de irritação peritoneal como rigidez, junto com achados de ar subdiafragmático na tomografia indica perfuração de úlcera péptica. Embora a ruptura de aneurisma de aorta cause choque e dor, o ar subdiafragmático é específico para perfuração gastrointestinal. A pancreatite aguda não explicaria o ar subdiafragmático desta magnitude, e o infarto do miocárdio geralmente não apresenta abdome agudo com irritação peritoneal.",
+    "topic": "Urgências abdominais",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
   },
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Carlos Menezes, 52 anos, pedreiro, consulta devido à perda de peso involuntária de 10 kg em 3 meses, associada a disfagia progressiva para sólidos. Ele também se queixa de episódios de dor retroesternal após refeições. Não possui antecedentes clínicos significativos e não faz uso regular de medicações. Ao exame físico, está emagrecido, mas sem outras anormalidades. Endoscopia digestiva alta revela estenose ao nível do esôfago médio com mucosa irregular e friável. O diagnóstico foi confirmado histologicamente. Qual é a conduta terapêutica mais apropriada?",
+    "statement": "Uma mulher de 68 anos com histórico de hipertensão e diabetes mellitus controlados é admitida no hospital devido a um quadro de dor abdominal em fossa ilíaca direita e febre de 38,3°C iniciado há dois dias. Descreve que a dor começou de forma insidiosa e foi piorando gradativamente, acompanhada de náuseas e anorexia. O exame físico revela dor à palpação profunda do quadrante inferior direito, com defesa e descompressão dolorosa. Ultrassonografia abdominal evidencia espessamento da parede do apêndice cecal e líquido livre periapendicular. Qual é o diagnóstico mais provável?",
     "options": [
-      "Quimioterapia neoadjuvante seguida de esofagectomia",
-      "Dilatação endoscópica",
-      "Apenas observação e acompanhamento",
-      "Radioterapia paliativa"
-    ],
-    "correct_index": 0,
-    "explanation": "No câncer de esôfago, especialmente em estágio avançado com sintomas obstrutivos, a quimioterapia neoadjuvante seguida de esofagectomia está frequentemente indicada. Dilatação endoscópica pode beneficiar casos não operáveis para aliviar sintomas. Observação não é apropriada para doença confirmada. Radioterapia pode ser considerada em cuidados paliativos. 🧑‍⚕️ Explicação Simplificada: A terapia combinada é padrão em doenças ressecáveis. 📚 Referência: Sabiston 21ed.",
-    "topic": "Cirurgia Geral - Câncer de Esôfago",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Marina Oliveira, 59 anos, comerciante, vem apresentando episódios de vômitos frequentes após refeições, associados a sensação de plenitude gástrica mesmo com pequenas quantidades de alimento. Os episódios começaram há 6 meses e vêm se intensificando. Relata perda de peso de 8 kg no período. Possui histórico de úlcera gástrica tratada há 10 anos. No exame físico: PA 120/80 mmHg, FC 88 bpm, FR 18 ipm, Temp. 36,8°C, SpO2 99%. Há distensão abdominal leve e ruídos hidroaéreos aumentados. Endoscopia mostra estenose pilórica. Qual é o tratamento cirúrgico indicado?",
-    "options": [
-      "Piloroplastia",
-      "Ressecção gástrica parcial",
-      "Gastrojejunostomia",
-      "Vagotomia altamente seletiva"
+      "Diverticulite aguda do cólon direito",
+      "Gravidez ectópica rota",
+      "Apendicite aguda",
+      "Torção de cisto ovariano"
     ],
     "correct_index": 2,
-    "explanation": "A gastrojejunostomia é indicada para alívio de sintomas de obstrução pilórica quando a estenose não responde a tratamentos conservadores. A piloroplastia pode não ser eficaz em casos de cicatrização significativa. Ressecção gástrica parcial é indicada quando há suspeita de malignidade. Vagotomia altamente seletiva é obsoleta em tratar obstruções. 🧑‍⚕️ Explicação Simplificada: Cirurgia bypass é muitas vezes necessária em estenoses intransponíveis. 📚 Referência: Sabiston 21ed.",
-    "topic": "Cirurgia Geral - Obstrução Pilórica",
+    "explanation": "Os sintomas clássicos de dor em fossa ilíaca direita com febre, associados a exame físico positivo para defesa e descompressão dolorosa, são típicos de apendicite aguda. Ultrassonografia confirmando espessamento de parede apendicular corrobora o diagnóstico. A diverticulite do cólon direito em uma paciente sem histórico de diverticulite é possível, mas menos comum, e gravidez ectópica é improvável, pois não há sinais de instabilidade hemodinâmica típicos de ruptura. Torção de cisto ovariano não explicaria o espessamento apendicular.",
+    "topic": "Abdome agudo inflamatório",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
   },
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "João Albuquerque, 38 anos, engenheiro, procura atendimento com queixa de distensão abdominal e ausência de evacuações há 3 dias. Relata episódios esporádicos de náuseas e vômitos nos últimos dois dias. Histórico de cirurgia prévia de apendicectomia há 15 anos. No exame físico: PA 110/70 mmHg, FC 92 bpm, FR 18 ipm, Temp. 37,2°C, SpO2 96%. O abdômen está distendido e timpânico, com dor difusa à palpação e ruídos hidroaéreos metálicos presentes. Raio-X de abdômen mostra níveis hidroaéreos em alças dilatadas. Qual é a causa mais provável dessa condição?",
+    "statement": "Um menino de 3 anos é levado ao pronto-socorro por sua mãe, que relata febre alta há 3 dias, associada a letargia e irritabilidade. Ela observa que ele não está comendo bem e está mais sonolento do que o normal. O exame físico revela uma criança letárgica, mas responsiva, deitada em decúbito dorsal. Sua temperatura é de 39,4°C, com frequência cardíaca de 130 bpm, frequência respiratória de 30 irpm e saturação de oxigênio de 96% em ar ambiente. Há rigidez de nuca e um teste de Brudzinski positivo. A ausculta pulmonar não revela anormalidades e o exame abdominal é benigno. Não há história de tosse ou coriza. Em relação ao exame do líquor, ele mostra pleocitose com predomínio de neutrófilos, glicose baixa e proteínas elevadas. Baseado nesses achados clínicos e laboratoriais, qual é o diagnóstico mais provável para esta criança?",
     "options": [
-      "Íleo metabólico",
-      "Aderências pós-operatórias",
-      "Câncer de cólon",
-      "Volvo do sigmoide"
+      "Meningite bacteriana",
+      "Meningite viral",
+      "Encefalite",
+      "Septicemia"
+    ],
+    "correct_index": 0,
+    "explanation": "A presença de febre alta, letargia, irritabilidade, rigidez de nuca e a positividade para sinais meníngeos, associada aos achados do exame do líquor que mostram pleocitose com predomínio de neutrófilos, hipoglicorraquia (glicose baixa) e proteínas elevadas, são típicos de meningite bacteriana (A). Meningite viral (B) geralmente apresenta pleocitose linfocítica e glicorraquia normal. Encefalite (C) pode apresentar sintomas neurológicos focais. Septicemia (D) é uma infecção sistêmica que poderia acompanhar, mas os sinais são mais indicativos de meningite bacteriana.",
+    "topic": "Meningite em Pediatria",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Uma menina de 7 anos é trazida ao consultório pediátrico devido a prurido anal intenso, especialmente durante a noite. A mãe percebeu que a filha está mais irritada, cansada e tem dificuldades de concentração recentemente. No exame físico, a criança apresenta boas condições gerais, sem febre e com sinais vitais normais. O exame abdominal não revela anormalidades, mas ao inspecionar a região anal, observa-se eritema e pequenos arranhões, sem infecção evidente. A história familiar revela que um irmão mais novo apresenta sintomas semelhantes. Que teste simples pode confirmar a suspeita diagnóstica mais provável?",
+    "options": [
+      "Exame de sangue",
+      "Teste de Graham",
+      "Urocultura",
+      "Raios-X de abdome"
     ],
     "correct_index": 1,
-    "explanation": "A causa mais comum de obstrução intestinal em pacientes com história de cirurgia abdominal prévia é a presença de aderências pós-operatórias. O íleo metabólico não gera obstrução mecânica verdadeira. Câncer de cólon tem uma apresentação mais insidiosa. Volvo apresenta-se com quadro abrupto e em geral mais grave. 🧑‍⚕️ Explicação Simplificada: Aderências formam-se após cirurgias, podendo estreitar e obstruir o intestino. 📚 Referência: Sabiston 21ed.",
-    "topic": "Cirurgia Geral - Obstrução Intestinal",
+    "explanation": "Diante dos sintomas de prurido anal noturno e eritema perianal, juntamente com a história de coceira noturna e os sintomas familiares semelhantes, suspeita-se de oxiurose (infecção por Enterobius vermicularis). O teste de Graham (B) usa fita adesiva para coleta de ovos de helmintos na pele perianal, confirmando o diagnóstico. Exame de sangue (A), urocultura (C) e raios-X de abdome (D) não são métodos adequados para este diagnóstico específico.",
+    "topic": "Infecções parasitárias em Pediatria",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
   },
   {
     "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Mariana, 3 anos, previamente saudável, é levada ao pronto-socorro por sua mãe com queixa de febre alta há 3 dias, dificuldade para engolir e irritabilidade. A criança frequenta creche e não há história de contato com pessoas doentes recentemente. Seus antecedentes incluem apenas episódios esporádicos de resfriados. No exame físico, apresenta-se febril (39,2°C), com faringe eritematosa e hipertrofia de amígdalas com exsudato purulento. Linfonodomegalia cervical sensível. Exames laboratoriais revelam leucocitose (15.000/mm³, referência: 4.500-11.000/mm³) e aumento de neutrófilos. Qual o diagnóstico mais provável?",
+    "statement": "Um recém-nascido do sexo masculino, nascido de parto vaginal a termo, apresenta icterícia às 36 horas de vida. O bebê é o segundo filho de uma mãe O negativo, com um irmão mais velho que é saudável. O exame físico revela um recém-nascido ictérico com boa sucção e tônus. A mãe teve uma gravidez sem intercorrências, mas não recebeu profilaxia durante a gestação. O nível de bilirrubina total é de 15 mg/dL com 36 horas de vida. Qual é o diagnóstico mais provável para este quadro de icterícia neonatal precoce?",
     "options": [
-      "Infecção estreptocócica das vias aéreas superiores",
-      "Mononucleose infecciosa",
-      "Laringotraqueíte viral",
-      "Herpangina"
+      "Icterícia fisiológica",
+      "Incompatibilidade ABO",
+      "Incompatibilidade Rh",
+      "Deficiência de G6PD"
+    ],
+    "correct_index": 2,
+    "explanation": "A icterícia precoce (em menos de 24-48 horas de vida) com altos níveis de bilirrubina sugere causas patológicas. Apesar de a mãe ser O negativo, não há menção de que o parto atual foi acompanhado por imunoprofilaxia (imuno-globulina anti-D), elevando a suspeita de incompatibilidade Rh (C), uma causa clássica de icterícia neonatal precoce. Icterícia fisiológica (A) geralmente ocorre após 48 horas. Incompatibilidade ABO (B) é possível, mas mais comum quando a mãe é O e o bebê está grupado em A/B. Deficiência de G6PD (D) também causa icterícia, mas é geralmente mais tardia e associada a fatores desencadeantes.",
+    "topic": "Icterícia neonatal",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Uma adolescente de 15 anos é levada ao pronto-socorro com dor abdominal intensa no quadrante inferior direito. Ela descreve a dor como iniciando na região periumbilical há cerca de 12 horas e migrando. A dor é acompanhada por perda de apetite e náuseas. A paciente apresenta um aspecto de desconforto e mantém o abdome levemente flexionado. Seus sinais vitais são: temperatura 38,2°C, pressão arterial 110/70 mmHg, frequência cardíaca 92 bpm e frequência respiratória 18 irpm. Na palpação, há dor intensa e resistência muscular no quadrante inferior direito, com sinal de Blumberg positivo. Baseado nesses achados, qual é o diagnóstico mais provável?",
+    "options": [
+      "Colecistite aguda",
+      "Gastrite",
+      "Apendicite aguda",
+      "Torção ovariana"
+    ],
+    "correct_index": 2,
+    "explanation": "A descrição clássica de dor abdominal que inicia na região periumbilical e migra para o quadrante inferior direito, associada a febre, náuseas e anorexia, sugere fortemente apendicite aguda (C). Colecistite aguda (A) afeta geralmente o quadrante superior direito. Gastrite (B) se manifestaria com sintomas gastrointestinais superiores, não com dor localizada em um quadrante inferior. Torção ovariana (D) poderia simular dor no quadrante inferior, mas mais frequentemente associada com massa palpável e dor súbita, muitas vezes sem a clássica migração de dor descrita para apendicite.",
+    "topic": "Dor abdominal aguda em adolescentes",
+    "is_global": true,
+    "review_status": "approved",
+    "quality_tier": "exam_standard"
+  },
+  {
+    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
+    "statement": "Um lactente de 9 meses é trazido ao pronto-socorro com história de tosse persistente e dificuldade respiratória nos últimos 3 dias. A mãe relata ainda que ele tem sibilos audíveis e, por vezes, parece ofegante. Não houve febre e os sintomas começaram após um episódio de resfriado comum. Na avaliação, a criança está alerta, com um leve desconforto respiratório, frequência respiratória de 50 irpm, saturação de oxigênio de 94% em ar ambiente, e sibilância difusa ao exame pulmonar. À luz desses achados, qual é o diagnóstico mais provável?",
+    "options": [
+      "Bronquiolite",
+      "Pneumonia bacteriana",
+      "Asma",
+      "Corpo estranho nas vias aéreas"
     ],
     "correct_index": 0,
-    "explanation": "A infecção estreptocócica das vias aéreas superiores é indicada pela febre alta, dor de garganta, exsudato amigdaliano e leucocitose neutrofílica. A mononucleose costuma apresentar esplenomegalia e linfocitose atípica. A laringotraqueíte viral geralmente causa tosse característica e estridor. Herpangina exibe vesículas na orofaringe e menor elevação leucocitária. \n🧑‍⚕️ Explicação Simplificada: Streptococcus pyogenes causa faringite aguda com febre e exsudato.\n📚 Mini-revisão: A faringite estreptocócica é comum em crianças e se apresenta com febre, dor de garganta e linfonodomegalia cervical. (Nelson 21ed)",
-    "topic": "Pediatria - Infecções de vias aéreas superiores",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Lucas, 5 anos, foi trazido por sua mãe ao pronto-socorro com dor abdominal intensa há 24 horas. A dor localiza-se na região periumbilical e migrou para o quadrante inferior direito no decorrer do dia. Ele tem náuseas e apresentou um episódio de vômito. Antecedentes negativos para cirurgias e doenças crônicas. No exame físico, encontra-se hipertérmico (38,5°C), pressão arterial 100/65 mmHg, frequência cardíaca 112 bpm, frequência respiratória 24 irpm. Há rigidez na fossa ilíaca direita e redução de ruídos hidroaéreos. O ultrassom abdominal mostra um apêndice inflamado com 10 mm de diâmetro e aumento de ecogenicidade do tecido peri-apendicular. Qual é a melhor conduta terapêutica para o caso?",
-    "options": [
-      "Antibioticoterapia isolada",
-      "Apendicectomia laparoscópica",
-      "Drenagem percutânea",
-      "Observar e reavaliar em 24 horas"
-    ],
-    "correct_index": 1,
-    "explanation": "O quadro clínico é sugestivo de apendicite aguda, confirmada pelo ultrassom. Apendicectomia laparoscópica é o tratamento de escolha em pacientes com diagnóstico confirmado de apendicite, especialmente quando há evidência de inflamação. Antibioticoterapia isolada é reservada para pacientes com contraindicações cirúrgicas. Drenagem é indicada para abscesso apendicular. \n🧑‍⚕️ Explicação Simplificada: Apendicectomia resolve a inflamação e previne complicações.\n📚 Mini-revisão: A apendicite é a inflamação do apêndice cecal, frequentemente necessitando de intervenção cirúrgica. (Sabiston 21ed)",
-    "topic": "Pediatria - Cirurgia de urgência",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Gabriel, 10 anos, foi admitido no pronto atendimento devido à hemorragia nasal espontânea de repetição nos últimos 3 dias. Tem antecedentes de saúde geral preservada, exceto por episódio de linfadenopatia há um mês que melhorou sem intervenção. No exame, palidez cutânea, saturação de oxigênio 98%, conforto respiratório, pressão arterial 110/70 mmHg, frequência cardíaca 88 bpm, temperatura 36,7°C. Ao exame físico, observa-se gengivorragia discreta. Hemograma evidencia plaquetopenia (54.000/mm³, referência: 150.000-450.000/mm³). Exames de coagulação dentro dos limites normais. Qual é a principal suspeita diagnóstica?",
-    "options": [
-      "Púrpura trombocitopênica idiopática",
-      "Leucemia linfoide aguda",
-      "Doença de Von Willebrand",
-      "Deficiência de vitamina C"
-    ],
-    "correct_index": 0,
-    "explanation": "A purpura trombocitopênica idiopática (PTI) é caracterizada por trombocitopenia isolada e episódios de sangramento. O hemograma desvela baixa contagem de plaquetas, mas sem alteração em glóbulos brancos ou hemácias, descartando leucemias. A doença de Von Willebrand afeta a hemostasia primária e os testes de coagulação, comumente alterados. Deficiência de vitamina C provoca principalmente hiperqueratose folicular e não apenas trombocitopenia. \n🧑‍⚕️ Explicação Simplificada: PTI é uma condição autoimune que leva à destruição de plaquetas.\n📚 Mini-revisão: A PTI é a causa mais comum de trombocitopenia em crianças e muitas vezes é auto-limitada. (Nelson 21ed)",
-    "topic": "Pediatria - Hematologia",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Ana, 7 anos, foi levada ao consultório pediátrico com queixas de dor nas articulações dos joelhos e cotovelos, acompanhada de febre baixa persistente nos últimos 10 dias. A mãe relata que Ana teve um episódio de faringite estreptocócica tratada com antibióticos duas semanas atrás. No exame físico, apresenta movimentos limitados das articulações afetadas devido à dor, sem sinais de edema ou rubor significativos. No laboratório, teste de ASLO positivo, PCR elevado e anticorpos anti-DNAse B aumentados. Qual é a hipótese diagnóstica provável?",
-    "options": [
-      "Febre reumática",
-      "Artrite reativa",
-      "Doença de Kawasaki",
-      "Artrite idiopática juvenil"
-    ],
-    "correct_index": 0,
-    "explanation": "A febre reumática é uma sequela da infecção pelo Streptococcus pyogenes, apresentando artrite migratória, frequentemente após faringite estreptocócica. A artrite reativa também se manifesta após infecções mas não frequentemente após faringites estreptocócicas. A doença de Kawasaki apresenta febre persistente e alterações cutâneas e mucosas. A artrite idiopática juvenil não está associada à infecção estreptocócica. \n🧑‍⚕️ Explicação Simplificada: A febre reumática ocorre após infecção estreptocócica com inflamação das articulações.\n📚 Mini-revisão: A febre reumática é uma doença inflamatória decorrente de uma resposta imune contra Streptococcus. (Nelson 21ed)",
-    "topic": "Pediatria - Reumatologia",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Isabela, 15 anos, é levada ao prontosocorro acompanhada pela mãe que relata episódios de perda de peso importante e poliúria nas últimas semanas. Além disso, a adolescente tem se queixado de mal-estar e cãibras. Não há antecedentes de doenças crônicas. No exame físico: pressão arterial de 90/60 mmHg, frequência cardíaca de 98 bpm, frequência respiratória de 22 irpm, temperatura axilar de 36,5°C, saturação de oxigênio de 97%. Está emagrecida, com mucosas orais secas. Exames laboratoriais mostram glicemia de 450 mg/dL (referência: 70-99 mg/dL) e corpos cetônicos na urina. Qual é o diagnóstico provável?",
-    "options": [
-      "Diabetes mellitus tipo 1",
-      "Síndrome de Cushing",
-      "Diabetes insípido",
-      "Hipertireoidismo"
-    ],
-    "correct_index": 0,
-    "explanation": "Os sintomas de poliúria, perda de peso e glicemia elevada são indicadores de diabetes mellitus tipo 1, comum em adolescentes, indicando deficiência de insulina e aumento da glicose no sangue. A síndrome de Cushing envolve hiperglicemia, mas também há ganho de peso e hipertensão. Diabetes insípido causa poliúria e desidratação sem hiperglicemia. O hipertireoidismo geralmente causa perda de peso e aumento da frequência cardíaca, mas não glicemia alta. \n🧑‍⚕️ Explicação Simplificada: Diabetes tipo 1 é uma desordem autoimune que resulta na destruição das células beta do pâncreas que produzem insulina.\n📚 Mini-revisão: O diabetes tipo 1 é caracterizado por deficiência insulinica resultando em hiperglicemia e cetoacidose. (Harrison 21ed)",
-    "topic": "Pediatria - Endocrinologia",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Maria Fernanda, 28 anos, advogada, chega ao pronto-socorro relatando dor abdominal intensa no quadrante inferior direito há 5 horas. Relata atraso menstrual de 6 semanas. Nega cirurgias prévias, tabagismo e uso de medicamentos, exceto anticoncepcional oral, que suspendeu nos últimos dois meses. Ao exame: PA 100/60 mmHg, FC 110 bpm, Temp 37,5°C, SpO2 98%. Abdome doloroso à palpação na fossa ilíaca direita, com defesa. USG transvaginal: massa anexial direita de 4 cm com líquido livre em pelve. Qual o diagnóstico mais provável?",
-    "options": [
-      "A. Gravidez ectópica",
-      "B. Torção ovariana",
-      "C. Apendicite aguda",
-      "D. Cisto hemorrágico de ovário"
-    ],
-    "correct_index": 0,
-    "explanation": "A presença de atraso menstrual e a descrição da massa anexial com líquido livre são indicativos de uma possível gravidez ectópica, provavelmente rota, causando sangramento e dor intensa. Torção ovariana é menos provável devido à ausência de massa volumosa. Apendicite aguda geralmente não se associa a atraso menstrual ou líquido livre na pelve. Cisto hemorrágico é possível, mas menos provável com a apresentação atual. 🧑‍⚕️ Explicação Simplificada: A combinação de atraso menstrual, dor e líquido livre sugere gravidez ectópica. 📚 Mini-revisão: A gravidez ectópica é mais comuna nas trompas, podendo ser potencialmente fatal se não reconhecida e tratada rapidamente (Williams 26ed).",
-    "topic": "Ginecologia - Gravidez Ectópica",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Carolina, 32 anos, enfermeira, apresenta sangramento vaginal irregular há 3 meses, intercalado com episódios de amenorreia. Tem dois filhos, partos normais, e relata uso de DIU de cobre há 2 anos. Nega comorbidades e usa ocasionalmente ibuprofeno para cólicas. Ao exame: PA 120/80 mmHg, FC 78 bpm, Temp 36,8°C. Especular: colo sem lesões, sangramento moderado proveniente de cavidade uterina. Ecografia: endométrio espessado com áreas císticas múltiplas. Qual a próxima conduta diagnóstica?",
-    "options": [
-      "A. Histeroscopia diagnóstica",
-      "B. Citologia oncótica de colo uterino",
-      "C. Troca do DIU de cobre por hormonal",
-      "D. Ultrassonografia transvaginal"
-    ],
-    "correct_index": 0,
-    "explanation": "A presença de endométrio espessado com cistos sugere hiperplasia ou pólipo endometrial, o que justifica a histeroscopia diagnóstica para avaliação direta. Citologia oncótica avalia apenas colo, não câmara uterina. Troca de DIU não tem função diagnóstica. A ultrassonografia já foi realizada. 🧑‍⚕️ Explicação Simplificada: O exame mais direto para visualizar patologias intrauterinas suspeitas é a histeroscopia. 📚 Mini-revisão: Histeroscopia permite avaliação e correção de alterações na cavidade endometrial (Harrison 21ed).",
-    "topic": "Ginecologia - Sangramento Uterino Anormal",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Ana Cláudia, 34 anos, arquiteta, consulta com queixa de infertilidade após 2 anos tentando engravidar. Tem ciclos menstruais regulares e sem dismenorreia. História passada de apendicectomia. Ao exame: PA 115/75 mmHg, FC 72 bpm, Temp 36,7°C. USG transvaginal revela ovários de aspecto policístico bilaterais. Exames hormonais: FSH normal, LH 2x o normal, testosterona total elevada. Qual o diagnóstico mais provável?",
-    "options": [
-      "A. Síndrome dos ovários policísticos",
-      "B. Endometriose",
-      "C. Insuficiência ovariana prematura",
-      "D. Hiperplasia adrenal congênita"
-    ],
-    "correct_index": 0,
-    "explanation": "A presença de ovários policísticos, concomitantemente com aumento de LH e testosterona, é indicativa da síndrome dos ovários policísticos. A endometriose geralmente não apresenta ovários policísticos. Insuficiência ovariana prematura apresentaria FSH elevado. Hiperplasia adrenal congênita veria elevações hormonais com clínico diferente e histórico específico. 🧑‍⚕️ Explicação Simplificada: Ovários com múltiplos cistos e alterações hormonais sugerem SOP. 📚 Mini-revisão: SOP é uma causa comum de alterações menstruais e infertilidade (Williams 26ed).",
-    "topic": "Ginecologia - Infertilidade",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Juliana, 40 anos, professora, com queixas de calorões, insônia e irregularidade menstrual há 1 ano. G1P1, menopausa materna aos 48 anos. Nega comorbidades. Uso de anticoncepcional oral interrompido há 5 anos. Exame físico sem alterações. PA 118/78 mmHg, FC 80 bpm, Temp 36,9°C. Exame ginecológico normal. Exames: FSH 35 mUI/mL, estradiol baixo para faixa etária. Qual o diagnóstico mais provável?",
-    "options": [
-      "A. Menopausa precoce",
-      "B. Hipotireoidismo",
-      "C. Insuficiência ovariana prematura",
-      "D. Síndrome de Cushing"
-    ],
-    "correct_index": 0,
-    "explanation": "Os sintomas vasomotores, irregularidade menstrual e níveis elevados de FSH com baixo estradiol sugerem menopausa precoce. Hipotireoidismo pode ter sintomas similares, mas com FSH normal. Insuficiência ovariana prematura é semelhante à menopausa precoce, porém geralmente identificada antes dos 40. Cushing geralmente apresenta alterações típicas como obesidade e hirsutismo. 🧑‍⚕️ Explicação Simplificada: Mudanças hormonais e FSH elevado indicam menopausa precoce. 📚 Mini-revisão: A menopausa precoce pode ser espontânea ou associada a condições genéticas (Nelson 21ed).",
-    "topic": "Ginecologia - Menopausa",
-    "is_global": true,
-    "review_status": "approved",
-    "quality_tier": "exam_standard"
-  },
-  {
-    "user_id": "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
-    "statement": "Bárbara, 37 anos, bancária, apresenta sangramento pós-coito e leucorréia. Multiparidade, último parto há 10 anos. Nega métodos contraceptivos. Ao exame: PA 125/85 mmHg, FC 77 bpm. Exame ginecológico: colo uterino erodido, friável, e presença de alterações acetobrancas após aplicação de ácido acético. Qual é a suspeita diagnóstica mais provável?",
-    "options": [
-      "A. Neoplasia intraepitelial cervical",
-      "B. Cervicite por Chlamydia",
-      "C. Adenocarcinoma do colo do útero",
-      "D. Pólipo cervical"
-    ],
-    "correct_index": 0,
-    "explanation": "A presença de colo friável e lesões acetobrancas são altamente sugestivas de neoplasia intraepitelial cervical, possivelmente identificado em rastreios com colposcopia. Cervicite teria inflamação séria, não apenas alteração epitelial. Adenocarcinoma não apresenta tipicamente lesões acetobrancas iniciais. Pólipo cervical surge como massa, sem relação com alterações acetobrancas. 🧑‍⚕️ Explicação Simplificada: Lesões acetobrancas após ácido sugerem alterações cervicais pré-malignas. 📚 Mini-revisão: NIC são alterações precancerosas exigindo seguimento ou tratamento específico (Harrison 21ed).",
-    "topic": "Ginecologia - Oncologia Ginecológica",
+    "explanation": "Os sintomas de tosse, dificuldade respiratória e sibilância após infecção do trato respiratório superior em um lactente sugerem bronquiolite (A), frequentemente causada pelo Vírus Sincicial Respiratório (RSV). Pneumonia bacteriana (B) geralmente se apresenta com febre alta e sinais de consolidação no exame pulmonar. Asma (C) neste caso específico é menos provável, pois é raramente diagnosticada nessa idade e a apresentação não é típica sem história familiar. Corpo estranho (D) geralmente apresenta um início súbito de sintomas respiratórios e frequentemente é unilateral em termos de som pulmonar.",
+    "topic": "Distúrbios respiratórios em lactentes",
     "is_global": true,
     "review_status": "approved",
     "quality_tier": "exam_standard"
