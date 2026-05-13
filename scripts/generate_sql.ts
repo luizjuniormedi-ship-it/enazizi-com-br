@@ -1,5 +1,4 @@
 
-// readTextFileSync is a global in Deno
 const data = JSON.parse(Deno.readTextFileSync("validation_batch.json"));
 
 function escapeSql(str) {
@@ -10,11 +9,11 @@ function escapeSql(str) {
 let sql = "INSERT INTO public.questions_bank (user_id, statement, options, correct_index, explanation, topic, is_global, review_status, quality_tier) VALUES ";
 
 const values = data.map(q => {
-  const optionsArr = q.options.map(opt => `'${escapeSql(opt)}'`).join(',');
+  const optionsJson = JSON.stringify(q.options);
   return `(
     '${q.user_id}', 
     '${escapeSql(q.statement)}', 
-    ARRAY[${optionsArr}], 
+    '${escapeSql(optionsJson)}'::jsonb, 
     ${q.correct_index}, 
     '${escapeSql(q.explanation)}', 
     '${escapeSql(q.topic)}', 
