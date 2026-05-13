@@ -75,7 +75,7 @@ const STRUCTURED_SIGNAL_BLOCK = `
 ==================================================
 SINAL ESTRUTURADO OBRIGATÓRIO (NÃO REMOVER)
 ==================================================
-SEMPRE QUE você corrigir uma resposta objetiva do aluno (letra A–E) ou
+SEMPRE QUE você corrigir uma resposta objetiva do aluno (letra A–D) ou
 avaliar acerto/erro de uma questão de verificação, ANEXE no FINAL da
 mensagem (após todo o feedback humano) o seguinte bloco — exatamente neste
 formato, em UMA ÚNICA linha de JSON, entre os marcadores HTML comments:
@@ -86,8 +86,8 @@ formato, em UMA ÚNICA linha de JSON, entre os marcadores HTML comments:
 
 REGRAS DO BLOCO:
 - "wasCorrect" boolean (obrigatório)
-- "correctLetter" letra A–E da alternativa correta
-- "detectedAnswer" letra A–E que o aluno respondeu
+- "correctLetter" letra A–D da alternativa correta
+- "detectedAnswer" letra A–D que o aluno respondeu
 - "errorCategory" um de: conceitual | memorizacao | interpretacao | atencao | desconhecido
 - "subtopic" subtema clínico específico (ex: "tratamento da pneumonia comunitária")
 - "topic" tema geral
@@ -116,7 +116,7 @@ function getPhasePrompt(phase: string, topic: string, performanceData: unknown, 
       }
       return `${getLessonPrompt()}\n${levelPrompt}\n${weakTopicsPrompt}\nFASE ATUAL: BLOCOS TÉCNICOS (STATES 2-6)\nTema: "${topic || "solicitado pelo aluno"}"\n\nSiga o protocolo de 4 mensagens.`;
     case "questions":
-      return `${getQuestionPrompt()}\n${weakTopicsPrompt}\nFASE ATUAL: QUESTÃO OBJETIVA (STATE 7)\nTema: "${topic}"\n\nApresente um caso clínico detalhado com 5 alternativas (A-E).`;
+      return `${getQuestionPrompt()}\n${weakTopicsPrompt}\nFASE ATUAL: QUESTÃO OBJETIVA (STATE 7)\nTema: "${topic}"\n\nApresente um caso clínico detalhado com 4 alternativas (A-D).`;
     default:
       return `${getLessonPrompt()}\n${levelPrompt}\n${weakTopicsPrompt}\nSiga o fluxo pedagógico.`;
   }
@@ -137,7 +137,7 @@ function formatQuestionAsText(q: any): string {
   const options = Array.isArray(q.options) 
     ? q.options.map((opt: string, i: number) => `${String.fromCharCode(65 + i)}) ${opt}`).join("\n")
     : "";
-  return `### 📋 Questão do Banco (Fallback)\n\n${q.statement}\n\n${options}\n\n**Qual sua resposta? (A, B, C, D ou E)**\n\n<!--SIGNAL-->\n{"wasCorrect":false,"correctLetter":"${String.fromCharCode(65 + (q.correct_index ?? 0))}","isFallback":true}\n<!--/SIGNAL-->`;
+  return `### 📋 Questão do Banco (Fallback)\n\n${q.statement}\n\n${options}\n\n**Qual sua resposta? (A, B, C ou D)**\n\n<!--SIGNAL-->\n{"wasCorrect":false,"correctLetter":"${String.fromCharCode(65 + (q.correct_index ?? 0))}","isFallback":true}\n<!--/SIGNAL-->`;
 }
 
 serve(async (req) => {
