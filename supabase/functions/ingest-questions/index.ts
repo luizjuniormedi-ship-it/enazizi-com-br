@@ -17,15 +17,29 @@ function normalizeText(s: string): string {
 function isValidQuestion(q: { statement?: string; options?: string[]; correct_index?: number }): boolean {
   if (!q.statement || !Array.isArray(q.options) || typeof q.correct_index !== "number") return false;
   if (q.options.length < 4 || q.options.length > 5) return false;
-  if (q.statement.length < 400) return false;
+  
+  // High quality standard: Real questions are rarely extremely short
+  // Standard medical questions usually have between 300 and 1500 chars
+  if (q.statement.length < 250) return false;
+  
+  // Reject questions with image references since we can't ingest images yet
   if (IMAGE_REF_PATTERN.test(q.statement)) return false;
   if (ENGLISH_PATTERN.test(q.statement)) return false;
+  
   // Reject statements that contain metadata (topic/specialty names embedded)
   const metadataPattern = /^(Cardiologia|Pediatria|Cirurgia|Neurologia|Pneumologia|Ginecologia|Obstetrícia|Infectologia|Dermatologia|Endocrinologia|Gastroenterologia|Hematologia|Nefrologia|Reumatologia|Urologia|Psiquiatria|Oncologia|Angiologia|Ortopedia)\s*[-–—:]/i;
   if (metadataPattern.test(q.statement.trim())) return false;
-  // Reject empty/trivial options
-  const validOpts = q.options.filter(o => String(o).trim().length > 2);
+
+  // Real medical questions avoid trivial or extremely short options (except numbers/dates)
+  const validOpts = q.options.filter(o => {
+    const text = String(o).trim();
+    if (text.length <= 1) return false;
+    // Basic medical vocabulary check or numeric/date
+    const isNumeric = /^\d+/.test(text);
+    return text.length > 3 || isNumeric;
+  });
   if (validOpts.length < 4) return false;
+
   return true;
 }
 
@@ -413,6 +427,15 @@ Deno.serve(async (req) => {
         while (opts.length < 5) opts.push(`Alternativa ${String.fromCharCode(65 + opts.length)}`);
         if (opts.length > 5) opts.splice(5);
 
+        // Heuristic for difficulty based on length and medical complexity
+        let difficulty = 3; // Standard
+        const textLen = q.statement.length;
+        if (textLen > 1000 || /paciente de \d+ anos.*diagn[óo]stico/i.test(q.statement)) {
+          difficulty = 4; // High (Clinical Cases)
+        } else if (textLen < 400 && !/diagn[óo]stico|tratamento/i.test(q.statement)) {
+          difficulty = 2; // Medium-Low
+        }
+
         const { error: insErr } = await supabase.from("questions_bank").insert({
           statement: q.statement,
           options: opts,
@@ -425,7 +448,7 @@ Deno.serve(async (req) => {
           source_url: sourceUrl,
           user_id: adminUserId,
           is_global: true,
-          difficulty: 3,
+          difficulty: difficulty,
           review_status: "pending",
         });
 
