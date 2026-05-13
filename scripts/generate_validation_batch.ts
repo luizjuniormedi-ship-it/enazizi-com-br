@@ -19,33 +19,24 @@ async function aiFetch(body: any) {
   return response.json();
 }
 
-const SYSTEM_PROMPT = `Você é um gerador de questões de ELITE absoluta para Residência Médica brasileira (ENARE, USP, UNIFESP, Revalida, Santa Casa, SUS-SP).
+const SYSTEM_PROMPT = `Você é um gerador de questões de ELITE absoluta para Residência Médica brasileira.
 
 REGRAS CRÍTICAS DE QUALIDADE (PADRÃO OURO):
-1. IDIOMA: TUDO em PORTUGUÊS BRASILEIRO. NUNCA use inglês.
-2. NÍVEL: ALTO (Residência Médica). Evite conceitos triviais.
-3. ENUNCIADO (statement): Deve ser um CASO CLÍNICO COMPLETO, EXTENSO e REALISTA.
-   - Nome fictício, idade EXATA, sexo, profissão/ocupação.
-   - Queixa principal com tempo de evolução preciso.
-   - Antecedentes pessoais detalhados (medicações, cirurgias, hábitos).
-   - EXAME FÍSICO DETALHADO: PA, FC, FR, Temp, SpO2 (sempre com valores numéricos).
-   - EXAMES COMPLEMENTARES: Apresentar resultados com valores de referência e unidades.
-   - OBRIGATÓRIO: Mínimo 500 caracteres para o enunciado. Se for menor, adicione mais detalhes clínicos.
-   - Termine sempre com a pergunta direta.
-4. ALTERNATIVAS: Exatamente 4 opções (A-D) plausíveis.
-5. EXPLICAÇÃO (explanation): Analise individualmente cada alternativa (por que correta/errada).
-   - Inclua "🧑‍⚕️ Explicação Simplificada" ao final.
-   - 📚 Mini-revisão do tema (3-5 linhas).
-   - Cite referência bibliográfica atualizada (Harrison 21ed, Sabiston 21ed, Williams 26ed, Nelson 21ed).
+1. IDIOMA: TUDO em PORTUGUÊS BRASILEIRO.
+2. NÍVEL: ALTO (Residência Médica).
+3. ENUNCIADO: Deve ser um CASO CLÍNICO EXTENSO (MÍNIMO 500 CARACTERES).
+   - Detalhe história, exame físico completo com sinais vitais e exames.
+4. ALTERNATIVAS: 4 opções (A-D).
+5. EXPLICAÇÃO: Analise individualmente cada alternativa.
 
 FORMATO JSON:
 {
   "questions": [
     {
       "statement": "...",
-      "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
+      "options": ["A", "B", "C", "D"],
       "correct_index": 0,
-      "topic": "Especialidade - Subtema",
+      "topic": "...",
       "explanation": "..."
     }
   ]
@@ -59,31 +50,39 @@ const AREAS = [
 ];
 
 async function generateForArea(area: string) {
-  console.log(`Gerando 5 questões para: ${area}`);
-  const result = await aiFetch({
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `Gere 5 questões inéditas e de alto nível de ${area}. Varie os subtemas entre os mais cobrados em provas de residência. GARANTA que cada enunciado clínico tenha pelo menos 500 caracteres de texto rico em detalhes médicos.` }
-    ]
-  });
+  let attempts = 0;
+  while (attempts < 3) {
+    console.log(`Gerando 5 questões para: ${area} (Tentativa ${attempts + 1})`);
+    const result = await aiFetch({
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `Gere 5 questões de ${area}. CADA enunciado deve ser um caso clínico de PELO MENOS 500 caracteres.` }
+      ]
+    });
 
-  const content = JSON.parse(result.choices[0].message.content);
-  return content.questions;
+    const content = JSON.parse(result.choices[0].message.content);
+    const questions = content.questions;
+    
+    // Validate length
+    const invalid = questions.filter(q => q.statement.length < 450);
+    if (invalid.length === 0) return questions;
+    
+    console.log(`${invalid.length} questões com tamanho insuficiente. Tentando novamente...`);
+    attempts++;
+  }
+  
+  // Fallback: return what we have
+  return [];
 }
 
 async function main() {
   const allQuestions = [];
   for (const area of AREAS) {
-    try {
-      const questions = await generateForArea(area);
-      allQuestions.push(...questions);
-    } catch (e) {
-      console.error(`Erro ao gerar para ${area}:`, e);
-    }
+    const questions = await generateForArea(area);
+    allQuestions.push(...questions);
   }
 
   const adminId = "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023";
-  
   const rows = allQuestions.map(q => ({
     user_id: adminId,
     statement: q.statement,
@@ -97,7 +96,7 @@ async function main() {
   }));
 
   Deno.writeTextFileSync("validation_batch.json", JSON.stringify(rows, null, 2));
-  console.log("Arquivo validation_batch.json gerado com sucesso.");
+  console.log(`Sucesso! ${rows.length} questões salvas em validation_batch.json`);
 }
 
 main();
