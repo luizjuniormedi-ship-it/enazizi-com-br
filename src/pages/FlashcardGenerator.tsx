@@ -52,6 +52,7 @@ const FlashcardGenerator = () => {
   const [quantity, setQuantity] = useState(10);
   const [showSetup, setShowSetup] = useState(true);
   const initialPromptRef = useRef<string>("");
+  const decisionIdRef = useRef<string | null>(null);
 
   const effectiveSpecialty = specialty.trim();
 
@@ -70,11 +71,20 @@ const FlashcardGenerator = () => {
     const parsed = parseFlashcardsFromText(content);
     if (parsed.length === 0) throw new Error("Nenhum flashcard encontrado para salvar. Verifique se o formato é válido.");
 
+    // Garantir decisionId antes de salvar
+    if (!decisionIdRef.current) {
+      const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+      decisionIdRef.current = await getOrchestratorDecision(user.id, "flashcard-generator", {
+        topic: effectiveSpecialty
+      });
+    }
+
     const rows = parsed.map((f) => ({
       user_id: user.id,
       question: f.question,
       answer: f.answer,
       topic: f.topic,
+      decision_id: decisionIdRef.current,
     }));
 
     const { error } = await supabase.from("flashcards").insert(rows);
@@ -83,7 +93,7 @@ const FlashcardGenerator = () => {
     await addXp(XP_REWARDS.flashcard_created * parsed.length);
 
     return parsed.length;
-  }, [user, addXp]);
+  }, [user, addXp, effectiveSpecialty]);
 
   const loadPreviousFlashcards = useCallback(async (): Promise<string> => {
     if (!user) return "";
@@ -101,10 +111,18 @@ const FlashcardGenerator = () => {
     return `⛔ FLASHCARDS JÁ GERADOS ANTERIORMENTE (NÃO REPETIR cenários similares — varie diagnóstico, perfil do paciente e abordagem):\n${items.join("\n")}`;
   }, [user]);
 
-  const handleStartGenerating = () => {
+  const handleStartGenerating = async () => {
+    if (user) {
+      const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+      decisionIdRef.current = await getOrchestratorDecision(user.id, "flashcard-generator", {
+        topic: effectiveSpecialty,
+        quantity
+      });
+    }
     setShowSetup(false);
     initialPromptRef.current = buildPrompt();
   };
+
 
   if (showSetup) {
     return (
