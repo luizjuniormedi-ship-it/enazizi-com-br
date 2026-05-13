@@ -95,7 +95,8 @@ async function main() {
     quality_tier: "exam_standard"
   }));
 
-  console.log(JSON.stringify(rows));
+  Deno.writeTextFileSync("validation_batch.json", JSON.stringify(rows, null, 2));
+  console.log("Arquivo validation_batch.json gerado com sucesso.");
 }
 
 main();
