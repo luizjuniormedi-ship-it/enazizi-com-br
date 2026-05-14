@@ -153,9 +153,9 @@ export const useDashboardData = () => {
           if (diff > 0) daysUntilExam = Math.ceil(diff / (1000 * 60 * 60 * 24));
         }
 
-        const upcomingReviews = (cd.revisoes || []).slice(0, 5).map((r: any) => ({
-          topic: r.tema_estudado?.tema || "Revisão",
-          next: r.data_revisao,
+        const upcomingReviews = (uni.upcoming_reviews || []).slice(0, 5).map((r: any) => ({
+          topic: r.topic || "Revisão",
+          next: r.next_review,
         }));
 
         const todayPlan = uni.daily_plan?.plan;

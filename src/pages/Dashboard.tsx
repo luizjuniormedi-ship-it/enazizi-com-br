@@ -294,35 +294,6 @@ const Dashboard = () => {
             </Suspense>
           </div>
         </div>
-
-        {/* Bottom Metrics Grid */}
-        <div className="px-4 sm:px-8 lg:px-14 pb-12">
-          <EnaflixSectionTitle kicker="MÉTRICAS DETALHADAS" title="Estatísticas de Estudo" />
-          <div className="mt-6">
-            {dashData && <DashboardMetricsGrid stats={dashData.stats} metrics={dashData.metrics} />}
-          </div>
-        </div>
-      </div>
-
-      {/* Floating Mascot */}
-      <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-2">
-        <MascotBubble speech={mascotSpeech} />
-        <MascotAvatar state={mascotState} size="lg" />
-      </div>
-
-
-    </div>
-  );
-};
-
-const LocalSectionSkeleton = () => (
-  <div className="p-6 rounded-[32px] bg-white/5 border border-white/10 space-y-4 animate-pulse">
-    <div className="h-4 w-1/3 bg-white/10 rounded-full" />
-    <div className="grid grid-cols-2 gap-4">
-      <div className="h-32 bg-white/5 rounded-2xl" />
-      <div className="h-32 bg-white/5 rounded-2xl" />
-    </div>
-  </div>
 );
 
 export default memo(Dashboard);

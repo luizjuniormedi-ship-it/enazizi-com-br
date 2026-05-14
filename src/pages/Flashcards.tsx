@@ -318,7 +318,7 @@ const Flashcards = () => {
         <EnaflixSectionTitle
           kicker="Revisão Inteligente"
           title="Consolidação Cognitiva"
-          subtitle="Revise seus conhecimentos com repetição espaçada personalizada."
+          subtitle="Fortaleça sua memória de longo prazo com repetição espaçada."
         />
       </div>
 
