@@ -1,50 +1,41 @@
-I will execute a comprehensive audit and controlled consolidation of ENAZIZI to finalize the Enterprise MVP.
+# ENAZIZI Go-Live & Operational Excellence Plan (v16)
 
-### FASE 1 & 2: Real Audit & Gap Identification
-Based on my exploration:
-- **Core Status**: The system is architecturally solid but suffers from "over-engineering entropy" with dozens of specialized edge functions and duplicate dashboard components.
-- **Redundancies**: Multiple "Heroes" and "Dashboards" exist. `UnifiedMissionHero` and `EnaflixLayout` are the modern standard, while legacy layouts still haunt some routes.
-- **Gaps**:
-    - **Unified Loading**: `App.tsx` has a `PageLoader`, but hydration in `Dashboard.tsx` still feels fragmented (multiple hooks fetching overlapping data).
-    - **Planner PDF**: Infrastructure exists, but the "deduplication" and "FSRS integration" in the UI need stabilization.
-    - **Study Session**: The transition between `OperationalHub` and active study mode needs to be seamless and guaranteed to have a `decisionId`.
-    - **FSRS**: Integrated in Flashcards and Study Session, but missing a global "Readiness" view in the MVP.
+The project has reached Enterprise MVP maturity. This phase focuses on hardening the student experience, ensuring operational stability, and preparing for real-world traffic.
 
-### FASE 3: Controlled Cleanup
-- **Remove Orphaned Functions**: I will identify and list edge functions that are no longer used by the frontend (e.g., legacy `generate-lesson-from-real-study` vs `study-session`).
-- **Consolidate Dashboard**: Ensure `Dashboard.tsx` uses only `useDashboardData` and `useStudyNext` for hydration.
+## 1. Auth & Session Hardening
+- Audit `useAuth.tsx` to ensure `forceLoginRefresh` correctly handles token expiration without infinite loops.
+- Validate `ProtectedRoute` and `ModuleGuard` interaction to prevent flashing unauthorized states.
+- Ensure `ResetPassword.tsx` correctly detects tokens from URL hashes across all browser engines.
 
-### FASE 4: MVP Implementation/Refinement
+## 2. First User Experience (FUX) & Onboarding
+- Refine `Register.tsx` to handle "already registered" errors gracefully with clear CTAs.
+- Enhance `Diagnostic.tsx` generation reliability using the existing contingency/fallback question system.
+- Ensure `UnifiedMissionHero` provides a clear "First Mission" when new users have zero history.
 
-#### 1. Unified Dashboard Hydration
-- Optimize `useDashboardData.ts` to fully rely on the `get_unified_dashboard_data` RPC.
-- Implement a single skeleton state in `Dashboard.tsx`.
+## 3. UX Hardening & Mobile Excellence
+- Review `EnaflixLayout` to ensure immersive modes (Study Session, Tutor) fully respect safe areas and keyboard overlap on iOS/Android.
+- Validate `EnaflixMobileNav` z-index and backdrop-blur performance on mid-range devices.
+- Audit all `Skeleton` states to ensure layout stability during data synchronization (cockpit diagnostic mode).
 
-#### 2. Planner & PDF Extract
-- Enhance `SmartPlanner.tsx` to ensure the PDF topic extraction correctly populates the FSRS baseline.
+## 4. Student Retention & Resilience
+- Hardent the `updateStreak` logic in `activityLogger.ts` to prevent data loss during offline study sessions.
+- Verify `studyCompleteRetryQueue.ts` correctly flushes pending pedagogical signals after network reconnection.
+- Ensure `ResumeSessionBanner` provides immediate continuity for interrupted sessions.
 
-#### 3. Missão do Dia
-- Refine the recommendation engine in `study-next` edge function to prioritize Error Bank and FSRS Due.
+## 5. Production Observability
+- Finalize the `AdminMonitoring.tsx` dashboard to include health metrics for:
+    - Auth (success rate, session duration)
+    - AI Tutor (latency, signal confidence)
+    - Planner (generation time, task completion)
+    - Content Ops (quarantine volume, audit backlog)
 
-#### 4. Study Session UX
-- Improve mobile rendering for MCQ and ensure "Expert Explanation" always triggers Active Recall prompts.
-- Force `decisionId` mandatory for all study steps.
+## 6. Performance Optimization
+- Target `<1s` for `Dashboard.tsx` first-paint using existing `lazyWithRetry` and `Suspense` boundaries.
+- Ensure `useStudyNext` query is prefetched or cached to hit the `<3s` recommendation target.
+- Validate that `behaviroalTelemetry` ampling (10%) is active to protect database throughput.
 
-#### 5. Question Bank Quality
-- Enforce the 4-alternative standard via the `question-generator` system prompt.
-- Stabilize the "Quality Lock" lifecycle (Draft -> Approved).
-
-### FASE 5 & 6: Performance & Governance
-- Optimize SQL indexes on `practice_attempts` and `fsrs_cards` to keep Dashboard < 1s.
-- Lock the `Unified Telemetry` to sample only 10% of non-critical events (already partially done, will finalize).
-
-### FASE 7: Final UX
-- Standardize all cards to the "Pixar/Netflix" medical glassmorphism style.
-- Remove redundant navigation links in the Sidebar.
-
----
-
-### Technical Details
-- **Unified RPC**: Update `get_unified_dashboard_data` to include missing metrics like `avg_retention` and `daily_streak` to eliminate secondary fetches.
-- **Sampling Strategy**: Sample `telemetry_events` in `_shared/unified-core.ts` to prevent DB bloat.
-- **Route Guard**: Ensure `ModuleGuard` is used consistently in `App.tsx`.
+## Technical Details
+- **sampling**: telemetry ampling set to 10% for non-critical events.
+- **boundaries**: Global `ErrorBoundary` used for crash recovery.
+- **persistence**: Local-first sync for pedagogical signals via `localStorage` queue.
+- **mobile**: Safe-area-bottom classes applied to all fixed navigation.
