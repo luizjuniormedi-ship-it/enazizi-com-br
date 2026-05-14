@@ -310,6 +310,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+        </div>
+      </div>
 
       <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-2">
         <MascotBubble speech={mascotSpeech} />
