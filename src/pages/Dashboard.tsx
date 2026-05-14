@@ -91,21 +91,21 @@ const Dashboard = () => {
         telemetryFiredRef.current = true;
         const loadTime = Date.now() - mountTimeRef.current;
         
-        // Registrar telemetria
+        // Registrar telemetria via pipeline unificado (Phase 14)
         import("@/integrations/supabase/client").then(({ supabase }) => {
-          supabase.from("telemetry_events").insert([{
-            user_id: user.id,
-            session_id: crypto.randomUUID(),
-            event_name: "cockpit_partial_mode",
-            properties: {
-              route: window.location.pathname,
-              load_time_ms: loadTime,
-              timed_out: true,
-              failed_blocks: failedBlocks,
-              fallback_used: true,
-              timestamp: new Date().toISOString()
+          supabase.functions.invoke("unified-telemetry", {
+            body: {
+              userId: user.id,
+              eventType: "COCKPIT_PARTIAL_MODE",
+              data: {
+                route: window.location.pathname,
+                load_time_ms: loadTime,
+                timed_out: true,
+                failed_blocks: failedBlocks,
+                fallback_used: true
+              }
             }
-          }]).then();
+          }).then();
         });
 
         // Persistência leve

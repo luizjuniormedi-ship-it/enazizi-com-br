@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
-import { corsHeaders, jsonResponse, errorResponse, getServiceClient, getUserIdFromRequest } from "../_shared/assistant-helpers.ts";
+import { getServiceClient, corsHeaders, logTelemetry } from "../_shared/unified-core.ts";
 import { detectFatigue, calculateRetention } from "../_shared/cognitive-helpers.ts";
 import { estimateTheta, IRTResponse } from "../_shared/irt-engine.ts";
 
@@ -86,20 +85,19 @@ serve(async (req) => {
 
     const { data: decisionData } = await supabase.from("orchestrator_decisions").insert(decision).select().single();
 
-    // 5. AGENT LOGGING (Cognitive Supervisor)
-    await supabase.from("ai_agents_logs").insert({
-      user_id: userId,
-      agent_name: "Cognitive Supervisor",
-      action: "ORCHESTRATION_COMPLETE",
-      confidence: 0.9,
-      decision_payload: { decision_id: decisionData?.id, nextAction }
-    });
+    // 5. AGENT LOGGING (Cognitive Supervisor) - Unified Telemetry
+    await logTelemetry(supabase, "ORCHESTRATION_COMPLETE", { 
+      decision_id: decisionData?.id, 
+      nextAction,
+      fatigue,
+      retention
+    }, userId);
 
-    return jsonResponse({
+    return new Response(JSON.stringify({
       success: true,
       decision: decisionData,
       snapshot
-    });
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
     console.error("Orchestrator Error:", err);
