@@ -2905,7 +2905,9 @@ export type Database = {
           evidence_level: string | null
           guideline_name: string
           id: string
+          is_active: boolean | null
           keywords: string[] | null
+          pdf_url: string | null
           specialty: string | null
           summary: string | null
           updated_at: string | null
@@ -2919,7 +2921,9 @@ export type Database = {
           evidence_level?: string | null
           guideline_name: string
           id?: string
+          is_active?: boolean | null
           keywords?: string[] | null
+          pdf_url?: string | null
           specialty?: string | null
           summary?: string | null
           updated_at?: string | null
@@ -2933,7 +2937,9 @@ export type Database = {
           evidence_level?: string | null
           guideline_name?: string
           id?: string
+          is_active?: boolean | null
           keywords?: string[] | null
+          pdf_url?: string | null
           specialty?: string | null
           summary?: string | null
           updated_at?: string | null
@@ -8119,6 +8125,69 @@ export type Database = {
         }
         Relationships: []
       }
+      cognitive_telemetry: {
+        Row: {
+          alternative_changed: boolean | null
+          confidence_level: number | null
+          created_at: string | null
+          fatigue_score: number | null
+          flashcard_id: string | null
+          id: string
+          is_abandoned: boolean | null
+          needs_review: boolean | null
+          perceived_difficulty: number | null
+          question_id: string | null
+          response_time_ms: number | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          alternative_changed?: boolean | null
+          confidence_level?: number | null
+          created_at?: string | null
+          fatigue_score?: number | null
+          flashcard_id?: string | null
+          id?: string
+          is_abandoned?: boolean | null
+          needs_review?: boolean | null
+          perceived_difficulty?: number | null
+          question_id?: string | null
+          response_time_ms?: number | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          alternative_changed?: boolean | null
+          confidence_level?: number | null
+          created_at?: string | null
+          fatigue_score?: number | null
+          flashcard_id?: string | null
+          id?: string
+          is_abandoned?: boolean | null
+          needs_review?: boolean | null
+          perceived_difficulty?: number | null
+          question_id?: string | null
+          response_time_ms?: number | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_telemetry_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cognitive_telemetry_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cognitive_window_performance: {
         Row: {
           drift_rate: number | null
@@ -10490,6 +10559,7 @@ export type Database = {
           decision_id: string | null
           difficulty: number | null
           explanation: string | null
+          fsrs_integration_data: Json | null
           generation_method: string | null
           id: string
           is_global: boolean
@@ -10497,6 +10567,7 @@ export type Database = {
           microtopic_id: string | null
           organization_id: string | null
           question: string
+          retention_score: number | null
           reviewed_by_human: boolean
           session_id: string | null
           source: string | null
@@ -10504,6 +10575,7 @@ export type Database = {
           specialty_id: string | null
           subtopic_id: string | null
           topic: string | null
+          urgency_score: number | null
           user_id: string
         }
         Insert: {
@@ -10513,6 +10585,7 @@ export type Database = {
           decision_id?: string | null
           difficulty?: number | null
           explanation?: string | null
+          fsrs_integration_data?: Json | null
           generation_method?: string | null
           id?: string
           is_global?: boolean
@@ -10520,6 +10593,7 @@ export type Database = {
           microtopic_id?: string | null
           organization_id?: string | null
           question: string
+          retention_score?: number | null
           reviewed_by_human?: boolean
           session_id?: string | null
           source?: string | null
@@ -10527,6 +10601,7 @@ export type Database = {
           specialty_id?: string | null
           subtopic_id?: string | null
           topic?: string | null
+          urgency_score?: number | null
           user_id: string
         }
         Update: {
@@ -10536,6 +10611,7 @@ export type Database = {
           decision_id?: string | null
           difficulty?: number | null
           explanation?: string | null
+          fsrs_integration_data?: Json | null
           generation_method?: string | null
           id?: string
           is_global?: boolean
@@ -10543,6 +10619,7 @@ export type Database = {
           microtopic_id?: string | null
           organization_id?: string | null
           question?: string
+          retention_score?: number | null
           reviewed_by_human?: boolean
           session_id?: string | null
           source?: string | null
@@ -10550,6 +10627,7 @@ export type Database = {
           specialty_id?: string | null
           subtopic_id?: string | null
           topic?: string | null
+          urgency_score?: number | null
           user_id?: string
         }
         Relationships: [
@@ -16672,7 +16750,9 @@ export type Database = {
       }
       questions_bank: {
         Row: {
+          approved_for_generation: boolean | null
           batch_id: string | null
+          board: string | null
           board_similarity_score: number | null
           classification_confidence: number | null
           classification_method: string | null
@@ -16691,12 +16771,15 @@ export type Database = {
           embedding_hash: string | null
           exam_bank_id: string | null
           explanation: string
+          fsrs_hooks: Json | null
           guideline_recency_score: number | null
           guideline_reference: string | null
           guideline_year: number | null
           hallucination_risk_score: number | null
           id: string
           image_url: string | null
+          ingestion_version: string | null
+          institution: string | null
           is_global: boolean | null
           language: string | null
           lifecycle_state: string | null
@@ -16711,6 +16794,7 @@ export type Database = {
           review_status: string | null
           source: string | null
           source_map_id: string | null
+          source_pdf: string | null
           source_type: string | null
           source_url: string | null
           specialty_id: string | null
@@ -16720,11 +16804,15 @@ export type Database = {
           topic: string | null
           topic_id: string | null
           tri_difficulty_score: number | null
+          tutor_context: string | null
           updated_at: string
           user_id: string
+          year: number | null
         }
         Insert: {
+          approved_for_generation?: boolean | null
           batch_id?: string | null
+          board?: string | null
           board_similarity_score?: number | null
           classification_confidence?: number | null
           classification_method?: string | null
@@ -16743,12 +16831,15 @@ export type Database = {
           embedding_hash?: string | null
           exam_bank_id?: string | null
           explanation: string
+          fsrs_hooks?: Json | null
           guideline_recency_score?: number | null
           guideline_reference?: string | null
           guideline_year?: number | null
           hallucination_risk_score?: number | null
           id?: string
           image_url?: string | null
+          ingestion_version?: string | null
+          institution?: string | null
           is_global?: boolean | null
           language?: string | null
           lifecycle_state?: string | null
@@ -16763,6 +16854,7 @@ export type Database = {
           review_status?: string | null
           source?: string | null
           source_map_id?: string | null
+          source_pdf?: string | null
           source_type?: string | null
           source_url?: string | null
           specialty_id?: string | null
@@ -16772,11 +16864,15 @@ export type Database = {
           topic?: string | null
           topic_id?: string | null
           tri_difficulty_score?: number | null
+          tutor_context?: string | null
           updated_at?: string
           user_id: string
+          year?: number | null
         }
         Update: {
+          approved_for_generation?: boolean | null
           batch_id?: string | null
+          board?: string | null
           board_similarity_score?: number | null
           classification_confidence?: number | null
           classification_method?: string | null
@@ -16795,12 +16891,15 @@ export type Database = {
           embedding_hash?: string | null
           exam_bank_id?: string | null
           explanation?: string
+          fsrs_hooks?: Json | null
           guideline_recency_score?: number | null
           guideline_reference?: string | null
           guideline_year?: number | null
           hallucination_risk_score?: number | null
           id?: string
           image_url?: string | null
+          ingestion_version?: string | null
+          institution?: string | null
           is_global?: boolean | null
           language?: string | null
           lifecycle_state?: string | null
@@ -16815,6 +16914,7 @@ export type Database = {
           review_status?: string | null
           source?: string | null
           source_map_id?: string | null
+          source_pdf?: string | null
           source_type?: string | null
           source_url?: string | null
           specialty_id?: string | null
@@ -16824,8 +16924,10 @@ export type Database = {
           topic?: string | null
           topic_id?: string | null
           tri_difficulty_score?: number | null
+          tutor_context?: string | null
           updated_at?: string
           user_id?: string
+          year?: number | null
         }
         Relationships: [
           {
