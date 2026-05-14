@@ -22585,6 +22585,40 @@ export type Database = {
         }
         Relationships: []
       }
+      view_cognitive_health: {
+        Row: {
+          avg_depth: number | null
+          avg_hallucination_risk: number | null
+          avg_quality: number | null
+          topic: string | null
+          total_questions: number | null
+        }
+        Relationships: []
+      }
+      view_pedagogical_drift: {
+        Row: {
+          created_at: string | null
+          divergence_score: number | null
+          metric_type: string | null
+          original_quality: number | null
+          shadow_quality: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          divergence_score?: number | null
+          metric_type?: string | null
+          original_quality?: never
+          shadow_quality?: never
+        }
+        Update: {
+          created_at?: string | null
+          divergence_score?: number | null
+          metric_type?: string | null
+          original_quality?: never
+          shadow_quality?: never
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_ai_cache_report: {
@@ -22690,6 +22724,13 @@ export type Database = {
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
+      }
+      detect_question_drift: {
+        Args: never
+        Returns: {
+          question_id: string
+          similarity_score: number
+        }[]
       }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
