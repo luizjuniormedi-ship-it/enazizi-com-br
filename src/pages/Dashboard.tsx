@@ -202,42 +202,13 @@ const Dashboard = () => {
       {/* Debug Panel */}
       {debugPanel}
 
-      {/* Sync Warning Banner */}
-      {cockpitTimedOut && isDataMissing && (
-        <div className="mx-4 sm:mx-8 lg:mx-14 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-3">
-            <RefreshCw className="h-4 w-4 text-amber-500 animate-spin-slow" />
-            <p className="text-sm font-medium text-amber-200/80">
-              Algumas métricas ainda estão sincronizando. Você já pode estudar.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button 
-              onClick={() => {
-                refreshStudyNext();
-                refreshSnapshot();
-              }}
-              className="text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors"
-            >
-              Tentar atualizar
-            </button>
-            <button 
-              onClick={() => navigate("/dashboard/sessao-estudo")}
-              className="text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors"
-            >
-              Iniciar sessão mesmo assim
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Hero unificado — fonte única de CTA principal (deriva de useStudyNext) */}
       <UnifiedMissionHero
         firstName={firstName}
         recommendationTitle={activeRec?.title}
         recommendationDescription={activeRec?.description}
         recommendationType={activeRec?.type}
-        recommendationTopic={activeRec?.targetId} // Using targetId as topic context if available
+        recommendationTopic={activeRec?.targetId}
         adaptiveJustification={adaptiveState?.justification}
       />
 

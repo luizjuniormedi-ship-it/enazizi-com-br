@@ -53,14 +53,11 @@ const NAV_SECTIONS = [
   {
     title: "ESTUDAR",
     items: [
-      { to: "/dashboard/sessao-estudo", label: "Continuar", icon: PlayCircle },
+      { to: "/dashboard/sessao-estudo", label: "Missão do Dia", icon: PlayCircle },
       { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: MonitorPlay },
-      { to: "/dashboard/flashcards", label: "Revisões", icon: Clock },
+      { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
-      { to: "/dashboard/image-quiz", label: "Questões com Imagem", icon: ImageIcon },
-      { to: "/dashboard/feynman", label: "Método Feynman", icon: Brain },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
-      { to: "/dashboard/mnemonico", label: "Mnemônicos", icon: BrainCircuit },
       { to: "/dashboard/sessao-estudo", label: "Tutor IA", icon: Sparkles, badge: "Premium" },
     ]
   },

@@ -93,96 +93,31 @@ export const useDashboardData = () => {
 
         if (unifiedError) throw unifiedError;
 
-        // Legacy compatibility / fallbacks for specific queries not yet in RPC
-        const [
-          reviewsRes,
-          discursivasRes, globalFlashRes, globalQuestRes,
-          questionsCreatedRes, summariesRes, chroniclesRes,
-          imageQuizRes, diagnosticRes,
-          adaptiveProfileRes,
-        ] = await Promise.all([
-          supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", userId).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
-          supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
-          supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
-          supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true).eq("review_status", "approved"),
-          supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("user_id", userId),
-          supabase.from("summaries").select("id", { count: "exact", head: true }).eq("user_id", userId),
-          supabase.from("chat_conversations").select("id, agent_type", { count: "exact" }).eq("user_id", userId),
-          supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
-          supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
-          supabase.from("cme_adaptive_profiles").select("*").eq("user_id", userId).maybeSingle(),
-        ]);
-
-        const flashcardsRes = { count: (unified as any).flashcards_count };
-        const uploadsRes = { count: (unified as any).uploads_count };
-        const tasksRes = { data: (unified as any).daily_plan?.tasks || [] };
-        const dailyPlansRes = { data: (unified as any).daily_plan?.plan };
-
-
-        const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
-          supabase.from("teacher_simulado_results").select("total_questions, score").eq("student_id", userId),
-          supabase.from("teacher_clinical_case_results").select("id", { count: "exact", head: true }).eq("student_id", userId),
-        ]);
-
-        // Use coreData for shared data
-        const practiceAttempts = cd.practiceAttempts || [];
-        const todayStr = new Date().toISOString().split("T")[0];
-        const questionsToday = practiceAttempts.filter(a => a.created_at?.startsWith(todayStr)).length;
-        const practiceCorrect = practiceAttempts.filter(a => a.correct).length;
-        const practiceTotal = practiceAttempts.length;
-
-        const examData = cd.examSessions || [];
-        const examQuestionsTotal = examData.reduce((sum, e) => sum + (e.total_questions || 0), 0);
-        const examCorrectTotal = examData.reduce((sum, e) => {
-          const total = e.total_questions || 0;
-          return sum + Math.round(((e.score || 0) / 100) * total);
-        }, 0);
-
-        const teacherSimData = teacherSimuladoRes.data || [];
-        const teacherQuestionsTotal = teacherSimData.reduce((sum: number, e: any) => sum + (e.total_questions || 0), 0);
-        const teacherCorrectTotal = teacherSimData.reduce((sum: number, e: any) => {
-          const total = e.total_questions || 0;
-          return sum + Math.round(((e.score || 0) / 100) * total);
-        }, 0);
-
-        const teacherClinicalCount = teacherClinicalRes.count || 0;
-        const questionsAnswered = practiceTotal + examQuestionsTotal + teacherQuestionsTotal;
-        const totalCorrect = practiceCorrect + examCorrectTotal + teacherCorrectTotal;
-        const accuracy = questionsAnswered > 0 ? Math.min(Math.round((totalCorrect / questionsAnswered) * 100), 100) : 0;
-
-        const pendingRevisoes = (cd.revisoes || []).filter(r => {
-          if (r.status !== "pendente") return false;
-          return r.data_revisao <= todayStr;
-        }).length;
-
-        const totalSimulados = examData.length + teacherSimData.length;
-        const totalClinical = cd.simulationSessionsCount + teacherClinicalCount;
-        const gamData = cd.gamification;
-
+        const uni = unified as any;
         const metrics: DashboardMetrics = {
-          questionsAnswered,
-          accuracy,
+          questionsAnswered: Number(uni.metrics?.total_answered || 0),
+          accuracy: Number(uni.metrics?.accuracy || 0),
           errorsCount: cd.errorBankCount,
-          pendingRevisoes,
-          simuladosCompleted: totalSimulados,
-          discursivasCompleted: discursivasRes.count || 0,
-          gamificationStreak: gamData?.current_streak || 0,
-          gamificationXp: gamData?.xp || 0,
-          gamificationLevel: gamData?.level || 1,
-          globalFlashcards: globalFlashRes.count || 0,
-          globalQuestions: globalQuestRes.count || 0,
-          questionsCreated: questionsCreatedRes.count || 0,
-          clinicalSimulations: totalClinical,
+          pendingRevisoes: Number(uni.metrics?.pending_reviews || 0),
+          simuladosCompleted: cd.examSessions?.length || 0,
+          discursivasCompleted: 0, // Simplified for MVP
+          gamificationStreak: Number(uni.metrics?.streak || 0),
+          gamificationXp: cd.gamification?.xp || 0,
+          gamificationLevel: cd.gamification?.level || 1,
+          globalFlashcards: 0,
+          globalQuestions: 0,
+          questionsCreated: 0,
+          clinicalSimulations: cd.simulationSessionsCount || 0,
           anamnesisCompleted: (cd.anamnesisResults || []).length,
-          summariesCreated: summariesRes.count || 0,
-          chroniclesCompleted: (chroniclesRes.data || []).filter((c: any) => c.agent_type === "medical-chronicle").length,
-          imageQuizAttempts: imageQuizRes.count || 0,
-          diagnosticCompleted: diagnosticRes.count || 0,
-          chatConversations: chroniclesRes.count || 0,
-          retentionScore: Number(adaptiveProfileRes.data?.retention_score) || 0,
-          fatigueScore: 0, // Will be updated by real-time neuroanalytics
+          summariesCreated: 0,
+          chroniclesCompleted: 0,
+          imageQuizAttempts: 0,
+          diagnosticCompleted: 0,
+          chatConversations: 0,
+          retentionScore: Number(uni.metrics?.avg_retention || 0.5),
+          fatigueScore: 0,
           engagementScore: 0,
-          overloadThreshold: Number(adaptiveProfileRes.data?.overload_threshold) || 0.8,
+          overloadThreshold: 0.8,
         };
 
         // Build stats
