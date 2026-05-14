@@ -73,6 +73,7 @@ const Rankings = lazyWithRetry(() => import("./pages/Rankings"), "Rankings");
 const MedicalImageQuiz = lazyWithRetry(() => import("./pages/MedicalImageQuiz"), "MedicalImageQuiz");
 const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "PracticalExam");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
+const Enaflix = lazyWithRetry(() => import("./pages/Enaflix"), "Enaflix");
 const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixPage");
 
 const VideoLessonsExplore = lazyWithRetry(() => import("./pages/VideoLessonsExplore"), "VideoLessonsExplore");
@@ -146,7 +147,8 @@ const App = () => (
               <Route path="/bank-errors" element={<Navigate to="/dashboard/banco-erros" replace />} />
               <Route path="/performance" element={<Navigate to="/dashboard/analytics" replace />} />
               <Route path="/profile" element={<Navigate to="/dashboard/perfil" replace />} />
-              <Route path="/settings" element={<Navigate to="/dashboard/perfil" replace />} />
+<Route path="/settings" element={<Navigate to="/dashboard/perfil" replace />} />
+<Route path="/enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
               
               <Route path="/teacher" element={<Navigate to="/professor" replace />} />
               <Route path="/teacher/*" element={<Navigate to="/professor" replace />} />
@@ -169,8 +171,8 @@ const App = () => (
                 <Route path="desempenho" element={<Navigate to="/dashboard/analytics" replace />} />
                 <Route path="performance" element={<Navigate to="/dashboard/analytics" replace />} />
                 <Route path="configuracoes" element={<Settings />} />
-                <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
-                <Route path="enaflix" element={<Navigate to="/dashboard" replace />} />
+<Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
+<Route path="enaflix" element={<Enaflix />} />
                 
                 <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                 <Route path="planner" element={<SmartPlanner />} />

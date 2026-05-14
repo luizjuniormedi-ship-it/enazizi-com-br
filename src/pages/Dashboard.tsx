@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo, memo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudyNext } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
@@ -230,6 +230,36 @@ const Dashboard = () => {
       />
 
       <div className="enaflix-stagger space-y-16 pb-24">
+        <EnaflixRow title="Atalhos Rápidos">
+          <Link to="/dashboard/enaflix" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
+            <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+              <Play className="h-5 w-5 text-red-500" />
+            </div>
+            <div>
+              <p className="font-medium text-sm">ENAFLIX</p>
+              <p className="text-xs text-muted-foreground">Biblioteca de conteúdo</p>
+            </div>
+          </Link>
+          <Link to="/dashboard/flashcards" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
+            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-amber-500" />
+            </div>
+            <div>
+              <p className="font-medium text-sm">Flashcards</p>
+              <p className="text-xs text-muted-foreground">Repetição Espaçada</p>
+            </div>
+          </Link>
+          <Link to="/dashboard/simulados" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
+            <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="font-medium text-sm">Simulados</p>
+              <p className="text-xs text-muted-foreground">Provas & Questões</p>
+            </div>
+          </Link>
+        </EnaflixRow>
+
         {continueModules.length > 0 && (
           <EnaflixRow title="Continuar Estudando">
             {continueModules.map(m => (
