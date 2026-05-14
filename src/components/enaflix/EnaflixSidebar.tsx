@@ -45,16 +45,17 @@ const NAV_SECTIONS = [
   {
     title: "PANORAMA",
     items: [
-      { to: "/enaflix", label: "Início ENAFLIX", icon: Home },
-      { to: "/dashboard", label: "Hoje", icon: Calendar },
+      { to: "/dashboard", label: "Início", icon: Home },
+      { to: "/dashboard/planner", label: "Hoje (Planner)", icon: Calendar },
       { to: "/dashboard/analytics", label: "Meu Progresso", icon: BrainCircuit },
+      { to: "/dashboard/enaflix", label: "Biblioteca ENAFLIX", icon: MonitorPlay },
     ]
   },
   {
     title: "ESTUDAR",
     items: [
       { to: "/dashboard/sessao-estudo", label: "Missão do Dia", icon: PlayCircle },
-      { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: MonitorPlay },
+      { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: PlayCircle },
       { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },

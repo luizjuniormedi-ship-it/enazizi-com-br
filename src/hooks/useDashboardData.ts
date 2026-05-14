@@ -63,7 +63,7 @@ export const useDashboardData = () => {
     queryKey: ["dashboard-snapshot", user?.id],
     queryFn: () => user ? loadDashboardSnapshot(user.id) : null,
     enabled: !!user && snapshotEnabled,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 60, // Aumentado para 1 hora (snapshot é imutável na sessão)
   });
 
   return useQuery({
@@ -214,8 +214,8 @@ export const useDashboardData = () => {
       }
     },
     enabled: !!user && !!coreData,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 1000 * 60 * 30, // 30 minutos de cache para o cockpit
+    gcTime: 1000 * 60 * 60, // 1 hora de GC
     refetchOnWindowFocus: false,
     retry: 1,
   });

@@ -134,7 +134,8 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
 
           <nav className="hidden md:flex items-center gap-8 ml-4">
             {[
-              { label: "Início", path: "/enaflix" },
+              { label: "Dashboard", path: "/dashboard" },
+              { label: "ENAFLIX", path: "/dashboard/enaflix" },
               { label: "Planner", path: "/dashboard/planner" },
               { label: "Simulados", path: "/dashboard/simulados" },
               { label: "Flashcards", path: "/dashboard/flashcards" },

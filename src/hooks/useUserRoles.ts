@@ -28,8 +28,8 @@ export const useUserRoles = () => {
       };
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 1, // 1 minuto (role revogada persiste < 1min)
-    gcTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 60, // Aumentado para 1 hora (roles mudam raramente)
+    gcTime: 1000 * 60 * 120, // 2 horas de garbage collection
   });
 
   // Realtime subscription para detecção de mudanças de cargo no usuário logado
