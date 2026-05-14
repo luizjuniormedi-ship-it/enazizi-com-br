@@ -17,6 +17,9 @@ import {
   Video,
   Sparkles
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
