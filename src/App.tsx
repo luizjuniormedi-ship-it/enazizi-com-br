@@ -110,6 +110,8 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000,
       refetchOnWindowFocus: false,
       retry: 1,
+      // Performance optimization: prevent initial loading states for cached queries
+      refetchOnMount: false,
     },
   },
 });
