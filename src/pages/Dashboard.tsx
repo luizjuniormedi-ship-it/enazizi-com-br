@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo, memo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudyNext } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
@@ -27,7 +26,6 @@ import { MascotAvatar } from "@/components/mascot/MascotAvatar";
 import { MascotBubble } from "@/components/mascot/MascotBubble";
 import { useMascotState } from "@/components/mascot/useMascotState";
 
-
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 const PendingReviewsCard = lazy(() => import("@/components/dashboard/PendingReviewsCard"));
@@ -46,7 +44,7 @@ const Dashboard = () => {
   const isDebug = searchParams.get("debug") === "cockpit";
   
   const { user } = useAuth();
-  const { data: dashData, isLoading: dashLoading, error: dashError } = useDashboardData();
+  const { data: dashData, isLoading: dashLoading, error: dashError, refetch: refreshDash } = useDashboardData();
   const { data: studyNext, isLoading: missionLoading, error: missionError, refresh: refreshStudyNext } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading, error: snapError, refetch: refreshSnapshot } = useAnalyticsSnapshot();
   const enaflixUsage = useEnaflixUsage();
@@ -63,7 +61,6 @@ const Dashboard = () => {
       });
     }
   }, [dashLoading, dashData, triggerInteraction]);
-
 
   const continueModules = useMemo(() => {
     return recentIds
@@ -91,7 +88,6 @@ const Dashboard = () => {
         telemetryFiredRef.current = true;
         const loadTime = Date.now() - mountTimeRef.current;
         
-        // Registrar telemetria via pipeline unificado (Phase 14)
         import("@/integrations/supabase/client").then(({ supabase }) => {
           supabase.functions.invoke("unified-telemetry", {
             body: {
@@ -108,7 +104,6 @@ const Dashboard = () => {
           }).then();
         });
 
-        // Persistência leve
         sessionStorage.setItem("cockpit_partial_mode", "true");
         sessionStorage.setItem("cockpit_partial_reason", failedBlocks.join(","));
 
@@ -120,7 +115,6 @@ const Dashboard = () => {
     return () => clearTimeout(timer);
   }, [missionLoading, snapLoading, dashLoading, studyNext, snapshot, dashData, user]);
 
-  // Retry automático após 10s
   useEffect(() => {
     if (cockpitTimedOut && !retryFiredRef.current) {
       const retryTimer = setTimeout(() => {
@@ -133,14 +127,10 @@ const Dashboard = () => {
     }
   }, [cockpitTimedOut, studyNext, snapshot, refreshStudyNext, refreshSnapshot]);
 
-  // Limpar persistência quando tudo carregar
   useEffect(() => {
     if (studyNext && snapshot && dashData) {
       sessionStorage.removeItem("cockpit_partial_mode");
       sessionStorage.removeItem("cockpit_partial_reason");
-      if (telemetryFiredRef.current && import.meta.env.DEV) {
-        console.log(`[Cockpit Diagnostic] Full recovery complete at ${Date.now() - mountTimeRef.current}ms`);
-      }
     }
   }, [studyNext, snapshot, dashData]);
 
@@ -154,7 +144,7 @@ const Dashboard = () => {
     navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
   }, [missionLoading, studyNext, searchParams, navigate]);
 
-  const isDataMissing = !studyNext; // Only studyNext (CTA) is strictly critical for the layout
+  const isDataMissing = !studyNext;
   const initialLoading = isDataMissing && !cockpitTimedOut && missionLoading;
 
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
@@ -199,10 +189,37 @@ const Dashboard = () => {
       <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
 
-      {/* Debug Panel */}
       {debugPanel}
 
-      {/* Hero unificado — fonte única de CTA principal (deriva de useStudyNext) */}
+      {cockpitTimedOut && isDataMissing && (
+        <div className="mx-4 sm:mx-8 lg:mx-14 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <RefreshCw className="h-4 w-4 text-amber-500 animate-spin-slow" />
+            <p className="text-sm font-medium text-amber-200/80">
+              Algumas métricas ainda estão sincronizando. Você já pode estudar.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => {
+                refreshStudyNext();
+                refreshSnapshot();
+                refreshDash();
+              }}
+              className="text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors"
+            >
+              Tentar atualizar
+            </button>
+            <button 
+              onClick={() => navigate("/dashboard/sessao-estudo")}
+              className="text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors"
+            >
+              Iniciar sessão mesmo assim
+            </button>
+          </div>
+        </div>
+      )}
+
       <UnifiedMissionHero
         firstName={firstName}
         recommendationTitle={activeRec?.title}
@@ -212,10 +229,8 @@ const Dashboard = () => {
         adaptiveJustification={adaptiveState?.justification}
       />
 
-
       <div className="enaflix-stagger space-y-16 pb-24">
-        {/* Atividade Recente / Continuar — só renderiza com dados reais */}
-        {(continueModules.length > 0) && (
+        {continueModules.length > 0 && (
           <EnaflixRow title="Continuar Estudando">
             {continueModules.map(m => (
               <EnaflixContinueCard
@@ -228,10 +243,6 @@ const Dashboard = () => {
             ))}
           </EnaflixRow>
         )}
-
-        {/* "Temas Populares" e "Revisões Recomendadas" hardcoded foram removidos.
-            Substituições reais (derivadas de user_topic_profiles + FSRS due) virão
-            nas próximas fases. Não exibimos placeholders fake. */}
 
         <EnaflixRow title="Tutor IA & Co-Pilot">
            <EnaflixCinematicCard 
@@ -259,11 +270,9 @@ const Dashboard = () => {
                   Iniciar Conversa
                 </Enaflix3DButton>
               </div>
-
            </EnaflixCinematicCard>
         </EnaflixRow>
 
-        {/* Dashboard Modules Grid */}
         <div className="px-4 sm:px-8 lg:px-14">
           <EnaflixSectionTitle kicker="PAINEL DE CONTROLE" title="Módulos de Estudo" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
@@ -279,7 +288,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Analytics Section */}
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
           <div className="space-y-6">
             <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
@@ -294,6 +302,31 @@ const Dashboard = () => {
             </Suspense>
           </div>
         </div>
+
+        <div className="px-4 sm:px-8 lg:px-14 pb-12">
+          <EnaflixSectionTitle kicker="MÉTRICAS DETALHADAS" title="Estatísticas de Estudo" />
+          <div className="mt-6">
+            {dashData && <DashboardMetricsGrid stats={dashData.stats} metrics={dashData.metrics} />}
+          </div>
+        </div>
+      </div>
+
+      <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-2">
+        <MascotBubble speech={mascotSpeech} />
+        <MascotAvatar state={mascotState} size="lg" />
+      </div>
+    </div>
+  );
+};
+
+const LocalSectionSkeleton = () => (
+  <div className="p-6 rounded-[32px] bg-white/5 border border-white/10 space-y-4 animate-pulse">
+    <div className="h-4 w-1/3 bg-white/10 rounded-full" />
+    <div className="grid grid-cols-2 gap-4">
+      <div className="h-32 bg-white/5 rounded-2xl" />
+      <div className="h-32 bg-white/5 rounded-2xl" />
+    </div>
+  </div>
 );
 
 export default memo(Dashboard);
