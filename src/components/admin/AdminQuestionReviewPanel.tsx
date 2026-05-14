@@ -112,18 +112,29 @@ const AdminQuestionReviewPanel = () => {
 
   const handleAction = async (id: string, action: "approved" | "rejected") => {
     setActionLoading(id);
-    const { error } = await supabase.from("questions_bank")
-      .update({ review_status: action })
-      .eq("id", id);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: action === "approved" ? "Aprovada" : "Rejeitada" });
-      setQuestions(prev => prev.filter(q => q.id !== id));
-      setTotal(prev => prev - 1);
-      fetchCounts();
+    try {
+      const { error } = await supabase.from("questions_bank")
+        .update({ review_status: action })
+        .eq("id", id);
+      
+      if (error) {
+        console.error("Action error:", error);
+        toast({ 
+          title: "Erro na aprovação", 
+          description: error.message || "Você pode não ter permissão para esta ação.", 
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: action === "approved" ? "✅ Questão Aprovada" : "❌ Questão Rejeitada" });
+        setQuestions(prev => prev.filter(q => q.id !== id));
+        setTotal(prev => prev - 1);
+        fetchCounts();
+      }
+    } catch (err: any) {
+      toast({ title: "Erro sistêmico", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
     }
-    setActionLoading(null);
   };
 
   const handleBulkApprove = async () => {
