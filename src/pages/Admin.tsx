@@ -264,6 +264,10 @@ const Admin = ({ initialTab }: AdminProps) => {
     loadAuditLog();
   }, [loadData, loadAuditLog]);
 
+  useEffect(() => {
+    if (activeSection === "audit") loadAuditLog();
+  }, [activeSection, loadAuditLog]);
+
   const handleAction = useCallback(async (userId: string, fn: () => Promise<void>) => {
     setActionLoading(userId);
     try { 
