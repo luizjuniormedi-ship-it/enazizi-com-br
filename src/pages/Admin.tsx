@@ -642,7 +642,7 @@ const Admin = ({ initialTab }: AdminProps) => {
                   )}
 
                   {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} /></Suspense>}
-                  {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog logs={auditLogs} loading={auditLoading} onRefresh={loadAuditLog} /></Suspense>}
+                  {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} /></Suspense>}
                   {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
                   {activeSection === "tutor-qa" && <Suspense fallback={<PanelLoader />}><TutorQAPanel /></Suspense>}
 
