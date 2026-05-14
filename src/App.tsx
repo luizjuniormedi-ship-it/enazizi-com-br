@@ -137,6 +137,8 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/termos" element={<Terms />} />
               <Route path="/privacidade" element={<Privacy />} />
+              <Route path="/term" element={<Navigate to="/termos" replace />} />
+              <Route path="/privacy" element={<Navigate to="/privacidade" replace />} />
               
               <Route path="/chatgpt" element={<Navigate to="/dashboard/chatgpt" replace />} />
               <Route path="/mentor-ai" element={<Navigate to="/dashboard/chatgpt" replace />} />
