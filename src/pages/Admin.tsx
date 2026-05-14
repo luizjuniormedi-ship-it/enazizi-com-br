@@ -112,6 +112,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
         { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
         { key: "scraping", label: "Web Scraping", icon: Search },
+        { key: "harvester", label: "Exam Harvester", icon: Database },
+
       ],
     },
     {
