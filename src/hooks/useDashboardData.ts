@@ -63,7 +63,7 @@ export const useDashboardData = () => {
     queryKey: ["dashboard-snapshot", user?.id],
     queryFn: () => user ? loadDashboardSnapshot(user.id) : null,
     enabled: !!user && snapshotEnabled,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 60, // Aumentado para 1 hora (snapshot é imutável na sessão)
   });
 
   return useQuery({
