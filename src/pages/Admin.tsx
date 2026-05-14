@@ -73,6 +73,8 @@ const TutorLessonStructureDashboard = lazy(() => import("@/components/admin/Tuto
 const TutorVideoAuditPanel = lazy(() => import("@/components/admin/TutorVideoAuditPanel").then(m => ({ default: m.TutorVideoAuditPanel })));
 const KnowledgeBaseAdmin = lazy(() => import("@/components/admin/KnowledgeBaseAdmin").then(m => ({ default: m.KnowledgeBaseAdmin })));
 const TutorQAPanel = lazy(() => import("@/components/admin/TutorQAPanel"));
+const ExamHarvesterPanel = lazy(() => import("@/components/admin/ExamHarvesterPanel").then(m => ({ default: m.ExamHarvesterPanel })));
+
 
 
 // ─── Navigation structure ─────────────────────────────
@@ -110,6 +112,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
         { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
         { key: "scraping", label: "Web Scraping", icon: Search },
+        { key: "harvester", label: "Exam Harvester", icon: Database },
+
       ],
     },
     {
@@ -618,7 +622,9 @@ const Admin = ({ initialTab }: AdminProps) => {
                   {activeSection === "question-review" && <Suspense fallback={<PanelLoader />}><AdminQuestionReviewPanel /></Suspense>}
                   {activeSection === "image-review" && <Suspense fallback={<PanelLoader />}><AdminImageQuestionReviewPanel /></Suspense>}
                   {activeSection === "scraping" && <Suspense fallback={<PanelLoader />}><AdminWebScrapingPanel /></Suspense>}
-                  {activeSection === "pipeline" && <Suspense fallback={<PanelLoader />}><AdminPipelineMonitor /></Suspense>}
+                   {activeSection === "harvester" && <Suspense fallback={<PanelLoader />}><ExamHarvesterPanel /></Suspense>}
+                   {activeSection === "pipeline" && <Suspense fallback={<PanelLoader />}><AdminPipelineMonitor /></Suspense>}
+
                   {activeSection === "cinematic-engine" && <Suspense fallback={<PanelLoader />}><AdminCinematicEngine /></Suspense>}
                   {activeSection === "knowledge-base" && <KnowledgeBaseAdmin />}
                   {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}

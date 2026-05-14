@@ -14338,42 +14338,211 @@ export type Database = {
         }
         Relationships: []
       }
-      official_exam_files: {
+      official_exam_assets: {
         Row: {
-          checksum_sha256: string | null
+          asset_type: string | null
           created_at: string | null
-          file_name: string
-          file_url: string
           id: string
           metadata: Json | null
-          source_id: string | null
-          status: string | null
+          ocr_content: string | null
+          question_id: string | null
           storage_path: string | null
+        }
+        Insert: {
+          asset_type?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          ocr_content?: string | null
+          question_id?: string | null
+          storage_path?: string | null
+        }
+        Update: {
+          asset_type?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          ocr_content?: string | null
+          question_id?: string | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_exam_assets_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      official_exam_downloads: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          download_url: string
+          file_id: string | null
+          file_size: number | null
+          id: string
+          last_error: string | null
+          status: string | null
           updated_at: string | null
         }
         Insert: {
-          checksum_sha256?: string | null
+          attempts?: number | null
           created_at?: string | null
-          file_name: string
-          file_url: string
+          download_url: string
+          file_id?: string | null
+          file_size?: number | null
           id?: string
-          metadata?: Json | null
-          source_id?: string | null
+          last_error?: string | null
           status?: string | null
-          storage_path?: string | null
           updated_at?: string | null
         }
         Update: {
+          attempts?: number | null
+          created_at?: string | null
+          download_url?: string
+          file_id?: string | null
+          file_size?: number | null
+          id?: string
+          last_error?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_exam_downloads_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      official_exam_duplicates: {
+        Row: {
+          created_at: string | null
+          detection_method: string | null
+          duplicate_question_id: string | null
+          id: string
+          original_question_id: string | null
+          similarity_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          detection_method?: string | null
+          duplicate_question_id?: string | null
+          id?: string
+          original_question_id?: string | null
+          similarity_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          detection_method?: string | null
+          duplicate_question_id?: string | null
+          id?: string
+          original_question_id?: string | null
+          similarity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_exam_duplicates_duplicate_question_id_fkey"
+            columns: ["duplicate_question_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "official_exam_duplicates_original_question_id_fkey"
+            columns: ["original_question_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      official_exam_failures: {
+        Row: {
+          context: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          payload: Json | null
+          resolved: boolean | null
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          resolved?: boolean | null
+        }
+        Update: {
+          context?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          resolved?: boolean | null
+        }
+        Relationships: []
+      }
+      official_exam_files: {
+        Row: {
+          banca: string | null
+          checksum_sha256: string | null
+          created_at: string | null
+          exam_type: string | null
+          file_name: string
+          file_url: string
+          id: string
+          institution: string | null
+          metadata: Json | null
+          source_id: string | null
+          specialty: string | null
+          state: string | null
+          status: string | null
+          storage_path: string | null
+          updated_at: string | null
+          year: number | null
+        }
+        Insert: {
+          banca?: string | null
           checksum_sha256?: string | null
           created_at?: string | null
-          file_name?: string
-          file_url?: string
+          exam_type?: string | null
+          file_name: string
+          file_url: string
           id?: string
+          institution?: string | null
           metadata?: Json | null
           source_id?: string | null
+          specialty?: string | null
+          state?: string | null
           status?: string | null
           storage_path?: string | null
           updated_at?: string | null
+          year?: number | null
+        }
+        Update: {
+          banca?: string | null
+          checksum_sha256?: string | null
+          created_at?: string | null
+          exam_type?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          institution?: string | null
+          metadata?: Json | null
+          source_id?: string | null
+          specialty?: string | null
+          state?: string | null
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string | null
+          year?: number | null
         }
         Relationships: [
           {
@@ -14385,42 +14554,175 @@ export type Database = {
           },
         ]
       }
+      official_exam_gabaritos: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          exam_file_id: string | null
+          file_url: string | null
+          id: string
+          status: string | null
+          storage_path: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          exam_file_id?: string | null
+          file_url?: string | null
+          id?: string
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          exam_file_id?: string | null
+          file_url?: string | null
+          id?: string
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_exam_gabaritos_exam_file_id_fkey"
+            columns: ["exam_file_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      official_exam_ingestion_logs: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          details: Json | null
+          duration_ms: number | null
+          id: string
+          source_id: string | null
+          status: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          id?: string
+          source_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          duration_ms?: number | null
+          id?: string
+          source_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_exam_ingestion_logs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      official_exam_processing_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          id: string
+          item_id: string | null
+          item_type: string | null
+          priority: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          item_id?: string | null
+          item_type?: string | null
+          priority?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          item_id?: string | null
+          item_type?: string | null
+          priority?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       official_exam_questions: {
         Row: {
           alternativas: Json
+          comment: string | null
           confidence_score: number | null
           created_at: string | null
+          difficulty: string | null
           disciplina: string | null
+          embedding: string | null
           enunciado: string
           file_id: string | null
           id: string
+          incidence: number | null
+          level: string | null
           metadata: Json | null
           question_number: number | null
           resposta: string
+          specialty: string | null
+          sub_topic: string | null
         }
         Insert: {
           alternativas: Json
+          comment?: string | null
           confidence_score?: number | null
           created_at?: string | null
+          difficulty?: string | null
           disciplina?: string | null
+          embedding?: string | null
           enunciado: string
           file_id?: string | null
           id?: string
+          incidence?: number | null
+          level?: string | null
           metadata?: Json | null
           question_number?: number | null
           resposta: string
+          specialty?: string | null
+          sub_topic?: string | null
         }
         Update: {
           alternativas?: Json
+          comment?: string | null
           confidence_score?: number | null
           created_at?: string | null
+          difficulty?: string | null
           disciplina?: string | null
+          embedding?: string | null
           enunciado?: string
           file_id?: string | null
           id?: string
+          incidence?: number | null
+          level?: string | null
           metadata?: Json | null
           question_number?: number | null
           resposta?: string
+          specialty?: string | null
+          sub_topic?: string | null
         }
         Relationships: [
           {
@@ -14456,6 +14758,30 @@ export type Database = {
           name?: string
           updated_at?: string | null
           url?: string | null
+        }
+        Relationships: []
+      }
+      official_exam_telemetry: {
+        Row: {
+          created_at: string | null
+          event_name: string
+          id: string
+          metadata: Json | null
+          value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_name: string
+          id?: string
+          metadata?: Json | null
+          value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          event_name?: string
+          id?: string
+          metadata?: Json | null
+          value?: number | null
         }
         Relationships: []
       }
@@ -23592,6 +23918,7 @@ export type Database = {
         Returns: boolean
       }
       sync_cognitive_rhythm: { Args: { p_user_id: string }; Returns: undefined }
+      trigger_exam_harvester_scan: { Args: never; Returns: undefined }
       tutor_memory_adjust_quality: {
         Args: { _delta: number; _memory_id: string }
         Returns: undefined
