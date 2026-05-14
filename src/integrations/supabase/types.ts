@@ -9684,6 +9684,98 @@ export type Database = {
         }
         Relationships: []
       }
+      enaflix_content: {
+        Row: {
+          content_type: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          difficulty: string | null
+          duration_minutes: number | null
+          id: string
+          is_published: boolean | null
+          order_index: number | null
+          specialty: string
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          content_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_published?: boolean | null
+          order_index?: number | null
+          specialty: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          difficulty?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_published?: boolean | null
+          order_index?: number | null
+          specialty?: string
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      enaflix_progress: {
+        Row: {
+          content_id: string
+          created_at: string | null
+          id: string
+          progress_percent: number | null
+          user_id: string
+          watched: boolean | null
+          watched_at: string | null
+        }
+        Insert: {
+          content_id: string
+          created_at?: string | null
+          id?: string
+          progress_percent?: number | null
+          user_id: string
+          watched?: boolean | null
+          watched_at?: string | null
+        }
+        Update: {
+          content_id?: string
+          created_at?: string | null
+          id?: string
+          progress_percent?: number | null
+          user_id?: string
+          watched?: boolean | null
+          watched_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enaflix_progress_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "enaflix_content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enazizi_progress: {
         Row: {
           created_at: string
