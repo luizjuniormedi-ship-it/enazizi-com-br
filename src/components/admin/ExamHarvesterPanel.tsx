@@ -3,7 +3,7 @@ import {
   Search, Download, FileText, Database, AlertCircle, 
   CheckCircle2, Clock, Play, RefreshCw, BarChart3, 
   Settings, Layers, ExternalLink, Filter, ChevronRight,
-  ShieldCheck, Info, Bug, History, Trash2
+  ShieldCheck, Info, Bug, History, Trash2, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import {
   TableHeader, TableRow 
 } from "@/components/ui/table";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 export const ExamHarvesterPanel = () => {
   const { toast } = useToast();
