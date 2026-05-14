@@ -2898,6 +2898,51 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_guidelines: {
+        Row: {
+          created_at: string | null
+          entity: string
+          evidence_level: string | null
+          guideline_name: string
+          id: string
+          keywords: string[] | null
+          specialty: string | null
+          summary: string | null
+          updated_at: string | null
+          valid_until: string | null
+          version: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          entity: string
+          evidence_level?: string | null
+          guideline_name: string
+          id?: string
+          keywords?: string[] | null
+          specialty?: string | null
+          summary?: string | null
+          updated_at?: string | null
+          valid_until?: string | null
+          version?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          entity?: string
+          evidence_level?: string | null
+          guideline_name?: string
+          id?: string
+          keywords?: string[] | null
+          specialty?: string | null
+          summary?: string | null
+          updated_at?: string | null
+          valid_until?: string | null
+          version?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       clinical_quality_profiles: {
         Row: {
           average_quality: number | null
@@ -16628,20 +16673,27 @@ export type Database = {
       questions_bank: {
         Row: {
           batch_id: string | null
+          board_similarity_score: number | null
           classification_confidence: number | null
           classification_method: string | null
           classification_reviewed_by_human: boolean
           classified_at: string | null
+          clinical_density_score: number | null
           clinical_reasoning_depth: number | null
+          cognitive_complexity_score: number | null
           cognitive_quality_score: number | null
           correct_index: number
           cost_tokens: number | null
           cost_usd: number | null
           created_at: string
           difficulty: number
+          distractor_quality_score: number | null
           embedding_hash: string | null
           exam_bank_id: string | null
           explanation: string
+          guideline_recency_score: number | null
+          guideline_reference: string | null
+          guideline_year: number | null
           hallucination_risk_score: number | null
           id: string
           image_url: string | null
@@ -16649,6 +16701,7 @@ export type Database = {
           language: string | null
           lifecycle_state: string | null
           microtopic_id: string | null
+          official_exam_flag: boolean | null
           options: Json
           organization_id: string | null
           original_question_id: string | null
@@ -16666,25 +16719,33 @@ export type Database = {
           subtopic_id: string | null
           topic: string | null
           topic_id: string | null
+          tri_difficulty_score: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           batch_id?: string | null
+          board_similarity_score?: number | null
           classification_confidence?: number | null
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
           classified_at?: string | null
+          clinical_density_score?: number | null
           clinical_reasoning_depth?: number | null
+          cognitive_complexity_score?: number | null
           cognitive_quality_score?: number | null
           correct_index?: number
           cost_tokens?: number | null
           cost_usd?: number | null
           created_at?: string
           difficulty?: number
+          distractor_quality_score?: number | null
           embedding_hash?: string | null
           exam_bank_id?: string | null
           explanation: string
+          guideline_recency_score?: number | null
+          guideline_reference?: string | null
+          guideline_year?: number | null
           hallucination_risk_score?: number | null
           id?: string
           image_url?: string | null
@@ -16692,6 +16753,7 @@ export type Database = {
           language?: string | null
           lifecycle_state?: string | null
           microtopic_id?: string | null
+          official_exam_flag?: boolean | null
           options?: Json
           organization_id?: string | null
           original_question_id?: string | null
@@ -16709,25 +16771,33 @@ export type Database = {
           subtopic_id?: string | null
           topic?: string | null
           topic_id?: string | null
+          tri_difficulty_score?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           batch_id?: string | null
+          board_similarity_score?: number | null
           classification_confidence?: number | null
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
           classified_at?: string | null
+          clinical_density_score?: number | null
           clinical_reasoning_depth?: number | null
+          cognitive_complexity_score?: number | null
           cognitive_quality_score?: number | null
           correct_index?: number
           cost_tokens?: number | null
           cost_usd?: number | null
           created_at?: string
           difficulty?: number
+          distractor_quality_score?: number | null
           embedding_hash?: string | null
           exam_bank_id?: string | null
           explanation?: string
+          guideline_recency_score?: number | null
+          guideline_reference?: string | null
+          guideline_year?: number | null
           hallucination_risk_score?: number | null
           id?: string
           image_url?: string | null
@@ -16735,6 +16805,7 @@ export type Database = {
           language?: string | null
           lifecycle_state?: string | null
           microtopic_id?: string | null
+          official_exam_flag?: boolean | null
           options?: Json
           organization_id?: string | null
           original_question_id?: string | null
@@ -16752,6 +16823,7 @@ export type Database = {
           subtopic_id?: string | null
           topic?: string | null
           topic_id?: string | null
+          tri_difficulty_score?: number | null
           updated_at?: string
           user_id?: string
         }
