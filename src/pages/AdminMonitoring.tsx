@@ -21,6 +21,8 @@ import { InterventionEfficacyMonitor } from "@/components/admin/InterventionEffi
 import { AdaptivePathwaysLog } from "@/components/admin/AdaptivePathwaysLog";
 import { VideoRecommendationAuditTab } from "@/components/monitoring/VideoRecommendationAuditTab";
 import { AdaptiveAuditTab } from "@/components/monitoring/AdaptiveAuditTab";
+import { ScaleGovernanceTab } from "@/components/monitoring/ScaleGovernanceTab";
+import { Scale, Database } from "lucide-react";
 
 export default function AdminMonitoring() {
   const { session } = useAuth();
@@ -177,6 +179,10 @@ export default function AdminMonitoring() {
               <Brain className="h-3.5 w-3.5 text-primary" />
               Auditoria Cognitiva
             </TabsTrigger>
+            <TabsTrigger value="scale-governance" className="text-xs gap-1.5">
+              <Scale className="h-3.5 w-3.5 text-primary" />
+              Governança de Escala
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -211,6 +217,9 @@ export default function AdminMonitoring() {
           </TabsContent>
           <TabsContent value="cognitive-audit">
             <AdaptiveAuditTab />
+          </TabsContent>
+          <TabsContent value="scale-governance">
+            <ScaleGovernanceTab />
           </TabsContent>
         </Tabs>
       ) : (

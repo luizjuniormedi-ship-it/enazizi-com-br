@@ -1,6 +1,6 @@
 /**
- * Phase 2/3/3.5 AI helpers: cache, usage control, anti-repetition,
- * content logging, and study-next integration conventions.
+ * Phase 2/3/3.5/v13 AI helpers: cache, usage control, anti-repetition,
+ * content logging, cost governance, and scale governance.
  */
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
@@ -33,9 +33,6 @@ export async function extractUserId(req: Request): Promise<string | null> {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
     );
-    // Prefer getClaims (works with both legacy HS256 and new asymmetric JWT
-    // signing keys, and avoids an extra network hop). Fallback to getUser
-    // only if claims aren't available.
     const { data: claimsData, error: claimsError } = await sb.auth.getClaims(token);
     const sub = claimsData?.claims?.sub;
     if (!claimsError && typeof sub === "string" && sub.length > 0) return sub;
@@ -55,6 +52,8 @@ async function sha256(text: string): Promise<string> {
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
+
+export { sha256 };
 
 /** Deterministic hash from type + sorted payload */
 export async function buildCacheKey(
@@ -76,7 +75,86 @@ export async function buildCacheKey(
 /** Quick hash for content dedup (anti-repetition) */
 export async function contentHash(text: string): Promise<string> {
   const normalized = text.toLowerCase().replace(/\s+/g, " ").trim().slice(0, 500);
-  return (await sha256(normalized)).slice(0, 16);
+  return (await sha256(normalized)).slice(0, 32); // v13 uses longer hash for safety
+}
+
+// ── Cost Governance ──
+export async function trackAiCost(params: {
+  featureName: string;
+  modelName: string;
+  tokensInput: number;
+  tokensOutput: number;
+  costUsd: number;
+  metadata?: any;
+}): Promise<void> {
+  try {
+    const sb = getAdmin();
+    await sb.from("ai_cost_metrics").insert({
+      feature_name: params.featureName,
+      model_name: params.modelName,
+      tokens_input: params.tokensInput,
+      tokens_output: params.tokensOutput,
+      cost_usd: params.costUsd,
+      metadata: params.metadata,
+    });
+  } catch (e) {
+    console.warn("[trackAiCost] failed:", e);
+  }
+}
+
+// ── Question Lifecycle & Governance ──
+export type QuestionLifecycleState = 
+  | 'generated' 
+  | 'validating' 
+  | 'approved' 
+  | 'golden' 
+  | 'shadow_review' 
+  | 'quarantined' 
+  | 'deprecated' 
+  | 'archived';
+
+export async function updateQuestionLifecycle(
+  questionId: string, 
+  state: QuestionLifecycleState,
+  notes?: string
+): Promise<void> {
+  try {
+    const sb = getAdmin();
+    await sb.from("questions_bank")
+      .update({ 
+        lifecycle_state: state,
+        // Optional: add to an audit log if needed
+      })
+      .eq("id", questionId);
+      
+    if (notes) {
+      await sb.from("adaptive_governance_logs").insert({
+        question_id: questionId,
+        event_type: `lifecycle_transition_${state}`,
+        details: { notes }
+      });
+    }
+  } catch (e) {
+    console.warn("[updateQuestionLifecycle] failed:", e);
+  }
+}
+
+export async function triggerHumanAudit(
+  questionId: string, 
+  reason: 'random' | 'high_risk' | 'divergence',
+  divergenceScore?: number
+): Promise<void> {
+  try {
+    const sb = getAdmin();
+    await sb.from("human_audit_queue").insert({
+      question_id: questionId,
+      audit_reason: reason,
+      divergence_score: divergenceScore,
+      status: 'pending'
+    });
+  } catch (e) {
+    console.warn("[triggerHumanAudit] failed:", e);
+  }
 }
 
 // ── Cache (reuses ai_content_cache) ──
@@ -134,7 +212,6 @@ export async function setCache(
 }
 
 // ── Anti-repetition ──
-/** Check if content with same hash was generated for this user recently */
 export async function wasRecentlyGenerated(
   userId: string,
   hash: string,
@@ -255,14 +332,14 @@ const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const LIGHT_MODEL = "openai/gpt-5-mini";
 const HEAVY_MODEL = "openai/gpt-5";
 
-async function callAI(model: string, system: string, user: string, maxTokens: number): Promise<string> {
+async function callAI(model: string, system: string, user: string, maxTokens: number): Promise<{ content: string; tokensInput: number; tokensOutput: number }> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
   const res = await fetch(GATEWAY, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], max_tokens: maxTokens }),
+    body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], max_completion_tokens: maxTokens }),
   });
 
   if (!res.ok) {
@@ -274,15 +351,48 @@ async function callAI(model: string, system: string, user: string, maxTokens: nu
   }
 
   const json = await res.json();
-  return json.choices?.[0]?.message?.content || "";
+  return {
+    content: json.choices?.[0]?.message?.content || "",
+    tokensInput: json.usage?.prompt_tokens || 0,
+    tokensOutput: json.usage?.completion_tokens || 0
+  };
 }
 
-export function callLightAI(system: string, user: string): Promise<string> {
-  return callAI(LIGHT_MODEL, system, user, 1024);
+export async function callLightAI(system: string, user: string): Promise<string> {
+  const { content } = await callAI(LIGHT_MODEL, system, user, 1024);
+  return content;
 }
 
-export function callHeavyAI(system: string, user: string, maxTokens = 4096): Promise<string> {
-  return callAI(HEAVY_MODEL, system, user, maxTokens);
+export async function callHeavyAI(system: string, user: string, maxTokens = 4096): Promise<string> {
+  const { content } = await callAI(HEAVY_MODEL, system, user, maxTokens);
+  return content;
+}
+
+/** New v13 call with cost tracking */
+export async function callAIWithGovernance(
+  feature: string,
+  model: 'light' | 'heavy',
+  system: string,
+  user: string,
+  maxTokens = 4096
+): Promise<string> {
+  const modelName = model === 'light' ? LIGHT_MODEL : HEAVY_MODEL;
+  const { content, tokensInput, tokensOutput } = await callAI(modelName, system, user, maxTokens);
+  
+  // Cost estimation (GPT-4o style roughly)
+  const costInput = (tokensInput / 1_000_000) * (model === 'light' ? 0.15 : 5.00);
+  const costOutput = (tokensOutput / 1_000_000) * (model === 'light' ? 0.60 : 15.00);
+  const totalCost = costInput + costOutput;
+
+  await trackAiCost({
+    featureName: feature,
+    modelName,
+    tokensInput,
+    tokensOutput,
+    costUsd: totalCost
+  });
+
+  return content;
 }
 
 /** Parse JSON from AI response, handling markdown code blocks */
@@ -341,10 +451,6 @@ export function smartFallback(endpoint: string, theme: string): {
 }
 
 // ── Study-next integration conventions ──
-/**
- * Maps study-next recommendation types to suggested content endpoints.
- * This is a reference convention — study-next itself is not modified.
- */
 export const STUDY_NEXT_ACTION_MAP: Record<string, string[]> = {
   error_review: ["reinforce-error", "generate-adaptive-question"],
   review: ["summarize-topic", "explain-deep"],
@@ -363,3 +469,4 @@ export function handleAiError(e: unknown, context: string): Response {
   if (msg === "AI_CREDITS_EXHAUSTED") return jsonError("Créditos esgotados.", 402);
   return jsonError(`Erro: ${context}`, 500);
 }
+
