@@ -43,16 +43,11 @@ export interface DashboardMetrics {
   imageQuizAttempts: number;
   diagnosticCompleted: number;
   chatConversations: number;
-  // Fase Enterprise+ (Neuroanalytics)
   retentionScore?: number;
   fatigueScore?: number;
   engagementScore?: number;
   overloadThreshold?: number;
 }
-
-// [planner-unification-final] PlanJson removido — Dashboard não lê mais study_plans.
-// hasStudyPlan, subjects, subjectHours, totalStudyHours, todayTotal são derivados de daily_plans/daily_plan_tasks.
-// daysUntilExam é derivado de profiles.exam_date (via coreData).
 
 export const useDashboardData = () => {
   const { user } = useAuth();
@@ -64,12 +59,11 @@ export const useDashboardData = () => {
   todayStart.setHours(0, 0, 0, 0);
   const todayIso = todayStart.toISOString();
 
-  // Load snapshot as placeholder data to allow "Instant Dashboard"
   const { data: snapshot } = useQuery({
     queryKey: ["dashboard-snapshot", user?.id],
     queryFn: () => user ? loadDashboardSnapshot(user.id) : null,
     enabled: !!user && snapshotEnabled,
-    staleTime: 1000 * 60 * 10, // 10 mins
+    staleTime: 1000 * 60 * 10,
   });
 
   return useQuery({
@@ -84,7 +78,6 @@ export const useDashboardData = () => {
       const startTime = Date.now();
 
       try {
-        // [PHASE 4] Unified Snapshot via RPC
         const { data: unified, error: unifiedError } = await supabase.rpc('get_unified_dashboard_data', {
           p_user_id: userId,
           p_reset_at: resetAt || "1900-01-01T00:00:00Z",
@@ -100,7 +93,7 @@ export const useDashboardData = () => {
           errorsCount: cd.errorBankCount,
           pendingRevisoes: Number(uni.metrics?.pending_reviews || 0),
           simuladosCompleted: cd.examSessions?.length || 0,
-          discursivasCompleted: 0, // Simplified for MVP
+          discursivasCompleted: 0,
           gamificationStreak: Number(uni.metrics?.streak || 0),
           gamificationXp: cd.gamification?.xp || 0,
           gamificationLevel: cd.gamification?.level || 1,
@@ -120,21 +113,18 @@ export const useDashboardData = () => {
           overloadThreshold: 0.8,
         };
 
-        // Build stats
-        const tasks = tasksRes.data || [];
+        const tasks = uni.daily_plan?.tasks || [];
         const completedTasks = tasks.filter((t: any) => t.completed).length;
 
         const weekMap: Record<string, { hours: number; timestamp: number }> = {};
         for (const task of tasks) {
           if (!(task as any).completed) continue;
-          // [planner-unification] usar completed_at quando existir; fallback para created_at
           const refDate = (task as any).completed_at || (task as any).created_at;
           const date = new Date(refDate);
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
           weekStart.setHours(0, 0, 0, 0);
           const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
-          // [planner-unification] estimated_minutes substitui task_json.duration
           const minutes = (task as any).estimated_minutes ?? 60;
           const hours = minutes / 60;
           if (!weekMap[key]) weekMap[key] = { hours: 0, timestamp: weekStart.getTime() };
@@ -144,10 +134,7 @@ export const useDashboardData = () => {
           .sort((a, b) => a[1].timestamp - b[1].timestamp)
           .map(([week, { hours, timestamp }]) => ({ week, hours: Math.round(hours * 10) / 10, timestamp }));
 
-        // [planner-unification-final] hasStudyPlan agora vem de daily_plans (fonte viva).
-        const hasStudyPlan = !!dailyPlansRes.data;
-
-        // [planner-unification-final] subjects + subjectHours derivados de daily_plan_tasks (specialty/topic + estimated_minutes).
+        const hasStudyPlan = !!uni.daily_plan?.plan;
         const subjectHours: Record<string, number> = {};
         let totalStudyHours = 0;
         for (const t of tasks as any[]) {
@@ -159,7 +146,6 @@ export const useDashboardData = () => {
         }
         const subjects = Object.keys(subjectHours);
 
-        // [planner-unification-final] daysUntilExam vem de profiles.exam_date (coreData).
         let daysUntilExam: number | null = null;
         const examDateVal = cd.profile?.exam_date;
         if (examDateVal) {
@@ -167,24 +153,20 @@ export const useDashboardData = () => {
           if (diff > 0) daysUntilExam = Math.ceil(diff / (1000 * 60 * 60 * 24));
         }
 
-        const upcomingReviews = (reviewsRes.data || []).map((r: any) => ({
-          topic: r.flashcards?.topic || "Sem tópico",
-          next: r.next_review,
+        const upcomingReviews = (cd.revisoes || []).slice(0, 5).map((r: any) => ({
+          topic: r.tema_estudado?.tema || "Revisão",
+          next: r.data_revisao,
         }));
 
-        // [planner-unification-final] todayTotal/todayCompleted vêm de daily_plan_tasks do plano de hoje.
-        const todayPlanId = dailyPlansRes.data?.plan_date === new Date().toISOString().split("T")[0]
-          ? dailyPlansRes.data.id
-          : null;
-        const todayTasks = todayPlanId
-          ? (tasks as any[]).filter((t) => t.daily_plan_id === todayPlanId)
+        const todayPlan = uni.daily_plan?.plan;
+        const todayTasks = todayPlan?.plan_date === new Date().toISOString().split("T")[0]
+          ? tasks.filter((t: any) => t.daily_plan_id === todayPlan.id)
           : [];
-        const todayTotal = todayTasks.length || (dailyPlansRes.data?.total_blocks ?? 0);
         const completedToday = todayTasks.filter((t: any) => t.completed);
 
         const stats: DashboardStats = {
-          flashcards: flashcardsRes.count || 0,
-          uploads: uploadsRes.count || 0,
+          flashcards: Number(uni.flashcards_count || 0),
+          uploads: Number(uni.uploads_count || 0),
           completedTasks,
           totalTasks: tasks.length,
           totalStudyHours,
@@ -193,10 +175,10 @@ export const useDashboardData = () => {
           upcomingReviews,
           daysUntilExam,
           weeklyChart,
-          streak: gamData?.current_streak || 0,
+          streak: Number(uni.metrics?.streak || 0),
           todayCompleted: completedToday.length,
-          todayTotal,
-          questionsToday,
+          todayTotal: todayTasks.length || (todayPlan?.total_blocks ?? 0),
+          questionsToday: 0, // Placeholder
           hasStudyPlan,
         };
 
@@ -208,7 +190,6 @@ export const useDashboardData = () => {
           targetExams: cd.profile?.target_exams,
         };
 
-        // Write-through: persist snapshot for next fast-path
         saveDashboardSnapshot(userId, result);
         console.debug(`[Dashboard] Hydration complete in ${Date.now() - startTime}ms`, { traceId });
 
