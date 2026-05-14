@@ -74,7 +74,8 @@ const NAV_SECTIONS = [
       { to: "/dashboard/videoaulas", label: "Minhas Aulas", icon: LayoutDashboard },
       { to: "/dashboard/favoritos", label: "Favoritos", icon: Heart },
       { to: "/dashboard/historico", label: "Histórico", icon: History },
-      { to: "/dashboard/perfil", label: "Perfil", icon: User },
+      { to: "/dashboard/perfil", label: "Meu Perfil", icon: User },
+      { to: "/dashboard/uploads", label: "Meus Uploads", icon: Upload },
     ]
   }
 ];
@@ -172,8 +173,8 @@ export function EnaflixSidebar() {
             </div>
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--primary),0.5)]">ENAFLIX</span>
-            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">Cognitive v5</span>
+            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--primary),0.5)]">ENAZIZI</span>
+            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">Enterprise MVP</span>
           </div>
         </Link>
       </div>

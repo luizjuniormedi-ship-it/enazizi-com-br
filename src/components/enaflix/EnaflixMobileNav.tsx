@@ -12,10 +12,10 @@ import { motion } from "framer-motion";
 
 const MOBILE_ITEMS = [
   { to: "/enaflix", label: "Início", icon: Home },
-  { to: "/dashboard/sessao-estudo", label: "Tutor IA", icon: Brain },
+  { to: "/dashboard/sessao-estudo", label: "Missão", icon: Brain },
   { to: "/dashboard/sessao-estudo", label: "Estudar", icon: PlayCircle },
   { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
-  { to: "/dashboard/perfil", label: "Perfil", icon: User },
+  { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
 ];
 
 export function EnaflixMobileNav() {
