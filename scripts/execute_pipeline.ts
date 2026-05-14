@@ -1,6 +1,6 @@
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import OpenAI from "https://esm.sh/openai";
+import { createClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -39,21 +39,26 @@ async function generateQuestions(specialty: string, count: number) {
     ]
   }`;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-  });
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+    });
 
-  const data = JSON.parse(response.choices[0].message.content || '{"questions": []}');
-  return data.questions.map((q: any) => ({
-    ...q,
-    topic: specialty,
-    user_id: adminUserId,
-    is_global: true,
-    difficulty: 3 + Math.floor(Math.random() * 2), // 3 or 4
-    review_status: Math.random() > 0.8 ? "pending" : "approved" // Most approved, some pending for testing
-  }));
+    const data = JSON.parse(response.choices[0].message.content || '{"questions": []}');
+    return data.questions.map((q: any) => ({
+      ...q,
+      topic: specialty,
+      user_id: adminUserId,
+      is_global: true,
+      difficulty: 3 + Math.floor(Math.random() * 2), // 3 or 4
+      review_status: Math.random() > 0.8 ? "pending" : "approved" // Most approved, some pending for testing
+    }));
+  } catch (err) {
+    console.error(`Error generating for ${specialty}:`, err);
+    return [];
+  }
 }
 
 async function generateFlashcards(count: number) {
@@ -76,19 +81,24 @@ async function generateFlashcards(count: number) {
     ]
   }`;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-  });
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+    });
 
-  const data = JSON.parse(response.choices[0].message.content || '{"flashcards": []}');
-  return data.flashcards.map((f: any) => ({
-    ...f,
-    user_id: adminUserId,
-    is_global: true,
-    difficulty: 3
-  }));
+    const data = JSON.parse(response.choices[0].message.content || '{"flashcards": []}');
+    return data.flashcards.map((f: any) => ({
+      ...f,
+      user_id: adminUserId,
+      is_global: true,
+      difficulty: 3
+    }));
+  } catch (err) {
+    console.error(`Error generating flashcards:`, err);
+    return [];
+  }
 }
 
 async function run() {
@@ -97,6 +107,8 @@ async function run() {
 
   for (const spec of specialties) {
     const questions = await generateQuestions(spec, 40);
+    if (questions.length === 0) continue;
+    
     const { error } = await supabase.from('questions_bank').insert(questions);
     if (error) console.error(`Error in ${spec}:`, error);
     else {
@@ -106,9 +118,11 @@ async function run() {
   }
 
   const flashcards = await generateFlashcards(35);
-  const { error: fError } = await supabase.from('flashcards').insert(flashcards);
-  if (fError) console.error("Error in flashcards:", fError);
-  else console.log(`Inserted ${flashcards.length} flashcards.`);
+  if (flashcards.length > 0) {
+    const { error: fError } = await supabase.from('flashcards').insert(flashcards);
+    if (fError) console.error("Error in flashcards:", fError);
+    else console.log(`Inserted ${flashcards.length} flashcards.`);
+  }
 
   console.log(`Pipeline finished. Total questions: ${totalInserted}.`);
 }
