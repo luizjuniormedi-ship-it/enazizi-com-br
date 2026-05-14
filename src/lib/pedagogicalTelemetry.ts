@@ -279,6 +279,12 @@ class TelemetryService {
   }
 
   public async track(eventName: TelemetryEventName, properties: TelemetryProperties = {}) {
+    // 10% sampling for high-frequency events to save DB throughput
+    const highFreqEvents: TelemetryEventName[] = ['performance_vitals', 'scroll_depth' as any, 'idle_dashboard', 'tutor_message_sent'];
+    if (highFreqEvents.includes(eventName) && Math.random() > 0.1) {
+      return;
+    }
+
     try {
       const userId = await this.ensureUser();
       if (!userId) return; // sem usuário, não há como satisfazer RLS
