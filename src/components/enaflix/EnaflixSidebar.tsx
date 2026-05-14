@@ -55,7 +55,7 @@ const NAV_SECTIONS = [
     title: "ESTUDAR",
     items: [
       { to: "/dashboard/sessao-estudo", label: "Missão do Dia", icon: PlayCircle },
-      { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: MonitorPlay },
+      { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: PlayCircle },
       { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
