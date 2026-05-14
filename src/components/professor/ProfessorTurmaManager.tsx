@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Users, Plus, Search, Trash2, Edit2, UserPlus, UserMinus, Loader2, GraduationCap, X } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Users, Plus, Search, Trash2, Edit2, UserPlus, UserMinus, Loader2, GraduationCap, X, CheckSquare, Square, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { FACULDADES } from "@/constants/faculdades";
 
 interface Student {
   id: string;
@@ -36,8 +38,10 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
   const [formData, setFormData] = useState({ name: "", description: "" });
   const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
   
-  // Student search state
+  // Student search/filter state
   const [studentSearch, setStudentSearch] = useState("");
+  const [faculdadeFilter, setFaculdadeFilter] = useState<string>("all");
+  const [periodoFilter, setPeriodoFilter] = useState<string>("all");
   const [searchResults, setSearchResults] = useState<Student[]>([]);
   const [searchingStudents, setSearchingStudents] = useState(false);
 
@@ -58,26 +62,36 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
   }, [loadTurmas]);
 
   const handleSearchStudents = useCallback(async () => {
-    if (studentSearch.length < 3) return;
+    // We allow searching with just filters too, not only query string
     setSearchingStudents(true);
     try {
-      const res = await callAPI({ action: "search_students", query: studentSearch });
+      const res = await callAPI({ 
+        action: "get_students", 
+        query: studentSearch,
+        faculdades: faculdadeFilter === "all" ? [] : [faculdadeFilter],
+        periodos: periodoFilter === "all" ? [] : [parseInt(periodoFilter)],
+        limit: 100 // Load more for easier multi-selection
+      });
       setSearchResults(res.students || []);
     } catch (e) {
       console.error(e);
+      toast({ title: "Erro ao buscar alunos", variant: "destructive" });
     } finally {
       setSearchingStudents(false);
     }
-  }, [callAPI, studentSearch]);
+  }, [callAPI, studentSearch, faculdadeFilter, periodoFilter, toast]);
 
-  // Debounced search
+  // Trigger search when filters change or search query changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (studentSearch.length >= 3) handleSearchStudents();
-      else setSearchResults([]);
-    }, 400);
+      if (studentSearch.length >= 3 || faculdadeFilter !== "all" || periodoFilter !== "all") {
+        handleSearchStudents();
+      } else {
+        setSearchResults([]);
+      }
+    }, 500);
     return () => clearTimeout(timer);
-  }, [studentSearch, handleSearchStudents]);
+  }, [studentSearch, faculdadeFilter, periodoFilter, handleSearchStudents]);
 
   const handleSaveTurma = async () => {
     if (!formData.name.trim()) {
@@ -138,6 +152,14 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
     }
     setStudentSearch("");
     setSearchResults([]);
+  };
+
+  const addAllStudents = () => {
+    const newStudents = searchResults.filter(s => !selectedStudents.some(sel => sel.id === s.id));
+    if (newStudents.length > 0) {
+      setSelectedStudents([...selectedStudents, ...newStudents]);
+      toast({ title: `${newStudents.length} alunos adicionados` });
+    }
   };
 
   const removeStudent = (id: string) => {
@@ -285,8 +307,44 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
                 </div>
               )}
 
-              <div className="space-y-3 pt-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Adicionar Alunos</Label>
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Filter className="h-3 w-3" /> Filtrar e Adicionar Alunos
+                  </Label>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Faculdade</Label>
+                    <Select value={faculdadeFilter} onValueChange={setFaculdadeFilter}>
+                      <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-xl text-xs">
+                        <SelectValue placeholder="Todas" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0A0A0B] border-white/10">
+                        <SelectItem value="all">Todas</SelectItem>
+                        {FACULDADES.map((f) => (
+                          <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Período</Label>
+                    <Select value={periodoFilter} onValueChange={setPeriodoFilter}>
+                      <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-xl text-xs">
+                        <SelectValue placeholder="Todos" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0A0A0B] border-white/10">
+                        <SelectItem value="all">Todos</SelectItem>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
+                          <SelectItem key={p} value={String(p)} className="text-xs">{p}º período</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
@@ -299,23 +357,52 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
                 </div>
 
                 {searchResults.length > 0 && (
-                  <Card className="bg-[#121214] border-white/10 shadow-2xl">
+                  <Card className="bg-[#121214] border-white/10 shadow-2xl overflow-hidden">
+                    <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/5">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {searchResults.length} resultados encontrados
+                      </span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={addAllStudents}
+                        className="h-7 text-[10px] gap-1.5 hover:bg-primary/20 hover:text-primary font-bold uppercase"
+                      >
+                        <CheckSquare className="h-3 w-3" /> Adicionar Todos
+                      </Button>
+                    </div>
                     <ScrollArea className="h-48">
                       <div className="p-2 space-y-1">
-                        {searchResults.map((s) => (
-                          <button
-                            key={s.id}
-                            onClick={() => addStudent(s)}
-                            disabled={selectedStudents.some(sel => sel.id === s.id)}
-                            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 text-left"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{s.display_name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{s.email}</p>
-                            </div>
-                            <UserPlus className="h-4 w-4 text-primary shrink-0" />
-                          </button>
-                        ))}
+                        {searchResults.map((s) => {
+                          const isAlreadySelected = selectedStudents.some(sel => sel.id === s.id);
+                          return (
+                            <button
+                              key={s.id}
+                              onClick={() => !isAlreadySelected && addStudent(s)}
+                              disabled={isAlreadySelected}
+                              className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 text-left group"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{s.display_name}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <p className="text-[10px] text-muted-foreground truncate">{s.email}</p>
+                                  {s.periodo && (
+                                    <Badge variant="outline" className="h-4 px-1 text-[8px] border-white/10 text-muted-foreground">
+                                      {s.periodo}º
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              {isAlreadySelected ? (
+                                <Badge variant="secondary" className="h-6 bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">
+                                  Adicionado
+                                </Badge>
+                              ) : (
+                                <UserPlus className="h-4 w-4 text-primary shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     </ScrollArea>
                   </Card>
