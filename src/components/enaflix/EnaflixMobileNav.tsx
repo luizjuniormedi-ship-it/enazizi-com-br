@@ -6,7 +6,8 @@ import {
   PlayCircle, 
   User,
   MonitorPlay,
-  LayoutGrid
+  LayoutGrid,
+  Clock
 } from "lucide-react";
 import { motion } from "framer-motion";
 
