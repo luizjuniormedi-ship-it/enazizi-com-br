@@ -85,6 +85,13 @@ serve(async (req) => {
       qualityProfile = profile;
     }
 
+    // Fetch v12 Quality Lock Baseline
+    const { data: baseline } = await sb
+      .from("cognitive_quality_baseline")
+      .select("*")
+      .eq("is_active", true)
+      .single();
+
     if (messages.length === 0 && !generationContext) {
       return errorResponse("Campo 'messages' ou 'generationContext' é obrigatório.", 400);
     }
@@ -131,7 +138,10 @@ FORMATO JSON (Array puro):
     "options": ["A", "B", "C", "D"],
     "correct_index": 0,
     "topic": "Especialidade - Subtema",
-    "explanation": "..."
+    "explanation": "...",
+    "quality_score": 0.95,
+    "hallucination_risk": 0.05,
+    "clinical_depth": 5
   }
 ]`;
 
@@ -312,12 +322,29 @@ Regras:
     // Add difficulty instruction
     if (difficulty) {
       const diffMap: Record<string, string> = {
-        facil: "Gere questões de nível FÁCIL: conceitos diretos, apresentações clássicas e típicas, sem pegadinhas. Foco em conhecimento básico e reconhecimento de padrões clínicos clássicos.",
+        facil: "Gere questões de nível FÁCIL: conceitos diretos, apresentações clássicas e típicas, sem pegadinhas.",
         intermediario: "Gere questões de nível INTERMEDIÁRIO (padrão REVALIDA/ENAMED): diagnósticos diferenciais reais, pacientes com comorbidades.",
         dificil: "Gere questões de nível AVANÇADO (padrão ENAMED/ENARE com pegadinhas): apresentações ATÍPICAS, múltiplas comorbidades, dilemas de conduta.",
         misto: "Mescle: 20% intermediárias (REVALIDA), 80% avançadas/expert (ENARE/USP). PROIBIDO nível fácil ou intermediário simples.",
       };
       systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
+    }
+
+    // PHASE 12: QUALITY LOCK & GOLDEN REFERENCE
+    if (baseline) {
+      systemPrompt += `\n\n=== QUALITY LOCK (v12) ===
+Você DEVE seguir a baseline de qualidade:
+- Cognitive Score Mínimo: ${baseline.quality_thresholds?.min_cognitive_score || 0.85}
+- Clinical Depth Mínimo: ${baseline.avg_clinical_depth || 4.5}
+- Hallucination Risk Máximo: ${baseline.quality_thresholds?.max_hallucination_risk || 0.1}
+
+Sua resposta deve ser comparada internamente com o "Golden Standard":
+- Casos clínicos densos (>450 chars).
+- Explicações que analisam cada alternativa.
+- Justificativa clara para a resposta correta baseada em diretrizes 2024.
+- Uso de referências bibliográficas reais.
+
+Se a questão for superficial, será REJEITADA automaticamente.`;
     }
 
     // Camada de Alias e Resolução de Banca
