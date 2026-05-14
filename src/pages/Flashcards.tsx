@@ -17,6 +17,7 @@ import {
   FlipVertical, Loader2, Brain, GraduationCap,
   Download, Zap, Clock, Award, Maximize2, Minimize2,
   MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap, Sparkles, ChevronLeft,
+  LayoutGrid
 } from "lucide-react";
 import { CinematicHero } from "@/components/cinematic";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -321,19 +322,25 @@ const Flashcards = () => {
         />
       </div>
 
-        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-3 gap-6">
           <EnaflixActionCard
-            title="Gerar novos Flashcards"
-            description="Use a IA para criar novos cards a partir de temas médicos ou materiais de estudo."
+            title="Gerar Flashcards"
+            description="Use a IA para criar novos cards a partir de temas médicos."
             icon={Sparkles}
             variant="primary"
-            onClick={() => navigate("/dashboard/gerar-flashcards")}
+            onClick={() => handleGenerateFromBank(true)}
           />
           <EnaflixActionCard
             title="Importar Conteúdo"
-            description="Adicione seus próprios materiais em PDF ou texto para gerar revisões."
+            description="Adicione seus próprios materiais em PDF ou texto."
             icon={DatabaseZap}
             onClick={() => navigate("/dashboard/uploads")}
+          />
+          <EnaflixActionCard
+            title="Simulados"
+            description="Pratique com questões reais de residência."
+            icon={LayoutGrid}
+            onClick={() => navigate("/dashboard/simulados")}
           />
         </div>
       </div>
