@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Lock, Loader2, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Mail, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -8,29 +8,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { motion } from "framer-motion";
 
-const ResetPassword = () => {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+const ForgotPassword = () => {
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/reset-password",
+      });
 
       if (error) {
         toast({
@@ -41,14 +31,13 @@ const ResetPassword = () => {
       } else {
         toast({
           title: "Sucesso",
-          description: "Senha alterada com sucesso! Você já pode entrar.",
+          description: "Se o email existir, você receberá um link de recuperação",
         });
-        navigate("/login");
       }
     } catch (err) {
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao atualizar sua senha.",
+        description: "Ocorreu um erro ao processar sua solicitação.",
         variant: "destructive",
       });
     } finally {
@@ -66,37 +55,22 @@ const ResetPassword = () => {
         className="w-full max-w-md z-10"
       >
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Nova Senha</h1>
-          <p className="text-white/40 font-medium">Crie uma nova senha segura para sua conta</p>
+          <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Esqueci minha senha</h1>
+          <p className="text-white/40 font-medium">Recupere o acesso à sua conta</p>
         </div>
 
         <div className="card-pixar p-8 bg-[#050508]/60 border-white/10 backdrop-blur-2xl shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-white/40">Nova Senha</label>
+              <label className="text-xs font-black uppercase tracking-widest text-white/40">Email</label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                 <Input 
-                  type="password" 
-                  placeholder="••••••••" 
+                  type="email" 
+                  placeholder="seu@email.com" 
                   className="pl-12 h-12" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-white/40">Confirmar Senha</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                <Input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  className="pl-12 h-12" 
-                  value={confirmPassword} 
-                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
                   required 
                 />
               </div>
@@ -106,10 +80,10 @@ const ResetPassword = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Atualizando...
+                  Enviando...
                 </>
               ) : (
-                "Redefinir Senha"
+                "Enviar link de recuperação"
               )}
             </Button>
 
@@ -127,4 +101,4 @@ const ResetPassword = () => {
   );
 };
 
-export default ResetPassword;
+export default ForgotPassword;
