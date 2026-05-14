@@ -58,7 +58,17 @@ const Settings = () => {
         <p className="text-muted-foreground">Personalize sua experiência no ENAZIZI</p>
       </div>
 
-      {/* Aparência removida pois o app é 100% dark mode por design */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Moon className="h-4 w-4" /> Aparência</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>Tema escuro</Label>
+            <Switch checked={theme === "dark"} onCheckedChange={toggleTheme} />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

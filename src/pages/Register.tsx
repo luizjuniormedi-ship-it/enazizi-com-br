@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
@@ -31,12 +31,8 @@ const Register = () => {
   const [periodo, setPeriodo] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signUp, user } = useAuth();
+  const { signUp } = useAuth();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true });
-  }, [user, navigate]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();

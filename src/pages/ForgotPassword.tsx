@@ -56,10 +56,10 @@ const ForgotPassword = () => {
       >
         <div className="text-center mb-10">
           <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Esqueci minha senha</h1>
-          <p className="text-white/70 font-medium">Recupere o acesso à sua conta</p>
+          <p className="text-white/40 font-medium">Recupere o acesso à sua conta</p>
         </div>
 
-        <div className="card-pixar p-8 bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl">
+        <div className="card-pixar p-8 bg-[#050508]/60 border-white/10 backdrop-blur-2xl shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-white/40">Email</label>
