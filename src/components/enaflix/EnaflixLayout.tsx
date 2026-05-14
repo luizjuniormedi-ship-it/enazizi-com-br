@@ -2,11 +2,11 @@ import { ReactNode } from "react";
 import { EnaflixSidebar } from "./EnaflixSidebar";
 import { EnaflixMobileNav } from "./EnaflixMobileNav";
 import { EnaflixOverlayNav } from "./EnaflixOverlayNav";
-// motion/AnimatePresence removidos: transição de rota é feita por CinematicRouteTransition
 import { useLocation, useNavigate } from "react-router-dom";
 import { EnaflixBackgroundFX } from "./EnaflixBackgroundFX";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
+import { cn } from "@/lib/utils";
 
 interface Props {
   children: ReactNode;
