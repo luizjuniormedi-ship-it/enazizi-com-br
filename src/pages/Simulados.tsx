@@ -666,6 +666,52 @@ const Simulados = () => {
   };
 
   const handleFinish = async (answers: Record<number, number>, flagged: number[]) => {
+    clearInterval(elapsedSecondsRef.current);
+
+    if (user) {
+      const elapsed = startTimeRef.current
+        ? Math.round((new Date().getTime() - startTimeRef.current.getTime()) / 60000)
+        : 0;
+
+      const areaResults: Record<string, { correct: number; total: number }> = {};
+      questions.forEach((q, i) => {
+        if (!areaResults[q.topic]) areaResults[q.topic] = { correct: 0, total: 0 };
+        areaResults[q.topic].total++;
+        if (answers[i] === q.correct) areaResults[q.topic].correct++;
+      });
+
+      const correctCount = Object.values(answers).filter((ans, idx) => ans === questions[idx]?.correct).length;
+      const finalScore = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
+
+      try {
+        const { error: insertErr } = await supabase.from("exam_sessions").insert({
+          user_id: user.id,
+          title: `Simulado - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
+          total_questions: questions.length,
+          time_limit_minutes: questions.length * 3, // Default 3 min per question
+          status: "finished",
+          finished_at: new Date().toISOString(),
+          answers_json: answers as any,
+          results_json: areaResults as any,
+          score: finalScore,
+        });
+        if (insertErr) throw insertErr;
+
+        try {
+          await addXp(XP_REWARDS.simulado_completed);
+        } catch (xpErr) {
+          console.error("XP error (non-fatal):", xpErr);
+        }
+      } catch (err) {
+        console.error("Erro ao salvar simulado:", err);
+        toast({
+          title: "Aviso",
+          description: "Simulado finalizado, mas não foi possível salvar o histórico. Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+      }
+    }
+
     setFinalAnswers(answers);
     setFlaggedQuestions(flagged);
     setPhase("finished");
