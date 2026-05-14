@@ -85,6 +85,13 @@ serve(async (req) => {
       qualityProfile = profile;
     }
 
+    // Fetch v12 Quality Lock Baseline
+    const { data: baseline } = await sb
+      .from("cognitive_quality_baseline")
+      .select("*")
+      .eq("is_active", true)
+      .single();
+
     if (messages.length === 0 && !generationContext) {
       return errorResponse("Campo 'messages' ou 'generationContext' é obrigatório.", 400);
     }
