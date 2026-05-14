@@ -170,7 +170,11 @@ function PanelLoader() {
   );
 }
 
-const Admin = () => {
+interface AdminProps {
+  initialTab?: string;
+}
+
+const Admin = ({ initialTab }: AdminProps) => {
   const { session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -178,7 +182,7 @@ const Admin = () => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [activeSection, setActiveSection] = useState("overview");
+  const [activeSection, setActiveSection] = useState(initialTab || "overview");
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {

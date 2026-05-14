@@ -54,6 +54,7 @@ const MedicalReviewer = lazyWithRetry(() => import("./pages/MedicalReviewer"), "
 const InterviewSimulator = lazyWithRetry(() => import("./pages/InterviewSimulator"), "InterviewSimulator");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "NotFound");
 const AnamnesisTrainer = lazyWithRetry(() => import("./pages/AnamnesisTrainer"), "AnamnesisTrainer");
+const Settings = lazyWithRetry(() => import("./pages/Settings"), "Settings");
 const Install = lazyWithRetry(() => import("./pages/Install"), "Install");
 const StudyGuides = lazyWithRetry(() => import("./pages/StudyGuides"), "StudyGuides");
 const MedicalChronicles = lazyWithRetry(() => import("./pages/MedicalChronicles"), "MedicalChronicles");
@@ -167,7 +168,7 @@ const App = () => (
                 <Route path="revisoes" element={<Navigate to="/dashboard/cronograma" replace />} />
                 <Route path="desempenho" element={<Navigate to="/dashboard/analytics" replace />} />
                 <Route path="performance" element={<Navigate to="/dashboard/analytics" replace />} />
-                <Route path="configuracoes" element={<Navigate to="/dashboard/perfil" replace />} />
+                <Route path="configuracoes" element={<Settings />} />
                 <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
                 <Route path="enaflix" element={<Navigate to="/dashboard" replace />} />
                 
@@ -217,12 +218,40 @@ const App = () => (
               </Route>
               <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
-                <Route path="users" element={<Navigate to="/admin?tab=users-all" replace />} />
+                <Route path="users" element={<Admin initialTab="users-all" />} />
+                <Route path="usuarios" element={<Admin initialTab="users-all" />} />
+                <Route path="pending" element={<Admin initialTab="users-pending" />} />
+                <Route path="whatsapp" element={<Admin initialTab="integrations" />} />
+                <Route path="audit" element={<Admin initialTab="audit" />} />
+                <Route path="logs" element={<Admin initialTab="audit" />} />
+                <Route path="stats" element={<Admin initialTab="overview" />} />
+                <Route path="analytics" element={<Admin initialTab="overview" />} />
+                <Route path="settings" element={<Admin initialTab="features" />} />
+                <Route path="flags" element={<Admin initialTab="features" />} />
+                <Route path="health" element={<Admin initialTab="intelligence-overview" />} />
+                <Route path="system" element={<Admin initialTab="features" />} />
+                <Route path="content" element={<Admin initialTab="uploads" />} />
+                <Route path="conteudo" element={<Admin initialTab="uploads" />} />
+                <Route path="questions" element={<Admin initialTab="ingestion" />} />
+                <Route path="questoes" element={<Admin initialTab="ingestion" />} />
+                <Route path="ingestion" element={<Admin initialTab="ingestion" />} />
+                <Route path="ingestao" element={<Admin initialTab="ingestion" />} />
+                <Route path="telemetry" element={<Admin initialTab="intelligence-overview" />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="ceo" element={<AdminCEO />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
+                <Route path="simulados" element={<ProfessorDashboard initialTab="simulados" />} />
+                <Route path="plantao" element={<ProfessorDashboard initialTab="operacional" />} />
+                <Route path="video" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="sala" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="alunos" element={<ProfessorDashboard initialTab="operacional" />} />
+                <Route path="turmas" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="analytics" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="relatorios" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="questoes" element={<ProfessorDashboard initialTab="simulados" />} />
+                <Route path="materiais" element={<ProfessorDashboard initialTab="mentoria" />} />
                 <Route path="simulados/novo" element={<NewProfessorSimuladoPage />} />
                 <Route path="simulados/editar/:id" element={<NewProfessorSimuladoPage />} />
               </Route>
@@ -249,6 +278,15 @@ const App = () => (
               <Route path="/daily-plan" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+              <Route path="/teacher/dashboard" element={<Navigate to="/professor" replace />} />
+              <Route path="/teacher/turmas" element={<Navigate to="/professor/turmas" replace />} />
+              <Route path="/teacher/alunos" element={<Navigate to="/professor/alunos" replace />} />
+              <Route path="/teacher/simulados" element={<Navigate to="/professor/simulados" replace />} />
+              <Route path="/teacher/questoes" element={<Navigate to="/professor/questoes" replace />} />
+              <Route path="/teacher/relatorios" element={<Navigate to="/professor/relatorios" replace />} />
+              <Route path="/teacher/materiais" element={<Navigate to="/professor/materiais" replace />} />
+              <Route path="/teacher/plantao" element={<Navigate to="/professor/plantao" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
