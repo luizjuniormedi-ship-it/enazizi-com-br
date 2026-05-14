@@ -38,13 +38,17 @@ const ProfessorBIPanel = lazy(() => import("@/components/professor/ProfessorBIPa
 const SimuladoResultsDialog = lazy(() => import("@/components/professor/SimuladoResultsDialog"));
 const SimuladoQuestionsDialog = lazy(() => import("@/components/professor/SimuladoQuestionsDialog").then(m => ({ default: m.SimuladoQuestionsDialog })));
 
-const ProfessorDashboard = () => {
+interface ProfessorDashboardProps {
+  initialTab?: string;
+}
+
+const ProfessorDashboard = ({ initialTab }: ProfessorDashboardProps) => {
   const { session } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [simulados, setSimulados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("operacional");
+  const [activeTab, setActiveTab] = useState(initialTab || "operacional");
   const [activeSub, setActiveSub] = useState<string>("risco");
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
@@ -114,7 +118,20 @@ const ProfessorDashboard = () => {
 
   useEffect(() => {
     loadSimulados();
-  }, [loadSimulados]);
+    
+    // Auto-select first sub-tab if initialTab was provided
+    if (initialTab) {
+      const subMapping: Record<string, string> = {
+        operacional: "risco",
+        turmas: "minhas",
+        simulados: "lista",
+        mentoria: "temas",
+        auditoria: "trace",
+      };
+      const sub = subMapping[initialTab];
+      if (sub) setActiveSub(sub);
+    }
+  }, [loadSimulados, initialTab]);
 
   const handleViewResults = useCallback(
     async (simulado: any) => {
