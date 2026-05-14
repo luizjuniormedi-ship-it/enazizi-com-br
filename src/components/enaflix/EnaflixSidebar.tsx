@@ -53,14 +53,11 @@ const NAV_SECTIONS = [
   {
     title: "ESTUDAR",
     items: [
-      { to: "/dashboard/sessao-estudo", label: "Continuar", icon: PlayCircle },
+      { to: "/dashboard/sessao-estudo", label: "Missão do Dia", icon: PlayCircle },
       { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: MonitorPlay },
-      { to: "/dashboard/flashcards", label: "Revisões", icon: Clock },
+      { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
-      { to: "/dashboard/image-quiz", label: "Questões com Imagem", icon: ImageIcon },
-      { to: "/dashboard/feynman", label: "Método Feynman", icon: Brain },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
-      { to: "/dashboard/mnemonico", label: "Mnemônicos", icon: BrainCircuit },
       { to: "/dashboard/sessao-estudo", label: "Tutor IA", icon: Sparkles, badge: "Premium" },
     ]
   },
@@ -77,7 +74,8 @@ const NAV_SECTIONS = [
       { to: "/dashboard/videoaulas", label: "Minhas Aulas", icon: LayoutDashboard },
       { to: "/dashboard/favoritos", label: "Favoritos", icon: Heart },
       { to: "/dashboard/historico", label: "Histórico", icon: History },
-      { to: "/dashboard/perfil", label: "Perfil", icon: User },
+      { to: "/dashboard/perfil", label: "Meu Perfil", icon: User },
+      { to: "/dashboard/uploads", label: "Meus Uploads", icon: Upload },
     ]
   }
 ];
@@ -175,8 +173,8 @@ export function EnaflixSidebar() {
             </div>
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--primary),0.5)]">ENAFLIX</span>
-            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">Cognitive v5</span>
+            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--primary),0.5)]">ENAZIZI</span>
+            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">Enterprise MVP</span>
           </div>
         </Link>
       </div>
