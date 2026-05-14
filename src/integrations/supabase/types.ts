@@ -960,6 +960,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_cost_metrics: {
+        Row: {
+          cost_usd: number | null
+          created_at: string | null
+          feature_name: string
+          id: string
+          metadata: Json | null
+          model_name: string
+          tokens_input: number | null
+          tokens_output: number | null
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string | null
+          feature_name: string
+          id?: string
+          metadata?: Json | null
+          model_name: string
+          tokens_input?: number | null
+          tokens_output?: number | null
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string | null
+          feature_name?: string
+          id?: string
+          metadata?: Json | null
+          model_name?: string
+          tokens_input?: number | null
+          tokens_output?: number | null
+        }
+        Relationships: []
+      }
       ai_enterprise_usage_logs: {
         Row: {
           actor_key: string | null
@@ -10838,6 +10871,42 @@ export type Database = {
         }
         Relationships: []
       }
+      governance_queues: {
+        Row: {
+          batch_id: string
+          created_at: string | null
+          error_log: string | null
+          id: string
+          payload: Json | null
+          priority: number | null
+          queue_type: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string | null
+          error_log?: string | null
+          id?: string
+          payload?: Json | null
+          priority?: number | null
+          queue_type: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string | null
+          error_log?: string | null
+          id?: string
+          payload?: Json | null
+          priority?: number | null
+          queue_type?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       governance_thresholds: {
         Row: {
           category: string
@@ -11010,6 +11079,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "prompt_performance_analytics"
             referencedColumns: ["prompt_id"]
+          },
+        ]
+      }
+      human_audit_queue: {
+        Row: {
+          audit_notes: string | null
+          audit_reason: string | null
+          auditor_id: string | null
+          created_at: string | null
+          divergence_score: number | null
+          id: string
+          question_id: string | null
+          status: string | null
+        }
+        Insert: {
+          audit_notes?: string | null
+          audit_reason?: string | null
+          auditor_id?: string | null
+          created_at?: string | null
+          divergence_score?: number | null
+          id?: string
+          question_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          audit_notes?: string | null
+          audit_reason?: string | null
+          auditor_id?: string | null
+          created_at?: string | null
+          divergence_score?: number | null
+          id?: string
+          question_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "human_audit_queue_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -16425,6 +16535,7 @@ export type Database = {
       }
       questions_bank: {
         Row: {
+          batch_id: string | null
           classification_confidence: number | null
           classification_method: string | null
           classification_reviewed_by_human: boolean
@@ -16432,8 +16543,11 @@ export type Database = {
           clinical_reasoning_depth: number | null
           cognitive_quality_score: number | null
           correct_index: number
+          cost_tokens: number | null
+          cost_usd: number | null
           created_at: string
           difficulty: number
+          embedding_hash: string | null
           exam_bank_id: string | null
           explanation: string
           hallucination_risk_score: number | null
@@ -16441,6 +16555,7 @@ export type Database = {
           image_url: string | null
           is_global: boolean | null
           language: string | null
+          lifecycle_state: string | null
           microtopic_id: string | null
           options: Json
           organization_id: string | null
@@ -16462,6 +16577,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          batch_id?: string | null
           classification_confidence?: number | null
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
@@ -16469,8 +16585,11 @@ export type Database = {
           clinical_reasoning_depth?: number | null
           cognitive_quality_score?: number | null
           correct_index?: number
+          cost_tokens?: number | null
+          cost_usd?: number | null
           created_at?: string
           difficulty?: number
+          embedding_hash?: string | null
           exam_bank_id?: string | null
           explanation: string
           hallucination_risk_score?: number | null
@@ -16478,6 +16597,7 @@ export type Database = {
           image_url?: string | null
           is_global?: boolean | null
           language?: string | null
+          lifecycle_state?: string | null
           microtopic_id?: string | null
           options?: Json
           organization_id?: string | null
@@ -16499,6 +16619,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          batch_id?: string | null
           classification_confidence?: number | null
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
@@ -16506,8 +16627,11 @@ export type Database = {
           clinical_reasoning_depth?: number | null
           cognitive_quality_score?: number | null
           correct_index?: number
+          cost_tokens?: number | null
+          cost_usd?: number | null
           created_at?: string
           difficulty?: number
+          embedding_hash?: string | null
           exam_bank_id?: string | null
           explanation?: string
           hallucination_risk_score?: number | null
@@ -16515,6 +16639,7 @@ export type Database = {
           image_url?: string | null
           is_global?: boolean | null
           language?: string | null
+          lifecycle_state?: string | null
           microtopic_id?: string | null
           options?: Json
           organization_id?: string | null
@@ -19269,6 +19394,48 @@ export type Database = {
         }
         Relationships: []
       }
+      telemetry_aggregates: {
+        Row: {
+          aggregate_type: string | null
+          avg_value: number | null
+          count_value: number | null
+          created_at: string | null
+          dimension_name: string | null
+          dimension_value: string | null
+          end_time: string
+          id: string
+          metric_name: string
+          start_time: string
+          sum_value: number | null
+        }
+        Insert: {
+          aggregate_type?: string | null
+          avg_value?: number | null
+          count_value?: number | null
+          created_at?: string | null
+          dimension_name?: string | null
+          dimension_value?: string | null
+          end_time: string
+          id?: string
+          metric_name: string
+          start_time: string
+          sum_value?: number | null
+        }
+        Update: {
+          aggregate_type?: string | null
+          avg_value?: number | null
+          count_value?: number | null
+          created_at?: string | null
+          dimension_name?: string | null
+          dimension_value?: string | null
+          end_time?: string
+          id?: string
+          metric_name?: string
+          start_time?: string
+          sum_value?: number | null
+        }
+        Relationships: []
+      }
       telemetry_events: {
         Row: {
           device_type: string | null
@@ -19448,6 +19615,24 @@ export type Database = {
           standard_error?: number | null
           theta_value?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      topic_distribution_stats: {
+        Row: {
+          last_generated_at: string | null
+          question_count: number | null
+          topic: string
+        }
+        Insert: {
+          last_generated_at?: string | null
+          question_count?: number | null
+          topic: string
+        }
+        Update: {
+          last_generated_at?: string | null
+          question_count?: number | null
+          topic?: string
         }
         Relationships: []
       }
