@@ -138,7 +138,10 @@ FORMATO JSON (Array puro):
     "options": ["A", "B", "C", "D"],
     "correct_index": 0,
     "topic": "Especialidade - Subtema",
-    "explanation": "..."
+    "explanation": "...",
+    "quality_score": 0.95,
+    "hallucination_risk": 0.05,
+    "clinical_depth": 5
   }
 ]`;
 
