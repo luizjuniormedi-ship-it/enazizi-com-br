@@ -119,8 +119,9 @@ const Flashcards = () => {
       const ownCards = ownRes.data || [];
       const globalCards = globalRes.data || [];
       const ownIds = new Set(ownCards.map(c => c.id));
-      const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
-        .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
+      const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))];
+      // Note: Removed restrictive isMedicalContent filter here to avoid "zeroing" valid cards.
+      // We rely on the generation process to ensure quality.
       setAllCards(merged);
 
       const stateMap = new Map<string, FsrsReviewState>();
