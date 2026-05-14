@@ -31,6 +31,7 @@ const Flashcards = lazyWithRetry(() => import("./pages/Flashcards"), "Flashcards
 const QuestionsBank = lazyWithRetry(() => import("./pages/QuestionsBank"), "QuestionsBank");
 const Simulados = lazyWithRetry(() => import("./pages/Simulados"), "Simulados");
 const MnemonicGenerator = lazyWithRetry(() => import("./pages/MnemonicStudioPage"), "MnemonicStudioPage");
+const Uploads = lazyWithRetry(() => import("./pages/Uploads"), "Uploads");
 const QuestionGenerator = lazyWithRetry(() => import("./pages/QuestionGenerator"), "QuestionGenerator");
 const ContentSummarizer = lazyWithRetry(() => import("./pages/ContentSummarizer"), "ContentSummarizer");
 const MotivationalCoach = lazyWithRetry(() => import("./pages/MotivationalCoach"), "MotivationalCoach");
