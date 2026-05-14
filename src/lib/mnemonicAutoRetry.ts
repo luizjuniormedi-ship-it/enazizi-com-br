@@ -46,10 +46,10 @@ export function isValidMnemonicResult(
   const cena = String(data.cena_visual ?? "").trim();
   const score = Number(data.score_final ?? 0);
 
-  if (frase.length < 5) return false; // More lenient
-  if (explicacao.length < 15) return false; // More lenient
+  if (frase.length < 6) return false;
+  if (explicacao.length < 20) return false;
   if (score <= 0) return false;
-  if (options.requireScene && cena.length < 6) return false; // More lenient scene length
+  if (options.requireScene && cena.length < 12) return false;
 
   // Eco literal: frase é igual à junção dos termos
   // Quando rodamos em modo automático (termos vazios no input do usuário),

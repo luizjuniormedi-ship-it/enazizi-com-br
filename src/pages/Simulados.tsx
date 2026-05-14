@@ -769,17 +769,7 @@ const Simulados = () => {
 
           {showConfigStep && configToVerify && (
             <div className="w-full max-w-3xl mx-auto">
-              <div className="glass-card p-6 sm:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 border-amber-500/30">
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-6">
-                  <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-                    <Info className="h-5 w-5 text-amber-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black uppercase tracking-widest text-amber-500">Confirmação de Blueprint</h3>
-                    <p className="text-xs text-white/60">Ajuste os parâmetros oficiais ou clique em iniciar para carregar a prova.</p>
-                  </div>
-                </div>
-                
+              <div className="glass-card p-6 sm:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <SimuladoSetup
                   inlineMode={true}
                   onStart={(config) => handleStart({ ...config, forceStart: true })}
