@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo, memo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudyNext } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
