@@ -23918,6 +23918,7 @@ export type Database = {
         Returns: boolean
       }
       sync_cognitive_rhythm: { Args: { p_user_id: string }; Returns: undefined }
+      trigger_exam_harvester_scan: { Args: never; Returns: undefined }
       tutor_memory_adjust_quality: {
         Args: { _delta: number; _memory_id: string }
         Returns: undefined
