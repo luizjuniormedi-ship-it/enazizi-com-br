@@ -90,16 +90,15 @@ const DailyPlan = () => {
   // ── Load today's data from Planner tables ──
   useEffect(() => {
     if (!user) return;
-    let cancelled = false;
     const loadToday = async () => {
-      // BR timezone (America/Sao_Paulo) – fixes "today" para usuários após 21h BRT
-      const today = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "America/Sao_Paulo",
-        year: "numeric", month: "2-digit", day: "2-digit",
-      }).format(new Date());
-
       try {
         setLoading(true);
+        // BR timezone (America/Sao_Paulo) – fixes "today" para usuários após 21h BRT
+        const today = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Sao_Paulo",
+          year: "numeric", month: "2-digit", day: "2-digit",
+        }).format(new Date());
+
         const [reviewsRes, attemptsRes, todayTemasRes, profileRes] = await Promise.all([
           supabase
             .from("revisoes")
@@ -127,7 +126,10 @@ const DailyPlan = () => {
             .maybeSingle(),
         ]);
 
-        if (cancelled) return;
+        if (reviewsRes.error) throw reviewsRes.error;
+        if (attemptsRes.error) throw attemptsRes.error;
+        if (todayTemasRes.error) throw todayTemasRes.error;
+        if (profileRes.error) throw profileRes.error;
 
         const userDailyMinutes = Math.round((profileRes.data?.daily_study_hours || 4) * 60);
         setDailyMinutes(userDailyMinutes);
@@ -155,7 +157,8 @@ const DailyPlan = () => {
             supabase.from("revisoes").select("tema_id").eq("user_id", user.id).eq("status", "concluida").gt("created_at", resetAt || "1900-01-01T00:00:00Z").in("tema_id", temaIds),
           ]);
 
-          if (cancelled) return;
+          if (temasRes.error) throw temasRes.error;
+          if (doneReviewsRes.error) throw doneReviewsRes.error;
 
           const reviewCounts = new Map<string, number>();
           for (const r of (doneReviewsRes.data || [])) {
@@ -206,7 +209,6 @@ const DailyPlan = () => {
         const reviewedTemaIds = new Set((reviewsRes.data || []).map(r => r.tema_id));
         const { data: completedReviewTemas } = await supabase
           .from("revisoes").select("tema_id").eq("user_id", user.id).eq("status", "concluida");
-        if (cancelled) return;
         const completedTemaIds = new Set((completedReviewTemas || []).map(r => r.tema_id));
         const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id) && !completedTemaIds.has(t.id));
 
@@ -227,25 +229,21 @@ const DailyPlan = () => {
         setOverflowTopics(extraTopics);
         setMasteryData(mMap);
       } catch (err) {
-        console.error("[DailyPlan.loadToday] failed:", err);
-        if (!cancelled) {
-          // Fallback seguro: zera estados para evitar tela quebrada
-          setScheduledReviews([]);
-          setOverflowReviews([]);
-          setTodayTopics([]);
-          setOverflowTopics([]);
-          toast({
-            title: "Não conseguimos carregar seu plano",
-            description: "Tente recarregar a página em instantes.",
-            variant: "destructive",
-          });
-        }
+        console.error("Erro ao carregar plano do dia:", err);
+        setScheduledReviews([]);
+        setOverflowReviews([]);
+        setTodayTopics([]);
+        setOverflowTopics([]);
+        toast({
+          title: "Não conseguimos carregar seu plano",
+          description: "Tente recarregar a página em instantes.",
+          variant: "destructive",
+        });
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
     };
     loadToday();
-    return () => { cancelled = true; };
   }, [user, location.key, resetAt, toast]);
 
   // ── Navigation helpers with studyContext ──

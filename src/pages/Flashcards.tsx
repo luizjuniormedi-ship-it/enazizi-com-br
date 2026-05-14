@@ -104,29 +104,45 @@ const Flashcards = () => {
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    const [ownRes, globalRes, fsrsRes] = await Promise.all([
-      supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
-      supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
-      supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
-    ]);
-    const ownCards = ownRes.data || [];
-    const globalCards = globalRes.data || [];
-    const ownIds = new Set(ownCards.map(c => c.id));
-    const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
-      .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
-    setAllCards(merged);
+    setLoading(true);
+    try {
+      const [ownRes, globalRes, fsrsRes] = await Promise.all([
+        supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
+        supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(10000),
+        supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
+      ]);
 
-    const stateMap = new Map<string, FsrsReviewState>();
-    (fsrsRes.data || []).forEach((r: any) => stateMap.set(r.card_ref_id, { due: r.due, stability: r.stability, state: r.state }));
-    setFsrsStates(stateMap);
+      if (ownRes.error) throw ownRes.error;
+      if (globalRes.error) throw globalRes.error;
+      if (fsrsRes.error) throw fsrsRes.error;
 
-    const now = new Date().toISOString();
-    const due = merged.filter((c) => {
-      const fsrs = stateMap.get(c.id);
-      return !fsrs || fsrs.due <= now;
-    });
-    setDueCards(due);
-    setLoading(false);
+      const ownCards = ownRes.data || [];
+      const globalCards = globalRes.data || [];
+      const ownIds = new Set(ownCards.map(c => c.id));
+      const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
+        .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
+      setAllCards(merged);
+
+      const stateMap = new Map<string, FsrsReviewState>();
+      (fsrsRes.data || []).forEach((r: any) => stateMap.set(r.card_ref_id, { due: r.due, stability: r.stability, state: r.state }));
+      setFsrsStates(stateMap);
+
+      const now = new Date().toISOString();
+      const due = merged.filter((c) => {
+        const fsrs = stateMap.get(c.id);
+        return !fsrs || fsrs.due <= now;
+      });
+      setDueCards(due);
+    } catch (err) {
+      console.error("Erro ao carregar flashcards:", err);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os flashcards. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -250,37 +266,57 @@ const Flashcards = () => {
     const card = allCards.find(c => c.id === cardId);
     if (!card) return;
 
-    const updatedCard = await fsrsReview("flashcard", cardId, rating);
-    const scheduledDays = Math.round(updatedCard.scheduled_days);
-    const isCorrect = rating !== Rating.Again;
+    try {
+      const updatedCard = await fsrsReview("flashcard", cardId, rating);
+      const scheduledDays = Math.round(updatedCard.scheduled_days);
+      const isCorrect = rating !== Rating.Again;
 
-    await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
-    if (card.topic) {
-      await updateDomainMap(user.id, [{ topic: card.topic, correct: isCorrect }]);
-    }
-    if (rating === Rating.Again && card.topic) {
-      await logErrorToBank({
-        userId: user.id,
-        tema: card.topic || "Flashcard",
-        tipoQuestao: "flashcard",
-        conteudo: card.question,
-        motivoErro: `Resposta do aluno: "${userAnswer}" — Resposta correta: "${card.answer}"`,
-        categoriaErro: "conceito",
+      await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
+      if (card.topic) {
+        await updateDomainMap(user.id, [{ topic: card.topic, correct: isCorrect }]);
+      }
+      if (rating === Rating.Again && card.topic) {
+        await logErrorToBank({
+          userId: user.id,
+          tema: card.topic || "Flashcard",
+          tipoQuestao: "flashcard",
+          conteudo: card.question,
+          motivoErro: `Resposta do aluno: "${userAnswer}" — Resposta correta: "${card.answer}"`,
+          categoriaErro: "conceito",
+        });
+      }
+
+      const labels: Record<string, string> = {
+        [Rating.Again]: "Revisar em breve",
+        [Rating.Good]: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
+        [Rating.Easy]: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
+      };
+      toast({ title: labels[rating] || "Revisado" });
+    } catch (err) {
+      console.error("Review error:", err);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar a revisão.",
+        variant: "destructive",
       });
     }
-
-    const labels: Record<string, string> = {
-      [Rating.Again]: "Revisar em breve",
-      [Rating.Good]: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
-      [Rating.Easy]: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
-    };
-    toast({ title: labels[rating] || "Revisado" });
   };
 
   const handleDelete = async (cardId: string) => {
-    await supabase.from("flashcards").delete().eq("id", cardId);
-    setAllCards(prev => prev.filter(c => c.id !== cardId));
-    setDueCards(prev => prev.filter(c => c.id !== cardId));
+    try {
+      const { error } = await supabase.from("flashcards").delete().eq("id", cardId);
+      if (error) throw error;
+      setAllCards(prev => prev.filter(c => c.id !== cardId));
+      setDueCards(prev => prev.filter(c => c.id !== cardId));
+      toast({ title: "Flashcard removido" });
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o flashcard.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFinish = (stats: { correct: number; wrong: number; skipped: number }) => {
