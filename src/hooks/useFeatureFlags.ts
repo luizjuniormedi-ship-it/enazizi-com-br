@@ -138,8 +138,8 @@ export const useFeatureFlags = () => {
       return data as SystemFlag[];
     },
     enabled: !!user,
-    staleTime: 2 * 60 * 1000, // 2 min cache
-    gcTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 min cache
+    gcTime: 15 * 60 * 1000,
     retry: 1,
   });
 
