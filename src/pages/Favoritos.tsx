@@ -13,10 +13,12 @@ export default function Favoritos() {
     if (!user) return;
     const load = async () => {
       try {
-        const { data } = await supabase
-          .from("user_favorites" as any)
-          .select("*, enaflix_content(*)" as any)
-          .eq("user_id" as any, user.id);
+        const { data, error } = await (supabase as any)
+          .from("user_favorites")
+          .select("*, enaflix_content(*)")
+          .eq("user_id", user.id);
+        
+        if (error) throw error;
         setFavorites(data || []);
       } catch (err) {
         console.error("Erro ao carregar favoritos:", err);
