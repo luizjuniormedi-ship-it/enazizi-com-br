@@ -179,6 +179,10 @@ export default function AdminMonitoring() {
               <Brain className="h-3.5 w-3.5 text-primary" />
               Auditoria Cognitiva
             </TabsTrigger>
+            <TabsTrigger value="scale-governance" className="text-xs gap-1.5">
+              <Scale className="h-3.5 w-3.5 text-primary" />
+              Governança de Escala
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
