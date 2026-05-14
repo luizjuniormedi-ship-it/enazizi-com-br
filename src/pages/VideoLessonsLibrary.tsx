@@ -124,13 +124,23 @@ const VideoLessonsLibrary = () => {
   const specialties = Array.from(new Set(lessons?.map(l => (l as any).specialty) || []));
 
   return (
-    <div className="container mx-auto p-6 space-y-8 animate-in fade-in duration-500 bg-[#0a0a12] text-white min-h-screen">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Biblioteca de Videoaulas IA v1.5
+    <div className="pb-32 pt-12 space-y-12 relative min-h-screen overflow-x-hidden">
+      <EnaflixBackgroundFX intensity="medium" />
+      
+      <div className="px-4 sm:px-8 lg:px-14 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3"
+          >
+            <div className="h-2 w-10 bg-gradient-to-r from-primary to-accent rounded-full" />
+            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Minha Biblioteca</span>
+          </motion.div>
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-white leading-none">
+            Minhas <span className="gradient-text">Videoaulas</span>
           </h1>
-          <p className="text-muted-foreground text-lg">Conteúdo médico multimodal com Tutor IA e FSRS integrado.</p>
+          <p className="text-white/50 text-lg max-w-2xl font-medium">Conteúdo médico multimodal com Tutor IA e FSRS integrado.</p>
         </div>
         <div className="flex gap-2">
           <Badge variant="secondary" className="px-3 py-1 gap-1 cursor-pointer" onClick={() => navigate("/dashboard/mission")}>
