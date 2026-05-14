@@ -118,7 +118,20 @@ const ProfessorDashboard = ({ initialTab }: ProfessorDashboardProps) => {
 
   useEffect(() => {
     loadSimulados();
-  }, [loadSimulados]);
+    
+    // Auto-select first sub-tab if initialTab was provided
+    if (initialTab) {
+      const subMapping: Record<string, string> = {
+        operacional: "risco",
+        turmas: "minhas",
+        simulados: "lista",
+        mentoria: "temas",
+        auditoria: "trace",
+      };
+      const sub = subMapping[initialTab];
+      if (sub) setActiveSub(sub);
+    }
+  }, [loadSimulados, initialTab]);
 
   const handleViewResults = useCallback(
     async (simulado: any) => {
