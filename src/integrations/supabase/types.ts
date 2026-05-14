@@ -10750,6 +10750,36 @@ export type Database = {
         }
         Relationships: []
       }
+      fsrs_parameters: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          retention_request: number | null
+          updated_at: string | null
+          user_id: string | null
+          weights: number[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          retention_request?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          weights?: number[] | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          retention_request?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          weights?: number[] | null
+        }
+        Relationships: []
+      }
       fsrs_review_log: {
         Row: {
           card_id: string
