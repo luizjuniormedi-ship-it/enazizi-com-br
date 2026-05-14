@@ -73,6 +73,8 @@ const TutorLessonStructureDashboard = lazy(() => import("@/components/admin/Tuto
 const TutorVideoAuditPanel = lazy(() => import("@/components/admin/TutorVideoAuditPanel").then(m => ({ default: m.TutorVideoAuditPanel })));
 const KnowledgeBaseAdmin = lazy(() => import("@/components/admin/KnowledgeBaseAdmin").then(m => ({ default: m.KnowledgeBaseAdmin })));
 const TutorQAPanel = lazy(() => import("@/components/admin/TutorQAPanel"));
+const ExamHarvesterPanel = lazy(() => import("@/components/admin/ExamHarvesterPanel").then(m => ({ default: m.ExamHarvesterPanel })));
+
 
 
 // ─── Navigation structure ─────────────────────────────
