@@ -9,7 +9,7 @@ const adminUserId = "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023";
 const spec = process.argv[2] || "Cardiologia";
 
 async function run() {
-  const prompt = `Gere 38 questões de residência médica para a especialidade ${spec}.
+  const prompt = `Gere 20 questões de residência médica para a especialidade ${spec}.
   ENARE/USP/SUS-SP 2025.
   Retorne um JSON: {"questions": [{"statement": "...", "options": ["...", "...", "...", "..."], "correct_index": 0, "explanation": "...", "source": "ENARE 2025"}]}`;
 
