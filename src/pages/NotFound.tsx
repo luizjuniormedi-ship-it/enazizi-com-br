@@ -1,4 +1,5 @@
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 
 const NotFound = () => {
@@ -9,26 +10,22 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center space-y-4">
-        <h1 className="text-6xl font-bold text-primary">404</h1>
-        <p className="text-xl text-muted-foreground">Página não encontrada</p>
-        <p className="text-sm text-muted-foreground">
-          A página que você procura não existe ou foi movida.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <a
-            href="https://enazizi.com"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            Ir para enazizi.com
-          </a>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-6 py-2.5 text-sm font-medium hover:bg-accent transition-colors"
-          >
-            Voltar ao início
-          </a>
+    <div className="flex min-h-screen items-center justify-center bg-[#050508] relative p-6">
+      <div className="text-center space-y-6 relative z-10">
+        <h1 className="text-9xl font-black text-primary/20 tracking-tighter">404</h1>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Página não encontrada</h2>
+          <p className="text-white/40 font-medium max-w-xs mx-auto">
+            A página que você procura não existe ou foi movida.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+          <Button asChild className="h-12 px-8 rounded-xl font-black uppercase tracking-widest text-xs">
+            <Link to="/dashboard">Ir para o Dashboard</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-12 px-8 rounded-xl font-black uppercase tracking-widest text-xs border-white/10 text-white/60 hover:text-white">
+            <Link to="/">Voltar ao início</Link>
+          </Button>
         </div>
       </div>
     </div>

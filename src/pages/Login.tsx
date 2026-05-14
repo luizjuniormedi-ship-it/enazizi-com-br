@@ -263,9 +263,9 @@ const Login = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-black uppercase tracking-widest text-white/40">Senha</label>
-                    <button type="button" onClick={() => setForgotMode(true)} className="text-[10px] font-bold text-primary hover:text-white transition-colors uppercase tracking-wider">
-                      Esqueci a senha
-                    </button>
+                    <Link to="/forgot-password" className="text-[10px] font-bold text-primary hover:text-white transition-colors uppercase tracking-wider hover:underline">
+                      Esqueci minha senha
+                    </Link>
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />

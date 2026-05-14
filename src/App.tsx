@@ -57,6 +57,9 @@ const AnamnesisTrainer = lazyWithRetry(() => import("./pages/AnamnesisTrainer"),
 const Install = lazyWithRetry(() => import("./pages/Install"), "Install");
 const StudyGuides = lazyWithRetry(() => import("./pages/StudyGuides"), "StudyGuides");
 const MedicalChronicles = lazyWithRetry(() => import("./pages/MedicalChronicles"), "MedicalChronicles");
+const ForgotPassword = lazyWithRetry(() => import("./pages/ForgotPassword"), "ForgotPassword");
+const Terms = lazyWithRetry(() => import("./pages/Terms"), "Terms");
+const Privacy = lazyWithRetry(() => import("./pages/Privacy"), "Privacy");
 const FeynmanTrainer = lazyWithRetry(() => import("./pages/ContentSummarizer"), "ContentSummarizer");
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
@@ -119,11 +122,55 @@ const App = () => (
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
-               <Route path="/login" element={<Login />} />
-               <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
-               <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth" element={<Navigate to="/login" replace />} />
+              <Route path="/signup" element={<Navigate to="/register" replace />} />
+              <Route path="/pricing" element={<Navigate to="/#pricing" replace />} />
+              
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/termos" element={<Terms />} />
+              <Route path="/privacidade" element={<Privacy />} />
+              
+              <Route path="/chatgpt" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/mentor-ai" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/ai-mentor" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/study" element={<Navigate to="/dashboard/cronograma" replace />} />
+              <Route path="/study-session" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/simulations" element={<Navigate to="/dashboard/simulados" replace />} />
+              <Route path="/questions" element={<Navigate to="/dashboard/questoes" replace />} />
+              <Route path="/planner" element={<Navigate to="/dashboard/cronograma" replace />} />
+              <Route path="/flashcards" element={<Navigate to="/dashboard/flashcards" replace />} />
+              <Route path="/errors" element={<Navigate to="/dashboard/banco-erros" replace />} />
+              <Route path="/bank-errors" element={<Navigate to="/dashboard/banco-erros" replace />} />
+              <Route path="/performance" element={<Navigate to="/dashboard/analytics" replace />} />
+              <Route path="/profile" element={<Navigate to="/dashboard/perfil" replace />} />
+              <Route path="/settings" element={<Navigate to="/dashboard/perfil" replace />} />
+              
+              <Route path="/teacher" element={<Navigate to="/professor" replace />} />
+              <Route path="/teacher/*" element={<Navigate to="/professor" replace />} />
+
+              <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
+                <Route path="home" element={<Navigate to="/dashboard" replace />} />
+                <Route path="estudar" element={<Navigate to="/dashboard/chatgpt" replace />} />
+                <Route path="sessao-estudo" element={<Navigate to="/dashboard/chatgpt" replace />} />
+                <Route path="tutor" element={<Navigate to="/dashboard/chatgpt" replace />} />
+                <Route path="mentor" element={<Navigate to="/dashboard/chatgpt" replace />} />
+                <Route path="chat" element={<Navigate to="/dashboard/chatgpt" replace />} />
+                <Route path="simulado" element={<Navigate to="/dashboard/simulados" replace />} />
+                <Route path="error-bank" element={<Navigate to="/dashboard/banco-erros" replace />} />
+                <Route path="planner" element={<Navigate to="/dashboard/cronograma" replace />} />
+                <Route path="plano-estudos" element={<Navigate to="/dashboard/cronograma" replace />} />
+                <Route path="revisoes" element={<Navigate to="/dashboard/cronograma" replace />} />
+                <Route path="desempenho" element={<Navigate to="/dashboard/analytics" replace />} />
+                <Route path="performance" element={<Navigate to="/dashboard/analytics" replace />} />
+                <Route path="configuracoes" element={<Navigate to="/dashboard/perfil" replace />} />
+                <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
+                <Route path="enaflix" element={<Navigate to="/dashboard" replace />} />
+                
                 <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                 <Route path="planner" element={<SmartPlanner />} />
                 <Route path="sessao-estudo" element={<StudySession />} />
