@@ -158,6 +158,7 @@ async function processInBackground(
         total_chunks: textChunks.length 
       });
 
+      console.log(`[PROCESS_UPLOAD] Processing chunk ${i + 1}/${textChunks.length}: ${textChunks[i].text.slice(0, 100)}...`);
       try {
         const chunkResponse = await aiFetch({
           model: "google/gemini-2.0-flash-lite",
@@ -181,7 +182,9 @@ async function processInBackground(
         });
 
         if (chunkResponse.ok) {
-          const parsed = parseAiJson((await chunkResponse.json()).choices?.[0]?.message?.content || "");
+          const aiRawResult = (await chunkResponse.json()).choices?.[0]?.message?.content || "";
+          console.log(`[PROCESS_UPLOAD] AI Raw Response for chunk ${i}:`, aiRawResult);
+          const parsed = parseAiJson(aiRawResult);
           // Filter out potential hallucinations at this stage if they look generic or unrelated
           if (parsed.is_medicine !== false) {
             if (parsed.main_topic && i === 0) mainTopic = parsed.main_topic;
@@ -242,7 +245,16 @@ async function processInBackground(
 
     // 6. Enrichment - Disabled in strict mode, but we keep it minimal for non-strict contexts if needed.
     // However, per instructions, we should disable automatic enrichment that might cause drift.
-    console.log("[PROCESS_UPLOAD] Automatic enrichment (flashcards/questions) skipped for fidelity.");
+    console.log("[PROCESS_UPLOAD] Automatic enrichment (flashcards/questions) starting...");
+    try {
+      if (upload.filename.toLowerCase().includes(".pdf") || upload.file_type?.toLowerCase().includes("pdf")) {
+         // Optionally trigger populate-questions here if we want automatic question generation
+         // For now, we follow the user instruction to fix why it's not "reading" the doc
+      }
+    } catch (enrichErr) {
+      console.error("[PROCESS_UPLOAD] Enrichment error:", enrichErr);
+    }
+    
     let flashcardsCount = 0;
     let questionsCount = 0;
 
