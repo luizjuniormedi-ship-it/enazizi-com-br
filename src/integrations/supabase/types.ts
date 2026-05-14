@@ -7894,6 +7894,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cognitive_quality_baseline: {
+        Row: {
+          avg_clinical_depth: number | null
+          avg_cognitive_score: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          quality_thresholds: Json | null
+          target_distribution: Json | null
+          version: string
+        }
+        Insert: {
+          avg_clinical_depth?: number | null
+          avg_cognitive_score?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          quality_thresholds?: Json | null
+          target_distribution?: Json | null
+          version: string
+        }
+        Update: {
+          avg_clinical_depth?: number | null
+          avg_cognitive_score?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          quality_thresholds?: Json | null
+          target_distribution?: Json | null
+          version?: string
+        }
+        Relationships: []
+      }
       cognitive_rhythm_snapshots: {
         Row: {
           avg_accuracy: number | null
@@ -10683,6 +10716,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      golden_question_reference: {
+        Row: {
+          complexity_level: number | null
+          created_at: string | null
+          embeddings: string | null
+          explanation_depth_score: number | null
+          hallucination_risk_score: number | null
+          id: string
+          metadata: Json | null
+          question_id: string | null
+          reasoning_pattern: string | null
+        }
+        Insert: {
+          complexity_level?: number | null
+          created_at?: string | null
+          embeddings?: string | null
+          explanation_depth_score?: number | null
+          hallucination_risk_score?: number | null
+          id?: string
+          metadata?: Json | null
+          question_id?: string | null
+          reasoning_pattern?: string | null
+        }
+        Update: {
+          complexity_level?: number | null
+          created_at?: string | null
+          embeddings?: string | null
+          explanation_depth_score?: number | null
+          hallucination_risk_score?: number | null
+          id?: string
+          metadata?: Json | null
+          question_id?: string | null
+          reasoning_pattern?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golden_question_reference_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       governance_audit_logs: {
         Row: {
