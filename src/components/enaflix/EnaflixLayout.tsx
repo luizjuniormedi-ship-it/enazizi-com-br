@@ -2,11 +2,11 @@ import { ReactNode } from "react";
 import { EnaflixSidebar } from "./EnaflixSidebar";
 import { EnaflixMobileNav } from "./EnaflixMobileNav";
 import { EnaflixOverlayNav } from "./EnaflixOverlayNav";
-// motion/AnimatePresence removidos: transição de rota é feita por CinematicRouteTransition
 import { useLocation, useNavigate } from "react-router-dom";
 import { EnaflixBackgroundFX } from "./EnaflixBackgroundFX";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
+import { cn } from "@/lib/utils";
 
 interface Props {
   children: ReactNode;
@@ -31,7 +31,7 @@ export function EnaflixLayout({ children }: Props) {
   const showTopNav = !showSidebar && !isEnaflixHome && !isImmersive;
 
   return (
-    <div className="min-h-screen bg-[#050508] text-white selection:bg-primary/30 selection:text-white antialiased">
+    <div className="min-h-screen bg-[#050508] text-white selection:bg-primary/30 selection:text-white antialiased flex flex-col">
       {/* Global Cinematic Background */}
       <EnaflixBackgroundFX intensity="medium" />
 
@@ -45,8 +45,13 @@ export function EnaflixLayout({ children }: Props) {
       )}
 
       {/* Main Content Area - Adjust padding if sidebar is hidden */}
-      <main className={`${showSidebar ? 'lg:pl-64' : 'pl-0'} ${showTopNav ? 'pt-16' : ''} min-h-screen transition-all duration-700 ${isImmersive ? 'pb-0' : 'pb-20 lg:pb-0'} relative z-10`}>
-        <div className="w-full min-h-screen">
+      <main className={cn(
+        "flex-1 min-h-screen transition-all duration-700 relative z-10",
+        showSidebar ? "lg:pl-64" : "pl-0",
+        showTopNav ? "pt-16" : "",
+        isImmersive ? "pb-0" : "pb-20 lg:pb-0"
+      )}>
+        <div className="w-full min-h-full safe-area-bottom">
           {children}
         </div>
       </main>

@@ -1,5 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
-import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle, Star, Quote } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle, Star, Quote, RefreshCw } from "lucide-react";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,8 @@ const Login = () => {
     flashcards: "—",
   });
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get("expired") === "1";
   const { user, session, loading: authLoading, signIn, resetPassword } = useAuth();
   const { toast } = useToast();
 
@@ -215,6 +217,16 @@ const Login = () => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="w-full max-w-md"
         >
+          {sessionExpired && (
+            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+              <RefreshCw className="h-5 w-5 text-amber-500 animate-spin-slow" />
+              <div className="flex-1">
+                <p className="text-xs font-black uppercase tracking-widest text-amber-500">Sessão Expirada</p>
+                <p className="text-[10px] font-bold text-amber-200/60 uppercase tracking-tighter">Sua sessão expirou por inatividade. Faça login novamente.</p>
+              </div>
+            </div>
+          )}
+
           <div className="text-center mb-10">
             <h1 className="text-3xl font-black text-white tracking-tighter mb-2">{forgotMode ? "Recuperar senha" : "Acesso Studio"}</h1>
             <p className="text-white/40 font-medium">

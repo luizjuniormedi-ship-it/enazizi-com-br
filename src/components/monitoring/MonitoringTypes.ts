@@ -10,6 +10,24 @@ export interface DashboardData {
     topTopics: { topic: string; count: number }[];
     weakTopics: { topic: string; accuracy: number; questions: number }[];
   };
+  auth?: {
+    loginSuccessRate: number;
+    activeSessions: number;
+    avgSessionDuration: number;
+    tokenRefreshes24h: number;
+  };
+  tutor?: {
+    avgLatency: number;
+    avgSignalConfidence: number;
+    signalDetectionRate: number;
+    reinforcementRate: number;
+  };
+  content?: {
+    quarantineVolume: number;
+    auditBacklog: number;
+    autoFixRate: number;
+    avgEditorialGrade: number;
+  };
   students?: StudentRow[];
   riskAlerts?: RiskAlert[];
   timestamp: string;

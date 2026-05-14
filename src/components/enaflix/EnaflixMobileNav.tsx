@@ -23,7 +23,7 @@ export function EnaflixMobileNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 h-20 bg-[#0a0a0e]/95 backdrop-blur-3xl border-t border-white/5 z-[100] lg:hidden flex items-center justify-around px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+    <nav className="fixed bottom-0 inset-x-0 h-20 bg-[#0a0a0e]/95 backdrop-blur-3xl border-t border-white/5 z-[100] lg:hidden flex items-center justify-around px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)] supports-[padding:env(safe-area-inset-bottom)]:pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
       {MOBILE_ITEMS.map((item) => {
         const active = location.pathname === item.to || (item.to === "/enaflix" && location.pathname === "/dashboard");
         const Icon = item.icon;

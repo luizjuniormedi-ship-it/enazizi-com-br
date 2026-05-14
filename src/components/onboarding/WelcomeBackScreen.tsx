@@ -1,70 +1,66 @@
-import { Button } from "@/components/ui/button";
-import { Sparkles, Rocket, Target, Brain, BarChart3, ArrowRight } from "lucide-react";
+/**
+ * WelcomeBackScreen - Refined for Enterprise FUX
+ * Minimalist, high-impact screen for returning or new users needing context.
+ */
+import { Rocket, Sparkles, Brain, CheckCircle2 } from "lucide-react";
+import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
+import { motion } from "framer-motion";
 
-interface Props {
-  onStart: () => void;
-  onSkip: () => void;
-}
-
-const features = [
-  {
-    icon: <Target className="h-5 w-5 text-primary" />,
-    title: "Plano feito para você",
-    desc: "Alunos com plano personalizado evoluem até 3x mais rápido.",
-  },
-  {
-    icon: <BarChart3 className="h-5 w-5 text-primary" />,
-    title: "Sua chance real de aprovação",
-    desc: "Acompanhe em tempo real o que falta para você passar.",
-  },
-  {
-    icon: <Brain className="h-5 w-5 text-primary" />,
-    title: "Cada minuto conta",
-    desc: "O sistema escolhe a sequência ideal: teoria, questões, revisão ou prática.",
-  },
-];
-
-export default function WelcomeBackScreen({ onStart, onSkip }: Props) {
+const WelcomeBackScreen = ({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-lg space-y-6 animate-fade-in text-center">
-        <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-          <Rocket className="h-10 w-10 text-primary" />
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Comece do jeito certo 🎯</h1>
-          <p className="text-muted-foreground text-sm">
-            Alunos que personalizam o plano evoluem até <span className="font-semibold text-primary">3x mais rápido</span>.
+    <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+      
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md space-y-8 relative z-10"
+      >
+        <div className="space-y-4">
+          <div className="h-20 w-20 rounded-[2rem] bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto shadow-glow-sm">
+            <Sparkles className="h-10 w-10 text-primary animate-pulse" />
+          </div>
+          <h1 className="text-4xl font-black tracking-tighter text-white uppercase italic">
+            O Futuro é <span className="gradient-text">Adaptativo</span>
+          </h1>
+          <p className="text-white/60 font-medium leading-relaxed">
+            Seja bem-vindo ao ENAFLIX Studio. Nossa IA acaba de reconstruir sua trilha de estudo baseada nos exames mais recentes.
           </p>
         </div>
 
-        <div className="space-y-3 text-left">
-          {features.map((f, i) => (
-            <div key={i} className="flex gap-3 items-start rounded-lg border bg-card p-3">
-              <div className="mt-0.5 h-9 w-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
-                {f.icon}
-              </div>
-              <div>
-                <p className="text-sm font-semibold">{f.title}</p>
-                <p className="text-xs text-muted-foreground">{f.desc}</p>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 gap-3">
+          {[
+            { icon: Brain, label: "Conteúdo Personalizado" },
+            { icon: CheckCircle2, label: "Foco no que cai na prova" },
+            { icon: Rocket, label: "Otimização de tempo real" }
+          ].map((item, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 + i * 0.1 }}
+              className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/5"
+            >
+              <item.icon className="h-5 w-5 text-primary" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-white/80">{item.label}</span>
+            </motion.div>
           ))}
         </div>
 
-        <div className="space-y-2">
-          <Button onClick={onStart} size="lg" className="w-full gap-2">
-            <Sparkles className="h-4 w-4" /> Quero um plano personalizado
-          </Button>
-          <Button variant="outline" onClick={onSkip} size="lg" className="w-full gap-2 text-muted-foreground">
-            Continuar sem personalizar <ArrowRight className="h-4 w-4" />
-          </Button>
-          <p className="text-[11px] text-muted-foreground/70 pt-1">
-            Sem personalização, seu plano ficará menos preciso
-          </p>
+        <div className="pt-4 space-y-4">
+          <Enaflix3DButton size="lg" glow onClick={onStart} className="w-full">
+            Iniciar Configuração
+          </Enaflix3DButton>
+          <button 
+            onClick={onSkip}
+            className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 hover:text-white transition-colors"
+          >
+            Pular e ir ao Dashboard
+          </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
-}
+};
+
+export default WelcomeBackScreen;

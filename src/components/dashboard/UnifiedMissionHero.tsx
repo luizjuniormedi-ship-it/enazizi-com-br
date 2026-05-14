@@ -29,8 +29,8 @@ interface UnifiedMissionHeroProps {
   posterUrl?: string;
 }
 
-const FALLBACK_TITLE = "Continuar revisão inteligente";
-const FALLBACK_DESC = "Vamos retomar pelo que mais importa hoje.";
+const FALLBACK_TITLE = "Sua Primeira Missão";
+const FALLBACK_DESC = "Comece agora para que a IA conheça seu ritmo e personalize sua jornada.";
 
 export function UnifiedMissionHero({
   firstName,

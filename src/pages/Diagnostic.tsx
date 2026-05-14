@@ -257,16 +257,28 @@ NÃO inclua texto extra, APENAS o JSON.` }],
       const failedAreas: string[] = [];
 
       const AREAS = getAreasForCycle(cycle);
-      // Process areas in batches of 2 to reduce server load
-      for (let i = 0; i < AREAS.length; i += 2) {
-        const batch = AREAS.slice(i, i + 2);
-        const results = await Promise.allSettled(batch.map(area => generateAreaQuestions(area, allQuestions)));
+      // Process areas in parallel but limited to 3 concurrent to balance speed vs reliability
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < AREAS.length; i += BATCH_SIZE) {
+        const batch = AREAS.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(batch.map(area => 
+          // Add a per-area retry logic for robustness
+          (async () => {
+            try {
+              return await generateAreaQuestions(area, allQuestions);
+            } catch (areaErr) {
+              console.warn(`[Diagnostic] Failed attempt for ${area}, retrying once...`, areaErr);
+              return await generateAreaQuestions(area, allQuestions);
+            }
+          })()
+        ));
 
         results.forEach((result, idx) => {
           const area = batch[idx];
-          if (result.status === "fulfilled" && result.value.length > 0) {
+          if (result.status === "fulfilled" && result.value && result.value.length > 0) {
             allQuestions.push(...result.value);
           } else {
+            console.warn(`[Diagnostic] All attempts failed for ${area}, using fallback.`);
             failedAreas.push(area);
             allQuestions.push(...getFallbackQuestionsForArea(area, QUESTIONS_PER_AREA));
           }
