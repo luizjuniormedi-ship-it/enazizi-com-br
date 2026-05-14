@@ -155,7 +155,7 @@ const VideoLessonsLibrary = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-3 gap-12 relative z-10">
         <div className="md:col-span-2 space-y-6">
           <div className="flex flex-col gap-4">
             <div className="flex gap-4">
