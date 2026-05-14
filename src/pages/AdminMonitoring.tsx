@@ -218,6 +218,9 @@ export default function AdminMonitoring() {
           <TabsContent value="cognitive-audit">
             <AdaptiveAuditTab />
           </TabsContent>
+          <TabsContent value="scale-governance">
+            <ScaleGovernanceTab />
+          </TabsContent>
         </Tabs>
       ) : (
         <Card>
