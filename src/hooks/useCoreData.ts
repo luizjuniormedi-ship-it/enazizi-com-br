@@ -134,7 +134,7 @@ export function useCoreData() {
     queryFn: () => fetchCoreData(user!.id),
     enabled: !!user,
     staleTime: 10 * 60 * 1000, // 10 min cache
-    gcTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000, // 30 min GC
     refetchOnWindowFocus: false,
     retry: 1,
   });
