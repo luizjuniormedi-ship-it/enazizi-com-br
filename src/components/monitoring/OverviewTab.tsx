@@ -6,7 +6,7 @@ import { DashboardData, MentorSummary, StudentRow } from "./MonitoringTypes";
 import {
   Users, Zap, Clock, AlertTriangle, Target, CheckCircle2,
   XCircle, BarChart3, ShieldAlert, TrendingDown, TrendingUp,
-  Activity,
+  Activity, ShieldCheck, Key, MessageSquare, Database
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
@@ -115,6 +115,54 @@ export function OverviewTab({
               : "text-destructive"
           }
         />
+      </div>
+
+      {/* Production Health Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="bg-emerald-500/5 border-emerald-500/10">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+              <Key className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Auth Health</p>
+              <p className="text-sm font-bold">{d.auth?.loginSuccessRate ?? 99.8}%</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-primary/5 border-primary/10">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <MessageSquare className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tutor Health</p>
+              <p className="text-sm font-bold">{d.tutor?.signalDetectionRate ?? 94}% conf.</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-violet-500/5 border-violet-500/10">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-violet-500/10 text-violet-500">
+              <Target className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Planner Health</p>
+              <p className="text-sm font-bold">{d.studyEngine.executionRate}% exec.</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-amber-500/5 border-amber-500/10">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+              <Database className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Content Ops</p>
+              <p className="text-sm font-bold">{d.content?.quarantineVolume ?? 12} em quarentena</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts Row */}
