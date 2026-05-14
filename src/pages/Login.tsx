@@ -263,7 +263,7 @@ const Login = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-black uppercase tracking-widest text-white/40">Senha</label>
-                    <Link to="/forgot-password" size="sm" className="text-[10px] font-bold text-primary hover:text-white transition-colors uppercase tracking-wider hover:underline">
+                    <Link to="/forgot-password" className="text-[10px] font-bold text-primary hover:text-white transition-colors uppercase tracking-wider hover:underline">
                       Esqueci minha senha
                     </Link>
                   </div>
