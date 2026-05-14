@@ -72,7 +72,8 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   handleGoHome = () => {
-    window.location.href = "/dashboard";
+    // Force a full reload when going home to clear any corrupted JS state
+    window.location.href = "/dashboard?recovered=1";
   };
 
   render() {
