@@ -43,7 +43,7 @@ async function processTextToQuestions(
     chunks.push(fullText.slice(i, i + chunkSize));
   }
 
-  const chunksToProcess = chunks.slice(0, 4);
+  const chunksToProcess = chunks.slice(0, 10); // Process up to 10 chunks instead of 4
   const baseJson = existingJson || {};
 
   // Update progress if uploadId provided
@@ -118,8 +118,8 @@ Se não encontrar questões, retorne {"questions": []}`
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length === 4 && typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 450 &&
+      q.statement && Array.isArray(q.options) && q.options.length >= 4 && typeof q.correct_index === "number" &&
+      String(q.statement).trim().length >= 100 && // Lower threshold to capture more real questions
       !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
     );
 
