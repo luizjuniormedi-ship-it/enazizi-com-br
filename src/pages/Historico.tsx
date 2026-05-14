@@ -13,11 +13,10 @@ export default function Historico() {
     const load = async () => {
       try {
         const { data } = await supabase
-          .from("study_sessions_log")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(50);
+          .from("study_sessions_log" as any)
+          .select("*" as any)
+          .eq("user_id" as any, user.id)
+          .order("created_at" as any, { ascending: false });
         setHistory(data || []);
       } catch (err) {
         console.error("Erro ao carregar histórico:", err);

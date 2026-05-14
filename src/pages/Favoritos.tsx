@@ -14,10 +14,9 @@ export default function Favoritos() {
     const load = async () => {
       try {
         const { data } = await supabase
-          .from("user_favorites")
-          .select("*, enaflix_content(*)")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+          .from("user_favorites" as any)
+          .select("*, enaflix_content(*)" as any)
+          .eq("user_id" as any, user.id);
         setFavorites(data || []);
       } catch (err) {
         console.error("Erro ao carregar favoritos:", err);

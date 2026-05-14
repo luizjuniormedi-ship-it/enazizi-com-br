@@ -272,9 +272,9 @@ const App = () => (
               <Route path="/mission" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<MissionMode />} />
               </Route>
-              <Route path="/enaflix" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                <Route index element={<EnaflixPage />} />
-                <Route path="*" element={<EnaflixPage />} />
+              <Route path="/enaflix-legacy" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
+                <Route index element={<Enaflix />} />
+                <Route path="*" element={<Enaflix />} />
               </Route>
               <Route path="/study-hub" element={<Navigate to="/enaflix" replace />} />
               {/* Canonical redirects — /study/* → /dashboard/* */}
