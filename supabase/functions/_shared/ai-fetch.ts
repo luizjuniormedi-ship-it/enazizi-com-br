@@ -216,6 +216,8 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       // If not a credit/rate issue, log it but maybe continue to fallback
       if (response.status !== 402 && response.status !== 429) {
         const errorBody = await response.clone().text();
+        console.error(`[aiFetch] Lovable AI Gateway Error ${response.status}:`, errorBody);
+        
         await logPipelineAlert({
           source,
           message: `Lovable AI Gateway Error: ${response.status}`,
