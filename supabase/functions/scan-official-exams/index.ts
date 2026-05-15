@@ -30,39 +30,62 @@ serve(async (req) => {
     for (const source of sources) {
       console.log(`Scanning source: ${source.name} at ${source.url}`)
       
-      // Historical logic integrated
-      const currentYear = new Date().getFullYear();
-      const years = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4, currentYear - 5];
-      
-      for (const year of years) {
-        // Search simulation for each year
-        const mockDiscovery = {
-          source_id: source.id,
-          file_name: `${source.name}_Prova_${year}.pdf`,
-          file_url: `${source.url}/provas/${year}/prova.pdf`,
-          institution: source.name,
-          detected_year: year,
-          detected_category: 'prova',
-          status: 'discovered'
+      // 2. Real Discovery via Scrape
+      try {
+        const resp = await fetch(source.url, { headers: { "User-Agent": "Mozilla/5.0" } });
+        if (!resp.ok) {
+          console.warn(`Failed to fetch source URL: ${source.url}`);
+          continue;
         }
+        const html = await resp.text();
+        
+        // Extract all .pdf links
+        const pdfRegex = /href=["']([^"']+\.pdf)["']/gi;
+        const matches = [...html.matchAll(pdfRegex)];
+        
+        for (const match of matches) {
+          let fileUrl = match[1];
+          if (!fileUrl.startsWith('http')) {
+            const baseUrl = new URL(source.url);
+            fileUrl = new URL(fileUrl, baseUrl.origin + baseUrl.pathname).href;
+          }
 
-        const { data: file, error: fileError } = await supabase
-          .from('official_exam_files')
-          .upsert(mockDiscovery, { onConflict: 'file_url' })
-          .select()
-          .single()
+          const fileName = decodeURIComponent(fileUrl.split('/').pop() || "prova.pdf").replace(/[_-]/g, " ");
+          const yearMatch = fileName.match(/(20\d{2})/);
+          const detectedYear = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear();
 
-        if (!fileError && file) {
-          await supabase
-            .from('official_exam_processing_queue')
-            .insert({
-              item_type: 'file',
-              item_id: file.id,
-              priority: year === currentYear ? 10 : 5
-            })
-          
-          results.push({ source: source.name, year, status: 'discovered', file: file.file_name })
+          // Basic filtering to ensure it looks like an exam/gabarito
+          const isExam = /prova|gabarito|objetiva|caderno|exame/i.test(fileName);
+          if (!isExam) continue;
+
+          const { data: file, error: fileError } = await supabase
+            .from('official_exam_files')
+            .upsert({
+              source_id: source.id,
+              file_name: fileName,
+              file_url: fileUrl,
+              institution: source.name,
+              detected_year: detectedYear,
+              detected_category: fileName.toLowerCase().includes('gabarito') ? 'gabarito' : 'prova',
+              status: 'discovered'
+            }, { onConflict: 'file_url' })
+            .select()
+            .single()
+
+          if (!fileError && file) {
+            await supabase
+              .from('official_exam_processing_queue')
+              .insert({
+                item_type: 'file',
+                item_id: file.id,
+                priority: detectedYear === new Date().getFullYear() ? 10 : 5
+              })
+            
+            results.push({ source: source.name, year: detectedYear, status: 'discovered', file: file.file_name })
+          }
         }
+      } catch (scrapeError) {
+        console.error(`Error scraping ${source.name}: ${scrapeError.message}`);
       }
     }
 
