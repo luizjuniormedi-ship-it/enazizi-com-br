@@ -13,6 +13,7 @@ export async function logPipelineAlert(data: {
   model_used?: string;
   http_status?: number;
   severity?: 'warning' | 'error' | 'critical';
+  alert_type?: string;
   metadata?: any;
 }) {
   try {
@@ -26,6 +27,7 @@ export async function logPipelineAlert(data: {
         model_used: data.model_used,
         http_status: data.http_status,
         severity: data.severity || 'error',
+        alert_type: data.alert_type || 'system_error',
         metadata: data.metadata || {},
       });
 
