@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getServiceClient, logPipelineAlert } from "../_shared/pipeline-logger.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { validateAIOutput, logValidationRejection } from "../_shared/ai-validation.ts";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -284,7 +285,7 @@ FORMATO JSON OBRIGATÓRIO:
 }`;
   try {
     const response = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: ALLOWED_MODELS.generation,
       messages: [
         { role: "system", content: "Você extrai questões de residência médica. Responda APENAS com JSON." },
         { role: "user", content: prompt },

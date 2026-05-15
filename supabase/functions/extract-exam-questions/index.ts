@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
-import { AI_MODELS } from "../_shared/ai-models.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
 import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
 
@@ -20,7 +20,11 @@ Deno.serve(async (req) => {
 
   // Parse body cedo para retornar 202 imediatamente
   const earlyBody = await req.json().catch(() => ({}));
-  const earlyUploadId = earlyBody.upload_id || "f8b2995a-d260-4d76-9a28-a9ae02c12419";
+  const earlyUploadId = earlyBody.upload_id;
+  
+  if (!earlyUploadId) {
+    return new Response(JSON.stringify({ error: "upload_id is required" }), { status: 400, headers: corsHeaders });
+  }
 
   // Reconstruir um Request "virtual" não dá — então executa o pipeline em background
   const work = (async () => {
@@ -133,7 +137,7 @@ Deno.serve(async (req) => {
           ${section.text.slice(0, 15000)}`;
 
           const aiResp = await aiFetch({
-            model: AI_MODELS.extraction,
+            model: ALLOWED_MODELS.generation,
             messages: [
               { role: "system", content: "Você é um extrator de provas médicas especializado em REVALIDA." },
               { role: "user", content: prompt }
@@ -164,7 +168,7 @@ Deno.serve(async (req) => {
               message: `AI Fallback failed for year ${section.year}: ${aiResp.status}`,
               error_stack: errText,
               http_status: aiResp.status,
-              model_used: AI_MODELS.extraction
+              model_used: ALLOWED_MODELS.generation
             });
           }
         } catch (err) {

@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
-import { AI_MODELS } from "../_shared/ai-models.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { normalizeModel } from "../_shared/model-normalizer.ts";
 import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
 
 const corsHeaders = {
@@ -444,7 +445,7 @@ FORMATO ESTRITO:
 { "questions": [{ "statement": "...", "options": ["...", "...", "...", "...", "..."], "correct_index": 0, "topic": "...", "subtopic": "...", "explanation": "" }] }`;
 
           const aiResp = await aiFetch({
-            model: AI_MODELS.extraction,
+            model: ALLOWED_MODELS.generation,
             messages: [
               { role: "system", content: "Você extrai questões estruturadas de provas. Sempre 4 ou 5 alternativas em pt-BR." },
               { role: "user", content: prompt }
