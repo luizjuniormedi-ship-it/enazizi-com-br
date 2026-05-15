@@ -217,7 +217,28 @@ async function populateInBackground(
     const existingJson = (upload.extracted_json || {}) as Record<string, any>;
     const totalQuestions = await processTextToQuestions(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId, existingJson);
 
+    if (totalQuestions === 0) {
+      await supabaseAdmin.from("uploads").update({
+        status: "error",
+        extracted_json: {
+          ...existingJson,
+          error: "Nenhuma questão foi gerada a partir do texto.",
+          step: "failed",
+          progress: 100,
+        },
+      }).eq("id", uploadId);
+      
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: "Generation concluded with 0 questions",
+        severity: "error",
+        metadata: { uploadId, filename: upload.filename }
+      });
+      return;
+    }
+
     await supabaseAdmin.from("uploads").update({
+      status: "processed",
       extracted_json: {
         ...existingJson,
         questions_count: (existingJson.questions_count || 0) + totalQuestions,
