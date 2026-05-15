@@ -318,6 +318,7 @@ async function importRealExamQuestions(specialty: string, supabaseAdmin: any, us
     user_id: userId, statement: q.statement, options: q.options, correct_index: q.correct_index,
     explanation: q.explanation || "", topic: specialty, subtopic: q.subtopic || null,
     difficulty: q.difficulty || 4, source: "real_exam_import", source_url: q.source_url,
+    board: q.banca || q.board || "Importação",
     is_global: true, review_status: "pending",
   }));
 
