@@ -124,6 +124,7 @@ Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false
     }
 
     const data = await resp.json();
+    console.log("[VisionGate] Full response data:", JSON.stringify(data, null, 2));
     const content = data.choices?.[0]?.message?.content || "";
     console.log("[VisionGate] Response content:", content);
 
