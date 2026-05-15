@@ -75,7 +75,7 @@ async function processTextToContent(
     console.log(`[Populate] Processing chunk of size ${chunk.length}...`);
     try {
       const response = await aiFetch({
-        model: AI_MODELS.generation,
+        model: ALLOWED_MODELS.generation,
         messages: [
           {
             role: "system",
