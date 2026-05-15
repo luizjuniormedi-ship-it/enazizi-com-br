@@ -217,6 +217,18 @@ const AdminIngestionPanel = () => {
     } finally { setProcessing(null); }
   };
 
+  const getFreshToken = async (): Promise<string | null> => {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) return null;
+    // Refresh proativamente se faltar < 5 min para expirar
+    const expiresAt = (data.session.expires_at ?? 0) * 1000;
+    if (expiresAt - Date.now() < 5 * 60 * 1000) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      return refreshed.session?.access_token ?? data.session.access_token;
+    }
+    return data.session.access_token;
+  };
+
   const handleEqualize = async () => {
     if (!session) return;
     setEqualizing(true);
@@ -246,10 +258,12 @@ const AdminIngestionPanel = () => {
         setEqProgress(prev => prev ? { ...prev, current: i + 1, percent: Math.round(((i) / total) * 100), currentSpecialty: spec.name, eta: etaStr } : prev);
 
         try {
-          // Start background job
+          // Start background job (token fresco)
+          const startToken = await getFreshToken();
+          if (!startToken) throw new Error("Sessão expirada. Faça login novamente.");
           const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${startToken}` },
             body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 }),
           });
           const raw = await resp.text();
@@ -267,9 +281,11 @@ const AdminIngestionPanel = () => {
               await new Promise(r => setTimeout(r, 3000));
               if (pauseRef.current) break;
               try {
+                const pollToken = await getFreshToken();
+                if (!pollToken) throw new Error("Sessão expirada durante polling.");
                 const pollResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content?job_id=${jobId}`, {
                   method: "GET",
-                  headers: { Authorization: `Bearer ${session.access_token}` },
+                  headers: { Authorization: `Bearer ${pollToken}` },
                 });
                 const pollData = await pollResp.json();
                 if (pollData.status === "completed") { jobResult = pollData.result || {}; break; }
