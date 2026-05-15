@@ -73,8 +73,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "No text content found" }), { status: 400, headers: corsHeaders });
     }
 
-    // Clean up OCR artifacts: rejoin broken lines
-    fullText = fullText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    // Clean up OCR artifacts and sanitize database-incompatible characters (like null bytes)
+    fullText = fullText.replace(/\0/g, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
     // Split by year markers: look for standalone year numbers (2011-2025)
     const yearSections: { year: number; text: string }[] = [];
