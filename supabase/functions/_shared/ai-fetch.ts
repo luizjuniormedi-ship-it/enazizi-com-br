@@ -12,9 +12,13 @@ const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 const OPENAI_MAX_TOKENS: Record<string, number> = {
   "gpt-4o-mini": 16384,
   "gpt-4o": 16384,
+  "gpt-5-mini": 16384,
+  "gpt-5": 16384,
 };
 
 const MODEL_MAP: Record<string, string> = {
+  "openai/gpt-5-mini": "gpt-4o-mini",
+  "openai/gpt-5": "gpt-4o",
   "openai/gpt-4o-mini": "gpt-4o-mini",
   "openai/gpt-4o": "gpt-4o",
 };
