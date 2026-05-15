@@ -250,9 +250,20 @@ async function processInBackground(
     // However, per instructions, we should disable automatic enrichment that might cause drift.
     console.log("[PROCESS_UPLOAD] Automatic enrichment (flashcards/questions) starting...");
     try {
-      if (upload.filename.toLowerCase().includes(".pdf") || upload.file_type?.toLowerCase().includes("pdf")) {
-         // Optionally trigger populate-questions here if we want automatic question generation
-         // For now, we follow the user instruction to fix why it's not "reading" the doc
+      // Trigger populate-questions to generate content from the extracted text
+      const populateResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/populate-questions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ uploadId }),
+      });
+      
+      if (!populateResponse.ok) {
+        console.warn(`[PROCESS_UPLOAD] Failed to trigger populate-questions: ${populateResponse.status}`);
+      } else {
+        console.log("[PROCESS_UPLOAD] populate-questions triggered successfully");
       }
     } catch (enrichErr) {
       console.error("[PROCESS_UPLOAD] Enrichment error:", enrichErr);
