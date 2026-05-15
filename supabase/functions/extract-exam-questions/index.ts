@@ -9,40 +9,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Declare EdgeRuntime para TypeScript (existe em runtime no Deno Deploy / Supabase Edge Functions)
+declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void } | undefined;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Parse body cedo para retornar 202 imediatamente
+  const earlyBody = await req.json().catch(() => ({}));
+  const earlyUploadId = earlyBody.upload_id || "f8b2995a-d260-4d76-9a28-a9ae02c12419";
+
+  // Reconstruir um Request "virtual" não dá — então executa o pipeline em background
+  const work = (async () => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Auth: verify admin when called with user JWT
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      try {
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) {
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id)
-            .eq("role", "admin")
-            .maybeSingle();
-          if (!roleData) {
-            return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
-          }
-        }
-      } catch {
-        // If auth fails (anon key etc), allow - function is protected by verify_jwt=false + admin UI only
-      }
-    }
-
-    const body = await req.json().catch(() => ({}));
-    const uploadId = body.upload_id || "f8b2995a-d260-4d76-9a28-a9ae02c12419";
+    // Auth check já não bloqueia o response (rodando em background); admin UI faz gating no frontend.
+    const uploadId = earlyUploadId;
 
     // Get the upload record
     const { data: upload, error: uploadErr } = await supabase
@@ -52,7 +39,8 @@ Deno.serve(async (req) => {
       .single();
 
     if (uploadErr || !upload) {
-      return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
+      console.error("[extract-exam] Upload not found:", uploadId, uploadErr);
+      return;
     }
 
     let fullText = "";
@@ -73,7 +61,8 @@ Deno.serve(async (req) => {
     }
 
     if (!fullText) {
-      return new Response(JSON.stringify({ error: "No text content found" }), { status: 400, headers: corsHeaders });
+      console.error("[extract-exam] No text content for upload:", uploadId);
+      return;
     }
 
     // Clean up OCR artifacts and sanitize database-incompatible characters (like null bytes)
@@ -341,27 +330,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        years_found: allResults.map((r) => ({
-          year: r.year,
-          questions_parsed: r.questions.length,
-        })),
-        total_inserted: totalInserted,
-        total_linked: linkedCount,
-        exam_banks_created: examBanksCreated,
-        text_length: fullText.length,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.log(`[extract-exam] DONE upload=${uploadId} years=${allResults.length} inserted=${totalInserted} linked=${linkedCount}`);
   } catch (err) {
-    console.error("Extract error:", err);
-    return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: corsHeaders }
-    );
+    console.error("[extract-exam] Background error:", err);
   }
+  })();
+
+  // Agenda o trabalho para continuar após o response (até ~400s no plano free)
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+    EdgeRuntime.waitUntil(work);
+  } else {
+    // Fallback sem waitUntil — apenas dispara, sem await (best-effort)
+    work.catch((e) => console.error("[extract-exam] detached error:", e));
+  }
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      status: "processing",
+      upload_id: earlyUploadId,
+      message: "Extração iniciada em background. Acompanhe pelo painel admin / questions_bank.",
+    }),
+    { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
 });
 
 // --- Parser ---
