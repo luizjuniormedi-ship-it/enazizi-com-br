@@ -163,6 +163,39 @@ const AdminQuestionReviewPanel = () => {
     setActionLoading(null);
   };
 
+  const handleApproveAllFiltered = async () => {
+    if (!window.confirm(`Deseja aprovar TODAS as ${total} questões que correspondem aos filtros atuais?`)) {
+      return;
+    }
+
+    setActionLoading("bulk-all");
+    try {
+      let query = supabase.from("questions_bank")
+        .update({ review_status: "approved" })
+        .neq("review_status", "approved");
+
+      if (statusFilter !== "all") {
+        query = query.eq("review_status", statusFilter);
+      }
+      if (qualityFilter !== "all") {
+        query = query.eq("quality_tier", qualityFilter);
+      }
+
+      const { error, count } = await query;
+      
+      if (error) throw error;
+      
+      toast({ title: "Sucesso", description: "Lote completo aprovado com sucesso" });
+      fetchQuestions();
+      fetchCounts();
+    } catch (error: any) {
+      console.error("Bulk approve all error:", error);
+      toast({ title: "Erro na aprovação em lote", description: error.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
