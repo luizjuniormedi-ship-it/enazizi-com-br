@@ -126,16 +126,17 @@ serve(async (req) => {
     let failed = 0;
 
     for (const q of questions) {
-      const newStatement = await upgradeQuestion(
+      const upgradeResult = await upgradeQuestion(
         { ...q, options: Array.isArray(q.options) ? q.options : [] },
         LOVABLE_API_KEY,
       );
 
-      if (newStatement) {
+      if (upgradeResult) {
         const { error } = await supabaseAdmin.from("questions_bank").update({
-          statement: newStatement,
+          statement: upgradeResult.statement,
+          explanation: upgradeResult.explanation,
           quality_tier: "exam_standard",
-          review_status: "pending",
+          review_status: "approved",
           source: (q as any).source ? `${(q as any).source}|ai-upgraded` : "ai-upgraded",
         }).eq("id", q.id);
 
