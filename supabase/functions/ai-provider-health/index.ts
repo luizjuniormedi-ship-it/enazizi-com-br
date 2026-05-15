@@ -29,8 +29,7 @@ async function pingModel(model: string, key: string) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT_MS);
   try {
-    const isOpenAI5 = /^openai\/gpt-4o/.test(model);
-    const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
+    const tokenField = getTokenParameterName(model);
     const body: Record<string, unknown> = {
       model,
       messages: [
