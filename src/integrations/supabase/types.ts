@@ -14494,9 +14494,12 @@ export type Database = {
           banca: string | null
           checksum_sha256: string | null
           created_at: string | null
+          detected_category: string | null
+          detected_year: number | null
           exam_type: string | null
           file_name: string
           file_url: string
+          hash_sha256: string | null
           id: string
           institution: string | null
           metadata: Json | null
@@ -14512,9 +14515,12 @@ export type Database = {
           banca?: string | null
           checksum_sha256?: string | null
           created_at?: string | null
+          detected_category?: string | null
+          detected_year?: number | null
           exam_type?: string | null
           file_name: string
           file_url: string
+          hash_sha256?: string | null
           id?: string
           institution?: string | null
           metadata?: Json | null
@@ -14530,9 +14536,12 @@ export type Database = {
           banca?: string | null
           checksum_sha256?: string | null
           created_at?: string | null
+          detected_category?: string | null
+          detected_year?: number | null
           exam_type?: string | null
           file_name?: string
           file_url?: string
+          hash_sha256?: string | null
           id?: string
           institution?: string | null
           metadata?: Json | null
