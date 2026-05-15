@@ -151,7 +151,8 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
   for (const rawBlock of blocks) {
     let block = rawBlock.replace(/^QUEST[ÃA]O\s+\d+[\s\.:]*/i, "").trim();
     
-    const markerRegex = /(?:^|\s)([A-E])[\.)]\s/g;
+    // Aceita "A.", "A)", "A-" ou "A " seguido de caractere de texto (cobre PDFs sem pontuação após a letra)
+    const markerRegex = /(?:^|[\s\n])([A-E])(?:[\.)\-]\s|\s+(?=[A-ZÀ-Úa-zà-ú0-9]))/g;
     const markers = Array.from(block.matchAll(markerRegex)).map((match) => ({
       letter: match[1],
       rawIndex: match.index ?? 0,
