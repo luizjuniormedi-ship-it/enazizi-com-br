@@ -159,7 +159,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   }
 
   const maxRetries = options.maxRetries ?? 2;
-  const timeoutMs = options.timeoutMs ?? 45000;
+  const timeoutMs = options.timeoutMs ?? 90000;
 
   const buildBody = (model: string, isOpenAI = false) => {
     let maxTokens = options.maxTokens ?? 16384;
