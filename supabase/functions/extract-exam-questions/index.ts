@@ -61,7 +61,8 @@ Deno.serve(async (req) => {
     }
 
     if (!fullText) {
-      return new Response(JSON.stringify({ error: "No text content found" }), { status: 400, headers: corsHeaders });
+      console.error("[extract-exam] No text content for upload:", uploadId);
+      return;
     }
 
     // Clean up OCR artifacts and sanitize database-incompatible characters (like null bytes)
