@@ -1,6 +1,6 @@
 /**
  * trajectory-explain-v1 — Gera explicação narrativa em PT-BR sobre o snapshot
- * mais recente do Radar de Trajetória. 1 chamada Lovable AI (openai/gpt-5-mini).
+ * mais recente do Radar de Trajetória. 1 chamada Lovable AI (openai/gpt-4o-mini).
  *
  * Falha silenciosa: se LOVABLE_API_KEY não existir ou a chamada falhar,
  * devolve uma narrativa fallback determinística baseada nos próprios scores.
@@ -16,7 +16,7 @@ interface ExplainBody {
 }
 
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "openai/gpt-5-mini";
+const MODEL = "openai/gpt-4o-mini";
 
 function deterministicNarrative(snap: any, risks: any[], recs: any[]) {
   const overall = Number(snap.overall_score ?? 0);

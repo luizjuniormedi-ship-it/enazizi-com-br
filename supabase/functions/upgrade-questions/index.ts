@@ -42,7 +42,7 @@ Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando 
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "openai/gpt-4o-mini",
         messages: [
           { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown." },
           { role: "user", content: prompt },

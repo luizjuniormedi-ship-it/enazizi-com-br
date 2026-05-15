@@ -189,7 +189,7 @@ REGRAS:
 
   try {
     const response = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "openai/gpt-4o-mini",
       timeoutMs: 55000,
       maxRetries: 0,
       messages: [
@@ -209,7 +209,7 @@ REGRAS:
       try {
         console.log(`[${specialty}] Retrying with simplified prompt...`);
         const retryResponse = await aiFetch({
-          model: "openai/gpt-5-mini",
+          model: "openai/gpt-4o-mini",
           timeoutMs: 55000,
           maxRetries: 0,
           messages: [

@@ -139,7 +139,7 @@ Regras:
     logAiUsage({
       userId,
       functionName: "interview-simulator",
-      modelUsed: "openai/gpt-5-mini",
+      modelUsed: "openai/gpt-4o-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       cacheHit: false,

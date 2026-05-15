@@ -15,11 +15,11 @@ serve(async (req: Request) => {
 
     if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
 
-    // Default to gpt-5-mini if no model provided
+    // Default to gpt-4o-mini if no model provided
     const targetModel = model || "google/gemini-2.5-flash";
     
-    // gpt-5-mini only supports temperature 1.0 (default) in current gateway config
-    const targetTemperature = (targetModel.includes("gpt-5") || targetModel.includes("gemini")) ? (temperature ?? 1.0) : (temperature ?? 0.7);
+    // gpt-4o-mini only supports temperature 1.0 (default) in current gateway config
+    const targetTemperature = (targetModel.includes("gpt-4o") || targetModel.includes("gemini")) ? (temperature ?? 1.0) : (temperature ?? 0.7);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

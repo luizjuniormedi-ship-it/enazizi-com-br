@@ -343,7 +343,7 @@ Se não atingir padrão: {"invalid":true,"reason":"..."}`;
       try {
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
-          model: "openai/gpt-5-mini",
+          model: "openai/gpt-4o-mini",
           maxTokens: 4096,
         });
 

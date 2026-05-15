@@ -180,7 +180,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
     }
 
-    const fallbackBody = JSON.stringify({ model: "openai/gpt-5-mini", messages: allMessages, stream: true, max_tokens: 16384 });
+    const fallbackBody = JSON.stringify({ model: "openai/gpt-4o-mini", messages: allMessages, stream: true, max_tokens: 16384 });
     const response = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -206,7 +206,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
     }
 
-    logAiUsage({ userId, functionName: "chatgpt-agent", modelUsed: "openai/gpt-5", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
+    logAiUsage({ userId, functionName: "chatgpt-agent", modelUsed: "openai/gpt-4o", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
