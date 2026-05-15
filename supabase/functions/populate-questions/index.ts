@@ -153,6 +153,13 @@ async function processTextToContent(
       return { q: qCount, f: fCount };
     } catch (err) {
       console.error("[Populate] Chunk error:", err);
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: `Error processing chunk: ${err instanceof Error ? err.message : String(err)}`,
+        alert_type: "chunk_processing_error",
+        severity: "error",
+        payload: { uploadId, topic }
+      });
       return { q: 0, f: 0 };
     }
   };
