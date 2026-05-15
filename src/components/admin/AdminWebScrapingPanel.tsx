@@ -115,13 +115,18 @@ const AdminWebScrapingPanel = () => {
           description: `${data.pages_scraped ?? 0} páginas analisadas de fontes oficiais.`,
         });
       }
-    } catch (e) {
+    } catch (e: any) {
       const isTimeout = e instanceof TypeError && /load failed|abort|timeout/i.test(e.message);
-      const msg = isTimeout
+      let msg = isTimeout
         ? "A busca demorou demais e foi cancelada. Tente novamente ou escolha outra especialidade."
         : (e instanceof Error ? e.message : "Erro desconhecido");
+      
+      if (msg.includes("FIRECRAWL_API_KEY")) {
+        msg = "Configuração ausente: FIRECRAWL_API_KEY não encontrada no Supabase. O Web Scraping automático requer esta chave.";
+      }
+      
       setError(msg);
-      toast({ title: "Erro", description: msg, variant: "destructive" });
+      toast({ title: "Erro de Configuração", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
