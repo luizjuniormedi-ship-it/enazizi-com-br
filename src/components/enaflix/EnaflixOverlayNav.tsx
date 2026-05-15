@@ -160,6 +160,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               { label: "Planner", path: "/dashboard/planner" },
               { label: "Simulados", path: "/dashboard/simulados" },
               { label: "Flashcards", path: "/dashboard/flashcards" },
+              { label: "Mnemônicos", path: "/dashboard/mnemonico" },
               { label: "Tutor IA", path: "/dashboard/sessao-estudo" },
             ].map((item) => (
               <button 
