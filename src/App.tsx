@@ -155,7 +155,9 @@ const App = () => (
               <Route path="/performance" element={<Navigate to="/dashboard/analytics" replace />} />
               <Route path="/profile" element={<Navigate to="/dashboard/perfil" replace />} />
 <Route path="/settings" element={<Navigate to="/dashboard/perfil" replace />} />
-<Route path="/enaflix" element={<ProtectedRoute><EnaflixDashboardLayout><EnaflixPage /></EnaflixDashboardLayout></ProtectedRoute>} />
+              <Route element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
+                <Route path="/enaflix" element={<EnaflixPage />} />
+              </Route>
               
               <Route path="/teacher" element={<Navigate to="/professor" replace />} />
               <Route path="/teacher/*" element={<Navigate to="/professor" replace />} />
