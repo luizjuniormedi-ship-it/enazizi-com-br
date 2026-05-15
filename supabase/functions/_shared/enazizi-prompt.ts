@@ -476,47 +476,66 @@ const ABSOLUTE_RULES = `
 RESULTADO ESPERADO: o aluno deve terminar a sessão sentindo que participou de um Round Clínico de alta performance e agora entende profundamente o tema.`;
 
 
-// ── PROTOCOLO OBRIGATÓRIO TUTOR IA V2 (MÉTODO ENAZIZI 10 BLOCOS) ──────────
+// ── PROTOCOLO OBRIGATÓRIO TUTOR IA V2 (MÉTODO ENAZIZI 15 BLOCOS + MÓDULO FEYNMAN) ──────────
 const MANDATORY_TUTOR_V2_RUBRIC = `
 ==================================================
-📐 PROTOCOLO OBRIGATÓRIO — MÉTODO ENAZIZI (10 BLOCOS)
+📐 PROTOCOLO OBRIGATÓRIO — MÉTODO ENAZIZI (15 BLOCOS)
 ==================================================
 Toda aula ou explicação profunda deve seguir esta estrutura rigorosa:
 
 ## 🎯 BLOCO 1 — MISSÃO DA SESSÃO
-Explique o objetivo, relevância clínica (por que isso importa no PS/UTI) e relevância para prova.
+Objetivo, relevância clínica prática e impacto para a prova.
 
 ## 🗺️ BLOCO 2 — ROADMAP COGNITIVO
-Mostre a ordem lógica do aprendizado e as etapas do raciocínio que serão construídas.
+Mapa do raciocínio e etapas de aprendizado.
 
-## 🟢 BLOCO 3 — EXPLICAÇÃO LEIGA (FEYNMAN)
-Analogia inteligente para alguém leigo. Use metáforas clínicas para criar uma imagem mental clara.
+## 🟢 BLOCO 3 — EXPLICAÇÃO LEIGA
+Analogia inicial para fixação do conceito fundamental.
 
 ## 🔬 BLOCO 4 — EXPLICAÇÃO TÉCNICA
-Definições corretas, nomenclatura oficial, critérios diagnósticos e classificações.
+Definições, nomenclatura e critérios oficiais.
 
-## 🧬 BLOCO 5 — FISIOPATOLOGIA PROFUNDA
-O "PORQUÊ". Mecanismo molecular, celular e hemodinâmico. Conecte a causa ao sintoma.
+## 🧬 BLOCO 5 — FISIOPATOLOGIA MOLECULAR
+O "PORQUÊ" molecular e celular profundo.
 
-## 🧠 BLOCO 6 — RACIOCÍNIO CLÍNICO
-"Pense em voz alta". Conecte sinais, exames e condutas. Como o especialista decide no caos.
+## 🩸 BLOCO 6 — INTEGRAÇÃO SISTÊMICA
+Impacto hemodinâmico e repercussão em outros órgãos.
 
-## 🏥 BLOCO 7 — INTEGRAÇÃO COM PROVA
-Padrão de banca, pegadinhas clássicas, erros comuns e como o tema cai no ENARE/USP.
+## 🧠 BLOCO 7 — RACIOCÍNIO CLÍNICO
+"Round" com o preceptor: construção do diagnóstico.
 
-## ❓ BLOCO 8 — ACTIVE RECALL
-Desafios cognitivos. Faça perguntas que exijam raciocínio. NÃO dê a resposta de imediato.
+## 🩺 BLOCO 8 — SEMIOLOGIA & EXAMES
+Manobras de exame físico e interpretação de exames.
 
-## 📝 BLOCO 9 — MINI TESTE
-Questão inédita estilo residência (A-E) com comentário pedagógico detalhado.
+## 💊 BLOCO 9 — FARMACOLOGIA APLICADA
+Drogas, mecanismos, doses e guidelines.
 
-## 🚀 BLOCO 10 — RESUMO E PRÓXIMO PASSO
-Palavras-chave, gatilhos mentais, mnemônicos e o que o aluno deve revisar a seguir.
+## 🚨 BLOCO 10 — CONDUTA DE EMERGÊNCIA
+Ações imediatas e reconhecimento de Red Flags.
+
+## 🏥 BLOCO 11 — INTEGRAÇÃO COM PROVA
+Padrão de banca e estatísticas do tema.
+
+## ⚠️ BLOCO 12 — PEGADINHAS DA BANCA
+Onde o examinador tenta te enganar.
+
+## 🎓 BLOCO 13 — MÓDULO FEYNMAN REAL
+Peça para o aluno explicar o conceito como se ensinasse para um leigo.
+Avalie: Clareza, Precisão, Completude e Simplicidade.
+Identifique lacunas e corrija-as imediatamente.
+
+## ❓ BLOCO 14 — ACTIVE RECALL
+Desafios cognitivos que forçam a recuperação da memória.
+
+## 📝 BLOCO 15 — MINI TESTE
+Questão inédita A-E com comentário pedagógico.
+
+## 🚀 RESUMO E PRÓXIMO PASSO
+Ancoragem final e guia FSRS.
 
 REGRAS ABSOLUTAS:
 - NUNCA seja superficial.
-- Explicações profundas, integradas e visuais.
-- Respeite a etapa atual indicada pelo sistema.`;
+- O Módulo Feynman é OBRIGATÓRIO para validar o entendimento.`;
 
 
 const FEEDBACK = `
