@@ -535,20 +535,33 @@ serve(async (req) => {
 
     // [PHASE_0_CONTEXT] 
     let context: TutorContext = {};
+    let orchestratorData: any = null;
+
     try {
-      console.log("[TUTOR_V2] Calling context-builder...", { requestId });
-      const { data: contextData, error: contextError } = await supabase.functions.invoke("tutor-v2-context-builder", {
-        headers: { Authorization: `Bearer ${auth.token}` }
-      });
-      if (contextError) {
-        console.warn("[TUTOR_V2] context-builder error:", { message: contextError.message, requestId });
-      } else {
-        context = contextData?.context || {};
-      }
+      console.log("[TUTOR_V2] Calling orchestrator and context-builder...", { requestId });
+      
+      const [contextRes, orchestratorRes] = await Promise.all([
+        supabase.functions.invoke("tutor-v2-context-builder", {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }),
+        supabase.functions.invoke("tutor-orchestrator-v2", {
+          headers: { Authorization: `Bearer ${auth.token}` },
+          body: { sessionId, userMessage: message, history, context: {} }
+        })
+      ]);
+
+      if (contextRes.error) console.warn("[TUTOR_V2] context-builder error:", contextRes.error);
+      else context = contextRes.data?.context || {};
+
+      if (orchestratorRes.error) console.warn("[TUTOR_V2] orchestrator error:", orchestratorRes.error);
+      else orchestratorData = orchestratorRes.data;
+
     } catch (e) {
-      console.warn("[TUTOR_V2] context-builder call failed:", e instanceof Error ? e.message : String(e));
+      console.warn("[TUTOR_V2] Context/Orchestrator calls failed:", e instanceof Error ? e.message : String(e));
     }
-    console.log("[PHASE_0_CONTEXT]", JSON.stringify(context));
+
+    const currentStage = orchestratorData?.currentStage || session.current_stage || 'mission';
+    console.log("[TUTOR_V2_STAGE]", { currentStage, requestId });
 
     // [QUESTION_REVIEW_MODE] Stage A — detect + steer prompt (no UI changes)
     const qReview = detectQuestionReviewMode(message, history || []);
@@ -562,17 +575,18 @@ serve(async (req) => {
 ESTADO COGNITIVO DO ALUNO (FASE 0):
 - Tema: ${session.topic}
 - Especialidade: ${session.specialty || 'Geral'}
+- Estágio da Aula: ${currentStage.toUpperCase()}
 - Missão Ativa: ${context.mission?.title || 'Exploração Livre'}
 - Erros Recorrentes (Lacunas): ${context.detected_gaps?.join(', ') || 'Nenhuma detectada'}
 - Status FSRS: ${context.fsrs?.pending_reviews || 0} revisões pendentes.
 - Carga Cognitiva Atual: ${context.cognitive_load || 'Normal'}
 
-INSTRUÇÃO OPERACIONAL ADAPTATIVA:
-1. Aplique o Método Feynman para simplificar conceitos complexos. Use analogias.
-2. Percorra as Fases Cognitivas (Leiga → Técnica → Mecanismo → Clínica → Prova → Recall → Consolidação).
-3. Use bibliografia oficial (Harrison, Robbins, etc.).
-4. Adote o modo de resposta obrigatório do Protocolo de 15 Blocos ENAZIZI.
-5. Sempre que detectar um conceito chave, adicione FLASHCARD_SUGGESTION: {"front": "...", "back": "..."} ao final.${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
+INSTRUÇÃO OPERACIONAL ADAPTATIVA (MODO TUTOR V2):
+1. Sua prioridade absoluta é a etapa: ${currentStage.toUpperCase()}.
+2. NÃO avance de etapa a menos que o aluno demonstre compreensão ou peça explicitamente.
+3. Se estiver em ACTIVE_RECALL ou MINI_TEST, você DEVE fazer a pergunta e aguardar a resposta antes de explicar o gabarito.
+4. Aplique o Método Feynman para simplificar conceitos complexos. Use analogias.
+5. Adote o modo de resposta obrigatório do Protocolo de 11 Etapas ENAZIZI, mas foque na etapa atual.${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
 
     const messages = [
       { role: "system", content: systemPrompt },
