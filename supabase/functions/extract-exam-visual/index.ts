@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -231,18 +232,18 @@ serve(async (req) => {
       const batch = newQuestions.slice(i, i + BATCH_SIZE).map((q: any) => {
         const hasImg = q.has_image && q.page_number && pageImageUrls[q.page_number];
         if (hasImg) totalImages++;
-        return {
+        return sanitizeForPostgres({
           user_id: systemUserId,
-          statement: (q.statement || "").replace(/\0/g, "").trim(),
-          options: (Array.isArray(q.options) ? q.options : []).map((o: string) => String(o).replace(/\0/g, "").trim()),
+          statement: (q.statement || "").trim(),
+          options: (Array.isArray(q.options) ? q.options : []).map((o: string) => String(o).trim()),
           correct_index: typeof q.correct_index === "number" ? q.correct_index : null,
-          explanation: (q.explanation || "").replace(/\0/g, ""),
-          topic: (q.topic || "Geral").replace(/\0/g, ""),
-          source: (q.source || upload.filename?.replace(/\.\w+$/, "") || "visual-import").replace(/\0/g, ""),
+          explanation: (q.explanation || ""),
+          topic: (q.topic || "Geral"),
+          source: (q.source || upload.filename?.replace(/\.\w+$/, "") || "visual-import"),
           is_global: true,
           review_status: "pending",
           image_url: hasImg ? pageImageUrls[q.page_number] : null,
-        };
+        });
       });
 
       const { error: insertErr } = await supabase.from("questions_bank").insert(batch);
