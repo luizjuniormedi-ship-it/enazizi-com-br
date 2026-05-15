@@ -1,6 +1,9 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
+import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
+import { AI_MODELS } from "../_shared/ai-models.ts";
+import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -408,9 +411,8 @@ Deno.serve(async (req) => {
     if (questions.length < 5) {
       console.log(`[AI_REQUEST] Regex extracted ${questions.length}, running LLM extraction in chunks...`);
       try {
-        const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
-        const { AI_MODELS } = await import("../_shared/ai-models.ts");
-        const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
+        // Dynamic imports removed - now using static imports at the top
+
 
         const cleanedFull = normalizePdfExamText(fullText);
         const CHUNK = 12000;

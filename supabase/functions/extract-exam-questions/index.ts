@@ -1,7 +1,8 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 import { AI_MODELS } from "../_shared/ai-models.ts";
 import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
+import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -121,8 +122,8 @@ Deno.serve(async (req) => {
       if ((questions.length < 5 && section.text.length > 5000) || questions.length === 0) {
         console.log(`Regex found only ${questions.length} questions for year ${section.year}. Trying LLM fallback...`);
         try {
-          // Dynamic import to use the shared helper
-          const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
+          // Dynamic import removed - now using static imports at the top
+
           
           const prompt = `Extraia questões médicas do texto abaixo para o ano ${section.year}.
           O texto é de uma prova do REVALIDA INEP.
