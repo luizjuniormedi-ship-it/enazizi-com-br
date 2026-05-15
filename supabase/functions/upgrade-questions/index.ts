@@ -50,12 +50,12 @@ Retorne APENAS um JSON válido:
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: `openai/${ALLOWED_MODELS.generation}`,
         messages: [
           { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown." },
           { role: "user", content: prompt },
         ],
-        // temperature: 1, // GPT-5 mini only supports default temperature 1 currently
+        [getTokenParameterName(ALLOWED_MODELS.generation)]: 4000,
       }),
     });
 
