@@ -635,9 +635,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA (MODO TUTOR V2):
     console.log("[FEYNMAN_LAYER]", { analogy_used: hasAnalogies, recall_generated: hasRecall, requestId });
 
     const mandatoryBlocks = [
-      "Introdução", "Explicação leiga", "Técnica", "Fisiologia", "Fisiopatologia", 
-      "Clínica", "Sintomas", "Exame físico", "Diferencial", "Exames", 
-      "Tratamento", "Pegadinhas", "Resumo", "Active recall", "Próxima ação"
+      "BLOCO 1", "BLOCO 2", "BLOCO 3", "BLOCO 4", "BLOCO 5", 
+      "BLOCO 6", "BLOCO 7", "BLOCO 8", "BLOCO 9", "BLOCO 10"
     ];
     // QUESTION_REVIEW_MODE uses its own 11-step rubric — skip generic 15-block penalty
     const foundBlocks = qReview.active ? mandatoryBlocks : mandatoryBlocks.filter(b => assistantMessage.includes(b));
