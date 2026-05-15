@@ -57,6 +57,7 @@ serve(async (req) => {
               file_url: fileUrl,
               institution: source.name,
               detected_year: year,
+              year: year, // Sync with existing column
               detected_category: term.toLowerCase().includes('gabarito') ? 'gabarito' : (term.toLowerCase().includes('edital') ? 'edital' : 'prova'),
               status: 'discovered',
               metadata: { term, scanned_at: new Date().toISOString() }
