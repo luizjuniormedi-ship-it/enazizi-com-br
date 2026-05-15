@@ -1085,12 +1085,12 @@ const StudySession = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
-                      title="Pedir ajuda contextual ao Tutor IA sem sair da sessão"
+                      className="h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10 font-black uppercase tracking-tighter"
+                      title="Pedir ajuda contextual ao Tutor IA V2 sem sair da sessão"
                     >
                       <Sparkles className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Pedir ajuda ao Tutor</span>
-                      <span className="sm:hidden">Tutor</span>
+                      <span className="hidden sm:inline">Tutor IA V2</span>
+                      <span className="sm:hidden">Tutor V2</span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
