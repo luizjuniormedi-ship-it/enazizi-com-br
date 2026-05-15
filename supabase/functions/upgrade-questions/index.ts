@@ -103,7 +103,7 @@ serve(async (req) => {
     // Fetch questions to upgrade
     let query = supabaseAdmin.from("questions_bank")
       .select("id, statement, options, correct_index, topic, explanation")
-      .eq("quality_tier", "needs_upgrade")
+      .in("quality_tier", ["needs_upgrade", "basic"])
       .order("created_at", { ascending: false })
       .limit(batchSize);
 
