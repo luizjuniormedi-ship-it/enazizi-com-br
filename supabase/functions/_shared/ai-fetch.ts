@@ -126,7 +126,15 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-  const lovableModel = options.model || "openai/gpt-4o-mini";
+  let lovableModel = options.model || "openai/gpt-5-mini";
+  // Auto-prefix openai models if missing
+  if (lovableModel.startsWith("gpt-") || lovableModel.startsWith("o1-") || lovableModel.startsWith("o3-")) {
+    lovableModel = `openai/${lovableModel}`;
+  }
+  // Upgrade gpt-4o-mini to gpt-5-mini automatically for better cognitive performance
+  if (lovableModel === "openai/gpt-4o-mini") {
+    lovableModel = "openai/gpt-5-mini";
+  }
   const maxRetries = options.maxRetries ?? 2;
   const timeoutMs = options.timeoutMs ?? 45000;
 
