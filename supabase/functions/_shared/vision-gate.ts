@@ -2,6 +2,9 @@
 // imagem suspeita = rejeitado | visão falhou = rejeitado
 // diagnóstico não bate = rejeitado | retrato detectado = rejeitado
 
+import { aiFetch, parseAiJson } from "./ai-fetch.ts";
+import { ALLOWED_MODELS } from "./ai-model-registry.ts";
+
 const BLOCKED_URL_PATTERNS = [
   "logo", "icon", "avatar", "banner", "favicon", "tracking", "ad-",
   "thumbnail", "thumb", "social", "share", "button", "arrow", "caret",
@@ -62,7 +65,7 @@ export function extractCleanImageUrls(html: string): string[] {
 }
 
 /**
- * FAIL-CLOSED vision validation using OpenAI via Lovable Gateway.
+ * FAIL-CLOSED vision validation using OpenAI via aiFetch (Safe Mode compatible).
  */
 export async function validateImageVision(
   imageUrl: string,
@@ -70,36 +73,27 @@ export async function validateImageVision(
   imageType: string,
   apiKey: string | undefined,
 ): Promise<{ valid: boolean; reason: string }> {
-  if (!apiKey) return { valid: false, reason: "LOVABLE_API_KEY ausente" };
   if (!imageUrl) return { valid: false, reason: "URL de imagem ausente" };
 
   try {
-    const payload = {
-      model: "openai/gpt-5-mini",
-      messages: [{
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `You are a medical auditor. Respond ONLY with valid JSON.
+    const messages = [{
+      role: "user" as const,
+      content: [
+        {
+          type: "text",
+          text: `You are a medical auditor. Respond ONLY with valid JSON.
 Verify if the image is a REAL clinical exam (X-ray, ECG, US, etc.) matching "${expectedDiagnosis}" (${imageType}).
 REJECT infographics, diagrams, or portraits.
 JSON: {"is_clinical":bool, "matches_diagnosis":bool, "reason":"string"}`,
-          },
-          { type: "image_url", image_url: { url: imageUrl } },
-        ],
-      }],
-      max_completion_tokens: 1500,
-      response_format: { type: "json_object" }
-    };
+        },
+        { type: "image_url", image_url: { url: imageUrl } },
+      ],
+    }];
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+    const resp = await aiFetch({
+      model: ALLOWED_MODELS.generation, // Uses gpt-4o-mini in safe mode
+      messages: messages as any,
+      timeoutMs: 50000,
     });
 
     if (!resp.ok) {
@@ -109,7 +103,7 @@ JSON: {"is_clinical":bool, "matches_diagnosis":bool, "reason":"string"}`,
 
     const data = await resp.json();
     const content = data.choices?.[0]?.message?.content || "";
-    const result = JSON.parse(content);
+    const result = parseAiJson(content);
 
     if (!result.is_clinical) return { valid: false, reason: `Não é imagem clínica: ${result.reason}` };
     if (!result.matches_diagnosis) return { valid: false, reason: `Diagnóstico divergente: ${result.reason}` };
