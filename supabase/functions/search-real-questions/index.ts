@@ -313,8 +313,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const log = newRunLog();
   try {
-    const { specialty, banca } = await req.json();
-    if (!specialty) throw new Error("Specialty required");
+    const body = await req.json().catch(() => ({}));
+    const { specialty, banca } = body;
+    if (!specialty) {
+      return new Response(JSON.stringify({ success: true, stage: "BOOT_OK", function: "search-real-questions" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const queries = buildQueryPool(specialty, banca);
     log.queries_executed = queries.length;
     
