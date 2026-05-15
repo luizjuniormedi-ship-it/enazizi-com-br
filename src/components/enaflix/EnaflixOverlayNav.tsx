@@ -70,7 +70,22 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
       />
 
       <div className="relative flex items-center justify-between px-4 sm:px-8 lg:px-14 h-16">
-        <div className="flex items-center gap-4 sm:gap-8 min-w-0">
+        <div className="flex items-center gap-3 sm:gap-8 min-w-0">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="lg:hidden h-9 w-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/5 transition-all"
+                aria-label="Abrir menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 border-r border-white/10 w-64 bg-[#050508]">
+              <EnaflixSidebar isMobile />
+            </SheetContent>
+          </Sheet>
+
           {isSpecialUser ? (
             <button
               type="button"
