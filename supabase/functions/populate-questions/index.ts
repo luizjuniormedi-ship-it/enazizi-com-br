@@ -94,8 +94,16 @@ Se não encontrar questões, retorne {"questions": []}`
 
     console.log("AI response status:", response.status);
     if (!response.ok) {
-      const errText = await response.text();
+      const errText = await response.clone().text();
       console.error("AI error:", errText);
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: `AI Chunk Processing Failed: ${response.status}`,
+        error_stack: errText,
+        http_status: response.status,
+        model_used: AI_MODELS.generation,
+        payload: { chunk_length: chunk.length }
+      });
       return 0;
     }
 
