@@ -45,7 +45,11 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
 
   return (
     <header
-      className="fixed top-0 inset-x-0 z-50 transition-[background-color,box-shadow,backdrop-filter] duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
+      className={cn(
+        "fixed top-0 inset-x-0 z-50 transition-[background-color,box-shadow,backdrop-filter,left] duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
+        // Se a sidebar estiver visível (desktop), a topbar deve respeitar o recuo
+        (isAdmin || isProfessor || location.pathname === "/dashboard" || location.pathname === "/enaflix") ? "lg:left-64" : "left-0"
+      )}
       style={{
         backgroundColor: `rgba(10, 10, 18, ${bgAlpha})`,
         backdropFilter: `blur(${blurPx}px) saturate(140%)`,
@@ -149,7 +153,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 ml-4">
+          <nav className="hidden lg:flex items-center gap-6 ml-4">
             {[
               { label: "Dashboard", path: "/dashboard" },
               { label: "ENAFLIX", path: "/dashboard/enaflix" },
@@ -162,7 +166,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={cn(
-                  "text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-white hover:scale-105",
+                  "text-[9px] font-black uppercase tracking-[0.2em] transition-all hover:text-white hover:scale-105 whitespace-nowrap",
                   location.pathname === item.path || (item.path === "/dashboard" && (location.pathname === "/study-hub" || location.pathname === "/dashboard"))
                     ? "text-white" 
                     : "text-white/40"
