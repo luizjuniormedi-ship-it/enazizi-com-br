@@ -159,9 +159,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
 
   lovableModel = standardizeModelName(lovableModel);
   
-  // No more explicit overrides needed for gpt-5-mini as it is now supported
-  if (lovableModel === "openai/gpt-5-mini" || lovableModel === "gpt-5-mini") {
-    lovableModel = "openai/gpt-4o-mini";
+  // The Gateway expects gpt-5-* names. 
+  // openai/gpt-4o-mini is now mapped to gpt-5-mini in the project's logic where possible.
+  if (lovableModel === "openai/gpt-4o-mini" || lovableModel === "gpt-4o-mini") {
+    lovableModel = "openai/gpt-5-mini";
+  }
+  if (lovableModel === "openai/gpt-4o" || lovableModel === "gpt-4o") {
+    lovableModel = "openai/gpt-5";
   }
 
   const maxRetries = options.maxRetries ?? 2;
