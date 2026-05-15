@@ -204,9 +204,17 @@ const AdminWebScrapingPanel = () => {
         </Badge>
       </div>
 
-      <p className="text-xs text-muted-foreground mb-3">
+      <p className="text-xs text-muted-foreground mb-1">
         Busca questões reais de provas de residência em sites oficiais (INEP, universidades, portais) usando Firecrawl.
       </p>
+      <div className="flex items-center gap-1.5 mb-3">
+        <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-500/30 bg-amber-500/5">
+          Requer FIRECRAWL_API_KEY
+        </Badge>
+        <span className="text-[9px] text-muted-foreground italic">
+          Sem a chave, use o "Import Direto" no Pipeline de Ingestão.
+        </span>
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-3">
         <Select value={specialty} onValueChange={setSpecialty}>
