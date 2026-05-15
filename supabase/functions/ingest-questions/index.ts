@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
+import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -458,13 +459,13 @@ Deno.serve(async (req) => {
           difficulty = 2; // Medium-Low
         }
 
-        const { error: insErr } = await supabase.from("questions_bank").insert({
-          statement: q.statement.replace(/\0/g, ""),
-          options: opts.map(o => String(o).replace(/\0/g, "")),
+        const { error: insErr } = await supabase.from("questions_bank").insert(sanitizeForPostgres({
+          statement: q.statement,
+          options: opts,
           correct_index: q.correct_index >= 0 ? q.correct_index : 0,
-          topic: (q.topic || banca || "Geral").replace(/\0/g, ""),
-          subtopic: (q.subtopic || "Geral").replace(/\0/g, ""),
-          explanation: (q.explanation || "").replace(/\0/g, ""),
+          topic: (q.topic || banca || "Geral"),
+          subtopic: (q.subtopic || "Geral"),
+          explanation: (q.explanation || ""),
           source: `${banca || "external"}_${year || "unknown"}`,
           source_type,
           permission_type,
@@ -473,7 +474,7 @@ Deno.serve(async (req) => {
           is_global: true,
           difficulty: difficulty,
           review_status: "pending",
-        });
+        }));
 
         if (insErr) {
           errors++;

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { validateAIOutput, logValidationRejection } from "../_shared/ai-validation.ts";
+import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -986,7 +987,7 @@ serve(async (req) => {
     // Also insert into questions_bank for backward compatibility
     const adminUserId = await getAdminUserId(supabaseAdmin);
     if (adminUserId) {
-      const bankRows = unique.map((q: any) => ({
+      const bankRows = unique.map((q: any) => sanitizeForPostgres({
         user_id: adminUserId,
         statement: String(q.statement).trim(),
         options: q.options.map(String),

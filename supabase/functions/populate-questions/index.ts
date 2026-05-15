@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,12 +127,12 @@ Se não encontrar questões, retorne {"questions": []}`
     if (questions.length > 0) {
       const rows = questions.map((q: any) => {
         const stmtLen = String(q.statement).trim().length;
-        return {
+        return sanitizeForPostgres({
           user_id: userId, statement: String(q.statement).trim(), options: q.options.map(String),
           correct_index: q.correct_index, explanation: String(q.explanation || "").trim(),
           topic: String(q.topic || topic).trim(), source, is_global: true, review_status: "pending",
           quality_tier: stmtLen >= 450 ? "exam_standard" : (stmtLen >= 250 ? "basic" : "needs_upgrade"),
-        };
+        });
       });
       const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
       if (!error) return rows.length;
