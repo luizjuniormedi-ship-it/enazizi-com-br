@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 export const GenerateFlashcardsSchema = z.object({
   topic: z.string().min(1, "O tópico é obrigatório"),
