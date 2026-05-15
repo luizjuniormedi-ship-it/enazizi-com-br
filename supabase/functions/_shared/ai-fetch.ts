@@ -16,7 +16,7 @@ const OPENAI_API = "https://api.openai.com/v1/chat/completions";
  * When enabled, forces gpt-4o-mini, disables complex response_formats,
  * and uses standard payloads to maximize stability.
  */
-const PRODUCTION_SAFE_MODE = true;
+const PRODUCTION_SAFE_MODE = false; // Temporarily disabled for testing
 
 const OPENAI_MAX_TOKENS: Record<string, number> = {
   "gpt-4o-mini": 16384,
