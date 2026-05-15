@@ -330,6 +330,8 @@ Deno.serve(async (req) => {
       console.log("Regex parsing failed, trying LLM extraction...");
       try {
         const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
+        const { AI_MODELS } = await import("../_shared/ai-models.ts");
+        const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
         const prompt = `Você é um extrator de questões médicas de alta precisão. 
         Abaixo está o texto extraído de um PDF de prova de residência médica. 
         Extraia TODAS as questões completas seguindo rigorosamente o formato JSON.
@@ -347,7 +349,7 @@ Deno.serve(async (req) => {
         { "questions": [{ "statement": "...", "options": ["A) ...", "B) ..."], "correct_index": 0, "topic": "...", "subtopic": "...", "explanation": "..." }] }`;
 
         const aiResp = await aiFetch({
-          model: "openai/gpt-4o-mini",
+          model: AI_MODELS.extraction,
           messages: [{ role: "system", content: "Você é um assistente que extrai questões estruturadas de textos de provas." }, { role: "user", content: prompt }],
           response_format: { type: "json_object" }
         });
@@ -358,6 +360,15 @@ Deno.serve(async (req) => {
           const parsed = parseAiJson(rawContent);
           questions = parsed.questions || [];
           console.log(`LLM extracted ${questions.length} questions.`);
+        } else {
+          const errText = await aiResp.clone().text();
+          await logPipelineAlert({
+            source: "ingest-questions",
+            message: `LLM extraction failed: ${aiResp.status}`,
+            error_stack: errText,
+            http_status: aiResp.status,
+            model_used: AI_MODELS.extraction
+          });
         }
       } catch (aiErr) {
         console.error("LLM extraction failed:", aiErr);

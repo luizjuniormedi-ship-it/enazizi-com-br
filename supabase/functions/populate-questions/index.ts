@@ -1,8 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
-import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
+import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
+import { AI_MODELS } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,7 +70,7 @@ async function processTextToQuestions(
 
   const processChunk = async (chunk: string): Promise<number> => {
     const response = await aiFetch({
-      model: "openai/gpt-4o-mini",
+      model: AI_MODELS.generation,
       messages: [
         {
           role: "system",
@@ -92,29 +94,46 @@ Se não encontrar questões, retorne {"questions": []}`
 
     console.log("AI response status:", response.status);
     if (!response.ok) {
-      const errText = await response.text();
+      const errText = await response.clone().text();
       console.error("AI error:", errText);
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: `AI Chunk Processing Failed: ${response.status}`,
+        error_stack: errText,
+        http_status: response.status,
+        model_used: AI_MODELS.generation,
+        payload: { chunk_length: chunk.length }
+      });
       return 0;
     }
 
-    const data = await response.json();
-    const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
-    const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-
     let parsed: any = null;
-    try { parsed = JSON.parse(cleaned); } catch {
-      try {
-        const jsonMatch = cleaned.match(/\{"questions"\s*:\s*\[[\s\S]*?\]\s*\}/);
-        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-      } catch {
-        try {
-          const arrMatch = cleaned.match(/\[[\s\S]*\]/);
-          if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
-        } catch { return 0; }
-      }
+    try {
+      const data = await response.json();
+      const rawContent = data.choices?.[0]?.message?.content || "";
+      parsed = parseAiJson(rawContent);
+    } catch (parseErr) {
+      console.error("Parse error:", parseErr);
+      const rawText = await response.clone().text();
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: "JSON Parse Error in AI Response",
+        error_stack: parseErr instanceof Error ? parseErr.stack : String(parseErr),
+        payload: { raw_response: rawText.slice(0, 1000) },
+        model_used: AI_MODELS.generation
+      });
+      return 0;
     }
 
-    if (!parsed) return 0;
+    if (!parsed || !parsed.questions) {
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: "AI returned empty questions array",
+        severity: "warning",
+        model_used: AI_MODELS.generation
+      });
+      return 0;
+    }
 
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
@@ -198,7 +217,28 @@ async function populateInBackground(
     const existingJson = (upload.extracted_json || {}) as Record<string, any>;
     const totalQuestions = await processTextToQuestions(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId, existingJson);
 
+    if (totalQuestions === 0) {
+      await supabaseAdmin.from("uploads").update({
+        status: "error",
+        extracted_json: {
+          ...existingJson,
+          error: "Nenhuma questão foi gerada a partir do texto.",
+          step: "failed",
+          progress: 100,
+        },
+      }).eq("id", uploadId);
+      
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: "Generation concluded with 0 questions",
+        severity: "error",
+        metadata: { uploadId, filename: upload.filename }
+      });
+      return;
+    }
+
     await supabaseAdmin.from("uploads").update({
+      status: "processed",
       extracted_json: {
         ...existingJson,
         questions_count: (existingJson.questions_count || 0) + totalQuestions,

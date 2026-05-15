@@ -4,6 +4,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { AI_MODELS, getTokenParameterName } from "../_shared/ai-models.ts";
 
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const PING_TIMEOUT_MS = 12_000;
@@ -28,8 +29,7 @@ async function pingModel(model: string, key: string) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT_MS);
   try {
-    const isOpenAI5 = /^openai\/gpt-4o/.test(model);
-    const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
+    const tokenField = getTokenParameterName(model);
     const body: Record<string, unknown> = {
       model,
       messages: [

@@ -343,6 +343,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── AI MODE: AI specific health check ──
+    if (mode === "ai") {
+      const { data: alerts } = await supabase
+        .from("pipeline_alerts")
+        .select("*")
+        .eq("acknowledged", false)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      
+      const { data: providers } = await supabase
+        .from("ai_provider_health")
+        .select("*")
+        .order("latency_ms", { ascending: true });
+        
+      return new Response(JSON.stringify({
+        status: providers?.every(p => p.status === "healthy") ? "online" : "degraded",
+        active_alerts: alerts?.length || 0,
+        alerts,
+        providers
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── FULL MODE: original alerts logic ──
     // Check cache first
     if (cachedFullResult && Date.now() - cachedFullResult.ts < CACHE_TTL_MS) {

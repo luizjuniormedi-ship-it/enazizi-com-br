@@ -62,6 +62,7 @@ const ForgotPassword = lazyWithRetry(() => import("./pages/ForgotPassword"), "Fo
 const Terms = lazyWithRetry(() => import("./pages/Terms"), "Terms");
 const Privacy = lazyWithRetry(() => import("./pages/Privacy"), "Privacy");
 const FeynmanTrainer = lazyWithRetry(() => import("./pages/ContentSummarizer"), "ContentSummarizer");
+const AIPipelineHardening = lazyWithRetry(() => import("./pages/admin/AIPipelineHardening"), "AIPipelineHardening");
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
@@ -243,6 +244,7 @@ const App = () => (
                 <Route path="ingestao" element={<Admin initialTab="ingestion" />} />
                 <Route path="telemetry" element={<Admin initialTab="intelligence-overview" />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
+                <Route path="pipeline-hardening" element={<AIPipelineHardening />} />
                 <Route path="ceo" element={<AdminCEO />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>

@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
+import { AI_MODELS } from "../_shared/ai-models.ts";
+import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -141,7 +143,7 @@ Deno.serve(async (req) => {
           ${section.text.slice(0, 15000)}`;
 
           const aiResp = await aiFetch({
-            model: "openai/gpt-4o-mini",
+            model: AI_MODELS.extraction,
             messages: [
               { role: "system", content: "Você é um extrator de provas médicas especializado em REVALIDA." },
               { role: "user", content: prompt }
@@ -165,6 +167,15 @@ Deno.serve(async (req) => {
               console.log(`LLM extracted ${llmQs.length} questions, replacing regex results.`);
               questions = llmQs;
             }
+          } else {
+            const errText = await aiResp.clone().text();
+            await logPipelineAlert({
+              source: "extract-exam-questions",
+              message: `AI Fallback failed for year ${section.year}: ${aiResp.status}`,
+              error_stack: errText,
+              http_status: aiResp.status,
+              model_used: AI_MODELS.extraction
+            });
           }
         } catch (err) {
           console.error(`LLM fallback failed for ${section.year}:`, err);
