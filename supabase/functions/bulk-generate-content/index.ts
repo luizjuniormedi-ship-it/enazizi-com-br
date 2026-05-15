@@ -190,7 +190,7 @@ REGRAS:
 
   try {
     const response = await aiFetch({
-      model: "openai/gpt-4o-mini",
+      model: ALLOWED_MODELS.generation,
       timeoutMs: 55000,
       maxRetries: 0,
       messages: [
