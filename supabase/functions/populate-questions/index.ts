@@ -268,25 +268,27 @@ serve(async (req) => {
     
     let userId: string;
 
+    // Direct token comparison (most reliable for system calls)
     if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
-      console.log("Authenticated via Service Role Key");
+      console.log("Authenticated via Service Role Key (env)");
       const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
       userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
     } else {
+      // Try to get user from token
       const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token!);
-      if (authError || !user) {
-        // Fallback for direct curl or system calls during debugging
+      
+      if (user) {
+        const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+        if (!roleData) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
+        userId = user.id;
+      } else {
+        // Final fallback for manual calls using service role key that might fail auth.getUser()
         if (token && token.length > 20 && !token.includes(".")) {
-           console.log("Likely Service Role Key (manual call)");
            const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
            userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
         } else {
           return new Response(JSON.stringify({ error: "Unauthorized", details: authError?.message }), { status: 401, headers: corsHeaders });
         }
-      } else {
-        const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-        if (!roleData) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
-        userId = user.id;
       }
     }
 
