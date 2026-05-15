@@ -153,14 +153,19 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
   );
 }
 
-export function EnaflixSidebar() {
+export function EnaflixSidebar({ className, isMobile }: { className?: string; isMobile?: boolean }) {
   const location = useLocation();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#050508]/60 backdrop-blur-[80px] border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_60px_-20px_rgba(0,0,0,1)]">
+    <aside className={cn(
+      "bg-[#050508]/60 backdrop-blur-[80px] border-r border-white/5 flex flex-col z-50 shadow-[20px_0_60px_-20px_rgba(0,0,0,1)]",
+      !isMobile && "fixed left-0 top-0 bottom-0 w-64 hidden lg:flex",
+      isMobile && "w-full h-full",
+      className
+    )}>
       {/* Brand Header */}
       <div className="p-8 pb-4">
         <Link to="/enaflix" className="flex items-center gap-4 group">
