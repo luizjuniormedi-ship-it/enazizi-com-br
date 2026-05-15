@@ -83,7 +83,9 @@ export default function MnemonicGeneratorPage() {
   // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
   const autoTriggeredRef = useRef(false);
   useEffect(() => {
-    const temaParam = searchParams.get("tema") || searchParams.get("topic");
+    const state = location.state as { prefillTopic?: string; fromErrorBank?: boolean } | null;
+    const temaParam = searchParams.get("tema") || searchParams.get("topic") || state?.prefillTopic;
+    const autoParam = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
     const termosParam = searchParams.get("termos");
     const estiloParam = searchParams.get("estilo");
     const publicoParam = searchParams.get("publico");
