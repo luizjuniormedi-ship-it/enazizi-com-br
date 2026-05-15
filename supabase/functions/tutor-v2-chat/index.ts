@@ -584,9 +584,10 @@ ESTADO COGNITIVO DO ALUNO (FASE 0):
 INSTRUÇÃO OPERACIONAL ADAPTATIVA (MÉTODO ENAZIZI V2):
 1. Sua prioridade absoluta é o: ${currentStage.toUpperCase()}.
 2. NÃO avance de etapa a menos que o aluno peça explicitamente ("próximo", "continuar") ou demonstre domínio total.
-3. Você deve seguir RIGOROSAMENTE o Protocolo de 10 Blocos ENAZIZI.
-4. Aplique o Método Feynman Profundo. Use analogias densas e metáforas clínicas.
-5. Suas respostas devem ser LONGAS, PROFUNDAS e ESTRUTURADAS. Proibido respostas curtas.${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
+3. Você deve seguir RIGOROSAMENTE o Protocolo de 15 Blocos ENAZIZI, incluindo o MÓDULO FEYNMAN OBRIGATÓRIO no Bloco 13.
+4. No Bloco 13 (Feynman), você deve parar e pedir para o aluno explicar o tema com as próprias palavras.
+5. Suas respostas devem ser LONGAS, PROFUNDAS e ESTRUTURADAS. Proibido respostas curtas.
+6. Aplique o Método Feynman Profundo em todas as etapas, mas a validação real ocorre no Bloco 13.${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
 
     const messages = [
       { role: "system", content: systemPrompt },
