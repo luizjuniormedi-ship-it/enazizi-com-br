@@ -53,7 +53,7 @@ Retorne APENAS um JSON válido:
           { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown." },
           { role: "user", content: prompt },
         ],
-        temperature: 0.8,
+        // temperature: 1, // GPT-5 mini only supports default temperature 1 currently
       }),
     });
 
