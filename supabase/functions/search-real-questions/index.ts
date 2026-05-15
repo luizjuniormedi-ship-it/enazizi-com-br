@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
-import { AI_MODELS } from "../_shared/ai-models.ts"
+import { logPipelineAlert } from "../_shared/pipeline-logger.ts"
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,8 +11,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       function: "search-real-questions",
-      stage: "IMPORT_AI_MODELS_OK",
-      model: AI_MODELS.generation,
+      stage: "IMPORT_PIPELINE_LOGGER_OK",
       timestamp: new Date().toISOString()
     }), {
       headers: {
@@ -24,7 +23,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: false,
       function: "search-real-questions",
-      stage: "IMPORT_AI_MODELS_CATCH",
+      stage: "IMPORT_PIPELINE_LOGGER_CATCH",
       error: String(err),
       stack: err instanceof Error ? err.stack : null
     }), {
