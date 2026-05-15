@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { EnaflixSidebar } from "./EnaflixSidebar";
 
 interface Props {
   onClose: () => void;
