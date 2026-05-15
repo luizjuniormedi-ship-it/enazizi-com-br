@@ -215,10 +215,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
         await logPipelineAlert({
           source,
           message: `Lovable AI Gateway Error: ${response.status}`,
+          alert_type: "gateway_error",
           error_stack: errorBody,
           http_status: response.status,
           model_used: lovableModel,
-          payload: { messages: options.messages.slice(-1) } // log last message for context
+          payload: { 
+            last_message_preview: options.messages[options.messages.length - 1]?.content?.slice(0, 500) 
+          }
         });
       } else {
         const errorBody = await response.clone().text();
