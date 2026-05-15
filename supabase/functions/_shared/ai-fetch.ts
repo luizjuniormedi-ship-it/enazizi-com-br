@@ -13,8 +13,8 @@ const OPENAI_MAX_TOKENS: Record<string, number> = {
 };
 
 const MODEL_MAP: Record<string, string> = {
-  "openai/gpt-5-mini": "gpt-5-mini",
-  "openai/gpt-5": "gpt-5",
+  "openai/gpt-4o-mini": "gpt-4o-mini",
+  "openai/gpt-4o": "gpt-4o",
 };
 
 // Retryable status codes (transient errors)
@@ -126,7 +126,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-  const lovableModel = options.model || "openai/gpt-5-mini";
+  const lovableModel = options.model || "openai/gpt-4o-mini";
   const maxRetries = options.maxRetries ?? 2;
   const timeoutMs = options.timeoutMs ?? 45000;
 
