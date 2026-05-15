@@ -637,16 +637,26 @@ ${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer
     const feynmanScore = (hasAnalogies ? 50 : 0) + (hasRecall ? 50 : 0);
     console.log("[FEYNMAN_LAYER]", { analogy_used: hasAnalogies, recall_generated: hasRecall, requestId });
 
-    const mandatoryBlocks = [
-      "BLOCO 1", "BLOCO 2", "BLOCO 3", "BLOCO 4", "BLOCO 5", 
-      "BLOCO 6", "BLOCO 7", "BLOCO 8", "BLOCO 9", "BLOCO 10",
-      "BLOCO 11", "BLOCO 12", "BLOCO 13", "BLOCO 14", "BLOCO 15"
-    ];
-    // QUESTION_REVIEW_MODE uses its own 11-step rubric — skip generic 15-block penalty
-    const foundBlocks = qReview.active ? mandatoryBlocks : mandatoryBlocks.filter(b => assistantMessage.includes(b));
-    const missingBlocks = qReview.active ? [] : mandatoryBlocks.filter(b => !assistantMessage.includes(b));
-    const pedagogicalScore = qReview.active ? 100 : Math.round((foundBlocks.length / mandatoryBlocks.length) * 100);
-    console.log("[PEDAGOGICAL_BLOCK_VALIDATION]", { found: foundBlocks.length, missing: missingBlocks.length, skipped_for_qreview: qReview.active, requestId });
+    const stageToBlockMap: Record<string, string> = {
+      'mission': 'BLOCO 1', 'roadmap': 'BLOCO 2', 'layman': 'BLOCO 3', 
+      'technical': 'BLOCO 4', 'pathophysiology': 'BLOCO 5', 'systemic_integration': 'BLOCO 6',
+      'clinical_reasoning': 'BLOCO 7', 'semiology_exams': 'BLOCO 8', 'pharmacology': 'BLOCO 9',
+      'emergency_conduct': 'BLOCO 10', 'exam_integration': 'BLOCO 11', 'exam_tricks': 'BLOCO 12',
+      'feynman_module': 'BLOCO 13', 'active_recall': 'BLOCO 14', 'mini_test': 'BLOCO 15',
+      'summary': 'RESUMO'
+    };
+
+    const targetBlock = stageToBlockMap[currentStage] || 'BLOCO';
+    const hasTargetBlock = assistantMessage.includes(targetBlock);
+    const pedagogicalScore = qReview.active ? 100 : (hasTargetBlock ? 100 : 0);
+    
+    console.log("[PEDAGOGICAL_VALIDATION_V3]", { 
+      stage: currentStage, 
+      expected: targetBlock, 
+      found: hasTargetBlock,
+      score: pedagogicalScore,
+      requestId 
+    });
 
     const safetyKeywords = ["cuidado", "emergência", "urgência", "alerta", "contraindicação"];
     const hasSafetyInfo = safetyKeywords.some(k => assistantMessage.toLowerCase().includes(k));
