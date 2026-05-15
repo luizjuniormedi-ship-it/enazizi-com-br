@@ -16,7 +16,7 @@ const OPENAI_API = "https://api.openai.com/v1/chat/completions";
  * When enabled, forces gpt-4o-mini, disables complex response_formats,
  * and uses standard payloads to maximize stability.
  */
-const PRODUCTION_SAFE_MODE = true;
+const PRODUCTION_SAFE_MODE = false;
 
 const OPENAI_MAX_TOKENS: Record<string, number> = {
   "gpt-4o-mini": 16384,
@@ -147,7 +147,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   
   if (PRODUCTION_SAFE_MODE) {
     console.log("[SAFE_MODE] Overriding model to gpt-4o-mini");
-    rawModel = "gpt-4o-mini";
+    rawModel = "openai/gpt-5-mini";
   }
   
   const normalizedModel = normalizeModel(rawModel);
@@ -155,7 +155,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   // 2. Build Payload
   const buildPayload = (model: string, isOpenAI = false) => {
     let maxTokens = options.maxTokens ?? 16384;
-    let temperature = 0.7; // Standard temperature for stability
+    let temperature = 1; // Standard temperature for stability
     
     if (PRODUCTION_SAFE_MODE) {
       maxTokens = 1200; // Forced safe token limit
@@ -168,7 +168,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     const tokenKey = getTokenParameterName(model);
     
     const body: any = { 
-      model: model.startsWith("openai/") || isOpenAI ? model : `openai/${model}`, 
+      model: model, 
       messages: options.messages, 
       [tokenKey]: maxTokens,
       temperature
