@@ -294,7 +294,8 @@ FORMATO JSON OBRIGATÓRIO:
     });
     if (!response.ok) return [];
     const data = await response.json();
-    return extractQuestionsFromJson(data.choices?.[0]?.message?.content || "");
+    const content = data.choices?.[0]?.message?.content || data.content || "";
+    return extractQuestionsFromJson(content);
   } catch { return []; }
 }
 
