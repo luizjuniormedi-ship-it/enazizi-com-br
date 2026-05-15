@@ -100,9 +100,9 @@ const TutorPremiumHero = ({ onSend, initialValue, onInputValueChange }: { onSend
           className="space-y-4"
         >
           <div className="flex items-center justify-center gap-3">
-            <EnaflixBadge type="ia" className="scale-110" />
+            <EnaflixBadge type="ia" className="scale-110">V2</EnaflixBadge>
             <div className="h-1 w-1 rounded-full bg-white/20" />
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Sessão Premium Ativa</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Tutor IA V2 Ativo</span>
           </div>
           
           <h1 className="text-5xl sm:text-7xl font-black text-white tracking-tighter leading-tight">
