@@ -293,7 +293,7 @@ const Dashboard = () => {
               </div>
               <div className="space-y-4 flex-1">
                 <div>
-                  <h3 className="text-3xl font-black text-white">Tutor Médico IA</h3>
+                  <h3 className="text-3xl font-black text-white">Tutor IA V2</h3>
                   <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
                 <Enaflix3DButton variant="violet">
