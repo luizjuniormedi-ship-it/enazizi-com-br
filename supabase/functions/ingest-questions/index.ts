@@ -67,10 +67,16 @@ async function extractPdfTextFromUrl(url: string): Promise<string> {
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
+    // Use dangerousAllowAnyCertificate to bypass SSL issues on official sites (like FGV/ENARE)
+    const client = Deno.createHttpClient({
+      dangerousAllowAnyCertificate: true,
+    });
+    
     const resp = await fetch(url, {
       signal: controller.signal,
       headers: { "User-Agent": "Mozilla/5.0" },
-    });
+      client,
+    } as any);
 
     if (!resp.ok) {
       throw new Error(`Falha ao baixar PDF (${resp.status})`);
