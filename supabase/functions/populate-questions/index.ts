@@ -273,7 +273,7 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     let userId: string;
 
-    if (token === serviceRoleKey) {
+    if (token === serviceRoleKey || token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
       const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
       userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
     } else {
