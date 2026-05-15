@@ -330,6 +330,8 @@ Deno.serve(async (req) => {
       console.log("Regex parsing failed, trying LLM extraction...");
       try {
         const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
+        const { AI_MODELS } = await import("../_shared/ai-models.ts");
+        const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
         const prompt = `Você é um extrator de questões médicas de alta precisão. 
         Abaixo está o texto extraído de um PDF de prova de residência médica. 
         Extraia TODAS as questões completas seguindo rigorosamente o formato JSON.
