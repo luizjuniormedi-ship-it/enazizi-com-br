@@ -153,11 +153,23 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
     
     // Aceita "A.", "A)", "A-" ou "A " seguido de caractere de texto (cobre PDFs sem pontuação após a letra)
     const markerRegex = /(?:^|[\s\n])([A-E])(?:[\.)\-]\s|\s+(?=[A-ZÀ-Úa-zà-ú0-9]))/g;
-    const markers = Array.from(block.matchAll(markerRegex)).map((match) => ({
+    const allMarkers = Array.from(block.matchAll(markerRegex)).map((match) => ({
       letter: match[1],
       rawIndex: match.index ?? 0,
       start: (match.index ?? 0) + match[0].length,
     }));
+
+    // Filtra apenas a primeira sequência ordenada A,B,C,D[,E]
+    const sequence = ["A", "B", "C", "D", "E"];
+    const markers: typeof allMarkers = [];
+    let seqIdx = 0;
+    for (const m of allMarkers) {
+      if (m.letter === sequence[seqIdx]) {
+        markers.push(m);
+        seqIdx++;
+        if (seqIdx >= 5) break;
+      }
+    }
 
     if (markers.length < 4) continue;
 
