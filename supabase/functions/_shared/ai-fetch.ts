@@ -119,38 +119,57 @@ async function fetchWithRetry(
 }
 
 export async function aiFetch(options: AiFetchOptions): Promise<Response> {
+  const source = (Deno.env.get("FUNCTION_NAME") || "unknown-edge-function");
+  
   // Rate limit check
   if (options.userId && !checkRateLimit(options.userId)) {
     console.warn(`[aiFetch] Rate limited user ${options.userId}`);
+    await logPipelineAlert({
+      source,
+      message: "AI Rate Limited",
+      severity: "warning",
+      metadata: { userId: options.userId }
+    });
     throw new Error("AI_RATE_LIMITED");
   }
 
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-  let lovableModel = options.model || "openai/gpt-4o-mini";
-  // Auto-prefix openai models if missing
-  if (lovableModel.startsWith("gpt-") || lovableModel.startsWith("o1-") || lovableModel.startsWith("o3-")) {
-    lovableModel = `openai/${lovableModel}`;
+  let lovableModel = options.model || AI_MODELS.generation;
+  
+  // Validate model before proceeding
+  if (!validateModel(lovableModel)) {
+    const errorMsg = `Invalid AI model requested: ${lovableModel}`;
+    await logPipelineAlert({
+      source,
+      message: errorMsg,
+      severity: "critical",
+      model_used: lovableModel
+    });
+    // Fallback to safe default
+    lovableModel = AI_MODELS.generation;
   }
-  // Use gpt-4o-mini as default high-efficiency model
+
+  lovableModel = standardizeModelName(lovableModel);
+  
+  // Explicitly handle gpt-5-mini if it ever shows up again
   if (lovableModel === "openai/gpt-5-mini") {
     lovableModel = "openai/gpt-4o-mini";
   }
+
   const maxRetries = options.maxRetries ?? 2;
   const timeoutMs = options.timeoutMs ?? 45000;
 
   const buildBody = (model: string, isOpenAI = false) => {
     let maxTokens = options.maxTokens ?? 16384;
     if (isOpenAI) {
-      const modelMax = OPENAI_MAX_TOKENS[model] || 16384;
+      const modelClean = model.replace("openai/", "");
+      const modelMax = OPENAI_MAX_TOKENS[modelClean] || 16384;
       maxTokens = Math.min(maxTokens, modelMax);
     }
     
-    // Use max_completion_tokens ONLY for o1/o3 reasoning models. 
-    // Standard gpt-4o and gpt-4o-mini still use max_tokens.
-    const isReasoningModel = /^o[13]/i.test(model);
-    const tokenKey = isReasoningModel ? "max_completion_tokens" : "max_tokens";
+    const tokenKey = getTokenParameterName(model);
     
     const body: any = { 
       model, 
@@ -183,20 +202,47 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
         "LovableAI",
       );
 
-      // If not a credit/rate issue, return as-is
-      if (response.status !== 402 && response.status !== 429) {
+      // If successful, return
+      if (response.ok) {
         return response;
       }
 
-      const errorBody = await response.text();
-      console.warn(`Lovable AI returned ${response.status}, falling back to OpenAI. Body: ${errorBody.slice(0, 200)}`);
+      // If not a credit/rate issue, log it but maybe continue to fallback
+      if (response.status !== 402 && response.status !== 429) {
+        const errorBody = await response.clone().text();
+        await logPipelineAlert({
+          source,
+          message: `Lovable AI Gateway Error: ${response.status}`,
+          error_stack: errorBody,
+          http_status: response.status,
+          model_used: lovableModel,
+          payload: { messages: options.messages.slice(-1) } // log last message for context
+        });
+      } else {
+        const errorBody = await response.clone().text();
+        console.warn(`Lovable AI returned ${response.status}, falling back to OpenAI. Body: ${errorBody.slice(0, 200)}`);
+      }
+      
+      // If it's a 400 (Bad Request), fallback might not help but we'll try
     } catch (fetchErr) {
       console.error("Lovable AI all retries failed:", fetchErr);
+      await logPipelineAlert({
+        source,
+        message: "Lovable AI Fetch Exception",
+        error_stack: fetchErr instanceof Error ? fetchErr.stack : String(fetchErr),
+        severity: "error",
+        model_used: lovableModel
+      });
     }
   }
 
   // Fallback to OpenAI
   if (!OPENAI_API_KEY) {
+    await logPipelineAlert({
+      source,
+      message: "AI Credits Exhausted (No OpenAI Key)",
+      severity: "critical"
+    });
     throw new Error("AI_CREDITS_EXHAUSTED");
   }
 
@@ -219,8 +265,17 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     );
 
     if (!response.ok) {
-      const errText = await response.text();
+      const errText = await response.clone().text();
       console.error(`OpenAI fallback failed (${response.status}):`, errText.slice(0, 300));
+
+      await logPipelineAlert({
+        source,
+        message: `OpenAI Fallback Error: ${response.status}`,
+        error_stack: errText,
+        http_status: response.status,
+        model_used: openaiModel,
+        severity: "critical"
+      });
 
       if (response.status === 429) throw new Error("AI_RATE_LIMITED");
       if (response.status === 402) throw new Error("AI_CREDITS_EXHAUSTED");
@@ -230,7 +285,15 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     return response;
   } catch (err) {
     if (err instanceof Error && err.message.startsWith("AI_")) throw err;
+    
     console.error("OpenAI all retries failed:", err);
+    await logPipelineAlert({
+      source,
+      message: "OpenAI Fetch Exception",
+      error_stack: err instanceof Error ? err.stack : String(err),
+      severity: "critical",
+      model_used: openaiModel
+    });
     throw new Error("AI_SERVICE_UNAVAILABLE");
   }
 }
