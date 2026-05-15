@@ -285,7 +285,7 @@ FORMATO JSON OBRIGATÓRIO:
 }`;
   try {
     const response = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: ALLOWED_MODELS.generation,
       messages: [
         { role: "system", content: "Você extrai questões de residência médica. Responda APENAS com JSON." },
         { role: "user", content: prompt },
