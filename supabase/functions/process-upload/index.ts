@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
 import { aiFetch, sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts";
+import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -128,7 +129,7 @@ async function processInBackground(
     }
 
     // Save chunks to DB
-    const chunkInserts = textChunks.map((chunk, idx) => ({
+    const chunkInserts = textChunks.map((chunk, idx) => sanitizeForPostgres({
       upload_id: uploadId,
       user_id: userId,
       chunk_index: idx,
@@ -217,7 +218,7 @@ async function processInBackground(
       status: allExtractedTopics.some(t => t._chunk_index === i) ? "completed" : "failed"
     }));
 
-    await supabaseAdmin.from("planner_extracted_topics").insert({
+    await supabaseAdmin.from("planner_extracted_topics").insert(sanitizeForPostgres({
       upload_id: uploadId,
       user_id: userId,
       topics_json: uniqueTopics,
@@ -227,7 +228,7 @@ async function processInBackground(
         chunk_details: chunkStats,
         total_topics: uniqueTopics.length
       }
-    });
+    }));
 
     // 5. Update Status
     await supabaseAdmin.from("uploads").update({
