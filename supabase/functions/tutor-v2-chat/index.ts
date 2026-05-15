@@ -636,7 +636,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA (MÉTODO ENAZIZI V2):
 
     const mandatoryBlocks = [
       "BLOCO 1", "BLOCO 2", "BLOCO 3", "BLOCO 4", "BLOCO 5", 
-      "BLOCO 6", "BLOCO 7", "BLOCO 8", "BLOCO 9", "BLOCO 10"
+      "BLOCO 6", "BLOCO 7", "BLOCO 8", "BLOCO 9", "BLOCO 10",
+      "BLOCO 11", "BLOCO 12", "BLOCO 13", "BLOCO 14", "BLOCO 15"
     ];
     // QUESTION_REVIEW_MODE uses its own 11-step rubric — skip generic 15-block penalty
     const foundBlocks = qReview.active ? mandatoryBlocks : mandatoryBlocks.filter(b => assistantMessage.includes(b));
