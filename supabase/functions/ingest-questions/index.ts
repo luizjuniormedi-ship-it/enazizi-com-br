@@ -459,12 +459,12 @@ Deno.serve(async (req) => {
         }
 
         const { error: insErr } = await supabase.from("questions_bank").insert({
-          statement: q.statement,
-          options: opts,
+          statement: q.statement.replace(/\0/g, ""),
+          options: opts.map(o => String(o).replace(/\0/g, "")),
           correct_index: q.correct_index >= 0 ? q.correct_index : 0,
-          topic: q.topic || banca || "Geral",
-          subtopic: q.subtopic || "Geral",
-          explanation: q.explanation || "",
+          topic: (q.topic || banca || "Geral").replace(/\0/g, ""),
+          subtopic: (q.subtopic || "Geral").replace(/\0/g, ""),
+          explanation: (q.explanation || "").replace(/\0/g, ""),
           source: `${banca || "external"}_${year || "unknown"}`,
           source_type,
           permission_type,
