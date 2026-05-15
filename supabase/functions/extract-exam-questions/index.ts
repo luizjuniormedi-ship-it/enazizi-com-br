@@ -212,11 +212,11 @@ Deno.serve(async (req) => {
 
       for (let i = 0; i < newQuestions.length; i += BATCH_SIZE) {
         const batch = newQuestions.slice(i, i + BATCH_SIZE).map((q, idx) => ({
-          statement: q.statement,
-          options: q.options,
+          statement: q.statement.replace(/\0/g, ""),
+          options: q.options.map(opt => opt.replace(/\0/g, "")),
           correct_index: q.correctIndex,
-          explanation: q.explanation || "",
-          topic: q.topic || "Geral",
+          explanation: (q.explanation || "").replace(/\0/g, ""),
+          topic: (q.topic || "Geral").replace(/\0/g, ""),
           source: sourceTag,
           is_global: true,
           user_id: systemUserId,
