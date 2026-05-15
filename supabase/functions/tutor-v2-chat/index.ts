@@ -581,12 +581,15 @@ ESTADO COGNITIVO DO ALUNO (FASE 0):
 - Status FSRS: ${context.fsrs?.pending_reviews || 0} revisões pendentes.
 - Carga Cognitiva Atual: ${context.cognitive_load || 'Normal'}
 
-INSTRUÇÃO OPERACIONAL ADAPTATIVA (MÉTODO ENAZIZI V2):
-1. Sua prioridade absoluta é o: ${currentStage.toUpperCase()}.
-2. Você DEVE seguir rigorosamente o Protocolo de 15 Blocos ENAZIZI.
-3. No Bloco 13 (Feynman), você deve obrigatoriamente parar e avaliar o aluno.
-4. Suas respostas devem ser LONGAS, DENSAS e PROFUNDAS. Proibido respostas curtas.
-5. Mantenha o tom de Round Preceptor: preceituação clínica de alto nível.${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
+INSTRUÇÃO OPERACIONAL V3 (MÉTODO ENAZIZI PREMIUM):
+1. Prioridade absoluta: Estágio ${currentStage.toUpperCase()}.
+2. COMPORTAMENTO PRECEPTOR: Não entregue o conteúdo de uma vez. Comece provocando o raciocínio.
+3. INTERATIVIDADE: Termine o bloco com uma pergunta clínica ou um checkpoint de entendimento.
+4. LINGUAGEM "AO VIVO": Use transições como "Veja bem...", "Imagine que...", "Isso é o que separa o interno do especialista".
+5. VISUALIZAÇÃO: Use analogias que criem imagens mentais claras da fisiopatologia.
+6. Se o aluno estiver no meio de um raciocínio, guie-o em vez de dar a resposta pronta.
+7. Mantenha a densidade técnica, mas quebre em micro-seções para não cansar.
+${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -634,16 +637,26 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA (MÉTODO ENAZIZI V2):
     const feynmanScore = (hasAnalogies ? 50 : 0) + (hasRecall ? 50 : 0);
     console.log("[FEYNMAN_LAYER]", { analogy_used: hasAnalogies, recall_generated: hasRecall, requestId });
 
-    const mandatoryBlocks = [
-      "BLOCO 1", "BLOCO 2", "BLOCO 3", "BLOCO 4", "BLOCO 5", 
-      "BLOCO 6", "BLOCO 7", "BLOCO 8", "BLOCO 9", "BLOCO 10",
-      "BLOCO 11", "BLOCO 12", "BLOCO 13", "BLOCO 14", "BLOCO 15"
-    ];
-    // QUESTION_REVIEW_MODE uses its own 11-step rubric — skip generic 15-block penalty
-    const foundBlocks = qReview.active ? mandatoryBlocks : mandatoryBlocks.filter(b => assistantMessage.includes(b));
-    const missingBlocks = qReview.active ? [] : mandatoryBlocks.filter(b => !assistantMessage.includes(b));
-    const pedagogicalScore = qReview.active ? 100 : Math.round((foundBlocks.length / mandatoryBlocks.length) * 100);
-    console.log("[PEDAGOGICAL_BLOCK_VALIDATION]", { found: foundBlocks.length, missing: missingBlocks.length, skipped_for_qreview: qReview.active, requestId });
+    const stageToBlockMap: Record<string, string> = {
+      'mission': 'BLOCO 1', 'roadmap': 'BLOCO 2', 'layman': 'BLOCO 3', 
+      'technical': 'BLOCO 4', 'pathophysiology': 'BLOCO 5', 'systemic_integration': 'BLOCO 6',
+      'clinical_reasoning': 'BLOCO 7', 'semiology_exams': 'BLOCO 8', 'pharmacology': 'BLOCO 9',
+      'emergency_conduct': 'BLOCO 10', 'exam_integration': 'BLOCO 11', 'exam_tricks': 'BLOCO 12',
+      'feynman_module': 'BLOCO 13', 'active_recall': 'BLOCO 14', 'mini_test': 'BLOCO 15',
+      'summary': 'RESUMO'
+    };
+
+    const targetBlock = stageToBlockMap[currentStage] || 'BLOCO';
+    const hasTargetBlock = assistantMessage.includes(targetBlock);
+    const pedagogicalScore = qReview.active ? 100 : (hasTargetBlock ? 100 : 0);
+    
+    console.log("[PEDAGOGICAL_VALIDATION_V3]", { 
+      stage: currentStage, 
+      expected: targetBlock, 
+      found: hasTargetBlock,
+      score: pedagogicalScore,
+      requestId 
+    });
 
     const safetyKeywords = ["cuidado", "emergência", "urgência", "alerta", "contraindicação"];
     const hasSafetyInfo = safetyKeywords.some(k => assistantMessage.toLowerCase().includes(k));

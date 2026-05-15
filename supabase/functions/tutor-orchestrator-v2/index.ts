@@ -56,30 +56,34 @@ serve(async (req) => {
     const currentStage = session.current_stage || 'mission';
     const currentIndex = STAGES.indexOf(currentStage);
 
-    // 2. Analyze user message to decide transition
-    // Simple transition logic: if message is short or positive, move forward
-    // In a real scenario, we could use an AI call here to evaluate if the student "passed" the stage
+    // 2. Analyze user message to decide transition (V3 Adaptive Logic)
     let nextStage = currentStage;
-    let transitionReason = "Maintaining current stage";
+    let transitionReason = "Mantendo estágio para consolidação.";
     let shouldAdvance = false;
 
     const lowerMsg = (userMessage || "").toLowerCase();
-    const positiveSignals = ["entendi", "compreendi", "pode continuar", "proximo", "próximo", "ok", "avançar", "avancar", "entendido"];
-    const negativeSignals = ["não entendi", "confuso", "explica de novo", "repete", "dúvida", "duvida", "mais detalhe"];
+    
+    // Positive signals: understanding, asking to continue, or giving a technical answer
+    const positiveSignals = ["entendi", "compreendi", "pode continuar", "proximo", "próximo", "ok", "avançar", "avancar", "entendido", "perfeito", "exato", "correto"];
+    const negativeSignals = ["não entendi", "confuso", "explica de novo", "repete", "dúvida", "duvida", "mais detalhe", "como assim"];
+    
+    // Heuristic: if user provides a technical answer (longer message) or positive signal
+    const isTechnicalResponse = userMessage.length > 40;
+    const isPositive = positiveSignals.some(s => lowerMsg.includes(s));
+    const isNegative = negativeSignals.some(s => lowerMsg.includes(s));
 
-    if (positiveSignals.some(s => lowerMsg.includes(s)) || (userMessage && userMessage.length < 30 && !negativeSignals.some(s => lowerMsg.includes(s)))) {
+    if ((isPositive || isTechnicalResponse) && !isNegative) {
       shouldAdvance = true;
     }
 
-    // Special logic for active_recall and mini_test: they REQUIRE a response and validation
-    if (currentStage === 'active_recall' || currentStage === 'mini_test') {
-      // Here we could add AI validation. For now, let's assume we need to stay until validated.
-      // But for the sake of the demo/initial restoration, we'll advance if they answered anything.
-      if (userMessage.length > 10) {
+    // Special logic for validation stages: they REQUIRE a technical response
+    const validationStages = ['feynman_module', 'active_recall', 'mini_test'];
+    if (validationStages.includes(currentStage)) {
+      if (userMessage.length > 15 && !isNegative) {
         shouldAdvance = true;
       } else {
         shouldAdvance = false;
-        transitionReason = "Aguardando resposta ao desafio cognitivo.";
+        transitionReason = "Aguardando validação cognitiva profunda do aluno.";
       }
     }
 
