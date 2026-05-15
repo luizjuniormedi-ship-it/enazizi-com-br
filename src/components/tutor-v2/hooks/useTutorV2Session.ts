@@ -43,7 +43,30 @@ export function useTutorV2Session(sessionId?: string) {
     };
 
     fetchSession();
+
+    // Subscribe to session changes (real-time stage updates)
+    const channel = supabase
+      .channel(`tutor_session_${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tutor_sessions',
+          filter: `id=eq.${sessionId}`
+        },
+        (payload) => {
+          console.log("[TUTOR_V2] Real-time session update:", payload.new);
+          setSession(payload.new);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [sessionId]);
+
 
   return { session, isLoading, error, stats };
 }
