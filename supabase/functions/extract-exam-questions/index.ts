@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
+import { AI_MODELS } from "../_shared/ai-models.ts";
+import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
