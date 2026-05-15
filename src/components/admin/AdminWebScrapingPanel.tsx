@@ -115,13 +115,18 @@ const AdminWebScrapingPanel = () => {
           description: `${data.pages_scraped ?? 0} páginas analisadas de fontes oficiais.`,
         });
       }
-    } catch (e) {
+    } catch (e: any) {
       const isTimeout = e instanceof TypeError && /load failed|abort|timeout/i.test(e.message);
-      const msg = isTimeout
+      let msg = isTimeout
         ? "A busca demorou demais e foi cancelada. Tente novamente ou escolha outra especialidade."
         : (e instanceof Error ? e.message : "Erro desconhecido");
+      
+      if (msg.includes("FIRECRAWL_API_KEY")) {
+        msg = "Configuração ausente: FIRECRAWL_API_KEY não encontrada no Supabase. O Web Scraping automático requer esta chave.";
+      }
+      
       setError(msg);
-      toast({ title: "Erro", description: msg, variant: "destructive" });
+      toast({ title: "Erro de Configuração", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -199,9 +204,17 @@ const AdminWebScrapingPanel = () => {
         </Badge>
       </div>
 
-      <p className="text-xs text-muted-foreground mb-3">
+      <p className="text-xs text-muted-foreground mb-1">
         Busca questões reais de provas de residência em sites oficiais (INEP, universidades, portais) usando Firecrawl.
       </p>
+      <div className="flex items-center gap-1.5 mb-3">
+        <Badge variant="outline" className="text-[9px] text-amber-600 border-amber-500/30 bg-amber-500/5">
+          Requer FIRECRAWL_API_KEY
+        </Badge>
+        <span className="text-[9px] text-muted-foreground italic">
+          Sem a chave, use o "Import Direto" no Pipeline de Ingestão.
+        </span>
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-3">
         <Select value={specialty} onValueChange={setSpecialty}>
