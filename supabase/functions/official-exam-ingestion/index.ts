@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface IngestionRequest {
-  action: 'discover' | 'download' | 'parse' | 'full_pipeline';
+  action: 'discover' | 'download' | 'parse' | 'full_pipeline' | 'historical_harvest';
   source_id?: string;
   file_id?: string;
   metadata?: any;
@@ -130,6 +130,25 @@ serve(async (req) => {
       await supabaseClient
         .from('ingestion_pipeline_runs')
         .update({ status: 'success', stats: { ...run.stats, ...result }, finished_at: new Date().toISOString() })
+        .eq('id', run.id);
+    } else if (action === 'historical_harvest') {
+      console.log(`[Ingestion] Starting Historical Harvest for source: ${source_id || 'All'}`);
+      
+      const { data: harvestResult, error: harvestError } = await supabaseClient.functions.invoke('crawl-official-years', {
+        body: { mode: 'historical', sourceId: source_id }
+      });
+
+      if (harvestError) throw harvestError;
+
+      result = harvestResult;
+
+      await supabaseClient
+        .from('ingestion_pipeline_runs')
+        .update({ 
+          status: 'success', 
+          stats: { ...run.stats, ...result }, 
+          finished_at: new Date().toISOString() 
+        })
         .eq('id', run.id);
     }
 
