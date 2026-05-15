@@ -154,7 +154,9 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   lovableModel = standardizeModelName(lovableModel);
   
   // No more explicit overrides needed for gpt-5-mini as it is now supported
-
+  if (lovableModel === "openai/gpt-5-mini" || lovableModel === "gpt-5-mini") {
+    lovableModel = "openai/gpt-4o-mini";
+  }
 
   const maxRetries = options.maxRetries ?? 2;
   const timeoutMs = options.timeoutMs ?? 45000;
