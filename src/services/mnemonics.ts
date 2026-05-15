@@ -45,8 +45,8 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
         letter: String(a.letra ?? a.letter ?? "").trim(),
         word: String(a.representacao_no_mnemonico ?? a.word ?? "").trim(),
         original_item: String(a.termo_original ?? a.original_item ?? "").trim(),
-        symbol: null,
-        symbol_reason: null,
+        symbol: String(a.symbol ?? "").trim() || null,
+        symbol_reason: String(a.symbol_reason ?? "").trim() || null,
       }));
   }
 
