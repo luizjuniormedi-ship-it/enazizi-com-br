@@ -518,6 +518,54 @@ const AdminIngestionPanel = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="manual">
+          <div className="space-y-4 p-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium">URLs de PDFs (um por linha)</label>
+              <textarea 
+                className="w-full h-32 text-xs p-2 rounded border bg-background" 
+                placeholder="https://exemplo.com/prova-2025.pdf&#10;https://exemplo.com/gabarito-2025.pdf"
+                id="manual-urls"
+              />
+              <div className="flex gap-2">
+                <Input className="h-8 text-xs w-24" placeholder="Ano" id="manual-year" defaultValue={new Date().getFullYear()} />
+                <Input className="h-8 text-xs flex-1" placeholder="Banca/Instituição" id="manual-banca" />
+                <Button 
+                  size="sm" 
+                  className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
+                  onClick={async () => {
+                    const urlsEl = document.getElementById('manual-urls') as HTMLTextAreaElement;
+                    const yearEl = document.getElementById('manual-year') as HTMLInputElement;
+                    const bancaEl = document.getElementById('manual-banca') as HTMLInputElement;
+                    
+                    const urls = urlsEl.value.split('\n').filter(u => u.trim());
+                    const year = parseInt(yearEl.value);
+                    const banca = bancaEl.value;
+                    
+                    if (!urls.length) return;
+                    
+                    for (const url of urls) {
+                      toast({ title: "Iniciando importação", description: url });
+                      try {
+                        const data = await callIngest({ mode: "pdf_url", url: url.trim(), year, banca, source_type: "manual_import", permission_type: "indexed_external" });
+                        toast(getIngestToast(data, url));
+                      } catch (e) {
+                        toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+                      }
+                    }
+                    loadLogs();
+                  }}
+                >
+                  Processar URLs
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                Dica: Use este modo quando a busca automática falhar ou o site tiver bloqueio de SSL.
+              </p>
+            </div>
+          </div>
+        </TabsContent>
+
         <TabsContent value="discovered">
           <div className="space-y-1.5 max-h-60 overflow-y-auto">
             {discoveredSources.length === 0 ? (
