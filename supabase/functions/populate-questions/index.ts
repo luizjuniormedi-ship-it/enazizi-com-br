@@ -267,6 +267,8 @@ serve(async (req) => {
     const token = authHeader?.replace("Bearer ", "");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
+    console.log(`Debug Auth: token=${token?.slice(0, 5)}... serviceRoleKey=${serviceRoleKey?.slice(0, 5)}...`);
+
     let userId: string;
 
     if (token === serviceRoleKey) {
