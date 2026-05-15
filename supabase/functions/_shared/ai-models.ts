@@ -1,29 +1,30 @@
+import { ALLOWED_MODELS } from "./ai-model-registry.ts";
+import { normalizeModel } from "./model-normalizer.ts";
+
 /**
  * Centralized AI Model Registry
- * To be used by all Edge Functions to avoid hardcoded model names and incompatible parameters.
+ * Updated to use the new unified registry.
  */
-
 export const AI_MODELS = {
-  generation: "gpt-5-mini",
-  extraction: "gpt-5-mini",
-  reasoning: "gpt-5",
-  embeddings: "text-embedding-3-small",
+  generation: ALLOWED_MODELS.generation,
+  extraction: ALLOWED_MODELS.generation,
+  reasoning: ALLOWED_MODELS.reasoning,
+  embeddings: ALLOWED_MODELS.embeddings,
 } as const;
 
 export type AIModelKey = keyof typeof AI_MODELS;
 
 /**
- * Validates if a model name is allowed and exists in our registry or is a known valid model.
+ * Validates if a model name is allowed.
+ * Now uses the normalizer to ensure consistency.
  */
 export function validateModel(model: string): boolean {
-  const allowedPrefixes = ["gpt-5", "gpt-4o", "gpt-3.5", "o1-", "o3-", "text-embedding-", "google/gemini-"];
-  const isAllowed = allowedPrefixes.some(prefix => model.startsWith(prefix)) || 
-                    Object.values(AI_MODELS).includes(model as any);
-  
-  if (!isAllowed) {
-    console.error(`[ModelValidator] Model "${model}" is not in the allowed list.`);
+  try {
+    const normalized = normalizeModel(model);
+    return !!normalized;
+  } catch {
+    return false;
   }
-  return isAllowed;
 }
 
 /**
@@ -40,14 +41,12 @@ export function getTokenParameterName(model: string): string {
 }
 
 /**
- * Standardizes model names to include provider prefix for Lovable Gateway if missing.
+ * Standardizes model names.
  */
 export function standardizeModelName(model: string): string {
-  if (model.startsWith("gpt-") || model.startsWith("o1-") || model.startsWith("o3-") || model.startsWith("text-embedding-")) {
-    return `openai/${model}`;
+  const normalized = normalizeModel(model);
+  if (normalized.startsWith("gpt-") || normalized.startsWith("o1-") || normalized.startsWith("o3-") || normalized.startsWith("text-embedding-")) {
+    return `openai/${normalized}`;
   }
-  if (model.startsWith("gemini-")) {
-    return `google/${model}`;
-  }
-  return model;
+  return normalized;
 }
