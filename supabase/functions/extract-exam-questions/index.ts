@@ -20,7 +20,11 @@ Deno.serve(async (req) => {
 
   // Parse body cedo para retornar 202 imediatamente
   const earlyBody = await req.json().catch(() => ({}));
-  const earlyUploadId = earlyBody.upload_id || "f8b2995a-d260-4d76-9a28-a9ae02c12419";
+  const earlyUploadId = earlyBody.upload_id;
+  
+  if (!earlyUploadId) {
+    return new Response(JSON.stringify({ error: "upload_id is required" }), { status: 400, headers: corsHeaders });
+  }
 
   // Reconstruir um Request "virtual" não dá — então executa o pipeline em background
   const work = (async () => {
