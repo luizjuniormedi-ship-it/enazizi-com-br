@@ -551,7 +551,7 @@ Deno.serve(async (req) => {
           explanation: q.explanation || "",
           difficulty,
           year: year || new Date().getFullYear(),
-          banca: banca || "Importação",
+          board: banca || "Importação",
           language: "pt-BR",
           user_id: adminUserId,
           source_type,
