@@ -1,6 +1,9 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
+import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
+import { AI_MODELS } from "../_shared/ai-models.ts";
+import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
