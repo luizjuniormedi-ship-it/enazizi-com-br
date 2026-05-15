@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { createPipelineJob, updatePipelineJob, completePipelineJob, failPipelineJob } from "../_shared/pipeline-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -544,6 +545,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const mode = body.equalize ? "equalize" : "normal";
 
+    // Legacy job creation (maintaining UI compatibility)
     const { data: job, error: jobErr } = await supabaseAdmin.from("bulk_generation_jobs").insert({
       status: "processing", mode, specialty: body.specialty || null, user_id: userId, progress: { current: 0, total: 0 },
     }).select().single();
@@ -552,17 +554,37 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Falha ao criar job" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // New Autonomous Recovery Engine job creation
+    const pipelineJob = await createPipelineJob({
+      type: 'bulk_generation',
+      payload: body,
+      user_id: userId,
+      max_retries: 5
+    });
+
     // Start background processing
     EdgeRuntime.waitUntil(
-      (mode === "equalize"
-        ? processEqualize(job.id, body, userId, supabaseAdmin)
-        : processNormalMode(job.id, body, userId, supabaseAdmin)
-      ).catch(async (error) => {
-        console.error("[bulk-generate] Background error:", error);
-        await supabaseAdmin.from("bulk_generation_jobs").update({
-          status: "failed", error: error instanceof Error ? error.message : String(error), updated_at: new Date().toISOString(),
-        }).eq("id", job.id);
-      })
+      (async () => {
+        try {
+          if (mode === "equalize") {
+            await processEqualize(job.id, body, userId, supabaseAdmin);
+          } else {
+            await processNormalMode(job.id, body, userId, supabaseAdmin);
+          }
+          await completePipelineJob(pipelineJob.id, { bulk_job_id: job.id });
+        } catch (error) {
+          console.error("[bulk-generate] Background error:", error);
+          await supabaseAdmin.from("bulk_generation_jobs").update({
+            status: "failed", error: error instanceof Error ? error.message : String(error), updated_at: new Date().toISOString(),
+          }).eq("id", job.id);
+          
+          const { canRetry } = await failPipelineJob(pipelineJob.id, error, "generation_phase");
+          if (canRetry) {
+             console.log(`[Pipeline] Job ${pipelineJob.id} flagged for automatic retry.`);
+             // Here we could trigger a re-invocation or use a queue
+          }
+        }
+      })()
     );
 
     // Return immediately with job ID

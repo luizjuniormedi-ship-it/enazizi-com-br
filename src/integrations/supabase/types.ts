@@ -15296,6 +15296,63 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_jobs: {
+        Row: {
+          completed_at: string | null
+          fallback_used: boolean | null
+          id: string
+          last_error: string | null
+          max_retries: number | null
+          metadata: Json | null
+          payload: Json | null
+          progress: Json | null
+          recovery_mode: boolean | null
+          retries: number | null
+          stage: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["pipeline_job_status"]
+          type: Database["public"]["Enums"]["pipeline_job_type"]
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          fallback_used?: boolean | null
+          id?: string
+          last_error?: string | null
+          max_retries?: number | null
+          metadata?: Json | null
+          payload?: Json | null
+          progress?: Json | null
+          recovery_mode?: boolean | null
+          retries?: number | null
+          stage?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["pipeline_job_status"]
+          type: Database["public"]["Enums"]["pipeline_job_type"]
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          fallback_used?: boolean | null
+          id?: string
+          last_error?: string | null
+          max_retries?: number | null
+          metadata?: Json | null
+          payload?: Json | null
+          progress?: Json | null
+          recovery_mode?: boolean | null
+          retries?: number | null
+          stage?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["pipeline_job_status"]
+          type?: Database["public"]["Enums"]["pipeline_job_type"]
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       pipeline_lock: {
         Row: {
           dataset_type: string | null
@@ -24092,6 +24149,19 @@ export type Database = {
         | "endoscopy"
         | "obstetric_trace"
       notification_channel: "in_app" | "email"
+      pipeline_job_status:
+        | "pending"
+        | "running"
+        | "failed"
+        | "completed"
+        | "degraded"
+        | "retrying"
+      pipeline_job_type:
+        | "ingestion"
+        | "bulk_generation"
+        | "ecg_extraction"
+        | "embedding_sync"
+        | "ocr_process"
       qa_error_type:
         | "IA_QUALIDADE"
         | "IA_JSON_INVALIDO"
@@ -24374,6 +24444,21 @@ export const Constants = {
         "obstetric_trace",
       ],
       notification_channel: ["in_app", "email"],
+      pipeline_job_status: [
+        "pending",
+        "running",
+        "failed",
+        "completed",
+        "degraded",
+        "retrying",
+      ],
+      pipeline_job_type: [
+        "ingestion",
+        "bulk_generation",
+        "ecg_extraction",
+        "embedding_sync",
+        "ocr_process",
+      ],
       qa_error_type: [
         "IA_QUALIDADE",
         "IA_JSON_INVALIDO",
