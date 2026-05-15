@@ -16,9 +16,9 @@ export function normalizeModel(model: string | null | undefined): string {
   let normalized = rawModel.replace(/^openai\//, "");
 
   // Rule 2: Handle "gpt-5" variants (non-existent, mapping to gpt-4o)
-  if (normalized.includes("gpt-5-mini")) {
+  if (normalized.includes("gpt-5-mini") || normalized === "gpt-5-mini") {
     normalized = "gpt-4o-mini";
-  } else if (normalized.includes("gpt-5")) {
+  } else if (normalized.includes("gpt-5") || normalized === "gpt-5") {
     normalized = "gpt-4o";
   }
 
