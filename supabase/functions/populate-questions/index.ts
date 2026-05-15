@@ -208,8 +208,8 @@ async function populateInBackground(
     const topic = existingJson.main_topic || "Clínica Médica";
     const totals = await processTextToContent(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId, existingJson);
 
-    const finalStatus = (totals.questions > 0 || totals.flashcards > 0) ? "processed" : "error";
-    const finalError = finalStatus === "error" ? "Nenhuma questão ou flashcard foi gerado." : undefined;
+    const finalStatus = (totals.questions > 0 || totals.flashcards > 0) ? "processed" : "done";
+    const finalError = (totals.questions === 0 && totals.flashcards === 0) ? "Nenhuma questão ou flashcard foi gerado (verifique o conteúdo do arquivo)." : undefined;
 
     await supabaseAdmin.from("uploads").update({
       status: finalStatus,
