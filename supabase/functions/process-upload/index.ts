@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
 import { aiFetch, sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts";
-import { AI_MODELS } from "../_shared/ai-models.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
