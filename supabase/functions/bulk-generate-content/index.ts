@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
