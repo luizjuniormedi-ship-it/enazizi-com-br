@@ -60,13 +60,17 @@ serve(async (req) => {
               file_url: fileUrl,
               institution: source.name,
               detected_year: year,
-              year: year, // Sync with existing column
+              year: year,
               detected_category: term.toLowerCase().includes('gabarito') ? 'gabarito' : (term.toLowerCase().includes('edital') ? 'edital' : 'prova'),
               status: 'discovered',
               metadata: { term, scanned_at: new Date().toISOString() }
             }, { onConflict: 'file_url' })
             .select()
             .single()
+            
+          if (fileError) {
+             console.error(`Error upserting ${fileName}: ${fileError.message}`);
+          }
 
           if (!fileError && file) {
             // Queue for download
