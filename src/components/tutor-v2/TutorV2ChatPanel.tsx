@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { MascotAvatar } from "../mascot/MascotAvatar";
 import { MascotBubble } from "../mascot/MascotBubble";
 import { useMascotState } from "../mascot/useMascotState";
+import { motion } from "framer-motion";
+
 
 
 interface TutorV2ChatPanelProps {
