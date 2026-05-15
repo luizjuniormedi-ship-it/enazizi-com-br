@@ -284,6 +284,13 @@ const AdminQuestionReviewPanel = () => {
             {actionLoading === "bulk" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aprovar Todas"}
           </Button>
         )}
+        {isActionableStatus && total > PAGE_SIZE && (
+          <Button size="sm" variant="outline" className="text-xs h-7 border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10"
+            disabled={actionLoading === "bulk-all"} onClick={handleApproveAllFiltered}>
+            {actionLoading === "bulk-all" ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+            Aprovar Lote ({total})
+          </Button>
+        )}
         <Button size="sm" variant="outline" className="text-xs h-7 border-purple-500/30 text-purple-600 hover:bg-purple-500/10"
           disabled={upgradeLoading} onClick={handleUpgrade}>
           {upgradeLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
