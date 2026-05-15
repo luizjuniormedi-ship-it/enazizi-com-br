@@ -112,9 +112,14 @@ async function extractPdfTextFromBlob(fileData: Blob): Promise<string> {
 
 function normalizePdfExamText(text: string): string {
   return text
+    // Recupera 'Questão' quando encoding quebrou (Quest�o, Quest?o, Questao, etc.)
+    .replace(/Quest[\S]{0,3}o(?=\s+\d)/gi, "QUESTÃO")
     .replace(/Medway\s*-\s*ENARE\s*-\s*\d{4}\s*P[aá]ginas?\s*\d+\/\d+/gi, " ")
     .replace(/ENARE-\d{4}-Objetiva\s*\|\s*R1/gi, " ")
     .replace(/P[aá]ginas?\s*\d+\/\d+/gi, " ")
+    .replace(/proibida\s+venda[^\n]{0,80}/gi, " ")
+    .replace(/t\.me\/\S+/gi, " ")
+    .replace(/Venda proibida[^\n]{0,120}/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -146,12 +151,25 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
   for (const rawBlock of blocks) {
     let block = rawBlock.replace(/^QUEST[ÃA]O\s+\d+[\s\.:]*/i, "").trim();
     
-    const markerRegex = /(?:^|\s)([A-E])[\.)]\s/g;
-    const markers = Array.from(block.matchAll(markerRegex)).map((match) => ({
+    // Aceita "A.", "A)", "A-" ou "A " seguido de caractere de texto (cobre PDFs sem pontuação após a letra)
+    const markerRegex = /(?:^|[\s\n])([A-E])(?:[\.)\-]\s|\s+(?=[A-ZÀ-Úa-zà-ú0-9]))/g;
+    const allMarkers = Array.from(block.matchAll(markerRegex)).map((match) => ({
       letter: match[1],
       rawIndex: match.index ?? 0,
       start: (match.index ?? 0) + match[0].length,
     }));
+
+    // Filtra apenas a primeira sequência ordenada A,B,C,D[,E]
+    const sequence = ["A", "B", "C", "D", "E"];
+    const markers: typeof allMarkers = [];
+    let seqIdx = 0;
+    for (const m of allMarkers) {
+      if (m.letter === sequence[seqIdx]) {
+        markers.push(m);
+        seqIdx++;
+        if (seqIdx >= 5) break;
+      }
+    }
 
     if (markers.length < 4) continue;
 
@@ -386,59 +404,76 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: "No content extracted", step: "BODY_PARSE" }), { status: 400, headers: corsHeaders });
     }
 
-    // [AI_REQUEST]
-    if (questions.length === 0) {
-      console.log("[AI_REQUEST] Regex parsing failed or returned 0, trying LLM extraction...");
+    // [AI_REQUEST] - aciona LLM se regex extraiu poucas questões; processa em chunks
+    if (questions.length < 5) {
+      console.log(`[AI_REQUEST] Regex extracted ${questions.length}, running LLM extraction in chunks...`);
       try {
         const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
         const { AI_MODELS } = await import("../_shared/ai-models.ts");
         const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
-        
-        const prompt = `Você é um extrator de questões médicas de alta precisão. 
-        Abaixo está o texto extraído de um PDF de prova de residência médica. 
-        Extraia TODAS as questões completas seguindo rigorosamente o formato JSON.
-        
-        REGRAS:
-        1. Ignore cabeçalhos, rodapés e metadados.
-        2. Identifique enunciado e alternativas (A a E). O banco de dados aceita 4 ou 5 alternativas.
-        3. Se houver 5 alternativas, mantenha todas. Se houver 4, mantenha as 4.
-        4. Identifique o gabarito se estiver presente.
-        5. O campo "topic" deve ser "${banca || "Geral"}".
-        
-        TEXTO:
-        ${fullText.slice(0, 15000)}
-        
-        FORMATO:
-        { "questions": [{ "statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "topic": "...", "subtopic": "...", "explanation": "..." }] }`;
 
-        const aiResp = await aiFetch({
-          model: AI_MODELS.extraction,
-          messages: [
-            { role: "system", content: "Você é um assistente que extrai questões estruturadas de textos de provas. Gere entre 4 e 5 alternativas por questão." }, 
-            { role: "user", content: prompt }
-          ],
-          response_format: { type: "json_object" }
-        });
-
-        if (aiResp.ok) {
-          const aiData = await aiResp.json();
-          // [AI_RESPONSE]
-          const rawContent = aiData.choices?.[0]?.message?.content || "{}";
-          console.log("[AI_RESPONSE] Received response from AI.");
-          const parsed = parseAiJson(rawContent);
-          questions = parsed.questions || [];
-          console.log(`[AI_RESPONSE] LLM extracted ${questions.length} questions.`);
-        } else {
-          const errText = await aiResp.clone().text();
-          console.error("[AI_REQUEST] LLM extraction failed HTTP:", aiResp.status, errText);
-          await logPipelineAlert({
-            source: "ingest-questions",
-            message: `LLM extraction failed: ${aiResp.status}`,
-            error_stack: errText,
-            http_status: aiResp.status,
-            model_used: AI_MODELS.extraction
-          });
+        const cleanedFull = normalizePdfExamText(fullText);
+        const CHUNK = 12000;
+        const MAX_CHUNKS = 6; // até ~72k chars / chamada de função
+        const chunks: string[] = [];
+        for (let i = 0; i < cleanedFull.length && chunks.length < MAX_CHUNKS; i += CHUNK) {
+          chunks.push(cleanedFull.slice(i, i + CHUNK));
         }
+
+        const aiQuestions: any[] = [];
+        for (let idx = 0; idx < chunks.length; idx++) {
+          const chunk = chunks[idx];
+          const prompt = `Você é um extrator de questões médicas de alta precisão.
+Abaixo está parte ${idx + 1}/${chunks.length} do texto de uma prova de residência médica (encoding pode estar quebrado, ignore caracteres ilegíveis).
+Extraia TODAS as questões completas em JSON.
+
+REGRAS:
+1. Ignore cabeçalhos, rodapés, marcas d'água e mensagens de "venda proibida".
+2. Cada questão deve ter enunciado >= 50 chars e 4 ou 5 alternativas.
+3. Se houver gabarito ("Gabarito: B", "Resposta correta: C"), use-o em correct_index (A=0, B=1, ...).
+4. Se não houver gabarito, use 0.
+5. O campo "topic" deve ser "${banca || "Geral"}".
+6. Responda em pt-BR.
+
+TEXTO:
+${chunk}
+
+FORMATO ESTRITO:
+{ "questions": [{ "statement": "...", "options": ["...", "...", "...", "...", "..."], "correct_index": 0, "topic": "...", "subtopic": "...", "explanation": "" }] }`;
+
+          const aiResp = await aiFetch({
+            model: AI_MODELS.extraction,
+            messages: [
+              { role: "system", content: "Você extrai questões estruturadas de provas. Sempre 4 ou 5 alternativas em pt-BR." },
+              { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" }
+          });
+
+          if (aiResp.ok) {
+            const aiData = await aiResp.json();
+            const rawContent = aiData.choices?.[0]?.message?.content || "{}";
+            const parsed = parseAiJson(rawContent);
+            const got = Array.isArray(parsed.questions) ? parsed.questions : [];
+            console.log(`[AI_RESPONSE] chunk ${idx + 1}: ${got.length} questões`);
+            aiQuestions.push(...got);
+          } else {
+            const errText = await aiResp.clone().text();
+            console.error(`[AI_REQUEST] chunk ${idx + 1} HTTP ${aiResp.status}:`, errText.slice(0, 300));
+            await logPipelineAlert({
+              source: "ingest-questions",
+              message: `LLM extraction failed chunk ${idx + 1}: ${aiResp.status}`,
+              error_stack: errText.slice(0, 1000),
+              http_status: aiResp.status,
+              model_used: AI_MODELS.extraction
+            });
+          }
+        }
+
+        if (aiQuestions.length > questions.length) {
+          questions = aiQuestions;
+        }
+        console.log(`[AI_RESPONSE] Total LLM extracted: ${aiQuestions.length}; final: ${questions.length}`);
       } catch (aiErr) {
         console.error("[AI_REQUEST] LLM extraction exception:", aiErr);
       }
