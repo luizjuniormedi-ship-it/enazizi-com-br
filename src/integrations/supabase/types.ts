@@ -14739,7 +14739,9 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          last_historical_scan: string | null
           name: string
+          search_terms: string[] | null
           updated_at: string | null
           url: string | null
         }
@@ -14747,7 +14749,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_historical_scan?: string | null
           name: string
+          search_terms?: string[] | null
           updated_at?: string | null
           url?: string | null
         }
@@ -14755,7 +14759,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_historical_scan?: string | null
           name?: string
+          search_terms?: string[] | null
           updated_at?: string | null
           url?: string | null
         }
