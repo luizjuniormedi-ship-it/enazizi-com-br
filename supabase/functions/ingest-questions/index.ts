@@ -310,6 +310,11 @@ Deno.serve(async (req) => {
       questions = parseQuestionsFromPdfExamText(fullText, banca || "Geral");
     }
 
+    if (!fullText && mode === "direct_text" && body.text) {
+      fullText = body.text;
+      sourceName = `Texto: ${body.banca || "Importação Direta"}`;
+    }
+
     if (!fullText) {
       return new Response(JSON.stringify({ error: "No content extracted" }), { status: 400, headers: corsHeaders });
     }
