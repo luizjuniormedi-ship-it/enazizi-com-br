@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
