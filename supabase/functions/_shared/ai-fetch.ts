@@ -278,6 +278,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       await logPipelineAlert({
         source,
         message: `OpenAI Fallback Error: ${response.status}`,
+        alert_type: "fallback_error",
         error_stack: errText,
         http_status: response.status,
         model_used: openaiModel,
