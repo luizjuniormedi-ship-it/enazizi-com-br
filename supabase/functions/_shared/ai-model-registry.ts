@@ -6,10 +6,10 @@
 
 export const ALLOWED_MODELS = {
   // Primary model for content generation
-  generation: "gpt-4o-mini",
+  generation: "gpt-5-mini",
   
   // High-performance model for complex reasoning or specialized tasks
-  reasoning: "gpt-4o",
+  reasoning: "gpt-5",
   
   // Embedding model for vector search
   embeddings: "text-embedding-3-small",
@@ -20,7 +20,7 @@ export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
 
 // List of strictly allowed production models to prevent injection of experimental/invalid names
 export const PRODUCTION_MODELS = [
-  "gpt-4o-mini",
-  "gpt-4o",
+  "gpt-5-mini",
+  "gpt-5",
   "text-embedding-3-small"
 ];
