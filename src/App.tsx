@@ -157,15 +157,9 @@ const App = () => (
 <Route path="/settings" element={<Navigate to="/dashboard/perfil" replace />} />
               <Route element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route path="/enaflix" element={<EnaflixPage />} />
-              </Route>
-              
-              <Route path="/teacher" element={<Navigate to="/professor" replace />} />
-              <Route path="/teacher/*" element={<Navigate to="/professor" replace />} />
-
-              <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                <Route index element={<Dashboard />} />
+                <Route path="/dashboard">
+                  <Route index element={<EnaflixPage />} />
+                  <Route path="cockpit" element={<Dashboard />} />
                 
                 {/* Rotas Reais de Funcionalidades */}
                 <Route path="planner" element={<SmartPlanner />} />
