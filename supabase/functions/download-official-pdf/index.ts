@@ -19,7 +19,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 1. Get file info
     const { data: file, error: fileError } = await supabase
       .from('official_exam_files')
       .select('*')
@@ -28,23 +27,23 @@ serve(async (req) => {
 
     if (fileError || !file) throw new Error('File not found')
 
-    console.log(`Downloading: ${file.file_url}`)
+    console.log(`Downloading real PDF: ${file.file_url}`)
 
-    // 2. Download the file (mocking actual download for this implementation)
-    // In production, use fetch(file.file_url)
-    const response = await fetch(file.file_url).catch(() => null)
-    let blob;
+    // Use a robust fetch with better error handling
+    const response = await fetch(file.file_url, { 
+      headers: { "User-Agent": "Mozilla/5.0" } 
+    }).catch(err => {
+      console.error("Fetch error:", err);
+      return null;
+    });
     
-    if (response && response.ok) {
-        blob = await response.blob()
-    } else {
-        // Mock blob for demonstration if URL is not reachable
-        blob = new Blob(['Mock PDF content'], { type: 'application/pdf' })
+    if (!response || !response.ok) {
+      throw new Error(`Falha ao baixar PDF (${response?.status || 'network error'}). Verifique se o site tem bloqueios de SSL ou IP.`);
     }
 
-    const storagePath = `exams/${file.year}/${file.institution}/${file.file_name}`
+    const blob = await response.blob();
+    const storagePath = `exams/${file.year || 'unknown'}/${file.institution.replace(/[^a-zA-Z0-9]/g, '_')}/${file.file_name.replace(/[^a-zA-Z0-9.]/g, '_')}`
 
-    // 3. Upload to storage
     const { error: uploadError } = await supabase.storage
       .from('official-exams')
       .upload(storagePath, blob, {
@@ -54,7 +53,6 @@ serve(async (req) => {
 
     if (uploadError) throw uploadError
 
-    // 4. Update file status
     await supabase
       .from('official_exam_files')
       .update({ 
@@ -64,7 +62,6 @@ serve(async (req) => {
       })
       .eq('id', file.id)
 
-    // 5. Add to extraction queue
     await supabase
       .from('official_exam_processing_queue')
       .insert({
@@ -78,6 +75,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error(`[Download Error] ${error.message}`);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

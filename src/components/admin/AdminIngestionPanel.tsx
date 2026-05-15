@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Database, Globe, FileText, CheckCircle2, Loader2, ExternalLink, Search, Link2, BarChart3, Scale, Pause, RefreshCw } from "lucide-react";
+import { Database, Globe, FileText, CheckCircle2, Loader2, ExternalLink, Search, Link2, BarChart3, Scale, Pause, RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -153,11 +153,16 @@ const AdminIngestionPanel = () => {
     );
     const raw = await resp.text();
     let data: any = {};
-    try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+    try { 
+      data = raw ? JSON.parse(raw) : {}; 
+    } catch { 
+      console.error("Failed to parse ingestion response:", raw);
+      throw new Error("Resposta inválida do servidor. Verifique os logs da Edge Function."); 
+    }
     const normalized = { ...data, questions_found: data?.questions_found ?? 0, questions_inserted: data?.questions_inserted ?? 0, questions_updated: data?.questions_updated ?? 0, duplicates_skipped: data?.duplicates_skipped ?? 0, errors: data?.errors ?? 0 };
-    if (!resp.ok) throw new Error(normalized?.error || `Falha na ingestão (${resp.status})`);
+    if (!resp.ok) throw new Error(normalized?.error || `Falha na ingestão (${resp.status}): ${raw.slice(0, 100)}`);
     if (normalized.questions_inserted === 0 && normalized.questions_updated === 0 && normalized.duplicates_skipped === 0) {
-      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída deste PDF.");
+      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída deste PDF. O arquivo pode estar protegido por SSL ou ser apenas imagem.");
     }
     return normalized;
   };
@@ -339,6 +344,7 @@ const AdminIngestionPanel = () => {
         <TabsList className="mb-3 flex-wrap h-auto">
           <TabsTrigger value="balance" className="text-xs"><Scale className="h-3 w-3 mr-1" />Equilíbrio</TabsTrigger>
           <TabsTrigger value="sources" className="text-xs"><Globe className="h-3 w-3 mr-1" />Fontes</TabsTrigger>
+          <TabsTrigger value="manual" className="text-xs text-blue-500"><Download className="h-3 w-3 mr-1" />Import Direto</TabsTrigger>
           <TabsTrigger value="discovered" className="text-xs"><Link2 className="h-3 w-3 mr-1" />Descobertas</TabsTrigger>
           <TabsTrigger value="navigate" className="text-xs"><Search className="h-3 w-3 mr-1" />Navegação</TabsTrigger>
           <TabsTrigger value="log" className="text-xs"><FileText className="h-3 w-3 mr-1" />Log</TabsTrigger>
@@ -509,6 +515,54 @@ const AdminIngestionPanel = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <div className="space-y-4 p-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium">URLs de PDFs (um por linha)</label>
+              <textarea 
+                className="w-full h-32 text-xs p-2 rounded border bg-background" 
+                placeholder="https://exemplo.com/prova-2025.pdf&#10;https://exemplo.com/gabarito-2025.pdf"
+                id="manual-urls"
+              />
+              <div className="flex gap-2">
+                <Input className="h-8 text-xs w-24" placeholder="Ano" id="manual-year" defaultValue={new Date().getFullYear()} />
+                <Input className="h-8 text-xs flex-1" placeholder="Banca/Instituição" id="manual-banca" />
+                <Button 
+                  size="sm" 
+                  className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
+                  onClick={async () => {
+                    const urlsEl = document.getElementById('manual-urls') as HTMLTextAreaElement;
+                    const yearEl = document.getElementById('manual-year') as HTMLInputElement;
+                    const bancaEl = document.getElementById('manual-banca') as HTMLInputElement;
+                    
+                    const urls = urlsEl.value.split('\n').filter(u => u.trim());
+                    const year = parseInt(yearEl.value);
+                    const banca = bancaEl.value;
+                    
+                    if (!urls.length) return;
+                    
+                    for (const url of urls) {
+                      toast({ title: "Iniciando importação", description: url });
+                      try {
+                        const data = await callIngest({ mode: "pdf_url", url: url.trim(), year, banca, source_type: "manual_import", permission_type: "indexed_external" });
+                        toast(getIngestToast(data, url));
+                      } catch (e) {
+                        toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+                      }
+                    }
+                    loadLogs();
+                  }}
+                >
+                  Processar URLs
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic">
+                Dica: Use este modo quando a busca automática falhar ou o site tiver bloqueio de SSL.
+              </p>
+            </div>
           </div>
         </TabsContent>
 
