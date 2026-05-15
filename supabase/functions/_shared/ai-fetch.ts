@@ -3,7 +3,9 @@
 
 export { getModelForTier, getRecommendedTier, getMaxTokensForTier, type ModelTier } from "./ai-model-tier.ts";
 export { buildCacheKey, getCachedContent, setCachedContent, logAiUsage } from "./ai-cache.ts";
-import { AI_MODELS, validateModel, getTokenParameterName, standardizeModelName } from "./ai-models.ts";
+import { ALLOWED_MODELS } from "./ai-model-registry.ts";
+import { normalizeModel, validatePayload } from "./model-normalizer.ts";
+import { getTokenParameterName } from "./ai-models.ts";
 import { logPipelineAlert } from "./pipeline-logger.ts";
 
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -12,15 +14,6 @@ const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 const OPENAI_MAX_TOKENS: Record<string, number> = {
   "gpt-4o-mini": 16384,
   "gpt-4o": 16384,
-  "gpt-5-mini": 16384,
-  "gpt-5": 16384,
-};
-
-const MODEL_MAP: Record<string, string> = {
-  "openai/gpt-5-mini": "gpt-4o-mini",
-  "openai/gpt-5": "gpt-4o",
-  "openai/gpt-4o-mini": "gpt-4o-mini",
-  "openai/gpt-4o": "gpt-4o",
 };
 
 // Retryable status codes (transient errors)
