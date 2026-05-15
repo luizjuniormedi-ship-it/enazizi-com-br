@@ -164,7 +164,7 @@ async function processInBackground(
       console.log(`[PROCESS_UPLOAD] Processing chunk ${i + 1}/${textChunks.length}: ${textChunks[i].text.slice(0, 100)}...`);
       try {
         const chunkResponse = await aiFetch({
-          model: "google/gemini-1.5-flash",
+          model: AI_MODELS.extraction,
           messages: [
             {
               role: "system",
