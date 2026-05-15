@@ -33,58 +33,62 @@ serve(async (req) => {
     for (const source of sources) {
       console.log(`Scanning historical data for: ${source.name} (${startYear}-${currentYear})`)
       
-      // Define years to scan
-      const yearsToScan = []
-      for (let y = currentYear; y >= startYear; y--) {
-        yearsToScan.push(y)
-      }
-
-      for (const year of yearsToScan) {
-        // Logic to simulate finding historical PDFs based on URL patterns and search terms
-        // In a real implementation, this would trigger a crawler per year/term
-        const searchTerms = source.search_terms || ['prova', 'gabarito']
+      // 2. Real Scrape for historical links
+      try {
+        const resp = await fetch(source.url, { headers: { "User-Agent": "Mozilla/5.0" } });
+        if (!resp.ok) continue;
+        const html = await resp.text();
         
-        for (const term of searchTerms) {
-          // Force uniqueness in simulation by adding year to filename
-          const safeTerm = term.replace(/\s+/g, '_');
-          const fileName = `${source.name}_${safeTerm}_${year}.pdf`
-          const fileUrl = `${source.url}/archive/${year}/${safeTerm}_${year}.pdf`
-          
-          console.log(`Checking file: ${fileName}`);
-          
-          const { data: file, error: fileError } = await supabase
-            .from('official_exam_files')
-            .upsert({
-              source_id: source.id,
-              file_name: fileName,
-              file_url: fileUrl,
-              institution: source.name,
-              detected_year: year,
-              year: year,
-              detected_category: term.toLowerCase().includes('gabarito') ? 'gabarito' : (term.toLowerCase().includes('edital') ? 'edital' : 'prova'),
-              status: 'discovered',
-              metadata: { term, scanned_at: new Date().toISOString() }
-            }, { onConflict: 'file_url' })
-            .select()
-            .single()
-            
-          if (fileError) {
-             console.error(`Error upserting ${fileName}: ${fileError.message}`);
+        const pdfRegex = /href=["']([^"']+\.pdf)["']/gi;
+        const matches = [...html.matchAll(pdfRegex)];
+        
+        for (const match of matches) {
+          let fileUrl = match[1];
+          if (!fileUrl.startsWith('http')) {
+            const baseUrl = new URL(source.url);
+            fileUrl = new URL(fileUrl, baseUrl.origin + baseUrl.pathname).href;
           }
 
-          if (!fileError && file) {
-            // Queue for download
-            await supabase
-              .from('official_exam_processing_queue')
-              .insert({
-                item_type: 'file',
-                item_id: file.id,
-                priority: year === currentYear ? 10 : 5 // Priority for current year
-              })
-            
-            results.push({ source: source.name, year, file: file.file_name })
+          const fileName = decodeURIComponent(fileUrl.split('/').pop() || "prova.pdf").replace(/[_-]/g, " ");
+          const yearMatch = fileName.match(/(20\d{2})/);
+          const year = yearMatch ? parseInt(yearMatch[1]) : null;
+
+          if (year && year >= startYear && year <= currentYear) {
+            const isExam = /prova|gabarito|objetiva|caderno|exame|edital/i.test(fileName);
+            if (!isExam) continue;
+
+            const category = fileName.toLowerCase().includes('gabarito') ? 'gabarito' : (fileName.toLowerCase().includes('edital') ? 'edital' : 'prova');
+
+            const { data: file, error: fileError } = await supabase
+              .from('official_exam_files')
+              .upsert({
+                source_id: source.id,
+                file_name: fileName,
+                file_url: fileUrl,
+                institution: source.name,
+                detected_year: year,
+                year: year,
+                detected_category: category,
+                status: 'discovered',
+                metadata: { scanned_at: new Date().toISOString() }
+              }, { onConflict: 'file_url' })
+              .select()
+              .single()
+
+            if (!fileError && file) {
+              await supabase
+                .from('official_exam_processing_queue')
+                .insert({
+                  item_type: 'file',
+                  item_id: file.id,
+                  priority: year === currentYear ? 10 : 5
+                })
+              results.push({ source: source.name, year, file: file.file_name })
+            }
           }
         }
+      } catch (err) {
+        console.error(`Error crawling ${source.name}: ${err.message}`);
       }
       
       // Update last scan
