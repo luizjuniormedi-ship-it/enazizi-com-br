@@ -61,15 +61,15 @@ function checkRateLimit(userId: string): boolean {
   return true; // allowed
 }
 
-// Cleanup stale entries every 5 minutes
-setInterval(() => {
+// Cleanup stale entries (no longer using setInterval at top level)
+function cleanupRateLimitMap() {
   const now = Date.now();
   for (const [key, timestamps] of rateLimitMap.entries()) {
     const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
     if (recent.length === 0) rateLimitMap.delete(key);
     else rateLimitMap.set(key, recent);
   }
-}, 5 * 60_000);
+}
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
   const controller = new AbortController();
@@ -126,6 +126,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const source = (Deno.env.get("FUNCTION_NAME") || "unknown-edge-function");
   
   // Rate limit check
+  cleanupRateLimitMap();
   if (options.userId && !checkRateLimit(options.userId)) {
     console.warn(`[aiFetch] Rate limited user ${options.userId}`);
     await logPipelineAlert({

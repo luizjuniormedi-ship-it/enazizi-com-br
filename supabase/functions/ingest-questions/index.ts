@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
-import { sanitizeForPostgres } from "../_shared/db-utils.ts";
+// import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -410,7 +410,7 @@ Deno.serve(async (req) => {
       try {
         const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
         const { AI_MODELS } = await import("../_shared/ai-models.ts");
-        const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
+        // const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
 
         const cleanedFull = normalizePdfExamText(fullText);
         const CHUNK = 12000;

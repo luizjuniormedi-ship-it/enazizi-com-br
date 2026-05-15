@@ -1,9 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-
-export const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
+export function getServiceClient() {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 export async function logPipelineAlert(data: {
   source: string;
@@ -17,6 +18,7 @@ export async function logPipelineAlert(data: {
   metadata?: any;
 }) {
   try {
+    const serviceClient = getServiceClient();
     const { error } = await serviceClient
       .from("pipeline_alerts")
       .insert({
