@@ -102,6 +102,7 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
   options: string[];
   correct_index: number;
   topic: string;
+  subtopic: string;
   explanation: string;
 }> {
   const cleaned = normalizePdfExamText(text);
@@ -115,6 +116,7 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
     options: string[];
     correct_index: number;
     topic: string;
+    subtopic: string;
     explanation: string;
   }> = [];
 
@@ -159,6 +161,7 @@ function parseQuestionsFromPdfExamText(text: string, fallbackTopic: string): Arr
       options,
       correct_index: Math.max(0, Math.min(correctIndex, options.length - 1)),
       topic: fallbackTopic,
+      subtopic: "Geral",
       explanation: "",
     });
   }
@@ -344,7 +347,7 @@ Deno.serve(async (req) => {
           if (option) options.push(option);
         }
         if (options.length >= 4 && options.length <= 5) {
-          questions.push({ statement, options, correct_index: 0, topic: banca || "Geral", explanation: "" });
+          questions.push({ statement, options, correct_index: 0, topic: banca || "Geral", subtopic: "Geral", explanation: "" });
         }
       }
     }
@@ -441,6 +444,7 @@ Deno.serve(async (req) => {
           options: opts,
           correct_index: q.correct_index >= 0 ? q.correct_index : 0,
           topic: q.topic || banca || "Geral",
+          subtopic: q.subtopic || "Geral",
           explanation: q.explanation || "",
           source: `${banca || "external"}_${year || "unknown"}`,
           source_type,

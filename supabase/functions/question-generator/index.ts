@@ -131,17 +131,19 @@ PROIBIÇÕES:
 - NUNCA referencie imagens (ex: "observe a imagem abaixo").
 - NÃO inclua metadata no campo "statement".
 
-FORMATO JSON (Array puro):
+format OBRIGATÓRIO (JSON puro):
 [
   {
     "statement": "...",
     "options": ["A", "B", "C", "D"],
     "correct_index": 0,
-    "topic": "Especialidade - Subtema",
+    "topic": "Especialidade Principal (ex: Cardiologia)",
+    "subtopic": "Subtema Específico (ex: Insuficiência Cardíaca Aguda)",
     "explanation": "...",
     "quality_score": 0.95,
     "hallucination_risk": 0.05,
-    "clinical_depth": 5
+    "clinical_depth": 5,
+    "reference": "Harrison 21ed, 2024"
   }
 ]`;
 
