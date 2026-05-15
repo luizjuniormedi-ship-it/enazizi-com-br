@@ -7,14 +7,14 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function testConcurrency(count: number) {
-  console.log(`Starting concurrency test with ${count} parallel calls...`);
+  console.log(`\n🔥 STRESS TEST: ${count} parallel calls to ai-proxy...`);
   const start = Date.now();
   
   const promises = Array.from({ length: count }).map(async (_, i) => {
     const { data, error } = await supabase.functions.invoke("ai-proxy", {
-      body: { prompt: "Say hello", model: "openai/gpt-4o-mini" }
+      body: { prompt: "Say 'ENAZIZI IS READY'", model: "openai/gpt-5-mini" }
     });
-    return { id: i, ok: !error, error: error?.message };
+    return { id: i, ok: !error, error: error?.message, data };
   });
 
   const results = await Promise.all(promises);
@@ -23,44 +23,75 @@ async function testConcurrency(count: number) {
   const success = results.filter(r => r.ok).length;
   const failed = results.filter(r => !r.ok).length;
   
-  console.log(`Concurrency Test Results:`);
-  console.log(`- Total: ${count}`);
-  console.log(`- Success: ${success}`);
-  console.log(`- Failed: ${failed}`);
-  console.log(`- Duration: ${duration}ms`);
-  console.log(`- Avg: ${duration / count}ms per call`);
+  console.log(`Results: ${success} SUCCESS, ${failed} FAILED in ${duration}ms`);
   
   if (failed > 0) {
-    console.log("Errors encountered:", results.filter(r => !r.ok).map(r => r.error));
+    console.log("Error sample:", results.find(r => !r.ok)?.error);
   }
 }
 
 async function testRLS() {
-  console.log("Testing RLS Security...");
+  console.log("\n🔒 SECURITY AUDIT (RLS)...");
   
-  // Attempt to read profiles with anon key
-  const { data, error } = await supabase.from("profiles").select("*").limit(1);
-  
-  if (error) {
-    console.log("RLS Check: profiles table correctly protected or threw error:", error.message);
+  // 1. Profiles (should return 0 rows for anon)
+  const { data: profiles, error: pErr } = await supabase.from("profiles").select("id").limit(1);
+  if (pErr) {
+    console.log("✅ Profiles protected (Error):", pErr.message);
+  } else if (profiles && profiles.length > 0) {
+    console.log("❌ CRITICAL: Profiles accessible to anon user!");
   } else {
-    console.log("RLS Check: Profiles table accessible via anon key (Check if this is intended - public profiles?)");
+    console.log("✅ Profiles protected (0 rows returned for anon).");
   }
 
-  // Attempt to read official_exam_files (should be admin only)
-  const { data: exams, error: examErr } = await supabase.from("official_exam_files").select("*").limit(1);
-  if (examErr) {
-    console.log("RLS Check: official_exam_files protected:", examErr.message);
-  } else if (exams && exams.length > 0) {
-    console.log("CRITICAL: official_exam_files accessible via anon key!");
+  // 2. Questions table
+  const { data: questions, error: qErr } = await supabase.from("questions").select("id").limit(1);
+  if (qErr) {
+    console.log("✅ Questions protected (Error):", qErr.message);
+  } else if (questions && questions.length > 0) {
+    console.log("ℹ️ Questions are public (intended behavior?).");
   } else {
-    console.log("RLS Check: official_exam_files returned empty/protected.");
+    console.log("✅ Questions protected (0 rows).");
+  }
+
+  // 3. Admin Logs
+  const { data: logs, error: lErr } = await supabase.from("admin_actions_log").select("*").limit(1);
+  if (lErr) {
+     console.log("✅ Admin Logs protected:", lErr.message);
+  } else if (logs && logs.length > 0) {
+     console.log("❌ CRITICAL: Admin logs exposed to public!");
+  } else {
+     console.log("✅ Admin Logs protected (0 rows).");
+  }
+}
+
+async function testCognitiveStability() {
+  console.log("\n🧠 COGNITIVE STABILITY TEST...");
+  const start = Date.now();
+  
+  const { data, error } = await supabase.functions.invoke("tutor-v2-chat", {
+    body: { 
+      message: "Explique a fisiopatologia da pré-eclâmpsia de forma profunda.",
+      context: { topic: "Obstetrícia" }
+    }
+  });
+
+  const duration = Date.now() - start;
+  if (error) {
+    console.log("❌ Tutor IA failed:", error.message);
+  } else {
+    const content = data?.response || data?.choices?.[0]?.message?.content || JSON.stringify(data).slice(0, 100);
+    console.log(`✅ Tutor IA responded in ${duration}ms.`);
+    console.log(`Content length: ${content.length} chars.`);
+    if (content.length < 100) console.log("⚠️ Potential cognitive degradation (too short).");
   }
 }
 
 async function run() {
+  console.log("🚀 ENAZIZI ENTERPRISE CHAOS TEST INITIATED");
   await testRLS();
-  await testConcurrency(10); // Start with 10 to be safe
+  await testCognitiveStability();
+  await testConcurrency(20); // 20 simultaneous AI calls
+  console.log("\n🏁 CHAOS TEST COMPLETE");
 }
 
 run().catch(console.error);
