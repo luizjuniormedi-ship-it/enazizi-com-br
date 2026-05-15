@@ -315,9 +315,9 @@ const ChatGPT = () => {
       if (detectedTopic && detectedTopic.toLowerCase() !== currentTopic.toLowerCase()) {
         setCurrentTopic(detectedTopic);
         activeTopic = detectedTopic;
-        setEnaziziStep(3);
+        setEnaziziStep(1); // Reset para o Bloco 1 (Caso Vivo) no padrão V3
         setChangingTopic(false);
-        saveEnaziziStep(3, detectedTopic, performance, sessionQuestions);
+        saveEnaziziStep(1, detectedTopic, performance, sessionQuestions);
         savePerformance({ tema_atual: detectedTopic });
       }
     }
