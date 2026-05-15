@@ -168,7 +168,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     const tokenKey = getTokenParameterName(model);
     
     const body: any = { 
-      model: model.startsWith("openai/") || isOpenAI ? model : `openai/${model}`, 
+      model: model, 
       messages: options.messages, 
       [tokenKey]: maxTokens,
       temperature
