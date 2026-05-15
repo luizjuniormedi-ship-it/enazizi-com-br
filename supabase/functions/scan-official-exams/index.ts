@@ -30,36 +30,39 @@ serve(async (req) => {
     for (const source of sources) {
       console.log(`Scanning source: ${source.name} at ${source.url}`)
       
-      // In a real scenario, we would use a library like linkedom or cheerio to parse the HTML
-      // and look for PDF links. For this demo/implementation, we simulate the discovery.
+      // Historical logic integrated
+      const currentYear = new Date().getFullYear();
+      const years = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4, currentYear - 5];
       
-      // Simulate discovering a new PDF
-      const mockDiscovery = {
-        source_id: source.id,
-        file_name: `${source.name}_Prova_2025.pdf`,
-        file_url: `${source.url}/provas/2025/prova.pdf`,
-        institution: source.name,
-        year: 2025,
-        status: 'discovered'
-      }
+      for (const year of years) {
+        // Search simulation for each year
+        const mockDiscovery = {
+          source_id: source.id,
+          file_name: `${source.name}_Prova_${year}.pdf`,
+          file_url: `${source.url}/provas/${year}/prova.pdf`,
+          institution: source.name,
+          detected_year: year,
+          detected_category: 'prova',
+          status: 'discovered'
+        }
 
-      const { data: file, error: fileError } = await supabase
-        .from('official_exam_files')
-        .upsert(mockDiscovery, { onConflict: 'file_url' })
-        .select()
-        .single()
+        const { data: file, error: fileError } = await supabase
+          .from('official_exam_files')
+          .upsert(mockDiscovery, { onConflict: 'file_url' })
+          .select()
+          .single()
 
-      if (!fileError && file) {
-        // Add to download queue
-        await supabase
-          .from('official_exam_processing_queue')
-          .insert({
-            item_type: 'file',
-            item_id: file.id,
-            priority: 10
-          })
-        
-        results.push({ source: source.name, status: 'discovered', file: file.file_name })
+        if (!fileError && file) {
+          await supabase
+            .from('official_exam_processing_queue')
+            .insert({
+              item_type: 'file',
+              item_id: file.id,
+              priority: year === currentYear ? 10 : 5
+            })
+          
+          results.push({ source: source.name, year, status: 'discovered', file: file.file_name })
+        }
       }
     }
 
