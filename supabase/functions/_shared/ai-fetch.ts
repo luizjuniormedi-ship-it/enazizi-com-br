@@ -231,9 +231,10 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       // If it's a 400 (Bad Request), fallback might not help but we'll try
     } catch (fetchErr) {
       console.error("Lovable AI all retries failed:", fetchErr);
-      await logPipelineAlert({
+    await logPipelineAlert({
         source,
         message: "Lovable AI Fetch Exception",
+        alert_type: "fetch_exception",
         error_stack: fetchErr instanceof Error ? fetchErr.stack : String(fetchErr),
         severity: "error",
         model_used: lovableModel
@@ -246,6 +247,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     await logPipelineAlert({
       source,
       message: "AI Credits Exhausted (No OpenAI Key)",
+      alert_type: "credits_exhausted",
       severity: "critical"
     });
     throw new Error("AI_CREDITS_EXHAUSTED");
