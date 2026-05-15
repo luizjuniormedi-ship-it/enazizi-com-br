@@ -10,16 +10,15 @@ const corsHeaders = {
 
 const STAGES = [
   'mission',
+  'roadmap',
   'layman',
   'technical',
   'pathophysiology',
   'clinical_reasoning',
-  'practical_integration',
-  'exam_tricks',
+  'exam_integration',
   'active_recall',
   'mini_test',
-  'summary',
-  'next_step'
+  'summary'
 ];
 
 serve(async (req) => {
