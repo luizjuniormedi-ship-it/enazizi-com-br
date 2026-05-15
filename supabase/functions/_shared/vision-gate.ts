@@ -76,7 +76,7 @@ export async function validateImageVision(
 
   try {
     const payload = {
-      model: "openai/gpt-4o-mini",
+      model: "openai/gpt-5-mini",
       messages: [{
         role: "user",
         content: [
