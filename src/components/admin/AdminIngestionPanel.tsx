@@ -344,6 +344,7 @@ const AdminIngestionPanel = () => {
         <TabsList className="mb-3 flex-wrap h-auto">
           <TabsTrigger value="balance" className="text-xs"><Scale className="h-3 w-3 mr-1" />Equilíbrio</TabsTrigger>
           <TabsTrigger value="sources" className="text-xs"><Globe className="h-3 w-3 mr-1" />Fontes</TabsTrigger>
+          <TabsTrigger value="manual" className="text-xs text-blue-500"><Download className="h-3 w-3 mr-1" />Import Direto</TabsTrigger>
           <TabsTrigger value="discovered" className="text-xs"><Link2 className="h-3 w-3 mr-1" />Descobertas</TabsTrigger>
           <TabsTrigger value="navigate" className="text-xs"><Search className="h-3 w-3 mr-1" />Navegação</TabsTrigger>
           <TabsTrigger value="log" className="text-xs"><FileText className="h-3 w-3 mr-1" />Log</TabsTrigger>
