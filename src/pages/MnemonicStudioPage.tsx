@@ -61,6 +61,7 @@ function useErrorSuggestions() {
 
 export default function MnemonicGeneratorPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [tema, setTema] = useState("");
   const [termosText, setTermosText] = useState("");
   const [estilo, setEstilo] = useState("frase + imagem mental");
