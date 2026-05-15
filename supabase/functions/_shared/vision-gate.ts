@@ -102,7 +102,7 @@ Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false
           { type: "image_url", image_url: { url: imageUrl } },
         ],
       }],
-      max_completion_tokens: 300,
+      max_completion_tokens: 2000,
       response_format: { type: "json_object" }
     };
 
