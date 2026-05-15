@@ -217,6 +217,18 @@ const AdminIngestionPanel = () => {
     } finally { setProcessing(null); }
   };
 
+  const getFreshToken = async (): Promise<string | null> => {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) return null;
+    // Refresh proativamente se faltar < 5 min para expirar
+    const expiresAt = (data.session.expires_at ?? 0) * 1000;
+    if (expiresAt - Date.now() < 5 * 60 * 1000) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      return refreshed.session?.access_token ?? data.session.access_token;
+    }
+    return data.session.access_token;
+  };
+
   const handleEqualize = async () => {
     if (!session) return;
     setEqualizing(true);
