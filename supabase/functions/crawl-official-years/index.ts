@@ -45,9 +45,12 @@ serve(async (req) => {
         const searchTerms = source.search_terms || ['prova', 'gabarito']
         
         for (const term of searchTerms) {
-          // Mocking discovery of files matching the term and year
-          const fileName = `${source.name}_${term.replace(/\s+/g, '_')}_${year}.pdf`
-          const fileUrl = `${source.url}/archive/${year}/${fileName}`
+          // Force uniqueness in simulation by adding year to filename
+          const safeTerm = term.replace(/\s+/g, '_');
+          const fileName = `${source.name}_${safeTerm}_${year}.pdf`
+          const fileUrl = `${source.url}/archive/${year}/${safeTerm}_${year}.pdf`
+          
+          console.log(`Checking file: ${fileName}`);
           
           const { data: file, error: fileError } = await supabase
             .from('official_exam_files')
