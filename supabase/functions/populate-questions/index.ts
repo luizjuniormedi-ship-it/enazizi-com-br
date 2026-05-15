@@ -1,8 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
-import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
+import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
+import { AI_MODELS } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
