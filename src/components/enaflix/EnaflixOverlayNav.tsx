@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Search, X, User, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, Bell, Search, X, User, LayoutDashboard, Menu } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
