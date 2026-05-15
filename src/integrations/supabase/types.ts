@@ -15251,6 +15251,7 @@ export type Database = {
           http_status: number | null
           id: string
           message: string
+          metadata: Json | null
           model_used: string | null
           payload: Json | null
           run_id: string | null
@@ -15268,6 +15269,7 @@ export type Database = {
           http_status?: number | null
           id?: string
           message: string
+          metadata?: Json | null
           model_used?: string | null
           payload?: Json | null
           run_id?: string | null
@@ -15285,6 +15287,7 @@ export type Database = {
           http_status?: number | null
           id?: string
           message?: string
+          metadata?: Json | null
           model_used?: string | null
           payload?: Json | null
           run_id?: string | null
