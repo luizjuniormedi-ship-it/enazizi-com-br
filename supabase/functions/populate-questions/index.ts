@@ -265,30 +265,22 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const token = authHeader?.replace("Bearer ", "");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
-    console.log(`Debug Auth: token=${token?.slice(0, 5)}... serviceRoleKey=${serviceRoleKey?.slice(0, 5)}...`);
-
     let userId: string;
 
-    if (token === serviceRoleKey) {
+    if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
       console.log("Authenticated via Service Role Key");
       const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
       userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
-    } else if (authHeader?.startsWith("Bearer ")) {
-      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
-      const userClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: claimsData, error: claimsError } = await userClient.auth.getUser();
-      if (claimsError || !claimsData?.user) return new Response(JSON.stringify({ error: "Token inválido. Faça login novamente." }), { status: 401, headers: corsHeaders });
-
-      const uid = claimsData.user.id;
-      const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
-      if (!roleData) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
-      userId = uid;
     } else {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token!);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      }
+      
+      const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      if (!roleData) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
+      userId = user.id;
     }
 
     const body = await req.json();
