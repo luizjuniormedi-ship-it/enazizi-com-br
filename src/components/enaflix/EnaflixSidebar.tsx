@@ -46,6 +46,7 @@ const NAV_SECTIONS = [
     title: "PANORAMA",
     items: [
       { to: "/dashboard", label: "Início", icon: Home },
+      { to: "/dashboard/cockpit", label: "Painel de Métricas", icon: LayoutDashboard },
       { to: "/dashboard/planner", label: "Hoje (Planner)", icon: Calendar },
       { to: "/dashboard/analytics", label: "Meu Progresso", icon: BrainCircuit },
       { to: "/dashboard/enaflix", label: "Biblioteca ENAFLIX", icon: MonitorPlay },
