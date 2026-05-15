@@ -183,6 +183,10 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     if (options.tools) body.tools = options.tools;
     if (options.tool_choice) body.tool_choice = options.tool_choice;
     if (options.response_format) body.response_format = options.response_format;
+
+    // DEBUG: Log the full payload before stringifying
+    console.log(`[aiFetch] Payload for model ${model}:`, JSON.stringify(body, null, 2));
+    
     return JSON.stringify(body);
   };
 
