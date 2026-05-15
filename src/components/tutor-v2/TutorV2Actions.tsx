@@ -113,8 +113,30 @@ export default function TutorV2Actions({ session }: TutorV2ActionsProps) {
       <div className="h-9 w-[1px] bg-white/10 mx-1 hidden sm:block" />
 
       <div className="flex gap-1">
-        <ActionButton icon={Zap} label="Mnemônico" />
-        <ActionButton icon={MapIcon} label="Mapa Mental" />
+        <ActionButton 
+          icon={Zap} 
+          label="Mnemônico" 
+          onClick={() => {
+            const topic = session?.topic || session?.title || "";
+            if (topic) {
+              window.open(`/dashboard/mnemonico?tema=${encodeURIComponent(topic)}&auto=1`, "_blank");
+            } else {
+              window.open("/dashboard/mnemonico", "_blank");
+            }
+          }}
+        />
+        <ActionButton 
+          icon={MapIcon} 
+          label="Mapa Mental" 
+          onClick={() => {
+             const topic = session?.topic || session?.title || "";
+             if (topic) {
+               window.open(`/dashboard/mapas-mentais?tema=${encodeURIComponent(topic)}`, "_blank");
+             } else {
+               window.open("/dashboard/mapas-mentais", "_blank");
+             }
+          }}
+        />
         <ActionButton icon={Microscope} label="Caso Clínico" />
       </div>
 
