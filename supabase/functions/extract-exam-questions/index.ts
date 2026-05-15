@@ -122,8 +122,8 @@ Deno.serve(async (req) => {
       if ((questions.length < 5 && section.text.length > 5000) || questions.length === 0) {
         console.log(`Regex found only ${questions.length} questions for year ${section.year}. Trying LLM fallback...`);
         try {
-          // Dynamic import to use the shared helper
-          const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
+          // Dynamic import removed - now using static imports at the top
+
           
           const prompt = `Extraia questões médicas do texto abaixo para o ano ${section.year}.
           O texto é de uma prova do REVALIDA INEP.
