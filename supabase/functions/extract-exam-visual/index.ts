@@ -233,12 +233,12 @@ serve(async (req) => {
         if (hasImg) totalImages++;
         return {
           user_id: systemUserId,
-          statement: q.statement.trim(),
-          options: q.options.map((o: string) => o.trim()),
+          statement: (q.statement || "").replace(/\0/g, "").trim(),
+          options: (Array.isArray(q.options) ? q.options : []).map((o: string) => String(o).replace(/\0/g, "").trim()),
           correct_index: typeof q.correct_index === "number" ? q.correct_index : null,
-          explanation: q.explanation || null,
-          topic: q.topic || "Geral",
-          source: q.source || upload.filename?.replace(/\.\w+$/, "") || "visual-import",
+          explanation: (q.explanation || "").replace(/\0/g, ""),
+          topic: (q.topic || "Geral").replace(/\0/g, ""),
+          source: (q.source || upload.filename?.replace(/\.\w+$/, "") || "visual-import").replace(/\0/g, ""),
           is_global: true,
           review_status: "pending",
           image_url: hasImg ? pageImageUrls[q.page_number] : null,
