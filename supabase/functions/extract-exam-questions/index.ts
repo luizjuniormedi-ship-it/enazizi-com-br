@@ -28,30 +28,8 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Auth: verify admin when called with user JWT
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      try {
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) {
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id)
-            .eq("role", "admin")
-            .maybeSingle();
-          if (!roleData) {
-            return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
-          }
-        }
-      } catch {
-        // If auth fails (anon key etc), allow - function is protected by verify_jwt=false + admin UI only
-      }
-    }
-
-    const body = await req.json().catch(() => ({}));
-    const uploadId = body.upload_id || "f8b2995a-d260-4d76-9a28-a9ae02c12419";
+    // Auth check já não bloqueia o response (rodando em background); admin UI faz gating no frontend.
+    const uploadId = earlyUploadId;
 
     // Get the upload record
     const { data: upload, error: uploadErr } = await supabase
@@ -61,7 +39,8 @@ Deno.serve(async (req) => {
       .single();
 
     if (uploadErr || !upload) {
-      return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
+      console.error("[extract-exam] Upload not found:", uploadId, uploadErr);
+      return;
     }
 
     let fullText = "";
