@@ -987,7 +987,7 @@ serve(async (req) => {
     // Also insert into questions_bank for backward compatibility
     const adminUserId = await getAdminUserId(supabaseAdmin);
     if (adminUserId) {
-      const bankRows = unique.map((q: any) => ({
+      const bankRows = unique.map((q: any) => sanitizeForPostgres({
         user_id: adminUserId,
         statement: String(q.statement).trim(),
         options: q.options.map(String),
