@@ -62,6 +62,7 @@ const ForgotPassword = lazyWithRetry(() => import("./pages/ForgotPassword"), "Fo
 const Terms = lazyWithRetry(() => import("./pages/Terms"), "Terms");
 const Privacy = lazyWithRetry(() => import("./pages/Privacy"), "Privacy");
 const FeynmanTrainer = lazyWithRetry(() => import("./pages/ContentSummarizer"), "ContentSummarizer");
+const AIPipelineHardening = lazyWithRetry(() => import("./pages/admin/AIPipelineHardening"), "AIPipelineHardening");
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
