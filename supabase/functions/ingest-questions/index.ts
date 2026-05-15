@@ -158,7 +158,7 @@ serve(async (req) => {
     const { mode, url, upload_id, banca, year, source_type = "unknown", permission_type = "unknown" } = body;
 
     if (!mode) {
-      return new Response(JSON.stringify({ success: true, stage: "BOOT_OK", function: "ingest-questions" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: true, stage: "BOOT_OK_V3", function: "ingest-questions" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     console.log(`[EXEC] Mode: ${mode}`);
