@@ -107,24 +107,33 @@ Se não encontrar questões, retorne {"questions": []}`
       return 0;
     }
 
-    const data = await response.json();
-    const rawContent = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
-    const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-
     let parsed: any = null;
-    try { parsed = JSON.parse(cleaned); } catch {
-      try {
-        const jsonMatch = cleaned.match(/\{"questions"\s*:\s*\[[\s\S]*?\]\s*\}/);
-        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-      } catch {
-        try {
-          const arrMatch = cleaned.match(/\[[\s\S]*\]/);
-          if (arrMatch) parsed = { questions: JSON.parse(arrMatch[0]) };
-        } catch { return 0; }
-      }
+    try {
+      const data = await response.json();
+      const rawContent = data.choices?.[0]?.message?.content || "";
+      parsed = parseAiJson(rawContent);
+    } catch (parseErr) {
+      console.error("Parse error:", parseErr);
+      const rawText = await response.clone().text();
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: "JSON Parse Error in AI Response",
+        error_stack: parseErr instanceof Error ? parseErr.stack : String(parseErr),
+        payload: { raw_response: rawText.slice(0, 1000) },
+        model_used: AI_MODELS.generation
+      });
+      return 0;
     }
 
-    if (!parsed) return 0;
+    if (!parsed || !parsed.questions) {
+      await logPipelineAlert({
+        source: "populate-questions",
+        message: "AI returned empty questions array",
+        severity: "warning",
+        model_used: AI_MODELS.generation
+      });
+      return 0;
+    }
 
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
