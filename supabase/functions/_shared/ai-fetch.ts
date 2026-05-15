@@ -146,6 +146,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       source,
       message: errorMsg,
       severity: "critical",
+      alert_type: "validation_error",
       model_used: lovableModel
     });
     // Fallback to safe default
