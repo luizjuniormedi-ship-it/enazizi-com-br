@@ -135,37 +135,12 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-  let lovableModel = options.model || AI_MODELS.generation;
+  // 1. Normalize Model
+  const rawModel = options.model || ALLOWED_MODELS.generation;
+  const normalizedModel = normalizeModel(rawModel);
   
-  // Validate model before proceeding
-  if (!validateModel(lovableModel)) {
-    const errorMsg = `Invalid AI model requested: ${lovableModel}`;
-    await logPipelineAlert({
-      source,
-      message: errorMsg,
-      severity: "critical",
-      alert_type: "validation_error",
-      model_used: lovableModel
-    });
-    // Fallback to safe default
-    lovableModel = AI_MODELS.generation;
-  }
-
-  lovableModel = standardizeModelName(lovableModel);
-  
-  // The Gateway expects gpt-5-* names. 
-  // openai/gpt-4o-mini is now mapped to gpt-5-mini in the project's logic where possible.
-  if (lovableModel === "openai/gpt-4o-mini" || lovableModel === "gpt-4o-mini") {
-    lovableModel = "openai/gpt-5-mini";
-  }
-  if (lovableModel === "openai/gpt-4o" || lovableModel === "gpt-4o") {
-    lovableModel = "openai/gpt-5";
-  }
-
-  const maxRetries = options.maxRetries ?? 2;
-  const timeoutMs = options.timeoutMs ?? 90000;
-
-  const buildBody = (model: string, isOpenAI = false) => {
+  // 2. Build Payload
+  const buildPayload = (model: string, isOpenAI = false) => {
     let maxTokens = options.maxTokens ?? 16384;
     if (isOpenAI) {
       const modelClean = model.replace("openai/", "");
@@ -176,7 +151,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     const tokenKey = getTokenParameterName(model);
     
     const body: any = { 
-      model, 
+      model: model.startsWith("openai/") || isOpenAI ? model : `openai/${model}`, 
       messages: options.messages, 
       [tokenKey]: maxTokens 
     };
@@ -185,12 +160,41 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     if (options.tools) body.tools = options.tools;
     if (options.tool_choice) body.tool_choice = options.tool_choice;
     if (options.response_format) body.response_format = options.response_format;
-
-    // DEBUG: Log the full payload before stringifying
-    console.log(`[aiFetch] Payload for model ${model}:`, JSON.stringify(body, null, 2));
     
-    return JSON.stringify(body);
+    return body;
   };
+
+  const payload = buildPayload(normalizedModel);
+
+  // 3. Block Invalid Payloads
+  const validation = validatePayload(payload);
+  if (!validation.valid) {
+    const errorMsg = `Invalid AI payload: ${validation.error}`;
+    console.error(`[aiFetch] ${errorMsg}`, JSON.stringify(payload, null, 2));
+    await logPipelineAlert({
+      source,
+      message: errorMsg,
+      severity: "critical",
+      alert_type: "validation_error",
+      model_used: normalizedModel,
+      metadata: { payload_error: validation.error }
+    });
+    throw new Error(`VALIDATION_ERROR: ${validation.error}`);
+  }
+
+  // 4. Forensic Logs BEFORE call
+  console.log("[AI_PIPELINE_BEFORE]", {
+    rawModel,
+    normalizedModel,
+    payloadModel: payload.model,
+    provider: "lovable-gateway",
+    messagesCount: options.messages.length,
+    response_format: !!options.response_format,
+    timestamp: new Date().toISOString()
+  });
+
+  const maxRetries = options.maxRetries ?? 2;
+  const timeoutMs = options.timeoutMs ?? 90000;
 
   // Try Lovable AI first
   if (LOVABLE_API_KEY) {
@@ -203,49 +207,52 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
           },
-          body: buildBody(lovableModel),
+          body: JSON.stringify(payload),
         },
         maxRetries,
         timeoutMs,
         "LovableAI",
       );
 
-      // If successful, return
+      // Forensic Logs AFTER call
+      console.log("[AI_PIPELINE_AFTER]", {
+        status: response.status,
+        ok: response.ok,
+        provider: "lovable-gateway",
+        timestamp: new Date().toISOString()
+      });
+
       if (response.ok) {
         return response;
       }
 
-      // If not a credit/rate issue, log it but maybe continue to fallback
-      if (response.status !== 402 && response.status !== 429) {
-        const errorBody = await response.clone().text();
-        console.error(`[aiFetch] Lovable AI Gateway Error ${response.status}:`, errorBody);
-        
-        await logPipelineAlert({
-          source,
-          message: `Lovable AI Gateway Error: ${response.status}`,
-          alert_type: "gateway_error",
-          error_stack: errorBody,
-          http_status: response.status,
-          model_used: lovableModel,
-          payload: { 
-            last_message_preview: options.messages[options.messages.length - 1]?.content?.slice(0, 500) 
-          }
-        });
-      } else {
-        const errorBody = await response.clone().text();
-        console.warn(`Lovable AI returned ${response.status}, falling back to OpenAI. Body: ${errorBody.slice(0, 200)}`);
+      // If not a credit/rate issue, log it
+      const errorBody = await response.clone().text();
+      console.error(`[AI_PIPELINE_ERROR] Lovable AI Gateway Error ${response.status}:`, errorBody);
+      
+      await logPipelineAlert({
+        source,
+        message: `Lovable AI Gateway Error: ${response.status}`,
+        alert_type: "gateway_error",
+        error_stack: errorBody,
+        http_status: response.status,
+        model_used: normalizedModel,
+        metadata: { gatewayResponse: errorBody }
+      });
+
+      if (response.status === 400) {
+        throw new Error(`GATEWAY_ERROR_400: ${errorBody.slice(0, 100)}`);
       }
       
-      // If it's a 400 (Bad Request), fallback might not help but we'll try
     } catch (fetchErr) {
-      console.error("Lovable AI all retries failed:", fetchErr);
-    await logPipelineAlert({
+      console.error("[AI_PIPELINE_EXCEPTION] Lovable AI failed:", fetchErr);
+      await logPipelineAlert({
         source,
         message: "Lovable AI Fetch Exception",
         alert_type: "fetch_exception",
         error_stack: fetchErr instanceof Error ? fetchErr.stack : String(fetchErr),
         severity: "error",
-        model_used: lovableModel
+        model_used: normalizedModel
       });
     }
   }
