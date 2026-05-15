@@ -297,7 +297,7 @@ const Dashboard = () => {
                   <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
                 <Enaflix3DButton variant="violet">
-                  Iniciar Conversa
+                  Iniciar Tutor IA V2
                 </Enaflix3DButton>
               </div>
            </EnaflixCinematicCard>
