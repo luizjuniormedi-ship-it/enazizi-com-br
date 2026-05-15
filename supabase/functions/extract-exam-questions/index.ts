@@ -330,27 +330,29 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        years_found: allResults.map((r) => ({
-          year: r.year,
-          questions_parsed: r.questions.length,
-        })),
-        total_inserted: totalInserted,
-        total_linked: linkedCount,
-        exam_banks_created: examBanksCreated,
-        text_length: fullText.length,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.log(`[extract-exam] DONE upload=${uploadId} years=${allResults.length} inserted=${totalInserted} linked=${linkedCount}`);
   } catch (err) {
-    console.error("Extract error:", err);
-    return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: corsHeaders }
-    );
+    console.error("[extract-exam] Background error:", err);
   }
+  })();
+
+  // Agenda o trabalho para continuar após o response (até ~400s no plano free)
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+    EdgeRuntime.waitUntil(work);
+  } else {
+    // Fallback sem waitUntil — apenas dispara, sem await (best-effort)
+    work.catch((e) => console.error("[extract-exam] detached error:", e));
+  }
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      status: "processing",
+      upload_id: earlyUploadId,
+      message: "Extração iniciada em background. Acompanhe pelo painel admin / questions_bank.",
+    }),
+    { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
 });
 
 // --- Parser ---
