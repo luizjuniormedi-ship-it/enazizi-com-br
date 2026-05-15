@@ -8,10 +8,10 @@ const corsHeaders = {
 
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-async function upgradeQuestion(q: { id: string; statement: string; options: string[]; correct_index: number; topic: string; explanation?: string }, apiKey: string): Promise<string | null> {
+async function upgradeQuestion(q: { id: string; statement: string; options: string[]; correct_index: number; topic: string; explanation?: string }, apiKey: string): Promise<{ statement: string, explanation: string } | null> {
   const prompt = `Você é um elaborador de questões de ELITE para residência médica (ENAMED/REVALIDA).
 
-TAREFA: Expanda o enunciado curto abaixo em um CASO CLÍNICO COMPLETO padrão prova, mantendo o MESMO tema, as MESMAS alternativas e o MESMO gabarito (índice ${q.correct_index}).
+TAREFA: Transforme o enunciado abaixo em um CASO CLÍNICO DE ALTA COMPLEXIDADE padrão prova real, e gere uma EXPLICAÇÃO DETALHADA. Mantendo o MESMO tema, as MESMAS alternativas e o MESMO gabarito (índice ${q.correct_index}).
 
 ENUNCIADO ORIGINAL:
 "${q.statement}"
@@ -20,22 +20,28 @@ ALTERNATIVAS ORIGINAIS:
 ${q.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join("\n")}
 
 TEMA: ${q.topic}
+EXPLICAÇÃO ATUAL (se houver): ${q.explanation || "Nenhuma"}
 
-REGRAS OBRIGATÓRIAS:
-1. Crie um caso clínico com paciente fictício (nome, idade, sexo, profissão)
-2. Inclua: QP com tempo de evolução, HDA detalhada, antecedentes, hábitos
-3. Sinais vitais completos (PA, FC, FR, Temp, SpO2)
-4. Exame físico com achados positivos e negativos
-5. Exames laboratoriais com valores numéricos quando pertinente
-6. O enunciado expandido deve ter 400-800 caracteres
-7. NÃO altere as alternativas nem o gabarito
-8. NÃO referencie imagens, figuras ou gráficos
-9. TUDO em PORTUGUÊS BRASILEIRO
-10. Mantenha a pergunta objetiva no final do caso
-11. 🚨 CRÍTICO: O campo "statement" deve conter APENAS o caso clínico e a pergunta final. NÃO inclua as alternativas (A, B, C, D, E) dentro do statement. As alternativas já existem separadamente e serão mantidas como estão.
-12. NÃO repita, liste ou mencione as alternativas dentro do enunciado de forma alguma.
+REGRAS OBRIGATÓRIAS PARA O ENUNCIADO:
+1. Crie um caso clínico com paciente fictício (nome, idade, sexo, profissão).
+2. Inclua: QP com tempo de evolução, HDA detalhada, antecedentes relevantes, hábitos de vida.
+3. Sinais vitais completos e exame físico detalhado (achados positivos e negativos).
+4. Exames laboratoriais/imagem com valores numéricos quando pertinente.
+5. O enunciado deve ter 500-1000 caracteres.
+6. A pergunta final deve ser direta e técnica.
+7. NÃO repita as alternativas no enunciado.
 
-Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando APENAS com a pergunta, SEM listar alternativas"}`;
+REGRAS PARA A EXPLICAÇÃO:
+1. Deve ser pedagógica e detalhada.
+2. Justifique por que a alternativa correta está certa baseando-se em diretrizes atuais.
+3. Comente brevemente por que as outras alternativas estão incorretas (distratores).
+4. Use tom profissional e acadêmico.
+
+Retorne APENAS um JSON válido: 
+{
+  "statement": "Caso clínico completo e pergunta final",
+  "explanation": "Explicação detalhada e fundamentada"
+}`;
 
   try {
     const res = await fetch(LOVABLE_GATEWAY, {
