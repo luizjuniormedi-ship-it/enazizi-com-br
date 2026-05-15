@@ -852,6 +852,20 @@ serve(async (req) => {
 
     console.log(`=== PIPELINE START: ${specialty} (auto=${autoMode}, banca=${banca}) ===`);
 
+    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    if (!firecrawlKey) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "FIRECRAWL_API_KEY não configurada. O Web Scraping automatizado requer esta chave para buscar questões em fontes oficiais. Por favor, adicione a chave nas configurações do Supabase.",
+        questions_inserted: 0,
+        sources_used: [],
+        pages_scraped: 0,
+      }), { 
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+
     // Create scraping run log
     const { data: runData } = await supabaseAdmin
       .from("scraping_runs")
