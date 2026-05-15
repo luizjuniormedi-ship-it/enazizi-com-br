@@ -137,24 +137,45 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
       
       <header className="p-4 border-b border-white/5 bg-slate-950/60 backdrop-blur-2xl z-20 sticky top-0">
-        <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
-          <div className="flex items-center gap-4 group">
-            <div className="flex-shrink-0">
-              <MascotAvatar state="idle" size="sm" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-black uppercase tracking-widest text-white/90">
-                  {session.topic || "Sessão de Estudo"}
-                </h1>
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="max-w-6xl mx-auto w-full space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 group">
+              <div className="flex-shrink-0">
+                <MascotAvatar state="idle" size="sm" />
               </div>
-              <p className="text-[10px] text-indigo-400 font-black uppercase tracking-tighter mt-0.5">
-                {session.specialty || "Sessão Premium Ativa"} • Protocolo Feynman
-              </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-sm font-black uppercase tracking-widest text-white/90">
+                    {session.topic || "Sessão de Estudo"}
+                  </h1>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <p className="text-[10px] text-indigo-400 font-black uppercase tracking-tighter mt-0.5">
+                  {session.specialty || "Sessão Premium Ativa"} • Protocolo Feynman V2
+                </p>
+              </div>
+            </div>
+            <TutorV2Actions session={session} />
+          </div>
+
+          {/* Cognitive Progress Bar */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-0.5">
+              <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
+                Estágio Cognitivo: <span className="text-white">{session.current_stage || 'Exploração'}</span>
+              </span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                {session.cognitive_progress || 0}% Concluído
+              </span>
+            </div>
+            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${session.cognitive_progress || 0}%` }}
+                className="h-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-400"
+              />
             </div>
           </div>
-          <TutorV2Actions session={session} />
         </div>
       </header>
 
