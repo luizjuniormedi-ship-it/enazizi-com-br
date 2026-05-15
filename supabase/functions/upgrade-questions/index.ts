@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { getTokenParameterName } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,10 +10,10 @@ const corsHeaders = {
 
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-async function upgradeQuestion(q: { id: string; statement: string; options: string[]; correct_index: number; topic: string; explanation?: string }, apiKey: string): Promise<string | null> {
+async function upgradeQuestion(q: { id: string; statement: string; options: string[]; correct_index: number; topic: string; explanation?: string }, apiKey: string): Promise<{ statement: string, explanation: string } | null> {
   const prompt = `Você é um elaborador de questões de ELITE para residência médica (ENAMED/REVALIDA).
 
-TAREFA: Expanda o enunciado curto abaixo em um CASO CLÍNICO COMPLETO padrão prova, mantendo o MESMO tema, as MESMAS alternativas e o MESMO gabarito (índice ${q.correct_index}).
+TAREFA: Transforme o enunciado abaixo em um CASO CLÍNICO DE ALTA COMPLEXIDADE padrão prova real, e gere uma EXPLICAÇÃO DETALHADA. Mantendo o MESMO tema, as MESMAS alternativas e o MESMO gabarito (índice ${q.correct_index}).
 
 ENUNCIADO ORIGINAL:
 "${q.statement}"
@@ -20,58 +22,65 @@ ALTERNATIVAS ORIGINAIS:
 ${q.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join("\n")}
 
 TEMA: ${q.topic}
+EXPLICAÇÃO ATUAL (se houver): ${q.explanation || "Nenhuma"}
 
-REGRAS OBRIGATÓRIAS:
-1. Crie um caso clínico com paciente fictício (nome, idade, sexo, profissão)
-2. Inclua: QP com tempo de evolução, HDA detalhada, antecedentes, hábitos
-3. Sinais vitais completos (PA, FC, FR, Temp, SpO2)
-4. Exame físico com achados positivos e negativos
-5. Exames laboratoriais com valores numéricos quando pertinente
-6. O enunciado expandido deve ter 400-800 caracteres
-7. NÃO altere as alternativas nem o gabarito
-8. NÃO referencie imagens, figuras ou gráficos
-9. TUDO em PORTUGUÊS BRASILEIRO
-10. Mantenha a pergunta objetiva no final do caso
-11. 🚨 CRÍTICO: O campo "statement" deve conter APENAS o caso clínico e a pergunta final. NÃO inclua as alternativas (A, B, C, D, E) dentro do statement. As alternativas já existem separadamente e serão mantidas como estão.
-12. NÃO repita, liste ou mencione as alternativas dentro do enunciado de forma alguma.
+REGRAS OBRIGATÓRIAS PARA O ENUNCIADO:
+1. Crie um caso clínico com paciente fictício (nome, idade, sexo, profissão).
+2. Inclua: QP com tempo de evolução, HDA detalhada, antecedentes relevantes, hábitos de vida.
+3. Sinais vitais completos e exame físico detalhado (achados positivos e negativos).
+4. Exames laboratoriais/imagem com valores numéricos quando pertinente.
+5. O enunciado deve ter 500-1000 caracteres.
+6. A pergunta final deve ser direta e técnica.
+7. NÃO repita as alternativas no enunciado.
 
-Retorne APENAS JSON: {"statement": "caso clínico expandido completo terminando APENAS com a pergunta, SEM listar alternativas"}`;
+REGRAS PARA A EXPLICAÇÃO:
+1. Deve ser pedagógica e detalhada.
+2. Justifique por que a alternativa correta está certa baseando-se em diretrizes atuais.
+3. Comente brevemente por que as outras alternativas estão incorretas (distratores).
+4. Use tom profissional e acadêmico.
+
+Retorne APENAS um JSON válido: 
+{
+  "statement": "Caso clínico completo e pergunta final",
+  "explanation": "Explicação detalhada e fundamentada"
+}`;
 
   try {
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: `openai/${ALLOWED_MODELS.generation}`,
         messages: [
           { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown." },
           { role: "user", content: prompt },
         ],
-        temperature: 0.8,
+        [getTokenParameterName(ALLOWED_MODELS.generation)]: 4000,
       }),
     });
 
     if (!res.ok) {
-      console.error(`AI error ${res.status} for ${q.id}`);
+      const errorText = await res.text();
+      console.error(`AI error ${res.status} for ${q.id}: ${errorText}`);
       return null;
     }
 
     const data = await res.json();
     const raw = (data.choices?.[0]?.message?.content || "").replace(/```json\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(raw);
-    // Strip any alternatives that leaked into the statement
     let newStatement = (parsed.statement || "").trim();
-    // Remove patterns like "A) ...\nB) ...\nC) ..." or "a) ..." at the end
+    let newExplanation = (parsed.explanation || "").trim();
+
+    // Clean up alternatives if leaked
     newStatement = newStatement.replace(/\n\s*[A-Ea-e]\)\s+.+$/gms, "").trim();
-    // Remove patterns like "\nA. ...\nB. ..." 
     newStatement = newStatement.replace(/\n\s*[A-Ea-e]\.\s+.+$/gms, "").trim();
 
-    if (!newStatement || newStatement.length < 350) {
+    if (!newStatement || newStatement.length < 300) {
       console.warn(`Upgraded statement too short for ${q.id}: ${newStatement?.length}`);
       return null;
     }
 
-    return newStatement;
+    return { statement: newStatement, explanation: newExplanation };
   } catch (e) {
     console.error(`Upgrade error for ${q.id}:`, e);
     return null;
@@ -97,7 +106,7 @@ serve(async (req) => {
     // Fetch questions to upgrade
     let query = supabaseAdmin.from("questions_bank")
       .select("id, statement, options, correct_index, topic, explanation")
-      .eq("quality_tier", "needs_upgrade")
+      .in("quality_tier", ["needs_upgrade", "basic"])
       .order("created_at", { ascending: false })
       .limit(batchSize);
 
@@ -120,16 +129,17 @@ serve(async (req) => {
     let failed = 0;
 
     for (const q of questions) {
-      const newStatement = await upgradeQuestion(
+      const upgradeResult = await upgradeQuestion(
         { ...q, options: Array.isArray(q.options) ? q.options : [] },
         LOVABLE_API_KEY,
       );
 
-      if (newStatement) {
+      if (upgradeResult) {
         const { error } = await supabaseAdmin.from("questions_bank").update({
-          statement: newStatement,
+          statement: upgradeResult.statement,
+          explanation: upgradeResult.explanation,
           quality_tier: "exam_standard",
-          review_status: "pending",
+          review_status: "approved",
           source: (q as any).source ? `${(q as any).source}|ai-upgraded` : "ai-upgraded",
         }).eq("id", q.id);
 
