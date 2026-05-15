@@ -506,13 +506,13 @@ Deno.serve(async (req) => {
           skipped++;
         }
       } else {
-        // [DB_INSERT] FORCING 4 OPTIONS due to database constraint
+        // [DB_INSERT] Allow 4 or 5 options
         const opts = [...q.options];
         while (opts.length < 4) opts.push(`Alternativa ${String.fromCharCode(65 + opts.length)}`);
-        if (opts.length > 4) opts.splice(4);
+        if (opts.length > 5) opts.splice(5);
 
-        // Correct index must be 0-3
-        const correctIndex = Math.max(0, Math.min(q.correct_index, 3));
+        // Correct index must be 0-4
+        const correctIndex = Math.max(0, Math.min(q.correct_index, opts.length - 1));
 
         let difficulty = 3; 
         const textLen = q.statement.length;
