@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
-import { sanitizeForPostgres } from "../_shared/db-utils.ts"
+import { aiFetch } from "../_shared/ai-fetch.ts"
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -8,12 +8,10 @@ serve(async (req) => {
   }
 
   try {
-    const testSanitize = sanitizeForPostgres("test's string");
     return new Response(JSON.stringify({
       success: true,
       function: "search-real-questions",
-      stage: "IMPORT_DB_UTILS_OK",
-      test: testSanitize,
+      stage: "IMPORT_AI_FETCH_OK",
       timestamp: new Date().toISOString()
     }), {
       headers: {
@@ -25,7 +23,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: false,
       function: "search-real-questions",
-      stage: "IMPORT_DB_UTILS_CATCH",
+      stage: "IMPORT_AI_FETCH_CATCH",
       error: String(err),
       stack: err instanceof Error ? err.stack : null
     }), {
