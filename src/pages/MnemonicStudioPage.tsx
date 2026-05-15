@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Brain, Sparkles, AlertTriangle, Loader2,
@@ -61,6 +61,7 @@ function useErrorSuggestions() {
 
 export default function MnemonicGeneratorPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [tema, setTema] = useState("");
   const [termosText, setTermosText] = useState("");
   const [estilo, setEstilo] = useState("frase + imagem mental");
@@ -82,7 +83,9 @@ export default function MnemonicGeneratorPage() {
   // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
   const autoTriggeredRef = useRef(false);
   useEffect(() => {
-    const temaParam = searchParams.get("tema") || searchParams.get("topic");
+    const state = location.state as { prefillTopic?: string; fromErrorBank?: boolean } | null;
+    const temaParam = searchParams.get("tema") || searchParams.get("topic") || state?.prefillTopic;
+    const autoParam = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
     const termosParam = searchParams.get("termos");
     const estiloParam = searchParams.get("estilo");
     const publicoParam = searchParams.get("publico");
@@ -203,7 +206,8 @@ export default function MnemonicGeneratorPage() {
 
   // ── Auto-trigger generation when arriving via deep-link with ?auto=1 ──
   useEffect(() => {
-    const auto = searchParams.get("auto");
+    const state = location.state as { fromErrorBank?: boolean } | null;
+    const auto = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
     if (auto !== "1" && auto !== "true") return;
     if (autoTriggeredRef.current) return;
     if (!tema || tema.trim().length < 3) return;

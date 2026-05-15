@@ -60,6 +60,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
+      { to: "/dashboard/mnemonico", label: "Mnemônicos", icon: Brain, badge: "Premium" },
       { to: "/dashboard/sessao-estudo", label: "Tutor IA", icon: Sparkles, badge: "Premium" },
     ]
   },

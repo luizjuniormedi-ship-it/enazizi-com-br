@@ -12,6 +12,8 @@ export interface MnemonicRequest {
   termos: string[];
   estilo: string;
   publico: string;
+  original_result_id?: string;
+  regenerate_image_only?: boolean;
   termos_digitados?: string[];
   termos_enriquecidos?: string[];
   termos_priorizados?: string[];
