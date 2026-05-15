@@ -128,6 +128,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       source,
       message: "AI Rate Limited",
       severity: "warning",
+      alert_type: "rate_limit",
       metadata: { userId: options.userId }
     });
     throw new Error("AI_RATE_LIMITED");
@@ -145,6 +146,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       source,
       message: errorMsg,
       severity: "critical",
+      alert_type: "validation_error",
       model_used: lovableModel
     });
     // Fallback to safe default
@@ -213,10 +215,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
         await logPipelineAlert({
           source,
           message: `Lovable AI Gateway Error: ${response.status}`,
+          alert_type: "gateway_error",
           error_stack: errorBody,
           http_status: response.status,
           model_used: lovableModel,
-          payload: { messages: options.messages.slice(-1) } // log last message for context
+          payload: { 
+            last_message_preview: options.messages[options.messages.length - 1]?.content?.slice(0, 500) 
+          }
         });
       } else {
         const errorBody = await response.clone().text();
@@ -226,9 +231,10 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       // If it's a 400 (Bad Request), fallback might not help but we'll try
     } catch (fetchErr) {
       console.error("Lovable AI all retries failed:", fetchErr);
-      await logPipelineAlert({
+    await logPipelineAlert({
         source,
         message: "Lovable AI Fetch Exception",
+        alert_type: "fetch_exception",
         error_stack: fetchErr instanceof Error ? fetchErr.stack : String(fetchErr),
         severity: "error",
         model_used: lovableModel
@@ -241,6 +247,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     await logPipelineAlert({
       source,
       message: "AI Credits Exhausted (No OpenAI Key)",
+      alert_type: "credits_exhausted",
       severity: "critical"
     });
     throw new Error("AI_CREDITS_EXHAUSTED");
@@ -271,6 +278,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       await logPipelineAlert({
         source,
         message: `OpenAI Fallback Error: ${response.status}`,
+        alert_type: "fallback_error",
         error_stack: errText,
         http_status: response.status,
         model_used: openaiModel,
@@ -290,6 +298,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     await logPipelineAlert({
       source,
       message: "OpenAI Fetch Exception",
+      alert_type: "fallback_exception",
       error_stack: err instanceof Error ? err.stack : String(err),
       severity: "critical",
       model_used: openaiModel
