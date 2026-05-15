@@ -178,7 +178,7 @@ const ChatGPT = () => {
 
       // Set appropriate step based on phase
       const stepMap: Record<string, number> = { lesson: 3, fixation: 7, correction: 12 };
-      const step = stepMap[phase] || 3;
+      const step = stepMap[phase] || 1; // Default para Bloco 1 na V3
       setEnaziziStep(step);
 
       setTimeout(() => sendMessage(ensureSequentialInitialMessage(msg)), 500);
@@ -315,9 +315,9 @@ const ChatGPT = () => {
       if (detectedTopic && detectedTopic.toLowerCase() !== currentTopic.toLowerCase()) {
         setCurrentTopic(detectedTopic);
         activeTopic = detectedTopic;
-        setEnaziziStep(3);
+        setEnaziziStep(1); // Reset para o Bloco 1 (Caso Vivo) no padrão V3
         setChangingTopic(false);
-        saveEnaziziStep(3, detectedTopic, performance, sessionQuestions);
+        saveEnaziziStep(1, detectedTopic, performance, sessionQuestions);
         savePerformance({ tema_atual: detectedTopic });
       }
     }
