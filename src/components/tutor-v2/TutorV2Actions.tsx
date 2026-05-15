@@ -150,9 +150,14 @@ export default function TutorV2Actions({ session }: TutorV2ActionsProps) {
   );
 }
 
-function ActionButton({ icon: Icon, label }: { icon: any, label: string }) {
+function ActionButton({ icon: Icon, label, onClick }: { icon: any, label: string, onClick?: () => void }) {
   return (
-    <Button size="sm" variant="ghost" className="h-9 px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+    <Button 
+      size="sm" 
+      variant="ghost" 
+      onClick={onClick}
+      className="h-9 px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+    >
       <Icon className="h-3.5 w-3.5" />
       <span className="hidden lg:inline">{label}</span>
     </Button>
