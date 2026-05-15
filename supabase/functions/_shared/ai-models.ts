@@ -32,7 +32,7 @@ export function validateModel(model: string): boolean {
  * Standard models use 'max_tokens'.
  */
 export function getTokenParameterName(model: string): string {
-  const isReasoningModel = /^o[13]/i.test(model) || model.includes("/o1") || model.includes("/o3");
+  const isReasoningModel = /^o[13]/i.test(model) || model.includes("/o1") || model.includes("/o3") || model.includes("gpt-4o") || model.includes("gpt-5");
   return isReasoningModel ? "max_completion_tokens" : "max_tokens";
 }
 
