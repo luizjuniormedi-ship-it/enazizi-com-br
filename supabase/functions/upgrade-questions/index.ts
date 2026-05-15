@@ -58,7 +58,8 @@ Retorne APENAS um JSON válido:
     });
 
     if (!res.ok) {
-      console.error(`AI error ${res.status} for ${q.id}`);
+      const errorText = await res.text();
+      console.error(`AI error ${res.status} for ${q.id}: ${errorText}`);
       return null;
     }
 
