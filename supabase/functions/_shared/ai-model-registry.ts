@@ -20,7 +20,7 @@ export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
 
 // List of strictly allowed production models to prevent injection of experimental/invalid names
 export const PRODUCTION_MODELS = [
-  "gpt-4o-mini",
-  "gpt-4o",
-  "text-embedding-3-small"
+  "openai/gpt-5-mini",
+  "openai/gpt-5",
+  "openai/text-embedding-3-small"
 ];
