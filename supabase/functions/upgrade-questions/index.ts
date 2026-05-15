@@ -48,7 +48,7 @@ Retorne APENAS um JSON válido:
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: "openai/gpt-5-mini",
         messages: [
           { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown." },
           { role: "user", content: prompt },
