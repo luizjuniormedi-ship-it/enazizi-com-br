@@ -85,3 +85,5 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.generate-tutor-v2-lesson]
     verify_jwt = false
+  [functions.generate-mnemonic]
+    verify_jwt = false
