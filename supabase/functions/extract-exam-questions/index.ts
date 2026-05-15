@@ -9,11 +9,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Declare EdgeRuntime para TypeScript (existe em runtime no Deno Deploy / Supabase Edge Functions)
+declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void } | undefined;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Parse body cedo para retornar 202 imediatamente
+  const earlyBody = await req.json().catch(() => ({}));
+  const earlyUploadId = earlyBody.upload_id || "f8b2995a-d260-4d76-9a28-a9ae02c12419";
+
+  // Reconstruir um Request "virtual" não dá — então executa o pipeline em background
+  const work = (async () => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
