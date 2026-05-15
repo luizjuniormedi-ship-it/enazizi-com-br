@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -197,13 +198,13 @@ Deno.serve(async (req) => {
       } else {
         const { data: newBank, error: bankErr } = await supabase
           .from("exam_banks")
-          .insert({
+          .insert(sanitizeForPostgres({
             name: bankName,
             banca: "INEP",
             year: result.year,
             source_tag: sourceTag,
             total_questions: result.questions.length,
-          })
+          }))
           .select("id")
           .single();
 
@@ -257,12 +258,12 @@ Deno.serve(async (req) => {
       const systemUserId = adminUser?.user_id || "00000000-0000-0000-0000-000000000000";
 
       for (let i = 0; i < newQuestions.length; i += BATCH_SIZE) {
-        const batch = newQuestions.slice(i, i + BATCH_SIZE).map((q, idx) => ({
-          statement: q.statement.replace(/\0/g, ""),
-          options: q.options.map(opt => opt.replace(/\0/g, "")),
+        const batch = newQuestions.slice(i, i + BATCH_SIZE).map((q, idx) => sanitizeForPostgres({
+          statement: q.statement,
+          options: q.options,
           correct_index: q.correctIndex,
-          explanation: (q.explanation || "").replace(/\0/g, ""),
-          topic: (q.topic || "Geral").replace(/\0/g, ""),
+          explanation: q.explanation || "",
+          topic: q.topic || "Geral",
           source: sourceTag,
           is_global: true,
           user_id: systemUserId,
