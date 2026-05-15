@@ -155,7 +155,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   // 2. Build Payload
   const buildPayload = (model: string, isOpenAI = false) => {
     let maxTokens = options.maxTokens ?? 16384;
-    let temperature = 0.7; // Standard temperature for stability
+    let temperature = 1; // Standard temperature for stability
     
     if (PRODUCTION_SAFE_MODE) {
       maxTokens = 1200; // Forced safe token limit
