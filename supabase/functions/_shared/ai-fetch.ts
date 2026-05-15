@@ -128,6 +128,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       source,
       message: "AI Rate Limited",
       severity: "warning",
+      alert_type: "rate_limit",
       metadata: { userId: options.userId }
     });
     throw new Error("AI_RATE_LIMITED");
