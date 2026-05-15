@@ -268,7 +268,14 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     throw new Error("AI_CREDITS_EXHAUSTED");
   }
 
-  const openaiModel = MODEL_MAP[lovableModel] || lovableModel.replace("openai/", "");
+  const openaiModel = normalizedModel.replace("openai/", "");
+  const openaiPayload = buildPayload(openaiModel, true);
+
+  console.log("[AI_PIPELINE_FALLBACK]", {
+    originalModel: normalizedModel,
+    openaiModel,
+    timestamp: new Date().toISOString()
+  });
 
   try {
     const response = await fetchWithRetry(
@@ -279,12 +286,19 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: buildBody(openaiModel, true),
+        body: JSON.stringify(openaiPayload),
       },
       maxRetries,
       timeoutMs,
       "OpenAI",
     );
+
+    console.log("[AI_PIPELINE_AFTER_FALLBACK]", {
+      status: response.status,
+      ok: response.ok,
+      provider: "openai",
+      timestamp: new Date().toISOString()
+    });
 
     if (!response.ok) {
       const errText = await response.clone().text();
@@ -307,7 +321,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
 
     return response;
   } catch (err) {
-    if (err instanceof Error && err.message.startsWith("AI_")) throw err;
+    if (err instanceof Error && (err.message.startsWith("AI_") || err.message.startsWith("VALIDATION_ERROR") || err.message.startsWith("GATEWAY_ERROR"))) throw err;
     
     console.error("OpenAI all retries failed:", err);
     await logPipelineAlert({
