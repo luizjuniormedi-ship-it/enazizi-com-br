@@ -63,7 +63,6 @@ export function extractCleanImageUrls(html: string): string[] {
 
 /**
  * FAIL-CLOSED vision validation using OpenAI via Lovable Gateway.
- * Any failure = { valid: false }. Never allow on error.
  */
 export async function validateImageVision(
   imageUrl: string,
@@ -71,7 +70,7 @@ export async function validateImageVision(
   imageType: string,
   apiKey: string | undefined,
 ): Promise<{ valid: boolean; reason: string }> {
-  if (!apiKey) return { valid: false, reason: "LOVABLE_API_KEY ausente — rejeitado" };
+  if (!apiKey) return { valid: false, reason: "LOVABLE_API_KEY ausente" };
   if (!imageUrl) return { valid: false, reason: "URL de imagem ausente" };
 
   try {
@@ -82,31 +81,17 @@ export async function validateImageVision(
         content: [
           {
             type: "text",
-            text: `You are a STRICT medical image auditor. Your job is to REJECT anything that is NOT a real clinical image.
-
-REJECT immediately if the image is:
-- A human portrait, headshot, selfie, profile photo, team photo, staff photo
-- A doctor, nurse, physician, or any person (not a patient exam)
-- A website screenshot, UI mockup, infographic, chart, diagram
-- A logo, icon, badge, certificate, illustration, cartoon
-- A stock photo, marketing image, device photo
-- Any image that is NOT directly a medical exam result
-
-ACCEPT only if the image is a real clinical image (ECG tracing, X-ray, CT scan, ultrasound, dermatology lesion photo, histopathology slide, fundoscopy, etc.)
-
-Expected diagnosis: "${expectedDiagnosis}"
-Expected modality: "${imageType}"
-
-Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false,"contains_portrait":true/false,"reason":"brief reason"}`,
+            text: `You are a medical auditor. Respond ONLY with valid JSON.
+Verify if the image is a REAL clinical exam (X-ray, ECG, US, etc.) matching "${expectedDiagnosis}" (${imageType}).
+REJECT infographics, diagrams, or portraits.
+JSON: {"is_clinical":bool, "matches_diagnosis":bool, "reason":"string"}`,
           },
           { type: "image_url", image_url: { url: imageUrl } },
         ],
       }],
-      max_completion_tokens: 2000,
+      max_completion_tokens: 1500,
       response_format: { type: "json_object" }
     };
-
-    console.log("[VisionGate] Payload:", JSON.stringify(payload, null, 2));
 
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -118,27 +103,19 @@ Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false
     });
 
     if (!resp.ok) {
-      const errText = await resp.clone().text();
-      console.error(`[VisionGate] Lovable AI Gateway Error ${resp.status}:`, errText);
-      return { valid: false, reason: `Vision API erro ${resp.status} — rejeitado` };
+      const errText = await resp.text();
+      return { valid: false, reason: `Gateway error ${resp.status}: ${errText.slice(0,100)}` };
     }
 
     const data = await resp.json();
-    console.log("[VisionGate] Full response data:", JSON.stringify(data, null, 2));
     const content = data.choices?.[0]?.message?.content || "";
-    console.log("[VisionGate] Response content:", content);
+    const result = JSON.parse(content);
 
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return { valid: false, reason: "Resposta de visão inválida — rejeitado" };
-
-    const result = JSON.parse(jsonMatch[0]);
-    if (result.contains_portrait) return { valid: false, reason: `Retrato humano detectado: ${result.reason || "portrait"}` };
-    if (!result.is_clinical) return { valid: false, reason: `Imagem não clínica: ${result.reason || "não é exame"}` };
-    if (!result.matches_diagnosis) return { valid: false, reason: `Diagnóstico não bate: ${result.reason || "mismatch"}` };
+    if (!result.is_clinical) return { valid: false, reason: `Não é imagem clínica: ${result.reason}` };
+    if (!result.matches_diagnosis) return { valid: false, reason: `Diagnóstico divergente: ${result.reason}` };
 
     return { valid: true, reason: result.reason || "Validado" };
   } catch (err) {
-    console.error("[VisionGate] Exception:", err);
-    return { valid: false, reason: `Visão falhou: ${(err as Error).message} — rejeitado` };
+    return { valid: false, reason: `Falha de visão: ${(err as Error).message}` };
   }
 }
