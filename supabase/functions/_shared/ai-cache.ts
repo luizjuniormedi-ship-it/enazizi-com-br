@@ -20,7 +20,7 @@
  * Never store: success=false, audit-rejected, fallback (unless source flagged).
  */
 
-import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 function getSupabaseAdmin() {
   return createClient(
