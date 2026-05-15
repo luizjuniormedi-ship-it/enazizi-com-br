@@ -12,9 +12,13 @@ const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 const OPENAI_MAX_TOKENS: Record<string, number> = {
   "gpt-4o-mini": 16384,
   "gpt-4o": 16384,
+  "gpt-5-mini": 16384,
+  "gpt-5": 16384,
 };
 
 const MODEL_MAP: Record<string, string> = {
+  "openai/gpt-5-mini": "gpt-4o-mini",
+  "openai/gpt-5": "gpt-4o",
   "openai/gpt-4o-mini": "gpt-4o-mini",
   "openai/gpt-4o": "gpt-4o",
 };
@@ -155,9 +159,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
 
   lovableModel = standardizeModelName(lovableModel);
   
-  // No more explicit overrides needed for gpt-5-mini as it is now supported
-  if (lovableModel === "openai/gpt-5-mini" || lovableModel === "gpt-5-mini") {
-    lovableModel = "openai/gpt-4o-mini";
+  // The Gateway expects gpt-5-* names. 
+  // openai/gpt-4o-mini is now mapped to gpt-5-mini in the project's logic where possible.
+  if (lovableModel === "openai/gpt-4o-mini" || lovableModel === "gpt-4o-mini") {
+    lovableModel = "openai/gpt-5-mini";
+  }
+  if (lovableModel === "openai/gpt-4o" || lovableModel === "gpt-4o") {
+    lovableModel = "openai/gpt-5";
   }
 
   const maxRetries = options.maxRetries ?? 2;
@@ -183,6 +191,10 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     if (options.tools) body.tools = options.tools;
     if (options.tool_choice) body.tool_choice = options.tool_choice;
     if (options.response_format) body.response_format = options.response_format;
+
+    // DEBUG: Log the full payload before stringifying
+    console.log(`[aiFetch] Payload for model ${model}:`, JSON.stringify(body, null, 2));
+    
     return JSON.stringify(body);
   };
 
@@ -212,6 +224,8 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       // If not a credit/rate issue, log it but maybe continue to fallback
       if (response.status !== 402 && response.status !== 429) {
         const errorBody = await response.clone().text();
+        console.error(`[aiFetch] Lovable AI Gateway Error ${response.status}:`, errorBody);
+        
         await logPipelineAlert({
           source,
           message: `Lovable AI Gateway Error: ${response.status}`,
