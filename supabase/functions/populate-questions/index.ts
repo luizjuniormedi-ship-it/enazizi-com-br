@@ -263,20 +263,17 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    }
-
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader?.replace("Bearer ", "");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
     let userId: string;
 
-    if (token === serviceRoleKey || token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
+    if (token === serviceRoleKey) {
+      console.log("Authenticated via Service Role Key");
       const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
       userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
-    } else {
+    } else if (authHeader?.startsWith("Bearer ")) {
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
       const userClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey, {
         global: { headers: { Authorization: authHeader } },
@@ -288,6 +285,8 @@ serve(async (req) => {
       const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
       if (!roleData) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
       userId = uid;
+    } else {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
     const body = await req.json();
