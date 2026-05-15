@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { createPipelineJob, updatePipelineJob, completePipelineJob, failPipelineJob } from "../_shared/pipeline-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
