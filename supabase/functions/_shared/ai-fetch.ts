@@ -147,7 +147,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   
   if (PRODUCTION_SAFE_MODE) {
     console.log("[SAFE_MODE] Overriding model to gpt-4o-mini");
-    rawModel = "gpt-4o-mini";
+    rawModel = "openai/gpt-5-mini";
   }
   
   const normalizedModel = normalizeModel(rawModel);
