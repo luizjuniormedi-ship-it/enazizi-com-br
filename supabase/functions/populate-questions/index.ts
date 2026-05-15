@@ -70,7 +70,7 @@ async function processTextToQuestions(
 
   const processChunk = async (chunk: string): Promise<number> => {
     const response = await aiFetch({
-      model: "openai/gpt-4o-mini",
+      model: AI_MODELS.generation,
       messages: [
         {
           role: "system",
