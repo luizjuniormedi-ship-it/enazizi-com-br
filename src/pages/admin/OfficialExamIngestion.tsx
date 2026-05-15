@@ -118,19 +118,28 @@ const OfficialExamIngestion = () => {
                           {source.is_active ? "Ativo" : "Inativo"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right space-x-2">
+                      <TableCell className="text-right flex items-center justify-end gap-2">
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="h-8 text-xs"
+                          className="h-8 text-[10px]"
                           disabled={!!runningAction}
                           onClick={() => runMutation.mutate({ action: 'discover', sourceId: source.id })}
                         >
-                          Discovery
+                          Discover
                         </Button>
                         <Button 
                           size="sm" 
-                          className="h-8 text-xs bg-primary"
+                          variant="secondary" 
+                          className="h-8 text-[10px]"
+                          disabled={!!runningAction}
+                          onClick={() => runMutation.mutate({ action: 'historical_harvest', sourceId: source.id })}
+                        >
+                          <Clock className="h-3 w-3 mr-1" /> Last 5 Years
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          className="h-8 text-[10px] bg-primary"
                           disabled={!!runningAction}
                           onClick={() => runMutation.mutate({ action: 'full_pipeline', sourceId: source.id })}
                         >
