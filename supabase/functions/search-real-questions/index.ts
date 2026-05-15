@@ -314,10 +314,24 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   const log = newRunLog();
   try {
-    const body = await req.json().catch(() => ({}));
-    const { specialty, banca } = body;
-    if (!specialty) {
-      return new Response(JSON.stringify({ success: true, stage: "BOOT_OK", function: "search-real-questions" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const url = new URL(req.url);
+    const specialty = url.searchParams.get("specialty") || url.searchParams.get("query");
+    const banca = url.searchParams.get("banca");
+    
+    let body = {};
+    if (req.method === "POST") {
+      body = await req.json().catch(() => ({}));
+    }
+    
+    const finalSpecialty = specialty || (body as any).specialty;
+    const finalBanca = banca || (body as any).banca;
+
+    if (!finalSpecialty) {
+      return new Response(JSON.stringify({ 
+        success: true, 
+        stage: "BOOT_OK", 
+        function: "search-real-questions" 
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const queries = buildQueryPool(specialty, banca);
     log.queries_executed = queries.length;
