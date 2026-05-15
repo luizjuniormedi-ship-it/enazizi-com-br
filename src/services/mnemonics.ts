@@ -337,5 +337,6 @@ export async function regenerateMnemonic(payload: RegeneratePayload): Promise<Mn
     termos: payload.termos,
     estilo: mappedEstilo,
     publico: payload.publico,
+    original_result_id: payload.original_result_id,
   });
 }
