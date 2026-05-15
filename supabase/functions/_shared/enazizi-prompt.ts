@@ -595,7 +595,7 @@ export function getLessonPrompt(): string {
     FORMATTING,
     COGNITIVE_PHASES,
     FEYNMAN_GLOBAL,
-    MANDATORY_15_BLOCK_PROTOCOL,
+    MANDATORY_TUTOR_V2_RUBRIC,
     LAYER1_TEACHING,
     LAYER2_ADAPTIVE,
     LAYER4_MEMORY,
@@ -607,6 +607,7 @@ export function getLessonPrompt(): string {
     ABSOLUTE_RULES,
   ].join("\n");
 }
+
 
 /** Aula compacta — núcleo pedagógico mínimo */
 export function getCompactLessonPrompt(): string {
