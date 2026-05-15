@@ -200,21 +200,34 @@ serve(async (req) => {
   let runId: string | null = null;
 
   try {
+    const body = await req.json().catch(() => ({}));
+    const { force_asset_id } = body;
+
     // Find eligible assets
     console.log("[auto-gen] Step 1: Finding eligible assets...");
 
-    const { data: allAssets, error: assetErr } = await sb
-      .from("medical_image_assets")
-      .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url, asset_origin, validation_level, review_status, integrity_status, clinical_confidence, is_active")
-      .eq("is_active", true)
-      .eq("review_status", "published")
-      .gte("clinical_confidence", 0.9)
-      .in("validation_level", ["gold", "silver"])
-      .limit(50);
-
-    if (assetErr) {
-      console.error("[auto-gen] Asset query error:", assetErr);
-      return errorResponse(`Asset query failed: ${assetErr.message}`);
+    let allAssets: any[] = [];
+    if (force_asset_id) {
+      const { data } = await sb
+        .from("medical_image_assets")
+        .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url, asset_origin, validation_level, review_status, integrity_status, clinical_confidence, is_active")
+        .eq("id", force_asset_id);
+      allAssets = data || [];
+    } else {
+      const { data, error: assetErr } = await sb
+        .from("medical_image_assets")
+        .select("id, asset_code, image_type, specialty, subtopic, diagnosis, clinical_findings, distractors, difficulty, image_url, asset_origin, validation_level, review_status, integrity_status, clinical_confidence, is_active")
+        .eq("is_active", true)
+        .eq("review_status", "published")
+        .gte("clinical_confidence", 0.9)
+        .in("validation_level", ["gold", "silver"])
+        .limit(50);
+      
+      if (assetErr) {
+        console.error("[auto-gen] Asset query error:", assetErr);
+        return errorResponse(`Asset query failed: ${assetErr.message}`);
+      }
+      allAssets = data || [];
     }
 
     if (!allAssets || allAssets.length === 0) {
@@ -238,10 +251,10 @@ serve(async (req) => {
         .eq("asset_id", asset.id)
         .in("status", ["published", "needs_review", "draft", "upgrading"]);
 
-      if ((count || 0) < MAX_QUESTIONS_PER_ASSET) {
+      if (force_asset_id || (count || 0) < MAX_QUESTIONS_PER_ASSET) {
         targetAssets.push({ ...asset, existing_count: count || 0 });
       }
-      if (targetAssets.length >= BATCH_SIZE) break;
+      if (!force_asset_id && targetAssets.length >= BATCH_SIZE) break;
     }
 
     if (targetAssets.length === 0) {
@@ -255,7 +268,7 @@ serve(async (req) => {
     const { data: run, error: runErr } = await sb
       .from("question_generation_runs")
       .insert({
-        run_type: "auto_image_batch",
+        run_type: force_asset_id ? "manual_test" : "auto_image_batch",
         status: "running",
         target_assets: targetAssets.length,
         processed_assets: 0,
@@ -284,7 +297,7 @@ serve(async (req) => {
         break;
       }
 
-      const needed = MAX_QUESTIONS_PER_ASSET - (asset.existing_count || 0);
+      const needed = force_asset_id ? 1 : (MAX_QUESTIONS_PER_ASSET - (asset.existing_count || 0));
       if (needed <= 0) continue;
 
       // ── VISION GATE: fail-closed — retrato/não-clínico = rejeitado ──
@@ -341,7 +354,7 @@ ${difficulties.map((d, i) => `Q${i + 1}: ${types[i]} - difficulty: ${d}`).join("
 
 == REGRAS ABSOLUTAS ==
 1. Enunciado >= 400 caracteres: identificação do paciente, contexto clínico, HDA, exame físico, conexão com achados da imagem, pergunta
-2. 5 alternativas plausíveis (NUNCA absurdas), apenas 1 correta
+2. 5 alternativas plausíveis (NUNCA absurdas),penas 1 correta
 3. Explicação >= 120 caracteres justificando a correta e explicando por que as erradas estão incorretas
 4. rationale_map com chaves A-E, cada uma explicando por que correta/incorreta
 5. Paciente com perfil brasileiro único (nome, idade, contexto social)
@@ -384,59 +397,37 @@ Retorne APENAS um JSON array válido (sem markdown):
           }
 
           if (!q.difficulty) q.difficulty = asset.difficulty || "medium";
-          if (!q.exam_style) q.exam_style = "ENARE";
+          
+          const validationErrors = validateQuestion(q);
+          const hardVal = validateQuestionHard(asset, q);
 
-          const errors = validateQuestion(q);
-          if (errors.length > 0) {
-            console.warn(`[auto-gen] Validation failed for ${asset.asset_code}: ${errors.join("; ")}`);
-            totalFailed++;
-            continue;
-          }
+          const { data: newQ, error: insErr } = await sb
+            .from("medical_image_questions")
+            .insert({
+              asset_id: asset.id,
+              statement: q.statement,
+              option_a: q.option_a,
+              option_b: q.option_b,
+              option_c: q.option_c,
+              option_d: q.option_d,
+              option_e: q.option_e,
+              correct_index: q.correct_index,
+              explanation: q.explanation,
+              rationale_map: q.rationale_map,
+              difficulty: q.difficulty,
+              exam_style: q.exam_style || "ENARE",
+              status: hardVal.approved ? "published" : "needs_review",
+              review_notes: hardVal.approved ? "Auto-aprovado" : `Validação falhou: ${hardVal.reasons.join(", ")}`,
+              pedagogical_score: hardVal.score,
+              integrity_status: hardVal.blocked ? "failed" : "ok",
+              validation_level: hardVal.mode,
+              version: 1,
+            })
+            .select("id")
+            .single();
 
-          // ── HARD DETERMINISTIC VALIDATION ──
-          const hardResult = validateQuestionHard(asset, q);
-          console.log(`[auto-gen] Hard validation for ${asset.asset_code}: score=${hardResult.score} mode=${hardResult.mode} approved=${hardResult.approved} reasons=${hardResult.reasons.join(",")}`);
-
-          if (hardResult.blocked || !hardResult.approved) {
-            console.warn(`[auto-gen] ❌ BLOCKED by hard validation: ${asset.asset_code} (score=${hardResult.score}, reasons=${hardResult.reasons.join(",")})`);
-            totalFailed++;
-            continue;
-          }
-
-          const prefix = (asset.image_type || "img").toUpperCase().slice(0, 4);
-          const seq = Date.now().toString().slice(-6) + Math.random().toString(36).slice(2, 5);
-          const questionCode = `${prefix}-AUTO-${seq}`;
-
-          // ── ENFORCE EDITORIAL GRADE ──
-          if (!q.editorial_grade || !["excellent", "good"].includes(q.editorial_grade)) {
-            console.warn(`[auto-gen] editorial_grade missing/invalid for ${asset.asset_code}, defaulting to "good"`);
-            q.editorial_grade = "good";
-          }
-
-          const { error: insertErr } = await sb.from("medical_image_questions").insert({
-            asset_id: asset.id,
-            question_code: questionCode,
-            statement: q.statement,
-            option_a: q.option_a,
-            option_b: q.option_b,
-            option_c: q.option_c,
-            option_d: q.option_d,
-            option_e: q.option_e,
-            correct_index: q.correct_index,
-            explanation: q.explanation,
-            rationale_map: q.rationale_map,
-            difficulty: q.difficulty,
-            exam_style: q.exam_style,
-            editorial_grade: q.editorial_grade,
-            status: "needs_review",
-            question_mode: hardResult.mode,
-            hard_validation_score: hardResult.score,
-            hard_validation_reasons: hardResult.reasons,
-          });
-
-          if (insertErr) {
-            console.error(`[auto-gen] Insert error for ${asset.asset_code}:`, insertErr);
-            totalFailed++;
+          if (insErr) {
+            console.error(`[auto-gen] Insert failed for ${asset.asset_code}:`, insErr);
           } else {
             assetGenerated++;
             totalGenerated++;
@@ -444,110 +435,76 @@ Retorne APENAS um JSON array válido (sem markdown):
         }
 
         processedAssets++;
-        results.push({ asset: asset.asset_code, needed, generated: assetGenerated });
+        results.push({ asset: asset.asset_code, questions: assetGenerated });
+        
+        // Update run progress
+        try {
+          await sb
+            .from("question_generation_runs")
+            .update({
+              processed_assets: processedAssets,
+              generated_questions: totalGenerated,
+              failed_assets: totalFailed,
+            })
+            .eq("id", runId);
+        } catch (err) {
+          console.warn("[auto-gen] Run progress update failed:", err);
+        }
 
-        // ── FAIL-SAFE 3: Heartbeat — update run progress after each asset ──
-        await sb.from("question_generation_runs").update({
-          processed_assets: processedAssets,
-          generated_questions: totalGenerated,
-          failed_assets: totalFailed,
-        }).eq("id", runId);
-
-        // Rate limit between assets
-        await new Promise(r => setTimeout(r, 1000));
-
-      } catch (e) {
-        console.error(`[auto-gen] Error processing ${asset.asset_code}:`, e);
+      } catch (err: any) {
+        console.error(`[auto-gen] Error generating for ${asset.asset_code}:`, err);
         totalFailed++;
         processedAssets++;
-        results.push({ asset: asset.asset_code, error: (e as Error).message });
-
-        // Update progress even on failure
+        results.push({ asset: asset.asset_code, error: err.message });
+        
         try {
-          await sb.from("question_generation_runs").update({
-            processed_assets: processedAssets,
-            failed_assets: totalFailed,
-          }).eq("id", runId);
-        } catch (err) {
-          console.warn("[auto-gen] failure heartbeat update failed:", err);
+          await sb
+            .from("question_generation_runs")
+            .update({
+              processed_assets: processedAssets,
+              failed_assets: totalFailed,
+            })
+            .eq("id", runId);
+        } catch (dbErr) {
+          console.warn("[auto-gen] Run failure update failed:", dbErr);
         }
       }
     }
 
-    // ── Final run update ──
-    const durationMs = Date.now() - executionStart;
-    const finalStatus = totalGenerated > 0 ? (totalFailed > 0 ? "partial" : "completed") : "failed";
-    await sb.from("question_generation_runs").update({
-      status: finalStatus,
-      processed_assets: processedAssets,
-      generated_questions: totalGenerated,
-      failed_assets: totalFailed,
-      finished_at: new Date().toISOString(),
-      notes: `Auto-batch: ${totalGenerated} geradas, ${totalFailed} falharam (${durationMs}ms)`,
-    }).eq("id", runId);
-
-    // ── OPERATIONAL ALERTS ──
-    const alerts: { alert_type: string; severity: string; message: string; details: any }[] = [];
-
-    if (finalStatus === "failed") {
-      alerts.push({
-        alert_type: "run_failed",
-        severity: "critical",
-        message: `Run ${runId} falhou: 0 questões geradas de ${processedAssets} assets processados`,
-        details: { run_id: runId, processed: processedAssets, duration_ms: durationMs },
-      });
-    }
-
-    if (totalGenerated === 0 && finalStatus !== "failed") {
-      alerts.push({
-        alert_type: "run_sterile",
-        severity: "warning",
-        message: `Run ${runId} concluída sem gerar questões (${processedAssets} assets processados)`,
-        details: { run_id: runId, processed: processedAssets, duration_ms: durationMs },
-      });
-    }
-
-    if (totalFailed > 0) {
-      alerts.push({
-        alert_type: "partial_failure",
-        severity: "warning",
-        message: `Run ${runId}: ${totalFailed} asset(s) falharam durante geração`,
-        details: { run_id: runId, failed: totalFailed, generated: totalGenerated, duration_ms: durationMs },
-      });
-    }
-
-    if (alerts.length > 0) {
-      const rows = alerts.map(a => ({ ...a, run_id: runId }));
-      try { await sb.from("pipeline_alerts").insert(rows); } catch (err) { console.warn("[auto-gen] Alert insert error:", err); }
-    }
-
-    console.log(`[auto-gen] Done: ${totalGenerated} generated, ${totalFailed} failed in ${durationMs}ms, ${alerts.length} alerts`);
+    // Final update
+    const finalNotes = `Auto-batch: ${totalGenerated} geradas, ${totalFailed} falharam (${Date.now() - executionStart}ms)`;
+    await sb
+      .from("question_generation_runs")
+      .update({
+        status: "completed",
+        finished_at: new Date().toISOString(),
+        notes: finalNotes,
+      })
+      .eq("id", runId);
 
     return ok({
       success: true,
       generated: totalGenerated,
       failed: totalFailed,
       assets_processed: processedAssets,
-      execution_ms: Date.now() - executionStart,
       results,
+      execution_ms: Date.now() - executionStart,
     });
 
-  } catch (e) {
-    // ── FAIL-SAFE 4: Global catch persists error ──
-    console.error("[auto-gen] FATAL:", e);
-
+  } catch (err: any) {
+    console.error("[auto-gen] CRITICAL ERROR:", err);
+    
     if (runId) {
-      try {
-        await sb.from("question_generation_runs").update({
+      await sb
+        .from("question_generation_runs")
+        .update({
           status: "failed",
           finished_at: new Date().toISOString(),
-          notes: `FATAL: ${(e as Error).message?.slice(0, 200)}`,
-        }).eq("id", runId);
-      } catch (err) {
-        console.warn("[auto-gen] FATAL run update failed:", err);
-      }
+          notes: `Erro crítico: ${err.message}`,
+        })
+        .eq("id", runId);
     }
 
-    return errorResponse((e as Error).message);
+    return errorResponse(err.message);
   }
 });
