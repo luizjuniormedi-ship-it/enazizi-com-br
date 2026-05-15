@@ -18,17 +18,17 @@ export function EnaflixLayout({ children }: Props) {
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   
-  // Immersive routes: Tutor IA must occupy full screen, no sidebar/topnav overlap
-  const immersiveRoutes = ["/dashboard/mentor", "/dashboard/tutor", "/mentor", "/tutor", "/study/tutor", "/dashboard/sessao-estudo"];
+  // Immersive routes: Tutor IA and sessions must occupy full screen, but we maintain accessibility
+  const immersiveRoutes = ["/dashboard/mentor", "/dashboard/tutor", "/mentor", "/tutor", "/study/tutor", "/dashboard/sessao-estudo", "/dashboard/clinical-simulation", "/dashboard/anamnese"];
   const isImmersive = immersiveRoutes.some((r) => location.pathname === r || location.pathname.startsWith(r + "/"));
 
-  // Sidebar for everyone in desktop to ensure navigation is always available
-  const showSidebar = !isImmersive;
+  // Sidebar for Admin/Professor or in standard student view
+  // Students in immersive mode (Tutor) have it hidden by default but can be toggled if needed
+  const showSidebar = !isImmersive || isAdmin || isProfessor;
 
-  // For students (no sidebar), we show the OverlayNav consistently if not on the main Enaflix page
-  // (Since EnaflixPage already has its own OverlayNav with search logic, we avoid double rendering)
+  // Top Nav for subpages or when sidebar is hidden
   const isEnaflixHome = location.pathname === "/enaflix" || location.pathname === "/dashboard" || location.pathname === "/study-hub" || location.pathname === "/";
-  const showTopNav = !showSidebar && !isEnaflixHome && !isImmersive;
+  const showTopNav = !isEnaflixHome;
 
   return (
     <div className="min-h-screen bg-[#050508] text-white selection:bg-primary/30 selection:text-white antialiased flex flex-col">
