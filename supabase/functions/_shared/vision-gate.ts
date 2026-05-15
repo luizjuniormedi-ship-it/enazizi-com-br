@@ -102,7 +102,7 @@ Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false
           { type: "image_url", image_url: { url: imageUrl } },
         ],
       }],
-      max_tokens: 200,
+      max_completion_tokens: 200,
     };
 
     console.log("[VisionGate] Payload:", JSON.stringify(payload, null, 2));
