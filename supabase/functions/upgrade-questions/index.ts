@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { getTokenParameterName } from "../_shared/ai-models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
