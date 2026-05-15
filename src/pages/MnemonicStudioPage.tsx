@@ -206,7 +206,8 @@ export default function MnemonicGeneratorPage() {
 
   // ── Auto-trigger generation when arriving via deep-link with ?auto=1 ──
   useEffect(() => {
-    const auto = searchParams.get("auto");
+    const state = location.state as { fromErrorBank?: boolean } | null;
+    const auto = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
     if (auto !== "1" && auto !== "true") return;
     if (autoTriggeredRef.current) return;
     if (!tema || tema.trim().length < 3) return;
