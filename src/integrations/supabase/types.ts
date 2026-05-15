@@ -15247,10 +15247,15 @@ export type Database = {
           alert_type: string
           created_at: string | null
           details: Json | null
+          error_stack: string | null
+          http_status: number | null
           id: string
           message: string
+          model_used: string | null
+          payload: Json | null
           run_id: string | null
           severity: string
+          source: string | null
         }
         Insert: {
           acknowledged?: boolean | null
@@ -15259,10 +15264,15 @@ export type Database = {
           alert_type: string
           created_at?: string | null
           details?: Json | null
+          error_stack?: string | null
+          http_status?: number | null
           id?: string
           message: string
+          model_used?: string | null
+          payload?: Json | null
           run_id?: string | null
           severity?: string
+          source?: string | null
         }
         Update: {
           acknowledged?: boolean | null
@@ -15271,10 +15281,15 @@ export type Database = {
           alert_type?: string
           created_at?: string | null
           details?: Json | null
+          error_stack?: string | null
+          http_status?: number | null
           id?: string
           message?: string
+          model_used?: string | null
+          payload?: Json | null
           run_id?: string | null
           severity?: string
+          source?: string | null
         }
         Relationships: []
       }
