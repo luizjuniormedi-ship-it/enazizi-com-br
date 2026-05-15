@@ -153,11 +153,16 @@ const AdminIngestionPanel = () => {
     );
     const raw = await resp.text();
     let data: any = {};
-    try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+    try { 
+      data = raw ? JSON.parse(raw) : {}; 
+    } catch { 
+      console.error("Failed to parse ingestion response:", raw);
+      throw new Error("Resposta inválida do servidor. Verifique os logs da Edge Function."); 
+    }
     const normalized = { ...data, questions_found: data?.questions_found ?? 0, questions_inserted: data?.questions_inserted ?? 0, questions_updated: data?.questions_updated ?? 0, duplicates_skipped: data?.duplicates_skipped ?? 0, errors: data?.errors ?? 0 };
-    if (!resp.ok) throw new Error(normalized?.error || `Falha na ingestão (${resp.status})`);
+    if (!resp.ok) throw new Error(normalized?.error || `Falha na ingestão (${resp.status}): ${raw.slice(0, 100)}`);
     if (normalized.questions_inserted === 0 && normalized.questions_updated === 0 && normalized.duplicates_skipped === 0) {
-      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída deste PDF.");
+      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída deste PDF. O arquivo pode estar protegido por SSL ou ser apenas imagem.");
     }
     return normalized;
   };
