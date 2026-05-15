@@ -4,9 +4,9 @@
  */
 
 export const AI_MODELS = {
-  generation: "gpt-4o-mini",
-  extraction: "gpt-4o-mini",
-  reasoning: "gpt-4o",
+  generation: "gpt-5-mini",
+  extraction: "gpt-5-mini",
+  reasoning: "gpt-5",
   embeddings: "text-embedding-3-small",
 } as const;
 
@@ -16,7 +16,7 @@ export type AIModelKey = keyof typeof AI_MODELS;
  * Validates if a model name is allowed and exists in our registry or is a known valid model.
  */
 export function validateModel(model: string): boolean {
-  const allowedPrefixes = ["gpt-4o", "gpt-3.5", "o1-", "o3-", "text-embedding-"];
+  const allowedPrefixes = ["gpt-5", "gpt-4o", "gpt-3.5", "o1-", "o3-", "text-embedding-"];
   const isAllowed = allowedPrefixes.some(prefix => model.startsWith(prefix)) || 
                     Object.values(AI_MODELS).includes(model as any);
   
@@ -40,7 +40,7 @@ export function getTokenParameterName(model: string): string {
  * Standardizes model names to include provider prefix for Lovable Gateway if missing.
  */
 export function standardizeModelName(model: string): string {
-  if (model.startsWith("gpt-") || model.startsWith("o1-") || model.startsWith("o3-") || model.startsWith("text-embedding-")) {
+  if (model.startsWith("gpt-") || model.startsWith("o1-") || model.startsWith("o3-") || model.startsWith("text-embedding-") || model.startsWith("gpt-5")) {
     return `openai/${model}`;
   }
   return model;
