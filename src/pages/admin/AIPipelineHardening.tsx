@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, RefreshCw, AlertCircle, CheckCircle2, ShieldAlert, Cpu } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, ShieldAlert, Cpu } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AI_MODELS } from "@/config/ai-models";
 
@@ -16,7 +16,7 @@ interface PipelineAlert {
   model_used: string;
   http_status: number;
   created_at: string;
-  resolved: boolean;
+  acknowledged: boolean;
   error_stack?: string;
   payload?: any;
 }
@@ -26,7 +26,7 @@ interface ProviderHealth {
   model: string;
   status: string;
   latency_ms: number;
-  last_checked: string;
+  checked_at: string;
   success_count: number;
   error_count: number;
 }
@@ -54,8 +54,8 @@ export default function AIPipelineHardening() {
       if (alertsErr) throw alertsErr;
       if (healthErr) throw healthErr;
 
-      setAlerts(alertsData as PipelineAlert[]);
-      setHealth(healthData as ProviderHealth[]);
+      setAlerts((alertsData as any) || []);
+      setHealth((healthData as any) || []);
     } catch (err: any) {
       toast({
         title: "Erro ao carregar dados",
@@ -70,13 +70,13 @@ export default function AIPipelineHardening() {
   const resolveAlert = async (id: string) => {
     const { error } = await supabase
       .from("pipeline_alerts")
-      .update({ resolved: true })
+      .update({ acknowledged: true, acknowledged_at: new Date().toISOString() })
       .eq("id", id);
 
     if (error) {
       toast({ title: "Erro ao resolver", description: error.message, variant: "destructive" });
     } else {
-      setAlerts(prev => prev.map(a => a.id === id ? { ...a, resolved: true } : a));
+      setAlerts(prev => prev.map(a => a.id === id ? { ...a, acknowledged: true } : a));
       toast({ title: "Alerta resolvido" });
     }
   };
@@ -104,10 +104,12 @@ export default function AIPipelineHardening() {
           </h1>
           <p className="text-muted-foreground">Monitoramento de falhas silenciosas e saúde dos provedores.</p>
         </div>
-        <Button onClick={fetchData} disabled={loading}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchData} disabled={loading}>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -117,7 +119,7 @@ export default function AIPipelineHardening() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {alerts.filter(a => !a.resolved).length}
+              {alerts.filter(a => !a.acknowledged).length}
             </div>
           </CardContent>
         </Card>
@@ -165,7 +167,7 @@ export default function AIPipelineHardening() {
                   <TableRow>
                     <TableHead>Fonte</TableHead>
                     <TableHead>Mensagem</TableHead>
-                    <TableHead>Modelo</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>Ação</TableHead>
                   </TableRow>
@@ -177,22 +179,30 @@ export default function AIPipelineHardening() {
                     </TableRow>
                   ) : (
                     alerts.map((alert) => (
-                      <TableRow key={alert.id} className={alert.resolved ? "opacity-50" : ""}>
-                        <TableCell className="font-mono text-xs">{alert.source}</TableCell>
+                      <TableRow key={alert.id} className={alert.acknowledged ? "opacity-50" : ""}>
+                        <TableCell className="font-mono text-xs">{alert.source || "unknown"}</TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             <span className="font-medium text-sm">{alert.message}</span>
-                            {alert.http_status && (
-                              <Badge variant="outline" className="w-fit">HTTP {alert.http_status}</Badge>
-                            )}
+                            <div className="flex gap-2 items-center">
+                              {getSeverityBadge(alert.severity)}
+                              {alert.http_status && (
+                                <Badge variant="outline" className="w-fit">HTTP {alert.http_status}</Badge>
+                              )}
+                              {alert.model_used && (
+                                <span className="text-[10px] text-muted-foreground font-mono">{alert.model_used}</span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs">{alert.model_used}</TableCell>
+                        <TableCell>
+                           {alert.acknowledged ? <Badge variant="secondary">Resolvido</Badge> : <Badge variant="default">Pendente</Badge>}
+                        </TableCell>
                         <TableCell className="text-xs whitespace-nowrap">
                           {new Date(alert.created_at).toLocaleString("pt-BR")}
                         </TableCell>
                         <TableCell>
-                          {!alert.resolved && (
+                          {!alert.acknowledged && (
                             <Button size="sm" variant="outline" onClick={() => resolveAlert(alert.id)}>Resolver</Button>
                           )}
                         </TableCell>
@@ -222,10 +232,10 @@ export default function AIPipelineHardening() {
                       {h.status}
                     </Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground font-mono">{h.model}</div>
+                  <div className="text-xs text-muted-foreground font-mono truncate">{h.model}</div>
                   <div className="flex justify-between text-xs">
                     <span>Latência: {h.latency_ms}ms</span>
-                    <span>Sucesso: {((h.success_count / (h.success_count + h.error_count)) * 100 || 0).toFixed(1)}%</span>
+                    <span>Sucesso: {((h.success_count / (Math.max(1, h.success_count + h.error_count))) * 100 || 0).toFixed(1)}%</span>
                   </div>
                 </div>
               ))}
