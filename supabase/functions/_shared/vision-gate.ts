@@ -102,7 +102,8 @@ Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false
           { type: "image_url", image_url: { url: imageUrl } },
         ],
       }],
-      max_completion_tokens: 200,
+      max_completion_tokens: 300,
+      response_format: { type: "json_object" }
     };
 
     console.log("[VisionGate] Payload:", JSON.stringify(payload, null, 2));
@@ -124,6 +125,8 @@ Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false
 
     const data = await resp.json();
     const content = data.choices?.[0]?.message?.content || "";
+    console.log("[VisionGate] Response content:", content);
+
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { valid: false, reason: "Resposta de visão inválida — rejeitado" };
 
@@ -134,6 +137,7 @@ Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false
 
     return { valid: true, reason: result.reason || "Validado" };
   } catch (err) {
+    console.error("[VisionGate] Exception:", err);
     return { valid: false, reason: `Visão falhou: ${(err as Error).message} — rejeitado` };
   }
 }
