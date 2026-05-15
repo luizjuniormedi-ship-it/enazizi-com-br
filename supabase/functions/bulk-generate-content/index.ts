@@ -243,12 +243,25 @@ REGRAS:
       const rows = questions.map((q: any) => {
         const rawTopic = String(q.topic || specialty).trim();
         const normalizedTopic = normalizeTopicToParent(rawTopic, specialty);
+        
+        // Ensure options count is 4 or 5
+        const opts = Array.isArray(q.options) ? q.options.map(String) : [];
+        while (opts.length < 4) opts.push(`Alternativa ${String.fromCharCode(65 + opts.length)}`);
+        if (opts.length > 5) opts.splice(5);
+
         return {
-          user_id: userId, statement: String(q.statement).trim(), options: q.options.map(String),
-          correct_index: q.correct_index, explanation: String(q.explanation || "").trim(),
-          topic: normalizedTopic, subtopic: rawTopic !== normalizedTopic ? rawTopic : null,
+          user_id: userId, 
+          statement: String(q.statement).trim(), 
+          options: opts,
+          correct_index: Math.max(0, Math.min(Number(q.correct_index) || 0, opts.length - 1)), 
+          explanation: String(q.explanation || "").trim(),
+          topic: normalizedTopic, 
+          subtopic: rawTopic !== normalizedTopic ? rawTopic : null,
           difficulty: q.difficulty || (Math.random() < 0.5 ? 4 : 3),
-          source: "bulk-ai-generated", is_global: true, review_status: "pending",
+          board: "AI-Generated",
+          source: "bulk-ai-generated", 
+          is_global: true, 
+          review_status: "pending",
         };
       }).filter((r: any) => {
         const hash = normalizeStatementKey(r.statement);
