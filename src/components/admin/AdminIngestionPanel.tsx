@@ -521,46 +521,105 @@ const AdminIngestionPanel = () => {
         <TabsContent value="manual">
           <div className="space-y-4 p-2">
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium">URLs de PDFs (um por linha)</label>
-              <textarea 
-                className="w-full h-32 text-xs p-2 rounded border bg-background" 
-                placeholder="https://exemplo.com/prova-2025.pdf&#10;https://exemplo.com/gabarito-2025.pdf"
-                id="manual-urls"
-              />
-              <div className="flex gap-2">
-                <Input className="h-8 text-xs w-24" placeholder="Ano" id="manual-year" defaultValue={new Date().getFullYear()} />
-                <Input className="h-8 text-xs flex-1" placeholder="Banca/Instituição" id="manual-banca" />
-                <Button 
-                  size="sm" 
-                  className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
-                  onClick={async () => {
-                    const urlsEl = document.getElementById('manual-urls') as HTMLTextAreaElement;
-                    const yearEl = document.getElementById('manual-year') as HTMLInputElement;
-                    const bancaEl = document.getElementById('manual-banca') as HTMLInputElement;
-                    
-                    const urls = urlsEl.value.split('\n').filter(u => u.trim());
-                    const year = parseInt(yearEl.value);
-                    const banca = bancaEl.value;
-                    
-                    if (!urls.length) return;
-                    
-                    for (const url of urls) {
-                      toast({ title: "Iniciando importação", description: url });
-                      try {
-                        const data = await callIngest({ mode: "pdf_url", url: url.trim(), year, banca, source_type: "manual_import", permission_type: "indexed_external" });
-                        toast(getIngestToast(data, url));
-                      } catch (e) {
-                        toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-                      }
-                    }
-                    loadLogs();
-                  }}
-                >
-                  Processar URLs
-                </Button>
-              </div>
-              <p className="text-[10px] text-muted-foreground italic">
-                Dica: Use este modo quando a busca automática falhar ou o site tiver bloqueio de SSL.
+              <label className="text-xs font-medium">Importação Manual</label>
+              
+              <Tabs defaultValue="urls_tab">
+                <TabsList className="mb-2 h-7">
+                  <TabsTrigger value="urls_tab" className="text-[10px] h-6">URLs de PDFs</TabsTrigger>
+                  <TabsTrigger value="text_tab" className="text-[10px] h-6">Colar Texto/Markdown</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="urls_tab">
+                  <textarea 
+                    className="w-full h-32 text-xs p-2 rounded border bg-background" 
+                    placeholder="https://exemplo.com/prova-2025.pdf&#10;https://exemplo.com/gabarito-2025.pdf"
+                    id="manual-urls"
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <Input className="h-8 text-xs w-24" placeholder="Ano" id="manual-year" defaultValue={new Date().getFullYear()} />
+                    <Input className="h-8 text-xs flex-1" placeholder="Banca/Instituição" id="manual-banca" />
+                    <Button 
+                      size="sm" 
+                      className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
+                      onClick={async () => {
+                        const urlsEl = document.getElementById('manual-urls') as HTMLTextAreaElement;
+                        const yearEl = document.getElementById('manual-year') as HTMLInputElement;
+                        const bancaEl = document.getElementById('manual-banca') as HTMLInputElement;
+                        
+                        const urls = urlsEl.value.split('\n').filter(u => u.trim());
+                        const year = parseInt(yearEl.value);
+                        const banca = bancaEl.value;
+                        
+                        if (!urls.length) return;
+                        
+                        for (const url of urls) {
+                          toast({ title: "Iniciando importação", description: url });
+                          try {
+                            const data = await callIngest({ mode: "pdf_url", url: url.trim(), year, banca, source_type: "manual_import", permission_type: "indexed_external" });
+                            toast(getIngestToast(data, url));
+                          } catch (e) {
+                            toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+                          }
+                        }
+                        loadLogs();
+                      }}
+                    >
+                      Processar URLs
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="text_tab">
+                  <textarea 
+                    className="w-full h-32 text-xs p-2 rounded border bg-background" 
+                    placeholder="Cole aqui o texto extraído do PDF ou o conteúdo Markdown da página..."
+                    id="manual-text-content"
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <Input className="h-8 text-xs w-24" placeholder="Ano" id="manual-text-year" defaultValue={new Date().getFullYear()} />
+                    <Input className="h-8 text-xs flex-1" placeholder="Banca/Instituição" id="manual-text-banca" />
+                    <Button 
+                      size="sm" 
+                      className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                      onClick={async () => {
+                        const textEl = document.getElementById('manual-text-content') as HTMLTextAreaElement;
+                        const yearEl = document.getElementById('manual-text-year') as HTMLInputElement;
+                        const bancaEl = document.getElementById('manual-text-banca') as HTMLInputElement;
+                        
+                        const content = textEl.value.trim();
+                        const year = parseInt(yearEl.value);
+                        const banca = bancaEl.value;
+                        
+                        if (!content) return;
+                        
+                        toast({ title: "Processando texto", description: "Enviando para extração via LLM..." });
+                        try {
+                          const { data, error } = await supabase.functions.invoke('ingest-questions', {
+                            body: { 
+                              mode: "direct_text", 
+                              text: content, 
+                              year, 
+                              banca, 
+                              source_type: "manual_text", 
+                              permission_type: "indexed_external" 
+                            }
+                          });
+                          if (error) throw error;
+                          toast(getIngestToast(data, "Texto colado"));
+                        } catch (e) {
+                          toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
+                        }
+                        loadLogs();
+                      }}
+                    >
+                      Processar Texto
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <p className="text-[10px] text-muted-foreground italic mt-2">
+                Dica: Use este modo quando a busca automática falhar ou o site tiver bloqueio de SSL (como no caso da FGV/ENARE).
               </p>
             </div>
           </div>
