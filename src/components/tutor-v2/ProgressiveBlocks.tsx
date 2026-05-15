@@ -28,29 +28,38 @@ interface ProgressiveBlocksProps {
 
 const BLOCK_ICONS: Record<string, any> = {
   "Missão Clínica": Target,
+  "Missão da sessão": Target,
   "Explicação Feynman": Lightbulb,
+  "Explicação leiga": Lightbulb,
   "Lay/Feynman": Lightbulb,
   "Definição Técnica": Info,
+  "Explicação técnica": Info,
   "Técnica": Info,
   "Fisiopatologia": Microscope,
   "Fisiopato": Microscope,
   "Mecanismo molecular": Microscope,
+  "Raciocínio clínico": Brain,
   "Integração Clínica": Activity,
+  "Integração prática": Activity,
   "Aplicação Clínica": Activity,
   "Aplicação": Activity,
   "Diagnóstico Diferencial": GitBranch,
   "Diferencial": GitBranch,
   "Conduta": Zap,
   "Pegadinhas": AlertTriangle,
+  "Pegadinhas de prova": AlertTriangle,
   "Erros de Preceptoria": ShieldAlert,
   "Preceptoria": ShieldAlert,
   "Active Recall": Brain,
   "Recall": Brain,
+  "Mini teste": BookOpen,
   "Questão Comentada": BookOpen,
   "Resumo Final": Check,
   "Resumo": Check,
+  "Próximo passo": ChevronRight,
   "Referências": BookOpen,
 };
+
 
 export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
   const parsedContent = useMemo(() => parseContent(content), [content]);
