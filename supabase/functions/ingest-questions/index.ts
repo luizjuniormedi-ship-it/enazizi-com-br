@@ -380,8 +380,8 @@ Deno.serve(async (req) => {
         
         REGRAS:
         1. Ignore cabeçalhos, rodapés e metadados.
-        2. Identifique enunciado e alternativas (A a D). O banco de dados exige exatamente 4 alternativas.
-        3. Se houver 5 alternativas (A-E), escolha as 4 melhores ou resuma.
+        2. Identifique enunciado e alternativas (A a E). O banco de dados aceita 4 ou 5 alternativas.
+        3. Se houver 5 alternativas, mantenha todas. Se houver 4, mantenha as 4.
         4. Identifique o gabarito se estiver presente.
         5. O campo "topic" deve ser "${banca || "Geral"}".
         
@@ -389,12 +389,12 @@ Deno.serve(async (req) => {
         ${fullText.slice(0, 15000)}
         
         FORMATO:
-        { "questions": [{ "statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct_index": 0, "topic": "...", "subtopic": "...", "explanation": "..." }] }`;
+        { "questions": [{ "statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "topic": "...", "subtopic": "...", "explanation": "..." }] }`;
 
         const aiResp = await aiFetch({
           model: AI_MODELS.extraction,
           messages: [
-            { role: "system", content: "Você é um assistente que extrai questões estruturadas de textos de provas. Gere exatamente 4 alternativas por questão." }, 
+            { role: "system", content: "Você é um assistente que extrai questões estruturadas de textos de provas. Gere entre 4 e 5 alternativas por questão." }, 
             { role: "user", content: prompt }
           ],
           response_format: { type: "json_object" }
