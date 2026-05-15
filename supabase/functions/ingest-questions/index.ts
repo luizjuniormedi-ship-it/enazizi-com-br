@@ -112,9 +112,14 @@ async function extractPdfTextFromBlob(fileData: Blob): Promise<string> {
 
 function normalizePdfExamText(text: string): string {
   return text
+    // Recupera 'Questão' quando encoding quebrou (Quest�o, Quest?o, Questao, etc.)
+    .replace(/Quest[\S]{0,3}o(?=\s+\d)/gi, "QUESTÃO")
     .replace(/Medway\s*-\s*ENARE\s*-\s*\d{4}\s*P[aá]ginas?\s*\d+\/\d+/gi, " ")
     .replace(/ENARE-\d{4}-Objetiva\s*\|\s*R1/gi, " ")
     .replace(/P[aá]ginas?\s*\d+\/\d+/gi, " ")
+    .replace(/proibida\s+venda[^\n]{0,80}/gi, " ")
+    .replace(/t\.me\/\S+/gi, " ")
+    .replace(/Venda proibida[^\n]{0,120}/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
