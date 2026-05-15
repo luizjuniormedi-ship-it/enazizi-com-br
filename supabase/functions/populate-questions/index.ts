@@ -31,7 +31,7 @@ async function extractPdfText(fileData: Blob): Promise<string> {
   return pages.join("\n\n");
 }
 
-async function processTextToQuestions(
+async function processTextToContent(
   fullText: string,
   topic: string,
   source: string,
@@ -39,139 +39,135 @@ async function processTextToQuestions(
   supabaseAdmin: any,
   uploadId?: string,
   existingJson?: Record<string, any>,
-): Promise<number> {
-  const chunkSize = 15000;
+): Promise<{ questions: number; flashcards: number }> {
+  const chunkSize = 12000; // Slightly smaller chunks for better reliability
   const chunks: string[] = [];
   for (let i = 0; i < fullText.length; i += chunkSize) {
     chunks.push(fullText.slice(i, i + chunkSize));
   }
 
-  const chunksToProcess = chunks.slice(0, 10); // Process up to 10 chunks instead of 4
+  const chunksToProcess = chunks.slice(0, 15); // Process up to 15 chunks
   const baseJson = existingJson || {};
 
-  // Update progress if uploadId provided
-  const updateProgress = async (chunksDone: number, questionsFound: number) => {
+  const updateProgress = async (chunksDone: number, qFound: number, fFound: number) => {
     if (!uploadId) return;
     const progress = Math.round(20 + (chunksDone / chunksToProcess.length) * 70);
+    const currentQ = (baseJson.questions_count || 0) + qFound;
+    const currentF = (baseJson.flashcards_count || 0) + fFound;
+    
     await supabaseAdmin.from("uploads").update({
       extracted_json: {
         ...baseJson,
-        step: "populating_questions",
+        step: "populating_content",
         progress,
         chunks_total: chunksToProcess.length,
         chunks_done: chunksDone,
-        questions_count: (baseJson.questions_count || 0) + questionsFound,
+        questions_count: currentQ,
+        flashcards_count: currentF,
         main_topic: topic,
       },
     }).eq("id", uploadId);
   };
 
-  await updateProgress(0, 0);
+  await updateProgress(0, 0, 0);
 
-  const processChunk = async (chunk: string): Promise<number> => {
-    const response = await aiFetch({
-      model: AI_MODELS.generation,
-      messages: [
-        {
-          role: "system",
-          content: `Extraia TODAS as questões de múltipla escolha do texto. Se encontrar questões já formatadas, converta para JSON preservando EXATAMENTE o enunciado e alternativas originais. Se for texto teórico, gere questões baseadas no conteúdo.
-
-IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). Se o texto original estiver em inglês, TRADUZA para português. NUNCA retorne questões em inglês.
-
-GERE O MÁXIMO POSSÍVEL (10-30 por bloco).
-
-IMPORTANTE: Para questões que já existem no texto com gabarito/comentário, use o correct_index correto baseado no gabarito fornecido. Se não houver gabarito, use seu conhecimento médico para determinar a resposta correta.
-
-OBRIGATÓRIO: Exatamente 4 alternativas (A-D) por questão. NUNCA gere questões que referenciem imagens, figuras, fotos, radiografias ou gráficos externos.
-Mínimo 450 caracteres por enunciado clínico.
-
-Formato JSON PURO: {"questions": [{"statement": "enunciado clínico completo (450+ chars)", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct_index": 0, "explanation": "explicação detalhada do raciocínio clínico", "topic": "especialidade médica"}]}
-Se não encontrar questões, retorne {"questions": []}`
-        },
-        { role: "user", content: `Tema: ${topic}\n\n${chunk}` }
-      ],
-    });
-
-    console.log("AI response status:", response.status);
-    if (!response.ok) {
-      const errText = await response.clone().text();
-      console.error("AI error:", errText);
-      await logPipelineAlert({
-        source: "populate-questions",
-        message: `AI Chunk Processing Failed: ${response.status}`,
-        error_stack: errText,
-        http_status: response.status,
-        model_used: AI_MODELS.generation,
-        payload: { chunk_length: chunk.length }
-      });
-      return 0;
-    }
-
-    let parsed: any = null;
+  const processChunk = async (chunk: string): Promise<{ q: number; f: number }> => {
+    console.log(`[Populate] Processing chunk of size ${chunk.length}...`);
     try {
+      const response = await aiFetch({
+        model: AI_MODELS.generation,
+        messages: [
+          {
+            role: "system",
+            content: `Você é um especialista em educação médica. Sua tarefa é extrair e gerar questões e flashcards a partir do texto fornecido.
+            
+            1. QUESTÕES: Extraia questões existentes ou gere novas (caso clínico 450+ chars, 4 alternativas A-D, gabarito e explicação).
+            2. FLASHCARDS: Gere flashcards (Frente/Pergunta com caso clínico curto, Verso/Resposta concisa, Explicação).
+            
+            IDIOMA: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).
+            GERE: 5-10 questões e 5-10 flashcards por bloco.
+            
+            JSON format: 
+            {
+              "questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct_index": 0, "explanation": "...", "topic": "..."}],
+              "flashcards": [{"question": "🏥 CASO... ❓ PERGUNTA...", "answer": "...", "explanation": "...", "topic": "..."}]
+            }`
+          },
+          { role: "user", content: `Tema: ${topic}\n\nTexto:\n${chunk}` }
+        ],
+        timeoutMs: 120000, // 2 minutes for content generation
+      });
+
+      if (!response.ok) throw new Error(`AI error ${response.status}`);
+
       const data = await response.json();
-      const rawContent = data.choices?.[0]?.message?.content || "";
-      parsed = parseAiJson(rawContent);
-    } catch (parseErr) {
-      console.error("Parse error:", parseErr);
-      const rawText = await response.clone().text();
-      await logPipelineAlert({
-        source: "populate-questions",
-        message: "JSON Parse Error in AI Response",
-        error_stack: parseErr instanceof Error ? parseErr.stack : String(parseErr),
-        payload: { raw_response: rawText.slice(0, 1000) },
-        model_used: AI_MODELS.generation
-      });
-      return 0;
-    }
+      const content = data.choices?.[0]?.message?.content || "";
+      const parsed = parseAiJson(content);
+      
+      let qCount = 0;
+      let fCount = 0;
 
-    if (!parsed || !parsed.questions) {
-      await logPipelineAlert({
-        source: "populate-questions",
-        message: "AI returned empty questions array",
-        severity: "warning",
-        model_used: AI_MODELS.generation
-      });
-      return 0;
-    }
+      // Filter and insert questions
+      if (parsed.questions && Array.isArray(parsed.questions)) {
+        const questions = parsed.questions.filter((q: any) => 
+          q.statement && Array.isArray(q.options) && q.options.length >= 4
+        ).map((q: any) => sanitizeForPostgres({
+          user_id: userId,
+          statement: String(q.statement).trim(),
+          options: q.options.map(String),
+          correct_index: q.correct_index,
+          explanation: String(q.explanation || "").trim(),
+          topic: String(q.topic || topic).trim(),
+          source,
+          is_global: true,
+          review_status: "pending"
+        }));
 
-    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
-    const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
-    const questions = (parsed.questions || []).filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 4 && typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 100 && // Lower threshold to capture more real questions
-      !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
-    );
+        if (questions.length > 0) {
+          const { error } = await supabaseAdmin.from("questions_bank").insert(questions);
+          if (!error) qCount = questions.length;
+        }
+      }
 
-    if (questions.length > 0) {
-      const rows = questions.map((q: any) => {
-        const stmtLen = String(q.statement).trim().length;
-        return sanitizeForPostgres({
-          user_id: userId, statement: String(q.statement).trim(), options: q.options.map(String),
-          correct_index: q.correct_index, explanation: String(q.explanation || "").trim(),
-          topic: String(q.topic || topic).trim(), source, is_global: true, review_status: "pending",
-          quality_tier: stmtLen >= 450 ? "exam_standard" : (stmtLen >= 250 ? "basic" : "needs_upgrade"),
-        });
-      });
-      const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
-      if (!error) return rows.length;
-      else { console.error("Insert error:", error); return 0; }
+      // Filter and insert flashcards
+      if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
+        const flashcards = parsed.flashcards.filter((f: any) => 
+          f.question && f.answer
+        ).map((f: any) => sanitizeForPostgres({
+          user_id: userId,
+          question: String(f.question).trim(),
+          answer: String(f.answer).trim(),
+          explanation: String(f.explanation || "").trim(),
+          topic: String(f.topic || topic).trim(),
+          source,
+          is_global: true,
+          generation_method: "upload_extraction"
+        }));
+
+        if (flashcards.length > 0) {
+          const { error } = await supabaseAdmin.from("flashcards").insert(flashcards);
+          if (!error) fCount = flashcards.length;
+        }
+      }
+
+      return { q: qCount, f: fCount };
+    } catch (err) {
+      console.error("[Populate] Chunk error:", err);
+      return { q: 0, f: 0 };
     }
-    return 0;
   };
 
-  // Process in parallel
-  const results = await Promise.allSettled(chunksToProcess.map((c) => processChunk(c)));
-
-  let totalQuestions = 0;
-  let chunksDone = 0;
-  for (const r of results) {
-    chunksDone++;
-    if (r.status === "fulfilled") totalQuestions += r.value;
+  // Process in serial or small batches to avoid flooding/timeouts
+  let totalQ = 0;
+  let totalF = 0;
+  for (let i = 0; i < chunksToProcess.length; i++) {
+    const res = await processChunk(chunksToProcess[i]);
+    totalQ += res.q;
+    totalF += res.f;
+    await updateProgress(i + 1, totalQ, totalF);
   }
-  await updateProgress(chunksDone, totalQuestions);
 
-  return totalQuestions;
+  return { questions: totalQ, flashcards: totalF };
 }
 
 async function populateInBackground(
@@ -181,8 +177,9 @@ async function populateInBackground(
   supabaseAdmin: any,
 ) {
   try {
+    const existingJson = (upload.extracted_json || {}) as Record<string, any>;
     await supabaseAdmin.from("uploads").update({
-      extracted_json: { ...(upload.extracted_json || {}), step: "populating_questions", progress: 10 },
+      extracted_json: { ...existingJson, step: "populating_content", progress: 10 },
     }).eq("id", uploadId);
 
     let fullText = "";
@@ -190,146 +187,76 @@ async function populateInBackground(
       fullText = upload.extracted_text;
     } else if (upload.storage_path) {
       const { data: fileData } = await supabaseAdmin.storage.from("user-uploads").download(upload.storage_path);
-      if (!fileData) {
-        await supabaseAdmin.from("uploads").update({ extracted_json: { ...(upload.extracted_json || {}), step: "error", error: "File not found" } }).eq("id", uploadId);
-        return;
+      if (fileData) {
+        const fileType = (upload.file_type || "").toLowerCase();
+        fullText = fileType === "txt" ? await fileData.text() : await extractPdfText(fileData);
+        await supabaseAdmin.from("uploads").update({ extracted_text: fullText.slice(0, 50000) }).eq("id", uploadId);
       }
-      const fileType = (upload.file_type || "").toLowerCase();
-      fullText = fileType === "txt" ? await fileData.text() : await extractPdfText(fileData);
-      await supabaseAdmin.from("uploads").update({ extracted_text: fullText.slice(0, 50000) }).eq("id", uploadId);
     }
 
     if (!fullText.trim()) {
-      await supabaseAdmin.from("uploads").update({ extracted_json: { ...(upload.extracted_json || {}), step: "error", error: "No text" } }).eq("id", uploadId);
-      return;
+      throw new Error("Não foi possível extrair texto do arquivo.");
     }
 
-    const fn = upload.filename.toLowerCase();
-    let topic = "Clínica Médica";
-    if (fn.includes("car") || fn.includes("cardio")) topic = "Cardiologia";
-    else if (fn.includes("ped")) topic = "Pediatria";
-    else if (fn.includes("cir")) topic = "Cirurgia";
-    else if (fn.includes("go") || fn.includes("ginec")) topic = "Ginecologia e Obstetrícia";
-    else if (fn.includes("prev")) topic = "Medicina Preventiva";
-    else if (fn.includes("neuro")) topic = "Neurologia";
-    else if (fn.includes("pneumo")) topic = "Pneumologia";
+    const topic = existingJson.main_topic || "Clínica Médica";
+    const totals = await processTextToContent(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId, existingJson);
 
-    const existingJson = (upload.extracted_json || {}) as Record<string, any>;
-    const totalQuestions = await processTextToQuestions(fullText, topic, `upload:${upload.filename}`, userId, supabaseAdmin, uploadId, existingJson);
-
-    if (totalQuestions === 0) {
-      await supabaseAdmin.from("uploads").update({
-        status: "error",
-        extracted_json: {
-          ...existingJson,
-          error: "Nenhuma questão foi gerada a partir do texto.",
-          step: "failed",
-          progress: 100,
-        },
-      }).eq("id", uploadId);
-      
-      await logPipelineAlert({
-        source: "populate-questions",
-        message: "Generation concluded with 0 questions",
-        severity: "error",
-        metadata: { uploadId, filename: upload.filename }
-      });
-      return;
-    }
+    const finalStatus = (totals.questions > 0 || totals.flashcards > 0) ? "processed" : "error";
+    const finalError = finalStatus === "error" ? "Nenhuma questão ou flashcard foi gerado." : undefined;
 
     await supabaseAdmin.from("uploads").update({
-      status: "processed",
+      status: finalStatus,
       extracted_json: {
         ...existingJson,
-        questions_count: (existingJson.questions_count || 0) + totalQuestions,
-        main_topic: topic,
-        repopulated_at: new Date().toISOString(),
+        questions_count: (existingJson.questions_count || 0) + totals.questions,
+        flashcards_count: (existingJson.flashcards_count || 0) + totals.flashcards,
         step: "done",
         progress: 100,
-      },
+        error: finalError,
+        repopulated_at: new Date().toISOString()
+      }
     }).eq("id", uploadId);
 
-    console.log(`Populate done for ${uploadId}: ${totalQuestions} questions`);
-  } catch (e) {
-    console.error("Populate background error:", e);
+  } catch (err: any) {
+    console.error("[Populate] Background error:", err);
     await supabaseAdmin.from("uploads").update({
-      extracted_json: { ...(upload.extracted_json || {}), step: "error", error: e instanceof Error ? e.message : "Erro" },
+      extracted_json: { ...(upload.extracted_json || {}), step: "error", error: err.message }
     }).eq("id", uploadId);
   }
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
   try {
     const authHeader = req.headers.get("Authorization");
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const token = authHeader?.replace("Bearer ", "");
-    
+    if (!token) throw new Error("Unauthorized");
+
     let userId: string;
-
-    // Direct token comparison (most reliable for system calls)
-    if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) {
-      console.log("Authenticated via Service Role Key (env)");
-      const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
-      userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (user) {
+      userId = user.id;
     } else {
-      // Try to get user from token
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token!);
-      
-      if (user) {
-        const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-        if (!roleData) return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: corsHeaders });
-        userId = user.id;
-      } else {
-        // Final fallback for manual calls using service role key that might fail auth.getUser()
-        if (token && token.length > 20 && !token.includes(".")) {
-           const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
-           userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
-        } else {
-          return new Response(JSON.stringify({ error: "Unauthorized", details: authError?.message }), { status: 401, headers: corsHeaders });
-        }
-      }
+      // Fallback for service role calls
+      const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+      userId = adminRole?.user_id || "00000000-0000-0000-0000-000000000000";
     }
 
-    const body = await req.json();
-
-    // Mode 1: Raw text input (synchronous — used for batch/zip imports)
-    if (body.text && body.source) {
-      const topic = body.topic || "Clínica Médica";
-      const totalQuestions = await processTextToQuestions(body.text.slice(0, 80000), topic, body.source, userId, supabaseAdmin);
-      return new Response(JSON.stringify({
-        message: `${totalQuestions} questões extraídas de ${body.source}`,
-        questions_count: totalQuestions, topic,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    // Mode 2: Upload-based (background processing)
-    const { uploadId } = body;
-    if (!uploadId) {
-      return new Response(JSON.stringify({ error: "uploadId or text+source required" }), { status: 400, headers: corsHeaders });
-    }
+    const { uploadId } = await req.json();
+    if (!uploadId) throw new Error("uploadId required");
 
     const { data: upload } = await supabaseAdmin.from("uploads").select("*").eq("id", uploadId).maybeSingle();
-    if (!upload) {
-      return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
-    }
+    if (!upload) throw new Error("Upload not found");
 
-    // Fire-and-forget background processing
-    populateInBackground(uploadId, upload, userId, supabaseAdmin).catch((e) => {
-      console.error("Populate background task failed:", e);
+    populateInBackground(uploadId, upload, userId, supabaseAdmin).catch(console.error);
+
+    return new Response(JSON.stringify({ success: true, message: "Geração iniciada" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
-
-    return new Response(JSON.stringify({
-      message: "Geração de questões iniciada em background",
-      status: "processing",
-      uploadId,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-  } catch (e) {
-    console.error("populate-questions error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });

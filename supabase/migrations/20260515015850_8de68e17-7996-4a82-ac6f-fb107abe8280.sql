@@ -1,0 +1,1 @@
+ALTER TABLE public.pipeline_alerts ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;

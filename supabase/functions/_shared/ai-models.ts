@@ -31,8 +31,13 @@ export function validateModel(model: string): boolean {
  * Reasoning models (o1, o3) use 'max_completion_tokens'.
  * Standard models use 'max_tokens'.
  */
+/**
+ * Returns the correct token parameter name based on the model.
+ * Reasoning models (o1, o3) use 'max_completion_tokens' and do NOT support 'max_tokens'.
+ * Standard models (gpt-4o, gpt-4o-mini, etc.) use 'max_tokens'.
+ */
 export function getTokenParameterName(model: string): string {
-  const isReasoningModel = /^o[13]/i.test(model) || model.includes("/o1") || model.includes("/o3") || model.includes("gpt-4o") || model.includes("gpt-5");
+  const isReasoningModel = /^o[13]/i.test(model) || model.includes("/o1") || model.includes("/o3");
   return isReasoningModel ? "max_completion_tokens" : "max_tokens";
 }
 
