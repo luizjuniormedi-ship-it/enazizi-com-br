@@ -124,7 +124,7 @@ async function fetchWithRetry(
 
 export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const source = (Deno.env.get("FUNCTION_NAME") || "unknown-edge-function");
-  
+
   // Rate limit check
   cleanupRateLimitMap();
   if (options.userId && !checkRateLimit(options.userId)) {
