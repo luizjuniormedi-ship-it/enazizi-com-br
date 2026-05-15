@@ -298,6 +298,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     await logPipelineAlert({
       source,
       message: "OpenAI Fetch Exception",
+      alert_type: "fallback_exception",
       error_stack: err instanceof Error ? err.stack : String(err),
       severity: "critical",
       model_used: openaiModel
