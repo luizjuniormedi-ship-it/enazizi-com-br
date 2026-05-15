@@ -445,7 +445,7 @@ FORMATO ESTRITO:
 { "questions": [{ "statement": "...", "options": ["...", "...", "...", "...", "..."], "correct_index": 0, "topic": "...", "subtopic": "...", "explanation": "" }] }`;
 
           const aiResp = await aiFetch({
-            model: AI_MODELS.extraction,
+            model: ALLOWED_MODELS.generation,
             messages: [
               { role: "system", content: "Você extrai questões estruturadas de provas. Sempre 4 ou 5 alternativas em pt-BR." },
               { role: "user", content: prompt }
