@@ -21581,10 +21581,15 @@ export type Database = {
       }
       tutor_sessions: {
         Row: {
+          cognitive_progress: number | null
           conversation_id: string | null
           created_at: string
           current_phase: string | null
+          current_stage:
+            | Database["public"]["Enums"]["tutor_lesson_stage"]
+            | null
           id: string
+          metadata: Json | null
           mission_id: string | null
           mode: string
           source_context: string | null
@@ -21596,10 +21601,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cognitive_progress?: number | null
           conversation_id?: string | null
           created_at?: string
           current_phase?: string | null
+          current_stage?:
+            | Database["public"]["Enums"]["tutor_lesson_stage"]
+            | null
           id?: string
+          metadata?: Json | null
           mission_id?: string | null
           mode?: string
           source_context?: string | null
@@ -21611,10 +21621,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cognitive_progress?: number | null
           conversation_id?: string | null
           created_at?: string
           current_phase?: string | null
+          current_stage?:
+            | Database["public"]["Enums"]["tutor_lesson_stage"]
+            | null
           id?: string
+          metadata?: Json | null
           mission_id?: string | null
           mode?: string
           source_context?: string | null
@@ -21631,6 +21646,47 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: true
             referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_stage_history: {
+        Row: {
+          completed_at: string | null
+          duration_seconds: number | null
+          id: string
+          outcome_metadata: Json | null
+          session_id: string
+          stage: Database["public"]["Enums"]["tutor_lesson_stage"]
+          started_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          outcome_metadata?: Json | null
+          session_id: string
+          stage: Database["public"]["Enums"]["tutor_lesson_stage"]
+          started_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          outcome_metadata?: Json | null
+          session_id?: string
+          stage?: Database["public"]["Enums"]["tutor_lesson_stage"]
+          started_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_stage_history_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -24207,6 +24263,18 @@ export type Database = {
         | "completed"
         | "failed"
         | "cancelled"
+      tutor_lesson_stage:
+        | "mission"
+        | "layman"
+        | "technical"
+        | "pathophysiology"
+        | "clinical_reasoning"
+        | "practical_integration"
+        | "exam_tricks"
+        | "active_recall"
+        | "mini_test"
+        | "summary"
+        | "next_step"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -24507,6 +24575,19 @@ export const Constants = {
         "completed",
         "failed",
         "cancelled",
+      ],
+      tutor_lesson_stage: [
+        "mission",
+        "layman",
+        "technical",
+        "pathophysiology",
+        "clinical_reasoning",
+        "practical_integration",
+        "exam_tricks",
+        "active_recall",
+        "mini_test",
+        "summary",
+        "next_step",
       ],
     },
   },
