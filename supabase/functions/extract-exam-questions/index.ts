@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
           ${section.text.slice(0, 15000)}`;
 
           const aiResp = await aiFetch({
-            model: AI_MODELS.extraction,
+            model: ALLOWED_MODELS.generation,
             messages: [
               { role: "system", content: "Você é um extrator de provas médicas especializado em REVALIDA." },
               { role: "user", content: prompt }
