@@ -18,20 +18,40 @@ function normalizeText(s: string): string {
 }
 
 function isValidQuestion(q: { statement?: string; options?: string[]; correct_index?: number }): boolean {
-  if (!q.statement || !Array.isArray(q.options) || typeof q.correct_index !== "number") return false;
-  // Constraint check: MUST HAVE AT LEAST 4 OPTIONS
-  if (q.options.length < 4) return false;
+  if (!q.statement || !Array.isArray(q.options) || typeof q.correct_index !== "number") {
+    console.warn("[VALIDATE] Missing fields:", { statement: !!q.statement, options: !!q.options, correct_index: typeof q.correct_index });
+    return false;
+  }
   
-  if (q.statement.length < 50) return false; // Lowered from 250 for testing
+  if (q.options.length < 4) {
+    console.warn("[VALIDATE] Too few options:", q.options.length);
+    return false;
+  }
   
-  if (IMAGE_REF_PATTERN.test(q.statement)) return false;
-  if (ENGLISH_PATTERN.test(q.statement)) return false;
+  if (q.statement.length < 50) {
+    console.warn("[VALIDATE] Statement too short:", q.statement.length);
+    return false;
+  }
+  
+  if (IMAGE_REF_PATTERN.test(q.statement)) {
+    console.warn("[VALIDATE] Image reference detected");
+    return false;
+  }
+  
+  if (ENGLISH_PATTERN.test(q.statement)) {
+    console.warn("[VALIDATE] English pattern detected");
+    return false;
+  }
   
   const validOpts = q.options.filter(o => {
     const text = String(o).trim();
     return text.length > 0;
   });
-  if (validOpts.length < 4) return false;
+  
+  if (validOpts.length < 4) {
+    console.warn("[VALIDATE] Too few valid options after trim:", validOpts.length);
+    return false;
+  }
 
   return true;
 }
