@@ -75,20 +75,14 @@ export async function validateImageVision(
   if (!imageUrl) return { valid: false, reason: "URL de imagem ausente" };
 
   try {
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages: [{
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `You are a STRICT medical image auditor. Your job is to REJECT anything that is NOT a real clinical image.
+    const payload = {
+      model: "openai/gpt-4o-mini",
+      messages: [{
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `You are a STRICT medical image auditor. Your job is to REJECT anything that is NOT a real clinical image.
 
 REJECT immediately if the image is:
 - A human portrait, headshot, selfie, profile photo, team photo, staff photo
@@ -104,15 +98,29 @@ Expected diagnosis: "${expectedDiagnosis}"
 Expected modality: "${imageType}"
 
 Return ONLY valid JSON: {"is_clinical":true/false,"matches_diagnosis":true/false,"contains_portrait":true/false,"reason":"brief reason"}`,
-            },
-            { type: "image_url", image_url: { url: imageUrl } },
-          ],
-        }],
-        max_tokens: 200,
-      }),
+          },
+          { type: "image_url", image_url: { url: imageUrl } },
+        ],
+      }],
+      max_tokens: 200,
+    };
+
+    console.log("[VisionGate] Payload:", JSON.stringify(payload, null, 2));
+
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
 
-    if (!resp.ok) return { valid: false, reason: `Vision API erro ${resp.status} — rejeitado` };
+    if (!resp.ok) {
+      const errText = await resp.clone().text();
+      console.error(`[VisionGate] Lovable AI Gateway Error ${resp.status}:`, errText);
+      return { valid: false, reason: `Vision API erro ${resp.status} — rejeitado` };
+    }
 
     const data = await resp.json();
     const content = data.choices?.[0]?.message?.content || "";
