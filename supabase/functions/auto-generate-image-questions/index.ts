@@ -356,7 +356,7 @@ Retorne APENAS um JSON array válido (sem markdown):
 
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
-          model: "openai/gpt-5-mini",
+          model: "openai/gpt-4o-mini",
           maxTokens: 8192,
           timeoutMs: 60000,
         });

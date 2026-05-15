@@ -168,7 +168,7 @@ Retorne APENAS JSON válido:
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "openai/gpt-5-mini", messages: [{ role: "user", content: prompt }], temperature: 0.7 }),
+      body: JSON.stringify({ model: "openai/gpt-4o-mini", messages: [{ role: "user", content: prompt }], temperature: 0.7 }),
     });
 
     if (!response.ok) { console.error("AI error:", await response.text()); return 0; }

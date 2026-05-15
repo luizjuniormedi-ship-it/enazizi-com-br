@@ -81,7 +81,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "openai/gpt-4o-mini",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: `Analise esta crônica médica e gere a simulação OSCE:\n\n**Especialidade:** ${specialty || "Clínica Médica"}\n**Tema:** ${topic || "Geral"}\n**Dificuldade:** ${difficulty || "avancado"}\n\n---\n\n${chronicle_content.slice(0, 8000)}` },
@@ -190,7 +190,7 @@ serve(async (req) => {
     }
 
     // Cache the result for future reuse (fire-and-forget)
-    setCachedContent(cacheKey, "osce", osceData, "openai/gpt-5-mini", 30).catch(() => {});
+    setCachedContent(cacheKey, "osce", osceData, "openai/gpt-4o-mini", 30).catch(() => {});
 
     return new Response(JSON.stringify(osceData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

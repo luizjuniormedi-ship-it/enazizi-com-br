@@ -179,7 +179,7 @@ function logAnamnesis(success: boolean, elapsed: number, userId: string, errMsg?
   logAiUsage({
     userId,
     functionName: "anamnesis-trainer",
-    modelUsed: "openai/gpt-5-mini",
+    modelUsed: "openai/gpt-4o-mini",
     success,
     responseTimeMs: elapsed,
     cacheHit: false,
@@ -246,7 +246,7 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
 
       const startMs = Date.now();
       const response = await aiFetch({
-        model: "openai/gpt-5-mini",
+        model: "openai/gpt-4o-mini",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: prompt },
@@ -294,7 +294,7 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
 
       const startMs2 = Date.now();
       const response = await aiFetch({
-        model: "openai/gpt-5-mini",
+        model: "openai/gpt-4o-mini",
         messages: contextMessages,
         stream: false,
       });
@@ -345,7 +345,7 @@ Lembre-se: NUNCA repita pacientes anteriores. Varie todos os par√¢metros demogr√
 
       const startMs3 = Date.now();
       const response = await aiFetch({
-        model: "openai/gpt-5-mini",
+        model: "openai/gpt-4o-mini",
         messages: contextMessages,
         stream: false,
       });

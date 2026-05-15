@@ -285,7 +285,7 @@ A mensagem DEVE:
                 Authorization: `Bearer ${LOVABLE_API_KEY}`,
               },
               body: JSON.stringify({
-                model: "openai/gpt-5-mini",
+                model: "openai/gpt-4o-mini",
                 messages: [
                   { role: "system", content: "Você gera mensagens WhatsApp motivacionais e informativas para alunos de medicina em preparação para residência. Tom: direto, encorajador, com emojis. Sem markdown. Sem asteriscos. Sempre mencione as bancas alvo e o progresso real do aluno." },
                   { role: "user", content: prompt },
