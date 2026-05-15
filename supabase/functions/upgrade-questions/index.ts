@@ -65,19 +65,19 @@ Retorne APENAS um JSON válido:
     const data = await res.json();
     const raw = (data.choices?.[0]?.message?.content || "").replace(/```json\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(raw);
-    // Strip any alternatives that leaked into the statement
     let newStatement = (parsed.statement || "").trim();
-    // Remove patterns like "A) ...\nB) ...\nC) ..." or "a) ..." at the end
+    let newExplanation = (parsed.explanation || "").trim();
+
+    // Clean up alternatives if leaked
     newStatement = newStatement.replace(/\n\s*[A-Ea-e]\)\s+.+$/gms, "").trim();
-    // Remove patterns like "\nA. ...\nB. ..." 
     newStatement = newStatement.replace(/\n\s*[A-Ea-e]\.\s+.+$/gms, "").trim();
 
-    if (!newStatement || newStatement.length < 350) {
+    if (!newStatement || newStatement.length < 300) {
       console.warn(`Upgraded statement too short for ${q.id}: ${newStatement?.length}`);
       return null;
     }
 
-    return newStatement;
+    return { statement: newStatement, explanation: newExplanation };
   } catch (e) {
     console.error(`Upgrade error for ${q.id}:`, e);
     return null;
