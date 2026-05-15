@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
               message: `AI Fallback failed for year ${section.year}: ${aiResp.status}`,
               error_stack: errText,
               http_status: aiResp.status,
-              model_used: AI_MODELS.extraction
+              model_used: ALLOWED_MODELS.generation
             });
           }
         } catch (err) {
