@@ -163,6 +163,39 @@ const AdminQuestionReviewPanel = () => {
     setActionLoading(null);
   };
 
+  const handleApproveAllFiltered = async () => {
+    if (!window.confirm(`Deseja aprovar TODAS as ${total} questões que correspondem aos filtros atuais?`)) {
+      return;
+    }
+
+    setActionLoading("bulk-all");
+    try {
+      let query = supabase.from("questions_bank")
+        .update({ review_status: "approved" })
+        .neq("review_status", "approved");
+
+      if (statusFilter !== "all") {
+        query = query.eq("review_status", statusFilter);
+      }
+      if (qualityFilter !== "all") {
+        query = query.eq("quality_tier", qualityFilter);
+      }
+
+      const { error, count } = await query;
+      
+      if (error) throw error;
+      
+      toast({ title: "Sucesso", description: "Lote completo aprovado com sucesso" });
+      fetchQuestions();
+      fetchCounts();
+    } catch (error: any) {
+      console.error("Bulk approve all error:", error);
+      toast({ title: "Erro na aprovação em lote", description: error.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleUpgrade = async () => {
     setUpgradeLoading(true);
     try {
@@ -249,6 +282,13 @@ const AdminQuestionReviewPanel = () => {
           <Button size="sm" variant="outline" className="text-xs h-7"
             disabled={actionLoading === "bulk"} onClick={handleBulkApprove}>
             {actionLoading === "bulk" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aprovar Todas"}
+          </Button>
+        )}
+        {isActionableStatus && total > PAGE_SIZE && (
+          <Button size="sm" variant="outline" className="text-xs h-7 border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10"
+            disabled={actionLoading === "bulk-all"} onClick={handleApproveAllFiltered}>
+            {actionLoading === "bulk-all" ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
+            Aprovar Lote ({total})
           </Button>
         )}
         <Button size="sm" variant="outline" className="text-xs h-7 border-purple-500/30 text-purple-600 hover:bg-purple-500/10"
