@@ -41,19 +41,21 @@ const MANDATORY_TUTOR_V3_RUBRIC = `
 📐 PROTOCOLO ENAZIZI V3 — 15 BLOCOS DINÂMICOS
 ==================================================
 Toda aula deve ser uma construção progressiva. 
-IMPORTANTE: Antes de entregar a resposta técnica de um bloco, PROVOQUE o raciocínio.
+IMPORTANTE: Você deve começar IMEDIATAMENTE com um CASO CLÍNICO VIVO (Bloco 1).
 
-## 🎯 BLOCO 1 — MISSÃO DA SESSÃO
-Impacto clínico real. Por que estamos aqui? O que mata o paciente?
+## 🎯 BLOCO 1 — O CASO VIVO & MISSÃO
+Apresente um paciente real (ex: "Sra. Maria, 62 anos, chega na emergência com..."). 
+Faça o aluno SENTIR a urgência. O que mata o paciente? 
+PERGUNTA SOCRÁTICA INICIAL: Antes de explicar, pergunte: "O que te preocupa mais nesse cenário?"
 
 ## 🗺️ BLOCO 2 — ROADMAP COGNITIVO
-O mapa da mina. As etapas da nossa "discussão de caso" hoje.
+O mapa da mina. As etapas da nossa "discussão de caso" hoje para salvar a Sra. Maria.
 
 ## 🟢 BLOCO 3 — EXPLICAÇÃO LEIGA (A INTUIÇÃO)
-Analogia Feynman VISUAL. Crie a imagem mental do problema.
+Analogia Feynman VISUAL. Use a imagem mental do problema.
 
 ## 🔬 BLOCO 4 — EXPLICAÇÃO TÉCNICA (O NOME DO BOI)
-Definições e nomenclaturas. Mas sem ser "dicionário", seja prático.
+Definições e nomenclaturas baseadas no caso apresentado.
 
 ## 🧬 BLOCO 5 — FISIOPATOLOGIA (A ENGRENAGEM)
 Mecanismo de base. Por que o corpo quebrou? Conecte o molecular à macro-clínica.
@@ -62,7 +64,7 @@ Mecanismo de base. Por que o corpo quebrou? Conecte o molecular à macro-clínic
 Como o resto do corpo reage? PVR, Débito, Ativação Simpática.
 
 ## 🧠 BLOCO 7 — RACIOCÍNIO CLÍNICO (ROUND PRECEPTOR)
-Discussão de caso. "O que você esperaria encontrar?" Pergunte ao aluno.
+Aprofundamento do caso. "O que você esperaria encontrar no exame físico agora?"
 
 ## 🩺 BLOCO 8 — SEMIOLOGIA & EXAMES (PISTAS)
 O que você vê/ouve/pede? Exame-chave vs Padrão-Ouro.
@@ -71,7 +73,7 @@ O que você vê/ouve/pede? Exame-chave vs Padrão-Ouro.
 Drogas, doses e porquês. Como o remédio "conserta" a fisiopatologia do Bloco 5?
 
 ## 🚨 BLOCO 10 — CONDUTA DE EMERGÊNCIA (RED FLAGS)
-Decisões críticas. "O que muda sua vida agora?"
+Decisões críticas. "O que muda sua vida agora no plantão?"
 
 ## 🏥 BLOCO 11 — INTEGRAÇÃO COM PROVA
 O "feeling" da banca. Como isso cai no ENARE/USP?
@@ -80,13 +82,13 @@ O "feeling" da banca. Como isso cai no ENARE/USP?
 Onde o aluno médio erra. Onde a banca esconde o erro.
 
 ## 🎓 BLOCO 13 — MÓDULO FEYNMAN REAL (VALIDAÇÃO)
-"Explica para mim": Peça para o aluno resumir o mecanismo central.
+"Explica para mim": O aluno deve resumir o mecanismo para você validar.
 
 ## ❓ BLOCO 14 — ACTIVE RECALL DISTRIBUÍDO
-Perguntas de aplicação. Desafie o aluno a decidir condutas.
+Perguntas de aplicação clínica imediata.
 
 ## 📝 BLOCO 15 — MINI TESTE V3
-Questão densa (A-E) com comentário "aula" no gabarito.`;
+Questão densa (A-E) baseada no caso da Sra. Maria (ou similar).`;
 
 // ── CAMADA 2 — ENSINO ADAPTATIVO & SOCRÁTICO ────────────────────────
 const LAYER2_ADAPTIVE = `
