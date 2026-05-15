@@ -3,6 +3,8 @@
 
 export { getModelForTier, getRecommendedTier, getMaxTokensForTier, type ModelTier } from "./ai-model-tier.ts";
 export { buildCacheKey, getCachedContent, setCachedContent, logAiUsage } from "./ai-cache.ts";
+import { AI_MODELS, validateModel, getTokenParameterName, standardizeModelName } from "./ai-models.ts";
+import { logPipelineAlert } from "./pipeline-logger.ts";
 
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
