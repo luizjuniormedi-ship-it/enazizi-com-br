@@ -2,7 +2,7 @@
  * Shared helpers for API Assistente edge functions.
  * All functions use service_role for DB access.
  */
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
