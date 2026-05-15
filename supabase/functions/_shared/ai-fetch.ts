@@ -11,6 +11,13 @@ import { logPipelineAlert } from "./pipeline-logger.ts";
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 
+/**
+ * ENAZIZI PRODUCTION SAFE MODE
+ * When enabled, forces gpt-4o-mini, disables complex response_formats,
+ * and uses standard payloads to maximize stability.
+ */
+const PRODUCTION_SAFE_MODE = true;
+
 const OPENAI_MAX_TOKENS: Record<string, number> = {
   "gpt-4o-mini": 16384,
   "gpt-4o": 16384,
@@ -135,14 +142,24 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-  // 1. Normalize Model
-  const rawModel = options.model || ALLOWED_MODELS.generation;
+  // 1. Normalize Model & Apply Safe Mode
+  let rawModel = options.model || ALLOWED_MODELS.generation;
+  
+  if (PRODUCTION_SAFE_MODE) {
+    console.log("[SAFE_MODE] Overriding model to gpt-4o-mini");
+    rawModel = "gpt-4o-mini";
+  }
+  
   const normalizedModel = normalizeModel(rawModel);
   
   // 2. Build Payload
   const buildPayload = (model: string, isOpenAI = false) => {
     let maxTokens = options.maxTokens ?? 16384;
-    if (isOpenAI) {
+    let temperature = 0.7; // Standard temperature for stability
+    
+    if (PRODUCTION_SAFE_MODE) {
+      maxTokens = 1200; // Forced safe token limit
+    } else if (isOpenAI) {
       const modelClean = model.replace("openai/", "");
       const modelMax = OPENAI_MAX_TOKENS[modelClean] || 16384;
       maxTokens = Math.min(maxTokens, modelMax);
@@ -153,13 +170,22 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     const body: any = { 
       model: model.startsWith("openai/") || isOpenAI ? model : `openai/${model}`, 
       messages: options.messages, 
-      [tokenKey]: maxTokens 
+      [tokenKey]: maxTokens,
+      temperature
     };
     
     if (options.stream !== undefined) body.stream = options.stream;
-    if (options.tools) body.tools = options.tools;
-    if (options.tool_choice) body.tool_choice = options.tool_choice;
-    if (options.response_format) body.response_format = options.response_format;
+    
+    // Disable complex features in Safe Mode
+    if (!PRODUCTION_SAFE_MODE) {
+      if (options.tools) body.tools = options.tools;
+      if (options.tool_choice) body.tool_choice = options.tool_choice;
+      if (options.response_format) body.response_format = options.response_format;
+    } else {
+      if (options.tools || options.response_format) {
+        console.warn("[SAFE_MODE] Stripping tools/response_format from payload");
+      }
+    }
     
     return body;
   };
@@ -177,19 +203,22 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       severity: "critical",
       alert_type: "validation_error",
       model_used: normalizedModel,
-      metadata: { payload_error: validation.error }
+      metadata: { payload_error: validation.error, safe_mode: PRODUCTION_SAFE_MODE }
     });
     throw new Error(`VALIDATION_ERROR: ${validation.error}`);
   }
 
   // 4. Forensic Logs BEFORE call
   console.log("[AI_PIPELINE_BEFORE]", {
+    function: source,
     rawModel,
     normalizedModel,
     payloadModel: payload.model,
     provider: "lovable-gateway",
     messagesCount: options.messages.length,
-    response_format: !!options.response_format,
+    payloadSize: JSON.stringify(payload).length,
+    response_format: !!payload.response_format,
+    safe_mode: PRODUCTION_SAFE_MODE,
     timestamp: new Date().toISOString()
   });
 
@@ -214,11 +243,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
         "LovableAI",
       );
 
-      // Forensic Logs AFTER call
+      // Forensic Logs AFTER call (Success)
+      const duration = Date.now() - new Date(payload.timestamp || Date.now()).getTime(); // Approximate
       console.log("[AI_PIPELINE_AFTER]", {
         status: response.status,
         ok: response.ok,
         provider: "lovable-gateway",
+        success: true,
         timestamp: new Date().toISOString()
       });
 

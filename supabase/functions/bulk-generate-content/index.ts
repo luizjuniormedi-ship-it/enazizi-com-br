@@ -466,8 +466,12 @@ async function processNormalMode(jobId: string, body: any, userId: string, supab
     const { count: newCount } = await supabaseAdmin.from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true);
     const { count: flashcardCount } = await supabaseAdmin.from("flashcards").select("*", { count: "exact", head: true }).eq("is_global", true);
 
+    const finalStatus = (totalQ + totalF > 0) ? "completed" : "failed";
+    const finalError = (totalQ + totalF > 0) ? null : "Nenhuma questão ou flashcard foi gerado. O pipeline pode estar instável.";
+
     await supabaseAdmin.from("bulk_generation_jobs").update({
-      status: "completed",
+      status: finalStatus,
+      error: finalError,
       result: {
         message: `Geradas ${totalQ} questões e ${totalF} flashcards`,
         questions_added: totalQ, flashcards_added: totalF, total_questions: newCount,
