@@ -1,10 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS"
-}
+import { corsHeaders } from "../_shared/cors.ts"
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -15,7 +10,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       function: "search-real-questions",
-      stage: "BOOT_OK",
+      stage: "IMPORT_CORS_OK",
       timestamp: new Date().toISOString()
     }), {
       headers: {
@@ -27,7 +22,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: false,
       function: "search-real-questions",
-      stage: "BOOT_CATCH",
+      stage: "IMPORT_CORS_CATCH",
       error: String(err),
       stack: err instanceof Error ? err.stack : null
     }), {
