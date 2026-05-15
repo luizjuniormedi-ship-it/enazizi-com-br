@@ -73,8 +73,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "No text content found" }), { status: 400, headers: corsHeaders });
     }
 
-    // Clean up OCR artifacts: rejoin broken lines
-    fullText = fullText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    // Clean up OCR artifacts and sanitize database-incompatible characters (like null bytes)
+    fullText = fullText.replace(/\0/g, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
     // Split by year markers: look for standalone year numbers (2011-2025)
     const yearSections: { year: number; text: string }[] = [];
@@ -123,7 +123,53 @@ Deno.serve(async (req) => {
     }[] = [];
 
     for (const section of yearSections) {
-      const questions = parseExamQuestions(section.text);
+      let questions = parseExamQuestions(section.text);
+      
+      // Fallback: If regex finds nothing or too few questions (and section is large), use LLM
+      if ((questions.length < 5 && section.text.length > 5000) || questions.length === 0) {
+        console.log(`Regex found only ${questions.length} questions for year ${section.year}. Trying LLM fallback...`);
+        try {
+          // Dynamic import to use the shared helper
+          const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
+          
+          const prompt = `Extraia questões médicas do texto abaixo para o ano ${section.year}.
+          O texto é de uma prova do REVALIDA INEP.
+          Retorne um objeto JSON com um array "questions" contendo: statement, options (array de 4 ou 5), correctIndex (0-4), explanation, topic.
+          
+          TEXTO:
+          ${section.text.slice(0, 15000)}`;
+
+          const aiResp = await aiFetch({
+            model: "openai/gpt-4o-mini",
+            messages: [
+              { role: "system", content: "Você é um extrator de provas médicas especializado em REVALIDA." },
+              { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" }
+          });
+
+          if (aiResp.ok) {
+            const aiData = await aiResp.json();
+            const content = aiData.choices?.[0]?.message?.content || "{}";
+            const parsed = parseAiJson(content);
+            const llmQs = (parsed.questions || []).map((q: any) => ({
+              statement: q.statement,
+              options: q.options,
+              correctIndex: q.correctIndex ?? q.correct_index ?? 0,
+              explanation: q.explanation || "",
+              topic: q.topic || "Geral"
+            }));
+            
+            if (llmQs.length > questions.length) {
+              console.log(`LLM extracted ${llmQs.length} questions, replacing regex results.`);
+              questions = llmQs;
+            }
+          }
+        } catch (err) {
+          console.error(`LLM fallback failed for ${section.year}:`, err);
+        }
+      }
+
       if (questions.length > 0) {
         allResults.push({ year: section.year, questions });
       }
@@ -212,11 +258,11 @@ Deno.serve(async (req) => {
 
       for (let i = 0; i < newQuestions.length; i += BATCH_SIZE) {
         const batch = newQuestions.slice(i, i + BATCH_SIZE).map((q, idx) => ({
-          statement: q.statement,
-          options: q.options,
+          statement: q.statement.replace(/\0/g, ""),
+          options: q.options.map(opt => opt.replace(/\0/g, "")),
           correct_index: q.correctIndex,
-          explanation: q.explanation || "",
-          topic: q.topic || "Geral",
+          explanation: (q.explanation || "").replace(/\0/g, ""),
+          topic: (q.topic || "Geral").replace(/\0/g, ""),
           source: sourceTag,
           is_global: true,
           user_id: systemUserId,

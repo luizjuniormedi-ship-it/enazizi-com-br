@@ -67,10 +67,16 @@ async function extractPdfTextFromUrl(url: string): Promise<string> {
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
+    // Use dangerousAllowAnyCertificate to bypass SSL issues on official sites (like FGV/ENARE)
+    const client = Deno.createHttpClient({
+      dangerousAllowAnyCertificate: true,
+    });
+    
     const resp = await fetch(url, {
       signal: controller.signal,
       headers: { "User-Agent": "Mozilla/5.0" },
-    });
+      client,
+    } as any);
 
     if (!resp.ok) {
       throw new Error(`Falha ao baixar PDF (${resp.status})`);
@@ -322,7 +328,7 @@ Deno.serve(async (req) => {
     if (questions.length === 0) {
       console.log("Regex parsing failed, trying LLM extraction...");
       try {
-        const { aiFetch } = await import("../_shared/ai-fetch.ts");
+        const { aiFetch, parseAiJson } = await import("../_shared/ai-fetch.ts");
         const prompt = `Você é um extrator de questões médicas de alta precisão. 
         Abaixo está o texto extraído de um PDF de prova de residência médica. 
         Extraia TODAS as questões completas seguindo rigorosamente o formato JSON.
@@ -348,7 +354,7 @@ Deno.serve(async (req) => {
         if (aiResp.ok) {
           const aiData = await aiResp.json();
           const rawContent = aiData.choices?.[0]?.message?.content || "{}";
-          const parsed = JSON.parse(rawContent);
+          const parsed = parseAiJson(rawContent);
           questions = parsed.questions || [];
           console.log(`LLM extracted ${questions.length} questions.`);
         }
@@ -453,12 +459,12 @@ Deno.serve(async (req) => {
         }
 
         const { error: insErr } = await supabase.from("questions_bank").insert({
-          statement: q.statement,
-          options: opts,
+          statement: q.statement.replace(/\0/g, ""),
+          options: opts.map(o => String(o).replace(/\0/g, "")),
           correct_index: q.correct_index >= 0 ? q.correct_index : 0,
-          topic: q.topic || banca || "Geral",
-          subtopic: q.subtopic || "Geral",
-          explanation: q.explanation || "",
+          topic: (q.topic || banca || "Geral").replace(/\0/g, ""),
+          subtopic: (q.subtopic || "Geral").replace(/\0/g, ""),
+          explanation: (q.explanation || "").replace(/\0/g, ""),
           source: `${banca || "external"}_${year || "unknown"}`,
           source_type,
           permission_type,

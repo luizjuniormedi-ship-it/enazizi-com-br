@@ -183,12 +183,12 @@ Retorne SOMENTE JSON válido no formato:
 
           rows.push({
             user_id: userId,
-            statement: q.statement.trim(),
-            options: q.options.map((o: string) => o.trim()),
+            statement: q.statement.replace(/\0/g, "").trim(),
+            options: q.options.map((o: string) => String(o).replace(/\0/g, "").trim()),
             correct_index: typeof q.correct_index === "number" ? q.correct_index : null,
-            explanation: q.explanation || null,
-            topic: q.topic || "Cardiologia",
-            source: q.source || "docx-import",
+            explanation: (q.explanation || "").replace(/\0/g, ""),
+            topic: (q.topic || "Cardiologia").replace(/\0/g, ""),
+            source: (q.source || "docx-import").replace(/\0/g, ""),
             is_global: true,
             review_status: "pending",
             image_url: imageUrl,
