@@ -135,7 +135,10 @@ const registerProductionServiceWorker = () => {
 };
 
 const boot = async () => {
+  console.log("⚙️ [System] Booting...", { shouldRedirect: shouldRedirectToCanonical });
+  
   if (shouldRedirectToCanonical) {
+    console.warn("🔀 [System] Redirecting to canonical domain...");
     window.location.replace(`https://${canonical}${window.location.pathname}${window.location.search}`);
     return;
   }
