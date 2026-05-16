@@ -137,7 +137,8 @@ const registerProductionServiceWorker = () => {
 const boot = async () => {
   console.log("⚙️ [System] Booting...", { shouldRedirect: shouldRedirectToCanonical });
   
-  if (shouldRedirectToCanonical && !window.location.hostname.includes("lovable")) {
+  // Redirect logic disabled in development/preview to prevent boot loops
+  if (shouldRedirectToCanonical && !window.location.hostname.includes("lovable") && !window.location.hostname.includes("gptengineer") && !window.location.hostname.includes("localhost")) {
     console.warn("🔀 [System] Redirecting to canonical domain...");
     window.location.replace(`https://${canonical}${window.location.pathname}${window.location.search}`);
     return;
