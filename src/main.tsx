@@ -174,8 +174,9 @@ const boot = async () => {
   devLog(`[ENAZIZI] Release: ${APP_RELEASE}`);
 
   if (isPreviewHost || isInIframe) {
-    await unregisterServiceWorkers();
+    // In preview/iframe, mount immediately and clean up SW in background to avoid blocking boot
     mountApp();
+    void unregisterServiceWorkers();
     return;
   }
 
