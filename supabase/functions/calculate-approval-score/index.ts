@@ -26,6 +26,7 @@ async function computeAndPersist(adminClient: ReturnType<typeof createClient>, u
   const [
     practiceRes, domainRes, reviewRes, examRes,
     errorRes, streakRes, clinicalRes, diagnosticRes,
+    triPracticeRes
   ] = await Promise.all([
     adminClient.from("practice_attempts").select("correct").eq("user_id", userId).limit(1000),
     adminClient.from("medical_domain_map").select("domain_score, questions_answered").eq("user_id", userId),
@@ -35,6 +36,18 @@ async function computeAndPersist(adminClient: ReturnType<typeof createClient>, u
     adminClient.from("user_gamification").select("current_streak, longest_streak").eq("user_id", userId).maybeSingle(),
     adminClient.from("simulation_history").select("final_score").eq("user_id", userId).limit(20),
     adminClient.from("diagnostic_sessions").select("score").eq("user_id", userId).order("created_at", { ascending: false }).limit(1),
+    // Joined fetch for TRI calculation
+    adminClient.from("practice_attempts")
+        .select(`
+            correct,
+            questions_bank (
+                tri_difficulty_score,
+                tri_discrimination,
+                tri_guessing
+            )
+        `)
+        .eq("user_id", userId)
+        .limit(100)
   ]);
 
   const attempts = practiceRes.data || [];
