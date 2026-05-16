@@ -1,11 +1,11 @@
 // ai-pipeline-test - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
 // Mission: End-to-end smoke testing for AI and Database infrastructure.
 
-import { enterpriseEdgeHandler, EnterpriseContext } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
-Deno.serve(enterpriseEdgeHandler("ai-pipeline-test", async ({ logger, supabaseAdmin }: EnterpriseContext) => {
+Deno.serve(enterpriseEdgeHandler("ai-pipeline-test", async ({ logger, supabaseAdmin }) => {
   logger.info("SMOKE_TEST_START", "Initiating pipeline diagnostics");
 
   const results: any = {
@@ -22,7 +22,7 @@ Deno.serve(enterpriseEdgeHandler("ai-pipeline-test", async ({ logger, supabaseAd
     }, logger, supabaseAdmin);
     
     results.tests.push({ name: "AI_Generation", ok: !!aiResp, status: "healthy" });
-  } catch (err) {
+  } catch (err: any) {
     results.tests.push({ name: "AI_Generation", ok: false, error: err.message });
   }
 
@@ -30,7 +30,7 @@ Deno.serve(enterpriseEdgeHandler("ai-pipeline-test", async ({ logger, supabaseAd
   try {
     const { count, error } = await supabaseAdmin.from("questions_bank").select("id", { count: "exact", head: true }).limit(1);
     results.tests.push({ name: "Database_Connectivity", ok: !error, count, status: error ? "degraded" : "healthy" });
-  } catch (err) {
+  } catch (err: any) {
     results.tests.push({ name: "Database_Connectivity", ok: false, error: err.message });
   }
 
@@ -41,4 +41,4 @@ Deno.serve(enterpriseEdgeHandler("ai-pipeline-test", async ({ logger, supabaseAd
     status: allOk ? 200 : 500,
     headers: { "Content-Type": "application/json" }
   });
-});
+}));
