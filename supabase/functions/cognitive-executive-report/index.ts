@@ -23,18 +23,25 @@ serve(async (req) => {
             analyticsRes,
             governanceRes,
             tutorEffRes,
-            plannerEffRes
+            plannerEffRes,
+            incidentsRes,
+            costsRes
         ] = await Promise.all([
             supabase.from("cognitive_analytics").select("*").limit(100),
             supabase.from("ai_governance_logs").select("*").order("audited_at", { ascending: false }).limit(50),
             supabase.from("tutor_effectiveness").select("pedagogical_impact_score, average_depth_score, hallucination_detected"),
-            supabase.from("planner_effectiveness").select("progress_delta, accepted")
+            supabase.from("planner_effectiveness").select("progress_delta, accepted"),
+            supabase.from("self_healing_incidents").select("*").order("detected_at", { ascending: false }).limit(20),
+            supabase.from("ai_cost_metrics").select("cost_usd, tokens_input, tokens_output")
         ]);
 
         const totalUsers = analyticsRes.data?.length || 0;
         const avgRetention = analyticsRes.data?.reduce((s, a) => s + (a.overall_retention || 0), 0) / (totalUsers || 1);
         const avgRecovery = analyticsRes.data?.reduce((s, a) => s + (a.recovery_success_rate || 0), 0) / (totalUsers || 1);
         const highRiskChurn = analyticsRes.data?.filter(a => (a.fatigue_score || 0) > 80 || a.overload_flag).length || 0;
+
+        const totalCost = (costsRes.data || []).reduce((s, c) => s + Number(c.cost_usd || 0), 0);
+        const totalTokens = (costsRes.data || []).reduce((s, c) => s + (c.tokens_input || 0) + (c.tokens_output || 0), 0);
 
         const report = {
             cognitive: {
@@ -45,14 +52,21 @@ serve(async (req) => {
                 active_overload_count: analyticsRes.data?.filter(a => a.overload_flag).length || 0
             },
             ai_governance: {
-                total_incidents_30d: governanceRes.data?.length || 0,
-                hallucination_incidents: governanceRes.data?.filter(g => g.incident_type === 'hallucination').length || 0,
+                total_incidents_30d: (governanceRes.data?.length || 0) + (incidentsRes.data?.length || 0),
+                hallucination_incidents: (governanceRes.data?.filter(g => g.incident_type === 'hallucination').length || 0) + 
+                                       (incidentsRes.data?.filter(i => i.incident_type === 'hallucination').length || 0),
                 drift_incidents: governanceRes.data?.filter(g => g.incident_type === 'drift').length || 0,
+                self_healing_incidents: incidentsRes.data || [],
                 average_tutor_impact: tutorEffRes.data?.reduce((s, t) => s + (t.pedagogical_impact_score || 0), 0) / (tutorEffRes.data?.length || 1)
             },
             planner: {
                 acceptance_rate: (plannerEffRes.data?.filter(p => p.accepted).length || 0) / (plannerEffRes.data?.length || 1) * 100,
                 average_progress_delta: plannerEffRes.data?.reduce((s, p) => s + (p.progress_delta || 0), 0) / (plannerEffRes.data?.length || 1)
+            },
+            finances: {
+                total_ai_cost_usd: totalCost,
+                total_tokens: totalTokens,
+                cost_per_user: totalCost / (totalUsers || 1)
             }
         };
 

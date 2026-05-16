@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Brain, Activity, ShieldAlert, Zap, BarChart3, TrendingUp } from "lucide-react";
+import { Brain, Activity, ShieldAlert, Zap, BarChart3, TrendingUp, DollarSign, HeartPulse } from "lucide-react";
 
 export function ExecutiveCognitiveDashboard() {
     const { data: report, isLoading } = useQuery({
@@ -85,27 +85,47 @@ export function ExecutiveCognitiveDashboard() {
                         <div className="text-[10px] text-white/20 mt-2 font-bold">SCORE PEDAGÓGICO MÉDIO</div>
                     </CardContent>
                 </Card>
+                <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                            <ShieldAlert className="h-3 w-3" /> Governance Score
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-black text-blue-400">
+                            {Math.max(0, 100 - (report?.ai_governance?.total_incidents_30d * 2 || 0)).toFixed(0)}
+                        </div>
+                        <div className="text-[10px] text-white/20 mt-2 font-bold uppercase">SISTEMA RESILIENTE</div>
+                    </CardContent>
+                </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="bg-white/5 border-white/10">
                     <CardHeader>
                         <CardTitle className="text-sm font-black tracking-tight flex items-center gap-2">
-                            <BarChart3 className="h-4 w-4 text-primary" /> IA Governance & Quality
+                            <BarChart3 className="h-4 w-4 text-primary" /> IA Governance & Cost
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                            <span className="text-xs text-white/60">Custo Total IA</span>
+                            <span className="font-bold text-emerald-400 flex items-center gap-1">
+                                <DollarSign className="h-3 w-3" />
+                                {report?.finances?.total_ai_cost_usd?.toFixed(2) || "0.00"}
+                            </span>
+                        </div>
                         <div className="flex justify-between items-center p-3 rounded-xl bg-white/5">
-                            <span className="text-xs text-white/60">Incidentes de Alucinação (30d)</span>
+                            <span className="text-xs text-white/60">Custo Médio / Aluno</span>
+                            <span className="font-bold text-white">${report?.finances?.cost_per_user?.toFixed(3) || "0.00"}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 rounded-xl bg-white/5">
+                            <span className="text-xs text-white/60">Incidentes de Alucinação</span>
                             <span className="font-bold text-rose-400">{report?.ai_governance?.hallucination_incidents || 0}</span>
                         </div>
                         <div className="flex justify-between items-center p-3 rounded-xl bg-white/5">
-                            <span className="text-xs text-white/60">Drift Pedagógico Detectado</span>
-                            <span className="font-bold text-amber-400">{report?.ai_governance?.drift_incidents || 0}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 rounded-xl bg-white/5">
-                            <span className="text-xs text-white/60">Taxa de Aceitação Planner</span>
-                            <span className="font-bold text-emerald-400">{(report?.planner?.acceptance_rate || 0).toFixed(1)}%</span>
+                            <span className="text-xs text-white/60">Tokens Processados</span>
+                            <span className="font-bold text-primary">{(report?.finances?.total_tokens / 1000 || 0).toFixed(1)}k</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -113,12 +133,38 @@ export function ExecutiveCognitiveDashboard() {
                 <Card className="bg-white/5 border-white/10">
                     <CardHeader>
                         <CardTitle className="text-sm font-black tracking-tight flex items-center gap-2">
-                            <Brain className="h-4 w-4 text-primary" /> Cognitive Pressure Heatmap
+                            <HeartPulse className="h-4 w-4 text-rose-500" /> Self-Healing Monitor
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {report?.ai_governance?.self_healing_incidents?.length > 0 ? (
+                            report.ai_governance.self_healing_incidents.map((incident: any) => (
+                                <div key={incident.id} className="p-3 rounded-xl bg-white/5 border-l-2 border-rose-500 text-[10px]">
+                                    <div className="flex justify-between mb-1">
+                                        <span className="font-bold uppercase">{incident.incident_type}</span>
+                                        <span className="text-white/40">{new Date(incident.detected_at).toLocaleTimeString()}</span>
+                                    </div>
+                                    <p className="text-white/60 line-clamp-1">{incident.feature_name}: {incident.mitigation_details}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="h-32 flex items-center justify-center border border-dashed border-white/10 rounded-2xl text-[10px] text-emerald-500/40 font-bold uppercase tracking-widest">
+                                System Status: Healthy
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                        <CardTitle className="text-sm font-black tracking-tight flex items-center gap-2">
+                            <Brain className="h-4 w-4 text-primary" /> Autonomous Interventions
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-48 flex items-center justify-center border border-dashed border-white/10 rounded-2xl text-[10px] text-white/20 font-bold uppercase tracking-widest">
-                            [ Visual Heatmap Component ]
+                        <div className="h-48 flex items-center justify-center border border-dashed border-white/10 rounded-2xl text-[10px] text-white/20 font-bold uppercase tracking-widest text-center px-4">
+                            Autonomous Recovery Agent Active<br/>
+                            <span className="text-emerald-500">Monitoring fatigue & retention signals...</span>
                         </div>
                     </CardContent>
                 </Card>
