@@ -85,6 +85,19 @@ export function ExecutiveCognitiveDashboard() {
                         <div className="text-[10px] text-white/20 mt-2 font-bold">SCORE PEDAGÓGICO MÉDIO</div>
                     </CardContent>
                 </Card>
+                <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                            <ShieldAlert className="h-3 w-3" /> Governance Score
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-black text-blue-400">
+                            {Math.max(0, 100 - (report?.ai_governance?.total_incidents_30d * 2 || 0)).toFixed(0)}
+                        </div>
+                        <div className="text-[10px] text-white/20 mt-2 font-bold uppercase">SISTEMA RESILIENTE</div>
+                    </CardContent>
+                </Card>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
