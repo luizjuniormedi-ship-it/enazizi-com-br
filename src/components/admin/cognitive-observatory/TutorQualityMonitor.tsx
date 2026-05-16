@@ -86,7 +86,7 @@ export const TutorQualityMonitor: React.FC = () => {
                                         Missing Blocks: {(log.details as any)?.missingBlocks?.join(', ') || 'N/A'}
                                     </p>
                                     <div className="text-[9px] font-mono text-slate-600">
-                                        REQ_ID: {log.details?.requestId?.slice(0, 8)}...
+                                        REQ_ID: {(log.details as any)?.requestId?.slice(0, 8)}...
                                     </div>
                                 </div>
                             </div>
