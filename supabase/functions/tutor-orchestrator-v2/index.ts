@@ -9,22 +9,21 @@ const corsHeaders = {
 };
 
 const STAGES = [
-  'mission',
-  'roadmap',
-  'layman',
-  'technical',
-  'pathophysiology',
-  'systemic_integration',
-  'clinical_reasoning',
-  'semiology_exams',
-  'pharmacology',
-  'emergency_conduct',
-  'exam_integration',
-  'exam_tricks',
-  'feynman_module',
-  'active_recall',
-  'mini_test',
-  'summary'
+  'mission',             // Bloco 1
+  'roadmap',             // Bloco 2
+  'layman',              // Bloco 3
+  'technical',           // Bloco 4
+  'pathophysiology',     // Bloco 5
+  'clinical_reasoning',  // Bloco 6
+  'differential_diagnosis', // Bloco 7
+  'exam_tricks',         // Bloco 8
+  'guidelines',          // Bloco 9
+  'guided_question',     // Bloco 10
+  'commented_correction',// Bloco 11
+  'active_recall',       // Bloco 12
+  'flashcards',          // Bloco 13
+  'summary',             // Bloco 14
+  'recovery_plan'        // Bloco 15
 ];
 
 serve(async (req) => {
