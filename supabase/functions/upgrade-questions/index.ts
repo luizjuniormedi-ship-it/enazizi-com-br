@@ -114,7 +114,29 @@ Deno.serve(async (req, context) => {
           if (!res.ok) throw new Error(`AI error ${res.status}`);
 
           const aiData = await res.json();
-          const parsed = parseAiJson(aiData.choices?.[0]?.message?.content || "");
+          const aiContent = aiData.choices?.[0]?.message?.content || "";
+          
+          if (!aiContent) throw new Error("AI returned empty content");
+          
+          let parsed;
+          try {
+            parsed = parseAiJson(aiContent);
+          } catch (jsonErr) {
+            console.error(`[upgrade-questions] JSON parse error for ${q.id}:`, jsonErr, "Raw content:", aiContent);
+            // Fallback: Tentar extrair statement e explanation via regex se o JSON falhar
+            const statementMatch = aiContent.match(/"statement"\s*:\s*"([\s\S]*?)"/i);
+            const explanationMatch = aiContent.match(/"explanation"\s*:\s*"([\s\S]*?)"/i);
+            
+            if (statementMatch && statementMatch[1]) {
+              parsed = { 
+                statement: statementMatch[1], 
+                explanation: explanationMatch ? explanationMatch[1] : "" 
+              };
+              console.log(`[upgrade-questions] Recovered data via regex for ${q.id}`);
+            } else {
+              throw jsonErr;
+            }
+          }
           
           if (parsed.statement && parsed.statement.length > 200) {
             await supabaseAdmin.from("questions_bank").update({
