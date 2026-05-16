@@ -495,7 +495,7 @@ function isStatusCheck(url: URL): string | null {
 }
 
 // ── Main handler ──
-Deno.serve(async (req) => {
+Deno.serve(async (req, context) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -563,7 +563,7 @@ Deno.serve(async (req) => {
     });
 
     // Start background processing
-    EdgeRuntime.waitUntil(
+    context.waitUntil(
       (async () => {
         try {
           if (mode === "equalize") {
