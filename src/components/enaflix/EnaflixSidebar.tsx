@@ -59,6 +59,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: PlayCircle },
       { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
+      { to: "/dashboard/proficiencia", label: "Proficiência", icon: GraduationCap },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
       { to: "/dashboard/mnemonico", label: "Mnemônicos", icon: Brain, badge: "Premium" },
       { to: "/dashboard/sessao-estudo", label: "Tutor IA", icon: Sparkles, badge: "Premium" },
