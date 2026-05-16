@@ -1,5 +1,3 @@
-// ai-pipeline-test - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
-// Mission: End-to-end smoke testing for AI and Database infrastructure.
 
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
@@ -13,20 +11,43 @@ Deno.serve(enterpriseEdgeHandler("ai-pipeline-test", async ({ logger, supabaseAd
     tests: []
   };
 
-  // Test 1: AI Generation
+  // Test 1: AI Generation (Primary)
   try {
     const aiResp = await callAi({
       model: ALLOWED_MODELS.generation,
       messages: [{ role: "user", content: "Ping" }],
-      max_tokens: 10
+      max_tokens: 5
     }, logger, supabaseAdmin);
     
-    results.tests.push({ name: "AI_Generation", ok: !!aiResp, status: "healthy" });
+    results.tests.push({ 
+      name: "AI_Generation_Primary", 
+      ok: !!aiResp, 
+      status: "healthy",
+      model: ALLOWED_MODELS.generation
+    });
   } catch (err: any) {
-    results.tests.push({ name: "AI_Generation", ok: false, error: err.message });
+    results.tests.push({ name: "AI_Generation_Primary", ok: false, error: err.message });
   }
 
-  // Test 2: Database
+  // Test 2: AI Reasoning (Advanced)
+  try {
+    const aiResp = await callAi({
+      model: ALLOWED_MODELS.reasoning,
+      messages: [{ role: "user", content: "Ping" }],
+      max_tokens: 5
+    }, logger, supabaseAdmin);
+    
+    results.tests.push({ 
+      name: "AI_Reasoning_HighPerf", 
+      ok: !!aiResp, 
+      status: "healthy",
+      model: ALLOWED_MODELS.reasoning
+    });
+  } catch (err: any) {
+    results.tests.push({ name: "AI_Reasoning_HighPerf", ok: false, error: err.message });
+  }
+
+  // Test 3: Database
   try {
     const { count, error } = await supabaseAdmin.from("questions_bank").select("id", { count: "exact", head: true }).limit(1);
     results.tests.push({ name: "Database_Connectivity", ok: !error, count, status: error ? "degraded" : "healthy" });

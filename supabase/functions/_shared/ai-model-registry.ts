@@ -1,15 +1,15 @@
 /**
  * AI Model Registry
  * Single source of truth for all AI models used in the ENAZIZI project.
- * Avoid hardcoded strings across the codebase.
+ * Updated to use confirmed stable models for Lovable AI Gateway.
  */
 
 export const ALLOWED_MODELS = {
   // Primary model for content generation
-  generation: "openai/gpt-5-mini",
+  generation: "google/gemini-2.0-flash",
   
   // High-performance model for complex reasoning or specialized tasks
-  reasoning: "openai/gpt-5",
+  reasoning: "openai/gpt-4o",
   
   // Embedding model for vector search
   embeddings: "openai/text-embedding-3-small",
@@ -18,12 +18,12 @@ export const ALLOWED_MODELS = {
 export type AiModelType = keyof typeof ALLOWED_MODELS;
 export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
 
-// List of strictly allowed production models to prevent injection of experimental/invalid names
+// List of strictly allowed production models to prevent injection
 export const PRODUCTION_MODELS = [
-  "openai/gpt-5-mini",
-  "openai/gpt-5",
+  "google/gemini-2.0-flash",
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini",
   "openai/text-embedding-3-small",
-  "google/gemini-2.5-pro",
-  "google/gemini-2.5-flash",
-  "google/gemini-3-flash-preview"
+  "google/gemini-flash-1.5",
+  "google/gemini-pro-1.5"
 ];

@@ -29,14 +29,12 @@ export function validateModel(model: string): boolean {
 
 /**
  * Returns the correct token parameter name based on the model.
- * Lovable Gateway models (gpt-5*) and reasoning models (o1, o3) use 'max_completion_tokens'.
- * Standard legacy models use 'max_tokens'.
+ * Only o1/o3 and specific new generation models use 'max_completion_tokens'.
  */
 export function getTokenParameterName(model: string): string {
   const isNewModel = /^o[13]/i.test(model) || 
                     model.includes("/o1") || 
-                    model.includes("/o3") ||
-                    model.includes("gpt-5"); // All gpt-5 models use max_completion_tokens
+                    model.includes("/o3");
   return isNewModel ? "max_completion_tokens" : "max_tokens";
 }
 

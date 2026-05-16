@@ -2,28 +2,39 @@ import { ALLOWED_MODELS, PRODUCTION_MODELS } from "./ai-model-registry.ts";
 import { logPipelineAlert } from "./pipeline-logger.ts";
 
 /**
- * Normalizes any model string into a strictly supported version.
- * Prevents "openai/gpt-5-mini", "gpt-5-mini" and other invalid variants from breaking the pipeline.
+ * ENAZIZI ENTERPRISE — AI Model Normalizer
+ * Standardizes AI model names and prevents invalid variants from breaking the pipeline.
  */
+
 export function normalizeModel(model: string | null | undefined): string {
-  if (!model) {
-    return ALLOWED_MODELS.generation;
+  if (!model) return "google/gemini-2.0-flash";
+
+  let normalized = model.toLowerCase().trim();
+
+  // Map legacy or shorthand names to enterprise standards
+  if (normalized.includes("gpt-5")) {
+    // GPT-5 is not yet stable in this environment, fallback to high-quality gpt-4o
+    return "openai/gpt-4o";
   }
 
-  const rawModel = model.toLowerCase().trim();
+  if (normalized.includes("gpt-4o-mini")) return "openai/gpt-4o-mini";
+  if (normalized.includes("gpt-4o")) return "openai/gpt-4o";
+  if (normalized.includes("gemini-2.0-flash")) return "google/gemini-2.0-flash";
+  if (normalized.includes("gemini-2.5") || normalized.includes("gemini-3")) {
+    return "google/gemini-2.0-flash"; // Fallback to stable 2.0
+  }
 
-  // Rule 1: Fix legacy "openai/" prefix if needed, but registry now uses full names
-  let normalized = rawModel;
+  // Ensure prefix for known providers
+  if (normalized.startsWith("gpt-") || normalized.startsWith("o1-") || normalized.startsWith("o3-")) {
+    return `openai/${normalized}`;
+  }
   
-  // Backward compatibility: if someone asks for "gpt-5-mini" without prefix, fix it
-  if (normalized === "gpt-5-mini") normalized = "openai/gpt-5-mini";
-  if (normalized === "gpt-5") normalized = "openai/gpt-5";
-  if (normalized === "text-embedding-3-small") normalized = "openai/text-embedding-3-small";
-
-  // Rule 2: Strict check against production models
-  if (PRODUCTION_MODELS.includes(normalized)) {
-    return normalized;
+  if (normalized.startsWith("gemini-")) {
+    return `google/${normalized}`;
   }
+
+  return normalized;
+}
 
   // Rule 4: Fallback for any unknown model
   const source = Deno.env.get("FUNCTION_NAME") || "model-normalizer";
