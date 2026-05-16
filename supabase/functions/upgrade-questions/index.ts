@@ -14,7 +14,7 @@ Deno.serve(async (req, context) => {
 
   const startTime = Date.now();
   const correlationId = crypto.randomUUID();
-  console.log(`[upgrade-questions] REQUEST_START correlationId=${correlationId}`);
+  console.log(`[upgrade-questions] REQUEST_START correlationId=${correlationId} method=${req.method}`);
 
   try {
     console.log("[upgrade-questions] STEP: Loading core dependencies");
