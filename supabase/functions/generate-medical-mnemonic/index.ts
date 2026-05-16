@@ -88,7 +88,7 @@ interface ConsolidatedOutput {
 // CONSTANTS
 // ══════════════════════════════════════════════════
 
-const OPENAI_MODEL = "openai/gpt-5-mini";
+const OPENAI_MODEL = ALLOWED_MODELS.generation;
 const OPENAI_TEMP = 1.0; 
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;

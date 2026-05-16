@@ -1,11 +1,13 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const MODELS_TO_TEST = [
-  "gpt-4o",
-  "gpt-4o-mini"
+  ALLOWED_MODELS.generation,
+  ALLOWED_MODELS.reasoning,
+  "openai/gpt-4o-mini"
 ];
 
 serve(async (req) => {
@@ -14,15 +16,16 @@ serve(async (req) => {
   for (const model of MODELS_TO_TEST) {
     const start = Date.now();
     try {
-      const response = await fetch(`https://api.lovable.dev/v1/ai/chat?model=${model}`, {
+      const response = await fetch("https://api.lovable.dev/v1/ai/chat", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          model: model,
           messages: [{ role: "user", content: "hi" }],
-          max_tokens: 10
+          max_tokens: 5
         }),
       });
       
@@ -33,7 +36,7 @@ serve(async (req) => {
         model,
         status: response.status,
         duration,
-        response: data.substring(0, 150)
+        response: data.substring(0, 200)
       });
     } catch (e) {
       results.push({

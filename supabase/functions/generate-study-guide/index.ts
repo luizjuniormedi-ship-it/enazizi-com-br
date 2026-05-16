@@ -27,7 +27,7 @@ serve(async (req) => {
       });
     }
 
-    const MODEL = "openai/gpt-5-mini";
+    const MODEL = ALLOWED_MODELS.generation;
     const cacheKey = buildCacheKey({ specialty, topic, extra: `study-guide-${depth || "completo"}` });
 
     // 1. Try cache
