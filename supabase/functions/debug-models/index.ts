@@ -1,13 +1,12 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const MODELS_TO_TEST = [
-  ALLOWED_MODELS.generation,
-  ALLOWED_MODELS.reasoning,
-  "openai/gpt-4o-mini"
+  "gpt-4o",
+  "gpt-4o-mini",
+  "gemini-2.0-flash"
 ];
 
 serve(async (req) => {
