@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { getTokenParameterName } from "../_shared/ai-models.ts";
 import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
+import { sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
