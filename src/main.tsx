@@ -15,9 +15,9 @@ import "./index.css";
 import "./styles/enaflix-tokens.css";
 
 /* ENAZIZI v2.3 */
-console.error("🔥 APP_BUILD_ID", {
-  build: "FORENSE_REAL_V1",
-  ts: Date.now()
+console.log("🚀 [System] Bootstrap sequence starting...", {
+  ts: Date.now(),
+  host: window.location.hostname
 });
 
 if ('serviceWorker' in navigator) {
@@ -34,7 +34,10 @@ const shouldRedirectToCanonical =
   !window.location.hostname.includes("localhost") &&
   !window.location.hostname.includes("id-preview--") &&
   !window.location.hostname.includes("lovableproject.com") &&
-  !window.location.hostname.includes("lovable.app");
+  !window.location.hostname.includes("lovable.app") &&
+  !window.location.hostname.includes("lovable.dev") &&
+  !window.location.hostname.includes("gptengineer.app") &&
+  !window.location.hostname.includes("ngrok");
 
 const isInIframe = (() => {
   try {
