@@ -6,7 +6,7 @@ import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
-export default enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, supabaseAdmin }: EnterpriseContext) => {
+Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, supabaseAdmin }: EnterpriseContext) => {
   // 1. AUTH
   const { user } = await requireAuth(req);
   

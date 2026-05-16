@@ -4,7 +4,7 @@
 import { enterpriseEdgeHandler, EnterpriseContext } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
 
-export default enterpriseEdgeHandler("official-exam-ingestion", async ({ req, logger, supabaseAdmin }: EnterpriseContext) => {
+Deno.serve(enterpriseEdgeHandler("official-exam-ingestion", async ({ req, logger, supabaseAdmin }: EnterpriseContext) => {
   // 1. AUTH & ADMIN
   const { user } = await requireAdmin(req);
   logger.info("AUTH", "Admin authenticated", { userId: user.id });

@@ -4,7 +4,7 @@
 import { enterpriseEdgeHandler, EnterpriseContext } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 
-export default enterpriseEdgeHandler("tutor-context-builder", async ({ req, logger, supabaseAdmin }: EnterpriseContext) => {
+Deno.serve(enterpriseEdgeHandler("tutor-context-builder", async ({ req, logger, supabaseAdmin }: EnterpriseContext) => {
   // 1. AUTH
   const { user } = await requireAuth(req);
   logger.info("AUTH", "User authenticated", { userId: user.id });

@@ -7,7 +7,7 @@ import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { parseAiJson, sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
-export default enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, waitUntil, correlation }: EnterpriseContext) => {
+Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, waitUntil, correlation, supabaseAdmin }: EnterpriseContext) => {
   // 1. AUTH & ADMIN CHECK
   const { user, supabaseAdmin } = await requireAdmin(req);
   logger.info("AUTH", "Admin authenticated", { userId: user.id });

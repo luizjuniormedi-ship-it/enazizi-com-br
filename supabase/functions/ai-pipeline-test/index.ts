@@ -5,7 +5,7 @@ import { enterpriseEdgeHandler, EnterpriseContext } from "../_shared/enterprise-
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
-export default enterpriseEdgeHandler("ai-pipeline-test", async ({ logger, supabaseAdmin }: EnterpriseContext) => {
+Deno.serve(enterpriseEdgeHandler("ai-pipeline-test", async ({ logger, supabaseAdmin }: EnterpriseContext) => {
   logger.info("SMOKE_TEST_START", "Initiating pipeline diagnostics");
 
   const results: any = {

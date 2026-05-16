@@ -20,7 +20,7 @@ const SPECIALTIES = [
   "Terapia Intensiva",
 ];
 
-export default enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, waitUntil, correlation }: EnterpriseContext) => {
+Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, waitUntil, correlation, supabaseAdmin }: EnterpriseContext) => {
   // 1. AUTH & ADMIN CHECK
   const { user, supabaseAdmin } = await requireAdmin(req);
   logger.info("AUTH", "Admin authenticated", { userId: user.id });
