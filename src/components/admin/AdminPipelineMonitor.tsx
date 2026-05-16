@@ -117,6 +117,7 @@ export default function AdminPipelineMonitor() {
       const { data } = await supabase
         .from("pipeline_alerts" as any)
         .select("*")
+        .or(`acknowledged.eq.false,created_at.gt.${new Date(Date.now() - 7 * 86400000).toISOString()}`)
         .order("created_at", { ascending: false })
         .limit(30);
       return (data as any) || [];

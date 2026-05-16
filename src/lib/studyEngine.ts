@@ -204,6 +204,14 @@ async function computeApprovalScore(userId: string, practiceData: any[], examDat
 
 // ── Apply weights to limit slots per type ─────────────────────
 function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTotal: number): StudyRecommendation[] {
+  // Validate recs: filter out those without canonical IDs or required fields
+  const validRecs = recs.filter(r => {
+    const hasId = r.id && r.id !== "undefined" && r.id !== "null";
+    const hasTopic = !!r.topic;
+    if (!hasId) console.warn("[StudyEngine] Filtering invalid rec without ID:", r);
+    return hasId && hasTopic;
+  });
+
   const slotReview = Math.max(1, Math.round(maxTotal * weights.reviewWeight));
   const slotQuestions = Math.max(1, Math.round(maxTotal * weights.questionsWeight));
   const slotClinical = Math.round(maxTotal * weights.practicalWeight);
@@ -223,7 +231,7 @@ function applyWeights(recs: StudyRecommendation[], weights: PlanWeights, maxTota
   };
 
   const result: StudyRecommendation[] = [];
-  for (const rec of recs) {
+  for (const rec of validRecs) {
     if (result.length >= maxTotal) break;
     const b = rec.type;
     if ((buckets[b] || 0) < (limits[b] || 2)) {

@@ -79,6 +79,9 @@ const AdminQuestionReviewPanel = () => {
 
     if (statusFilter !== "all") {
       query = query.eq("review_status", statusFilter);
+    } else {
+      // P2 improvement: exclude REJECTED from 'all' view unless explicitly filtered
+      query = query.neq("review_status", "rejected");
     }
     if (qualityFilter !== "all") {
       query = query.eq("quality_tier", qualityFilter);

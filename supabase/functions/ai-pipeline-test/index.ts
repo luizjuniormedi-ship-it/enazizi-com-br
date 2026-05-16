@@ -43,7 +43,7 @@ serve(async (req) => {
       const data = await genResp.json();
       const content = data.choices?.[0]?.message?.content || "{}";
       const parsed = parseAiJson(content);
-      questionsFound = (parsed.questions || []).length || (parsed.statement ? 1 : 0);
+      questionsFound = (parsed.questions || []).length || (parsed.statement || parsed.question ? 1 : 0);
       genOk = questionsFound > 0;
     }
 

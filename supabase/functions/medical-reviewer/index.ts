@@ -106,7 +106,7 @@ Regras:
     logAiUsage({
       userId: "system-reviewer",
       functionName: "medical-reviewer",
-      modelUsed: "openai/gpt-4o-mini",
+      modelUsed: "openai/gpt-5-mini-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       cacheHit: false,

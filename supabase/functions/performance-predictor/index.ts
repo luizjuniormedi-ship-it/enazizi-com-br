@@ -18,7 +18,7 @@ serve(async (req) => {
   try {
     const { totalQuestions, correctAnswers, areaBreakdown, studyHoursPerWeek, daysUntilExam, diagnosticScore, streakDays, flashcardsReviewed, simuladoScores } = await req.json();
 
-    const MODEL = "openai/gpt-4o-mini";
+    const MODEL = "openai/gpt-5-mini-mini";
     const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     const cacheKey = buildCacheKey({ extra: `perf-pred-q${totalQuestions}-a${accuracy}-h${studyHoursPerWeek}-d${daysUntilExam}` });
 

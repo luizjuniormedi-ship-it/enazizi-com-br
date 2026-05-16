@@ -16,8 +16,8 @@ function getEnv(name: string): string {
 async function callAI(
   apiKey: string,
   prompt: string,
-  model = "openai/gpt-4o-mini",
-  temperature = 1.0 // Fixed: gpt-4o-mini only supports 1.0
+  model = "openai/gpt-5-mini-mini",
+  temperature = 1.0 // Fixed: gpt-5-mini-mini only supports 1.0
 ): Promise<{ ok: boolean; text?: string; status?: number }> {
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",

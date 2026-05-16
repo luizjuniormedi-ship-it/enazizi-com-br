@@ -519,11 +519,11 @@ Deno.serve(async (req) => {
       userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
     } else {
       const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-      const uid = claimsData?.claims?.sub as string | undefined;
-      if (claimsError || !uid) {
-        return new Response(JSON.stringify({ error: "Token inválido. Faça login novamente." }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: { user }, error: authError } = await userClient.auth.getUser();
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Token inválido ou expirado." }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      const uid = user.id;
       const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
       if (!roleData) {
         return new Response(JSON.stringify({ error: "Acesso negado. Apenas administradores." }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });

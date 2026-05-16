@@ -182,7 +182,7 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
     
     try {
       response = await aiFetch({
-        model: "gpt-4o-mini",
+        model: "gpt-5-mini-mini",
         messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
         stream: true,
         maxTokens: 8192,
@@ -193,7 +193,7 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
       await logAiUsage({
         userId,
         functionName: "generate-flashcards",
-        modelUsed: "gpt-4o-mini",
+        modelUsed: "gpt-5-mini-mini",
         success: false,
         responseTimeMs: Date.now() - startMs,
         modelTier: "standard",
@@ -208,7 +208,7 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
     await logAiUsage({
       userId,
       functionName: "generate-flashcards",
-      modelUsed: "gpt-4o-mini",
+      modelUsed: "gpt-5-mini-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",

@@ -84,8 +84,8 @@ serve(async (req) => {
       const userClient = createClient(SUPABASE_URL, ANON, {
         global: { headers: { Authorization: `Bearer ${jwt}` } },
       });
-      const { data: userData } = await userClient.auth.getUser();
-      userId = userData?.user?.id ?? null;
+      const { data: { user }, error: authError } = await userClient.auth.getUser();
+      userId = user?.id ?? null;
     }
 
     const body = (await req.json().catch(() => ({}))) as RequestBody;

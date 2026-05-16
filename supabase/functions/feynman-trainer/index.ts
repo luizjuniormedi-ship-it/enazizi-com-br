@@ -114,7 +114,7 @@ Com links clicáveis no formato: [Acessar no PubMed](URL_COMPLETA)`;
     logAiUsage({
       userId,
       functionName: "feynman-trainer",
-      modelUsed: "openai/gpt-4o-mini",
+      modelUsed: "openai/gpt-5-mini-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       cacheHit: false,
