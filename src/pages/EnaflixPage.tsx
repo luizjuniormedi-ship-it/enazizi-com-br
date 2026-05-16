@@ -73,8 +73,9 @@ export default function EnaflixPage() {
       try {
         const { data, error } = await supabase
           .from("ai_video_lessons")
-          .select("id, title, thumbnail_url, specialty, is_gold_content, duration_seconds, published_at, status")
+          .select("id, title, thumbnail_url, specialty, is_gold_content, duration_seconds, published_at, status, organization_id, is_global")
           .eq("status", "published")
+          .or(`is_global.eq.true,organization_id.eq.${user?.organization_id || 'null'}`)
           .order("published_at", { ascending: false })
           .limit(10);
 
@@ -82,9 +83,10 @@ export default function EnaflixPage() {
 
         const { data: memoryData, error: memoryError } = await supabase
           .from("tutor_lesson_memory")
-          .select("id, title, thumbnail_url, subject, duration, published_at, status, hidden_from_student")
+          .select("id, title, thumbnail_url, subject, duration, published_at, status, hidden_from_student, organization_id, is_global")
           .eq("status", "published")
           .eq("hidden_from_student", false)
+          .or(`is_global.eq.true,organization_id.eq.${user?.organization_id || 'null'}`)
           .order("published_at", { ascending: false })
           .limit(10);
 
