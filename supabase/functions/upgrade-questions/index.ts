@@ -138,8 +138,38 @@ Deno.serve(async (req, context) => {
         if (questions.indexOf(q) < questions.length - 1) {
           await new Promise(r => setTimeout(r, 1000));
         }
-      }
       console.log(`[upgrade-questions] BATCH DONE: ${upgraded} success, ${failed} failed`);
+
+      // 4. PIPELINE GOVERNANCE RECORDING
+      try {
+        const latency = Date.now() - startTime;
+        await supabaseAdmin.from("pipeline_governance").insert({
+          job_id: body.job_id || null,
+          pipeline_name: "upgrade-questions",
+          function_name: "upgrade-questions",
+          status: failed === 0 ? "completed" : (upgraded > 0 ? "partial" : "failed"),
+          model_used: ALLOWED_MODELS.generation,
+          latency_ms: latency,
+          user_id: user?.id || null,
+          metadata: {
+            upgraded,
+            failed,
+            total: questions.length,
+            ids: questions.map(q => q.id),
+            correlation_id: correlationId
+          }
+        });
+
+        // Update health metrics
+        await supabaseAdmin.rpc("update_pipeline_health", {
+          p_name: "upgrade-questions",
+          p_success: upgraded,
+          p_error: failed,
+          p_latency: latency
+        });
+      } catch (govErr) {
+        console.error("[upgrade-questions] Governance logging failed:", govErr);
+      }
     };
 
     // background job with context.waitUntil if available
