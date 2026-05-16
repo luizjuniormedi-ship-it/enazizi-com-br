@@ -70,6 +70,7 @@ const removeReleaseQueryParam = () => {
 };
 
 const mountApp = () => {
+  console.log("📦 [System] Mounting application...");
   createRoot(document.getElementById("root")!).render(<App />);
 };
 
