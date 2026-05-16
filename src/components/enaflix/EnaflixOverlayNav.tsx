@@ -161,6 +161,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               { label: "Simulados", path: "/dashboard/simulados" },
               { label: "Flashcards", path: "/dashboard/flashcards" },
               { label: "Mnemônicos", path: "/dashboard/mnemonico" },
+              { label: "Proficiência", path: "/dashboard/proficiencia" },
               { label: "Tutor IA", path: "/dashboard/sessao-estudo" },
             ].map((item) => (
               <button 
