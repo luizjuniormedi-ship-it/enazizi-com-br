@@ -48,6 +48,19 @@ export async function getRelatedMedicalEntities(
 }
 
 /**
+ * Specifically fetch diagnostic differentials for a topic.
+ */
+export async function getMedicalDifferentials(
+    supabase: any,
+    topic: string
+): Promise<string[]> {
+    const relations = await getRelatedMedicalEntities(supabase, topic, 1, 0.7);
+    return relations
+        .filter(r => r.relation === "diferencial" || r.relation === "similar_a")
+        .map(r => r.source === topic ? r.target : r.source);
+}
+
+/**
  * Detect potential clinical gaps by looking at disconnected or weak clusters 
  * in the user's performance vs the Knowledge Graph.
  */

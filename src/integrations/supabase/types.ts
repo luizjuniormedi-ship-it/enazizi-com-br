@@ -17382,6 +17382,7 @@ export type Database = {
           fsrs_hooks: Json | null
           guideline_recency_score: number | null
           guideline_reference: string | null
+          guideline_relevancy_score: number | null
           guideline_year: number | null
           hallucination_risk_score: number | null
           id: string
@@ -17400,6 +17401,8 @@ export type Database = {
           permission_type: string | null
           quality_tier: string
           question_order: number | null
+          reasoning_complexity_score: number | null
+          retention_value_score: number | null
           review_status: string | null
           source: string | null
           source_map_id: string | null
@@ -17445,6 +17448,7 @@ export type Database = {
           fsrs_hooks?: Json | null
           guideline_recency_score?: number | null
           guideline_reference?: string | null
+          guideline_relevancy_score?: number | null
           guideline_year?: number | null
           hallucination_risk_score?: number | null
           id?: string
@@ -17463,6 +17467,8 @@ export type Database = {
           permission_type?: string | null
           quality_tier?: string
           question_order?: number | null
+          reasoning_complexity_score?: number | null
+          retention_value_score?: number | null
           review_status?: string | null
           source?: string | null
           source_map_id?: string | null
@@ -17508,6 +17514,7 @@ export type Database = {
           fsrs_hooks?: Json | null
           guideline_recency_score?: number | null
           guideline_reference?: string | null
+          guideline_relevancy_score?: number | null
           guideline_year?: number | null
           hallucination_risk_score?: number | null
           id?: string
@@ -17526,6 +17533,8 @@ export type Database = {
           permission_type?: string | null
           quality_tier?: string
           question_order?: number | null
+          reasoning_complexity_score?: number | null
+          retention_value_score?: number | null
           review_status?: string | null
           source?: string | null
           source_map_id?: string | null
@@ -23525,6 +23534,17 @@ export type Database = {
         }
         Relationships: []
       }
+      question_quality_analytics: {
+        Row: {
+          avg_complexity: number | null
+          avg_density: number | null
+          avg_distractor: number | null
+          question_count: number | null
+          subtopic: string | null
+          topic: string | null
+        }
+        Relationships: []
+      }
       tutor_health_metrics: {
         Row: {
           avg_latency_ms: number | null
@@ -24305,6 +24325,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      recalculate_user_theta: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: number
       }
       recalibrate_clinical_profiles: { Args: never; Returns: undefined }
       reconcile_and_smooth_weights: {

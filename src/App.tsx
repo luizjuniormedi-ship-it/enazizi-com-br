@@ -63,6 +63,9 @@ const Terms = lazyWithRetry(() => import("./pages/Terms"), "Terms");
 const Privacy = lazyWithRetry(() => import("./pages/Privacy"), "Privacy");
 const FeynmanTrainer = lazyWithRetry(() => import("./pages/ContentSummarizer"), "ContentSummarizer");
 const AIPipelineHardening = lazyWithRetry(() => import("./pages/admin/AIPipelineHardening"), "AIPipelineHardening");
+const CognitiveObservatory = lazyWithRetry(() => import("./pages/admin/CognitiveObservatory"), "CognitiveObservatory");
+const ExecutiveIntelligence = lazyWithRetry(() => import("./pages/admin/ExecutiveIntelligence"), "ExecutiveIntelligence");
+const MedicalKnowledgeGraphPage = lazyWithRetry(() => import("./pages/admin/MedicalKnowledgeGraph"), "MedicalKnowledgeGraph");
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
@@ -249,6 +252,9 @@ const App = () => (
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="pipeline-hardening" element={<AIPipelineHardening />} />
                 <Route path="ceo" element={<AdminCEO />} />
+                <Route path="observatory" element={<CognitiveObservatory />} />
+                <Route path="executive" element={<ExecutiveIntelligence />} />
+                <Route path="knowledge-graph" element={<MedicalKnowledgeGraphPage />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
