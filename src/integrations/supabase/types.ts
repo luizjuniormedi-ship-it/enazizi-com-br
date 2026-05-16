@@ -970,6 +970,7 @@ export type Database = {
           model_name: string
           tokens_input: number | null
           tokens_output: number | null
+          user_id: string | null
         }
         Insert: {
           cost_usd?: number | null
@@ -980,6 +981,7 @@ export type Database = {
           model_name: string
           tokens_input?: number | null
           tokens_output?: number | null
+          user_id?: string | null
         }
         Update: {
           cost_usd?: number | null
@@ -990,6 +992,7 @@ export type Database = {
           model_name?: string
           tokens_input?: number | null
           tokens_output?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -8047,6 +8050,78 @@ export type Database = {
         }
         Relationships: []
       }
+      cognitive_predictions: {
+        Row: {
+          confidence_score: number | null
+          contributing_factors: Json | null
+          created_at: string | null
+          id: string
+          prediction_type: string
+          probability: number
+          time_horizon: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          contributing_factors?: Json | null
+          created_at?: string | null
+          id?: string
+          prediction_type: string
+          probability: number
+          time_horizon?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          contributing_factors?: Json | null
+          created_at?: string | null
+          id?: string
+          prediction_type?: string
+          probability?: number
+          time_horizon?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cognitive_profiles: {
+        Row: {
+          cognitive_resistance_score: number | null
+          fatigue_tolerance_index: number | null
+          id: string
+          last_updated_at: string | null
+          learning_speed_index: number | null
+          learning_style_profile: Json | null
+          pattern_recognition_accuracy: number | null
+          peak_performance_hours: number[] | null
+          retention_efficiency: number | null
+          user_id: string
+        }
+        Insert: {
+          cognitive_resistance_score?: number | null
+          fatigue_tolerance_index?: number | null
+          id?: string
+          last_updated_at?: string | null
+          learning_speed_index?: number | null
+          learning_style_profile?: Json | null
+          pattern_recognition_accuracy?: number | null
+          peak_performance_hours?: number[] | null
+          retention_efficiency?: number | null
+          user_id: string
+        }
+        Update: {
+          cognitive_resistance_score?: number | null
+          fatigue_tolerance_index?: number | null
+          id?: string
+          last_updated_at?: string | null
+          learning_speed_index?: number | null
+          learning_style_profile?: Json | null
+          pattern_recognition_accuracy?: number | null
+          peak_performance_hours?: number[] | null
+          retention_efficiency?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cognitive_quality_baseline: {
         Row: {
           avg_clinical_depth: number | null
@@ -13482,6 +13557,42 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_vision_analysis: {
+        Row: {
+          ai_interpretation: Json | null
+          asset_id: string | null
+          clinical_relevance_score: number | null
+          confidence: number | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          modality: string
+          user_id: string
+        }
+        Insert: {
+          ai_interpretation?: Json | null
+          asset_id?: string | null
+          clinical_relevance_score?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          modality: string
+          user_id: string
+        }
+        Update: {
+          ai_interpretation?: Json | null
+          asset_id?: string | null
+          clinical_relevance_score?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          modality?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mental_maps: {
         Row: {
           content_json: Json
@@ -18229,6 +18340,39 @@ export type Database = {
           },
         ]
       }
+      recovery_interventions: {
+        Row: {
+          action_details: Json | null
+          automatic: boolean | null
+          created_at: string | null
+          id: string
+          impact_score: number | null
+          intervention_type: string
+          reason_code: string
+          user_id: string
+        }
+        Insert: {
+          action_details?: Json | null
+          automatic?: boolean | null
+          created_at?: string | null
+          id?: string
+          impact_score?: number | null
+          intervention_type: string
+          reason_code: string
+          user_id: string
+        }
+        Update: {
+          action_details?: Json | null
+          automatic?: boolean | null
+          created_at?: string | null
+          id?: string
+          impact_score?: number | null
+          intervention_type?: string
+          reason_code?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recovery_metrics: {
         Row: {
           final_score: number | null
@@ -18528,6 +18672,48 @@ export type Database = {
           resource?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      self_healing_incidents: {
+        Row: {
+          detected_at: string | null
+          fallback_activated: boolean | null
+          fallback_model_used: string | null
+          feature_name: string
+          id: string
+          incident_type: string
+          metadata: Json | null
+          mitigation_details: string | null
+          resolution_status: string | null
+          severity: string
+          symptoms: Json | null
+        }
+        Insert: {
+          detected_at?: string | null
+          fallback_activated?: boolean | null
+          fallback_model_used?: string | null
+          feature_name: string
+          id?: string
+          incident_type: string
+          metadata?: Json | null
+          mitigation_details?: string | null
+          resolution_status?: string | null
+          severity: string
+          symptoms?: Json | null
+        }
+        Update: {
+          detected_at?: string | null
+          fallback_activated?: boolean | null
+          fallback_model_used?: string | null
+          feature_name?: string
+          id?: string
+          incident_type?: string
+          metadata?: Json | null
+          mitigation_details?: string | null
+          resolution_status?: string | null
+          severity?: string
+          symptoms?: Json | null
         }
         Relationships: []
       }
