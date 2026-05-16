@@ -84,7 +84,6 @@ Deno.serve(async (req, context) => {
       });
     }
 
-    const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
     const processUpgrade = async () => {
       let upgraded = 0;
