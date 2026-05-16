@@ -9,6 +9,10 @@ Deno.serve(async (req, context) => {
 
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const startTime = Date.now();
+  const correlationId = crypto.randomUUID();
+  console.log(`[upgrade-questions] REQUEST_START correlationId=${correlationId}`);
+
   try {
     console.log("[upgrade-questions] STEP: Loading core dependencies");
     const { createClient } = await import("npm:@supabase/supabase-js@2.45.0");
