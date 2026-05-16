@@ -1,7 +1,7 @@
 // bulk-generate-content - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
 // Mission: High-volume content generation with industrial-grade resilience.
 
-import { enterpriseEdgeHandler, EnterpriseContext } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { parseAiJson, sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
@@ -20,9 +20,9 @@ const SPECIALTIES = [
   "Terapia Intensiva",
 ];
 
-Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, waitUntil, correlation, supabaseAdmin }: EnterpriseContext) => {
+Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, waitUntil, correlation, supabaseAdmin }) => {
   // 1. AUTH & ADMIN CHECK
-  const { user, supabaseAdmin } = await requireAdmin(req);
+  const { user } = await requireAdmin(req);
   logger.info("AUTH", "Admin authenticated", { userId: user.id });
 
   // 2. PARSE REQUEST
@@ -94,7 +94,7 @@ REGRAS:
         }
       });
 
-    } catch (err) {
+    } catch (err: any) {
       logger.error("GENERATION_PROCESS_FAILED", err.message, { stack: err.stack });
     }
   };
@@ -119,4 +119,4 @@ REGRAS:
       headers: { "Content-Type": "application/json" },
     });
   }
-});
+}));
