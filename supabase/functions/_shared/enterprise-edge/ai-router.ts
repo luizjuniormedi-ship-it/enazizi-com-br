@@ -5,6 +5,7 @@
 
 import { StructuredLogger } from "./structured-logger.ts";
 import { ALLOWED_MODELS } from "../ai-model-registry.ts";
+import { getTokenParameterName } from "../ai-models.ts";
 
 export interface AiRequest {
   model?: string;
@@ -27,13 +28,22 @@ export async function callAi(
 
   logger.info("AI_CALL", `Calling model ${model}`, { model, stream: !!payload.stream });
 
+  const tokenParam = getTokenParameterName(model);
+  const normalizedPayload = { ...payload };
+  
+  if (payload.max_tokens && tokenParam === "max_completion_tokens") {
+    // @ts-ignore: mapping to new token param
+    normalizedPayload.max_completion_tokens = payload.max_tokens;
+    delete normalizedPayload.max_tokens;
+  }
+
   const res = await fetch(LOVABLE_GATEWAY, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(normalizedPayload),
   });
 
   const latency = Date.now() - startTime;
