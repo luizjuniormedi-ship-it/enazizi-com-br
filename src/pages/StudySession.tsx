@@ -13,13 +13,8 @@ import { Loader2 } from "lucide-react";
 console.error("🔥 BUILD_FORENSE", {
   component: "StudySession.tsx",
   timestamp: Date.now(),
-  version: "FORENSE_V2"
+  version: "FORENSE_V3"
 });
-
-type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring" | "reinforcement";
-type Msg = { role: "user" | "assistant"; content: string };
-
-const StudySessionContent = () => {
 
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
