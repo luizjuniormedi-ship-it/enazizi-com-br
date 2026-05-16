@@ -24656,6 +24656,15 @@ export type Database = {
         Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
+      update_pipeline_health: {
+        Args: {
+          p_error: number
+          p_latency: number
+          p_name: string
+          p_success: number
+        }
+        Returns: undefined
+      }
       upsert_error_bank_entry: {
         Args: {
           p_categoria_erro?: string
