@@ -183,8 +183,9 @@ Deno.serve(async (req, context) => {
           pipeline_name: "upgrade-questions",
           function_name: "upgrade-questions",
           status: failed === 0 ? "completed" : (upgraded > 0 ? "partial" : "failed"),
-          model_used: ALLOWED_MODELS.generation,
+          model_used: modelName,
           latency_ms: latency,
+          completed_at: new Date().toISOString(),
           user_id: user?.id || null,
           metadata: {
             upgraded,
