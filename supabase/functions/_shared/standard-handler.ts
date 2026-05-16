@@ -3,7 +3,7 @@
  *
  * Wraps an edge-function handler with:
  *   • CORS
- *   • Real JWT validation (uses getClaims, no longer trusts the header alone)
+ *   • Real JWT validation (uses getUser, no longer trusts the header alone)
  *   • Body parsing
  *   • Standard error envelope
  *
@@ -12,7 +12,7 @@
  *         meant functions deployed with verify_jwt=false had effectively
  *         NO authentication at all.
  *
- * AFTER:  the JWT is verified server-side via supabase.auth.getClaims().
+ * AFTER:  the JWT is verified server-side via supabase.auth.getUser().
  *         If invalid or missing, the request is rejected with 401.
  *         The real user id is forwarded to the handler.
  */
@@ -68,18 +68,16 @@ export async function handleStandardEdgeFunction(
       global: { headers: { Authorization: authHeader } },
     });
 
-    // getClaims verifies the JWT signature locally using the project's
-    // signing keys and returns the payload. This is the canonical way
-    // to authenticate when verify_jwt = false.
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    // getUser verifies the JWT signature and returns the user object.
+    const { data: userData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !userData?.user?.id) {
       return jsonResponse(
         { success: false, error: "UNAUTHORIZED", message: "Token inválido ou expirado." },
         401,
       );
     }
 
-    const userId = claimsData.claims.sub as string;
+    const userId = userData.user.id;
     const body = await req.json().catch(() => ({}));
 
     const response = await handler(body, userId);
