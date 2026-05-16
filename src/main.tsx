@@ -33,7 +33,8 @@ const shouldRedirectToCanonical =
   window.location.hostname !== `www.${canonical}` &&
   !window.location.hostname.includes("localhost") &&
   !window.location.hostname.includes("id-preview--") &&
-  !window.location.hostname.includes("lovableproject.com");
+  !window.location.hostname.includes("lovableproject.com") &&
+  !window.location.hostname.includes("lovable.app");
 
 const isInIframe = (() => {
   try {
