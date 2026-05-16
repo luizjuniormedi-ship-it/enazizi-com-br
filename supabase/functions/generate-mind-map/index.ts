@@ -88,7 +88,7 @@ Siga RIGOROSAMENTE a estrutura com as 10 categorias obrigatórias. Cada child de
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: "openai/gpt-5-mini-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

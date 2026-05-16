@@ -26,7 +26,7 @@ serve(async (req) => {
     const normalizedTopic = topic.trim().toLowerCase().replace(/\s+/g, ' ');
     const normalizedSpecialty = (specialty || '').trim().toLowerCase().replace(/\s+/g, ' ');
     const cacheKey = buildCacheKey({ topic: normalizedTopic, specialty: normalizedSpecialty, extra: "micro-quiz" });
-    const MODEL = "openai/gpt-4o-mini";
+    const MODEL = "openai/gpt-5-mini-mini";
 
     // 1. Try cache first
     try {

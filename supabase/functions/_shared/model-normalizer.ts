@@ -3,7 +3,7 @@ import { logPipelineAlert } from "./pipeline-logger.ts";
 
 /**
  * Normalizes any model string into a strictly supported version.
- * Prevents "openai/gpt-4o-mini", "gpt-5-mini" and other invalid variants from breaking the pipeline.
+ * Prevents "openai/gpt-5-mini-mini", "gpt-5-mini" and other invalid variants from breaking the pipeline.
  */
 export function normalizeModel(model: string | null | undefined): string {
   if (!model) {

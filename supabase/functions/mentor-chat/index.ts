@@ -227,7 +227,7 @@ serve(async (req) => {
     // 8. IA Orchestration
     const startMs = Date.now();
     let response;
-    let modelUsed = "openai/gpt-4o";
+    let modelUsed = "openai/gpt-5-mini";
 
     // If jsonResponse is true, we override stream to false
     const stream = !jsonResponse;
@@ -250,7 +250,7 @@ serve(async (req) => {
       response = await invokeIA(modelUsed, 30000);
     } catch (err) {
       console.warn(`[mentor-chat] PRIMARY_AI_FAILED id=${requestId}`, err);
-      modelUsed = "openai/gpt-4o-mini";
+      modelUsed = "openai/gpt-5-mini-mini";
       try {
         response = await invokeIA(modelUsed, 15000);
       } catch (fallbackErr) {

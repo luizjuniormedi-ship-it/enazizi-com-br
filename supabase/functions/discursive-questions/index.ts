@@ -75,12 +75,12 @@ REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um as
         const startMs = Date.now();
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
-          model: "openai/gpt-4o-mini",
+          model: "openai/gpt-5-mini-mini",
         });
         const elapsed = Date.now() - startMs;
 
         if (!response.ok) {
-          logAiUsage({ userId: user.id, functionName: "discursive-questions", modelUsed: "openai/gpt-4o-mini", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
+          logAiUsage({ userId: user.id, functionName: "discursive-questions", modelUsed: "openai/gpt-5-mini-mini", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
           throw new Error("Erro ao gerar questão");
         }
 
@@ -92,7 +92,7 @@ REGRA: Gere SEMPRE entre 2 e 4 sub-perguntas separadas, cada uma focada em um as
         if (!jsonMatch) throw new Error("Erro ao processar questão gerada");
 
         const questionData = JSON.parse(jsonMatch[0]);
-        logAiUsage({ userId: user.id, functionName: "discursive-questions", modelUsed: "openai/gpt-4o-mini", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
+        logAiUsage({ userId: user.id, functionName: "discursive-questions", modelUsed: "openai/gpt-5-mini-mini", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
         // Validate AI output
         const validation = validateAIOutput(questionData, { specialty }, "discursiva");
@@ -177,7 +177,7 @@ Retorne APENAS um JSON válido:
 
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
-          model: "openai/gpt-4o-mini",
+          model: "openai/gpt-5-mini-mini",
         });
 
         if (!response.ok) throw new Error("Erro ao corrigir resposta");

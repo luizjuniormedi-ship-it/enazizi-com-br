@@ -100,7 +100,7 @@ REGRAS DE ESPAÇAMENTO:
     logAiUsage({
       userId,
       functionName: "motivational-coach",
-      modelUsed: "openai/gpt-4o-mini",
+      modelUsed: "openai/gpt-5-mini-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",

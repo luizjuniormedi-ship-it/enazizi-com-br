@@ -37,23 +37,23 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     temperature: 0.85,
   });
 
-  // Try OpenAI first (gpt-4o) for higher quality
+  // Try OpenAI first (gpt-5-mini) for higher quality
   if (OPENAI_API_KEY) {
     try {
       const startMs = Date.now();
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-        body: buildBody("gpt-4o"),
+        body: buildBody("gpt-5-mini"),
       });
       if (res.ok) {
         const data = await res.json();
-        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-4o", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
+        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-5-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
         return data.choices?.[0]?.message?.content || "";
       }
       const errText = await res.text();
       console.warn(`OpenAI ${res.status}: ${errText.slice(0, 200)}`);
-      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-4o", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard", errorMessage: `status ${res.status}` }).catch(() => {});
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-5-mini", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard", errorMessage: `status ${res.status}` }).catch(() => {});
       if (res.status !== 429 && res.status !== 402) {
         throw new Error(`OpenAI error ${res.status}`);
       }
@@ -69,15 +69,15 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: buildBody("openai/gpt-4o-mini"),
+      body: buildBody("openai/gpt-5-mini-mini"),
     });
     if (res.ok) {
       const data = await res.json();
-      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-4o-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-5-mini-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
       return data.choices?.[0]?.message?.content || "";
     }
     const errText = await res.text();
-    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-4o-mini", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
+    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-5-mini-mini", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
     throw new Error(`Lovable Gateway ${res.status}: ${errText.slice(0, 200)}`);
   }
 

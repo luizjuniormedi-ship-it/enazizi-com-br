@@ -13,14 +13,14 @@ const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 
 /**
  * ENAZIZI PRODUCTION SAFE MODE
- * When enabled, forces gpt-4o-mini, disables complex response_formats,
+ * When enabled, forces gpt-5-mini-mini, disables complex response_formats,
  * and uses standard payloads to maximize stability.
  */
 const PRODUCTION_SAFE_MODE = false;
 
 const OPENAI_MAX_TOKENS: Record<string, number> = {
-  "gpt-4o-mini": 16384,
-  "gpt-4o": 16384,
+  "gpt-5-mini-mini": 16384,
+  "gpt-5-mini": 16384,
 };
 
 // Retryable status codes (transient errors)
@@ -146,8 +146,8 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   let rawModel = options.model || ALLOWED_MODELS.generation;
   
   if (PRODUCTION_SAFE_MODE) {
-    console.log("[SAFE_MODE] Overriding model to gpt-4o-mini");
-    rawModel = "gpt-4o-mini";
+    console.log("[SAFE_MODE] Overriding model to gpt-5-mini-mini");
+    rawModel = "gpt-5-mini-mini";
   }
   
   const normalizedModel = normalizeModel(rawModel);

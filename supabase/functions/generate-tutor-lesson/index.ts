@@ -93,7 +93,7 @@ Responda APENAS o JSON:
     let lessonContent;
     try {
       const aiResponse = await aiFetch({
-        model: "openai/gpt-4o",
+        model: "openai/gpt-5-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
