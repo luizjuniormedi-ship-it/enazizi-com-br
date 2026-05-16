@@ -16,7 +16,7 @@ export const ExecutiveOverview: React.FC = () => {
             return {
                 avgApproval: scores?.reduce((a, b) => a + (b.score || 0), 0) / (scores?.length || 1),
                 totalUsers: users || 0,
-                estimatedCost: costs?.reduce((a, b) => a + (b.cost_usd || 0), 0) || 0
+                estimatedCost: (costs as any[])?.reduce((a, b) => a + (b.cost_usd || 0), 0) || 0
             };
         }
     });
