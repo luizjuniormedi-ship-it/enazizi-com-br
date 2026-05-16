@@ -636,33 +636,44 @@ ${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer
     let assistantMessage = providerResult.content;
     const latency = Date.now() - startTime;
 
-    // --- PEDAGOGICAL AUDIT LAYER ---
+    // --- PEDAGOGICAL AUDIT LAYER v2026 ---
+    const allBlocks = [
+      'BLOCO 1', 'BLOCO 2', 'BLOCO 3', 'BLOCO 4', 'BLOCO 5',
+      'BLOCO 6', 'BLOCO 7', 'BLOCO 8', 'BLOCO 9', 'BLOCO 10',
+      'BLOCO 11', 'BLOCO 12', 'BLOCO 13', 'BLOCO 14', 'BLOCO 15'
+    ];
+    const foundBlocks = allBlocks.filter(b => assistantMessage.includes(b));
+    const missingBlocks = allBlocks.filter(b => !assistantMessage.includes(b));
+
     const feynmanKeywords = ["analogia", "imagine", "simples", "como se fosse", "trocando em miúdos"];
     const hasAnalogies = feynmanKeywords.some(k => assistantMessage.toLowerCase().includes(k));
     const hasRecall = assistantMessage.toLowerCase().includes("active recall") || assistantMessage.includes("?");
     const feynmanScore = (hasAnalogies ? 50 : 0) + (hasRecall ? 50 : 0);
-    console.log("[FEYNMAN_LAYER]", { analogy_used: hasAnalogies, recall_generated: hasRecall, requestId });
-
+    
     const stageToBlockMap: Record<string, string> = {
       'mission': 'BLOCO 1', 'roadmap': 'BLOCO 2', 'layman': 'BLOCO 3', 
-      'technical': 'BLOCO 4', 'pathophysiology': 'BLOCO 5', 'systemic_integration': 'BLOCO 6',
-      'clinical_reasoning': 'BLOCO 7', 'semiology_exams': 'BLOCO 8', 'pharmacology': 'BLOCO 9',
-      'emergency_conduct': 'BLOCO 10', 'exam_integration': 'BLOCO 11', 'exam_tricks': 'BLOCO 12',
-      'feynman_module': 'BLOCO 13', 'active_recall': 'BLOCO 14', 'mini_test': 'BLOCO 15',
-      'summary': 'RESUMO'
+      'technical': 'BLOCO 4', 'pathophysiology': 'BLOCO 5', 'clinical_reasoning': 'BLOCO 6',
+      'differential_diagnosis': 'BLOCO 7', 'exam_tricks': 'BLOCO 8', 'guidelines': 'BLOCO 9',
+      'guided_question': 'BLOCO 10', 'commented_correction': 'BLOCO 11', 'active_recall': 'BLOCO 12',
+      'flashcards': 'BLOCO 13', 'summary': 'BLOCO 14', 'recovery_plan': 'BLOCO 15'
     };
 
     const targetBlock = stageToBlockMap[currentStage] || 'BLOCO';
     const hasTargetBlock = assistantMessage.includes(targetBlock);
+    
+    // Quality Lock v2026: Response must have the target block OR be a high-quality conversation
     const pedagogicalScore = qReview.active ? 100 : (hasTargetBlock ? 100 : 0);
     
-    console.log("[PEDAGOGICAL_VALIDATION_V3]", { 
+    console.log("[PEDAGOGICAL_AUDIT_v2026]", { 
       stage: currentStage, 
       expected: targetBlock, 
       found: hasTargetBlock,
+      blocks_count: foundBlocks.length,
+      missing: missingBlocks,
       score: pedagogicalScore,
       requestId 
     });
+
 
     const safetyKeywords = ["cuidado", "emergência", "urgência", "alerta", "contraindicação"];
     const hasSafetyInfo = safetyKeywords.some(k => assistantMessage.toLowerCase().includes(k));
