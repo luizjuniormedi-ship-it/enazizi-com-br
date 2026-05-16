@@ -1,374 +1,130 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// mentor-chat - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
+// Mission: Intelligent mentorship with real-time streaming and RAG support.
+
+import { enterpriseEdgeHandler, EnterpriseContext } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
+import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
-import { aiFetch, getAiErrorMessage } from "../_shared/ai-fetch.ts";
-import { logAIUsage, buildPromptHash, getCachedAIResponse, saveAIResponseToCache } from "../_shared/ai-cache.ts";
-import { searchPubMed, formatPubMedForPrompt, extractSearchTopic } from "../_shared/pubmed-search.ts";
-import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
-import { requireAuth } from "../_shared/require-auth.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { createEmbedding } from "../_shared/ai-embeddings.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+export default enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil, correlation }: EnterpriseContext) => {
+  // 1. AUTH
+  const { user, supabaseAdmin } = await requireAuth(req);
+  logger.info("AUTH", "User authenticated", { userId: user.id });
 
-/** Standard JSON response helper */
-const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
-  status,
-  headers: { ...corsHeaders, "Content-Type": "application/json" },
-});
+  // 2. PARSE REQUEST
+  const body = await req.json().catch(() => ({}));
+  const { 
+    messages, 
+    userContext, 
+    conversationId, 
+    topic: userTopic,
+    jsonResponse = false 
+  } = body;
 
-serve(async (req) => {
-  console.error("[EDGE_FORENSE] REQUEST_RECEIVED", {
-    ts: Date.now()
-  });
-  console.error("[EDGE] mentor-chat :: REQUEST_RECEIVED");
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (!messages || messages.length === 0) {
+    throw new Error("Missing messages");
+  }
 
-  const requestId = crypto.randomUUID();
-  const startTime = Date.now();
-  console.log(`[mentor-chat] SEND_STARTED id=${requestId}`);
+  const lastUserMessage = messages[messages.length - 1]?.content || "";
+  logger.info("MESSAGES_RECEIVED", "Processing chat interaction", { conversationId });
 
-  const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
+  // 3. SYSTEM PROMPT & CONTEXT
+  let systemPrompt = ENAZIZI_PROMPT;
+  if (userContext) {
+    systemPrompt += `\n\n--- MATERIAL DO ALUNO ---\n${userContext}\n--- FIM ---`;
+  }
+  if (userTopic) {
+    systemPrompt += `\n\n--- CONTEXTO ---\nTópico: ${userTopic}\n--- FIM ---`;
+  }
 
-  try {
-    // 1. Authentication
-    console.log(`[mentor-chat] REQUEST_CREATED id=${requestId}`);
-    const auth = await requireAuth(req);
-    if (!auth.ok) {
-      console.warn(`[mentor-chat] AUTH_FAILED id=${requestId}`);
-      return auth.response;
-    }
-    const { userId } = auth;
-    console.log(`[mentor-chat] AUTH_OK id=${requestId} user=${userId}`);
-
-    // 2. Input Validation
-    let body;
-    try {
-      body = await req.json();
-    } catch (e) {
-      console.error(`[mentor-chat] BODY_INVALID id=${requestId}`, e);
-      return json({ ok: false, error: "invalid_json", message: "Corpo da requisição inválido.", requestId }, 400);
-    }
-
-    const { 
-      messages, 
-      userContext, 
-      targetExam, 
-      skipCache = false, 
-      conversationId, 
-      topic: userTopic, 
-      specialty: userSpecialty,
-      bypassRAG = false,
-      debugOnlyRAG = false,
-      jsonResponse = false
-    } = body;
-
-    console.log(`[mentor-chat] BODY_VALIDATED id=${requestId} conv=${conversationId} bypassRAG=${bypassRAG} debugOnlyRAG=${debugOnlyRAG}`);
-
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return json({ ok: false, error: "missing_messages", message: "Histórico de mensagens é obrigatório.", requestId }, 400);
-    }
-
-    // 3. Environment & Config
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      console.error(`[mentor-chat] CONFIG_ERROR id=${requestId}`);
-      return json({ ok: false, error: "config_error", message: "Erro de configuração no servidor.", requestId }, 500);
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    // 4. Cache Management (Skip if debugging/bypass)
-    const lastUserMessage = messages[messages.length - 1]?.content || "";
-    if (!skipCache && !bypassRAG && !debugOnlyRAG) {
-      const semanticHash = await buildPromptHash({ lastUserMessage, userContext, targetExam, specialty: userSpecialty });
-      const cacheResult = await getCachedAIResponse({
-        module: "mentor-chat",
-        scope: userContext ? "user" : "global",
-        userId: userContext ? userId : null,
-        semanticHash,
-        contentType: "tutor_response"
-      });
-
-      if (cacheResult.hit && cacheResult.content?.text) {
-        console.log(`[mentor-chat] CACHE_HIT id=${requestId}`);
-        await logAIUsage({
-          userId,
-          module: "mentor-chat",
-          model: cacheResult.modelUsed || "cache",
-          cacheStatus: "hit",
-          success: true,
-          requestId
-        });
-
-        const elapsedMs = Date.now() - startTime;
-        console.log(`[mentor-chat] RESPONSE_SENT id=${requestId} elapsed=${elapsedMs}ms source=cache`);
-        return json({ 
-          ok: true,
-          content: cacheResult.content.text, 
-          message: cacheResult.content.text,
-          cached: true, 
-          requestId,
-          elapsedMs,
-          status: "PERSIST_FINISHED"
-        });
-      }
-    }
-
-    // 5. Prompt Construction
-    let systemPrompt = ENAZIZI_PROMPT;
-    if (targetExam) {
-      const bancaProfile = getBancaProfile(targetExam);
-      systemPrompt += buildBancaBlock(bancaProfile);
-    }
-    if (userContext) {
-      systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\\n${userContext}\\n--- FIM DO MATERIAL ---`;
-    }
-    if (userTopic || userSpecialty) {
-      systemPrompt += `\n\n--- CONTEXTO ATUAL DA SESSÃO ---\\nTópico: ${userTopic || "Não especificado"}\\nEspecialidade: ${userSpecialty || "Geral"}\\n--- FIM DO CONTEXTO ---`;
-    }
-
-    // 6. RAG / Knowledge Base Retrieval
-    let ragContext = "";
-    let ragSources = [];
-    
-    if (!bypassRAG) {
-      try {
-        console.log(`[mentor-chat] RAG_STARTED id=${requestId}`);
-        const retrievalStart = Date.now();
-        
-        // Timeout for RAG (8s as requested)
-        const retrievalPromise = (async () => {
-          const queryEmbedding = await createEmbedding(lastUserMessage);
-          const { data: chunks, error: rpcError } = await supabase.rpc("match_rag_chunks", {
-            query_embedding: queryEmbedding,
-            match_threshold: 0.5,
-            match_count: 5
-          });
-          if (rpcError) throw rpcError;
-          return chunks;
-        })();
-
-        const chunks = await Promise.race([
-          retrievalPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000))
-        ]) as any[];
-        
-        if (chunks && chunks.length > 0) {
-          ragContext = chunks.map((c: any) => c.content).join("\\n\\n");
-          ragSources = chunks.map((c: any) => ({ 
-            id: c.id, 
-            document_id: c.document_id, 
-            similarity: c.similarity 
-          }));
-          
-          systemPrompt += `\n\n--- BASE DE CONHECIMENTO (RAG) ---\\n${ragContext}\\n--- FIM DA BASE ---`;
-        }
-        
-        const retrievalElapsed = Date.now() - retrievalStart;
-        console.log(`[mentor-chat] RAG_FINISHED id=${requestId} chunksFound=${chunks?.length || 0} elapsed=${retrievalElapsed}ms`);
-        
-        if (debugOnlyRAG) {
-          return json({ 
-            ok: true, 
-            debug: true,
-            status: "RAG_FINISHED",
-            chunksFound: chunks?.length || 0, 
-            sources: ragSources, 
-            requestId,
-            elapsedMs: Date.now() - startTime
-          });
-        }
-      } catch (e) {
-        console.warn(`[mentor-chat] RAG_RETRIEVAL_FAILED id=${requestId} error=${e.message}`);
-        if (debugOnlyRAG) {
-          return json({ ok: false, error: "rag_failed", message: e.message, requestId, status: "RAG_FAILED" }, 500);
-        }
-        // Continue without RAG
-      }
-    }
-
-    // PubMed enrichment (Secondary, safe-failure)
-    if (!bypassRAG && !debugOnlyRAG) {
-      const searchTopic = extractSearchTopic(messages);
-      if (searchTopic && searchTopic.length >= 3) {
-        try {
-          console.log(`[mentor-chat] RETRIEVAL_STARTED (PubMed) id=${requestId}`);
-          const articles = await Promise.race([
-            searchPubMed(searchTopic, 3),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 5000))
-          ]) as any;
-          const pubmedBlock = formatPubMedForPrompt(articles);
-          if (pubmedBlock) systemPrompt += pubmedBlock;
-          console.log(`[mentor-chat] RETRIEVAL_FINISHED (PubMed) id=${requestId}`);
-        } catch (e) {
-          console.warn(`[mentor-chat] PubMed enrichment failed id=${requestId}:`, e.message);
-        }
-      }
-    }
-
-    // 7. Persistence: User Message
-    if (conversationId && !debugOnlyRAG) {
-      console.log(`[mentor-chat] PERSIST_STARTED id=${requestId}`);
-      supabase.from("chat_messages").insert({
+  // 4. PERSIST USER MESSAGE (Background)
+  if (conversationId) {
+    waitUntil((async () => {
+      await supabaseAdmin.from("chat_messages").insert({
         conversation_id: conversationId,
         role: "user",
         content: lastUserMessage,
-        user_id: userId
-      }).then(({ error }) => {
-        if (error) console.error(`[mentor-chat] PERSIST_USER_FAILED id=${requestId}:`, error);
-        else console.log(`[mentor-chat] PERSIST_FINISHED (user) id=${requestId}`);
+        user_id: user.id
       });
-    }
-
-    // 8. IA Orchestration
-    const startMs = Date.now();
-    let response;
-    let modelUsed = "openai/gpt-5-mini";
-
-    // If jsonResponse is true, we override stream to false
-    const stream = !jsonResponse;
-
-    const invokeIA = async (model: string, timeout: number) => {
-      console.log(`[mentor-chat] PROVIDER_STARTED id=${requestId} model=${model} stream=${stream}`);
-      const res = await aiFetch({
-        model: model,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-        stream,
-        maxTokens: 4096,
-        timeoutMs: timeout, 
-        userId
-      });
-      console.log(`[mentor-chat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
-      return res;
-    };
-
-    try {
-      response = await invokeIA(modelUsed, 30000);
-    } catch (err) {
-      console.warn(`[mentor-chat] PRIMARY_AI_FAILED id=${requestId}`, err);
-      modelUsed = "openai/gpt-5-mini";
-      try {
-        response = await invokeIA(modelUsed, 15000);
-      } catch (fallbackErr) {
-        console.error(`[mentor-chat] FATAL_CAUGHT id=${requestId}`, fallbackErr);
-        await logAIUsage({
-          userId, module: "mentor-chat", model: modelUsed, success: false,
-          errorMessage: getAiErrorMessage(fallbackErr), requestId
-        });
-        
-        return json({ 
-          ok: false, error: "ai_failed", message: fallbackMessage,
-          requestId, fallbackUsed: true, elapsedMs: Date.now() - startTime,
-          status: "PROVIDER_FAILED"
-        }, 503);
-      }
-    }
-
-    const elapsed = Date.now() - startMs;
-    console.log(`[mentor-chat] PROVIDER_FINISHED id=${requestId} model=${modelUsed} elapsed=${elapsed}ms`);
-
-    if (jsonResponse) {
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "";
-      return json({
-        ok: true,
-        content,
-        message: content,
-        modelUsed,
-        requestId,
-        chunksFound: ragSources.length,
-        sources: ragSources,
-        elapsedMs: Date.now() - startTime,
-        status: "PERSIST_FINISHED"
-      });
-    }
-
-    // Transformation: Prepend sources and wrap the stream with block telemetry
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    let fullText = "";
-    
-    const transformStream = new TransformStream({
-      async start(controller) {
-        console.log(`[mentor-chat] STREAM_STARTED id=${requestId}`);
-        if (ragSources.length > 0) {
-          const sourcesChunk = {
-            choices: [{ delta: { content: "" } }],
-            sources: ragSources,
-            requestId,
-            status: "STREAM_STARTED"
-          };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sourcesChunk)}\n\n`));
-        }
-      },
-      async transform(chunk, controller) {
-        const text = decoder.decode(chunk);
-        fullText += text;
-
-        // Detect pedagogical blocks in real-time
-        const blockMatch = text.match(/## 🎯 BLOCO (\d+)/);
-        if (blockMatch) {
-            const blockNum = blockMatch[1];
-            // Record block event (non-blocking)
-            supabase.from("tutor_events").insert({
-                user_id: userId,
-                conversation_id: conversationId,
-                event_type: "block_started",
-                block_type: `BLOCO_${blockNum}`,
-                payload: { requestId, timestamp: Date.now() }
-            }).then();
-        }
-
-        controller.enqueue(chunk);
-      },
-      async flush(controller) {
-        console.log(`[mentor-chat] STREAM_FINISHED id=${requestId}`);
-        
-        // Final instrumentation: Overall quality audit
-        const blocksFound = (fullText.match(/## 🎯 BLOCO/g) || []).length;
-        const complete15 = blocksFound >= 15;
-        
-        await supabase.from("tutor_effectiveness").insert({
-            user_id: userId,
-            conversation_id: conversationId,
-            topic: userTopic,
-            pedagogical_impact_score: complete15 ? 100 : (blocksFound / 15) * 100,
-            average_depth_score: fullText.length / 500, // Heuristic depth
-            hallucination_detected: false // TODO: integrate with Anti-Hallucination Agent
-        });
-
-        // Record governance log if blocks are missing
-        if (!complete15) {
-            await supabase.from("ai_governance_logs").insert({
-                function_name: "mentor-chat",
-                model_name: modelUsed,
-                incident_type: "missing_block",
-                severity: "warning",
-                details: { blocksFound, requestId }
-            });
-        }
-      }
-    });
-
-    return new Response(response.body?.pipeThrough(transformStream), {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
-
-  } catch (error) {
-    console.error(`[mentor-chat] FATAL_CAUGHT id=${requestId}`, error);
-    console.error("[EDGE_FORENSE] RESPONSE_SENT", {
-      ts: Date.now(),
-      ok: true
-    });
-    console.error("[EDGE] mentor-chat :: RESPONSE_SENT");
-    return json({ 
-      ok: false, error: "internal_error", message: fallbackMessage,
-      requestId, fallbackUsed: true, elapsedMs: Date.now() - startTime,
-      status: "FATAL_ERROR"
-    }, 500);
+      logger.info("PERSIST_USER_MSG", "User message saved to DB");
+    })());
   }
+
+  // 5. AI EXECUTION
+  const stream = !jsonResponse;
+  const aiPayload = {
+    model: ALLOWED_MODELS.generation,
+    messages: [{ role: "system", content: systemPrompt }, ...messages],
+    stream,
+    max_tokens: 4000,
+  };
+
+  const aiResponse = await callAi(aiPayload, logger, supabaseAdmin);
+
+  if (jsonResponse) {
+    const data = await aiResponse;
+    const content = data.choices?.[0]?.message?.content || "";
+    
+    // Persist Assistant Message (Background)
+    if (conversationId) {
+      waitUntil((async () => {
+        await supabaseAdmin.from("chat_messages").insert({
+          conversation_id: conversationId,
+          role: "assistant",
+          content,
+          user_id: user.id
+        });
+      })());
+    }
+
+    return new Response(JSON.stringify({
+      ok: true,
+      content,
+      correlation_id: correlation.correlationId
+    }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  // Streaming Response
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let fullText = "";
+
+  const transformStream = new TransformStream({
+    async transform(chunk, controller) {
+      const text = decoder.decode(chunk);
+      fullText += text;
+      controller.enqueue(chunk);
+    },
+    async flush() {
+      // Final persistence and governance
+      if (conversationId) {
+        waitUntil((async () => {
+          await supabaseAdmin.from("chat_messages").insert({
+            conversation_id: conversationId,
+            role: "assistant",
+            content: fullText,
+            user_id: user.id
+          });
+          logger.info("PERSIST_ASSISTANT_MSG", "Assistant response saved to DB");
+          
+          // Log to AI governance manually for streaming
+          await supabaseAdmin.from("ai_governance_logs").insert({
+            model_used: ALLOWED_MODELS.generation,
+            status: "success",
+            metadata: { 
+              correlation_id: correlation.correlationId,
+              text_length: fullText.length
+            }
+          });
+        })());
+      }
+    }
+  });
+
+  return new Response(aiResponse.body?.pipeThrough(transformStream), {
+    headers: { "Content-Type": "text/event-stream" },
+  });
 });
