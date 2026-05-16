@@ -324,7 +324,7 @@ serve(async (req: Request) => {
           code: "TIMEOUT",
           requestId: requestIdForError
         }, 504));
-      }, GLOBAL_TIMEOUT_MS);
+      }, 115_000); // Higher timeout to matches headers
     });
 
     const mainPipeline = async (): Promise<Response> => {
@@ -332,14 +332,13 @@ serve(async (req: Request) => {
       let order = 0;
       try {
         console.log(`[MNEMONIC_AUTH_CHECK] Method: ${req.method}, Content-Length: ${req.headers.get("content-length")}`);
-        // TEMP BYPASS FOR DEBUGGING
-        // const auth = await requireAuth(req);
-        // if (!auth.ok) {
-        //   console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError} - Status: ${auth.response.status}`);
-        //   return auth.response;
-        // }
-        // const userId = auth.userId;
-        const userId = "d342be08-4a6a-4183-94a0-fce42255cec1"; // Valid user ID from query
+        // RE-ENABLE AUTH
+        const auth = await requireAuth(req);
+        if (!auth.ok) {
+          console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError} - Status: ${auth.response.status}`);
+          return auth.response;
+        }
+        const userId = auth.userId;
 
         const aiKey = requireEnv("LOVABLE_API_KEY");
         let rawBody;
