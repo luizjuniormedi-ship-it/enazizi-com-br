@@ -4,9 +4,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const MODELS_TO_TEST = [
-  "gpt-4o",
-  "gpt-4o-mini",
-  "gemini-2.0-flash"
+  "openai/gpt-5-mini",
+  "google/gemini-2.0-flash",
+  "openai/gpt-4o-mini"
 ];
 
 serve(async (req) => {
@@ -24,7 +24,8 @@ serve(async (req) => {
         body: JSON.stringify({
           model: model,
           messages: [{ role: "user", content: "hi" }],
-          max_tokens: 5
+          max_tokens: 10,
+          max_completion_tokens: 10
         }),
       });
       
@@ -35,7 +36,7 @@ serve(async (req) => {
         model,
         status: response.status,
         duration,
-        response: data.substring(0, 200)
+        response: data.substring(0, 300)
       });
     } catch (e) {
       results.push({
