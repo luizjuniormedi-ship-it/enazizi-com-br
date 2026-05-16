@@ -1,4 +1,5 @@
 // upgrade-questions - ISOLAMENTO PROGRESSIVO FASE 3: COMPLETA COM LAZY IMPORTS
+// ENAZIZI ENTERPRISE - Autonomous Cognitive Pipeline Infrastructure
 console.log("[upgrade-questions] BOOT: Initing Phase 3 (Full Logic)");
 
 Deno.serve(async (req, context) => {
