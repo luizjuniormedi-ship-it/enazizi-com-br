@@ -1,16 +1,10 @@
 /**
- * calculate-approval-score
+ * calculate-approval-score — TRI/IRT Enhanced v2026
  * Recalcula o approval score de um usuário e atualiza chance_by_exam.
- *
- * Modos:
- *   - JWT (caller é o próprio usuário): usa requireAuth e calcula para si.
- *   - Service-role (cron / backfill): aceita body { target_user_id } e
- *     valida via header `apikey` igual a SUPABASE_SERVICE_ROLE_KEY.
- *
- * Sem mocks. Sem dado fake. Se faltar dado, score = 0 com phase="critico".
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { estimateTheta, thetaToScore } from "../_shared/tri-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,14 +13,14 @@ const corsHeaders = {
 };
 
 const MINIMUM_BANCAS = ["enare", "usp", "sus-sp", "unifesp", "unicamp"];
-const BANCA_WEIGHTS: Record<string, { acc: number; domain: number; sim: number; review: number; consistency: number; osce: number; errorPen: number }> = {
-  enare:    { acc: 0.30, domain: 0.20, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
-  usp:      { acc: 0.25, domain: 0.15, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.10, errorPen: 0.10 },
-  unicamp:  { acc: 0.25, domain: 0.15, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.15, errorPen: 0.10 },
-  unifesp:  { acc: 0.25, domain: 0.20, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
-  "sus-sp": { acc: 0.30, domain: 0.25, sim: 0.10, review: 0.15, consistency: 0.10, osce: 0.00, errorPen: 0.10 },
+const BANCA_WEIGHTS: Record<string, { acc: number; tri: number; domain: number; sim: number; review: number; consistency: number; osce: number; errorPen: number }> = {
+  enare:    { acc: 0.15, tri: 0.15, domain: 0.20, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
+  usp:      { acc: 0.10, tri: 0.15, domain: 0.15, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.10, errorPen: 0.10 },
+  unicamp:  { acc: 0.10, tri: 0.15, domain: 0.15, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.15, errorPen: 0.10 },
+  unifesp:  { acc: 0.10, tri: 0.15, domain: 0.20, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
+  "sus-sp": { acc: 0.15, tri: 0.15, domain: 0.25, sim: 0.10, review: 0.15, consistency: 0.10, osce: 0.00, errorPen: 0.10 },
 };
-const DEFAULT_W = { acc: 0.25, domain: 0.20, sim: 0.15, review: 0.15, consistency: 0.10, osce: 0.05, errorPen: 0.10 };
+const DEFAULT_W = { acc: 0.15, tri: 0.10, domain: 0.20, sim: 0.15, review: 0.15, consistency: 0.10, osce: 0.05, errorPen: 0.10 };
 
 async function computeAndPersist(adminClient: ReturnType<typeof createClient>, userId: string, source: string) {
   const [
