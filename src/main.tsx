@@ -15,10 +15,6 @@ import "./index.css";
 import "./styles/enaflix-tokens.css";
 
 /* ENAZIZI v2.3 */
-console.log("🚀 [System] Bootstrap sequence starting...", {
-  ts: Date.now(),
-  host: window.location.hostname
-});
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((regs) => {
@@ -28,16 +24,18 @@ if ('serviceWorker' in navigator) {
 
 const canonical = "enazizi.com";
 
+const isLocalHost = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
+const isPreviewHost = 
+  window.location.hostname.includes("id-preview--") || 
+  window.location.hostname.includes("lovable") || 
+  window.location.hostname.includes("gptengineer") ||
+  window.location.hostname.includes("lovableproject.com");
+
 const shouldRedirectToCanonical =
+  !isLocalHost &&
+  !isPreviewHost &&
   window.location.hostname !== canonical &&
-  window.location.hostname !== `www.${canonical}` &&
-  !window.location.hostname.includes("localhost") &&
-  !window.location.hostname.includes("id-preview--") &&
-  !window.location.hostname.includes("lovableproject.com") &&
-  !window.location.hostname.includes("lovable.app") &&
-  !window.location.hostname.includes("lovable.dev") &&
-  !window.location.hostname.includes("gptengineer.app") &&
-  !window.location.hostname.includes("ngrok");
+  window.location.hostname !== `www.${canonical}`;
 
 const isInIframe = (() => {
   try {
@@ -46,10 +44,6 @@ const isInIframe = (() => {
     return true;
   }
 })();
-
-const isPreviewHost =
-  window.location.hostname.includes("id-preview--") ||
-  window.location.hostname.includes("lovableproject.com");
 
 const standaloneNavigator = navigator as Navigator & { standalone?: boolean };
 const isStandalone =
@@ -70,20 +64,17 @@ const removeReleaseQueryParam = () => {
 };
 
 const mountApp = () => {
-  console.log("📦 [System] Mounting application...");
-  createRoot(document.getElementById("root")!).render(<App />);
+  const rootElement = document.getElementById("root");
+  if (!rootElement) return;
+  createRoot(rootElement).render(<App />);
 };
 
 const registerProductionServiceWorker = () => {
-  // CRITICAL iOS FIX: when the new SW takes control (clientsClaim), force a
-  // full page reload so the standalone PWA picks up the fresh bundle without
-  // requiring the user to kill the app from the multitask switcher.
   let reloadingForNewSW = false;
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (reloadingForNewSW) return;
       reloadingForNewSW = true;
-      console.log("[PWA] Novo Service Worker assumiu controle. Recarregando…");
       window.location.reload();
     });
   }
@@ -91,8 +82,6 @@ const registerProductionServiceWorker = () => {
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
-      devLog("[PWA] Nova versão disponível, atualizando agora...");
-      // Triggers SKIP_WAITING → controllerchange → reload above.
       updateSW(true);
     },
     onOfflineReady() {
@@ -101,10 +90,6 @@ const registerProductionServiceWorker = () => {
     onRegisteredSW(swUrl, registration) {
       if (!registration) return;
 
-      // CRITICAL iOS FIX: Safari aggressively caches sw.js (default
-      // updateViaCache is "imports", which still allows HTTP cache for the
-      // top-level script). Re-register with "none" so registration.update()
-      // always hits the network and the new SW is detected immediately.
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
           .register(swUrl, { scope: "/", updateViaCache: "none" })
@@ -113,33 +98,21 @@ const registerProductionServiceWorker = () => {
 
       const checkForUpdates = () => {
         registration.update().catch(() => {});
-
         if (registration.waiting) {
           updateSW(true);
         }
       };
 
       checkForUpdates();
-
       const intervalMs = isStandalone ? 60_000 : 5 * 60 * 1000;
       window.setInterval(checkForUpdates, intervalMs);
       window.addEventListener("focus", checkForUpdates);
-      window.addEventListener("pageshow", checkForUpdates);
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-          checkForUpdates();
-        }
-      });
     },
   });
 };
 
 const boot = async () => {
-  console.log("⚙️ [System] Booting...", { shouldRedirect: shouldRedirectToCanonical });
-  
-  // Redirect logic disabled in development/preview to prevent boot loops
-  if (shouldRedirectToCanonical && !window.location.hostname.includes("lovable") && !window.location.hostname.includes("gptengineer") && !window.location.hostname.includes("localhost")) {
-    console.warn("🔀 [System] Redirecting to canonical domain...");
+  if (shouldRedirectToCanonical) {
     window.location.replace(`https://${canonical}${window.location.pathname}${window.location.search}`);
     return;
   }
@@ -159,7 +132,6 @@ const boot = async () => {
   const storedRelease = localStorage.getItem(RELEASE_KEY);
 
   if (storedRelease && storedRelease !== APP_RELEASE) {
-    devLog(`[ENAZIZI] Release changed ${storedRelease} → ${APP_RELEASE}. Clearing caches…`);
     await performHardAppReset({
       preserveSessionEntries: loginRefreshSignature
         ? [[LOGIN_REFRESH_SIGNATURE_KEY, loginRefreshSignature]]
@@ -172,12 +144,10 @@ const boot = async () => {
 
   localStorage.setItem(RELEASE_KEY, APP_RELEASE);
   removeReleaseQueryParam();
-  devLog(`[ENAZIZI] Release: ${APP_RELEASE}`);
 
   if (isPreviewHost || isInIframe) {
-    // In preview/iframe, mount immediately and clean up SW in background to avoid blocking boot
     mountApp();
-    void unregisterServiceWorkers();
+    unregisterServiceWorkers().catch(() => {});
     return;
   }
 
