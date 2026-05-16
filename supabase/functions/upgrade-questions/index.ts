@@ -1,133 +1,36 @@
-import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
-import { getTokenParameterName } from "../_shared/ai-models.ts";
-import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
-import { sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
-async function upgradeQuestion(q: { id: string; statement: string; options: string[]; correct_index: number; topic: string; explanation?: string }, apiKey: string): Promise<{ statement: string, explanation: string } | null> {
-  const prompt = `Você é um elaborador de questões de ELITE para residência médica (ENAMED/REVALIDA).
-
-TAREFA: Transforme o enunciado abaixo em um CASO CLÍNICO DE ALTA COMPLEXIDADE padrão prova real, e gere uma EXPLICAÇÃO DETALHADA. Mantendo o MESMO tema, as MESMAS alternativas e o MESMO gabarito (índice ${q.correct_index}).
-
-ENUNCIADO ORIGINAL:
-"${q.statement}"
-
-ALTERNATIVAS ORIGINAIS:
-${q.options.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join("\n")}
-
-TEMA: ${q.topic}
-EXPLICAÇÃO ATUAL (se houver): ${q.explanation || "Nenhuma"}
-
-REGRAS OBRIGATÓRIAS PARA O ENUNCIADO:
-1. Crie um caso clínico com paciente fictício (nome, idade, sexo, profissão).
-2. Inclua: QP com tempo de evolução, HDA detalhada, antecedentes relevantes, hábitos de vida.
-3. Sinais vitais completos e exame físico detalhado (achados positivos e negativos).
-4. Exames laboratoriais/imagem com valores numéricos quando pertinente.
-5. O enunciado deve ter 500-1000 caracteres.
-6. A pergunta final deve ser direta e técnica.
-7. NÃO repita as alternativas no enunciado.
-
-REGRAS PARA A EXPLICAÇÃO:
-1. Deve ser pedagógica e detalhada.
-2. Justifique por que a alternativa correta está certa baseando-se em diretrizes atuais.
-3. Comente brevemente por que as outras alternativas estão incorretas (distratores).
-4. Use tom profissional e acadêmico.
-
-Retorne APENAS um JSON válido: 
-{
-  "statement": "Caso clínico completo e pergunta final",
-  "explanation": "Explicação detalhada e fundamentada"
-}`;
-
-  try {
-    const modelName = ALLOWED_MODELS.generation;
-    const tokenKey = getTokenParameterName(modelName);
-
-    const res = await fetch(LOVABLE_GATEWAY, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown." },
-          { role: "user", content: prompt },
-        ],
-        [tokenKey]: 4000,
-      }),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(`AI error ${res.status} for ${q.id}: ${errorText}`);
-      return null;
-    }
-
-    const data = await res.json();
-    const rawContent = data.choices?.[0]?.message?.content || "";
-    const parsed = parseAiJson(rawContent);
-    
-    let newStatement = (parsed.statement || "").trim();
-    let newExplanation = (parsed.explanation || "").trim();
-
-    // Clean up alternatives if leaked
-    newStatement = newStatement.replace(/\n\s*[A-Ea-e]\)\s+.+$/gms, "").trim();
-    newStatement = newStatement.replace(/\n\s*[A-Ea-e]\.\s+.+$/gms, "").trim();
-
-    if (!newStatement || newStatement.length < 300) {
-      console.warn(`Upgraded statement too short for ${q.id}: ${newStatement?.length}`);
-      return null;
-    }
-
-    return { statement: newStatement, explanation: newExplanation };
-  } catch (e) {
-    console.error(`Upgrade error for ${q.id}:`, e);
-    return null;
-  }
-}
+// upgrade-questions - ISOLAMENTO PROGRESSIVO FASE 3: COMPLETA COM LAZY IMPORTS
+console.log("[upgrade-questions] BOOT: Initing Phase 3 (Full Logic)");
 
 Deno.serve(async (req, context) => {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const functionName = "upgrade-questions";
-
   try {
-    // 1. TOP-LEVEL SIDE EFFECT PROTECTION (Moved inside handler)
+    console.log("[upgrade-questions] STEP: Loading core dependencies");
+    const { createClient } = await import("npm:@supabase/supabase-js@2.45.0");
+    const { ALLOWED_MODELS } = await import("../_shared/ai-model-registry.ts");
+    const { getTokenParameterName } = await import("../_shared/ai-models.ts");
+    const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
+    const { parseAiJson } = await import("../_shared/ai-fetch.ts");
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error("Missing Supabase configuration");
-    }
-
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 2. AUTHENTICATION
+    console.log("[upgrade-questions] STEP: Auth validation");
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "UNAUTHORIZED", message: "Auth required" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
+    if (!authHeader) throw new Error("UNAUTHORIZED: Missing auth header");
 
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authError || !user) {
-      console.error("[upgrade-questions] Auth failure:", authError);
-      return new Response(JSON.stringify({ error: "UNAUTHORIZED", message: "Invalid token" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) throw new Error("UNAUTHORIZED: Invalid token");
 
-    // Check if user has admin role
+    // Admin role check
     const { data: roleData } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -135,22 +38,14 @@ Deno.serve(async (req, context) => {
       .eq("role", "admin")
       .single();
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "FORBIDDEN", message: "Admin role required" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    // 3. BACKGROUND PROCESSING FALLBACK
-    const waitUntil = context?.waitUntil ?? ((promise: Promise<unknown>) => promise.catch(err => 
-      console.error(`[${functionName}] background_error`, err)
-    ));
+    if (!roleData) throw new Error("FORBIDDEN: Admin role required");
 
     const body = await req.json().catch(() => ({}));
-    const batchSize = Math.min(body.batch_size || 10, 20);
+    const batchSize = Math.min(body.batch_size || 5, 10); // Batch reduzido para segurança
     const ids: string[] | undefined = body.ids;
 
-    // Fetch questions to upgrade
+    console.log("[upgrade-questions] STEP: Fetching questions", { batchSize, idsCount: ids?.length });
+
     let query = supabaseAdmin.from("questions_bank")
       .select("id, statement, options, correct_index, topic, explanation, source")
       .in("quality_tier", ["needs_upgrade", "basic"])
@@ -168,82 +63,96 @@ Deno.serve(async (req, context) => {
     if (fetchError) throw fetchError;
 
     if (!questions || questions.length === 0) {
-      return new Response(JSON.stringify({ message: "Nenhuma questão para enriquecer", upgraded: 0 }), {
+      return new Response(JSON.stringify({ message: "Nenhuma questão pendente", upgraded: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Core logic
-    const processBatch = async () => {
+    const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+    const processUpgrade = async () => {
       let upgraded = 0;
       let failed = 0;
 
       for (const q of questions) {
-        const upgradeResult = await upgradeQuestion(
-          { ...q, options: Array.isArray(q.options) ? q.options : [] },
-          LOVABLE_API_KEY,
-        );
+        try {
+          console.log(`[upgrade-questions] Processing ${q.id}`);
+          const prompt = `Você é um elaborador de questões de ELITE para residência médica (ENAMED/REVALIDA).
+          TAREFA: Transforme o enunciado abaixo em um CASO CLÍNICO DE ALTA COMPLEXIDADE padrão prova real, e gere uma EXPLICAÇÃO DETALHADA. Mantendo o MESMO tema, as MESMAS alternativas e o MESMO gabarito (índice ${q.correct_index}).
+          
+          ENUNCIADO ORIGINAL: "${q.statement}"
+          TEMA: ${q.topic}
+          
+          Retorne APENAS um JSON: {"statement": "...", "explanation": "..."}`;
 
-        if (upgradeResult) {
-          const { error } = await supabaseAdmin.from("questions_bank").update({
-            statement: upgradeResult.statement,
-            explanation: upgradeResult.explanation,
-            quality_tier: "exam_standard",
-            review_status: "approved",
-            source: q.source ? `${q.source}|ai-upgraded` : "ai-upgraded",
-          }).eq("id", q.id);
+          const modelName = ALLOWED_MODELS.generation;
+          const tokenKey = getTokenParameterName(modelName);
 
-          if (!error) upgraded++;
-          else { console.error(`Update error ${q.id}:`, error); failed++; }
-        } else {
+          const res = await fetch(LOVABLE_GATEWAY, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: modelName,
+              messages: [{ role: "user", content: prompt }],
+              [tokenKey]: 2000,
+            }),
+          });
+
+          if (!res.ok) throw new Error(`AI error ${res.status}`);
+
+          const aiData = await res.json();
+          const parsed = parseAiJson(aiData.choices?.[0]?.message?.content || "");
+          
+          if (parsed.statement && parsed.statement.length > 300) {
+            await supabaseAdmin.from("questions_bank").update({
+              statement: parsed.statement.trim(),
+              explanation: parsed.explanation?.trim(),
+              quality_tier: "exam_standard",
+              review_status: "approved",
+              source: q.source ? `${q.source}|ai-upgraded` : "ai-upgraded",
+            }).eq("id", q.id);
+            upgraded++;
+          } else {
+            failed++;
+          }
+        } catch (err) {
+          console.error(`[upgrade-questions] Failed question ${q.id}:`, err);
           failed++;
         }
-
-        // Small delay to avoid rate limits
+        
         if (questions.indexOf(q) < questions.length - 1) {
           await new Promise(r => setTimeout(r, 1000));
         }
       }
-
-      console.log(`[${functionName}] Finished: ${upgraded} upgraded, ${failed} failed.`);
+      console.log(`[upgrade-questions] BATCH DONE: ${upgraded} success, ${failed} failed`);
     };
 
-    // If batch is large or explicitly requested background, we can use waitUntil
-    // For now, let's process it and return the result to be more standard
-    await processBatch();
-
-    return new Response(JSON.stringify({
-      message: "Batch processed",
-      total_processed: questions.length,
-      success: true
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-  } catch (error) {
-    console.error(`[${functionName}] RUNTIME_ERROR`, {
-      name: error?.name,
-      message: error?.message,
-      stack: error?.stack
-    });
-
-    // Self-healing: Log to pipeline_alerts
-    try {
-      await logPipelineAlert({
-        source: functionName,
-        message: `RUNTIME_ERROR: ${error?.message}`,
-        severity: "critical",
-        alert_type: "runtime_error",
-        error_stack: error?.stack,
-        metadata: { name: error?.name }
+    // background job with context.waitUntil if available
+    const isBackground = body.background === true;
+    if (isBackground && context?.waitUntil) {
+      context.waitUntil(processUpgrade());
+      return new Response(JSON.stringify({ status: "processing_in_background", batch_size: questions.length }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch (logErr) {
-      console.error("Failed to log alert:", logErr);
+    } else {
+      await processUpgrade();
+      return new Response(JSON.stringify({ status: "completed", processed: questions.length }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    return new Response(JSON.stringify({ 
-      error: "upgrade_questions_failed", 
-      message: error instanceof Error ? error.message : "Unknown error" 
-    }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  } catch (error) {
+    const errorInfo = {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack,
+      ts: new Date().toISOString()
+    };
+    console.error("[upgrade-questions] FATAL ERROR", errorInfo);
+
+    return new Response(JSON.stringify({ error: "failed", details: errorInfo }), {
+      status: error?.message?.includes("UNAUTHORIZED") ? 401 : 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });
