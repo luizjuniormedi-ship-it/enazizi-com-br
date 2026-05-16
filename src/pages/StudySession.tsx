@@ -148,7 +148,9 @@ const StudySessionContent = () => {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((m, i) => (
             <div key={i} className={cn("max-w-[85%] rounded-2xl p-4", m.role === "user" ? "bg-primary/10 ml-auto border border-primary/20" : "bg-white/5 mr-auto border border-white/10")}>
-              <ReactMarkdown className="prose prose-invert max-w-none text-sm leading-relaxed">{m.content}</ReactMarkdown>
+              <div className="prose prose-invert max-w-none text-sm leading-relaxed">
+                <ReactMarkdown>{m.content}</ReactMarkdown>
+              </div>
             </div>
           ))}
           {isLoading && <div className="flex items-center gap-2 text-xs text-white/30 animate-pulse"><Loader2 className="h-3 w-3 animate-spin" /> Mentor pensando...</div>}

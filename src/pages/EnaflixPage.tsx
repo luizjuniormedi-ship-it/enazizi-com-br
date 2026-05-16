@@ -72,6 +72,7 @@ export default function EnaflixPage() {
     queryFn: async () => {
       try {
         const { data: profile } = await supabase.from("profiles").select("organization_id").eq("user_id", user?.id).single();
+        const userOrgId = (profile as any)?.organization_id || 'null';
         const orgId = profile?.organization_id || 'null';
 
         const { data, error } = await supabase
