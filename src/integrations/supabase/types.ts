@@ -9718,6 +9718,48 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_execution_logs: {
+        Row: {
+          correlation_id: string | null
+          created_at: string | null
+          error_message: string | null
+          function_name: string
+          id: string
+          latency_ms: number | null
+          metadata: Json | null
+          method: string | null
+          request_id: string | null
+          status_code: number | null
+          user_id: string | null
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          function_name: string
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          method?: string | null
+          request_id?: string | null
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          method?: string | null
+          request_id?: string | null
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       editorial_audit_trail: {
         Row: {
           batch_id: string | null
@@ -15839,6 +15881,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_tracker: {
+        Row: {
+          completed_at: string | null
+          completed_steps: number | null
+          correlation_id: string | null
+          error_count: number | null
+          id: string
+          metadata: Json | null
+          pipeline_name: string
+          started_at: string | null
+          status: string | null
+          total_steps: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_steps?: number | null
+          correlation_id?: string | null
+          error_count?: number | null
+          id?: string
+          metadata?: Json | null
+          pipeline_name: string
+          started_at?: string | null
+          status?: string | null
+          total_steps?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completed_steps?: number | null
+          correlation_id?: string | null
+          error_count?: number | null
+          id?: string
+          metadata?: Json | null
+          pipeline_name?: string
+          started_at?: string | null
+          status?: string | null
+          total_steps?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       planner_effectiveness: {
         Row: {
           accepted: boolean | null
@@ -18671,6 +18755,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      runtime_incidents: {
+        Row: {
+          correlation_id: string | null
+          created_at: string | null
+          function_name: string
+          id: string
+          is_resolved: boolean | null
+          message: string
+          metadata: Json | null
+          resolved_at: string | null
+          severity: string | null
+          stack_trace: string | null
+          stage: string | null
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string | null
+          function_name: string
+          id?: string
+          is_resolved?: boolean | null
+          message: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string | null
+          stack_trace?: string | null
+          stage?: string | null
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string | null
+          function_name?: string
+          id?: string
+          is_resolved?: boolean | null
+          message?: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string | null
+          stack_trace?: string | null
+          stage?: string | null
+        }
+        Relationships: []
       }
       scraping_runs: {
         Row: {
