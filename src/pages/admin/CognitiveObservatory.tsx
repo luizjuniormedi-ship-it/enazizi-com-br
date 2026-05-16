@@ -192,7 +192,10 @@ const CognitiveObservatory: React.FC = () => {
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <CognitiveAlerts />
+            <TutorQualityMonitor />
+            <div className="mt-6">
+              <CognitiveAlerts />
+            </div>
           </motion.div>
 
           <motion.div
