@@ -1,6 +1,6 @@
 /**
  * ENAZIZI ENTERPRISE — AI Router
- * Centralized AI execution with routing and governance.
+ * Centralized AI execution with routing, governance, and streaming support.
  */
 
 import { StructuredLogger } from "./structured-logger.ts";
@@ -11,6 +11,7 @@ export interface AiRequest {
   messages: any[];
   max_tokens?: number;
   temperature?: number;
+  stream?: boolean;
 }
 
 export async function callAi(
@@ -24,7 +25,7 @@ export async function callAi(
   const model = payload.model || ALLOWED_MODELS.generation;
   const startTime = Date.now();
 
-  logger.info("AI_CALL", `Calling model ${model}`, { model });
+  logger.info("AI_CALL", `Calling model ${model}`, { model, stream: !!payload.stream });
 
   const res = await fetch(LOVABLE_GATEWAY, {
     method: "POST",
@@ -43,9 +44,14 @@ export async function callAi(
     throw new Error(`AI Gateway error ${res.status}: ${errorText}`);
   }
 
+  // If streaming, return the raw response
+  if (payload.stream) {
+    return res;
+  }
+
   const data = await res.json();
   
-  // Log to ai_governance_logs
+  // Log to ai_governance_logs (non-streaming only for now, or use background job for streaming)
   try {
     await supabaseAdmin.from("ai_governance_logs").insert({
       model_used: model,
@@ -63,3 +69,4 @@ export async function callAi(
 
   return data;
 }
+
