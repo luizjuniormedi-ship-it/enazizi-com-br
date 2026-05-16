@@ -92,13 +92,24 @@ Deno.serve(async (req, context) => {
       for (const q of questions) {
         try {
           console.log(`[upgrade-questions] Processing ${q.id}`);
-          const prompt = `Você é um elaborador de questões de ELITE para residência médica (ENAMED/REVALIDA).
-          TAREFA: Transforme o enunciado abaixo em um CASO CLÍNICO DE ALTA COMPLEXIDADE padrão prova real, e gere uma EXPLICAÇÃO DETALHADA. Mantendo o MESMO tema, as MESMAS alternativas e o MESMO gabarito (índice ${q.correct_index}).
-          
-          ENUNCIADO ORIGINAL: "${q.statement}"
-          TEMA: ${q.topic}
-          
-          Retorne APENAS um JSON: {"statement": "...", "explanation": "..."}`;
+          const prompt = `Você é um professor elaborador de questões de ELITE para residência médica (ENARE, USP, UNICAMP).
+
+TAREFA: Transforme o enunciado abaixo em um CASO CLÍNICO DE ALTA COMPLEXIDADE padrão "prova real".
+O novo enunciado deve ser RICO em detalhes semióticos, laboratoriais e de imagem.
+
+ENUNCIADO ORIGINAL: "${q.statement}"
+TEMA: ${q.topic}
+
+REGRAS:
+1. Gere um caso clínico realista (paciente, idade, sexo, queixa principal, HDA, EF, exames).
+2. Mantenha o MESMO tema e lógica da questão original.
+3. Gere uma EXPLICAÇÃO pedagógica e fundamentada para o gabarito.
+4. O enunciado final deve ter entre 600-1200 caracteres.
+5. Retorne APENAS um JSON:
+{
+  "statement": "Enunciado completo",
+  "explanation": "Explicação completa"
+}`;
 
           const modelName = ALLOWED_MODELS.reasoning; // Usar modelo mais forte
           const tokenKey = getTokenParameterName(modelName);
