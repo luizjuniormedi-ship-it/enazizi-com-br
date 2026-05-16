@@ -1,267 +1,144 @@
-// upgrade-questions - ISOLAMENTO PROGRESSIVO FASE 3: COMPLETA COM LAZY IMPORTS
-// ENAZIZI ENTERPRISE - Autonomous Cognitive Pipeline Infrastructure
-console.log("[upgrade-questions] BOOT: Initing Phase 3 (Full Logic)");
+// upgrade-questions - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
+// Mission: Robust AI-driven question upgrading with full governance.
 
-const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+import { enterpriseEdgeHandler, EnterpriseContext } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
+import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
+import { parseAiJson, sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
-Deno.serve(async (req, context) => {
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-regression-test",
-  };
+export default enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, waitUntil, correlation }: EnterpriseContext) => {
+  // 1. AUTH & ADMIN CHECK
+  const { user, supabaseAdmin } = await requireAdmin(req);
+  logger.info("AUTH", "Admin authenticated", { userId: user.id });
 
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  // 2. PARSE REQUEST
+  const body = await req.json().catch(() => ({}));
+  const batchSize = Math.min(body.batch_size || 5, 10);
+  const ids: string[] | undefined = body.ids;
 
-  const startTime = Date.now();
-  const correlationId = crypto.randomUUID();
-  console.log(`[upgrade-questions] REQUEST_START correlationId=${correlationId} method=${req.method}`);
+  logger.info("FETCH_QUESTIONS", "Querying questions for upgrade", { batchSize, idsCount: ids?.length });
 
-  try {
-    console.log("[upgrade-questions] STEP: Loading core dependencies");
-    const { createClient } = await import("npm:@supabase/supabase-js@2.45.0");
-    const { ALLOWED_MODELS } = await import("../_shared/ai-model-registry.ts");
-    const { getTokenParameterName } = await import("../_shared/ai-models.ts");
-    const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
-    const { parseAiJson } = await import("../_shared/ai-fetch.ts");
+  let query = supabaseAdmin.from("questions_bank")
+    .select("id, statement, options, correct_index, topic, explanation, source")
+    .in("quality_tier", ["needs_upgrade", "basic"])
+    .order("created_at", { ascending: false })
+    .limit(batchSize);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    // BYPASS AUTH FOR REGRESSION TEST ONLY IF ENABLED VIA HEADER
-    const isTest = req.headers.get("x-regression-test") === "true";
-    let user: any = null;
-
-    if (!isTest) {
-      console.log("[upgrade-questions] STEP: Auth validation");
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader) throw new Error("UNAUTHORIZED: Missing auth header");
-
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
-      if (authError || !authUser) throw new Error("UNAUTHORIZED: Invalid token");
-      user = authUser;
-
-      // Admin role check
-      const { data: roleData } = await supabaseAdmin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .single();
-
-      if (!roleData) throw new Error("FORBIDDEN: Admin role required");
-    } else {
-      console.log("[upgrade-questions] STEP: REGRESSION TEST BYPASS ENABLED");
-    }
-
-    const body = await req.json().catch(() => ({}));
-    const batchSize = Math.min(body.batch_size || 5, 10);
-    const ids: string[] | undefined = body.ids;
-
-    console.log("[upgrade-questions] STEP: Fetching questions", { batchSize, idsCount: ids?.length });
-
-    let query = supabaseAdmin.from("questions_bank")
+  if (ids && ids.length > 0) {
+    query = supabaseAdmin.from("questions_bank")
       .select("id, statement, options, correct_index, topic, explanation, source")
-      .in("quality_tier", ["needs_upgrade", "basic"])
-      .order("created_at", { ascending: false })
+      .in("id", ids)
       .limit(batchSize);
+  }
 
-    if (ids && ids.length > 0) {
-      query = supabaseAdmin.from("questions_bank")
-        .select("id, statement, options, correct_index, topic, explanation, source")
-        .in("id", ids)
-        .limit(batchSize);
-    }
+  const { data: questions, error: fetchError } = await query;
+  if (fetchError) throw fetchError;
 
-    const { data: questions, error: fetchError } = await query;
-    if (fetchError) throw fetchError;
+  if (!questions || questions.length === 0) {
+    logger.info("FINISHED", "No questions found to upgrade");
+    return new Response(JSON.stringify({ message: "Nenhuma questão pendente", upgraded: 0 }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-    if (!questions || questions.length === 0) {
-      return new Response(JSON.stringify({ message: "Nenhuma questão pendente", upgraded: 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  // 3. BACKGROUND EXECUTION LOGIC
+  const processUpgrade = async () => {
+    let upgraded = 0;
+    let failed = 0;
 
-
-    const processUpgrade = async () => {
-      let upgraded = 0;
-      let failed = 0;
-
-      for (const q of questions) {
-        try {
-          console.log(`[upgrade-questions] Processing ${q.id}`);
-          const prompt = `Você é um professor elaborador de questões de ELITE para residência médica (ENARE, USP, UNICAMP).
-
-TAREFA: Transforme o enunciado abaixo em um CASO CLÍNICO DE ALTA COMPLEXIDADE padrão "prova real".
-O novo enunciado deve ser RICO em detalhes semióticos, laboratoriais e de imagem.
+    for (const q of questions) {
+      try {
+        logger.info("AI_UPGRADE_START", `Upgrading question ${q.id}`, { questionId: q.id });
+        
+        const prompt = `Você é um professor elaborador de questões de ELITE para residência médica.
+Transforme o enunciado abaixo em um CASO CLÍNICO DE ALTA COMPLEXIDADE padrão "prova real".
 
 ENUNCIADO ORIGINAL: "${q.statement}"
 TEMA: ${q.topic}
 
 REGRAS:
-1. Gere um caso clínico realista (paciente, idade, sexo, queixa principal, HDA, EF, exames).
-2. Mantenha o MESMO tema e lógica da questão original.
-3. Gere uma EXPLICAÇÃO pedagógica e fundamentada para o gabarito.
-4. O enunciado final deve ter entre 600-1200 caracteres.
-5. Retorne APENAS um JSON:
-{
-  "statement": "Enunciado completo",
-  "explanation": "Explicação completa"
-}`;
+1. Gere um caso clínico realista.
+2. Mantenha o gabarito original.
+3. Retorne APENAS um JSON: {"statement": "...", "explanation": "..."}`;
 
-          const modelName = ALLOWED_MODELS.reasoning; // Usar modelo mais forte
-          const tokenKey = getTokenParameterName(modelName);
+        const aiResponse = await callAi({
+          model: ALLOWED_MODELS.reasoning,
+          messages: [
+            { role: "system", content: "Professor de medicina de elite. Responda APENAS JSON." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 2000,
+        }, logger, supabaseAdmin);
 
-          console.log(`[upgrade-questions] Calling AI Gateway for ${q.id} with model ${modelName}`);
-          const res = await fetch(LOVABLE_GATEWAY, {
-            method: "POST",
-            headers: { 
-              "Authorization": `Bearer ${LOVABLE_API_KEY}`, 
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: modelName,
-              messages: [
-                { role: "system", content: "Você é um professor de medicina especialista em provas de residência. Responda APENAS com JSON válido." },
-                { role: "user", content: prompt }
-              ],
-              [tokenKey]: 2000,
-            }),
-          });
+        const aiContent = aiResponse.choices?.[0]?.message?.content || "";
+        if (!aiContent) throw new Error("AI returned empty content");
 
-          if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`AI error ${res.status}: ${errorText}`);
-          }
-
-          const aiData = await res.json();
-          console.log(`[upgrade-questions] AI Response received for ${q.id}`);
-          const aiContent = aiData.choices?.[0]?.message?.content || "";
-          
-          if (!aiContent) throw new Error("AI returned empty content");
-          
-          let parsed;
-          try {
-            parsed = parseAiJson(aiContent);
-          } catch (jsonErr) {
-            console.error(`[upgrade-questions] JSON parse error for ${q.id}:`, jsonErr, "Raw content:", aiContent);
-            // Fallback: Tentar extrair statement e explanation via regex se o JSON falhar
-            const statementMatch = aiContent.match(/"statement"\s*:\s*"([\s\S]*?)"/i);
-            const explanationMatch = aiContent.match(/"explanation"\s*:\s*"([\s\S]*?)"/i);
-            
-            if (statementMatch && statementMatch[1]) {
-              parsed = { 
-                statement: statementMatch[1], 
-                explanation: explanationMatch ? explanationMatch[1] : "" 
-              };
-              console.log(`[upgrade-questions] Recovered data via regex for ${q.id}`);
-            } else {
-              throw jsonErr;
-            }
-          }
-          
-          if (parsed.statement && parsed.statement.length > 200) {
-            await supabaseAdmin.from("questions_bank").update({
-              statement: parsed.statement.trim(),
-              explanation: parsed.explanation?.trim(),
-              quality_tier: "exam_standard",
-              review_status: "approved",
-              updated_at: new Date().toISOString(),
-              source: q.source ? `${q.source}|ai-upgraded` : "ai-upgraded",
-            }).eq("id", q.id);
-            upgraded++;
-          } else {
-            console.warn(`[upgrade-questions] Upgrade result too short or invalid for ${q.id}`);
-            failed++;
-          }
-        } catch (err) {
-          console.error(`[upgrade-questions] Failed question ${q.id}:`, err);
-          failed++;
-        }
+        const parsed = parseAiJson(aiContent);
         
-        if (questions.indexOf(q) < questions.length - 1) {
-          await new Promise(r => setTimeout(r, 1000));
+        if (parsed.statement && parsed.statement.length > 200) {
+          await supabaseAdmin.from("questions_bank").update({
+            statement: sanitizeAiContent(parsed.statement),
+            explanation: sanitizeAiContent(parsed.explanation),
+            quality_tier: "exam_standard",
+            review_status: "approved",
+            updated_at: new Date().toISOString(),
+            source: q.source ? `${q.source}|ai-upgraded` : "ai-upgraded",
+          }).eq("id", q.id);
+          upgraded++;
+          logger.info("UPGRADE_SUCCESS", `Question ${q.id} updated successfully`);
+        } else {
+          throw new Error("AI output invalid or too short");
         }
+      } catch (err) {
+        failed++;
+        logger.error("UPGRADE_FAILED", `Failed for question ${q.id}`, { error: err.message });
       }
-      
-      console.log(`[upgrade-questions] BATCH DONE: ${upgraded} success, ${failed} failed`);
 
-      // 4. PIPELINE GOVERNANCE RECORDING
-      try {
-        const latency = Date.now() - startTime;
-        await supabaseAdmin.from("pipeline_governance").insert({
-          job_id: body.job_id || null,
-          pipeline_name: "upgrade-questions",
-          function_name: "upgrade-questions",
-          status: failed === 0 ? "completed" : (upgraded > 0 ? "partial" : "failed"),
-          model_used: ALLOWED_MODELS.reasoning,
-          latency_ms: latency,
-          completed_at: new Date().toISOString(),
-          user_id: user?.id || null,
-          metadata: {
-            upgraded,
-            failed,
-            total: questions.length,
-            ids: questions.map((q: any) => q.id),
-            correlation_id: correlationId
-          }
-        });
-
-        // Update health metrics
-        await supabaseAdmin.rpc("update_pipeline_health", {
-          p_name: "upgrade-questions",
-          p_success: upgraded,
-          p_error: failed,
-          p_latency: latency
-        });
-      } catch (govErr) {
-        console.error("[upgrade-questions] Governance logging failed:", govErr);
-      }
-    };
-
-    // background job with context.waitUntil if available
-    const isBackground = body.background === true;
-    if (isBackground && context?.waitUntil) {
-      context.waitUntil(processUpgrade());
-      return new Response(JSON.stringify({ status: "processing_in_background", batch_size: questions.length }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    } else {
-      await processUpgrade();
-      return new Response(JSON.stringify({ status: "completed", processed: questions.length }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Small delay between AI calls to stay within limits if needed
+      await new Promise(r => setTimeout(r, 500));
     }
 
-  } catch (error) {
-    const errorInfo = {
-      name: error?.name,
-      message: error?.message,
-      stack: error?.stack,
-      ts: new Date().toISOString()
-    };
-    console.error("[upgrade-questions] FATAL ERROR", errorInfo);
-
-    // Self-healing: Log to pipeline_alerts
+    // Pipeline tracking
     try {
-      const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
-      await logPipelineAlert({
-        source: "upgrade-questions",
-        message: `RUNTIME_ERROR: ${error?.message}`,
-        severity: "critical",
-        alert_type: "runtime_error",
-        error_stack: error?.stack,
-        metadata: { name: error?.name, correlation_id: correlationId }
+      await supabaseAdmin.from("pipeline_governance").insert({
+        pipeline_name: "upgrade-questions",
+        function_name: "upgrade-questions",
+        status: failed === 0 ? "completed" : (upgraded > 0 ? "partial" : "failed"),
+        model_used: ALLOWED_MODELS.reasoning,
+        completed_at: new Date().toISOString(),
+        user_id: user.id,
+        metadata: {
+          upgraded,
+          failed,
+          total: questions.length,
+          correlation_id: correlation.correlationId
+        }
       });
-    } catch (logErr) {
-      console.error("Failed to log alert:", logErr);
+    } catch (govErr) {
+      logger.warn("GOVERNANCE_FAIL", "Failed to log final governance", { error: govErr.message });
     }
+  };
 
-    return new Response(JSON.stringify({ error: "failed", details: errorInfo }), {
-      status: error?.message?.includes("UNAUTHORIZED") ? 401 : 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+  // 4. RETURN IMMEDIATE OR WAIT
+  const isBackground = body.background === true;
+  if (isBackground) {
+    waitUntil(processUpgrade());
+    return new Response(JSON.stringify({ 
+      status: "processing", 
+      batch_size: questions.length,
+      correlation_id: correlation.correlationId 
+    }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } else {
+    await processUpgrade();
+    return new Response(JSON.stringify({ 
+      status: "completed", 
+      processed: questions.length,
+      correlation_id: correlation.correlationId 
+    }), {
+      headers: { "Content-Type": "application/json" },
     });
   }
 });
