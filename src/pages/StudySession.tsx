@@ -1,39 +1,26 @@
+import { useState, useRef, useEffect, useCallback, memo, Suspense } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { logErrorToBank } from "@/lib/errorBankLogger";
+import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
+import { createPortal } from "react-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
+import { Loader2 } from "lucide-react";
 
 console.error("🔥 BUILD_FORENSE", {
   component: "StudySession.tsx",
   timestamp: Date.now(),
-  version: "FORENSE_V1"
+  version: "FORENSE_V2"
 });
-// ... keep existing imports
-import { useState, useRef, useEffect, useCallback, memo, Suspense, lazy } from "react";
-// ... keep existing imports
+
+type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring" | "reinforcement";
+type Msg = { role: "user" | "assistant"; content: string };
+
 const StudySessionContent = () => {
-  // ... all existing code inside StudySession ...
-};
 
-const StudySession = () => (
-  <ErrorBoundary>
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 space-y-6">
-        <div className="relative">
-          <div className="h-16 w-16 rounded-full border-t-2 border-primary animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="h-6 w-6 text-primary animate-pulse" />
-          </div>
-        </div>
-        <div className="text-center space-y-2">
-          <h2 className="text-lg font-black uppercase tracking-widest text-white/80 animate-pulse">SESSÃO DE ESTUDO</h2>
-          <p className="text-[10px] text-white/30 font-bold uppercase tracking-tighter">Carregando centro pedagógico...</p>
-        </div>
-      </div>
-    }>
-      <StudySessionContent />
-    </Suspense>
-  </ErrorBoundary>
-);
-
-export default memo(StudySession);
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
 import { Button } from "@/components/ui/button";
