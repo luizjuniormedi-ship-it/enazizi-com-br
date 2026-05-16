@@ -70,8 +70,9 @@ Retorne APENAS um JSON válido:
     }
 
     const data = await res.json();
-    const raw = (data.choices?.[0]?.message?.content || "").replace(/```json\n?/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(raw);
+    const rawContent = data.choices?.[0]?.message?.content || "";
+    const parsed = parseAiJson(rawContent);
+    
     let newStatement = (parsed.statement || "").trim();
     let newExplanation = (parsed.explanation || "").trim();
 
