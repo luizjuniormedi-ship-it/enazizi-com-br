@@ -331,9 +331,13 @@ serve(async (req: Request) => {
       let requestId: string | null = null;
       let order = 0;
       try {
+        console.log(`[MNEMONIC_AUTH_CHECK] Header: ${req.headers.get("Authorization")?.substring(0, 20)}...`);
         // Auth FIRST — before any IA call or body parse
         const auth = await requireAuth(req);
-        if (!auth.ok) return auth.response;
+        if (!auth.ok) {
+          console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError}`);
+          return auth.response;
+        }
         const userId = auth.userId;
 
         const aiKey = requireEnv("LOVABLE_API_KEY");
