@@ -5,8 +5,7 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const MODELS_TO_TEST = [
   "gpt-4o",
-  "gpt-4o-mini",
-  "gemini-2.0-flash"
+  "gpt-4o-mini"
 ];
 
 serve(async (req) => {
@@ -15,14 +14,13 @@ serve(async (req) => {
   for (const model of MODELS_TO_TEST) {
     const start = Date.now();
     try {
-      const response = await fetch("https://api.lovable.dev/v1/ai/chat", {
+      const response = await fetch(`https://api.lovable.dev/v1/ai/chat?model=${model}`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: model,
           messages: [{ role: "user", content: "hi" }],
           max_tokens: 10
         }),
