@@ -23,6 +23,7 @@ import { toast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ReactMarkdown from "react-markdown";
+import { cn } from "@/lib/utils";
 
 import StudyStyleSelector, { type StudyMode } from "@/components/tutor/StudyStyleSelector";
 import TutorChatPanel from "@/components/study/TutorChatPanel";
@@ -33,7 +34,7 @@ import { flushStudyCompleteQueue } from "@/lib/studyCompleteRetryQueue";
 console.error("🔥 BUILD_FORENSE", {
   component: "StudySession.tsx",
   timestamp: Date.now(),
-  version: "FORENSE_FINAL"
+  version: "FORENSE_FINAL_V2"
 });
 
 type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring" | "reinforcement";
@@ -77,21 +78,12 @@ const INITIAL_PERFORMANCE: PerformanceData = {
 
 const StudySessionContent = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [searchParams] = useSearchParams();
-  const { trackAction } = useTelemetry();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [studyMode, setStudyMode] = useState<StudyMode>("full");
   const [phase, setPhase] = useState<Phase>("start");
   const [topic, setTopic] = useState("");
-  const [topicInput, setTopicInput] = useState("");
-  const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -181,7 +173,6 @@ const StudySessionContent = () => {
     </div>
   );
 
-  if (isFullscreen) return createPortal(content, document.body);
   return content;
 };
 
