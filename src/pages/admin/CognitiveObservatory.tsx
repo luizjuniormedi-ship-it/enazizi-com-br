@@ -11,6 +11,7 @@ import { PerformanceAnalytics } from '@/components/admin/cognitive-observatory/P
 import { CognitiveAlerts } from '@/components/admin/cognitive-observatory/CognitiveAlerts';
 import { CognitiveReplay } from '@/components/admin/cognitive-observatory/CognitiveReplay';
 import { ModelIntelligence } from '@/components/admin/cognitive-observatory/ModelIntelligence';
+import { TutorQualityMonitor } from '@/components/admin/cognitive-observatory/TutorQualityMonitor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
