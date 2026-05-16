@@ -20,7 +20,6 @@ Deno.serve(async (req, context) => {
     const { getTokenParameterName } = await import("../_shared/ai-models.ts");
     const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
     const { parseAiJson } = await import("../_shared/ai-fetch.ts");
-    const { getServiceClient } = await import("../_shared/pipeline-logger.ts");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -29,7 +28,7 @@ Deno.serve(async (req, context) => {
 
     // BYPASS AUTH FOR REGRESSION TEST ONLY IF ENABLED VIA HEADER
     const isTest = req.headers.get("x-regression-test") === "true";
-    let user = null;
+    let user: any = null;
 
     if (!isTest) {
       console.log("[upgrade-questions] STEP: Auth validation");
@@ -117,7 +116,7 @@ Deno.serve(async (req, context) => {
           const aiData = await res.json();
           const parsed = parseAiJson(aiData.choices?.[0]?.message?.content || "");
           
-          if (parsed.statement && parsed.statement.length > 300) {
+          if (parsed.statement && parsed.statement.length > 200) {
             await supabaseAdmin.from("questions_bank").update({
               statement: parsed.statement.trim(),
               explanation: parsed.explanation?.trim(),
@@ -128,6 +127,7 @@ Deno.serve(async (req, context) => {
             }).eq("id", q.id);
             upgraded++;
           } else {
+            console.warn(`[upgrade-questions] Upgrade result too short or invalid for ${q.id}`);
             failed++;
           }
         } catch (err) {
@@ -138,6 +138,8 @@ Deno.serve(async (req, context) => {
         if (questions.indexOf(q) < questions.length - 1) {
           await new Promise(r => setTimeout(r, 1000));
         }
+      }
+      
       console.log(`[upgrade-questions] BATCH DONE: ${upgraded} success, ${failed} failed`);
 
       // 4. PIPELINE GOVERNANCE RECORDING
@@ -155,7 +157,7 @@ Deno.serve(async (req, context) => {
             upgraded,
             failed,
             total: questions.length,
-            ids: questions.map(q => q.id),
+            ids: questions.map((q: any) => q.id),
             correlation_id: correlationId
           }
         });
@@ -194,6 +196,21 @@ Deno.serve(async (req, context) => {
       ts: new Date().toISOString()
     };
     console.error("[upgrade-questions] FATAL ERROR", errorInfo);
+
+    // Self-healing: Log to pipeline_alerts
+    try {
+      const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
+      await logPipelineAlert({
+        source: "upgrade-questions",
+        message: `RUNTIME_ERROR: ${error?.message}`,
+        severity: "critical",
+        alert_type: "runtime_error",
+        error_stack: error?.stack,
+        metadata: { name: error?.name, correlation_id: correlationId }
+      });
+    } catch (logErr) {
+      console.error("Failed to log alert:", logErr);
+    }
 
     return new Response(JSON.stringify({ error: "failed", details: errorInfo }), {
       status: error?.message?.includes("UNAUTHORIZED") ? 401 : 500,
