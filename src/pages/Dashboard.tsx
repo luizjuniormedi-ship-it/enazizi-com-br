@@ -258,6 +258,15 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground">Provas & Questões</p>
             </div>
           </Link>
+          <Link to="/dashboard/proficiencia" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
+            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <GraduationCap className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="font-medium text-sm">Proficiência</p>
+              <p className="text-xs text-muted-foreground">Avaliações Atribuídas</p>
+            </div>
+          </Link>
         </EnaflixRow>
 
         {continueModules.length > 0 && (
