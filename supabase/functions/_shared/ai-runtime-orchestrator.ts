@@ -347,7 +347,7 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
-    const isOpenAI5 = /^openai\/openai/gpt-5/.test(ref.model);
+    const isOpenAI5 = ref.model.includes("gpt-5") || /^openai\/o[13]/.test(ref.model);
     const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
     const body: Record<string, unknown> = {
       model: ref.model,

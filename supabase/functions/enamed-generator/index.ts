@@ -30,12 +30,16 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-  const buildBody = (model: string) => JSON.stringify({
-    model,
-    messages,
-    max_tokens: 16384,
-    temperature: 0.85,
-  });
+  const buildBody = (model: string) => {
+    const isNewModel = model.includes("gpt-5") || model.includes("/o1") || model.includes("/o3");
+    const tokenParam = isNewModel ? "max_completion_tokens" : "max_tokens";
+    return JSON.stringify({
+      model,
+      messages,
+      [tokenParam]: 16384,
+      temperature: 0.85,
+    });
+  };
 
   // Try OpenAI first (gpt-5-mini) for higher quality
   if (OPENAI_API_KEY) {
