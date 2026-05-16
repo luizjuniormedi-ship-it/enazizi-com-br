@@ -2,6 +2,8 @@
 // ENAZIZI ENTERPRISE - Autonomous Cognitive Pipeline Infrastructure
 console.log("[upgrade-questions] BOOT: Initing Phase 3 (Full Logic)");
 
+const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
 Deno.serve(async (req, context) => {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
