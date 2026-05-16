@@ -98,7 +98,7 @@ Deno.serve(async (req, context) => {
           
           Retorne APENAS um JSON: {"statement": "...", "explanation": "..."}`;
 
-          const modelName = ALLOWED_MODELS.generation;
+          const modelName = ALLOWED_MODELS.reasoning; // Usar modelo mais forte
           const tokenKey = getTokenParameterName(modelName);
 
           console.log(`[upgrade-questions] Calling AI Gateway for ${q.id} with model ${modelName}`);
@@ -107,12 +107,11 @@ Deno.serve(async (req, context) => {
             headers: { 
               "Authorization": `Bearer ${LOVABLE_API_KEY}`, 
               "Content-Type": "application/json",
-              "Lovable-API-Key": LOVABLE_API_KEY || ""
             },
             body: JSON.stringify({
               model: modelName,
               messages: [
-                { role: "system", content: "Você é um professor de medicina especialista em provas de residência. Responda apenas com JSON." },
+                { role: "system", content: "Você é um professor de medicina especialista em provas de residência. Responda APENAS com JSON válido." },
                 { role: "user", content: prompt }
               ],
               [tokenKey]: 2000,
