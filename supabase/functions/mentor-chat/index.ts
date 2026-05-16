@@ -287,8 +287,11 @@ serve(async (req) => {
       });
     }
 
-    // Transformation: Prepend sources and wrap the stream
+    // Transformation: Prepend sources and wrap the stream with block telemetry
     const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let fullText = "";
+    
     const transformStream = new TransformStream({
       async start(controller) {
         console.log(`[mentor-chat] STREAM_STARTED id=${requestId}`);
@@ -299,15 +302,55 @@ serve(async (req) => {
             requestId,
             status: "STREAM_STARTED"
           };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sourcesChunk)}\\n\\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sourcesChunk)}\n\n`));
         }
       },
-      transform(chunk, controller) {
-        // Here we could parse chunks to log STREAM_CHUNK_RECEIVED if needed
+      async transform(chunk, controller) {
+        const text = decoder.decode(chunk);
+        fullText += text;
+
+        // Detect pedagogical blocks in real-time
+        const blockMatch = text.match(/## 🎯 BLOCO (\d+)/);
+        if (blockMatch) {
+            const blockNum = blockMatch[1];
+            // Record block event (non-blocking)
+            supabase.from("tutor_events").insert({
+                user_id: userId,
+                conversation_id: conversationId,
+                event_type: "block_started",
+                block_type: `BLOCO_${blockNum}`,
+                payload: { requestId, timestamp: Date.now() }
+            }).then();
+        }
+
         controller.enqueue(chunk);
       },
-      flush() {
+      async flush(controller) {
         console.log(`[mentor-chat] STREAM_FINISHED id=${requestId}`);
+        
+        // Final instrumentation: Overall quality audit
+        const blocksFound = (fullText.match(/## 🎯 BLOCO/g) || []).length;
+        const complete15 = blocksFound >= 15;
+        
+        await supabase.from("tutor_effectiveness").insert({
+            user_id: userId,
+            conversation_id: conversationId,
+            topic: userTopic,
+            pedagogical_impact_score: complete15 ? 100 : (blocksFound / 15) * 100,
+            average_depth_score: fullText.length / 500, // Heuristic depth
+            hallucination_detected: false // TODO: integrate with Anti-Hallucination Agent
+        });
+
+        // Record governance log if blocks are missing
+        if (!complete15) {
+            await supabase.from("ai_governance_logs").insert({
+                function_name: "mentor-chat",
+                model_name: modelUsed,
+                incident_type: "missing_block",
+                severity: "warning",
+                details: { blocksFound, requestId }
+            });
+        }
       }
     });
 
