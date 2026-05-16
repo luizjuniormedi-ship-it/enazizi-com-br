@@ -89,11 +89,25 @@ async function computeAndPersist(adminClient: ReturnType<typeof createClient>, u
   const diagnosticWeight = hasDiagnostic ? (hasEnoughHistory ? 0.10 : 0.40) : 0;
   const remainingWeight = 1 - diagnosticWeight;
 
+  // TRI / IRT Latent Ability Estimation
+  const triData = triPracticeRes.data || [];
+  const triResponses = triData.map((r: any) => ({
+      correct: r.correct,
+      item: {
+          difficulty: (r.questions_bank?.tri_difficulty_score || 0) / 100, // Map 0-100 to standard TRI
+          discrimination: r.questions_bank?.tri_discrimination || 1.0,
+          guessing: r.questions_bank?.tri_guessing || 0.2
+      }
+  }));
+  const theta = estimateTheta(triResponses);
+  const triScore = thetaToScore(theta);
+
   const rawScore =
     accuracy * 0.25 * remainingWeight +
+    triScore * 0.10 * remainingWeight + // Adding TRI to global score
     domainScore * 0.15 * remainingWeight +
-    reviewScore * 0.15 * remainingWeight +
-    consistencyScore * 0.15 * remainingWeight +
+    reviewScore * 0.10 * remainingWeight +
+    consistencyScore * 0.10 * remainingWeight +
     simulationScore * 0.20 * remainingWeight +
     errorComponent * 0.10 * remainingWeight +
     diagnosticScore * diagnosticWeight;
