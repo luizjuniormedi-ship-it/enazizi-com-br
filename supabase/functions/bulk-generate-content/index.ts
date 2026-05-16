@@ -500,6 +500,8 @@ Deno.serve(async (req, context) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const { createPipelineJob, completePipelineJob, failPipelineJob } = await import("../_shared/pipeline-engine.ts");
+
     const url = new URL(req.url);
 
     const authHeader = req.headers.get("Authorization");
