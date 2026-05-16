@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const MODELS_TO_TEST = [
+  "google/gemini-2.0-flash",
   "google/gemini-2.5-flash",
   "google/gemini-2.5-pro",
   "openai/gpt-4o",
@@ -19,6 +20,7 @@ serve(async (req) => {
     console.log(`Testing model: ${model}`);
     const start = Date.now();
     try {
+      // Use both parameters for safety in test
       const response = await fetch("https://api.lovable.dev/v1/ai/chat", {
         method: "POST",
         headers: {
@@ -28,7 +30,8 @@ serve(async (req) => {
         body: JSON.stringify({
           model: model,
           messages: [{ role: "user", content: "hi" }],
-          max_tokens: 10
+          max_tokens: 10,
+          max_completion_tokens: 10
         }),
       });
       
@@ -39,10 +42,8 @@ serve(async (req) => {
         model,
         status: response.status,
         duration,
-        response: data.substring(0, 100)
+        response: data.substring(0, 150)
       });
-      
-      console.log(`Model ${model} result: ${response.status}`);
     } catch (e) {
       results.push({
         model,
@@ -51,7 +52,7 @@ serve(async (req) => {
     }
   }
   
-  return new Response(JSON.stringify(results), {
+  return new Response(JSON.stringify(results, null, 2), {
     headers: { "Content-Type": "application/json" }
   });
 });
