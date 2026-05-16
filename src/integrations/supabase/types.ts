@@ -1171,6 +1171,36 @@ export type Database = {
           },
         ]
       }
+      ai_governance_logs: {
+        Row: {
+          audited_at: string | null
+          details: Json | null
+          function_name: string
+          id: string
+          incident_type: string | null
+          model_name: string
+          severity: string | null
+        }
+        Insert: {
+          audited_at?: string | null
+          details?: Json | null
+          function_name: string
+          id?: string
+          incident_type?: string | null
+          model_name: string
+          severity?: string | null
+        }
+        Update: {
+          audited_at?: string | null
+          details?: Json | null
+          function_name?: string
+          id?: string
+          incident_type?: string | null
+          model_name?: string
+          severity?: string | null
+        }
+        Relationships: []
+      }
       ai_model_registry: {
         Row: {
           cost_tier: string
@@ -7948,6 +7978,45 @@ export type Database = {
           },
         ]
       }
+      cognitive_analytics: {
+        Row: {
+          average_time_to_mastery: string | null
+          cognitive_pressure: number | null
+          computed_at: string | null
+          fatigue_score: number | null
+          id: string
+          memory_decay_rate: number | null
+          overall_retention: number | null
+          overload_flag: boolean | null
+          recovery_success_rate: number | null
+          user_id: string
+        }
+        Insert: {
+          average_time_to_mastery?: string | null
+          cognitive_pressure?: number | null
+          computed_at?: string | null
+          fatigue_score?: number | null
+          id?: string
+          memory_decay_rate?: number | null
+          overall_retention?: number | null
+          overload_flag?: boolean | null
+          recovery_success_rate?: number | null
+          user_id: string
+        }
+        Update: {
+          average_time_to_mastery?: string | null
+          cognitive_pressure?: number | null
+          computed_at?: string | null
+          fatigue_score?: number | null
+          id?: string
+          memory_decay_rate?: number | null
+          overall_retention?: number | null
+          overload_flag?: boolean | null
+          recovery_success_rate?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cognitive_drift_logs: {
         Row: {
           detected_at: string | null
@@ -10515,6 +10584,39 @@ export type Database = {
           specialty?: string | null
           title?: string
           year?: number | null
+        }
+        Relationships: []
+      }
+      fatigue_metrics: {
+        Row: {
+          abandonment_risk: number | null
+          created_at: string | null
+          error_rate_spike: boolean | null
+          id: string
+          overload_score: number | null
+          session_id: string | null
+          time_per_question_spike: boolean | null
+          user_id: string
+        }
+        Insert: {
+          abandonment_risk?: number | null
+          created_at?: string | null
+          error_rate_spike?: boolean | null
+          id?: string
+          overload_score?: number | null
+          session_id?: string | null
+          time_per_question_spike?: boolean | null
+          user_id: string
+        }
+        Update: {
+          abandonment_risk?: number | null
+          created_at?: string | null
+          error_rate_spike?: boolean | null
+          id?: string
+          overload_score?: number | null
+          session_id?: string | null
+          time_per_question_spike?: boolean | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -13241,6 +13343,36 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_knowledge_graph: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          relation_type: string
+          source_entity: string
+          strength: number | null
+          target_entity: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          relation_type: string
+          source_entity: string
+          strength?: number | null
+          target_entity: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          relation_type?: string
+          source_entity?: string
+          strength?: number | null
+          target_entity?: string
+        }
+        Relationships: []
+      }
       medical_prompt_execution_logs: {
         Row: {
           cache_status: string | null
@@ -15503,6 +15635,36 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_effectiveness: {
+        Row: {
+          accepted: boolean | null
+          created_at: string | null
+          id: string
+          progress_delta: number | null
+          recommendation_id: string | null
+          retention_boost: number | null
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          created_at?: string | null
+          id?: string
+          progress_delta?: number | null
+          recommendation_id?: string | null
+          retention_boost?: number | null
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          created_at?: string | null
+          id?: string
+          progress_delta?: number | null
+          recommendation_id?: string | null
+          retention_boost?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       planner_extracted_topics: {
         Row: {
           coverage_stats: Json | null
@@ -17228,6 +17390,7 @@ export type Database = {
           institution: string | null
           is_global: boolean | null
           language: string | null
+          latent_ability_theta: number | null
           lifecycle_state: string | null
           microtopic_id: string | null
           official_exam_flag: boolean | null
@@ -17250,6 +17413,8 @@ export type Database = {
           topic: string | null
           topic_id: string | null
           tri_difficulty_score: number | null
+          tri_discrimination: number | null
+          tri_guessing: number | null
           tutor_context: string | null
           updated_at: string
           user_id: string
@@ -17288,6 +17453,7 @@ export type Database = {
           institution?: string | null
           is_global?: boolean | null
           language?: string | null
+          latent_ability_theta?: number | null
           lifecycle_state?: string | null
           microtopic_id?: string | null
           official_exam_flag?: boolean | null
@@ -17310,6 +17476,8 @@ export type Database = {
           topic?: string | null
           topic_id?: string | null
           tri_difficulty_score?: number | null
+          tri_discrimination?: number | null
+          tri_guessing?: number | null
           tutor_context?: string | null
           updated_at?: string
           user_id: string
@@ -17348,6 +17516,7 @@ export type Database = {
           institution?: string | null
           is_global?: boolean | null
           language?: string | null
+          latent_ability_theta?: number | null
           lifecycle_state?: string | null
           microtopic_id?: string | null
           official_exam_flag?: boolean | null
@@ -17370,6 +17539,8 @@ export type Database = {
           topic?: string | null
           topic_id?: string | null
           tri_difficulty_score?: number | null
+          tri_discrimination?: number | null
+          tri_guessing?: number | null
           tutor_context?: string | null
           updated_at?: string
           user_id?: string
@@ -18049,6 +18220,42 @@ export type Database = {
           },
         ]
       }
+      recovery_metrics: {
+        Row: {
+          final_score: number | null
+          id: string
+          initial_score: number | null
+          recovery_end_at: string | null
+          recovery_start_at: string | null
+          reincidência_rate: number | null
+          success: boolean | null
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          final_score?: number | null
+          id?: string
+          initial_score?: number | null
+          recovery_end_at?: string | null
+          recovery_start_at?: string | null
+          reincidência_rate?: number | null
+          success?: boolean | null
+          topic: string
+          user_id: string
+        }
+        Update: {
+          final_score?: number | null
+          id?: string
+          initial_score?: number | null
+          recovery_end_at?: string | null
+          recovery_start_at?: string | null
+          reincidência_rate?: number | null
+          success?: boolean | null
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recovery_runs: {
         Row: {
           active: boolean
@@ -18084,6 +18291,42 @@ export type Database = {
           reason?: string | null
           started_at?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      retention_metrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          lapses_count: number | null
+          last_review_at: string | null
+          predicted_stability: number | null
+          real_retention: number | null
+          subtopic: string | null
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lapses_count?: number | null
+          last_review_at?: string | null
+          predicted_stability?: number | null
+          real_retention?: number | null
+          subtopic?: string | null
+          topic: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lapses_count?: number | null
+          last_review_at?: string | null
+          predicted_stability?: number | null
+          real_retention?: number | null
+          subtopic?: string | null
+          topic?: string
           user_id?: string
         }
         Relationships: []
@@ -20826,6 +21069,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tutor_effectiveness: {
+        Row: {
+          average_depth_score: number | null
+          conversation_id: string | null
+          created_at: string | null
+          hallucination_detected: boolean | null
+          id: string
+          pedagogical_impact_score: number | null
+          recall_effectiveness: number | null
+          topic: string | null
+          user_id: string
+        }
+        Insert: {
+          average_depth_score?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          hallucination_detected?: boolean | null
+          id?: string
+          pedagogical_impact_score?: number | null
+          recall_effectiveness?: number | null
+          topic?: string | null
+          user_id: string
+        }
+        Update: {
+          average_depth_score?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          hallucination_detected?: boolean | null
+          id?: string
+          pedagogical_impact_score?: number | null
+          recall_effectiveness?: number | null
+          topic?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       tutor_events: {
         Row: {

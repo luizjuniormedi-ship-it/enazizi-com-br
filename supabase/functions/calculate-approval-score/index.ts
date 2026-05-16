@@ -1,16 +1,10 @@
 /**
- * calculate-approval-score
+ * calculate-approval-score — TRI/IRT Enhanced v2026
  * Recalcula o approval score de um usuário e atualiza chance_by_exam.
- *
- * Modos:
- *   - JWT (caller é o próprio usuário): usa requireAuth e calcula para si.
- *   - Service-role (cron / backfill): aceita body { target_user_id } e
- *     valida via header `apikey` igual a SUPABASE_SERVICE_ROLE_KEY.
- *
- * Sem mocks. Sem dado fake. Se faltar dado, score = 0 com phase="critico".
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { estimateTheta, thetaToScore } from "../_shared/tri-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,19 +13,20 @@ const corsHeaders = {
 };
 
 const MINIMUM_BANCAS = ["enare", "usp", "sus-sp", "unifesp", "unicamp"];
-const BANCA_WEIGHTS: Record<string, { acc: number; domain: number; sim: number; review: number; consistency: number; osce: number; errorPen: number }> = {
-  enare:    { acc: 0.30, domain: 0.20, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
-  usp:      { acc: 0.25, domain: 0.15, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.10, errorPen: 0.10 },
-  unicamp:  { acc: 0.25, domain: 0.15, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.15, errorPen: 0.10 },
-  unifesp:  { acc: 0.25, domain: 0.20, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
-  "sus-sp": { acc: 0.30, domain: 0.25, sim: 0.10, review: 0.15, consistency: 0.10, osce: 0.00, errorPen: 0.10 },
+const BANCA_WEIGHTS: Record<string, { acc: number; tri: number; domain: number; sim: number; review: number; consistency: number; osce: number; errorPen: number }> = {
+  enare:    { acc: 0.15, tri: 0.15, domain: 0.20, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
+  usp:      { acc: 0.10, tri: 0.15, domain: 0.15, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.10, errorPen: 0.10 },
+  unicamp:  { acc: 0.10, tri: 0.15, domain: 0.15, sim: 0.15, review: 0.10, consistency: 0.10, osce: 0.15, errorPen: 0.10 },
+  unifesp:  { acc: 0.10, tri: 0.15, domain: 0.20, sim: 0.20, review: 0.10, consistency: 0.10, osce: 0.05, errorPen: 0.10 },
+  "sus-sp": { acc: 0.15, tri: 0.15, domain: 0.25, sim: 0.10, review: 0.15, consistency: 0.10, osce: 0.00, errorPen: 0.10 },
 };
-const DEFAULT_W = { acc: 0.25, domain: 0.20, sim: 0.15, review: 0.15, consistency: 0.10, osce: 0.05, errorPen: 0.10 };
+const DEFAULT_W = { acc: 0.15, tri: 0.10, domain: 0.20, sim: 0.15, review: 0.15, consistency: 0.10, osce: 0.05, errorPen: 0.10 };
 
 async function computeAndPersist(adminClient: ReturnType<typeof createClient>, userId: string, source: string) {
   const [
     practiceRes, domainRes, reviewRes, examRes,
     errorRes, streakRes, clinicalRes, diagnosticRes,
+    triPracticeRes
   ] = await Promise.all([
     adminClient.from("practice_attempts").select("correct").eq("user_id", userId).limit(1000),
     adminClient.from("medical_domain_map").select("domain_score, questions_answered").eq("user_id", userId),
@@ -41,6 +36,18 @@ async function computeAndPersist(adminClient: ReturnType<typeof createClient>, u
     adminClient.from("user_gamification").select("current_streak, longest_streak").eq("user_id", userId).maybeSingle(),
     adminClient.from("simulation_history").select("final_score").eq("user_id", userId).limit(20),
     adminClient.from("diagnostic_sessions").select("score").eq("user_id", userId).order("created_at", { ascending: false }).limit(1),
+    // Joined fetch for TRI calculation
+    adminClient.from("practice_attempts")
+        .select(`
+            correct,
+            questions_bank (
+                tri_difficulty_score,
+                tri_discrimination,
+                tri_guessing
+            )
+        `)
+        .eq("user_id", userId)
+        .limit(100)
   ]);
 
   const attempts = practiceRes.data || [];
@@ -82,11 +89,25 @@ async function computeAndPersist(adminClient: ReturnType<typeof createClient>, u
   const diagnosticWeight = hasDiagnostic ? (hasEnoughHistory ? 0.10 : 0.40) : 0;
   const remainingWeight = 1 - diagnosticWeight;
 
+  // TRI / IRT Latent Ability Estimation
+  const triData = triPracticeRes.data || [];
+  const triResponses = triData.map((r: any) => ({
+      correct: r.correct,
+      item: {
+          difficulty: (r.questions_bank?.tri_difficulty_score || 0) / 100, // Map 0-100 to standard TRI
+          discrimination: r.questions_bank?.tri_discrimination || 1.0,
+          guessing: r.questions_bank?.tri_guessing || 0.2
+      }
+  }));
+  const theta = estimateTheta(triResponses);
+  const triScore = thetaToScore(theta);
+
   const rawScore =
     accuracy * 0.25 * remainingWeight +
+    triScore * 0.10 * remainingWeight + // Adding TRI to global score
     domainScore * 0.15 * remainingWeight +
-    reviewScore * 0.15 * remainingWeight +
-    consistencyScore * 0.15 * remainingWeight +
+    reviewScore * 0.10 * remainingWeight +
+    consistencyScore * 0.10 * remainingWeight +
     simulationScore * 0.20 * remainingWeight +
     errorComponent * 0.10 * remainingWeight +
     diagnosticScore * diagnosticWeight;
