@@ -15539,6 +15539,99 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_governance: {
+        Row: {
+          completed_at: string | null
+          error_stack: string | null
+          failure_reason: string | null
+          function_name: string
+          id: string
+          job_id: string | null
+          latency_ms: number | null
+          metadata: Json | null
+          model_used: string | null
+          pipeline_name: string
+          quality_score: number | null
+          started_at: string | null
+          status: string
+          tokens_used: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          error_stack?: string | null
+          failure_reason?: string | null
+          function_name: string
+          id?: string
+          job_id?: string | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          model_used?: string | null
+          pipeline_name: string
+          quality_score?: number | null
+          started_at?: string | null
+          status?: string
+          tokens_used?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          error_stack?: string | null
+          failure_reason?: string | null
+          function_name?: string
+          id?: string
+          job_id?: string | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          model_used?: string | null
+          pipeline_name?: string
+          quality_score?: number | null
+          started_at?: string | null
+          status?: string
+          tokens_used?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      pipeline_health_metrics: {
+        Row: {
+          avg_latency_ms: number | null
+          completion_rate: number | null
+          error_count: number | null
+          health_status: string | null
+          id: string
+          last_health_check: string | null
+          pipeline_name: string
+          success_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_latency_ms?: number | null
+          completion_rate?: number | null
+          error_count?: number | null
+          health_status?: string | null
+          id?: string
+          last_health_check?: string | null
+          pipeline_name: string
+          success_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_latency_ms?: number | null
+          completion_rate?: number | null
+          error_count?: number | null
+          health_status?: string | null
+          id?: string
+          last_health_check?: string | null
+          pipeline_name?: string
+          success_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pipeline_jobs: {
         Row: {
           completed_at: string | null

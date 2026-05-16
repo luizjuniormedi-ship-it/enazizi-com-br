@@ -1,7 +1,8 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { getTokenParameterName } from "../_shared/ai-models.ts";
+import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
+import { sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,16 +47,19 @@ Retorne APENAS um JSON válido:
 }`;
 
   try {
+    const modelName = ALLOWED_MODELS.generation;
+    const tokenKey = getTokenParameterName(modelName);
+
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: `openai/${ALLOWED_MODELS.generation}`,
+        model: modelName,
         messages: [
           { role: "system", content: "Responda EXCLUSIVAMENTE com JSON válido. Sem markdown." },
           { role: "user", content: prompt },
         ],
-        [getTokenParameterName(ALLOWED_MODELS.generation)]: 4000,
+        [tokenKey]: 4000,
       }),
     });
 
@@ -66,8 +70,9 @@ Retorne APENAS um JSON válido:
     }
 
     const data = await res.json();
-    const raw = (data.choices?.[0]?.message?.content || "").replace(/```json\n?/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(raw);
+    const rawContent = data.choices?.[0]?.message?.content || "";
+    const parsed = parseAiJson(rawContent);
+    
     let newStatement = (parsed.statement || "").trim();
     let newExplanation = (parsed.explanation || "").trim();
 
@@ -87,17 +92,59 @@ Retorne APENAS um JSON válido:
   }
 }
 
-serve(async (req) => {
+Deno.serve(async (req, context) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const functionName = "upgrade-questions";
+
   try {
+    // 1. TOP-LEVEL SIDE EFFECT PROTECTION (Moved inside handler)
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error("Missing Supabase configuration");
+    }
+
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // 2. AUTHENTICATION
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "UNAUTHORIZED", message: "Auth required" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (authError || !user) {
+      console.error("[upgrade-questions] Auth failure:", authError);
+      return new Response(JSON.stringify({ error: "UNAUTHORIZED", message: "Invalid token" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Check if user has admin role
+    const { data: roleData } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: "FORBIDDEN", message: "Admin role required" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 3. BACKGROUND PROCESSING FALLBACK
+    const waitUntil = context?.waitUntil ?? ((promise: Promise<unknown>) => promise.catch(err => 
+      console.error(`[${functionName}] background_error`, err)
+    ));
 
     const body = await req.json().catch(() => ({}));
     const batchSize = Math.min(body.batch_size || 10, 20);
@@ -105,66 +152,97 @@ serve(async (req) => {
 
     // Fetch questions to upgrade
     let query = supabaseAdmin.from("questions_bank")
-      .select("id, statement, options, correct_index, topic, explanation")
+      .select("id, statement, options, correct_index, topic, explanation, source")
       .in("quality_tier", ["needs_upgrade", "basic"])
       .order("created_at", { ascending: false })
       .limit(batchSize);
 
     if (ids && ids.length > 0) {
       query = supabaseAdmin.from("questions_bank")
-        .select("id, statement, options, correct_index, topic, explanation")
+        .select("id, statement, options, correct_index, topic, explanation, source")
         .in("id", ids)
         .limit(batchSize);
     }
 
     const { data: questions, error: fetchError } = await query;
     if (fetchError) throw fetchError;
+
     if (!questions || questions.length === 0) {
       return new Response(JSON.stringify({ message: "Nenhuma questão para enriquecer", upgraded: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    let upgraded = 0;
-    let failed = 0;
+    // Core logic
+    const processBatch = async () => {
+      let upgraded = 0;
+      let failed = 0;
 
-    for (const q of questions) {
-      const upgradeResult = await upgradeQuestion(
-        { ...q, options: Array.isArray(q.options) ? q.options : [] },
-        LOVABLE_API_KEY,
-      );
+      for (const q of questions) {
+        const upgradeResult = await upgradeQuestion(
+          { ...q, options: Array.isArray(q.options) ? q.options : [] },
+          LOVABLE_API_KEY,
+        );
 
-      if (upgradeResult) {
-        const { error } = await supabaseAdmin.from("questions_bank").update({
-          statement: upgradeResult.statement,
-          explanation: upgradeResult.explanation,
-          quality_tier: "exam_standard",
-          review_status: "approved",
-          source: (q as any).source ? `${(q as any).source}|ai-upgraded` : "ai-upgraded",
-        }).eq("id", q.id);
+        if (upgradeResult) {
+          const { error } = await supabaseAdmin.from("questions_bank").update({
+            statement: upgradeResult.statement,
+            explanation: upgradeResult.explanation,
+            quality_tier: "exam_standard",
+            review_status: "approved",
+            source: q.source ? `${q.source}|ai-upgraded` : "ai-upgraded",
+          }).eq("id", q.id);
 
-        if (!error) upgraded++;
-        else { console.error(`Update error ${q.id}:`, error); failed++; }
-      } else {
-        failed++;
+          if (!error) upgraded++;
+          else { console.error(`Update error ${q.id}:`, error); failed++; }
+        } else {
+          failed++;
+        }
+
+        // Small delay to avoid rate limits
+        if (questions.indexOf(q) < questions.length - 1) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
       }
 
-      // Small delay to avoid rate limits
-      if (questions.indexOf(q) < questions.length - 1) {
-        await new Promise(r => setTimeout(r, 1500));
-      }
-    }
+      console.log(`[${functionName}] Finished: ${upgraded} upgraded, ${failed} failed.`);
+    };
+
+    // If batch is large or explicitly requested background, we can use waitUntil
+    // For now, let's process it and return the result to be more standard
+    await processBatch();
 
     return new Response(JSON.stringify({
-      message: `${upgraded} questões enriquecidas, ${failed} falharam`,
-      upgraded,
-      failed,
+      message: "Batch processed",
       total_processed: questions.length,
+      success: true
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-  } catch (e) {
-    console.error("upgrade-questions error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
+  } catch (error) {
+    console.error(`[${functionName}] RUNTIME_ERROR`, {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack
+    });
+
+    // Self-healing: Log to pipeline_alerts
+    try {
+      await logPipelineAlert({
+        source: functionName,
+        message: `RUNTIME_ERROR: ${error?.message}`,
+        severity: "critical",
+        alert_type: "runtime_error",
+        error_stack: error?.stack,
+        metadata: { name: error?.name }
+      });
+    } catch (logErr) {
+      console.error("Failed to log alert:", logErr);
+    }
+
+    return new Response(JSON.stringify({ 
+      error: "upgrade_questions_failed", 
+      message: error instanceof Error ? error.message : "Unknown error" 
+    }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
