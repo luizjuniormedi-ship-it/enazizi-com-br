@@ -107,9 +107,10 @@ Deno.serve(async (req, context) => {
             await supabaseAdmin.from("questions_bank").update({
               statement: parsed.statement.trim(),
               explanation: parsed.explanation?.trim(),
-              quality_tier: "exam_standard",
-              review_status: "approved",
-              source: q.source ? `${q.source}|ai-upgraded` : "ai-upgraded",
+            quality_tier: "exam_standard",
+            review_status: "approved",
+            updated_at: new Date().toISOString(),
+            source: q.source ? `${q.source}|ai-upgraded` : "ai-upgraded",
             }).eq("id", q.id);
             upgraded++;
           } else {
