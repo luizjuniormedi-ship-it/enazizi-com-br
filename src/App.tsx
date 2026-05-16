@@ -252,6 +252,9 @@ const App = () => (
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="pipeline-hardening" element={<AIPipelineHardening />} />
                 <Route path="ceo" element={<AdminCEO />} />
+                <Route path="observatory" element={<CognitiveObservatory />} />
+                <Route path="executive" element={<ExecutiveIntelligence />} />
+                <Route path="knowledge-graph" element={<MedicalKnowledgeGraphPage />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
