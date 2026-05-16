@@ -17,10 +17,18 @@ export const forceLoginRefresh = async (session: Session | null) => {
   if (forceRefreshInFlight) return false;
 
   const loginSignature = getLoginRefreshSignature(session);
-  if (!loginSignature) return false;
+  if (!loginSignature) {
+    console.debug("[Auth] No login signature available");
+    return false;
+  }
 
   const previousSignature = sessionStorage.getItem(LOGIN_REFRESH_SIGNATURE_KEY);
-  if (previousSignature === loginSignature) return false;
+  console.debug("[Auth] Signature check:", { previous: previousSignature, current: loginSignature });
+  
+  if (previousSignature === loginSignature) {
+    console.debug("[Auth] Signature match, skipping refresh");
+    return false;
+  }
 
   forceRefreshInFlight = true;
 
