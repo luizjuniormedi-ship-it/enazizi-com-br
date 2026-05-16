@@ -101,19 +101,31 @@ Deno.serve(async (req, context) => {
           const modelName = ALLOWED_MODELS.generation;
           const tokenKey = getTokenParameterName(modelName);
 
+          console.log(`[upgrade-questions] Calling AI Gateway for ${q.id} with model ${modelName}`);
           const res = await fetch(LOVABLE_GATEWAY, {
             method: "POST",
-            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+            headers: { 
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`, 
+              "Content-Type": "application/json",
+              "Lovable-API-Key": LOVABLE_API_KEY || ""
+            },
             body: JSON.stringify({
               model: modelName,
-              messages: [{ role: "user", content: prompt }],
+              messages: [
+                { role: "system", content: "Você é um professor de medicina especialista em provas de residência. Responda apenas com JSON." },
+                { role: "user", content: prompt }
+              ],
               [tokenKey]: 2000,
             }),
           });
 
-          if (!res.ok) throw new Error(`AI error ${res.status}`);
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`AI error ${res.status}: ${errorText}`);
+          }
 
           const aiData = await res.json();
+          console.log(`[upgrade-questions] AI Response received for ${q.id}`);
           const aiContent = aiData.choices?.[0]?.message?.content || "";
           
           if (!aiContent) throw new Error("AI returned empty content");
