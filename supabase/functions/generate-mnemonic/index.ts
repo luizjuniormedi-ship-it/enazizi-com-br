@@ -308,6 +308,7 @@ serve(async (req: Request) => {
   const requestIdForError = crypto.randomUUID();
 
   try {
+    console.log(`[MNEMONIC_REQUEST_START] ${req.method} ${requestIdForError}`);
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
     if (req.method !== "POST") return jsonResponse({ success: false, error: "Método não permitido.", requestId: requestIdForError }, 405);
 
