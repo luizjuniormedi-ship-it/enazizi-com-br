@@ -5,12 +5,10 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const MODELS_TO_TEST = [
   "google/gemini-2.0-flash",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-pro",
   "openai/gpt-4o",
   "openai/gpt-4o-mini",
-  "openai/gpt-5",
-  "openai/gpt-5-mini"
+  "openai/gpt-4",
+  "openai/gpt-3.5-turbo"
 ];
 
 serve(async (req) => {
@@ -20,7 +18,6 @@ serve(async (req) => {
     console.log(`Testing model: ${model}`);
     const start = Date.now();
     try {
-      // Use both parameters for safety in test
       const response = await fetch("https://api.lovable.dev/v1/ai/chat", {
         method: "POST",
         headers: {
@@ -30,8 +27,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: model,
           messages: [{ role: "user", content: "hi" }],
-          max_tokens: 10,
-          max_completion_tokens: 10
+          max_tokens: 10
         }),
       });
       
