@@ -33,15 +33,50 @@ interface PlanWeights {
 
 function adjustPlanByApprovalScore(score: number): PlanWeights {
   if (score < 50) {
-    return { reviewWeight: 0.40, theoryWeight: 0.15, questionsWeight: 0.35, practicalWeight: 0.10, maxNewTopics: 1, phase: "critico" };
+    // ZONE A — CRÍTICO: recover foundation
+    return {
+      reviewWeight: 0.55,
+      theoryWeight: 0.20,
+      questionsWeight: 0.20,
+      practicalWeight: 0.05,
+      maxNewTopics: 1,
+      phase: "critico",
+    };
   }
+
   if (score < 70) {
-    return { reviewWeight: 0.30, theoryWeight: 0.15, questionsWeight: 0.30, practicalWeight: 0.25, maxNewTopics: 2, phase: "atencao" };
+    // ZONE B — ATENÇÃO: repair and stabilize
+    return {
+      reviewWeight: 0.40,
+      theoryWeight: 0.20,
+      questionsWeight: 0.25,
+      practicalWeight: 0.15,
+      maxNewTopics: 2,
+      phase: "atencao",
+    };
   }
+
   if (score < 85) {
-    return { reviewWeight: 0.20, theoryWeight: 0.10, questionsWeight: 0.25, practicalWeight: 0.45, maxNewTopics: 3, phase: "competitivo" };
+    // ZONE C — COMPETITIVO: refine and increase realism
+    return {
+      reviewWeight: 0.25,
+      theoryWeight: 0.20,
+      questionsWeight: 0.30,
+      practicalWeight: 0.25,
+      maxNewTopics: 3,
+      phase: "competitivo",
+    };
   }
-  return { reviewWeight: 0.15, theoryWeight: 0.05, questionsWeight: 0.20, practicalWeight: 0.60, maxNewTopics: 2, phase: "pronto" };
+
+  // ZONE D — PRONTO: maintain sharpness
+  return {
+    reviewWeight: 0.20,
+    theoryWeight: 0.10,
+    questionsWeight: 0.35,
+    practicalWeight: 0.35,
+    maxNewTopics: 2,
+    phase: "pronto",
+  };
 }
 
 /** SHA-256 hex (sub-resource Web Crypto). */
