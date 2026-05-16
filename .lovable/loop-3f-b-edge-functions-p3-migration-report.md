@@ -49,7 +49,7 @@ Confirmado para todas as 9: `requireAuth` é a primeira instrução dentro do `t
 
 ## Não tocados (escopo estrito respeitado)
 - ❌ Nenhum prompt de IA alterado
-- ❌ Nenhum modelo alterado (`openai/gpt-5-mini`, `openai/gpt-4o-mini`, `google/gemini-2.5-flash-image` etc.)
+- ❌ Nenhum modelo alterado (`openai/gpt-5-mini`, `openai/gpt-5-mini`, `google/gemini-2.5-flash-image` etc.)
 - ❌ Nenhum payload request/response alterado
 - ❌ Nenhuma lógica pedagógica alterada (slot-based generation, validação Hard, banca profiles, FSRS, mnemonic agents)
 - ❌ Nenhum arquivo `src/` modificado

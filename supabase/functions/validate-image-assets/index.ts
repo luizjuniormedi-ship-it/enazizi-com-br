@@ -69,7 +69,7 @@ serve(async (req) => {
           quality_score: validation.quality,
           validation_status: validation.status,
           validation_reason: validation.reason,
-          model_used: "openai/gpt-5-mini-mini",
+          model_used: "openai/gpt-5-mini",
         });
 
         // If invalid, deactivate asset
@@ -144,7 +144,7 @@ Return ONLY valid JSON:
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/gpt-5-mini-mini",
+      model: "openai/gpt-5-mini",
       messages: [
         { role: "user", content: prompt },
       ],

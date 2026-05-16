@@ -10,8 +10,8 @@ WHERE fallback_model IN ('o1-preview', 'o1', 'o1-mini');
 -- Also update standard defaults just in case
 UPDATE public.clinical_quality_profiles
 SET preferred_model = 'openai/gpt-5-mini'
-WHERE preferred_model = 'gpt-4o-mini';
+WHERE preferred_model = 'openai/gpt-5-mini';
 
 UPDATE public.clinical_quality_profiles
 SET fallback_model = 'openai/gpt-5'
-WHERE fallback_model = 'gpt-4o';
+WHERE fallback_model = 'openai/gpt-5';

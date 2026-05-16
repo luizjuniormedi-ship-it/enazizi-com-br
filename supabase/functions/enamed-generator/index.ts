@@ -69,15 +69,15 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: buildBody("openai/gpt-5-mini-mini"),
+      body: buildBody("openai/gpt-5-mini"),
     });
     if (res.ok) {
       const data = await res.json();
-      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-5-mini-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-5-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
       return data.choices?.[0]?.message?.content || "";
     }
     const errText = await res.text();
-    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-5-mini-mini", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
+    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-5-mini", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
     throw new Error(`Lovable Gateway ${res.status}: ${errText.slice(0, 200)}`);
   }
 

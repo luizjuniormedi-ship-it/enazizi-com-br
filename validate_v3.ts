@@ -22,7 +22,7 @@ async function validateTopic(topic: string) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-4o", // ou o modelo que você preferir testar
+        model: "openai/gpt-5", // ou o modelo que você preferir testar
         messages: messages,
         temperature: 0.7
       })

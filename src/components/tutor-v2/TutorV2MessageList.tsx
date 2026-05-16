@@ -127,7 +127,7 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
                   <div className="h-3 w-[1px] bg-white/5" />
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter p-0 h-auto hover:bg-transparent flex items-center gap-1 border-none">
-                      <Layout className="h-3 w-3" /> {msg.metadata?.model || "gpt-4o"}
+                      <Layout className="h-3 w-3" /> {msg.metadata?.model || "openai/gpt-5"}
                     </Badge>
 
                     {msg.metadata?.fallback_used && (

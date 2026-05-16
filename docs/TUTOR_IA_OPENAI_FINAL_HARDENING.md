@@ -1,8 +1,8 @@
 # TUTOR IA & ENAZIZI MNEMONIC GENERATOR — OPENAI HARDENING
 
 ## Arquitetura Final
-- **Modelos de Linguagem:** `openai/gpt-4o-mini` (rápido, barato, preciso para medicina).
-- **Modelos de Imagem:** `openai/gpt-4o` (DALL-E 3 via API multimodal).
+- **Modelos de Linguagem:** `openai/gpt-5-mini` (rápido, barato, preciso para medicina).
+- **Modelos de Imagem:** `openai/gpt-5` (DALL-E 3 via API multimodal).
 - **Hardening:** Bloqueio total de modelos Gemini/Google para evitar regressões de gateway e inconsistências de telemetria.
 
 ## Fluxo de Geração (ENAZIZI Definitivo)
