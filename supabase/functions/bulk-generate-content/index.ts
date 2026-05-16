@@ -1,7 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
-import { createPipelineJob, updatePipelineJob, completePipelineJob, failPipelineJob } from "../_shared/pipeline-engine.ts";
+// Lazy import pipeline engine to avoid top-level side effects if any
+// import { createPipelineJob, updatePipelineJob, completePipelineJob, failPipelineJob } from "../_shared/pipeline-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -499,6 +500,8 @@ Deno.serve(async (req, context) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const { createPipelineJob, completePipelineJob, failPipelineJob } = await import("../_shared/pipeline-engine.ts");
+
     const url = new URL(req.url);
 
     const authHeader = req.headers.get("Authorization");
@@ -563,7 +566,11 @@ Deno.serve(async (req, context) => {
     });
 
     // Start background processing
-    context.waitUntil(
+    const waitUntil = typeof (context as any)?.waitUntil === 'function' 
+      ? (context as any).waitUntil.bind(context) 
+      : (promise: Promise<any>) => promise.catch(err => console.error("Background error (no waitUntil):", err));
+
+    waitUntil(
       (async () => {
         try {
           if (mode === "equalize") {
@@ -593,9 +600,17 @@ Deno.serve(async (req, context) => {
       message: "Geração iniciada em background. Use o job_id para acompanhar o progresso.",
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-  } catch (e) {
-    console.error("bulk-generate error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+  } catch (e: any) {
+    console.error("[bulk-generate-content] RUNTIME_ERROR", {
+      message: e?.message,
+      stack: e?.stack,
+      name: e?.name
+    });
+
+    return new Response(JSON.stringify({ 
+      error: "bulk_generate_content_failed",
+      message: e?.message ?? "Unknown error" 
+    }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
