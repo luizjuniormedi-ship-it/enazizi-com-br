@@ -7,7 +7,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
 import { ENAFLIX_MODULES } from "@/data/enaflix/enaflixModules";
-import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen, AlertCircle, RefreshCw, Activity, Timer } from "lucide-react";
+import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen, AlertCircle, RefreshCw, Activity, Timer, GraduationCap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
@@ -256,6 +256,15 @@ const Dashboard = () => {
             <div>
               <p className="font-medium text-sm">Simulados</p>
               <p className="text-xs text-muted-foreground">Provas & Questões</p>
+            </div>
+          </Link>
+          <Link to="/dashboard/proficiencia" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
+            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <GraduationCap className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="font-medium text-sm">Proficiência</p>
+              <p className="text-xs text-muted-foreground">Avaliações Atribuídas</p>
             </div>
           </Link>
         </EnaflixRow>

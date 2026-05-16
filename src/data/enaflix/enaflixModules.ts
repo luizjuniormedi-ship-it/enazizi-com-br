@@ -389,11 +389,12 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
   {
     id: "proficiencia",
     title: "Proficiência",
-    description: "Provas atribuídas e desempenho",
+    description: "Avaliações e simulados atribuídos pelo seu preceptor",
     route: "/dashboard/proficiencia",
-    category: "progresso",
+    category: "avaliacao",
     icon: GraduationCap,
-    accent: "warning",
+    accent: "success",
+    featured: true,
   },
 
   // ───────── GAMIFICAÇÃO ─────────
