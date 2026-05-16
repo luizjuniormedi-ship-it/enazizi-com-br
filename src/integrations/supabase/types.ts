@@ -24326,6 +24326,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recalculate_user_theta: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: number
+      }
       recalibrate_clinical_profiles: { Args: never; Returns: undefined }
       reconcile_and_smooth_weights: {
         Args: { p_exam_key: string; p_smoothing_factor?: number }
