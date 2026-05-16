@@ -572,14 +572,20 @@ serve(async (req) => {
     // 2. Build AI Prompt
     const systemPrompt = `${PROMPT_COMPLETO}
 
-ESTADO COGNITIVO DO ALUNO (FASE 0):
+ESTADO COGNITIVO DO ALUNO (AUDITORIA v2026):
 - Tema: ${session.topic}
 - Especialidade: ${session.specialty || 'Geral'}
 - Estágio da Aula: ${currentStage.toUpperCase()}
 - Missão Ativa: ${context.mission?.title || 'Exploração Livre'}
-- Erros Recorrentes (Lacunas): ${context.detected_gaps?.join(', ') || 'Nenhuma detectada'}
+- Erros Recorrentes (Error Bank): ${context.detected_gaps?.join(', ') || 'Nenhuma detectada'}
 - Status FSRS: ${context.fsrs?.pending_reviews || 0} revisões pendentes.
 - Carga Cognitiva Atual: ${context.cognitive_load || 'Normal'}
+- Desempenho Geral: ${context.performance_score || 'Não calculado'}
+- Nível de Dificuldade: ${context.difficulty_level || 'Médio'}
+- Estilo de Banca Alvo: ${context.target_exam_style || 'ENARE'}
+- Simulados Pendentes: ${context.pending_simulados_count || 0}
+- Plano de Estudo (Planner): ${context.planner_status || 'Ativo'}
+
 
 INSTRUÇÃO OPERACIONAL V3 (MÉTODO ENAZIZI PREMIUM):
 1. Prioridade absoluta: Estágio ${currentStage.toUpperCase()}.
