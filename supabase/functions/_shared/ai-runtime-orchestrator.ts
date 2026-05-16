@@ -109,8 +109,8 @@ const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "google/gemini-3-flash-preview": "low",
   "google/gemini-2.5-flash": "low",
   "google/gemini-2.5-pro": "medium",
-  "openai/gpt-4o-mini": "medium",
-  "openai/gpt-4o": "high",
+  "openai/gpt-5-mini": "medium",
+  "openai/gpt-5": "high",
 };
 
 // Perfis de prompt (apenas marcadores nesta fase; o prompt real é montado
@@ -186,7 +186,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
         return wrap(
           MODELS.gpt5Mini,
           [MODELS.flash, MODELS.flashStable],
-          "tutor_chat preventiva/SUS → gpt-4o-mini",
+          "tutor_chat preventiva/SUS → openai/gpt-5-mini",
           PROMPT_PROFILES.preventive_sus,
         );
       }
@@ -347,7 +347,7 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
-    const isOpenAI5 = /^openai\/gpt-4o/.test(ref.model);
+    const isOpenAI5 = /^openai\/openai/gpt-5/.test(ref.model);
     const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
     const body: Record<string, unknown> = {
       model: ref.model,

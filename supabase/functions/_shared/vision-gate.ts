@@ -91,7 +91,7 @@ JSON: {"is_clinical":bool, "matches_diagnosis":bool, "reason":"string"}`,
     }];
 
     const resp = await aiFetch({
-      model: ALLOWED_MODELS.generation, // Uses gpt-5-mini-mini in safe mode
+      model: ALLOWED_MODELS.generation, // Uses openai/gpt-5-mini in safe mode
       messages: messages as any,
       timeoutMs: 50000,
     });

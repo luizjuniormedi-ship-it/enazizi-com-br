@@ -242,7 +242,7 @@ ${contagemRegressiva ? "5. Mencionar os dias restantes para a prova" : ""}
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "openai/gpt-5-mini-mini",
+              model: "openai/gpt-5-mini",
               messages: [
                 { role: "system", content: "Você é um assistente HILÁRIO que gera mensagens de WhatsApp para alunos de medicina preparando para residência. Cada mensagem deve ser ÚNICA, ENGRAÇADA e MEMORÁVEL. Sempre mencione as bancas alvo e dados reais do aluno. Sem markdown. Sem asteriscos." },
                 { role: "user", content: prompt },

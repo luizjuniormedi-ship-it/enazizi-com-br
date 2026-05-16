@@ -32,7 +32,7 @@ export async function logTelemetry(supabase: any, event: string, payload: any, u
 export async function callAI(system: string, prompt: string, options: { model?: string, temperature?: number, maxTokens?: number } = {}) {
   // Unified AI entry point
   const body = {
-    model: options.model || "gpt-5-mini-mini", // Cost optimization: default to mini
+    model: options.model || "openai/gpt-5-mini", // Cost optimization: default to mini
     messages: [
       { role: "system", content: system },
       { role: "user", content: prompt }

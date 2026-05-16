@@ -13,7 +13,7 @@ async function generateQuestions(specialty: string, count: number) {
   Retorne um JSON: {"questions": [{"statement": "...", "options": ["...", "...", "...", "..."], "correct_index": 0, "explanation": "...", "source": "ENARE 2025"}]}`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "openai/gpt-5-mini",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
   });
@@ -40,7 +40,7 @@ async function run() {
 
   const flashcardsPrompt = `Gere 35 flashcards médicos. JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "Cardiologia", "explanation": "..."}]}`;
   const fResp = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "openai/gpt-5-mini",
     messages: [{ role: "user", content: flashcardsPrompt }],
     response_format: { type: "json_object" },
   });

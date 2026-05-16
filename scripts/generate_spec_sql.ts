@@ -14,7 +14,7 @@ async function run() {
   Retorne um JSON: {"questions": [{"statement": "...", "options": ["...", "...", "...", "..."], "correct_index": 0, "explanation": "...", "source": "ENARE 2025"}]}`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "openai/gpt-5-mini",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
   });

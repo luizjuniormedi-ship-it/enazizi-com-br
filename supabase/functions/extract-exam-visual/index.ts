@@ -75,7 +75,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini-mini",
+        model: "openai/gpt-5-mini",
         max_tokens: 16000,
         messages: [
           {

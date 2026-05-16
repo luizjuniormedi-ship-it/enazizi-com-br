@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS public.clinical_quality_profiles (
     specialty TEXT NOT NULL UNIQUE,
     average_quality FLOAT DEFAULT 0,
     regeneration_rate FLOAT DEFAULT 0,
-    preferred_model TEXT DEFAULT 'gpt-4o-mini',
-    fallback_model TEXT DEFAULT 'gpt-4o',
+    preferred_model TEXT DEFAULT 'openai/gpt-5-mini',
+    fallback_model TEXT DEFAULT 'openai/gpt-5',
     requires_references BOOLEAN DEFAULT false,
     explanation_depth TEXT DEFAULT 'medium', -- 'low', 'medium', 'high'
     prompt_profile TEXT DEFAULT 'standard', -- 'standard', 'deep_clinical', 'guideline_focused'
@@ -26,12 +26,12 @@ USING (true);
 INSERT INTO public.clinical_quality_profiles 
 (specialty, preferred_model, fallback_model, requires_references, explanation_depth, prompt_profile)
 VALUES 
-('Medicina Preventiva', 'gpt-4o', 'o1-preview', true, 'high', 'guideline_focused'),
-('Cardiologia', 'gpt-4o-mini', 'gpt-4o', false, 'medium', 'standard'),
-('Ginecologia e Obstetrícia', 'gpt-4o-mini', 'gpt-4o', true, 'medium', 'standard'),
-('Pediatria', 'gpt-4o-mini', 'gpt-4o', true, 'medium', 'standard'),
-('Cirurgia Geral', 'gpt-4o-mini', 'gpt-4o', false, 'medium', 'standard'),
-('Clínica Médica', 'gpt-4o', 'o1-preview', true, 'high', 'deep_clinical')
+('Medicina Preventiva', 'openai/gpt-5', 'o1-preview', true, 'high', 'guideline_focused'),
+('Cardiologia', 'openai/gpt-5-mini', 'openai/gpt-5', false, 'medium', 'standard'),
+('Ginecologia e Obstetrícia', 'openai/gpt-5-mini', 'openai/gpt-5', true, 'medium', 'standard'),
+('Pediatria', 'openai/gpt-5-mini', 'openai/gpt-5', true, 'medium', 'standard'),
+('Cirurgia Geral', 'openai/gpt-5-mini', 'openai/gpt-5', false, 'medium', 'standard'),
+('Clínica Médica', 'openai/gpt-5', 'o1-preview', true, 'high', 'deep_clinical')
 ON CONFLICT (specialty) DO NOTHING;
 
 -- Function to update profiles based on recent audits

@@ -4,9 +4,9 @@
  */
 
 export const AI_MODELS = {
-  generation: "gpt-4o-mini",
-  extraction: "gpt-4o-mini",
-  reasoning: "gpt-4o",
+  generation: "openai/gpt-5-mini",
+  extraction: "openai/gpt-5-mini",
+  reasoning: "openai/gpt-5",
   embeddings: "text-embedding-3-small",
 } as const;
 
@@ -16,7 +16,7 @@ export type AIModelKey = keyof typeof AI_MODELS;
  * Validates if a model name is allowed.
  */
 export function validateModel(model: string): boolean {
-  const allowedPrefixes = ["gpt-4o", "gpt-3.5", "o1-", "o3-", "text-embedding-"];
+  const allowedPrefixes = ["openai/gpt-5", "gpt-3.5", "o1-", "o3-", "text-embedding-"];
   const isAllowed = allowedPrefixes.some(prefix => model.startsWith(prefix)) || 
                     Object.values(AI_MODELS).includes(model as any);
   

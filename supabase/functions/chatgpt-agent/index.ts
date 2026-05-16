@@ -180,7 +180,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
     }
 
-    const fallbackBody = JSON.stringify({ model: "openai/gpt-5-mini-mini", messages: allMessages, stream: true, max_tokens: 16384 });
+    const fallbackBody = JSON.stringify({ model: "openai/gpt-5-mini", messages: allMessages, stream: true, max_tokens: 16384 });
     const response = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },

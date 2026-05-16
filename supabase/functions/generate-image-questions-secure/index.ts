@@ -55,7 +55,7 @@ Retorne APENAS JSON válido:
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini-mini",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "user",

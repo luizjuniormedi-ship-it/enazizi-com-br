@@ -11,7 +11,7 @@ async function aiFetch(body: any) {
       "Authorization": `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model: "openai/gpt-5",
       messages: body.messages,
       response_format: { type: "json_object" },
     }),

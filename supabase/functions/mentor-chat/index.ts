@@ -250,7 +250,7 @@ serve(async (req) => {
       response = await invokeIA(modelUsed, 30000);
     } catch (err) {
       console.warn(`[mentor-chat] PRIMARY_AI_FAILED id=${requestId}`, err);
-      modelUsed = "openai/gpt-5-mini-mini";
+      modelUsed = "openai/gpt-5-mini";
       try {
         response = await invokeIA(modelUsed, 15000);
       } catch (fallbackErr) {

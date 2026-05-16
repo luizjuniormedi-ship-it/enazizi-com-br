@@ -277,7 +277,7 @@ Return ONLY valid JSON:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini-mini",
+        model: "openai/gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
       }),

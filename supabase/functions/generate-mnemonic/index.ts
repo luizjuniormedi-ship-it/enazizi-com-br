@@ -11,7 +11,7 @@ const corsHeaders = {
 };
 
 // ═══ CONFIG ═══
-const AI_MODEL = "openai/gpt-5-mini-mini";
+const AI_MODEL = "openai/gpt-5-mini";
 const IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const GLOBAL_TIMEOUT_MS = 110_000;
 const AGENT_TIMEOUT_MS = 45_000;
@@ -292,7 +292,7 @@ FORMATO JSON OBRIGATÓRIO:
 }
 
 RESTRIÇÃO CRÍTICA:
-- USE MODELO: gpt-5-mini-mini.
+- USE MODELO: openai/gpt-5-mini.
 - NÃO USE max_completion_tokens.
 - NÃO use "gpt-5-mini".
 - Retorne APENAS o JSON.`;
