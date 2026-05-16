@@ -3,6 +3,7 @@
  * The master wrapper for all Edge Functions.
  */
 
+import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { createCorrelationContext, CorrelationContext } from "./correlation.ts";
 import { StructuredLogger } from "./structured-logger.ts";
 import { createSafeWaitUntil, SafeWaitUntil } from "./safe-wait-until.ts";
@@ -18,6 +19,7 @@ export interface EnterpriseContext {
   correlation: CorrelationContext;
   logger: StructuredLogger;
   waitUntil: SafeWaitUntil;
+  supabaseAdmin: any;
 }
 
 export type EnterpriseHandler = (ctx: EnterpriseContext) => Promise<Response>;
@@ -34,6 +36,12 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
     const logger = new StructuredLogger(correlation);
     const waitUntil = createSafeWaitUntil(context);
 
+    // Initialize Supabase Admin for the context
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     logger.info("BOOT", "Function initialized");
 
     try {
@@ -44,20 +52,14 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
         correlation,
         logger,
         waitUntil,
+        supabaseAdmin,
       });
 
       const latency = Date.now() - startTime;
       
-      // 3. Global Telemetry (After response is ready)
-      // Note: We don't block the response for telemetry
+      // 3. Global Telemetry
       waitUntil((async () => {
         try {
-          const { createClient } = await import("npm:@supabase/supabase-js@2.45.0");
-          const supabaseAdmin = createClient(
-            Deno.env.get("SUPABASE_URL")!,
-            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-          );
-
           await supabaseAdmin.from("edge_execution_logs").insert({
             function_name: functionName,
             request_id: correlation.requestId,
@@ -87,12 +89,6 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
       // 4. Incident Reporting
       waitUntil((async () => {
         try {
-          const { createClient } = await import("npm:@supabase/supabase-js@2.45.0");
-          const supabaseAdmin = createClient(
-            Deno.env.get("SUPABASE_URL")!,
-            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-          );
-
           await supabaseAdmin.from("runtime_incidents").insert({
             function_name: functionName,
             severity: "critical",
@@ -130,3 +126,4 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
     }
   };
 }
+
