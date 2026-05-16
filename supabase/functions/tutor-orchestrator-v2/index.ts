@@ -76,7 +76,7 @@ serve(async (req) => {
     }
 
     // Special logic for validation stages: they REQUIRE a technical response
-    const validationStages = ['feynman_module', 'active_recall', 'mini_test'];
+    const validationStages = ['guided_question', 'commented_correction', 'active_recall'];
     if (validationStages.includes(currentStage)) {
       if (userMessage.length > 15 && !isNegative) {
         shouldAdvance = true;
