@@ -12,15 +12,15 @@ export function normalizeModel(model: string | null | undefined): string {
 
   const rawModel = model.toLowerCase().trim();
 
-  // Rule 1: Remove "openai/" prefix if present
-  let normalized = rawModel.replace(/^openai\//, "");
+  // Rule 1: Fix legacy "openai/" prefix if needed, but registry now uses full names
+  let normalized = rawModel;
+  
+  // Backward compatibility: if someone asks for "gpt-5-mini" without prefix, fix it
+  if (normalized === "gpt-5-mini") normalized = "openai/gpt-5-mini";
+  if (normalized === "gpt-5") normalized = "openai/gpt-5";
+  if (normalized === "text-embedding-3-small") normalized = "openai/text-embedding-3-small";
 
-  // Rule 2: Pass through gpt-5 models directly (they are the standard now)
-  if (normalized.includes("gpt-5")) {
-    // Keep it as is
-  }
-
-  // Rule 3: Strict check against production models
+  // Rule 2: Strict check against production models
   if (PRODUCTION_MODELS.includes(normalized)) {
     return normalized;
   }

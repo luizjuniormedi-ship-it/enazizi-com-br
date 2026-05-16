@@ -308,6 +308,7 @@ serve(async (req: Request) => {
   const requestIdForError = crypto.randomUUID();
 
   try {
+    console.log(`[MNEMONIC_REQUEST_START] ${req.method} ${requestIdForError}`);
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
     if (req.method !== "POST") return jsonResponse({ success: false, error: "Método não permitido.", requestId: requestIdForError }, 405);
 
@@ -323,16 +324,20 @@ serve(async (req: Request) => {
           code: "TIMEOUT",
           requestId: requestIdForError
         }, 504));
-      }, GLOBAL_TIMEOUT_MS);
+      }, 115_000); // Higher timeout to matches headers
     });
 
     const mainPipeline = async (): Promise<Response> => {
       let requestId: string | null = null;
       let order = 0;
       try {
-        // Auth FIRST — before any IA call or body parse
+        console.log(`[MNEMONIC_AUTH_CHECK] Method: ${req.method}, Content-Length: ${req.headers.get("content-length")}`);
+        // RE-ENABLE AUTH
         const auth = await requireAuth(req);
-        if (!auth.ok) return auth.response;
+        if (!auth.ok) {
+          console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError} - Status: ${auth.response.status}`);
+          return auth.response;
+        }
         const userId = auth.userId;
 
         const aiKey = requireEnv("LOVABLE_API_KEY");
