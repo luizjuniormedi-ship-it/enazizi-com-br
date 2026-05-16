@@ -20,6 +20,7 @@ Deno.serve(async (req, context) => {
     const { getTokenParameterName } = await import("../_shared/ai-models.ts");
     const { logPipelineAlert } = await import("../_shared/pipeline-logger.ts");
     const { parseAiJson } = await import("../_shared/ai-fetch.ts");
+    const { getServiceClient } = await import("../_shared/pipeline-logger.ts");
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
