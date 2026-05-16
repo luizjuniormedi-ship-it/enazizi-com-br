@@ -331,11 +331,11 @@ serve(async (req: Request) => {
       let requestId: string | null = null;
       let order = 0;
       try {
-        console.log(`[MNEMONIC_AUTH_CHECK] Header: ${req.headers.get("Authorization")?.substring(0, 20)}...`);
+        console.log(`[MNEMONIC_AUTH_CHECK] Method: ${req.method}, Content-Length: ${req.headers.get("content-length")}`);
         // Auth FIRST — before any IA call or body parse
         const auth = await requireAuth(req);
         if (!auth.ok) {
-          console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError}`);
+          console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError} - Status: ${auth.response.status}`);
           return auth.response;
         }
         const userId = auth.userId;
