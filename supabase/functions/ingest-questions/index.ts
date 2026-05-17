@@ -196,15 +196,25 @@ serve(async (req) => {
 
     const validQuestions = questions.filter(isValidQuestion);
     for (const q of validQuestions) {
-      const { data: question } = await supabase.from("question_bank").insert({
-        statement: sanitizeForPostgres(q.statement), topic: q.topic || banca || "Geral", subtopic: q.subtopic || "Geral",
-        year: year || new Date().getFullYear(), banca: banca || "Geral", difficulty: "medium", is_real: true, source_url: url || "", created_by: userId
+      const { data: question, error: insertError } = await supabase.from("questions_bank").insert({
+        statement: sanitizeForPostgres(q.statement),
+        options: q.options,
+        correct_index: q.correct_index ?? q.correctIndex ?? 0,
+        explanation: q.explanation || "",
+        topic: q.topic || banca || "Geral",
+        subtopic: q.subtopic || "Geral",
+        year: year || new Date().getFullYear(),
+        board: banca || "Geral", // Map banca to board for consistency in questions_bank
+        institution: banca || "Geral",
+        difficulty: 3, // medium/integer
+        is_global: true,
+        source_url: url || "",
+        user_id: userId,
+        quality_tier: "basic"
       }).select().single();
-      if (question) {
-        const opts = q.options.map((opt: string, idx: number) => ({
-          question_id: question.id, text: sanitizeForPostgres(opt), is_correct: idx === q.correct_index, order_index: idx
-        }));
-        await supabase.from("question_options").insert(opts);
+      
+      if (insertError) {
+        console.error("[INGEST] Error inserting question:", insertError);
       }
     }
 
