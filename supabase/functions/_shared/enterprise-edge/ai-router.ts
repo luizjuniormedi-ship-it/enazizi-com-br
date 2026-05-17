@@ -137,7 +137,6 @@ export async function callAi(
   try {
     const governanceData = {
       function_name: Deno.env.get("FUNCTION_NAME") || "ai-router",
-      model_name: model,
       model_used: model,
       latency_ms: latency,
       token_usage: usage,
