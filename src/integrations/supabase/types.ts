@@ -17671,6 +17671,7 @@ export type Database = {
           guideline_recency_score: number | null
           guideline_reference: string | null
           guideline_relevancy_score: number | null
+          guideline_score: number | null
           guideline_year: number | null
           hallucination_risk_score: number | null
           id: string
@@ -17689,7 +17690,9 @@ export type Database = {
           permission_type: string | null
           quality_tier: string
           question_order: number | null
+          realism_score: number | null
           reasoning_complexity_score: number | null
+          reasoning_score: number | null
           retention_value_score: number | null
           review_status: string | null
           source: string | null
@@ -17737,6 +17740,7 @@ export type Database = {
           guideline_recency_score?: number | null
           guideline_reference?: string | null
           guideline_relevancy_score?: number | null
+          guideline_score?: number | null
           guideline_year?: number | null
           hallucination_risk_score?: number | null
           id?: string
@@ -17755,7 +17759,9 @@ export type Database = {
           permission_type?: string | null
           quality_tier?: string
           question_order?: number | null
+          realism_score?: number | null
           reasoning_complexity_score?: number | null
+          reasoning_score?: number | null
           retention_value_score?: number | null
           review_status?: string | null
           source?: string | null
@@ -17803,6 +17809,7 @@ export type Database = {
           guideline_recency_score?: number | null
           guideline_reference?: string | null
           guideline_relevancy_score?: number | null
+          guideline_score?: number | null
           guideline_year?: number | null
           hallucination_risk_score?: number | null
           id?: string
@@ -17821,7 +17828,9 @@ export type Database = {
           permission_type?: string | null
           quality_tier?: string
           question_order?: number | null
+          realism_score?: number | null
           reasoning_complexity_score?: number | null
+          reasoning_score?: number | null
           retention_value_score?: number | null
           review_status?: string | null
           source?: string | null
