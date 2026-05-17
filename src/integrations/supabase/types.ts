@@ -9877,6 +9877,36 @@ export type Database = {
         }
         Relationships: []
       }
+      drive_ingestion_log: {
+        Row: {
+          created_at: string | null
+          file_id: string
+          file_name: string
+          id: string
+          processed_by: string | null
+          questions_found: number | null
+          questions_saved: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_id: string
+          file_name: string
+          id?: string
+          processed_by?: string | null
+          questions_found?: number | null
+          questions_saved?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          file_id?: string
+          file_name?: string
+          id?: string
+          processed_by?: string | null
+          questions_found?: number | null
+          questions_saved?: number | null
+        }
+        Relationships: []
+      }
       edge_execution_logs: {
         Row: {
           correlation_id: string | null
@@ -18494,6 +18524,8 @@ export type Database = {
           microtopic_id: string | null
           options: Json
           quality_score: number
+          source_drive_id: string | null
+          source_file: string | null
           source_url: string
           specialty_id: string | null
           statement: string
@@ -18521,6 +18553,8 @@ export type Database = {
           microtopic_id?: string | null
           options?: Json
           quality_score?: number
+          source_drive_id?: string | null
+          source_file?: string | null
           source_url: string
           specialty_id?: string | null
           statement: string
@@ -18548,6 +18582,8 @@ export type Database = {
           microtopic_id?: string | null
           options?: Json
           quality_score?: number
+          source_drive_id?: string | null
+          source_file?: string | null
           source_url?: string
           specialty_id?: string | null
           statement?: string
