@@ -122,7 +122,7 @@ export async function callAi(
       message: `AI Gateway error ${res.status}: ${errorText}`,
       correlation_id: logger.correlationId,
       metadata: { status: res.status }
-    }).catch(() => {});
+    });
 
     throw new Error(`AI Gateway error ${res.status}: ${errorText}`);
   }
