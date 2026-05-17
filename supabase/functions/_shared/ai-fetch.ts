@@ -13,7 +13,7 @@ const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 
 /**
  * ENAZIZI PRODUCTION SAFE MODE
- * When enabled, forces openai/gpt-5-mini, disables complex response_formats,
+ * When enabled, forces google/gemini-2.5-flash, disables complex response_formats,
  * and uses standard payloads to maximize stability.
  */
 const PRODUCTION_SAFE_MODE = false;

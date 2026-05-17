@@ -59,7 +59,7 @@ serve(async (req) => {
 
       const response = await aiFetch({
         messages: [{ role: "user", content: prompt }],
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash",
         max_completion_tokens: 2000,
         response_format: { type: "json_object" }
       });

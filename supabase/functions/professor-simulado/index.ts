@@ -540,7 +540,7 @@ REGRAS INVIOLÁVEIS:
                 const prompt = buildSlotPrompt(stillNeeded, level, globalPrev);
                 const response = await aiFetch({
                   messages: [{ role: "user", content: prompt }],
-                  model: "openai/gpt-5-mini",
+                  model: "google/gemini-2.5-flash",
                   maxTokens: 8192,
                   timeoutMs: 55000,
                   maxRetries: 0,
@@ -1835,7 +1835,7 @@ REGRAS:
 
         const response = await aiFetch({
           messages: [{ role: "user", content: CLINICAL_PROMPT }],
-          model: "openai/gpt-5-mini",
+          model: "google/gemini-2.5-flash",
         });
 
         if (!response.ok) {
@@ -2706,7 +2706,7 @@ REGRAS:
 
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
-          model: "openai/gpt-5-mini",
+          model: "google/gemini-2.5-flash",
         });
 
         if (!response.ok) throw new Error("Erro ao gerar sugestões");

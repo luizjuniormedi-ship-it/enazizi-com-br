@@ -232,7 +232,7 @@ Siga RIGOROSAMENTE a estrutura completa de 18 seções. Inclua:
     // Use aiFetch with model tiering — chronicles use standard model (flash)
     const startMs = Date.now();
     const response = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       messages: aiMessages,
       stream: true,
       maxTokens: 32768,
@@ -242,7 +242,7 @@ Siga RIGOROSAMENTE a estrutura completa de 18 seções. Inclua:
     logAiUsage({
       userId: "system-chronicle",
       functionName: "medical-chronicle",
-      modelUsed: "openai/gpt-5-mini",
+      modelUsed: "google/gemini-2.5-flash",
       success: response.ok,
       responseTimeMs: elapsed,
       cacheHit: false,

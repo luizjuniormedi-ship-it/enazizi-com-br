@@ -198,7 +198,7 @@ export async function setCache(
         cache_key: key,
         content_type: type,
         content_json: json,
-        model_used: modelUsed || "openai/gpt-5-mini",
+        model_used: modelUsed || "google/gemini-2.5-flash",
         expires_at: new Date(Date.now() + ttlDays * 86_400_000).toISOString(),
         hit_count: 0,
       },
@@ -255,7 +255,7 @@ export async function logGeneratedContent(params: {
       request_payload: params.requestPayload as any,
       response_payload: params.responsePayload as any,
       source_endpoint: params.sourceEndpoint,
-      model_used: params.modelUsed || "openai/gpt-5-mini",
+      model_used: params.modelUsed || "google/gemini-2.5-flash",
       cache_hit: params.cacheHit,
       cost_units: params.costUnits,
     });
@@ -327,8 +327,8 @@ export async function checkAndIncrementUsage(
 
 // ── AI calls ──
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const LIGHT_MODEL = "openai/gpt-5-mini";
-const HEAVY_MODEL = "openai/gpt-5-mini";
+const LIGHT_MODEL = "google/gemini-2.5-flash";
+const HEAVY_MODEL = "google/gemini-2.5-flash";
 
 async function callAI(model: string, system: string, user: string, maxTokens: number): Promise<{ content: string; tokensInput: number; tokensOutput: number }> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");

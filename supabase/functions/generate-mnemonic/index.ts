@@ -292,9 +292,9 @@ FORMATO JSON OBRIGATÓRIO:
 }
 
 RESTRIÇÃO CRÍTICA:
-- USE MODELO: openai/gpt-5-mini.
+- USE MODELO: google/gemini-2.5-flash.
 - NÃO USE max_completion_tokens.
-- NÃO use "gpt-5-mini".
+- NÃO use "google/gemini-2.5-flash".
 - Retorne APENAS o JSON.`;
 
 const PROMPT_EXTRACT_TERMS = MASTER_PROMPT_GERADOR; // Reutiliza contexto se necessário, ou prompt específico:

@@ -31,7 +31,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
   const buildBody = (model: string) => {
-    const isNewModel = model.includes("gpt-5") || model.includes("/o1") || model.includes("/o3");
+    const isNewModel = model.includes("google/gemini-2.5-pro") || model.includes("/o1") || model.includes("/o3");
     const tokenParam = isNewModel ? "max_completion_tokens" : "max_tokens";
     return JSON.stringify({
       model,
@@ -48,16 +48,16 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-        body: buildBody("gpt-5-mini"),
+        body: buildBody("google/gemini-2.5-flash"),
       });
       if (res.ok) {
         const data = await res.json();
-        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-5-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
+        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
         return data.choices?.[0]?.message?.content || "";
       }
       const errText = await res.text();
       console.warn(`OpenAI ${res.status}: ${errText.slice(0, 200)}`);
-      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "gpt-5-mini", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard", errorMessage: `status ${res.status}` }).catch(() => {});
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard", errorMessage: `status ${res.status}` }).catch(() => {});
       if (res.status !== 429 && res.status !== 402) {
         throw new Error(`OpenAI error ${res.status}`);
       }
@@ -73,15 +73,15 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: buildBody("openai/gpt-5-mini"),
+      body: buildBody("google/gemini-2.5-flash"),
     });
     if (res.ok) {
       const data = await res.json();
-      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-5-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
       return data.choices?.[0]?.message?.content || "";
     }
     const errText = await res.text();
-    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "openai/gpt-5-mini", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
+    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
     throw new Error(`Lovable Gateway ${res.status}: ${errText.slice(0, 200)}`);
   }
 

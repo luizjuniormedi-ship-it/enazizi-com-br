@@ -14,7 +14,7 @@ export function normalizeModel(model: string | null | undefined): string {
   let normalized = model.toLowerCase().trim();
 
   // Map legacy or shorthand names to enterprise standards
-  if (normalized.includes("gpt-5") || normalized.includes("gpt-5-mini")) {
+  if (normalized.includes("google/gemini-2.5-pro") || normalized.includes("google/gemini-2.5-flash")) {
     console.warn(`[MODEL_NORMALIZER] GPT-5 detected and rejected due to Gateway Error 400. Falling back to ${ALLOWED_MODELS.generation}`);
     return ALLOWED_MODELS.generation;
   }

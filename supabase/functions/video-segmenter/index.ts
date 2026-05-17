@@ -147,7 +147,7 @@ Divida em microblocos seguindo as regras do system prompt.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SEGMENTER_PROMPT },
           { role: "user", content: userPrompt },

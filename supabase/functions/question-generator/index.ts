@@ -522,7 +522,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         if (lookup.hit && lookup.content?.questions?.length) {
           await logAIUsage({
             userId: auth.userId, module: cacheModule, functionName: "question-generator",
-            model: lookup.modelUsed || "openai/gpt-5-mini", cacheStatus: "hit",
+            model: lookup.modelUsed || "google/gemini-2.5-flash", cacheStatus: "hit",
             latencyMs: Date.now() - qgCacheStartedAt, success: true,
           });
           return new Response(JSON.stringify({
@@ -535,14 +535,14 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         }
         await logAIUsage({
           userId: auth.userId, module: cacheModule, functionName: "question-generator",
-          model: "openai/gpt-5-mini",
+          model: "google/gemini-2.5-flash",
           cacheStatus: lookup.expired ? "miss_expired" : "miss",
           latencyMs: Date.now() - qgCacheStartedAt, success: true,
         });
       } else {
         await logAIUsage({
           userId: auth.userId, module: "question_generator", functionName: "question-generator",
-          model: "openai/gpt-5-mini", cacheStatus: "bypass",
+          model: "google/gemini-2.5-flash", cacheStatus: "bypass",
           latencyMs: 0, success: true,
         });
       }
@@ -729,7 +729,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             if (needed <= 0) return [] as any[];
             try {
               const resp = await aiFetch({
-                model: qualityProfile?.preferred_model || "openai/gpt-5-mini",
+                model: qualityProfile?.preferred_model || "google/gemini-2.5-flash",
                 messages: [
                   { role: "system", content: systemPrompt }, 
                   { role: "user", content: buildSlotPrompt(needed, [...globalPrev], slotTarget) }
@@ -819,7 +819,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                       final_score,
                       adaptive_routing: {
                         specialty: currentSpecialty,
-                        model_used: qualityProfile?.preferred_model || 'openai/gpt-5-mini',
+                        model_used: qualityProfile?.preferred_model || 'google/gemini-2.5-flash',
                         depth_applied: qualityProfile?.explanation_depth || 'medium'
                       }
                     }
@@ -992,7 +992,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             difficulty_distribution: finalDist,
             audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length },
           },
-          modelUsed: qualityProfile?.preferred_model || "openai/gpt-5-mini",
+          modelUsed: qualityProfile?.preferred_model || "google/gemini-2.5-flash",
           ttlDays: cacheModule === "question_banca" ? CACHE_TTL_DAYS.question_banca : CACHE_TTL_DAYS.question_general,
           specialty: currentSpecialty || undefined,
           banca: safeTargetExam,
@@ -1020,7 +1020,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
     let response: Response;
     const startMs = Date.now();
     try {
-      response = await aiFetch({ ...aiFetchOptions, model: "openai/gpt-5-mini" });
+      response = await aiFetch({ ...aiFetchOptions, model: "google/gemini-2.5-flash" });
     } catch (aiErr) {
       console.error("question-generator aiFetch error:", aiErr);
       const msg = aiErr instanceof Error ? aiErr.message : "Serviço de IA indisponível";
@@ -1032,7 +1032,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
     logAiUsage({
       userId: "system-question-gen",
       functionName: "question-generator",
-      modelUsed: "openai/gpt-5-mini",
+      modelUsed: "google/gemini-2.5-flash",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",

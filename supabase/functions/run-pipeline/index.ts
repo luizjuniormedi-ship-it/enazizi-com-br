@@ -46,7 +46,7 @@ Retorne APENAS JSON: [{"statement":"...","options":["A)...","B)...","C)...","D).
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash",
         messages: [{ role: "user", content: [{ type: "text", text: prompt }, { type: "image_url", image_url: { url: asset.image_url } }] }],
         temperature: 0.7, max_tokens: 4000,
       }),
