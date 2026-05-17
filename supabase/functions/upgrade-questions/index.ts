@@ -1,19 +1,17 @@
 // upgrade-questions - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
-import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
-import { parseAiJson, sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
-import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { reviewAndEnrich } from "../_shared/question-review-engine.ts";
 
 Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, waitUntil, correlation, supabaseAdmin }) => {
   const { user } = await requireAdmin(req);
   const body = await req.json().catch(() => ({}));
-  const batchSize = Math.min(body.batch_size || 5, 10);
+  const batchSize = Math.min(body.batch_size || 5, 20);
   const ids: string[] | undefined = body.ids;
 
   let query = supabaseAdmin.from("questions_bank")
-    .select("id, statement, options, correct_index, topic, explanation, source")
-    .in("quality_tier", ["needs_upgrade", "basic"])
+    .select("*")
+    .in("quality_tier", ["needs_upgrade", "basic", "SILVER", "BASIC"])
     .order("created_at", { ascending: false })
     .limit(batchSize);
 
@@ -27,31 +25,64 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
   const processUpgrade = async () => {
     for (const q of (questions || [])) {
       try {
-        const aiResponse = await callAi({
-          model: ALLOWED_MODELS.reasoning,
-          messages: [{ role: "user", content: `Upgrade medical question: ${q.statement}` }],
-          max_tokens: 2000,
-        }, logger, supabaseAdmin);
-        const parsed = parseAiJson(aiResponse.choices?.[0]?.message?.content || "");
-        if (parsed.statement) {
-          await supabaseAdmin.from("questions_bank").update({
-            statement: sanitizeAiContent(parsed.statement),
-            explanation: sanitizeAiContent(parsed.explanation),
-            quality_tier: "exam_standard",
-            updated_at: new Date().toISOString(),
-          }).eq("id", q.id);
+        const startTime = Date.now();
+        const result = await reviewAndEnrich(q, body.target_banca || null, logger, supabaseAdmin);
+        const latency = Date.now() - startTime;
+
+        await supabaseAdmin.from("questions_bank").update({
+          statement: result.statement,
+          options: result.options,
+          correct_index: result.correct_index,
+          explanation: result.explanation,
+          quality_tier: result.quality_tier,
+          clinical_density_score: result.scores.clinical_density_score,
+          reasoning_score: result.scores.reasoning_score,
+          distractor_quality_score: result.scores.distractor_quality_score,
+          guideline_score: result.scores.guideline_score,
+          board_similarity_score: result.scores.board_similarity_score,
+          cognitive_complexity_score: result.scores.cognitive_complexity_score,
+          realism_score: result.scores.realism_score,
+          review_status: "reviewed",
+          updated_at: new Date().toISOString(),
+        }).eq("id", q.id);
+
+        // Flashcards integration
+        if (result.flashcards && result.flashcards.length > 0 && result.quality_tier === "GOLD") {
+          const flashcardsToInsert = result.flashcards.map(f => ({
+            question: f.question,
+            answer: f.answer,
+            explanation: f.explanation,
+            topic: q.topic,
+            subtopic_id: q.subtopic_id,
+            specialty_id: q.specialty_id,
+            user_id: user.id,
+            is_global: true,
+            generation_method: "upgrade_questions_pipeline"
+          }));
+          await supabaseAdmin.from("flashcards").insert(flashcardsToInsert);
         }
+
+        // Governance log
+        await supabaseAdmin.from("pipeline_governance").insert({
+          source: "upgrade-questions",
+          model_used: "google/gemini-2.5-pro",
+          latency_ms: latency,
+          upgrade_status: result.quality_tier,
+          correlation_id: correlation
+        });
+
       } catch (err) {
-        logger.error("UPGRADE_FAIL", err.message);
+        logger.error("UPGRADE_FAIL", `Question ${q.id} failed: ${err.message}`);
       }
     }
   };
 
   if (body.background) {
     waitUntil(processUpgrade());
-    return new Response(JSON.stringify({ status: "processing" }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ status: "processing", correlation_id: correlation }), { headers: { "Content-Type": "application/json" } });
   } else {
     await processUpgrade();
-    return new Response(JSON.stringify({ status: "completed" }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ status: "completed", correlation_id: correlation }), { headers: { "Content-Type": "application/json" } });
   }
 }));
+
