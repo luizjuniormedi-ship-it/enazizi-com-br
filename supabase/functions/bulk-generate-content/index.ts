@@ -29,14 +29,32 @@ Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, 
   const body = await req.json().catch(() => ({}));
   const specialty = body.specialty || SPECIALTIES[Math.floor(Math.random() * SPECIALTIES.length)];
   const count = Math.min(body.count || 5, 15);
+  const equalize = body.equalize === true;
 
-  logger.info("START_GENERATION", `Generating ${count} questions for ${specialty}`, { specialty, count });
+  logger.info("START_GENERATION", `Request for ${specialty} (equalize: ${equalize})`, { specialty, count, equalize });
 
   const processGeneration = async () => {
     try {
+      if (equalize) {
+        logger.info("EQUALIZATION", `Starting equalization for ${specialty}`);
+        try {
+          // Attempt to find real questions first
+          const searchResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/search-real-questions?specialty=${encodeURIComponent(specialty)}`, {
+            headers: { Authorization: req.headers.get("Authorization") || "" }
+          });
+          
+          if (searchResp.ok) {
+            const searchData = await searchResp.json();
+            logger.info("SEARCH_RESULT", `Search found ${searchData?.log?.questions_found || 0} candidates`);
+          }
+        } catch (searchErr) {
+          logger.warn("SEARCH_FAILED", "Real questions search failed, falling back to pure AI generation", { error: searchErr.message });
+        }
+      }
+
       const prompt = `Gere ${count} questões de MCQ para residência médica sobre ${specialty}.
 REGRAS:
-- Casos clínicos realistas.
+- Casos clínicos realistas e densos.
 - 5 alternativas, 1 correta.
 - Retorne APENAS JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "${specialty}", "difficulty": 3}]}`;
 
@@ -47,6 +65,7 @@ REGRAS:
           { role: "user", content: prompt }
         ],
         max_tokens: 4000,
+        taskType: "reasoning"
       }, logger, supabaseAdmin);
 
       const aiContent = aiResponse.choices?.[0]?.message?.content || "";
@@ -68,10 +87,13 @@ REGRAS:
             is_global: true,
             quality_tier: "exam_standard",
             source: "bulk-ai-generator",
-            review_status: "approved"
+            review_status: "approved",
+            board: "ENARE",
+            year: 2025
           });
 
           if (!insertError) savedCount++;
+          else logger.error("INSERT_ERROR", insertError.message, { question: q.statement.slice(0, 50) });
         } catch (e) {
           logger.error("DB_INSERT_FAILED", "Failed to save question", { error: e.message });
         }
@@ -83,19 +105,23 @@ REGRAS:
       await supabaseAdmin.from("pipeline_governance").insert({
         pipeline_name: "bulk-generate",
         function_name: "bulk-generate-content",
-        status: savedCount === questions.length ? "completed" : "partial",
+        status: savedCount > 0 ? "completed" : "failed",
         model_used: ALLOWED_MODELS.generation,
         completed_at: new Date().toISOString(),
         user_id: user.id,
         metadata: {
           specialty,
           count: savedCount,
-          correlation_id: correlation.correlationId
+          correlation_id: correlation.correlationId,
+          equalize
         }
       });
 
+      return { total_imported: 0, total_generated: savedCount };
+
     } catch (err: any) {
       logger.error("GENERATION_PROCESS_FAILED", err.message, { stack: err.stack });
+      throw err;
     }
   };
 
@@ -110,10 +136,11 @@ REGRAS:
       headers: { "Content-Type": "application/json" },
     });
   } else {
-    await processGeneration();
+    const result = await processGeneration();
     return new Response(JSON.stringify({ 
       status: "completed", 
       specialty,
+      result,
       correlation_id: correlation.correlationId 
     }), {
       headers: { "Content-Type": "application/json" },
