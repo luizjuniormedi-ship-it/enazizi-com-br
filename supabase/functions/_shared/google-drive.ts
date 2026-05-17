@@ -3,7 +3,7 @@ import { sanitizeForPostgres } from "./db-utils.ts";
 
 // Minimal JWT signer for Google Auth using native Web Crypto
 export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
-  if (logger) logger.info("GOOGLE_AUTH", "Google auth starting...");
+  if (logger) logger.info("GOOGLE_AUTH", "Google auth starting...", { privateKeyId: serviceAccount.private_key_id });
   
   const now = Math.floor(Date.now() / 1000);
   const expiry = now + 3600;
