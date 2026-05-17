@@ -88,7 +88,7 @@ export async function callAi(
   logger.info("AI_CALL", `Calling model ${model}`, { model, taskType: payload.taskType, stream: !!payload.stream });
 
   const tokenParam = getTokenParameterName(model);
-  const normalizedPayload = { ...payload, model };
+  const normalizedPayload: any = { ...payload, model };
   
   // Strip non-standard fields for the gateway
   delete (normalizedPayload as any).taskType;
