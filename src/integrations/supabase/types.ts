@@ -1178,43 +1178,61 @@ export type Database = {
         Row: {
           audited_at: string | null
           cost_usd: number | null
+          created_at: string | null
           details: Json | null
           function_name: string
           hallucination_score: number | null
           id: string
           incident_type: string | null
+          latency_ms: number | null
           medical_consistency_score: number | null
+          metadata: Json | null
           model_name: string
+          model_used: string | null
           quality_lock_status: string | null
           severity: string | null
+          status: string | null
+          token_usage: Json | null
           ttft_ms: number | null
         }
         Insert: {
           audited_at?: string | null
           cost_usd?: number | null
+          created_at?: string | null
           details?: Json | null
           function_name: string
           hallucination_score?: number | null
           id?: string
           incident_type?: string | null
+          latency_ms?: number | null
           medical_consistency_score?: number | null
+          metadata?: Json | null
           model_name: string
+          model_used?: string | null
           quality_lock_status?: string | null
           severity?: string | null
+          status?: string | null
+          token_usage?: Json | null
           ttft_ms?: number | null
         }
         Update: {
           audited_at?: string | null
           cost_usd?: number | null
+          created_at?: string | null
           details?: Json | null
           function_name?: string
           hallucination_score?: number | null
           id?: string
           incident_type?: string | null
+          latency_ms?: number | null
           medical_consistency_score?: number | null
+          metadata?: Json | null
           model_name?: string
+          model_used?: string | null
           quality_lock_status?: string | null
           severity?: string | null
+          status?: string | null
+          token_usage?: Json | null
           ttft_ms?: number | null
         }
         Relationships: []
