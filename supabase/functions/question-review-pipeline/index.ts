@@ -80,15 +80,19 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
           await supabaseAdmin.from("flashcards").insert(flashcardsToInsert);
         }
 
-        // Log governance
+        // Governance log
         await supabaseAdmin.from("pipeline_governance").insert({
-          source: "question-review-pipeline",
+          pipeline_name: "question-review-pipeline",
+          function_name: "question-review-pipeline",
           model_used: "google/gemini-2.5-pro",
           latency_ms: latency,
           quality_score: result.scores.clinical_density_score,
-          upgrade_status: result.quality_tier,
-          correlation_id: correlation,
-          metadata: { question_id: q.id, flashcards_created: result.flashcards?.length || 0 }
+          status: result.quality_tier,
+          metadata: { 
+            question_id: q.id, 
+            flashcards_created: result.flashcards?.length || 0,
+            correlation_id: correlation
+          }
         });
 
         processed++;
