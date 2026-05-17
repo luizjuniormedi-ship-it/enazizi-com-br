@@ -153,6 +153,8 @@ const AdminIngestionPanel = () => {
     );
     const raw = await resp.text();
     let data: any = {};
+    try { 
+      data = raw ? JSON.parse(raw) : {}; 
     } catch (err: any) { 
       console.error("Failed to parse ingestion response:", raw, err);
       throw new Error(`Resposta inválida (${resp.status}): ${raw.slice(0, 150)}`); 
