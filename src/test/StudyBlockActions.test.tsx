@@ -39,7 +39,7 @@ describe("StudyBlockActions", () => {
     
     const tutorBtn = await screen.findByLabelText("Tutor IA");
     fireEvent.click(tutorBtn);
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/mentor?topic=Neurologia");
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/sessao-estudo?topic=Neurologia");
   });
 
   it("navigates to Anamnese with specialty param", async () => {

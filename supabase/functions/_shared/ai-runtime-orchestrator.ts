@@ -14,6 +14,7 @@
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const AI_TIMEOUT_MS = 30_000;
 const AI_MAX_TOKENS = 4096;
+const AI_MAX_TOKENS_DEEP = 6000; // For tutor_chat high complexity & clinical_reasoning
 
 // ---------------------------------------------------------------------------
 // Tipos públicos
@@ -21,6 +22,7 @@ const AI_MAX_TOKENS = 4096;
 
 export type AITaskType =
   | "tutor_chat"
+  | "clinical_reasoning"
   | "lesson_generation"
   | "flashcard"
   | "mnemonic"
@@ -344,6 +346,7 @@ async function callOnce(
   ref: ModelRef,
   gatewayKey: string,
   messages: Array<{ role: string; content: string }>,
+  maxTokens: number = AI_MAX_TOKENS,
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
@@ -352,7 +355,7 @@ async function callOnce(
     const body: Record<string, unknown> = {
       model: ref.model,
       messages,
-      [tokenField]: AI_MAX_TOKENS,
+      [tokenField]: maxTokens,
     };
     const res = await fetchWithTimeout(
       AI_GATEWAY_URL,
@@ -557,7 +560,12 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
 
   for (let i = 0; i < chain.length; i++) {
     const ref = chain[i];
-    const r = await callOnce(ref, gatewayKey, input.messages);
+    // Use higher token limit for deep tutor/clinical tasks
+    const needsDeep = (input.taskType === "tutor_chat" && input.complexity === "high") ||
+                      input.taskType === "clinical_reasoning" ||
+                      input.taskType === "simulado_review";
+    const maxTokens = needsDeep ? AI_MAX_TOKENS_DEEP : AI_MAX_TOKENS;
+    const r = await callOnce(ref, gatewayKey, input.messages, maxTokens);
     attempts.push(r.attempt);
     if (r.attempt.success && r.content) {
       const result: AIRunResult = {

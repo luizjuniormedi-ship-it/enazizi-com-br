@@ -1,10 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getAdmin, corsHeaders, jsonOk, jsonError } from "../_shared/ai-phase2-helpers.ts";
+import { getAdmin, corsHeaders, jsonOk, jsonError, extractUserId } from "../_shared/ai-phase2-helpers.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Auth: admin/cron-only endpoint
+    const userId = await extractUserId(req);
+    if (!userId) return jsonError("Não autenticado", 401);
+
     const sb = getAdmin();
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);

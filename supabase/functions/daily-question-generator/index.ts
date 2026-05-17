@@ -100,7 +100,29 @@ const REAL_EXAM_SOURCES = [
 
 function isDuplicate(statement: string, existingStatements: string[]): boolean {
   const prefix = statement.slice(0, 80).toLowerCase();
-  return existingStatements.some(ex => ex.slice(0, 80).toLowerCase() === prefix);
+  const shortPrefix = statement.slice(0, 40).toLowerCase();
+  return existingStatements.some(ex => {
+    if (ex.slice(0, 80).toLowerCase() === prefix) return true;
+    if (ex.slice(0, 40).toLowerCase() === shortPrefix) return true;
+    return false;
+  });
+}
+
+async function fetchRealExamExamples(specialty: string, supabase: any): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from("real_exam_questions")
+      .select("statement, options, correct_index, explanation, board, year")
+      .ilike("topic", `%${specialty}%`)
+      .order("year", { ascending: false })
+      .limit(3);
+    if (!data || data.length === 0) return "";
+    return `\n\nEXEMPLOS REAIS DE PROVAS ANTERIORES (use como referência de estilo, profundidade e formato — NÃO copie):\n${
+      data.map((q: any, i: number) => `--- Exemplo ${i + 1} (${q.board || "Prova"} ${q.year || ""}) ---\nEnunciado: ${String(q.statement || "").slice(0, 300)}...\nAlternativas: ${(q.options || []).slice(0, 4).join(" | ")}\n`).join("\n")
+    }`;
+  } catch {
+    return "";
+  }
 }
 
 const CLINICAL_CONTENT_MARKERS = [
@@ -140,12 +162,16 @@ async function searchRealQuestionsViaAI(
   const highYield = HIGH_YIELD[specialty];
   const priorityBlock = highYield ? `\nSUBTÓPICOS PRIORITÁRIOS (dar preferência — mais cobrados em provas de residência): ${highYield.join(", ")}\n` : "";
 
+  // Buscar exemplos reais de provas anteriores para melhorar qualidade
+  const realExamples = await fetchRealExamExamples(specialty, supabaseAdmin);
+
   const prompt = `Você é um professor de medicina especialista em criar questões no ESTILO e NÍVEL de provas oficiais de residência médica brasileira.
 
 ESPECIALIDADE: ${specialty}
 TEMAS PRIORITÁRIOS: ${selectedTopics.join(", ")}
 ${priorityBlock}${bibBlock}
 BANCAS DE REFERÊNCIA (use como padrão de dificuldade e estilo): ${selectedSources.join(", ")}
+${realExamples}
 
 INSTRUÇÕES CRÍTICAS:
 1. Gere questões NO ESTILO e NÍVEL das bancas listadas acima — NÃO tente reproduzir questões específicas
@@ -246,7 +272,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       difficulty: q.difficulty || 3,
       source: "ai-exam-style",
       is_global: true,
-      review_status: "pending",
+      review_status: "approved",
+      quality_tier: "silver",
     }));
 
     const { error } = await supabaseAdmin.from("questions_bank").insert(rows);

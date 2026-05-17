@@ -1,11 +1,14 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { corsHeaders, jsonResponse, errorResponse, getServiceClient } from "../_shared/assistant-helpers.ts";
+import { corsHeaders, jsonResponse, errorResponse, getServiceClient, getUserIdFromRequest } from "../_shared/assistant-helpers.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const userId = await getUserIdFromRequest(req).catch(() => null);
+    if (!userId) return errorResponse("Não autenticado", 401);
+
     const supabase = getServiceClient();
     const { topic, duration_seconds = 60 } = await req.json().catch(() => ({}));
 

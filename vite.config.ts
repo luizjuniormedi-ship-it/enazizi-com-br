@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        // Do NOT precache HTML — always fetch fresh index.html so users get latest bundle
+        maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
+        globIgnores: ["**/vendor-pdf*", "**/vendor-charts*", "**/html2canvas*"],
         navigateFallback: null,
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
@@ -104,6 +104,9 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
+  },
+  esbuild: {
+    drop: mode === "production" ? ["console", "debugger"] : [],
   },
   resolve: {
     alias: {

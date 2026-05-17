@@ -15,7 +15,6 @@ const VALID_DASHBOARD_ROUTES = [
   "/dashboard/banco-erros",
   "/dashboard/gerador-questoes",
   "/dashboard/mentor",
-  "/dashboard/mentor",
   "/dashboard/videoaulas",
   "/dashboard/videoaulas/explorar",
   "/dashboard/videoaulas/:id",

@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProgressiveBlocks from "./ProgressiveBlocks";
 import { MascotAvatar } from "../mascot/MascotAvatar";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 
 
@@ -15,6 +19,40 @@ interface TutorV2MessageListProps {
 }
 
 export default function TutorV2MessageList({ messages, isTyping }: TutorV2MessageListProps) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleSaveFsrs = async (content: string) => {
+    if (!user?.id) return;
+    const topic = content.slice(0, 80).replace(/[#*_]/g, "").trim();
+    try {
+      await (supabase.from("fsrs_cards") as any).insert({
+        user_id: user.id,
+        card_type: "tutor",
+        due: new Date().toISOString(),
+        stability: 0,
+        difficulty: 0,
+        elapsed_days: 0,
+        scheduled_days: 0,
+        reps: 0,
+        lapses: 0,
+        state: 0,
+      });
+      toast.success("Salvo no FSRS para revisão espaçada");
+    } catch {
+      toast.error("Erro ao salvar no FSRS");
+    }
+  };
+
+  const handleGenerateFlashcard = (content: string) => {
+    const topic = content.slice(0, 100).replace(/[#*_]/g, "").trim();
+    navigate(`/dashboard/gerar-flashcards?topic=${encodeURIComponent(topic)}`);
+  };
+
+  const handleErrorBank = (content: string) => {
+    navigate("/dashboard/banco-erros");
+  };
+
   return (
     <div className="max-w-4xl mx-auto w-full pb-10">
       {messages.length === 0 && !isTyping && (
@@ -72,9 +110,9 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
               {/* FSRS / Flashcard Inline Actions */}
               {msg.role === "assistant" && !msg.metadata?.question_review && (
                 <div className="mt-6 pt-6 border-t border-white/5 flex flex-wrap gap-2">
-                  <InlineAction icon={Plus} label="Salvar no FSRS" onClick={() => {}} />
-                  <InlineAction icon={Brain} label="Gerar Flashcard" onClick={() => {}} />
-                  <InlineAction icon={Activity} label="Error Bank" onClick={() => {}} />
+                  <InlineAction icon={Plus} label="Salvar no FSRS" onClick={() => handleSaveFsrs(msg.content)} />
+                  <InlineAction icon={Brain} label="Gerar Flashcard" onClick={() => handleGenerateFlashcard(msg.content)} />
+                  <InlineAction icon={Activity} label="Error Bank" onClick={() => handleErrorBank(msg.content)} />
                 </div>
               )}
 
