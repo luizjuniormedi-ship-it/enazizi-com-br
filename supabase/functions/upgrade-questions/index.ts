@@ -4,8 +4,7 @@ import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
 import { reviewAndEnrich } from "../_shared/question-review-engine.ts";
 
 Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, waitUntil, correlation, supabaseAdmin }) => {
-  // const { user } = await requireAdmin(req);
-  const user = { id: "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023" }; // Test bypass
+  const { user } = await requireAdmin(req);
   const body = await req.json().catch(() => ({}));
   const batchSize = Math.min(body.batch_size || 5, 20);
   const ids: string[] | undefined = body.ids;
