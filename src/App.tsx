@@ -73,6 +73,15 @@ const AdminMonitoring = lazyWithRetry(() => import("./pages/AdminMonitoring"), "
 const AdminCEO = lazyWithRetry(() => import("./pages/AdminCEO"), "AdminCEO");
 const MissionMode = lazyWithRetry(() => import("./pages/MissionMode"), "MissionMode");
 const StudySession = lazyWithRetry(() => import("./pages/StudySession"), "StudySession");
+const TutorV2Page = lazyWithRetry(() => import("./pages/TutorV2Page"), "TutorV2Page");
+const DailyPlan = lazyWithRetry(() => import("./pages/DailyPlan"), "DailyPlan");
+const RadarTrajetoriaPage = lazyWithRetry(() => import("./pages/RadarTrajetoriaPage"), "RadarTrajetoriaPage");
+const FlashcardGenerator = lazyWithRetry(() => import("./pages/FlashcardGenerator"), "FlashcardGenerator");
+const MindMaps = lazyWithRetry(() => import("./pages/MindMaps"), "MindMaps");
+const ExamSimulator = lazyWithRetry(() => import("./pages/ExamSimulator"), "ExamSimulator");
+const MnemonicHistoryPage = lazyWithRetry(() => import("./pages/MnemonicHistoryPage"), "MnemonicHistoryPage");
+const AdminOrchestratorInsights = lazyWithRetry(() => import("./pages/AdminOrchestratorInsights"), "AdminOrchestratorInsights");
+const AdminCinematicEngine = lazyWithRetry(() => import("./pages/AdminCinematicEngine"), "AdminCinematicEngine");
 const Rankings = lazyWithRetry(() => import("./pages/Rankings"), "Rankings");
 const MedicalImageQuiz = lazyWithRetry(() => import("./pages/MedicalImageQuiz"), "MedicalImageQuiz");
 const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "PracticalExam");
@@ -167,7 +176,9 @@ const App = () => (
                   
                   {/* Rotas Reais de Funcionalidades */}
                   <Route path="planner" element={<SmartPlanner />} />
-                  <Route path="sessao-estudo" element={<StudySession />} />
+                  <Route path="sessao-estudo" element={<TutorV2Page />} />
+                  <Route path="sessao-estudo/:sessionId" element={<TutorV2Page />} />
+                  <Route path="tutor-legacy" element={<StudySession />} />
                   <Route path="simulados" element={<Simulados />} />
                   <Route path="flashcards" element={<Flashcards />} />
                   <Route path="banco-erros" element={<ErrorBank />} />
@@ -219,8 +230,19 @@ const App = () => (
                   <Route path="performance" element={<Navigate to="/dashboard/analytics" replace />} />
                   <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
                   <Route path="missao" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="plano-dia" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="gerar-flashcards" element={<Navigate to="/dashboard/flashcards" replace />} />
+                  <Route path="mnemonic-studio" element={<Navigate to="/dashboard/mnemonico" replace />} />
+                  <Route path="mnemonic-studio-v2" element={<Navigate to="/dashboard/mnemonico" replace />} />
+                  <Route path="mapas-mentais" element={<Navigate to="/dashboard/mapas-mentais" replace />} />
+                  <Route path="minha-jornada" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
+                  <Route path="radar-trajetoria" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
+                  <Route path="mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="daily-plan" element={<Navigate to="/dashboard/plano-dia" replace />} />
+                  <Route path="plano-dia" element={<DailyPlan />} />
+                  <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
+                  <Route path="mapas-mentais" element={<MindMaps />} />
+                  <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
+                  <Route path="exam-simulator" element={<ExamSimulator />} />
+                  <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
                 </Route>
               </Route>
 
@@ -255,6 +277,12 @@ const App = () => (
                 <Route path="observatory" element={<CognitiveObservatory />} />
                 <Route path="executive" element={<ExecutiveIntelligence />} />
                 <Route path="knowledge-graph" element={<MedicalKnowledgeGraphPage />} />
+                <Route path="orchestrator-insights" element={<AdminOrchestratorInsights />} />
+                <Route path="cinematic-engine" element={<AdminCinematicEngine />} />
+                <Route path="adaptive-experiments" element={<Admin initialTab="intelligence-overview" />} />
+                <Route path="cme-executive" element={<Admin initialTab="intelligence-overview" />} />
+                <Route path="intervention-policies" element={<Admin initialTab="features" />} />
+                <Route path="video-lessons" element={<Admin initialTab="uploads" />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
@@ -303,6 +331,9 @@ const App = () => (
               <Route path="/teacher/relatorios" element={<Navigate to="/professor/relatorios" replace />} />
               <Route path="/teacher/materiais" element={<Navigate to="/professor/materiais" replace />} />
               <Route path="/teacher/plantao" element={<Navigate to="/professor/plantao" replace />} />
+              {/* Redirects for broken navigate() targets */}
+              <Route path="/image-quiz" element={<Navigate to="/dashboard/image-quiz" replace />} />
+              <Route path="/banco-questoes" element={<Navigate to="/dashboard/banco-questoes" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

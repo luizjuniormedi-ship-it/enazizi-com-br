@@ -241,7 +241,7 @@ export const forceAppUpdate = async (
     try {
       window.location.reload();
     } catch {
-      window.location.href = window.location.href;
+      window.location.replace(window.location.href);
     }
   }, 350);
 };

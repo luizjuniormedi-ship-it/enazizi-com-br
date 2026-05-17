@@ -270,7 +270,7 @@ const ErrorBank = () => {
                 <ErrorThemeCard
                   key={stat.tema}
                   {...stat}
-                  onClick={() => {}}
+                  onClick={() => startReviewMode("revisar", stat.tema)}
                   onTrain={() => startReviewMode("treinar", stat.tema)}
                 />
               ))}

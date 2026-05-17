@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
-import Hls from "hls.js";
+import type Hls from "hls.js";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1380,51 +1380,62 @@ const VideoHLSPlayer = ({
     const video = videoRef.current;
     if (!video) return;
 
-    if (Hls.isSupported() && (src.includes('.m3u8') || src.includes('manifest'))) {
-      if (hlsRef.current) hlsRef.current.destroy();
-      
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-      });
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hlsRef.current = hls;
+    let hls: Hls | null = null;
+    let cancelled = false;
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    const initHls = async () => {
+      const HlsModule = (await import("hls.js")).default;
+      if (cancelled) return;
+
+      if (HlsModule.isSupported() && (src.includes('.m3u8') || src.includes('manifest'))) {
+        if (hlsRef.current) hlsRef.current.destroy();
+
+        hls = new HlsModule({
+          enableWorker: true,
+          lowLatencyMode: true,
+        });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hlsRef.current = hls;
+
+        hls.on(HlsModule.Events.MANIFEST_PARSED, () => {
+          if (initialTime && !isNaN(initialTime)) {
+            video.currentTime = initialTime;
+          }
+          video.play().catch(() => {});
+        });
+
+        hls.on(HlsModule.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            switch (data.type) {
+              case HlsModule.ErrorTypes.NETWORK_ERROR:
+                hls!.startLoad();
+                break;
+              case HlsModule.ErrorTypes.MEDIA_ERROR:
+                hls!.recoverMediaError();
+                break;
+              default:
+                hls!.destroy();
+                break;
+            }
+          }
+        });
+      } else {
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
+        video.src = src;
         if (initialTime && !isNaN(initialTime)) {
           video.currentTime = initialTime;
         }
-        video.play().catch(e => console.log("Auto-play prevented", e));
-      });
+      }
+    };
 
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
-              break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
-              break;
-            default:
-              hls.destroy();
-              break;
-          }
-        }
-      });
-    } else {
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-      video.src = src;
-      if (initialTime && !isNaN(initialTime)) {
-        video.currentTime = initialTime;
-      }
-    }
+    initHls();
 
     return () => {
+      cancelled = true;
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }

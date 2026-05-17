@@ -28,7 +28,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import {
   corsHeaders, jsonResponse, errorResponse,
-  getServiceClient, logDecision,
+  getServiceClient, logDecision, getUserIdFromRequest,
 } from "../_shared/assistant-helpers.ts";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,6 +98,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return errorResponse("Método não permitido", 405);
 
+  // Auth validation
+  const authUserId = await getUserIdFromRequest(req).catch(() => null);
+  if (!authUserId) return errorResponse("Não autenticado", 401);
+
   let body: OrchestratorBody;
   try {
     body = (await req.json()) as OrchestratorBody;
@@ -105,10 +109,11 @@ serve(async (req) => {
     return errorResponse("Body inválido", 400);
   }
 
-  // Validação mínima
-  if (!body?.userId || !body?.action?.actionType) {
+  // Validação mínima — use authenticated userId, not body.userId
+  if (!body?.action?.actionType) {
     return errorResponse("Payload incompleto", 400);
   }
+  body.userId = authUserId;
 
   const userId = body.userId;
   const action = body.action;

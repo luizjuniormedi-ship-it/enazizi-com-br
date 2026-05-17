@@ -32,8 +32,12 @@ export async function extractUserId(req: Request): Promise<string | null> {
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
+      {
+        global: { headers: { Authorization: header } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      },
     );
-    const { data: { user }, error } = await sb.auth.getUser(token);
+    const { data: { user }, error } = await sb.auth.getUser();
     if (error || !user) return null;
     return user.id;
   } catch (err) {

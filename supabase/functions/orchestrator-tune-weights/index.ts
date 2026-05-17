@@ -16,7 +16,7 @@
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import {
-  corsHeaders, jsonResponse, errorResponse, getServiceClient,
+  corsHeaders, jsonResponse, errorResponse, getServiceClient, getUserIdFromRequest,
 } from "../_shared/assistant-helpers.ts";
 
 const LOOKBACK_DAYS = 14;
@@ -39,6 +39,10 @@ serve(async (req) => {
   if (req.method !== "POST" && req.method !== "GET") return errorResponse("Method not allowed", 405);
 
   try {
+    // Auth: admin/cron-only endpoint
+    const userId = await getUserIdFromRequest(req).catch(() => null);
+    if (!userId) return errorResponse("Não autenticado", 401);
+
     const db = getServiceClient();
     const since = new Date(Date.now() - LOOKBACK_DAYS * 86_400_000).toISOString();
 

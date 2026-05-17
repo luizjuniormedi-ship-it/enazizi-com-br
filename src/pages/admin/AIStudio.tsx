@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { supabase } from "@/integrations/supabase/client";
-import { jsPDF } from "jspdf";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -419,7 +418,8 @@ export function AIStudio() {
     }
   };
 
-  const handleExportPDF = (content: any) => {
+  const handleExportPDF = async (content: any) => {
+    const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     const margin = 20;
     let y = 20;

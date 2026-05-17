@@ -16,6 +16,39 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
   const { toast } = useToast();
   const safeResults = Array.isArray(results) ? results : [];
   const completed = safeResults.filter(r => r?.status === "completed");
+
+  const exportCSV = useCallback(() => {
+    try {
+    const headers = ["Aluno", "Email", "Nota", "Acertos", "Total", "Tempo (s)", "Status"];
+    const rows = safeResults.map(r => [
+      r.student_name,
+      r.student_email,
+      r.score,
+      (r.answers_json || []).filter((a: any) => a.is_correct).length,
+      (r.answers_json || []).length,
+      r.time_spent_seconds,
+      r.status
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `relatorio_simulado_${simuladoTitle || 'professor'}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    } catch (error) {
+      toast({ title: "Erro na exportação", description: "Falha ao gerar CSV.", variant: "destructive" });
+    }
+  }, [safeResults, simuladoTitle, toast]);
+
+  const exportPDF = useCallback(() => {
+    window.print();
+  }, []);
+
   if (completed.length === 0) return null;
 
   // 1. Desempenho por tema
@@ -54,40 +87,6 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
 
   // 3. Alunos em risco (score < 50%)
   const atRiskStudents = completed.filter(r => (r.score || 0) < 50);
-
-  const exportCSV = useCallback(() => {
-    try {
-      console.log("[SimuladoInsights] Exporting CSV...");
-    const headers = ["Aluno", "Email", "Nota", "Acertos", "Total", "Tempo (s)", "Status"];
-    const rows = safeResults.map(r => [
-      r.student_name,
-      r.student_email,
-      r.score,
-      (r.answers_json || []).filter((a: any) => a.is_correct).length,
-      (r.answers_json || []).length,
-      r.time_spent_seconds,
-      r.status
-    ]);
-    
-    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `relatorio_simulado_${simuladoTitle || 'professor'}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    } catch (error) {
-      console.error("[SimuladoInsights] CSV Export failed", error);
-      toast({ title: "Erro na exportação", description: "Falha ao gerar CSV.", variant: "destructive" });
-    }
-  }, [safeResults, simuladoTitle, toast]);
-
-  const exportPDF = useCallback(() => {
-    window.print();
-  }, []);
 
   return (
     <div className="space-y-6 mb-8 print:p-0">

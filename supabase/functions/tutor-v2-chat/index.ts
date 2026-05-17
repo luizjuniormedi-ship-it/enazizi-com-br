@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { runAI, type AIComplexity, type AICognitiveLoad } from "../_shared/ai-runtime-orchestrator.ts";
+import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "../_shared/injection-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -502,7 +503,37 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    
+
+    // ── INJECTION GUARD ──────────────────────────────────────────────
+    if (detectInjection(message)) {
+      console.warn("[TUTOR_V2_INJECTION_BLOCKED]", { userId, requestId, messagePreview: message.slice(0, 80) });
+      const supabaseEarly = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await supabaseEarly.from("tutor_messages").insert([
+        { tutor_session_id: sessionId, user_id: userId, role: "user", content: message, metadata: { injection_attempt: true } },
+        { tutor_session_id: sessionId, user_id: userId, role: "assistant", content: SAFE_RESPONSE, metadata: { injection_blocked: true } },
+      ]);
+      await recordTutorEvent(supabaseEarly, {
+        userId, sessionId, topic: null, eventType: "injection_blocked", outcome: "blocked",
+        payload: { message_preview: message.slice(0, 100), request_id: requestId },
+      });
+      return new Response(JSON.stringify({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true, requestId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (isOffTopic(message)) {
+      console.warn("[TUTOR_V2_OFF_TOPIC]", { userId, requestId, messagePreview: message.slice(0, 80) });
+      const supabaseEarly = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await supabaseEarly.from("tutor_messages").insert([
+        { tutor_session_id: sessionId, user_id: userId, role: "user", content: message, metadata: { off_topic: true } },
+        { tutor_session_id: sessionId, user_id: userId, role: "assistant", content: OFF_TOPIC_RESPONSE, metadata: { off_topic_redirect: true } },
+      ]);
+      return new Response(JSON.stringify({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true, requestId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // ── END INJECTION GUARD ──────────────────────────────────────────
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
