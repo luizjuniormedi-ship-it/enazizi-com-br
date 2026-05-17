@@ -274,8 +274,15 @@ const AdminIngestionPanel = () => {
           });
           const raw = await resp.text();
           let data: any = {};
-          try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+          try { 
+            data = raw ? JSON.parse(raw) : {}; 
+          } catch (err: any) { 
+            console.error("[equalize] parse error", { raw, status: resp.status });
+            throw new Error(`Resposta inválida (${resp.status}): ${raw.slice(0, 100)}`); 
+          }
+          
           if (!resp.ok) {
+            console.error("[equalize] response not ok", { status: resp.status, data });
             throw new Error(data?.error || `Falha ao equalizar ${spec.name} (${resp.status})`);
           }
 
