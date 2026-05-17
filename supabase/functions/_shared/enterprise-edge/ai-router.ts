@@ -88,11 +88,7 @@ export async function callAi(
   logger.info("AI_CALL", `Calling model ${model}`, { model, taskType: payload.taskType, stream: !!payload.stream });
 
   const tokenParam = getTokenParameterName(model);
-  const normalizedPayload = { 
-    ...payload, 
-    model,
-    response_format: { type: "json_object" } 
-  };
+  const normalizedPayload = { ...payload, model };
   
   const normalizedPayload = { 
     ...payload, 
