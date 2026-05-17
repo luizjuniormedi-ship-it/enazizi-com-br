@@ -41,7 +41,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     });
   };
 
-  // Try OpenAI first (gpt-5-mini) for higher quality
+  // Try OpenAI/Google first (gemini-2.5-flash) for higher quality
   if (OPENAI_API_KEY) {
     try {
       const startMs = Date.now();
