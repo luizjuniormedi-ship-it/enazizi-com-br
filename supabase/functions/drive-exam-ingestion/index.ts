@@ -41,9 +41,17 @@ export default enterpriseEdgeHandler("drive-exam-ingestion", async ({ req, logge
   // DEFAULT ACTION: LIST AND REGISTER PENDING
   const listAndRegister = async () => {
     try {
-      const GOOGLE_SA_JSON = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-      if (!GOOGLE_SA_JSON) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-      const serviceAccount = JSON.parse(GOOGLE_SA_JSON);
+      let googleJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "";
+      if (!googleJson) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
+      
+      // Sanitize JSON string
+      googleJson = googleJson.trim();
+      if (googleJson.startsWith('"') && googleJson.endsWith('"')) {
+        googleJson = googleJson.slice(1, -1);
+      }
+      googleJson = googleJson.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+      
+      const serviceAccount = JSON.parse(googleJson);
 
       // 1. Google Drive Auth
       const accessToken = await getGoogleAccessToken(serviceAccount, logger);
