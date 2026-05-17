@@ -1,18 +1,57 @@
 /**
- * ENAZIZI ENTERPRISE — AI Router
- * Centralized AI execution with routing, governance, and streaming support.
+ * ENAZIZI ENTERPRISE — AI Router (v2026)
+ * Centralized AI execution with dynamic routing, governance, cost tracking, and observability.
  */
 
 import { StructuredLogger } from "./structured-logger.ts";
-import { ALLOWED_MODELS, PRODUCTION_MODELS } from "../ai-model-registry.ts";
+import { ALLOWED_MODELS, PRODUCTION_MODELS, MODEL_METRICS } from "../ai-model-registry.ts";
 import { getTokenParameterName } from "../ai-models.ts";
+
+export type AiTaskType = 
+  | "classification" 
+  | "parsing" 
+  | "flashcard" 
+  | "summary" 
+  | "reasoning" 
+  | "tutor_deep" 
+  | "question_upgrade"
+  | "differential_diagnosis";
 
 export interface AiRequest {
   model?: string;
+  taskType?: AiTaskType;
   messages: any[];
   max_tokens?: number;
   temperature?: number;
   stream?: boolean;
+}
+
+/**
+ * Calculates estimated cost in USD based on model and token usage.
+ */
+function calculateCost(model: string, usage: { prompt_tokens: number, completion_tokens: number }) {
+  const metrics = MODEL_METRICS[model];
+  if (!metrics) return 0;
+  
+  const promptCost = (usage.prompt_tokens / 1_000_000) * metrics.prompt;
+  const completionCost = (usage.completion_tokens / 1_000_000) * metrics.completion;
+  return promptCost + completionCost;
+}
+
+/**
+ * Decides which model to use based on task complexity.
+ */
+function routeModel(request: AiRequest): string {
+  if (request.model) return request.model;
+
+  const fastModels: AiTaskType[] = ["classification", "parsing", "flashcard", "summary"];
+  const reasoningModels: AiTaskType[] = ["reasoning", "tutor_deep", "question_upgrade", "differential_diagnosis"];
+
+  if (request.taskType && reasoningModels.includes(request.taskType)) {
+    return ALLOWED_MODELS.reasoning;
+  }
+
+  return ALLOWED_MODELS.generation;
 }
 
 export async function callAi(
@@ -23,9 +62,10 @@ export async function callAi(
   const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-  let model = payload.model || ALLOWED_MODELS.generation;
+  // 1. Dynamic Routing
+  let model = routeModel(payload);
   
-  // Validation against PRODUCTION_MODELS
+  // 2. Registry Validation
   if (!PRODUCTION_MODELS.includes(model)) {
     const originalModel = model;
     model = ALLOWED_MODELS.generation;
@@ -34,23 +74,25 @@ export async function callAi(
       replacement_model: model
     });
     
-    // Log to pipeline_alerts via logger if possible, or just keep it in metadata
-    await supabaseAdmin.from("pipeline_alerts").insert({
-      source: "ai-router",
-      message: `Invalid AI model replaced: ${originalModel}`,
-      alert_type: "validation_error",
+    await supabaseAdmin.from("ai_incidents").insert({
+      function_name: "ai-router",
+      model_name: originalModel,
       severity: "warning",
-      metadata: { originalModel, replacementModel: model }
+      incident_type: "validation_error",
+      message: `Invalid AI model replaced: ${originalModel}`,
+      correlation_id: logger.correlationId
     }).catch(() => {});
   }
 
   const startTime = Date.now();
-  logger.info("AI_CALL", `Calling model ${model}`, { model, stream: !!payload.stream });
+  logger.info("AI_CALL", `Calling model ${model}`, { model, taskType: payload.taskType, stream: !!payload.stream });
 
   const tokenParam = getTokenParameterName(model);
   const normalizedPayload = { ...payload, model };
-
   
+  // Strip non-standard fields for the gateway
+  delete (normalizedPayload as any).taskType;
+
   if (payload.max_tokens && tokenParam === "max_completion_tokens") {
     // @ts-ignore: mapping to new token param
     normalizedPayload.max_completion_tokens = payload.max_tokens;
@@ -71,26 +113,38 @@ export async function callAi(
   if (!res.ok) {
     const errorText = await res.text();
     logger.error("AI_ERROR", `Model ${model} failed`, { status: res.status, error: errorText });
+    
+    await supabaseAdmin.from("ai_incidents").insert({
+      function_name: "ai-router",
+      model_name: model,
+      severity: "critical",
+      incident_type: "gateway_error",
+      message: `AI Gateway error ${res.status}: ${errorText}`,
+      correlation_id: logger.correlationId,
+      metadata: { status: res.status }
+    }).catch(() => {});
+
     throw new Error(`AI Gateway error ${res.status}: ${errorText}`);
   }
 
-  // If streaming, return the raw response
-  if (payload.stream) {
-    return res;
-  }
+  if (payload.stream) return res;
 
   const data = await res.json();
+  const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0 };
+  const cost = calculateCost(model, usage);
   
-  // Log to ai_governance_logs (non-streaming only for now, or use background job for streaming)
+  // 3. Governance Logging
   try {
     await supabaseAdmin.from("ai_governance_logs").insert({
       model_used: model,
       latency_ms: latency,
-      token_usage: data.usage || {},
+      token_usage: usage,
+      cost_usd: cost,
       status: "success",
       metadata: { 
-        request: payload,
-        response_id: data.id 
+        task_type: payload.taskType,
+        request_id: data.id,
+        correlation_id: logger.correlationId
       }
     });
   } catch (err) {
@@ -99,4 +153,3 @@ export async function callAi(
 
   return data;
 }
-
