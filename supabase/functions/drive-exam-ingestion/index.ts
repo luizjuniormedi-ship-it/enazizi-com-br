@@ -41,17 +41,20 @@ export default enterpriseEdgeHandler("drive-exam-ingestion", async ({ req, logge
   // DEFAULT ACTION: LIST AND REGISTER PENDING
   const listAndRegister = async () => {
     try {
-      let googleJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "";
-      if (!googleJson) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-      
-      // Sanitize JSON string
-      googleJson = googleJson.trim();
-      if (googleJson.startsWith('"') && googleJson.endsWith('"')) {
-        googleJson = googleJson.slice(1, -1);
+      const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
+      const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
+      let private_key = Deno.env.get("GOOGLE_SA_PRIVATE_KEY") || "";
+
+      if (!client_email || !private_key) {
+        throw new Error("Missing Google Service Account individual secrets");
       }
-      googleJson = googleJson.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+
+      private_key = private_key.replace(/\\n/g, '\n');
+      if (private_key.startsWith('"') && private_key.endsWith('"')) {
+        private_key = private_key.slice(1, -1);
+      }
       
-      const serviceAccount = JSON.parse(googleJson);
+      const serviceAccount = { client_email, token_uri, private_key };
 
       // 1. Google Drive Auth
       const accessToken = await getGoogleAccessToken(serviceAccount, logger);

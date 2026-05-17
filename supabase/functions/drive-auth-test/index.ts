@@ -21,22 +21,25 @@ serve(async (req) => {
   };
 
   try {
-    let googleJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "";
-    if (!googleJson) {
-      results.error = "SECRET_NOT_FOUND";
+    const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
+    const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
+    let private_key = Deno.env.get("GOOGLE_SA_PRIVATE_KEY") || "";
+
+    if (!client_email || !private_key) {
+      results.error = "MISSING_GOOGLE_SA_SECRETS";
       return new Response(JSON.stringify(results), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
     }
 
-    // Sanitize JSON string: remove wrapping quotes and handle unescaped characters
-    googleJson = googleJson.trim();
-    if (googleJson.startsWith('"') && googleJson.endsWith('"')) {
-      googleJson = googleJson.slice(1, -1);
+    // Sanitize private key: fix escaped newlines if they exist
+    private_key = private_key.replace(/\\n/g, '\n');
+    
+    // Support wrapping quotes if present
+    if (private_key.startsWith('"') && private_key.endsWith('"')) {
+      private_key = private_key.slice(1, -1);
     }
-    // Handle unescaped internal quotes and newlines if it was stored as a string literal
-    googleJson = googleJson.replace(/\\n/g, '\n').replace(/\\"/g, '"');
 
-    const credentials = JSON.parse(googleJson);
-    results.private_key_id = credentials.private_key_id?.substring(0, 8) || "not_found";
+    const credentials = { client_email, token_uri, private_key };
+    results.private_key_id = "individual_secrets";
     
     results.step = "jwt_generation";
     const now = Math.floor(Date.now() / 1000);

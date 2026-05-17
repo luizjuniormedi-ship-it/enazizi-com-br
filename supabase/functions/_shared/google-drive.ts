@@ -96,17 +96,20 @@ export async function processSingleDriveFile(
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
   try {
-    let googleJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "";
-    if (!googleJson) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-    
-    // Sanitize JSON string
-    googleJson = googleJson.trim();
-    if (googleJson.startsWith('"') && googleJson.endsWith('"')) {
-      googleJson = googleJson.slice(1, -1);
+    const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
+    const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
+    let private_key = Deno.env.get("GOOGLE_SA_PRIVATE_KEY") || "";
+
+    if (!client_email || !private_key) {
+      throw new Error("Missing Google Service Account individual secrets (GOOGLE_SA_CLIENT_EMAIL, GOOGLE_SA_PRIVATE_KEY)");
     }
-    googleJson = googleJson.replace(/\\n/g, '\n').replace(/\\"/g, '"');
-    
-    const serviceAccount = JSON.parse(googleJson);
+
+    private_key = private_key.replace(/\\n/g, '\n');
+    if (private_key.startsWith('"') && private_key.endsWith('"')) {
+      private_key = private_key.slice(1, -1);
+    }
+
+    const serviceAccount = { client_email, token_uri, private_key };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
