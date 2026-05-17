@@ -135,7 +135,7 @@ export async function callAi(
   
   // 3. Governance Logging
   try {
-    await supabaseAdmin.from("ai_governance_logs").insert({
+    const governancePromise = supabaseAdmin.from("ai_governance_logs").insert({
       model_used: model,
       latency_ms: latency,
       token_usage: usage,
@@ -146,9 +146,14 @@ export async function callAi(
         request_id: data.id,
         correlation_id: logger.correlationId
       }
-    }).catch(() => {});
-  } catch (err) {
-    logger.warn("GOVERNANCE_ERROR", "Failed to log AI governance", { error: err.message });
+    });
+    
+    // We don't await this to keep AI response fast, but we wrap it in a catch
+    governancePromise.catch((err: any) => {
+      logger.warn("GOVERNANCE_ERROR", "Failed to log AI governance", { error: err.message });
+    });
+  } catch (err: any) {
+    logger.warn("GOVERNANCE_ERROR_WRAPPER", "Failed to initiate AI governance logging", { error: err.message });
   }
 
   return data;
