@@ -29,10 +29,12 @@ export async function logTelemetry(supabase: any, event: string, payload: any, u
   }
 }
 
+import { ALLOWED_MODELS } from "./ai-model-registry.ts";
+
 export async function callAI(system: string, prompt: string, options: { model?: string, temperature?: number, maxTokens?: number } = {}) {
   // Unified AI entry point
   const body = {
-    model: options.model || "openai/gpt-5-mini", // Cost optimization: default to mini
+    model: options.model || ALLOWED_MODELS.generation,
     messages: [
       { role: "system", content: system },
       { role: "user", content: prompt }

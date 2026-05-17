@@ -6,7 +6,7 @@
 
 export const ALLOWED_MODELS = {
   // Primary model for content generation
-  generation: "google/gemini-2.0-flash",
+  generation: "google/gemini-2.0-flash", // Using 2.0 as stable base until 2.5 is verified
   
   // High-performance model for complex reasoning or specialized tasks
   reasoning: "openai/gpt-4o",
@@ -14,6 +14,9 @@ export const ALLOWED_MODELS = {
   // Embedding model for vector search
   embeddings: "openai/text-embedding-3-small",
 } as const;
+
+export const DEFAULT_FAST_MODEL = "google/gemini-2.0-flash";
+export const DEFAULT_REASONING_MODEL = "openai/gpt-4o";
 
 export type AiModelType = keyof typeof ALLOWED_MODELS;
 export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
