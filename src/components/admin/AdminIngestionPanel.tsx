@@ -326,7 +326,8 @@ const AdminIngestionPanel = () => {
         } catch (error) {
           log.push({ specialty: spec.name, added: 0 });
           setEqProgress(prev => prev ? { ...prev, log: [...log] } : prev);
-          throw new Error(error instanceof Error ? `${spec.name}: ${error.message}` : `Falha ao equalizar ${spec.name}`);
+          console.error("[equalize] specialty error", { specialty: spec.name, error });
+          throw error; // Re-throw to catch in outer block and stop
         }
       }
 
