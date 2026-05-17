@@ -285,11 +285,8 @@ const AdminIngestionPanel = () => {
               try {
                 const pollToken = await getFreshToken();
                 if (!pollToken) throw new Error("Sessão expirada durante polling.");
-                const pollResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content?job_id=${jobId}`, {
-                  method: "GET",
-                  headers: { Authorization: `Bearer ${pollToken}` },
-                });
-                const pollData = await pollResp.json();
+                const { data: pollData, error: pollError } = await supabase.functions.invoke(`bulk-generate-content?job_id=${jobId}`, { method: "GET" });
+                if (pollError) throw pollError;
                 if (pollData.status === "completed") { jobResult = pollData.result || {}; break; }
                 if (pollData.status === "failed") { throw new Error(pollData.error || "Job falhou"); }
                 // Update progress from background job
