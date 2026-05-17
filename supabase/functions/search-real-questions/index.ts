@@ -30,6 +30,7 @@ const TRUSTED_DOMAINS = [
   "medgrupo.com.br", "sanarmed.com", "editorasanar.com.br",
   "jaleko.com.br", "afya.com.br", "med.estrategia.com", "residenciaprime.com.br",
   "medvideosaulas.com", "moodle.ufrj.br", "portal.mec.gov.br", "ebserh.gov.br",
+  "institutoaripe.com.br", "surce.org.br", "cefet-rj.br", "idcap.org.br",
 ];
 
 const BLOCKED_DOMAINS = ["scribd.com", "youtube.com", "youtu.be", "facebook.com", "instagram.com", "twitter.com", "tiktok.com"];
