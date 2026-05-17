@@ -142,7 +142,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
     const isMissionMode = mission_context?.mode === "mission";
     const maxTokens = isMissionMode ? 4096 : 16384;
     const allMessages = [{ role: "system", content: instructions }, ...messages];
-    const body = JSON.stringify({ model: "gpt-5-mini", messages: allMessages, stream: true, max_tokens: maxTokens });
+    const body = JSON.stringify({ model: "google/gemini-2.5-flash", messages: allMessages, stream: true, max_tokens: maxTokens });
     const startMs = Date.now();
 
     // 1) Try OpenAI first
@@ -155,7 +155,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
 
       if (response.ok) {
-        logAiUsage({ userId, functionName: "chatgpt-agent", modelUsed: "gpt-5-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
+        logAiUsage({ userId, functionName: "chatgpt-agent", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
         return new Response(response.body, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
@@ -180,7 +180,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
     }
 
-    const fallbackBody = JSON.stringify({ model: "openai/gpt-5-mini", messages: allMessages, stream: true, max_tokens: 16384 });
+    const fallbackBody = JSON.stringify({ model: "google/gemini-2.5-flash", messages: allMessages, stream: true, max_tokens: 16384 });
     const response = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -206,7 +206,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
     }
 
-    logAiUsage({ userId, functionName: "chatgpt-agent", modelUsed: "openai/gpt-5-mini", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
+    logAiUsage({ userId, functionName: "chatgpt-agent", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });

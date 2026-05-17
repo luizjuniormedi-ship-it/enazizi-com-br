@@ -4,7 +4,7 @@
  */
 
 import { StructuredLogger } from "./structured-logger.ts";
-import { ALLOWED_MODELS } from "../ai-model-registry.ts";
+import { ALLOWED_MODELS, PRODUCTION_MODELS } from "../ai-model-registry.ts";
 import { getTokenParameterName } from "../ai-models.ts";
 
 export interface AiRequest {
@@ -23,13 +23,33 @@ export async function callAi(
   const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-  const model = payload.model || ALLOWED_MODELS.generation;
-  const startTime = Date.now();
+  let model = payload.model || ALLOWED_MODELS.generation;
+  
+  // Validation against PRODUCTION_MODELS
+  if (!PRODUCTION_MODELS.includes(model)) {
+    const originalModel = model;
+    model = ALLOWED_MODELS.generation;
+    logger.warn("INVALID_MODEL_REPLACED", `Model ${originalModel} is not in production registry. Falling back to ${model}`, {
+      original_model: originalModel,
+      replacement_model: model
+    });
+    
+    // Log to pipeline_alerts via logger if possible, or just keep it in metadata
+    await supabaseAdmin.from("pipeline_alerts").insert({
+      source: "ai-router",
+      message: `Invalid AI model replaced: ${originalModel}`,
+      alert_type: "validation_error",
+      severity: "warning",
+      metadata: { originalModel, replacementModel: model }
+    }).catch(() => {});
+  }
 
+  const startTime = Date.now();
   logger.info("AI_CALL", `Calling model ${model}`, { model, stream: !!payload.stream });
 
   const tokenParam = getTokenParameterName(model);
-  const normalizedPayload = { ...payload };
+  const normalizedPayload = { ...payload, model };
+
   
   if (payload.max_tokens && tokenParam === "max_completion_tokens") {
     // @ts-ignore: mapping to new token param

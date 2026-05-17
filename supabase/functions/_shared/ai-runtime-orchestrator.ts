@@ -98,8 +98,8 @@ const MODELS = {
   flashStable: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
   flashLite: { provider: "lovable-ai", model: "google/gemini-2.5-flash-lite" } as ModelRef,
   pro: { provider: "lovable-ai", model: "google/gemini-2.5-pro" } as ModelRef,
-  gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-5-mini" } as ModelRef,
-  gpt5: { provider: "lovable-ai", model: "openai/gpt-5" } as ModelRef,
+  gpt5Mini: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
+  gpt5: { provider: "lovable-ai", model: "google/gemini-2.5-pro" } as ModelRef,
 
 
 };
@@ -109,8 +109,8 @@ const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "google/gemini-3-flash-preview": "low",
   "google/gemini-2.5-flash": "low",
   "google/gemini-2.5-pro": "medium",
-  "openai/gpt-5-mini": "medium",
-  "openai/gpt-5": "high",
+  "google/gemini-2.5-flash": "medium",
+  "google/gemini-2.5-pro": "high",
 };
 
 // Perfis de prompt (apenas marcadores nesta fase; o prompt real é montado
@@ -186,7 +186,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
         return wrap(
           MODELS.gpt5Mini,
           [MODELS.flash, MODELS.flashStable],
-          "tutor_chat preventiva/SUS → openai/gpt-5-mini",
+          "tutor_chat preventiva/SUS → google/gemini-2.5-flash",
           PROMPT_PROFILES.preventive_sus,
         );
       }
@@ -347,7 +347,7 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
-    const isOpenAI5 = ref.model.includes("gpt-5") || /^openai\/o[13]/.test(ref.model);
+    const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model);
     const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
     const body: Record<string, unknown> = {
       model: ref.model,

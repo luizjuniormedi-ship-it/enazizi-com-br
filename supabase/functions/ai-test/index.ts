@@ -11,7 +11,7 @@ serve(async (req) => {
   
   try {
     const resp = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       messages: [{ role: "user", content: "Responda apenas 'OK' se você estiver funcionando." }],
       max_completion_tokens: 100,
     });

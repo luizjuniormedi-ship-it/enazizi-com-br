@@ -222,7 +222,7 @@ A ÚLTIMA LINHA da mensagem DEVE ser exatamente: "Responda SAIR para não recebe
               method: "POST",
               headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
               body: JSON.stringify({
-                model: "openai/gpt-5-mini",
+                model: "google/gemini-2.5-flash",
                 messages: [
                   { role: "system", content: "Gere mensagens WhatsApp únicas e engraçadas para alunos de medicina preparando para residência. Sempre mencione bancas alvo e dados reais. Sem markdown. Sem asteriscos." },
                   { role: "user", content: prompt },

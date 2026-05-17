@@ -106,7 +106,7 @@ Regras:
     logAiUsage({
       userId: "system-reviewer",
       functionName: "medical-reviewer",
-      modelUsed: "openai/gpt-5-mini",
+      modelUsed: "google/gemini-2.5-flash",
       success: response.ok,
       responseTimeMs: elapsed,
       cacheHit: false,

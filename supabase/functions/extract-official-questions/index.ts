@@ -90,7 +90,7 @@ REGRAS:
 }`;
 
     const aiResponse = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Extraia as questões do seguinte texto da prova ${file.file_name} (${file.institution} ${file.year}):\n\n${textToProcess.slice(0, 15000)}` }
@@ -140,7 +140,7 @@ REGRAS:
       source_id: file.source_id,
       action: 'extraction',
       status: 'success',
-      details: { questions_count: insertedQuestions.length, model: "openai/gpt-5-mini" }
+      details: { questions_count: insertedQuestions.length, model: "google/gemini-2.5-flash" }
     });
 
     return new Response(

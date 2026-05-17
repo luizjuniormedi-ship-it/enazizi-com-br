@@ -6,14 +6,17 @@
 
 export const ALLOWED_MODELS = {
   // Primary model for content generation
-  generation: "google/gemini-2.0-flash",
+  generation: "google/gemini-2.5-flash",
   
   // High-performance model for complex reasoning or specialized tasks
-  reasoning: "openai/gpt-4o",
+  reasoning: "google/gemini-2.5-pro",
   
   // Embedding model for vector search
   embeddings: "openai/text-embedding-3-small",
 } as const;
+
+export const DEFAULT_FAST_MODEL = "google/gemini-2.5-flash";
+export const DEFAULT_REASONING_MODEL = "google/gemini-2.5-pro";
 
 export type AiModelType = keyof typeof ALLOWED_MODELS;
 export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
@@ -21,6 +24,8 @@ export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
 // List of strictly allowed production models to prevent injection
 export const PRODUCTION_MODELS = [
   "google/gemini-2.0-flash",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-pro",
   "openai/gpt-4o",
   "openai/gpt-4o-mini",
   "openai/text-embedding-3-small",

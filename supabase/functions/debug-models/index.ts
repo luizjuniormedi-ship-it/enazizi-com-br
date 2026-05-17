@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const MODELS_TO_TEST = [
-  "openai/gpt-5-mini",
+  "google/gemini-2.5-flash",
   "google/gemini-2.0-flash",
   "openai/gpt-4o-mini"
 ];

@@ -7,54 +7,61 @@ import { logPipelineAlert } from "./pipeline-logger.ts";
  */
 
 export function normalizeModel(model: string | null | undefined): string {
-  if (!model) return "google/gemini-2.0-flash";
+  const source = Deno.env.get("FUNCTION_NAME") || "model-normalizer";
+  
+  if (!model) return ALLOWED_MODELS.generation;
 
   let normalized = model.toLowerCase().trim();
 
   // Map legacy or shorthand names to enterprise standards
-  if (normalized.includes("gpt-5")) {
-    // GPT-5 is not yet stable in this environment, fallback to high-quality gpt-4o
-    return "openai/gpt-4o";
+  if (normalized.includes("google/gemini-2.5-pro") || normalized.includes("google/gemini-2.5-flash")) {
+    console.warn(`[MODEL_NORMALIZER] GPT-5 detected and rejected due to Gateway Error 400. Falling back to ${ALLOWED_MODELS.generation}`);
+    return ALLOWED_MODELS.generation;
   }
 
   if (normalized.includes("gpt-4o-mini")) return "openai/gpt-4o-mini";
   if (normalized.includes("gpt-4o")) return "openai/gpt-4o";
   if (normalized.includes("gemini-2.0-flash")) return "google/gemini-2.0-flash";
-  if (normalized.includes("gemini-2.5") || normalized.includes("gemini-3")) {
-    return "google/gemini-2.0-flash"; // Fallback to stable 2.0
-  }
+  if (normalized.includes("gemini-1.5-flash")) return "google/gemini-flash-1.5";
+  if (normalized.includes("gemini-1.5-pro")) return "google/gemini-pro-1.5";
 
-  // Ensure prefix for known providers
+  // Check if it's in our production whitelist
+  if (PRODUCTION_MODELS.includes(normalized)) return normalized;
+  
+  // Try adding provider prefix if missing
   if (normalized.startsWith("gpt-") || normalized.startsWith("o1-") || normalized.startsWith("o3-")) {
-    return `openai/${normalized}`;
+    const withPrefix = `openai/${normalized}`;
+    if (PRODUCTION_MODELS.includes(withPrefix)) return withPrefix;
   }
   
   if (normalized.startsWith("gemini-")) {
-    return `google/${normalized}`;
+    const withPrefix = `google/${normalized}`;
+    if (PRODUCTION_MODELS.includes(withPrefix)) return withPrefix;
+  }
+
+  // Final validation against PRODUCTION_MODELS
+  if (!PRODUCTION_MODELS.includes(normalized)) {
+    console.error(`[CRITICAL_MODEL_ERROR] Unknown or invalid model: "${model}". Falling back to ${ALLOWED_MODELS.generation}`);
+    
+    // Log critical alert for unknown models
+    logPipelineAlert({
+      source,
+      message: `Invalid AI model replaced: ${model}`,
+      severity: "critical",
+      alert_type: "validation_error",
+      model_used: model,
+      metadata: {
+        originalModel: model,
+        normalizedAttempt: normalized,
+        fallbackTo: ALLOWED_MODELS.generation,
+        reason: "Model rejected by Gateway or not in whitelist"
+      }
+    }).catch(err => console.error("Failed to log pipeline alert:", err));
+
+    return ALLOWED_MODELS.generation;
   }
 
   return normalized;
-}
-
-  // Rule 4: Fallback for any unknown model
-  const source = Deno.env.get("FUNCTION_NAME") || "model-normalizer";
-  console.error(`[CRITICAL_MODEL_ERROR] Unknown model detected: "${model}". Falling back to ${ALLOWED_MODELS.generation}`);
-  
-  // Log critical alert for unknown models
-  logPipelineAlert({
-    source,
-    message: `Invalid AI model requested: ${model}`,
-    severity: "critical",
-    alert_type: "validation_error",
-    model_used: model,
-    metadata: {
-      originalModel: model,
-      normalizedAttempt: normalized,
-      fallbackTo: ALLOWED_MODELS.generation
-    }
-  }).catch(err => console.error("Failed to log pipeline alert:", err));
-
-  return ALLOWED_MODELS.generation;
 }
 
 /**

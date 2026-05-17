@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
 
     // 1. Discover Relationships via AI
     const response = await aiFetch({
-      model: "gpt-4o-mini",
+      model: "google/gemini-2.5-flash",
       messages: [
         {
           role: "system",

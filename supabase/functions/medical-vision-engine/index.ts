@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
     // 1. Vision AI Request
     const response = await aiFetch({
-      model: "gpt-4o", // High performance multimodal model
+      model: "google/gemini-2.5-pro", // High performance multimodal model
       messages: [
         {
           role: "system",

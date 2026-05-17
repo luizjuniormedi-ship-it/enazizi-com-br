@@ -44,7 +44,7 @@ serve(async (req) => {
     const systemPrompt = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA responda em inglês. Inglês permitido APENAS em nomes de artigos/guidelines.\n\nVocê é um professor de medicina especialista. Gere uma explicação estruturada sobre o termo médico solicitado, voltada para estudantes de residência médica no Brasil. Use referências de Harrison, Sabiston, diretrizes SBC, MS e FEBRASGO quando aplicável.`;
 
     const response = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: `Explique o termo médico: "${term}"` },

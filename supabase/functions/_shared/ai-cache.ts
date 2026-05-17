@@ -43,11 +43,11 @@ export const CACHE_TTL_DAYS: Record<string, number> = {
 
 // ───── Cost table per 1k tokens (rough) ─────────────────────────────
 const COST_PER_1K: Record<string, number> = {
-  "openai/gpt-5-mini": 0.005,
-  "openai/gpt-5-mini": 0.0003,
-  "openai/gpt-5-mini-nano": 0.0001,
-  "openai/gpt-5-mini": 0.005,
-  "openai/gpt-5-mini": 0.0003,
+  "google/gemini-2.5-flash": 0.005,
+  "google/gemini-2.5-flash": 0.0003,
+  "google/gemini-2.5-flash-nano": 0.0001,
+  "google/gemini-2.5-flash": 0.005,
+  "google/gemini-2.5-flash": 0.0003,
   "google/gemini-2.5-pro": 0.0035,
   "google/gemini-2.5-flash": 0.0003,
   "google/gemini-2.5-flash-lite": 0.0001,

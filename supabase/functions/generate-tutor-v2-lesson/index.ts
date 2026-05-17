@@ -65,7 +65,7 @@ A aula deve seguir este esquema JSON exato:
         { role: "system", content: systemPrompt },
         { role: "user", content: `Gere uma aula sobre ${session.topic}. Histórico:\n${history}` }
       ],
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       response_format: { type: "json_object" }
     });
 
@@ -95,7 +95,7 @@ A aula deve seguir este esquema JSON exato:
       user_id: userId,
       session_id: sessionId,
       event_type: "lesson_generated",
-      model: "gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       success: true
     });
 
