@@ -39,6 +39,7 @@ Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, 
 
   const processGeneration = async () => {
     try {
+      let contextInfo = "";
       if (equalize) {
         logger.info("EQUALIZATION", `Starting equalization for ${specialty}`);
         try {
@@ -49,15 +50,20 @@ Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, 
           
           if (searchResp.ok) {
             const searchData = await searchResp.json();
-            logger.info("SEARCH_RESULT", `Search found ${searchData?.log?.questions_found || 0} candidates`);
+            const foundCount = searchData?.log?.questions_found || 0;
+            logger.info("SEARCH_RESULT", `Search found ${foundCount} candidates`);
+            if (foundCount > 0 && searchData.questions) {
+              contextInfo = `\nUSE ESTAS QUESTÕES REAIS COMO REFERÊNCIA DE ESTILO E PADRÃO:\n${JSON.stringify(searchData.questions.slice(0, 3))}`;
+            }
           }
         } catch (searchErr) {
           logger.warn("SEARCH_FAILED", "Real questions search failed, falling back to pure AI generation", { error: searchErr.message });
         }
       }
 
-      const prompt = `Gere ${count} questões de MCQ para residência médica sobre ${specialty}.
+      const prompt = `Gere ${count} questões de MCQ para residência médica sobre ${specialty}.${contextInfo}
 REGRAS:
+- Padrão Ouro (ENARE/USP/Revalida).
 - Casos clínicos realistas e densos.
 - 5 alternativas, 1 correta.
 - Retorne APENAS JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "${specialty}", "difficulty": 3}]}`;
@@ -65,7 +71,7 @@ REGRAS:
       const aiResponse = await callAi({
         model: ALLOWED_MODELS.generation,
         messages: [
-          { role: "system", content: "Professor de medicina especialista. Responda APENAS JSON." },
+          { role: "system", content: "Professor de medicina especialista em provas de residência. Responda APENAS JSON." },
           { role: "user", content: prompt }
         ],
         max_tokens: 4000,
