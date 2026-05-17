@@ -81,7 +81,7 @@ export async function callAi(
       incident_type: "validation_error",
       message: `Invalid AI model replaced: ${originalModel}`,
       correlation_id: logger.correlationId
-    }).catch(() => {});
+    });
   }
 
   const startTime = Date.now();
