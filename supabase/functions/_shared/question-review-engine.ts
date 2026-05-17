@@ -93,8 +93,9 @@ Analise e transforme em PADRÃO OURO. Se a questão for irremediavelmente ruim, 
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt }
     ],
-    max_tokens: 3000,
-    temperature: 0.7
+    max_tokens: 3500,
+    temperature: 0.1,
+    response_format: { type: "json_object" }
   }, logger, supabaseAdmin);
 
   const rawContent = response.choices?.[0]?.message?.content || "";

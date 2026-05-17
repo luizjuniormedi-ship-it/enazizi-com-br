@@ -24,6 +24,7 @@ export interface AiRequest {
   max_tokens?: number;
   temperature?: number;
   stream?: boolean;
+  response_format?: { type: "json_object" | "text" };
 }
 
 /**
@@ -44,7 +45,6 @@ function calculateCost(model: string, usage: { prompt_tokens: number, completion
 function routeModel(request: AiRequest): string {
   if (request.model) return request.model;
 
-  const fastModels: AiTaskType[] = ["classification", "parsing", "flashcard", "summary"];
   const reasoningModels: AiTaskType[] = ["reasoning", "tutor_deep", "question_upgrade", "differential_diagnosis"];
 
   if (request.taskType && reasoningModels.includes(request.taskType)) {
@@ -88,7 +88,7 @@ export async function callAi(
   logger.info("AI_CALL", `Calling model ${model}`, { model, taskType: payload.taskType, stream: !!payload.stream });
 
   const tokenParam = getTokenParameterName(model);
-  const normalizedPayload = { ...payload, model };
+  const normalizedPayload: any = { ...payload, model };
   
   // Strip non-standard fields for the gateway
   delete (normalizedPayload as any).taskType;
@@ -146,7 +146,7 @@ export async function callAi(
         request_id: data.id,
         correlation_id: logger.correlationId
       }
-    });
+    }).catch(() => {});
   } catch (err) {
     logger.warn("GOVERNANCE_ERROR", "Failed to log AI governance", { error: err.message });
   }
