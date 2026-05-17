@@ -261,15 +261,28 @@ const AdminIngestionPanel = () => {
           // Start background job (token fresco)
           const startToken = await getFreshToken();
           if (!startToken) throw new Error("Sessão expirada. Faça login novamente.");
-          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
+          
+          const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`;
+          const payload = { equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 };
+          
+          console.log("[equalize] invoking", { functionUrl, payload });
+          
+          const resp = await fetch(functionUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${startToken}` },
-            body: JSON.stringify({ equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 }),
+            body: JSON.stringify(payload),
           });
           const raw = await resp.text();
           let data: any = {};
-          try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
+          try { 
+            data = raw ? JSON.parse(raw) : {}; 
+          } catch (err: any) { 
+            console.error("[equalize] parse error", { raw, status: resp.status });
+            throw new Error(`Resposta inválida (${resp.status}): ${raw.slice(0, 100)}`); 
+          }
+          
           if (!resp.ok) {
+            console.error("[equalize] response not ok", { status: resp.status, data });
             throw new Error(data?.error || `Falha ao equalizar ${spec.name} (${resp.status})`);
           }
 
@@ -313,7 +326,8 @@ const AdminIngestionPanel = () => {
         } catch (error) {
           log.push({ specialty: spec.name, added: 0 });
           setEqProgress(prev => prev ? { ...prev, log: [...log] } : prev);
-          throw new Error(error instanceof Error ? `${spec.name}: ${error.message}` : `Falha ao equalizar ${spec.name}`);
+          console.error("[equalize] specialty error", { specialty: spec.name, error });
+          throw error; // Re-throw to catch in outer block and stop
         }
       }
 
