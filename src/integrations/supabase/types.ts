@@ -1177,30 +1177,153 @@ export type Database = {
       ai_governance_logs: {
         Row: {
           audited_at: string | null
+          cost_usd: number | null
+          created_at: string | null
           details: Json | null
           function_name: string
+          hallucination_score: number | null
           id: string
           incident_type: string | null
+          latency_ms: number | null
+          medical_consistency_score: number | null
+          metadata: Json | null
           model_name: string
+          model_used: string | null
+          quality_lock_status: string | null
           severity: string | null
+          status: string | null
+          token_usage: Json | null
+          ttft_ms: number | null
         }
         Insert: {
           audited_at?: string | null
+          cost_usd?: number | null
+          created_at?: string | null
           details?: Json | null
           function_name: string
+          hallucination_score?: number | null
           id?: string
           incident_type?: string | null
+          latency_ms?: number | null
+          medical_consistency_score?: number | null
+          metadata?: Json | null
           model_name: string
+          model_used?: string | null
+          quality_lock_status?: string | null
           severity?: string | null
+          status?: string | null
+          token_usage?: Json | null
+          ttft_ms?: number | null
         }
         Update: {
           audited_at?: string | null
+          cost_usd?: number | null
+          created_at?: string | null
           details?: Json | null
           function_name?: string
+          hallucination_score?: number | null
           id?: string
           incident_type?: string | null
+          latency_ms?: number | null
+          medical_consistency_score?: number | null
+          metadata?: Json | null
           model_name?: string
+          model_used?: string | null
+          quality_lock_status?: string | null
           severity?: string | null
+          status?: string | null
+          token_usage?: Json | null
+          ttft_ms?: number | null
+        }
+        Relationships: []
+      }
+      ai_incidents: {
+        Row: {
+          correlation_id: string | null
+          created_at: string | null
+          function_name: string
+          id: string
+          incident_type: string
+          message: string | null
+          metadata: Json | null
+          model_name: string | null
+          resolved_at: string | null
+          severity: string | null
+          stack_trace: string | null
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string | null
+          function_name: string
+          id?: string
+          incident_type: string
+          message?: string | null
+          metadata?: Json | null
+          model_name?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          stack_trace?: string | null
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string | null
+          function_name?: string
+          id?: string
+          incident_type?: string
+          message?: string | null
+          metadata?: Json | null
+          model_name?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          stack_trace?: string | null
+        }
+        Relationships: []
+      }
+      ai_model_benchmarks: {
+        Row: {
+          cost_estimate_usd: number | null
+          created_at: string | null
+          hallucination_score: number | null
+          id: string
+          json_stability_score: number | null
+          latency_ms: number | null
+          medical_accuracy_score: number | null
+          metadata: Json | null
+          model_name: string
+          raw_response: Json | null
+          test_suite: string
+          tokens_per_second: number | null
+          ttfb_ms: number | null
+        }
+        Insert: {
+          cost_estimate_usd?: number | null
+          created_at?: string | null
+          hallucination_score?: number | null
+          id?: string
+          json_stability_score?: number | null
+          latency_ms?: number | null
+          medical_accuracy_score?: number | null
+          metadata?: Json | null
+          model_name: string
+          raw_response?: Json | null
+          test_suite: string
+          tokens_per_second?: number | null
+          ttfb_ms?: number | null
+        }
+        Update: {
+          cost_estimate_usd?: number | null
+          created_at?: string | null
+          hallucination_score?: number | null
+          id?: string
+          json_stability_score?: number | null
+          latency_ms?: number | null
+          medical_accuracy_score?: number | null
+          metadata?: Json | null
+          model_name?: string
+          raw_response?: Json | null
+          test_suite?: string
+          tokens_per_second?: number | null
+          ttfb_ms?: number | null
         }
         Relationships: []
       }
@@ -1304,6 +1427,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_prompt_registry: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_updated_by: string | null
+          parameters: Json | null
+          prompt_key: string
+          system_prompt: string
+          updated_at: string | null
+          user_prompt_template: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_updated_by?: string | null
+          parameters?: Json | null
+          prompt_key: string
+          system_prompt: string
+          updated_at?: string | null
+          user_prompt_template?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_updated_by?: string | null
+          parameters?: Json | null
+          prompt_key?: string
+          system_prompt?: string
+          updated_at?: string | null
+          user_prompt_template?: string | null
+          version?: number | null
+        }
+        Relationships: []
       }
       ai_provider_health: {
         Row: {

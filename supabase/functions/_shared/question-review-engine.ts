@@ -88,7 +88,7 @@ Banca Alvo: ${bancaProfile.label} (${bancaProfile.style})
 Analise e transforme em PADRÃO OURO. Se a questão for irremediavelmente ruim, marque como REJECTED.`;
 
   const response = await callAi({
-    model: ALLOWED_MODELS.reasoning,
+    taskType: "question_upgrade",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt }
