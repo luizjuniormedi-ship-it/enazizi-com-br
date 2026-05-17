@@ -262,17 +262,28 @@ const AdminIngestionPanel = () => {
           const startToken = await getFreshToken();
           if (!startToken) throw new Error("Sessão expirada. Faça login novamente.");
           
+          const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`;
           const payload = { equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 };
           
-          console.log("[equalize] invoking", { payload });
+          console.log("[equalize] invoking", { functionUrl, payload });
           
-          const { data, error: invokeError } = await supabase.functions.invoke("bulk-generate-content", {
-            body: payload,
+          const resp = await fetch(functionUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${startToken}` },
+            body: JSON.stringify(payload),
           });
+          const raw = await resp.text();
+          let data: any = {};
+          try { 
+            data = raw ? JSON.parse(raw) : {}; 
+          } catch (err: any) { 
+            console.error("[equalize] parse error", { raw, status: resp.status });
+            throw new Error(`Resposta inválida (${resp.status}): ${raw.slice(0, 100)}`); 
+          }
           
-          if (invokeError) {
-            console.error("[equalize] invocation error", invokeError);
-            throw new Error(invokeError.message || `Falha ao equalizar ${spec.name}`);
+          if (!resp.ok) {
+            console.error("[equalize] response not ok", { status: resp.status, data });
+            throw new Error(data?.error || `Falha ao equalizar ${spec.name} (${resp.status})`);
           }
 
           // Poll for job completion
@@ -285,8 +296,11 @@ const AdminIngestionPanel = () => {
               try {
                 const pollToken = await getFreshToken();
                 if (!pollToken) throw new Error("Sessão expirada durante polling.");
-                const { data: pollData, error: pollError } = await supabase.functions.invoke(`bulk-generate-content?job_id=${jobId}`, { method: "GET" });
-                if (pollError) throw pollError;
+                const pollResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content?job_id=${jobId}`, {
+                  method: "GET",
+                  headers: { Authorization: `Bearer ${pollToken}` },
+                });
+                const pollData = await pollResp.json();
                 if (pollData.status === "completed") { jobResult = pollData.result || {}; break; }
                 if (pollData.status === "failed") { throw new Error(pollData.error || "Job falhou"); }
                 // Update progress from background job
