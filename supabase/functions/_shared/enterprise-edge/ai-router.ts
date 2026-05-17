@@ -149,15 +149,19 @@ export async function callAi(
       }
     };
     
-    // Using a simpler approach that doesn't rely on Promise methods not available or buggy in certain environments
-    (async () => {
-      try {
-        const { error } = await supabaseAdmin.from("ai_governance_logs").insert(governanceData);
+    // Use EdgeRuntime.waitUntil if available to ensure the log is sent before function termination
+    const logPromise = supabaseAdmin.from("ai_governance_logs").insert(governanceData)
+      .then(({ error }: any) => {
         if (error) logger.warn("GOVERNANCE_ERROR", "Failed to log AI governance", { error: error.message });
-      } catch (err: any) {
+      })
+      .catch((err: any) => {
         logger.warn("GOVERNANCE_EXCEPTION", "Exception during AI governance logging", { error: err.message });
-      }
-    })();
+      });
+
+    // @ts-ignore: Deno.waitUntil is standard in many edge runtimes
+    if (typeof Deno !== 'undefined' && (Deno as any).waitUntil) {
+      (Deno as any).waitUntil(logPromise);
+    }
   } catch (err: any) {
     logger.warn("GOVERNANCE_INIT_ERROR", "Failed to initialize AI governance logging", { error: err.message });
   }
