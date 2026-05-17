@@ -87,3 +87,8 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.generate-mnemonic]
     verify_jwt = false
+  [functions.drive-exam-ingestion]
+    verify_jwt = false
+  [functions.drive-process-single-file]
+    verify_jwt = false
+

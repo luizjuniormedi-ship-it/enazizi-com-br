@@ -9880,30 +9880,39 @@ export type Database = {
       drive_ingestion_log: {
         Row: {
           created_at: string | null
+          error_message: string | null
           file_id: string
           file_name: string
+          file_size: number | null
           id: string
           processed_by: string | null
           questions_found: number | null
           questions_saved: number | null
+          status: string | null
         }
         Insert: {
           created_at?: string | null
+          error_message?: string | null
           file_id: string
           file_name: string
+          file_size?: number | null
           id?: string
           processed_by?: string | null
           questions_found?: number | null
           questions_saved?: number | null
+          status?: string | null
         }
         Update: {
           created_at?: string | null
+          error_message?: string | null
           file_id?: string
           file_name?: string
+          file_size?: number | null
           id?: string
           processed_by?: string | null
           questions_found?: number | null
           questions_saved?: number | null
+          status?: string | null
         }
         Relationships: []
       }
