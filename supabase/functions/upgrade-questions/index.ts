@@ -64,11 +64,12 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
 
         // Governance log
         await supabaseAdmin.from("pipeline_governance").insert({
-          source: "upgrade-questions",
+          pipeline_name: "upgrade-questions",
+          function_name: "upgrade-questions",
           model_used: "google/gemini-2.5-pro",
           latency_ms: latency,
-          upgrade_status: result.quality_tier,
-          correlation_id: correlation
+          status: result.quality_tier,
+          metadata: { correlation_id: correlation, question_id: q.id }
         });
 
       } catch (err) {
