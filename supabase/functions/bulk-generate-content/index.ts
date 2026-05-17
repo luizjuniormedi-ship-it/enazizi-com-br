@@ -21,6 +21,10 @@ const SPECIALTIES = [
 ];
 
 Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, waitUntil, correlation, supabaseAdmin }) => {
+  console.log("[edge] function booted", {
+    function: "bulk-generate-content",
+    timestamp: new Date().toISOString()
+  });
   // 1. AUTH & ADMIN CHECK
   const { user } = await requireAdmin(req);
   logger.info("AUTH", "Admin authenticated", { userId: user.id });
