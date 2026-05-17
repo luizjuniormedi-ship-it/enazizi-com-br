@@ -25,7 +25,13 @@ export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
 
-  const privateKeyPem = serviceAccount.private_key;
+  let privateKeyPem = serviceAccount.private_key;
+  if (logger) logger.info("GOOGLE_AUTH_PK", `PK start: ${privateKeyPem.substring(0, 30)}`);
+
+  // 1. Replace literal \n with real newline
+  privateKeyPem = privateKeyPem.replace(/\\n/g, '\n');
+  
+  // 2. Remove header, footer and all whitespace (including \n, \r)
   const pemHeader = "-----BEGIN PRIVATE KEY-----";
   const pemFooter = "-----END PRIVATE KEY-----";
   const pemContents = privateKeyPem
@@ -33,6 +39,7 @@ export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
     .replace(pemFooter, "")
     .replace(/\s/g, "");
   
+  // 3. Decode base64 to binary
   const binaryDerString = atob(pemContents);
   const binaryDer = new Uint8Array(binaryDerString.length);
   for (let i = 0; i < binaryDerString.length; i++) {

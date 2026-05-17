@@ -43,6 +43,22 @@ serve(async (req) => {
     
     results.step = "jwt_generation";
     const now = Math.floor(Date.now() / 1000);
+
+    let pk = credentials.private_key;
+    console.log(`Auth test PK start: ${pk.substring(0, 30)}`);
+    
+    // 1. Replace literal \n with real newline
+    pk = pk.replace(/\\n/g, '\n');
+
+    // 2. Remove header, footer and whitespace
+    const pemContents = pk
+      .replace("-----BEGIN PRIVATE KEY-----", "")
+      .replace("-----END PRIVATE KEY-----", "")
+      .replace(/\s/g, "");
+
+    // 3. Decode base64
+    const keyData = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+
     const jwt = await new jose.SignJWT({
       iss: credentials.client_email,
       scope: "https://www.googleapis.com/auth/drive.readonly",
@@ -50,8 +66,8 @@ serve(async (req) => {
       exp: now + 3600,
       iat: now,
     })
-      .setProtectedHeader({ alg: "RS256", kid: credentials.private_key_id })
-      .sign(await jose.importPKCS8(credentials.private_key, "RS256"));
+      .setProtectedHeader({ alg: "RS256" })
+      .sign(await jose.importPKCS8(pk.replace(/\\n/g, '\n'), "RS256"));
 
     results.step = "token_exchange";
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
