@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
         severity: "high",
         symptoms: { low_score_count: regressions.length },
         fallback_activated: true,
-        fallback_model_used: "gpt-4o-mini", // Fallback to more stable model
+        fallback_model_used: "google/gemini-2.5-flash", // Fallback to more stable model
         mitigation_details: "Activated fallback model for all tutor requests."
       });
       

@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
     // 1. Quality Validation via LLM (Pedagogical Guardrail)
     const validationResponse = await aiFetch({
-      model: "gpt-4o-mini", // Use a cheaper/faster model for validation
+      model: "google/gemini-2.5-flash", // Use a cheaper/faster model for validation
       messages: [
         {
           role: "system",

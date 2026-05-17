@@ -62,7 +62,7 @@ Responda em JSON: { "score": 0-100, "hallucination": boolean, "feedback": "texto
             // 3. Log results
             await supabase.from("ai_governance_logs").insert({
                 function_name: "guardian-audit",
-                model_name: "gpt-4o-mini",
+                model_name: "google/gemini-2.5-flash",
                 incident_type: result.hallucination ? "hallucination" : "audit_report",
                 severity: result.score < 60 ? "critical" : "info",
                 details: {
