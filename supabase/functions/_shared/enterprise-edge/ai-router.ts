@@ -24,6 +24,7 @@ export interface AiRequest {
   max_tokens?: number;
   temperature?: number;
   stream?: boolean;
+  response_format?: { type: "json_object" | "text" };
 }
 
 /**
@@ -44,7 +45,6 @@ function calculateCost(model: string, usage: { prompt_tokens: number, completion
 function routeModel(request: AiRequest): string {
   if (request.model) return request.model;
 
-  const fastModels: AiTaskType[] = ["classification", "parsing", "flashcard", "summary"];
   const reasoningModels: AiTaskType[] = ["reasoning", "tutor_deep", "question_upgrade", "differential_diagnosis"];
 
   if (request.taskType && reasoningModels.includes(request.taskType)) {
@@ -81,7 +81,7 @@ export async function callAi(
       incident_type: "validation_error",
       message: `Invalid AI model replaced: ${originalModel}`,
       correlation_id: logger.correlationId
-    });
+    }).catch(() => {});
   }
 
   const startTime = Date.now();
@@ -89,12 +89,6 @@ export async function callAi(
 
   const tokenParam = getTokenParameterName(model);
   const normalizedPayload = { ...payload, model };
-  
-  const normalizedPayload = { 
-    ...payload, 
-    model,
-    response_format: { type: "json_object" } 
-  };
   
   // Strip non-standard fields for the gateway
   delete (normalizedPayload as any).taskType;
@@ -128,7 +122,7 @@ export async function callAi(
       message: `AI Gateway error ${res.status}: ${errorText}`,
       correlation_id: logger.correlationId,
       metadata: { status: res.status }
-    });
+    }).catch(() => {});
 
     throw new Error(`AI Gateway error ${res.status}: ${errorText}`);
   }
@@ -152,7 +146,7 @@ export async function callAi(
         request_id: data.id,
         correlation_id: logger.correlationId
       }
-    });
+    }).catch(() => {});
   } catch (err) {
     logger.warn("GOVERNANCE_ERROR", "Failed to log AI governance", { error: err.message });
   }
