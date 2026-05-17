@@ -28,7 +28,8 @@ const TRUSTED_DOMAINS = [
   "provamedicina.com.br", "residenciamedica.net",
   "medway.com.br", "medcel.com.br", "estrategiamed.com.br",
   "medgrupo.com.br", "sanarmed.com", "editorasanar.com.br",
-  "jaleko.com.br", "afya.com.br", "med.estrategia.com",
+  "jaleko.com.br", "afya.com.br", "med.estrategia.com", "residenciaprime.com.br",
+  "medvideosaulas.com", "moodle.ufrj.br", "portal.mec.gov.br", "ebserh.gov.br",
 ];
 
 const BLOCKED_DOMAINS = ["scribd.com", "youtube.com", "youtu.be", "facebook.com", "instagram.com", "twitter.com", "tiktok.com"];
