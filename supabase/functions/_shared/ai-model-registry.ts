@@ -6,22 +6,22 @@
 
 export const ALLOWED_MODELS = {
   // Primary model for content generation
-  generation: "google/gemini-2.5-flash",
+  generation: "google/gemini-2.0-flash",
   
   // High-performance model for complex reasoning or specialized tasks
-  reasoning: "google/gemini-2.5-pro",
+  reasoning: "google/gemini-1.5-pro",
   
   // Embedding model for vector search
   embeddings: "openai/text-embedding-3-small",
 } as const;
 
-export const DEFAULT_FAST_MODEL = "google/gemini-2.5-flash";
-export const DEFAULT_REASONING_MODEL = "google/gemini-2.5-pro";
+export const DEFAULT_FAST_MODEL = "google/gemini-2.0-flash";
+export const DEFAULT_REASONING_MODEL = "google/gemini-1.5-pro";
 
 // AI Tiers and Pricing (Est. USD per 1M tokens)
 export const MODEL_METRICS: Record<string, { prompt: number, completion: number, quality: number }> = {
-  "google/gemini-2.5-flash": { prompt: 0.075, completion: 0.3, quality: 85 },
-  "google/gemini-2.5-pro": { prompt: 3.5, completion: 10.5, quality: 98 },
+  "google/gemini-2.0-flash": { prompt: 0.075, completion: 0.3, quality: 85 },
+  "google/gemini-1.5-pro": { prompt: 3.5, completion: 10.5, quality: 98 },
   "openai/gpt-4o": { prompt: 5.0, completion: 15.0, quality: 96 },
   "openai/gpt-4o-mini": { prompt: 0.15, completion: 0.6, quality: 82 },
 };
