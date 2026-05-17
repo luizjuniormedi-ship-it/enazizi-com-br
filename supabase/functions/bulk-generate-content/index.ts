@@ -89,7 +89,8 @@ REGRAS:
             source: "bulk-ai-generator",
             review_status: "approved",
             board: "ENARE",
-            year: 2025
+            year: 2025,
+            user_id: user.id
           });
 
           if (!insertError) savedCount++;
