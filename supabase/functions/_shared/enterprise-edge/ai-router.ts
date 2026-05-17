@@ -94,6 +94,12 @@ export async function callAi(
     response_format: { type: "json_object" } 
   };
   
+  const normalizedPayload = { 
+    ...payload, 
+    model,
+    response_format: { type: "json_object" } 
+  };
+  
   // Strip non-standard fields for the gateway
   delete (normalizedPayload as any).taskType;
 
