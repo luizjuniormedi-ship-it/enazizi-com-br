@@ -18,6 +18,14 @@ export const ALLOWED_MODELS = {
 export const DEFAULT_FAST_MODEL = "google/gemini-2.5-flash";
 export const DEFAULT_REASONING_MODEL = "google/gemini-2.5-pro";
 
+// AI Tiers and Pricing (Est. USD per 1M tokens)
+export const MODEL_METRICS: Record<string, { prompt: number, completion: number, quality: number }> = {
+  "google/gemini-2.5-flash": { prompt: 0.075, completion: 0.3, quality: 85 },
+  "google/gemini-2.5-pro": { prompt: 3.5, completion: 10.5, quality: 98 },
+  "openai/gpt-4o": { prompt: 5.0, completion: 15.0, quality: 96 },
+  "openai/gpt-4o-mini": { prompt: 0.15, completion: 0.6, quality: 82 },
+};
+
 export type AiModelType = keyof typeof ALLOWED_MODELS;
 export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
 
