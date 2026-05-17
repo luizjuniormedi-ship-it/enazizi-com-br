@@ -33,7 +33,7 @@ export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
 export const PRODUCTION_MODELS = [
   "google/gemini-2.5-flash",
   "google/gemini-2.5-pro",
-  "openai/gpt-5-mini",
-  "openai/gpt-5",
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini",
   "openai/text-embedding-3-small",
 ];
