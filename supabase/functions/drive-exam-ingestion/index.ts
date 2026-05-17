@@ -81,7 +81,8 @@ export default enterpriseEdgeHandler("drive-exam-ingestion", async ({ req, logge
 
   const body = await req.json().catch(() => ({}));
   const FOLDER_ID = body.folder_id || "1sR5ArIv6MWc-1QR4zhfRKNG07queUya-";
-  const MAX_FILES = body.max_files || 3; // Processing in small batches to avoid timeouts
+  const MAX_FILES = body.max_files || 1; // Default to 1 file to prevent timeouts
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
 
   const processIngestion = async () => {
     try {
@@ -94,11 +95,28 @@ export default enterpriseEdgeHandler("drive-exam-ingestion", async ({ req, logge
 
       // 2. Google Drive Auth
       logger.info("GOOGLE_AUTH", "Authenticating with Google Drive...");
-      const accessToken = await getGoogleAccessToken(serviceAccount);
+      let accessToken;
+      try {
+        accessToken = await getGoogleAccessToken(serviceAccount);
+        logger.info("GOOGLE_AUTH_SUCCESS", "Successfully authenticated with Google Drive", {
+          clientEmail: serviceAccount.client_email,
+          privateKeyId: serviceAccount.private_key_id
+        });
+      } catch (authErr) {
+        logger.error("GOOGLE_AUTH_FAIL", `Google Drive authentication failed: ${authErr.message}`);
+        return new Response(JSON.stringify({ 
+          error: "Google Auth Failed", 
+          details: authErr.message,
+          correlation_id: correlation.correlationId 
+        }), { 
+          status: 401,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
 
       // 3. List PDFs in folder
       logger.info("DRIVE_LIST", `Listing PDFs in folder ${FOLDER_ID}...`);
-      const listUrl = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType='application/pdf'+and+trashed=false&fields=files(id,name)`;
+      const listUrl = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType='application/pdf'+and+trashed=false&fields=files(id,name,size)`;
       const listResp = await fetch(listUrl, {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
@@ -120,9 +138,16 @@ export default enterpriseEdgeHandler("drive-exam-ingestion", async ({ req, logge
 
       for (const file of filesToProcess) {
         try {
-          logger.info("FILE_PROCESSING", `Processing ${file.name} (${file.id})...`);
+          logger.info("FILE_PROCESSING", `Processing ${file.name} (${file.id})...`, { size: file.size });
           
-          // Download PDF
+          if (file.size && parseInt(file.size) > MAX_FILE_SIZE) {
+            logger.warn("FILE_SKIP", `File ${file.name} is too large (${file.size} bytes). Max limit is ${MAX_FILE_SIZE} bytes.`);
+            continue;
+          }
+
+          // Download PDF - Note: For extraction of first 20 pages only, we would need a PDF library.
+          // Gemini 1.5 Pro/Flash handles large PDFs well if we send the whole thing, 
+          // but here we are downloading the whole thing.
           const dlResp = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
             headers: { Authorization: `Bearer ${accessToken}` }
           });
