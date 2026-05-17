@@ -21,11 +21,19 @@ serve(async (req) => {
   };
 
   try {
-    const googleJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+    let googleJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "";
     if (!googleJson) {
       results.error = "SECRET_NOT_FOUND";
       return new Response(JSON.stringify(results), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
     }
+
+    // Sanitize JSON string: remove wrapping quotes and handle unescaped characters
+    googleJson = googleJson.trim();
+    if (googleJson.startsWith('"') && googleJson.endsWith('"')) {
+      googleJson = googleJson.slice(1, -1);
+    }
+    // Handle unescaped internal quotes and newlines if it was stored as a string literal
+    googleJson = googleJson.replace(/\\n/g, '\n').replace(/\\"/g, '"');
 
     const credentials = JSON.parse(googleJson);
     results.private_key_id = credentials.private_key_id?.substring(0, 8) || "not_found";
