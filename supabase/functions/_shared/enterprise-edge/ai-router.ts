@@ -136,6 +136,7 @@ export async function callAi(
   // 3. Governance Logging
   try {
     const governanceData = {
+      function_name: Deno.env.get("FUNCTION_NAME") || "ai-router",
       model_used: model,
       latency_ms: latency,
       token_usage: usage,
