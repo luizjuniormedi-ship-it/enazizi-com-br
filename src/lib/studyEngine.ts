@@ -714,15 +714,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   for (const [tema, { reviews, spec }] of sortedTemas) {
     const oldest = reviews[0];
     const isOverdue = oldest.data_revisao <= today;
-    const basePriority = isOverdue ? 95 : 80;
-    const riskBonus = oldest.risco_esquecimento === "alto" ? 5 : oldest.risco_esquecimento === "medio" ? 2 : 0;
-    const phaseBonus = weights.phase === "critico" ? 5 : 0;
-    const daysOverdue = isOverdue ? Math.max(0, Math.floor((Date.now() - new Date(oldest.data_revisao).getTime()) / 86400000)) : 0;
-    const overdueBoost = daysOverdue > 3 ? 10 : 0;
-    const pendingCount = reviews.length;
-    const pendingReviewIds = reviews.map((r: any) => r.id);
-    const nextReviewDate = reviews.length > 1 ? reviews[1].data_revisao : undefined;
-
+    
     // Check FSRS card for this tema for priority boost
     const fsrsCard = fsrsDue.find((c: any) =>
       c.card_type === "tema" && (
@@ -730,7 +722,20 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
         (c.card_ref_id || "").toLowerCase().includes(tema.toLowerCase().slice(0, 10))
       )
     );
-    const fsrsBoost = fsrsCard ? 5 : 0;
+
+    // ── PREMIUM BRAIN: Calculate shared priority ──
+    const priority = calculatePremiumPriority({
+      errorRate: 0.2, // Baseline for reviews, adjusted by lapses if available
+      fallProbability: 0.6, // Higher for topics in reviews
+      fsrsRisk: calculateFsrsRiskScore(fsrsCard?.stability ? (1 / fsrsCard.stability) : 0.8),
+      examProximity: examProximityScore,
+      currentMastery: 0.5 // Mid-mastery for reviews
+    });
+
+    const pendingCount = reviews.length;
+    const pendingReviewIds = reviews.map((r: any) => r.id);
+    const nextReviewDate = reviews.length > 1 ? reviews[1].data_revisao : undefined;
+    const daysOverdue = isOverdue ? Math.max(0, Math.floor((Date.now() - new Date(oldest.data_revisao).getTime()) / 86400000)) : 0;
 
     const countLabel = pendingCount > 1 ? ` (${pendingCount} pendentes)` : "";
 
@@ -746,7 +751,8 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       type: "review",
       topic: tema,
       specialty: spec,
-      priority: cap(basePriority + riskBonus + phaseBonus + overdueBoost + fsrsBoost - revIdx),
+      priority,
+
       reason: isOverdue
         ? daysOverdue > 3
           ? `⚠️ Revisão de "${tema}" atrasada ${daysOverdue} dias${countLabel} — prioridade máxima!`
