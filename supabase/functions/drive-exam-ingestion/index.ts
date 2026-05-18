@@ -142,9 +142,9 @@ serve(async (req) => {
     const triggerResults = await Promise.all(triggerPromises);
 
     return new Response(JSON.stringify({ 
-      status: "batch_completed", 
-      processed: results.length,
-      details: results
+      status: "batch_triggered", 
+      triggered: triggerResults.length,
+      details: triggerResults
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
