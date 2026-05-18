@@ -140,7 +140,35 @@ const DailyPlan = () => {
         if (dailyPlanRes.data) {
           setDailyPlan(dailyPlanRes.data);
           setDailyPlanTasks(dailyPlanRes.data.daily_plan_tasks || []);
+        } else {
+          // SE NÃO EXISTE PLANO PARA HOJE: Disparar geração via Coordenador Adaptativo
+          console.log("[DailyPlan] No plan for today. Triggering Adaptive Coordinator...");
+          const { data: session } = await supabase.auth.getSession();
+          const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.session?.access_token}`,
+            }
+          });
+          
+          if (resp.ok) {
+            const result = await resp.json();
+            // Re-fetch now that it's generated
+            const { data: newPlan } = await supabase
+              .from("daily_plans")
+              .select("*, daily_plan_tasks(*)")
+              .eq("id", result.planId)
+              .single();
+              
+            if (newPlan) {
+              setDailyPlan(newPlan);
+              setDailyPlanTasks(newPlan.daily_plan_tasks || []);
+              toast({ title: "Plano Diário Atualizado", description: "Seu coordenador adaptativo montou sua missão de hoje." });
+            }
+          }
         }
+
 
 
         if (reviewsRes.error) throw reviewsRes.error;
