@@ -91,7 +91,7 @@ export async function processSingleDriveFile(
   fileId: string, 
   { supabaseAdmin, logger, user }: { supabaseAdmin: any, logger: any, user: any }
 ) {
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
   try {
     // Use hardcoded constants
