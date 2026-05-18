@@ -2164,6 +2164,45 @@ export type Database = {
           },
         ]
       }
+      approval_predictions: {
+        Row: {
+          banca_target: string | null
+          created_at: string | null
+          estimated_score: number | null
+          id: string
+          metadata: Json | null
+          probability_percent: number | null
+          recovery_plan_summary: string | null
+          risk_factors: string[] | null
+          trend: string | null
+          user_id: string
+        }
+        Insert: {
+          banca_target?: string | null
+          created_at?: string | null
+          estimated_score?: number | null
+          id?: string
+          metadata?: Json | null
+          probability_percent?: number | null
+          recovery_plan_summary?: string | null
+          risk_factors?: string[] | null
+          trend?: string | null
+          user_id: string
+        }
+        Update: {
+          banca_target?: string | null
+          created_at?: string | null
+          estimated_score?: number | null
+          id?: string
+          metadata?: Json | null
+          probability_percent?: number | null
+          recovery_plan_summary?: string | null
+          risk_factors?: string[] | null
+          trend?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       approval_scores: {
         Row: {
           accuracy: number
@@ -3227,6 +3266,88 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      clinical_scores: {
+        Row: {
+          ai_feedback_json: Json | null
+          anamnesis_score: number | null
+          created_at: string | null
+          diagnosis_score: number | null
+          final_grade: string | null
+          id: string
+          management_score: number | null
+          physical_exam_score: number | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          ai_feedback_json?: Json | null
+          anamnesis_score?: number | null
+          created_at?: string | null
+          diagnosis_score?: number | null
+          final_grade?: string | null
+          id?: string
+          management_score?: number | null
+          physical_exam_score?: number | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          ai_feedback_json?: Json | null
+          anamnesis_score?: number | null
+          created_at?: string | null
+          diagnosis_score?: number | null
+          final_grade?: string | null
+          id?: string
+          management_score?: number | null
+          physical_exam_score?: number | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_scores_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinical_sessions: {
+        Row: {
+          case_id: string
+          finished_at: string | null
+          id: string
+          started_at: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          case_id: string
+          finished_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          case_id?: string
+          finished_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "clinical_cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cme_adaptive_generation_profiles: {
         Row: {
@@ -15718,6 +15839,54 @@ export type Database = {
           topic?: string
           total_questions?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      performance_metrics: {
+        Row: {
+          accuracy_rate: number | null
+          created_at: string | null
+          discipline: string | null
+          fsrs_stability: number | null
+          id: string
+          last_activity_at: string | null
+          mastery_level: string | null
+          questions_answered: number | null
+          specialty: string
+          topic: string | null
+          trend: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          created_at?: string | null
+          discipline?: string | null
+          fsrs_stability?: number | null
+          id?: string
+          last_activity_at?: string | null
+          mastery_level?: string | null
+          questions_answered?: number | null
+          specialty: string
+          topic?: string | null
+          trend?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accuracy_rate?: number | null
+          created_at?: string | null
+          discipline?: string | null
+          fsrs_stability?: number | null
+          id?: string
+          last_activity_at?: string | null
+          mastery_level?: string | null
+          questions_answered?: number | null
+          specialty?: string
+          topic?: string | null
+          trend?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
