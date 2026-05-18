@@ -789,7 +789,15 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // Smoothed aggressive boost: cap individual boosts to avoid wild oscillation
     const errorBoost = Math.min(err.vezes_errado >= 3 ? 20 : 0, 20);
     const scoreBoost = approvalScore < 40 ? 10 : 0;
-    const priority = cap(70 + Math.min(err.vezes_errado * 3, 15) - i * 2 + (weights.phase === "critico" ? 8 : 0) + errorBoost + scoreBoost);
+    // ── PREMIUM BRAIN: Calculate shared priority ──
+    const priority = calculatePremiumPriority({
+      errorRate: Math.min(1, (err.vezes_errado || 1) / 5),
+      fallProbability: 0.8, // Errors have high probability of falling again
+      fsrsRisk: 0.9, // High risk if actively making errors
+      examProximity: examProximityScore,
+      currentMastery: 0.1 // Low mastery for error topics
+    });
+    
     // Debug: log canonical ID injection for errors
     devLog("[StudyEngine] Error rec:", { tema: err.tema, errorId: err.id });
 
@@ -803,6 +811,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       specialty: err.subtema || "Geral",
       subtopic: err.subtema || undefined,
       priority,
+
       reason: err.vezes_errado >= 5
         ? `⚠️ "${err.tema}" errado ${err.vezes_errado}x — bloqueio ativo até domínio.`
         : `Você errou "${err.tema}" ${err.vezes_errado}x. Revise para fixar.`,
