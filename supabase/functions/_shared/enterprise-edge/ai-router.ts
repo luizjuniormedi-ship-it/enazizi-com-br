@@ -74,15 +74,20 @@ export async function callAi(
       replacement_model: model
     });
     
-    await supabaseAdmin.from("ai_incidents").insert({
-      function_name: "ai-router",
-      model_name: originalModel,
-      severity: "warning",
-      incident_type: "validation_error",
-      message: `Invalid AI model replaced: ${originalModel}`,
-      correlation_id: logger.correlationId
-    }).catch(() => {});
+    try {
+      await supabaseAdmin.from("ai_incidents").insert({
+        function_name: "ai-router",
+        model_name: originalModel,
+        severity: "warning",
+        incident_type: "validation_error",
+        message: `Invalid AI model replaced: ${originalModel}`,
+        correlation_id: logger.correlationId
+      });
+    } catch (err) {
+      logger.warn("INCIDENT_LOG_FAIL", "Failed to log AI model replacement incident", { error: err.message });
+    }
   }
+
 
   const startTime = Date.now();
   logger.info("AI_CALL", `Calling model ${model}`, { model, taskType: payload.taskType, stream: !!payload.stream });
@@ -114,15 +119,20 @@ export async function callAi(
     const errorText = await res.text();
     logger.error("AI_ERROR", `Model ${model} failed`, { status: res.status, error: errorText });
     
-    await supabaseAdmin.from("ai_incidents").insert({
-      function_name: "ai-router",
-      model_name: model,
-      severity: "critical",
-      incident_type: "gateway_error",
-      message: `AI Gateway error ${res.status}: ${errorText}`,
-      correlation_id: logger.correlationId,
-      metadata: { status: res.status }
-    }).catch(() => {});
+    try {
+      await supabaseAdmin.from("ai_incidents").insert({
+        function_name: "ai-router",
+        model_name: model,
+        severity: "critical",
+        incident_type: "gateway_error",
+        message: `AI Gateway error ${res.status}: ${errorText}`,
+        correlation_id: logger.correlationId,
+        metadata: { status: res.status }
+      });
+    } catch (err) {
+      logger.warn("INCIDENT_LOG_FAIL", "Failed to log AI gateway error incident", { error: err.message });
+    }
+
 
     throw new Error(`AI Gateway error ${res.status}: ${errorText}`);
   }

@@ -14,10 +14,10 @@ export function normalizeModel(model: string | null | undefined): string {
   let normalized = model.toLowerCase().trim();
 
   // Map legacy or shorthand names to enterprise standards
-  if (normalized.includes("google/gemini-2.5-pro") || normalized.includes("google/gemini-2.5-flash")) {
-    console.warn(`[MODEL_NORMALIZER] GPT-5 detected and rejected due to Gateway Error 400. Falling back to ${ALLOWED_MODELS.generation}`);
-    return ALLOWED_MODELS.generation;
-  }
+  // Ensure standard names for primary models
+  if (normalized.includes("gemini-2.5-pro")) return "google/gemini-2.5-pro";
+  if (normalized.includes("gemini-2.5-flash")) return "google/gemini-2.5-flash";
+
 
   if (normalized.includes("gpt-4o-mini")) return "openai/gpt-4o-mini";
   if (normalized.includes("gpt-4o")) return "openai/gpt-4o";
