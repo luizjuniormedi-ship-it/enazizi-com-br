@@ -23,39 +23,27 @@ serve(async (req) => {
   try {
     const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
     const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
-    let private_key = Deno.env.get("GOOGLE_SA_PRIVATE_KEY") || "";
+    const private_key_b64 = Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64") || "";
 
-    if (!client_email || !private_key) {
+    if (!client_email || !private_key_b64) {
       results.error = "MISSING_GOOGLE_SA_SECRETS";
       return new Response(JSON.stringify(results), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
     }
 
-    // Sanitize private key: fix escaped newlines if they exist
-    private_key = private_key.replace(/\\n/g, '\n');
-    
-    // Support wrapping quotes if present
-    if (private_key.startsWith('"') && private_key.endsWith('"')) {
-      private_key = private_key.slice(1, -1);
-    }
-
+    const private_key = atob(private_key_b64);
     const credentials = { client_email, token_uri, private_key };
-    results.private_key_id = "individual_secrets";
+    results.private_key_id = "individual_secrets_b64";
     
     results.step = "jwt_generation";
     const now = Math.floor(Date.now() / 1000);
 
-    let pk = credentials.private_key;
-    
-    // 1. Replace literal \n with real newline
-    pk = pk.replace(/\\n/g, '\n');
-    console.log(`Auth test PK after replace prefix: ${pk.substring(0, 30)}`);
+    const pk = credentials.private_key;
+    console.log(`Auth test PK from B64 prefix: ${pk.substring(0, 30)}`);
 
-    // 2. Remove header, footer and whitespace
-    const pemHeader = "-----BEGIN PRIVATE KEY-----";
-    const pemFooter = "-----END PRIVATE KEY-----";
+    // 2. Remove header, footer and whitespace/newlines
     const pemContent = pk
-      .replace(pemHeader, "")
-      .replace(pemFooter, "")
+      .replace("-----BEGIN PRIVATE KEY-----", "")
+      .replace("-----END PRIVATE KEY-----", "")
       .replace(/\n/g, "")
       .replace(/\r/g, "")
       .trim();
