@@ -17861,6 +17861,7 @@ export type Database = {
           cost_usd: number | null
           created_at: string
           difficulty: number
+          difficulty_level: number | null
           distractor_quality_score: number | null
           embedding_hash: string | null
           exam_bank_id: string | null
@@ -17876,6 +17877,7 @@ export type Database = {
           image_url: string | null
           ingestion_version: string | null
           institution: string | null
+          is_clinical_case: boolean | null
           is_global: boolean | null
           language: string | null
           latent_ability_theta: number | null
@@ -17902,6 +17904,7 @@ export type Database = {
           statement: string
           subtopic: string | null
           subtopic_id: string | null
+          tags: string[] | null
           topic: string | null
           topic_id: string | null
           tri_difficulty_score: number | null
@@ -17930,6 +17933,7 @@ export type Database = {
           cost_usd?: number | null
           created_at?: string
           difficulty?: number
+          difficulty_level?: number | null
           distractor_quality_score?: number | null
           embedding_hash?: string | null
           exam_bank_id?: string | null
@@ -17945,6 +17949,7 @@ export type Database = {
           image_url?: string | null
           ingestion_version?: string | null
           institution?: string | null
+          is_clinical_case?: boolean | null
           is_global?: boolean | null
           language?: string | null
           latent_ability_theta?: number | null
@@ -17971,6 +17976,7 @@ export type Database = {
           statement: string
           subtopic?: string | null
           subtopic_id?: string | null
+          tags?: string[] | null
           topic?: string | null
           topic_id?: string | null
           tri_difficulty_score?: number | null
@@ -17999,6 +18005,7 @@ export type Database = {
           cost_usd?: number | null
           created_at?: string
           difficulty?: number
+          difficulty_level?: number | null
           distractor_quality_score?: number | null
           embedding_hash?: string | null
           exam_bank_id?: string | null
@@ -18014,6 +18021,7 @@ export type Database = {
           image_url?: string | null
           ingestion_version?: string | null
           institution?: string | null
+          is_clinical_case?: boolean | null
           is_global?: boolean | null
           language?: string | null
           latent_ability_theta?: number | null
@@ -18040,6 +18048,7 @@ export type Database = {
           statement?: string
           subtopic?: string | null
           subtopic_id?: string | null
+          tags?: string[] | null
           topic?: string | null
           topic_id?: string | null
           tri_difficulty_score?: number | null
@@ -18518,6 +18527,7 @@ export type Database = {
       real_exam_questions: {
         Row: {
           answer_source: string
+          board: string | null
           classification_confidence: number | null
           classification_method: string | null
           classification_reviewed_by_human: boolean
@@ -18526,10 +18536,13 @@ export type Database = {
           correct_index: number | null
           created_at: string
           difficulty: number
+          difficulty_level: number | null
           exam_info: string | null
           explanation: string | null
           id: string
+          institution: string | null
           is_active: boolean
+          is_clinical_case: boolean | null
           microtopic_id: string | null
           options: Json
           quality_score: number
@@ -18541,12 +18554,15 @@ export type Database = {
           statement_hash: string
           subtopic: string | null
           subtopic_id: string | null
+          tags: string[] | null
           topic: string
           topic_id: string | null
           updated_at: string
+          year: number | null
         }
         Insert: {
           answer_source?: string
+          board?: string | null
           classification_confidence?: number | null
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
@@ -18555,10 +18571,13 @@ export type Database = {
           correct_index?: number | null
           created_at?: string
           difficulty?: number
+          difficulty_level?: number | null
           exam_info?: string | null
           explanation?: string | null
           id?: string
+          institution?: string | null
           is_active?: boolean
+          is_clinical_case?: boolean | null
           microtopic_id?: string | null
           options?: Json
           quality_score?: number
@@ -18570,12 +18589,15 @@ export type Database = {
           statement_hash: string
           subtopic?: string | null
           subtopic_id?: string | null
+          tags?: string[] | null
           topic: string
           topic_id?: string | null
           updated_at?: string
+          year?: number | null
         }
         Update: {
           answer_source?: string
+          board?: string | null
           classification_confidence?: number | null
           classification_method?: string | null
           classification_reviewed_by_human?: boolean
@@ -18584,10 +18606,13 @@ export type Database = {
           correct_index?: number | null
           created_at?: string
           difficulty?: number
+          difficulty_level?: number | null
           exam_info?: string | null
           explanation?: string | null
           id?: string
+          institution?: string | null
           is_active?: boolean
+          is_clinical_case?: boolean | null
           microtopic_id?: string | null
           options?: Json
           quality_score?: number
@@ -18599,9 +18624,11 @@ export type Database = {
           statement_hash?: string
           subtopic?: string | null
           subtopic_id?: string | null
+          tags?: string[] | null
           topic?: string
           topic_id?: string | null
           updated_at?: string
+          year?: number | null
         }
         Relationships: [
           {
