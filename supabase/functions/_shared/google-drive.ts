@@ -212,6 +212,7 @@ export async function processSingleDriveFile(
         .from("real_exam_questions")
         .insert(sanitizeForPostgres({
           statement: q.statement,
+          statement_hash: generateStatementHash(q.statement),
           options: q.options,
           correct_index: q.correct_index,
           explanation: q.explanation,
