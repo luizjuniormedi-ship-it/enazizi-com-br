@@ -337,6 +337,7 @@ Sempre:
 
   return new Response(JSON.stringify({ success: true, planId: plan.id }), { 
     status: 202, 
-    headers: { "Content-Type": "application/json" } 
+    headers: { ...corsHeaders, "Content-Type": "application/json" } 
   });
+
 }));
