@@ -524,8 +524,98 @@ const DailyPlan = () => {
           </motion.div>
         )}
 
+        {/* ── COORDENADOR ADAPTATIVO (MISSÃO DO DIA) ── */}
+        {dailyPlan && dailyPlanTasks.length > 0 && (
+          <section className="space-y-6">
+            <EnaflixSectionTitle 
+              kicker="Ecossistema Cognitivo"
+              title="Missão do Dia Adaptativa"
+              subtitle={dailyPlan.objective || "Seu coordenador pedagógico reorganizou seu estudo para hoje."}
+              action={
+                dailyPlan.approval_score && (
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                    Score Sugerido: {Math.round(dailyPlan.approval_score)}%
+                  </Badge>
+                )
+              }
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {dailyPlanTasks.sort((a, b) => (a.priority || 0) - (b.priority || 0)).map((task) => (
+                <EnaflixCinematicCard
+                  key={task.id}
+                  variant="lesson"
+                  className={cn(
+                    "p-5 space-y-4 transition-all group",
+                    task.completed && "opacity-40 grayscale"
+                  )}
+                  onClick={() => !task.completed && navigate(buildStudyPath({ 
+                    id: task.id, 
+                    topic: task.topic, 
+                    specialty: task.subject || "Medicina",
+                    type: task.type === "theory" ? "new" : task.type === "review" ? "review" : "practice"
+                  } as any, "daily-plan"))}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <EnaflixBadge type={task.type === "error_fix" ? "urgente" : "ia"} />
+                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                          {task.estimated_minutes}min
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
+                        {task.title}
+                      </h3>
+                      <p className="text-[10px] text-white/50 uppercase font-black tracking-wider">
+                        {task.subject}
+                      </p>
+                    </div>
+                    {task.completed ? (
+                      <CheckCircle2 className="h-6 w-6 text-primary" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-all">
+                        <Play className="h-4 w-4 text-white/40 group-hover:text-primary" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {task.rationale && (
+                    <p className="text-xs text-white/40 line-clamp-2 italic">
+                      "{task.rationale}"
+                    </p>
+                  )}
+
+                  {!task.completed && (
+                    <div className="pt-2">
+                      <Enaflix3DButton size="sm" variant="ghost" className="w-full text-[10px] uppercase font-black">
+                        Iniciar Bloco
+                      </Enaflix3DButton>
+                    </div>
+                  )}
+                </EnaflixCinematicCard>
+              ))}
+            </div>
+
+            {dailyPlan.diagnosis_summary && (
+              <EnaflixCinematicCard className="p-4 bg-primary/5 border-primary/20">
+                <div className="flex items-start gap-3">
+                  <Target className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-primary uppercase tracking-widest">Parecer do Coordenador</h4>
+                    <p className="text-sm text-white/70 mt-1 leading-relaxed">
+                      {dailyPlan.diagnosis_summary}
+                    </p>
+                  </div>
+                </div>
+              </EnaflixCinematicCard>
+            )}
+          </section>
+        )}
+
         {/* ── MISSÃO PRINCIPAL ── */}
         {nextAction && (
+
           <section className="space-y-4">
             <EnaflixSectionTitle 
               kicker="IA de Estudos"
