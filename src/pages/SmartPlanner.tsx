@@ -822,28 +822,84 @@ const SmartPlanner = () => {
               await supabase.from("temas_estudados").delete().eq("user_id", user.id);
               setTemas([]);
               if (subjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
-              // @legacy-read — study_plans.plan_json.topicMap não tem equivalente em daily_plans (estrutura semanal vs diária).
-              // Mantido como fallback opcional para enriquecer subtopics. Sem ele, subtopico fica null e o fluxo segue normal.
-              const { data: latestPlan } = await supabase.from("study_plans").select("plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
-              const topicMap: { topic: string; subtopics: string[] }[] = (latestPlan?.plan_json as any)?.topicMap || [];
+              // [planner-unification-final] Agora usamos o topicMap granular para separar os tópicos corretamente.
+              const { data: latestPlan } = await supabase.from("study_plans").select("plan_json").eq("id", (latestPlanId || latestPlan?.id)).maybeSingle();
+              const plan = latestPlan?.plan_json as any;
+              const topicMap: { topic: string; subtopics: string[]; priority_score?: number }[] = plan?.topicMap || [];
+              
               const registeredTemas: { id: string; tema: string; especialidade: string }[] = [];
               let totalReviews = 0;
-              for (const subject of subjects) {
-                const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(subject) || "Medicina Preventiva";
-                const topicEntry = topicMap.find(t => t.topic.toLowerCase() === subject.toLowerCase());
-                const subtopico = topicEntry?.subtopics?.join(", ") || null;
-                const { data, error } = await supabase.from("temas_estudados").insert({
-                  user_id: user.id, tema: subject, especialidade, data_estudo: today2, fonte: "plano_estudos", dificuldade: "medio", subtopico, observacoes: "Registrado pelo Plano Geral", status: "ativo",
-                } as any).select().single();
-                if (error || !data) continue;
-                const temaId = (data as any).id;
-                registeredTemas.push({ id: temaId, tema: subject, especialidade });
-                const reviews = generateReviewsByError(today2, 0);
-                totalReviews += reviews.length;
-                const reviewRows = reviews.map(r => ({
-                  user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo, data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
-                }));
-                await supabase.from("revisoes").insert(reviewRows as any);
+
+              // Se tivermos um topicMap detalhado, usamos ele para criar tópicos granulares
+              if (topicMap.length > 0) {
+                for (const entry of topicMap) {
+                  const mainTopic = entry.topic;
+                  const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(mainTopic) || "Clínica Médica";
+                  
+                  // Se não houver subtemas, cria o tema principal
+                  if (!entry.subtopics || entry.subtopics.length === 0) {
+                    const { data, error } = await supabase.from("temas_estudados").insert({
+                      user_id: user.id, 
+                      tema: mainTopic, 
+                      especialidade, 
+                      data_estudo: today2, 
+                      fonte: "plano_estudos", 
+                      dificuldade: "medio", 
+                      status: "ativo"
+                    } as any).select().single();
+                    
+                    if (!error && data) {
+                      const temaId = (data as any).id;
+                      registeredTemas.push({ id: temaId, tema: mainTopic, especialidade });
+                      const reviews = generateReviewsByError(today2, 0);
+                      totalReviews += reviews.length;
+                      await supabase.from("revisoes").insert(reviews.map(r => ({
+                        user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo, data_revisao: r.data, status: "pendente", prioridade: entry.priority_score || 50, risco_esquecimento: "baixo",
+                      })) as any);
+                    }
+                  } else {
+                    // Para cada subtema, cria uma entrada separada para o FSRS
+                    for (const sub of entry.subtopics) {
+                      const fullTema = `${mainTopic}: ${sub}`;
+                      const { data, error } = await supabase.from("temas_estudados").insert({
+                        user_id: user.id, 
+                        tema: fullTema, 
+                        especialidade, 
+                        data_estudo: today2, 
+                        fonte: "plano_estudos", 
+                        dificuldade: "medio", 
+                        subtopico: sub,
+                        status: "ativo"
+                      } as any).select().single();
+                      
+                      if (!error && data) {
+                        const temaId = (data as any).id;
+                        registeredTemas.push({ id: temaId, tema: fullTema, especialidade });
+                        const reviews = generateReviewsByError(today2, 0);
+                        totalReviews += reviews.length;
+                        await supabase.from("revisoes").insert(reviews.map(r => ({
+                          user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo, data_revisao: r.data, status: "pendente", prioridade: entry.priority_score || 50, risco_esquecimento: "baixo",
+                        })) as any);
+                      }
+                    }
+                  }
+                }
+              } else {
+                // Fallback para o comportamento anterior se não houver topicMap
+                for (const subject of subjects) {
+                  const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(subject) || "Medicina Preventiva";
+                  const { data, error } = await supabase.from("temas_estudados").insert({
+                    user_id: user.id, tema: subject, especialidade, data_estudo: today2, fonte: "plano_estudos", dificuldade: "medio", status: "ativo",
+                  } as any).select().single();
+                  if (error || !data) continue;
+                  const temaId = (data as any).id;
+                  registeredTemas.push({ id: temaId, tema: subject, especialidade });
+                  const reviews = generateReviewsByError(today2, 0);
+                  totalReviews += reviews.length;
+                  await supabase.from("revisoes").insert(reviews.map(r => ({
+                    user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo, data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
+                  })) as any);
+                }
               }
               let flashcardsCriados = 0;
               let questoesVinculadas = 0;
