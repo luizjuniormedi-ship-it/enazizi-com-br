@@ -125,9 +125,10 @@ export default function PlannerTaskCard({
 
     switch (target) {
       case "tutor":
-        navigate(`/dashboard/tutor?${queryString}`);
+        navigate(`/dashboard/sessao-estudo?${queryString}`);
         break;
       case "questions":
+
         navigate(`/dashboard/gerador-questoes?${queryString}`);
         break;
       case "flashcards":
