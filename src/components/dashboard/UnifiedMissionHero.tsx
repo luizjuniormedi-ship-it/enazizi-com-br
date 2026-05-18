@@ -45,10 +45,11 @@ export function UnifiedMissionHero({
   recommendationType,
   recommendationTopic,
   adaptiveJustification,
-  primaryHref = "/dashboard/sessao-estudo?source=dashboard_hero",
+  primaryHref = "/dashboard/plano-dia?source=dashboard_hero",
   secondaryHref = "/dashboard/flashcards",
   posterUrl = "https://images.unsplash.com/photo-1576091160550-2173bdb999ef?q=80&w=2000&auto=format&fit=crop",
 }: UnifiedMissionHeroProps) {
+
   const navigate = useNavigate();
   const { data: dashData, refetch: refreshDash } = useDashboardData();
   const [generating, setGenerating] = useState(false);
