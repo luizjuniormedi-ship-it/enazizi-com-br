@@ -252,7 +252,7 @@ Sempre:
     await supabaseAdmin.from("ai_governance_logs").insert({
       user_id: user.id,
       task_type: "daily_plan_generation",
-      model_name: "google/gemini-2.0-flash", // Using standard model for daily
+      model_name: "google/gemini-2.5-flash", // Using standard model for daily
       payload: { context_summary: "Daily adaptive generation" },
       response_summary: `Generated ${tasks.length} tasks`
     });
