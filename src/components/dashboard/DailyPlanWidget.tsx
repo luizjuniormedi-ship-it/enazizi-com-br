@@ -46,7 +46,8 @@ const DailyPlanWidget = () => {
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium flex items-center gap-2">
-          Plano do Dia
+          Missão do Dia
+
           <span className="text-xs text-muted-foreground">{data.completed}/{data.total} blocos</span>
         </div>
         <div className="h-2 rounded-full bg-secondary mt-1.5">
