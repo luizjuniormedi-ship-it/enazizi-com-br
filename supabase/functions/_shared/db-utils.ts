@@ -24,3 +24,11 @@ export function sanitizeForPostgres(obj: any): any {
   }
   return obj;
 }
+
+export function generateStatementHash(statement: string): string {
+  if (!statement) return "empty_hash";
+  const clean = statement.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 100);
+  const length = statement.length;
+  // Simple unique-ish string
+  return `${length}_${clean.length}_${clean.slice(0, 40)}`;
+}
