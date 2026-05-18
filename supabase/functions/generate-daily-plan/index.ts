@@ -1,7 +1,9 @@
 // generate-daily-plan - ENAZIZI COORDENADOR ADAPTATIVO (PLANNER INTELIGENTE)
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
-import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
+import { calculatePremiumPriority, calculateExamProximityScore, calculateFsrsRiskScore } from "../_shared/study-prioritization.ts";
+
 
 Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, supabaseAdmin, ai }) => {
   const { user } = await requireAuth(req);
