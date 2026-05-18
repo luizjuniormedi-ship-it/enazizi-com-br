@@ -50,9 +50,37 @@ export function UnifiedMissionHero({
   posterUrl = "https://images.unsplash.com/photo-1576091160550-2173bdb999ef?q=80&w=2000&auto=format&fit=crop",
 }: UnifiedMissionHeroProps) {
   const navigate = useNavigate();
-  const title = recommendationTitle?.trim() || FALLBACK_TITLE;
-  const rawDesc = recommendationDescription?.trim() || FALLBACK_DESC;
+  const { data: dashData, refetch: refreshDash } = useDashboardData();
+  const [generating, setGenerating] = useState(false);
+
+  const hasPlan = dashData?.stats.hasStudyPlan ?? false;
+  const title = recommendationTitle?.trim() || (hasPlan ? "Missão de Hoje" : FALLBACK_TITLE);
+  const rawDesc = recommendationDescription?.trim() || (hasPlan ? "Continue seu plano adaptativo." : FALLBACK_DESC);
   const desc = humanizeFSRSReason(rawDesc);
+
+  const handleGenerateDaily = async () => {
+    setGenerating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${session?.access_token}` 
+        },
+        body: JSON.stringify({ force: true }),
+      });
+      if (!resp.ok) throw new Error("Falha na Edge Function");
+      
+      toast({ title: "✅ Missão Gerada!", description: "Sua jornada de hoje está pronta." });
+      await refreshDash();
+    } catch (err) {
+      toast({ title: "Erro", description: "Não foi possível gerar sua missão.", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
 
   return (
     <div className="px-4 sm:px-8 lg:px-14">
