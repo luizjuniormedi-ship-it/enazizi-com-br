@@ -42,8 +42,8 @@ const reviewTimeEstimates: Record<string, number> = {
 
 /**
  * Daily Plan — Operational layer.
- * Displays today's tasks derived from Planner + Study Engine.
- * Does NOT generate its own planning logic.
+ * Displays today's tasks derived from Adaptive Coordinator (daily_plans) + Study Engine.
+ * Integrates directly with the Master Planner Engine rules.
  */
 const DailyPlan = () => {
   const { user } = useAuth();
@@ -67,6 +67,10 @@ const DailyPlan = () => {
   const [showOverflowReviews, setShowOverflowReviews] = useState(false);
   const [showOverflowTopics, setShowOverflowTopics] = useState(false);
 
+  // Adaptive Coordinator state
+  const [dailyPlan, setDailyPlan] = useState<any>(null);
+  const [dailyPlanTasks, setDailyPlanTasks] = useState<any[]>([]);
+
   // Mission Mode integration
   const { state: missionState, startMission, hasTasks: missionHasTasks } = useMissionMode();
 
@@ -83,9 +87,10 @@ const DailyPlan = () => {
   const [lastCompletedAt, setLastCompletedAt] = useState<number | null>(null);
 
   // Study Engine recommendations (from Planner + performance data)
-  const { data: engineRecs } = useStudyEngine();
+  const { data: engineRecs, adaptive: engineAdaptive } = useStudyEngine();
   const { data: coreData } = useCoreData();
   const resetAt = coreData?.profile.last_study_plan_reset_at ?? null;
+
 
   // ── Load today's data from Planner tables ──
   useEffect(() => {
@@ -99,7 +104,7 @@ const DailyPlan = () => {
           year: "numeric", month: "2-digit", day: "2-digit",
         }).format(new Date());
 
-        const [reviewsRes, attemptsRes, todayTemasRes, profileRes] = await Promise.all([
+        const [reviewsRes, attemptsRes, todayTemasRes, profileRes, dailyPlanRes] = await Promise.all([
           supabase
             .from("revisoes")
             .select("id, tema_id, tipo_revisao, data_revisao, status, prioridade, risco_esquecimento")
@@ -124,7 +129,42 @@ const DailyPlan = () => {
             .select("daily_study_hours")
             .eq("user_id", user.id)
             .maybeSingle(),
+          supabase
+            .from("daily_plans")
+            .select("*, daily_plan_tasks(*)")
+            .eq("user_id", user.id)
+            .eq("plan_date", today)
+            .maybeSingle(),
         ]);
+
+        if (dailyPlanRes.data) {
+          setDailyPlan(dailyPlanRes.data);
+          setDailyPlanTasks(dailyPlanRes.data.daily_plan_tasks || []);
+        } else {
+          // SE NÃO EXISTE PLANO PARA HOJE: Disparar geração via Coordenador Adaptativo
+          console.log("[DailyPlan] No plan for today. Triggering Adaptive Coordinator...");
+          const { data: result, error: invokeErr } = await supabase.functions.invoke("generate-daily-plan", {
+            method: "POST"
+          });
+          
+          if (!invokeErr && result?.planId) {
+            // Re-fetch now that it's generated
+            const { data: newPlan } = await supabase
+              .from("daily_plans")
+              .select("*, daily_plan_tasks(*)")
+              .eq("id", result.planId)
+              .single();
+              
+            if (newPlan) {
+              setDailyPlan(newPlan);
+              setDailyPlanTasks(newPlan.daily_plan_tasks || []);
+              toast({ title: "Plano Diário Atualizado", description: "Seu coordenador adaptativo montou sua missão de hoje." });
+            }
+          }
+        }
+
+
+
 
         if (reviewsRes.error) throw reviewsRes.error;
         if (attemptsRes.error) throw attemptsRes.error;
@@ -364,13 +404,22 @@ const DailyPlan = () => {
   };
 
   // ── Derived metrics ──
-  const totalItems = scheduledReviews.length + todayTopics.length + Math.min((engineRecs || []).length, 3);
-  const totalDone = completedReviews.size + completedTopics.size;
+  const totalItems = dailyPlanTasks.length > 0 
+    ? dailyPlanTasks.length 
+    : scheduledReviews.length + todayTopics.length + Math.min((engineRecs || []).length, 3);
+    
+  const totalDone = dailyPlanTasks.length > 0
+    ? dailyPlanTasks.filter(t => t.completed).length
+    : completedReviews.size + completedTopics.size;
+
   const overallPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
+  
   const reviewMinutes = scheduledReviews.reduce((sum, r) => sum + (r.estimatedMinutes || 15), 0);
   const topicMinutes = todayTopics.length * 40;
   const engineMinutes = Math.min((engineRecs || []).length, 3) * 20;
-  const totalMinutes = reviewMinutes + topicMinutes + engineMinutes;
+  const planMinutes = dailyPlanTasks.reduce((sum, t) => sum + (t.estimated_minutes || 0), 0);
+  
+  const totalMinutes = dailyPlanTasks.length > 0 ? planMinutes : reviewMinutes + topicMinutes + engineMinutes;
   const timeUsedPct = dailyMinutes > 0 ? Math.min(100, Math.round((totalMinutes / dailyMinutes) * 100)) : 0;
 
   const formatTime = (mins: number) => {
@@ -378,6 +427,7 @@ const DailyPlan = () => {
     const m = mins % 60;
     return h > 0 ? `${h}h${m > 0 ? `${m}min` : ""}` : `${m}min`;
   };
+
 
   if (loading) {
     return (
@@ -507,8 +557,98 @@ const DailyPlan = () => {
           </motion.div>
         )}
 
+        {/* ── COORDENADOR ADAPTATIVO (MISSÃO DO DIA) ── */}
+        {dailyPlan && dailyPlanTasks.length > 0 && (
+          <section className="space-y-6">
+            <EnaflixSectionTitle 
+              kicker="Ecossistema Cognitivo"
+              title="Missão do Dia Adaptativa"
+              subtitle={dailyPlan.objective || "Seu coordenador pedagógico reorganizou seu estudo para hoje."}
+              action={
+                dailyPlan.approval_score && (
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                    Score Sugerido: {Math.round(dailyPlan.approval_score)}%
+                  </Badge>
+                )
+              }
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {dailyPlanTasks.sort((a, b) => (a.priority || 0) - (b.priority || 0)).map((task) => (
+                <EnaflixCinematicCard
+                  key={task.id}
+                  variant="lesson"
+                  className={cn(
+                    "p-5 space-y-4 transition-all group",
+                    task.completed && "opacity-40 grayscale"
+                  )}
+                  onClick={() => !task.completed && navigate(buildStudyPath({ 
+                    id: task.id, 
+                    topic: task.topic, 
+                    specialty: task.subject || "Medicina",
+                    type: task.type === "theory" ? "new" : task.type === "review" ? "review" : "practice"
+                  } as any, "daily-plan"))}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <EnaflixBadge type={task.type === "error_fix" ? "urgente" : "ia"} />
+                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                          {task.estimated_minutes}min
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
+                        {task.title}
+                      </h3>
+                      <p className="text-[10px] text-white/50 uppercase font-black tracking-wider">
+                        {task.subject}
+                      </p>
+                    </div>
+                    {task.completed ? (
+                      <CheckCircle2 className="h-6 w-6 text-primary" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-all">
+                        <Play className="h-4 w-4 text-white/40 group-hover:text-primary" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {task.rationale && (
+                    <p className="text-xs text-white/40 line-clamp-2 italic">
+                      "{task.rationale}"
+                    </p>
+                  )}
+
+                  {!task.completed && (
+                    <div className="pt-2">
+                      <Enaflix3DButton size="sm" variant="ghost" className="w-full text-[10px] uppercase font-black">
+                        Iniciar Bloco
+                      </Enaflix3DButton>
+                    </div>
+                  )}
+                </EnaflixCinematicCard>
+              ))}
+            </div>
+
+            {dailyPlan.diagnosis_summary && (
+              <EnaflixCinematicCard className="p-4 bg-primary/5 border-primary/20">
+                <div className="flex items-start gap-3">
+                  <Target className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-primary uppercase tracking-widest">Parecer do Coordenador</h4>
+                    <p className="text-sm text-white/70 mt-1 leading-relaxed">
+                      {dailyPlan.diagnosis_summary}
+                    </p>
+                  </div>
+                </div>
+              </EnaflixCinematicCard>
+            )}
+          </section>
+        )}
+
         {/* ── MISSÃO PRINCIPAL ── */}
         {nextAction && (
+
           <section className="space-y-4">
             <EnaflixSectionTitle 
               kicker="IA de Estudos"
