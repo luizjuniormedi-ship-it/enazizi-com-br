@@ -60,6 +60,8 @@ const QuestionGenerator = () => {
   const marathonTotalRef = useRef(0);
   const sendPromptRef = useRef<((prompt: string) => void) | null>(null);
   const initialPromptRef = useRef<string>("");
+  const [loadingWeakTopics, setLoadingWeakTopics] = useState(false);
+
 
   // Listen to InteractiveQuestionCard answers via custom event
   useEffect(() => {
@@ -322,11 +324,39 @@ const QuestionGenerator = () => {
                   variant="ghost" 
                   size="sm" 
                   className="h-6 text-[10px] text-primary hover:text-primary/80 gap-1 px-2"
-                  onClick={() => {
-                    setDifficulty("misto");
-                    setQuantity(15);
-                    toast({ title: "Equalizador Ativado", description: "Ajustado para 15 questões com mix de dificuldade." });
+                  onClick={async () => {
+                    setLoadingWeakTopics(true);
+                    try {
+                      const { data } = await supabase
+                        .from("performance_metrics")
+                        .select("topic, mastery_level")
+                        .eq("user_id", user?.id)
+                        .order("mastery_level", { ascending: true })
+                        .limit(3);
+                      
+                      if (data && (data as any[]).length > 0) {
+                        const weakThemes = (data as any[]).map(d => d.topic).join(", ");
+                        setSpecificTopic(weakThemes);
+
+                        setDifficulty("misto");
+                        setQuantity(15);
+                        toast({ 
+                          title: "Equalizador Inteligente Ativado", 
+                          description: `Focando em suas maiores fraquezas: ${weakThemes}. Ajustado para 15 questões mistas.` 
+                        });
+                      } else {
+                        setDifficulty("misto");
+                        setQuantity(15);
+                        toast({ title: "Equalizador Ativado", description: "Ajustado para 15 questões com mix de dificuldade." });
+                      }
+                    } catch (err) {
+                      setDifficulty("misto");
+                      setQuantity(15);
+                    } finally {
+                      setLoadingWeakTopics(false);
+                    }
                   }}
+
                 >
                   <RefreshCw className="h-3 w-3" /> EQUALIZADOR
                 </Button>
