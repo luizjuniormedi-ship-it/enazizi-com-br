@@ -456,7 +456,11 @@ const SmartPlanner = () => {
                                [".png", ".jpg", ".jpeg", ".webp"].some(ext => file.name.toLowerCase().endsWith(ext));
 
           if (isProcessable) {
-            const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+            const fileExt = file.name.split('.').pop()?.toLowerCase() || 
+                           (file.type.includes('/') ? file.type.split('/')[1] : 'pdf');
+            
+            console.log("[PLANNER_UPLOAD] Registering upload in DB:", { filename: file.name, type: fileExt });
+            
             const { data: uploadRecord, error: dbError } = await supabase
               .from("uploads")
               .insert(({
@@ -469,17 +473,24 @@ const SmartPlanner = () => {
                 extracted_json: { 
                   file_size: file.size, 
                   mime_type: file.type,
-                  original_name: file.name 
+                  original_name: file.name,
+                  step: "uploaded"
                 }
               } as any))
               .select()
               .single();
 
-            if (!dbError && uploadRecord) {
+            if (dbError) {
+              console.error("[PLANNER_UPLOAD] Database insert error:", dbError);
+              throw dbError;
+            }
+
+            if (uploadRecord) {
               toast({
-                title: "Processando material...",
-                description: `Estamos analisando "${file.name}" para sugerir tópicos de estudo.`,
+                title: "Analisando material...",
+                description: `O ENAZIZI está extraindo o conteúdo de "${file.name}" para adaptar seu plano.`,
               });
+              
               const { data: sessionData } = await supabase.auth.getSession();
               fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
                 method: "POST",
@@ -493,18 +504,15 @@ const SmartPlanner = () => {
                   const errorData = await resp.json().catch(() => ({}));
                   console.error("[PLANNER_UPLOAD] Edge Function error:", errorData);
                   toast({
-                    title: "Erro no processamento",
-                    description: errorData.error || "O servidor de IA não respondeu corretamente.",
+                    title: "Alerta no processamento",
+                    description: errorData.error || "Ocorreu um erro ao analisar o texto, mas o arquivo foi salvo.",
                     variant: "destructive"
                   });
+                } else {
+                  console.log("[PLANNER_UPLOAD] Edge Function triggered successfully");
                 }
               }).catch(err => {
                 console.error("[PLANNER_UPLOAD] Trigger process-upload error:", err);
-                toast({
-                  title: "Falha na conexão",
-                  description: "Não foi possível iniciar a análise do arquivo.",
-                  variant: "destructive"
-                });
               });
             }
           }

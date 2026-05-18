@@ -54,6 +54,7 @@ const QuestionGenerator = () => {
   const [examBoard, setExamBoard] = useState("all");
   const [quantity, setQuantity] = useState(10);
   const [marathonMode, setMarathonMode] = useState(false);
+  const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 50, dificil: 30 });
   const [sessionStats, setSessionStats] = useState<SessionStats>({ total: 0, correct: 0, bySpecialty: {} });
   const [showSetup, setShowSetup] = useState(true);
   const marathonAnsweredRef = useRef(0);
@@ -100,7 +101,10 @@ const QuestionGenerator = () => {
   const buildPrompt = () => {
     const specPart = effectiveSpecialty || "qualquer área médica (variando especialidades)";
     const topicPart = specificTopic.trim() ? ` focadas no tema: "${specificTopic.trim()}"` : "";
-    const diffLabel = difficulty === "dificil" ? "ALTO (padrão ENARE/USP-SP)" : difficulty === "intermediario" ? "intermediário-alto (padrão REVALIDA)" : difficulty === "misto" ? "misto (30% intermediário + 70% difícil)" : "intermediário";
+    const diffLabel = difficulty === "dificil" ? "ALTO (padrão ENARE/USP-SP)" : 
+                     difficulty === "intermediario" ? "intermediário-alto (padrão REVALIDA)" : 
+                     difficulty === "misto" ? `MISTO RIGOROSO: ${difficultyMix.facil}% fáceis, ${difficultyMix.intermediario}% intermediárias e ${difficultyMix.dificil}% difíceis` : 
+                     "intermediário";
     const boardPart = examBoard !== "all" ? ` no estilo da prova ${examBoard}, com formato, pegadinhas e abordagens típicas dessa banca` : "";
     // Inject high-yield hints when no specific subtopic is selected
     let priorityHint = "";

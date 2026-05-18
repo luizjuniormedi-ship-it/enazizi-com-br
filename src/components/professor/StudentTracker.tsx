@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { User, Search, Loader2, BarChart3, AlertTriangle, BookOpen, Target, TrendingUp, Clock, CheckCircle2, Circle, Download, Activity, FileText, Stethoscope } from "lucide-react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { User, Search, Loader2, BarChart3, AlertTriangle, BookOpen, Target, TrendingUp, Clock, CheckCircle2, Circle, Download, Activity, FileText, Stethoscope, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +56,8 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
   const [faculdade, setFaculdade] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
@@ -79,7 +81,7 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
         action: "get_students",
         faculdades: faculdade && faculdade !== "all" ? [faculdade] : undefined,
         periodos: periodo && periodo !== "all" ? [parseInt(periodo)] : undefined,
-        query: searchTerm.trim() || undefined,
+        query: debouncedSearchTerm.trim() || undefined,
       });
 
       setStudents(res.students || []);
@@ -88,7 +90,15 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
     } finally {
       setLoading(false);
     }
-  }, [session, callAPI, faculdade, periodo, searchTerm, toast]);
+  }, [session, callAPI, faculdade, periodo, debouncedSearchTerm, toast]);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+  }, [searchTerm]);
 
   useEffect(() => { loadStudents(); }, [loadStudents]);
 
@@ -310,10 +320,28 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
         </Button>
       </div>
 
-      {students.length > 0 && (
+      {(students.length > 0 || searchTerm) && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Filtrar por nome..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 h-9" />
+          <Input 
+            placeholder="Buscar aluno por nome ou email..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="pl-9 pr-9 h-10 shadow-sm border-primary/20 focus:border-primary transition-all" 
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {loading && (
+            <div className="absolute right-10 top-1/2 -translate-y-1/2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            </div>
+          )}
         </div>
       )}
 
