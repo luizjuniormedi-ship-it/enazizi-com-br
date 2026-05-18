@@ -95,7 +95,14 @@ const DailyPlan = () => {
   // ── Load today's data from Planner tables ──
   useEffect(() => {
     if (!user) return;
+
+    // Telemetry: mission opened
+    supabase.functions.invoke("unified-telemetry", {
+      body: { userId: user.id, eventType: "daily_mission_opened", module: "daily-plan" }
+    }).then();
+
     const loadToday = async () => {
+
       try {
         setLoading(true);
         // BR timezone (America/Sao_Paulo) – fixes "today" para usuários após 21h BRT
