@@ -25,23 +25,16 @@ export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
 
-  const pkB64 = Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64") || "";
-  if (!pkB64) throw new Error("Missing GOOGLE_SA_PRIVATE_KEY_B64 secret");
+  const pkPart1 = Deno.env.get("GOOGLE_SA_PK_PART1") || "";
+  const pkPart2 = Deno.env.get("GOOGLE_SA_PK_PART2") || "";
+  if (!pkPart1 || !pkPart2) throw new Error("Missing GOOGLE_SA_PK_PART secrets");
   
-  const pk = atob(pkB64);
+  const pemBody = pkPart1 + pkPart2;
   
-  if (logger) logger.info("GOOGLE_AUTH_PK", `PK from B64 prefix: ${pk.substring(0, 30)}`);
+  if (logger) logger.info("GOOGLE_AUTH_PK", `PK body prefix: ${pemBody.substring(0, 30)}`);
 
-  // 2. Remove header, footer and all whitespace/newlines
-  const pemContent = pk
-    .replace("-----BEGIN PRIVATE KEY-----", "")
-    .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\n/g, "")
-    .replace(/\r/g, "")
-    .trim();
-  
   // 3. Decode base64 to binary
-  const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
+  const keyData = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
 
   const key = await crypto.subtle.importKey(
     "pkcs8",
@@ -102,14 +95,15 @@ export async function processSingleDriveFile(
   try {
     const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
     const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
-    const private_key_b64 = Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64") || "";
+    const pkPart1 = Deno.env.get("GOOGLE_SA_PK_PART1") || "";
+    const pkPart2 = Deno.env.get("GOOGLE_SA_PK_PART2") || "";
 
-    if (!client_email || !private_key_b64) {
-      throw new Error("Missing Google Service Account individual secrets (GOOGLE_SA_CLIENT_EMAIL, GOOGLE_SA_PRIVATE_KEY_B64)");
+    if (!client_email || !pkPart1 || !pkPart2) {
+      throw new Error("Missing Google Service Account individual secrets (GOOGLE_SA_CLIENT_EMAIL, GOOGLE_SA_PK_PART1/2)");
     }
 
-    const private_key = atob(private_key_b64);
-    const serviceAccount = { client_email, token_uri, private_key };
+    // Reconstruction is handled inside getGoogleAccessToken via serviceAccount parameter
+    const serviceAccount = { client_email, token_uri };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");

@@ -24,39 +24,30 @@ serve(async (req) => {
     console.log("ENV check:", { 
       hasClientEmail: !!Deno.env.get("GOOGLE_SA_CLIENT_EMAIL"),
       hasTokenUri: !!Deno.env.get("GOOGLE_SA_TOKEN_URI"),
-      hasPrivateKeyB64: !!Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64"),
-      hasPrivateKey: !!Deno.env.get("GOOGLE_SA_PRIVATE_KEY"),
+      hasPkPart1: !!Deno.env.get("GOOGLE_SA_PK_PART1"),
+      hasPkPart2: !!Deno.env.get("GOOGLE_SA_PK_PART2"),
     });
 
     const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
     const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
-    const private_key_b64 = Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64") || "";
+    const pkPart1 = Deno.env.get("GOOGLE_SA_PK_PART1") || "";
+    const pkPart2 = Deno.env.get("GOOGLE_SA_PK_PART2") || "";
 
-    if (!client_email || !private_key_b64) {
+    if (!client_email || !pkPart1 || !pkPart2) {
       results.error = "MISSING_GOOGLE_SA_SECRETS";
       return new Response(JSON.stringify(results), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
     }
 
-    const private_key = atob(private_key_b64);
-    const credentials = { client_email, token_uri, private_key };
-    results.private_key_id = "individual_secrets_b64";
+    const pemBody = pkPart1 + pkPart2;
+    results.private_key_id = "individual_pk_parts";
     
     results.step = "jwt_generation";
     const now = Math.floor(Date.now() / 1000);
 
-    const pk = credentials.private_key;
-    console.log(`Auth test PK from B64 prefix: ${pk.substring(0, 30)}`);
-
-    // 2. Remove header, footer and whitespace/newlines
-    const pemContent = pk
-      .replace("-----BEGIN PRIVATE KEY-----", "")
-      .replace("-----END PRIVATE KEY-----", "")
-      .replace(/\n/g, "")
-      .replace(/\r/g, "")
-      .trim();
+    console.log(`Auth test PK body prefix: ${pemBody.substring(0, 30)}`);
 
     // 3. Decode base64
-    const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
+    const keyData = Uint8Array.from(atob(pemBody), c => c.charCodeAt(0));
 
     // 4. Import Key using Native Crypto (matching shared logic)
     const cryptoKey = await crypto.subtle.importKey(
@@ -70,7 +61,7 @@ serve(async (req) => {
     // 5. Generate JWT components
     const header = { alg: "RS256", typ: "JWT" };
     const payload = {
-      iss: credentials.client_email,
+      iss: client_email,
       scope: "https://www.googleapis.com/auth/drive.readonly",
       aud: "https://oauth2.googleapis.com/token",
       exp: now + 3600,
