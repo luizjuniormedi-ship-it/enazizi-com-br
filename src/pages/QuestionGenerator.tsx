@@ -325,7 +325,7 @@ const QuestionGenerator = () => {
                   onClick={() => {
                     setDifficulty("misto");
                     setQuantity(15);
-                    toast.success("Equalizador: Ajustado para 15 questões com mix de dificuldade.");
+                    toast({ title: "Equalizador Ativado", description: "Ajustado para 15 questões com mix de dificuldade." });
                   }}
                 >
                   <RefreshCw className="h-3 w-3" /> EQUALIZADOR
