@@ -160,11 +160,23 @@ export async function processSingleDriveFile(
         messages: [
           {
             role: "system",
-            content: "Você é um especialista em medicina e extração de dados. Extraia questões médicas de provas em PDF."
+            content: `Você é um especialista em medicina e extração de dados. 
+            Extraia questões médicas de provas em PDF.
+            SEMPRE enriqueça cada questão com:
+            - board: nome da banca (ex: REVALIDA, ENARE, USP, UNICAMP, SUS-SP)
+            - year: ano da prova
+            - institution: instituição
+            - topic: especialidade médica (ex: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Preventiva)
+            - subtopic: subtema específico (ex: ICC, DPOC, Apendicite)
+            - difficulty: 1 a 5 baseado na complexidade
+            - explanation: explicação detalhada com referência bibliográfica se possível
+            - clinical_case: true/false se a questão apresenta um caso clínico
+            - tags: palavras-chave relevantes
+            `
           },
           {
             role: "user",
-            content: "Extraia questões deste PDF de prova médica. Formato JSON: {\"questions\": [{\"statement\": \"...\", \"options\": [\"A\", \"B\", \"C\", \"D\"], \"correct_index\": 0, \"explanation\": \"...\", \"topic\": \"...\"}]}"
+            content: "Extraia questões deste PDF de prova médica. Formato JSON: {\"questions\": [{\"statement\": \"...\", \"options\": [\"A\", \"B\", \"C\", \"D\"], \"correct_index\": 0, \"explanation\": \"...\", \"topic\": \"...\", \"subtopic\": \"...\", \"board\": \"...\", \"year\": 2024, \"institution\": \"...\", \"difficulty\": 3, \"clinical_case\": true, \"tags\": [\"tag1\"]}]}"
           },
           {
             role: "user",
@@ -204,6 +216,13 @@ export async function processSingleDriveFile(
           correct_index: q.correct_index,
           explanation: q.explanation,
           topic: q.topic,
+          subtopic: q.subtopic,
+          board: q.board,
+          year: q.year,
+          institution: q.institution,
+          difficulty_level: q.difficulty,
+          is_clinical_case: q.clinical_case,
+          tags: q.tags,
           exam_info: file.name.replace(".pdf", ""),
           quality_score: 0.95,
           source_file: file.name,
@@ -213,7 +232,10 @@ export async function processSingleDriveFile(
         .select("id")
         .single();
 
-      if (realErr) continue;
+      if (realErr) {
+        logger.error("DB_ERROR", `Failed to insert question: ${realErr.message}`);
+        continue;
+      }
 
       // Insert into questions_bank
       const { error: bankErr } = await supabaseAdmin
@@ -225,6 +247,10 @@ export async function processSingleDriveFile(
           correct_index: q.correct_index,
           explanation: q.explanation,
           topic: q.topic,
+          subtopic: q.subtopic,
+          difficulty_level: q.difficulty,
+          is_clinical_case: q.clinical_case,
+          tags: q.tags,
           source: file.name.replace(".pdf", ""),
           is_global: true,
           review_status: "approved",
@@ -256,7 +282,7 @@ export async function processSingleDriveFile(
       processed_by: user.id
     }).eq('file_id', fileId);
 
-    return { status: "completed", savedCount };
+    return { status: "completed", savedCount, questions_found: questions.length };
 
   } catch (err) {
     logger.error("PROCESS_FILE_ERROR", `Failed to process ${fileId}`, { error: err.message });
