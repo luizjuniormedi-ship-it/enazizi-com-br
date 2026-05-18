@@ -56,18 +56,42 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
 
   const dailyHours = profileRes.data?.daily_study_hours || 4;
   
-  // 2. Build context for AI
+  // 2. Pre-calculate Prioritization Variables
+  const daysUntilExam = profileRes.data?.target_exams?.[0] ? 60 : 90; // Placeholder until we have specific target dates per exam
+  const proximityScore = calculateExamProximityScore(daysUntilExam);
+
+  // 3. Build context for AI with calculated priorities
   const context = {
-    pendingReviews: revisoesRes.data || [],
-    topErrors: errorsRes.data || [],
+    pendingReviews: (revisoesRes.data || []).map(r => ({
+      ...r,
+      master_priority: calculatePremiumPriority({
+        errorRate: 0.2, // Need to fetch from performance_metrics if available
+        fallProbability: 0.5,
+        fsrsRisk: calculateFsrsRiskScore(r.estabilidade),
+        examProximity: proximityScore,
+        currentMastery: 0.4
+      })
+    })),
+    topErrors: (errorsRes.data || []).map(e => ({
+      ...e,
+      master_priority: calculatePremiumPriority({
+        errorRate: Math.min(1, (e.vezes_errado || 1) / 5),
+        fallProbability: 0.7,
+        fsrsRisk: 0.8, // High risk if actively making errors
+        examProximity: proximityScore,
+        currentMastery: 0.1
+      })
+    })),
     dailyHours,
     targetExams: profileRes.data?.target_exams || [],
     studentLevel: profileRes.data?.level || "beginner",
     macroPlan: studyPlanRes.data?.plan_json || null,
     currentScore: approvalRes.data || { score: 0, phase: "base" },
     fsrsStability: fsrsRes.data?.length ? (fsrsRes.data.reduce((acc, c) => acc + (c.stability || 0), 0) / fsrsRes.data.length) : 0,
+    proximityScore,
     today
   };
+
 
 
   const systemPrompt = `Você é o Planner Inteligente do ENAZIZI (Coordenador Adaptativo).
