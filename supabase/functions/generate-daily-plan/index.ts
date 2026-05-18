@@ -62,8 +62,11 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
     targetExams: profileRes.data?.target_exams || [],
     studentLevel: profileRes.data?.level || "beginner",
     macroPlan: studyPlanRes.data?.plan_json || null,
+    currentScore: approvalRes.data || { score: 0, phase: "base" },
+    fsrsStability: fsrsRes.data?.length ? (fsrsRes.data.reduce((acc, c) => acc + (c.stability || 0), 0) / fsrsRes.data.length) : 0,
     today
   };
+
 
   const systemPrompt = `Você é o Planner Inteligente do ENAZIZI (Coordenador Adaptativo).
 
