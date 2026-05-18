@@ -589,12 +589,27 @@ const DailyPlan = () => {
                     "p-5 space-y-4 transition-all group",
                     task.completed && "opacity-40 grayscale"
                   )}
-                  onClick={() => !task.completed && navigate(buildStudyPath({ 
-                    id: task.id, 
-                    topic: task.topic, 
-                    specialty: task.subject || "Medicina",
-                    type: task.type === "theory" ? "new" : task.type === "review" ? "review" : "practice"
-                  } as any, "daily-plan"))}
+                  onClick={() => {
+                    if (task.completed) return;
+                    
+                    // Telemetry: task started
+                    supabase.functions.invoke("unified-telemetry", {
+                      body: { 
+                        userId: user!.id, 
+                        eventType: "daily_mission_task_started", 
+                        module: "daily-plan",
+                        data: { task_id: task.id, type: task.type, topic: task.topic }
+                      }
+                    }).then();
+
+                    navigate(buildStudyPath({ 
+                      id: task.id, 
+                      topic: task.topic, 
+                      specialty: task.subject || "Medicina",
+                      type: task.type === "theory" ? "new" : task.type === "review" ? "review" : "practice"
+                    } as any, "daily-plan"));
+                  }}
+
                 >
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
