@@ -16,6 +16,12 @@ import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
 import { humanizeFSRSReason } from "@/lib/humanizedReasons";
 import MissionQuickActions from "@/components/mission-control/MissionQuickActions";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { Zap, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+
 
 interface UnifiedMissionHeroProps {
   firstName: string;
