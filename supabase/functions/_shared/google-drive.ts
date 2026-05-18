@@ -25,30 +25,29 @@ export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
 
-  let privateKeyPem = serviceAccount.private_key;
-  if (logger) logger.info("GOOGLE_AUTH_PK", `PK start: ${privateKeyPem.substring(0, 30)}`);
-
-  // 1. Replace literal \n with real newline
-  privateKeyPem = privateKeyPem.replace(/\\n/g, '\n');
+  let pk = serviceAccount.private_key;
   
-  // 2. Remove header, footer and all whitespace (including \n, \r)
+  // 1. Replace literal \n with real newline
+  pk = pk.replace(/\\n/g, '\n');
+  
+  if (logger) logger.info("GOOGLE_AUTH_PK", `PK after replace prefix: ${pk.substring(0, 30)}`);
+
+  // 2. Remove header, footer and all whitespace
   const pemHeader = "-----BEGIN PRIVATE KEY-----";
   const pemFooter = "-----END PRIVATE KEY-----";
-  const pemContents = privateKeyPem
+  const pemContent = pk
     .replace(pemHeader, "")
     .replace(pemFooter, "")
-    .replace(/\s/g, "");
+    .replace(/\n/g, "")
+    .replace(/\r/g, "")
+    .trim();
   
   // 3. Decode base64 to binary
-  const binaryDerString = atob(pemContents);
-  const binaryDer = new Uint8Array(binaryDerString.length);
-  for (let i = 0; i < binaryDerString.length; i++) {
-    binaryDer[i] = binaryDerString.charCodeAt(i);
-  }
+  const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
 
   const key = await crypto.subtle.importKey(
     "pkcs8",
-    binaryDer,
+    keyData,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
     ["sign"]
