@@ -61,8 +61,17 @@ export function UnifiedMissionHero({
 
   const handleGenerateDaily = async () => {
     setGenerating(true);
+    const startTime = Date.now();
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // Telemetry: start
+      if (session?.user) {
+        supabase.functions.invoke("unified-telemetry", {
+          body: { userId: session.user.id, eventType: "daily_mission_generate_clicked", module: "dashboard" }
+        }).then();
+      }
+
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
         method: "POST",
         headers: { 
@@ -73,14 +82,41 @@ export function UnifiedMissionHero({
       });
       if (!resp.ok) throw new Error("Falha na Edge Function");
       
+      const result = await resp.json();
+
+      // Telemetry: success
+      if (session?.user) {
+        supabase.functions.invoke("unified-telemetry", {
+          body: { 
+            userId: session.user.id, 
+            eventType: "daily_mission_generated", 
+            module: "dashboard",
+            data: { latency_ms: Date.now() - startTime, plan_id: result.planId }
+          }
+        }).then();
+      }
+
       toast({ title: "✅ Missão Gerada!", description: "Sua jornada de hoje está pronta." });
       await refreshDash();
-    } catch (err) {
+    } catch (err: any) {
+      // Telemetry: error
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        supabase.functions.invoke("unified-telemetry", {
+          body: { 
+            userId: session.user.id, 
+            eventType: "daily_mission_error", 
+            module: "dashboard",
+            data: { error: err.message }
+          }
+        }).then();
+      }
       toast({ title: "Erro", description: "Não foi possível gerar sua missão.", variant: "destructive" });
     } finally {
       setGenerating(false);
     }
   };
+
 
 
   return (
