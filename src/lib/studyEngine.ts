@@ -13,6 +13,8 @@ import {
   loadActiveRecoveryRun, startRecoveryRun, endRecoveryRun,
   updateRecoveryPhase, logRecoveryEvent, type ActiveRecoveryRun,
 } from "./recoveryPersistence";
+import { calculatePremiumPriority, calculateExamProximityScore, calculateFsrsRiskScore } from "./studyPrioritization";
+
 
 export type RecommendationType = "review" | "practice" | "clinical" | "new" | "error_review" | "simulado" | "chronicle";
 export type TargetModule = "tutor" | "questoes" | "flashcards" | "plantao" | "anamnese" | "simulado" | "cronograma" | "banco-erros" | "cronicas" | "tutor-v2";
