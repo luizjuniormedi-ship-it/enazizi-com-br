@@ -4,7 +4,7 @@ import type { CoreDataResult } from "@/hooks/useCoreData";
 import { adjustPlanByApprovalScore, getAdaptiveMode, type PlanWeights, type AdaptiveMode } from "./approvalScoreWeights";
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
-import type { StudyTaskType, StudyObjective } from "./studyContext";
+import { type StudyTaskType, type StudyObjective, objectiveFromTaskType } from "./studyContext";
 import { getExamProfile, getMergedExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
 import { fetchCurriculumForEngine, fetchAllCurriculumTopics } from "./curriculumBridge";
 import { saveStudyEngineSnapshot } from "./dualWrite";
