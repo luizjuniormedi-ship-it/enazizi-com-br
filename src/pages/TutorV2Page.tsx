@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import TutorV2ChatPanel from "@/components/tutor-v2/TutorV2ChatPanel";
 import TutorV2Sidebar from "@/components/tutor-v2/TutorV2Sidebar";
 import { useTutorV2Session } from "@/components/tutor-v2/hooks/useTutorV2Session";
+import { useStudyContext } from "@/lib/studyContext";
+
 import { Brain, Sparkles, GraduationCap, ArrowRight, Zap, Target, BookOpen, Clock, Heart, Shield, Activity, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +17,19 @@ export default function TutorV2Page() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const studyCtx = useStudyContext();
   const { session, isLoading, stats } = useTutorV2Session(sessionId);
-  const [newTopic, setNewTopic] = useState("");
+  const [newTopic, setNewTopic] = useState(studyCtx?.topic || "");
   const [isCreating, setIsCreating] = useState(false);
   const [bootStatus, setBootStatus] = useState("");
+
+  // Auto-start session if coming from study context
+  useEffect(() => {
+    if (studyCtx?.topic && user && !sessionId && !isCreating) {
+      handleStartSession(studyCtx.topic);
+    }
+  }, [studyCtx?.topic, user, sessionId]);
+
 
   const handleStartSession = async (topic?: string) => {
     const finalTopic = topic || newTopic;
