@@ -1,112 +1,72 @@
-import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
-import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
-import { getGoogleAccessToken, processSingleDriveFile } from "../_shared/google-drive.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { getGoogleAccessToken } from "../_shared/google-drive.ts"
 
-export default enterpriseEdgeHandler("drive-exam-ingestion", async ({ req, logger, supabaseAdmin, waitUntil, correlation }) => {
-  // 1. Auth & Admin Check (Bypassed for testing)
-  // const { user } = await requireAdmin(req);
-  const user = { id: "0af48797-38f2-4b77-bd16-0486fa291eba" };
-  logger.info("AUTH", "Admin check bypassed for testing", { userId: user.id });
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+}
 
-  const body = await req.json().catch(() => ({}));
-  const FOLDER_ID = body.folder_id || "1sR5ArIv6MWc-1QR4zhfRKNG07queUya-";
-  
-  // ACTION: PROCESS SINGLE FILE
-  if (body.action === "process" && body.fileId) {
-    logger.info("ACTION_PROCESS", `Processing specific file: ${body.fileId}`);
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  try {
+    const user = { id: "0af48797-38f2-4b77-bd16-0486fa291eba" };
+    const FOLDER_ID = "1sR5ArIv6MWc-1QR4zhfRKNG07queUya-";
+
+    const client_email = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
+    const token_uri = "https://oauth2.googleapis.com/token";
+    const serviceAccount = { client_email, token_uri };
+
+    const accessToken = await getGoogleAccessToken(serviceAccount);
+
+    const listUrl = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType='application/pdf'+and+trashed=false&fields=files(id,name,size)`;
+    const listResp = await fetch(listUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
     
-    const runProcessing = async () => {
-      try {
-        await processSingleDriveFile(body.fileId, { supabaseAdmin, logger, user });
-      } catch (err) {
-        logger.error("PROCESS_FAIL", `Error processing file ${body.fileId}: ${err.message}`);
-      }
-    };
-
-    if (body.background !== false) {
-      waitUntil(runProcessing());
-      return new Response(JSON.stringify({ 
-        status: "processing", 
-        message: "File processing started in background",
-        file_id: body.fileId,
-        correlation_id: correlation.correlationId 
-      }), { headers: { "Content-Type": "application/json" } });
-    } else {
-      const result = await processSingleDriveFile(body.fileId, { supabaseAdmin, logger, user });
-      return new Response(JSON.stringify({ ...result, correlation_id: correlation.correlationId }), {
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!listResp.ok) {
+      throw new Error(`Google Drive API error: ${listResp.status} ${await listResp.text()}`);
     }
-  }
 
-  // DEFAULT ACTION: LIST AND REGISTER PENDING
-  const listAndRegister = async () => {
-    try {
-      const client_email = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
-      const token_uri = "https://oauth2.googleapis.com/token";
-      
-      const serviceAccount = { client_email, token_uri };
+    const listData = await listResp.json();
+    const files = listData.files || [];
 
-      // 1. Google Drive Auth
-      const accessToken = await getGoogleAccessToken(serviceAccount, logger);
+    let registeredCount = 0;
+    for (const file of files) {
+      const { data: existing } = await supabaseAdmin
+        .from("drive_ingestion_log")
+        .select("id")
+        .eq("file_id", file.id)
+        .maybeSingle();
 
-      // 2. List PDFs in folder
-      logger.info("DRIVE_LIST", `Listing PDFs in folder ${FOLDER_ID}...`);
-      const listUrl = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType='application/pdf'+and+trashed=false&fields=files(id,name,size)`;
-      const listResp = await fetch(listUrl, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      
-      if (!listResp.ok) {
-        throw new Error(`Google Drive API error: ${listResp.status} ${await listResp.text()}`);
+      if (!existing) {
+        await supabaseAdmin.from("drive_ingestion_log").insert({
+          file_id: file.id,
+          file_name: file.name,
+          file_size: file.size ? parseInt(file.size) : null,
+          status: 'pending',
+          processed_by: user.id
+        });
+        registeredCount++;
       }
-
-      const listData = await listResp.json();
-      const files = listData.files || [];
-      logger.info("DRIVE_LIST_RESULT", `Found ${files.length} PDFs`);
-
-      // 3. Register new files as "pending"
-      let registeredCount = 0;
-      for (const file of files) {
-        // Check if already in log
-        const { data: existing } = await supabaseAdmin
-          .from("drive_ingestion_log")
-          .select("id")
-          .eq("file_id", file.id)
-          .maybeSingle();
-
-        if (!existing) {
-          await supabaseAdmin.from("drive_ingestion_log").insert({
-            file_id: file.id,
-            file_name: file.name,
-            file_size: file.size ? parseInt(file.size) : null,
-            status: 'pending',
-            processed_by: user.id
-          });
-          registeredCount++;
-        }
-      }
-
-      logger.info("REGISTRATION_DONE", `Registered ${registeredCount} new pending files`);
-      return { status: "success", registered: registeredCount, total_found: files.length };
-
-    } catch (err) {
-      logger.error("LIST_ERROR", `Failed to list/register: ${err.message}`);
-      throw err;
     }
-  };
 
-  if (body.background !== false) {
-    waitUntil(listAndRegister());
     return new Response(JSON.stringify({ 
-      status: "listing", 
-      message: "Drive listing started in background",
-      correlation_id: correlation.correlationId 
-    }), { headers: { "Content-Type": "application/json" } });
-  } else {
-    const result = await listAndRegister();
-    return new Response(JSON.stringify({ ...result, correlation_id: correlation.correlationId }), {
-      headers: { "Content-Type": "application/json" },
+      status: "success", 
+      registered: registeredCount, 
+      total_found: files.length 
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { 
+      status: 200, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
   }
 });
