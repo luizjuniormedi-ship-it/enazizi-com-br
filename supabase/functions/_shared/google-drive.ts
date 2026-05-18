@@ -91,7 +91,7 @@ export async function processSingleDriveFile(
   fileId: string, 
   { supabaseAdmin, logger, user }: { supabaseAdmin: any, logger: any, user: any }
 ) {
-  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // Increase to 50MB for large medical PDFs
 
   try {
     // Use hardcoded constants
