@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 import { requireAuth } from "../_shared/require-auth.ts";
 import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
 import { buildPromptHash, getCachedAIResponse, saveAIResponseToCache, logAIUsage, CACHE_TTL_DAYS } from "../_shared/ai-cache.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
