@@ -87,7 +87,7 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
     } finally {
       setLoading(false);
     }
-  }, [session, callAPI, faculdade, periodo, toast]);
+  }, [session, callAPI, faculdade, periodo, searchTerm, toast]);
 
   useEffect(() => { loadStudents(); }, [loadStudents]);
 

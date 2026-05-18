@@ -177,10 +177,18 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const handleEditalUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Better file type detection
+    const fileName = file.name.toLowerCase();
+    const isPDF = fileName.endsWith('.pdf') || file.type === "application/pdf";
+    const isDocx = fileName.endsWith('.docx') || fileName.endsWith('.doc') || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    const isImage = file.type.startsWith("image/") || [".png", ".jpg", ".jpeg", ".webp"].some(ext => fileName.endsWith(ext));
+    const isText = fileName.endsWith('.txt') || file.type === "text/plain";
+
     setEditalFileName(file.name);
     setProcessingEdital(true);
     
-    if (file.type === "text/plain" || file.name.endsWith(".txt")) {
+    if (isText) {
       try {
         const buffer = await file.arrayBuffer();
         let text: string;
@@ -197,12 +205,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       } finally {
         setProcessingEdital(false);
       }
-    } else if (file.type === "application/pdf" || 
-               file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-               file.name.endsWith(".docx") || 
-               file.name.endsWith(".doc") ||
-               file.type.startsWith("image/") ||
-               [".png", ".jpg", ".jpeg", ".webp"].some(ext => file.name.toLowerCase().endsWith(ext))) {
+    } else if (isPDF || isDocx || isImage) {
       if (!user) {
         setProcessingEdital(false);
         return;
@@ -212,6 +215,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
         const storagePath = `${user.id}/edital-${Date.now()}.${ext}`;
         const { error: storageError } = await supabase.storage.from("user-uploads").upload(storagePath, file);
         if (storageError) throw storageError;
+
         
         const { data: uploadRecord, error: dbError } = await supabase
           .from("uploads")
