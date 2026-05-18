@@ -661,7 +661,55 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     heavyRecovery,
   };
 
+  // ── 0. Daily Plan Tasks (COORDENADOR ADAPTATIVO) ────────────
+  const dailyPlan = dailyPlanData as any;
+  if (dailyPlan && dailyPlan.daily_plan_tasks) {
+    const planTasks = dailyPlan.daily_plan_tasks as any[];
+    planTasks.forEach((t: any, idx: number) => {
+      if (t.completed) return;
+      
+      const typeMap: Record<string, RecommendationType> = {
+        theory: "new",
+        practice: "practice",
+        review: "review",
+        error_fix: "error_review",
+        simulation: "simulado"
+      };
+
+      const moduleMap: Record<string, TargetModule> = {
+        theory: "tutor-v2",
+        practice: "questoes",
+        review: "flashcards",
+        error_fix: "banco-erros",
+        simulation: "simulado"
+      };
+
+      const pathMap: Record<string, string> = {
+        theory: `/dashboard/sessao-estudo?topic=${encodeURIComponent(t.topic || t.title)}&source=daily_plan`,
+        practice: `/dashboard/questoes?topic=${encodeURIComponent(t.topic || t.title)}&source=daily_plan`,
+        review: `/dashboard/flashcards?topic=${encodeURIComponent(t.topic || t.title)}&source=daily_plan`,
+        error_fix: `/dashboard/banco-erros?topic=${encodeURIComponent(t.topic || t.title)}&source=daily_plan`,
+        simulation: `/dashboard/simulados?source=daily_plan`
+      };
+
+      recs.push({
+        id: `plan-${t.id}`,
+        type: typeMap[t.type] || "practice",
+        topic: t.topic || t.title,
+        specialty: t.subject || "Geral",
+        priority: t.priority || 90,
+        reason: t.rationale || "Tarefa priorizada pelo Coordenador Adaptativo.",
+        targetModule: moduleMap[t.type] || "questoes",
+        targetPath: pathMap[t.type] || "/dashboard/questoes",
+        estimatedMinutes: t.estimated_minutes || 20,
+        dailyPlanTaskId: t.id,
+        objective: objectiveFromTaskType(typeMap[t.type] || "practice")
+      });
+    });
+  }
+
   // ── 1. Overdue / pending reviews (GROUPED BY TEMA) ────────────
+
   const seenTopics = new Set<string>();
   const addRec = (rec: StudyRecommendation) => {
     const groupKey = rec._groupKey || `${rec.type}:${rec.topic}`;
