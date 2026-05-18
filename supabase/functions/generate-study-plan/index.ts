@@ -261,7 +261,7 @@ Sempre:
         availability: `${hoursPerDay}h/dia, ${daysPerWeek} dias/semana`,
         examDate,
         strictMode,
-        editalText: editalText ? editalText.slice(0, 5000) : "Use incidência médica Brasil (ENARE, USP, SUS-SP)",
+        editalText: materialText ? materialText.slice(0, 5000) : "Use incidência médica Brasil (ENARE, USP, SUS-SP)",
         performance: {
           provided: performanceData || "Perfil novo",
           errors: errorsRes.data || [],
