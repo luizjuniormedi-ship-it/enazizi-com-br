@@ -186,10 +186,16 @@ Sempre:
         source: "ENAZIZI Adaptive Coordinator v2" 
       },
       total_blocks: tasks.length,
-      completed_count: 0
+      completed_count: 0,
+      approval_score: context.currentScore.score + (planJson.diagnostics?.suggested_score_adjustment || 0),
+      phase: planJson.diagnostics?.suggested_phase || context.currentScore.phase,
+      recovery_mode: !!planJson.diagnostics?.recovery_mode,
+      objective: planJson.daily_focus,
+      diagnosis_summary: planJson.expected_outcome
     }, { onConflict: "user_id,plan_date" })
     .select("id")
     .single();
+
 
   if (planErr) throw planErr;
 
