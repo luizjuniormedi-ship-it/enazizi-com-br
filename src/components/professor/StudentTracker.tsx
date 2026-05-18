@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { User, Search, Loader2, BarChart3, AlertTriangle, BookOpen, Target, TrendingUp, Clock, CheckCircle2, Circle, Download, Activity, FileText, Stethoscope } from "lucide-react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { User, Search, Loader2, BarChart3, AlertTriangle, BookOpen, Target, TrendingUp, Clock, CheckCircle2, Circle, Download, Activity, FileText, Stethoscope, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +56,8 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
   const [faculdade, setFaculdade] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
@@ -79,7 +81,7 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
         action: "get_students",
         faculdades: faculdade && faculdade !== "all" ? [faculdade] : undefined,
         periodos: periodo && periodo !== "all" ? [parseInt(periodo)] : undefined,
-        query: searchTerm.trim() || undefined,
+        query: debouncedSearchTerm.trim() || undefined,
       });
 
       setStudents(res.students || []);
@@ -88,7 +90,15 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
     } finally {
       setLoading(false);
     }
-  }, [session, callAPI, faculdade, periodo, searchTerm, toast]);
+  }, [session, callAPI, faculdade, periodo, debouncedSearchTerm, toast]);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+  }, [searchTerm]);
 
   useEffect(() => { loadStudents(); }, [loadStudents]);
 
