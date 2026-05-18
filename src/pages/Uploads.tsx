@@ -22,7 +22,9 @@ interface UploadRecord {
 const STEP_LABELS: Record<string, string> = {
   starting: "Iniciando...",
   downloading: "Baixando arquivo...",
-  extracting_text: "Extraindo texto do PDF...",
+  extracting_text: "Extraindo texto e processando OCR...",
+  extracting_topics: "Identificando temas médicos...",
+  consolidating: "Consolidando dados...",
   validating: "Validando conteúdo médico...",
   generating_flashcards: "Gerando flashcards com IA...",
   generating_questions: "Gerando questões com IA...",
@@ -249,7 +251,7 @@ const Uploads = () => {
           <p className="text-muted-foreground">Envie materiais de medicina para gerar flashcards e questões automaticamente com IA.</p>
         </div>
         <ModuleHelpButton moduleKey="uploads" moduleName="Uploads" steps={[
-          "Clique na área de upload ou arraste um arquivo PDF, TXT ou DOCX",
+          "Clique na área de upload ou arraste um arquivo PDF, TXT, DOCX ou Imagem (JPG/PNG)",
           "A IA extrai o conteúdo e identifica temas médicos automaticamente",
           "Aguarde o processamento — acompanhe pela barra de progresso",
           "Após processar, gere flashcards e questões a partir do material",
@@ -261,7 +263,7 @@ const Uploads = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.txt,.docx"
+        accept=".pdf,.txt,.docx,.jpg,.jpeg,.png,.webp"
         className="hidden"
         onChange={handleFileSelect}
       />
@@ -280,7 +282,7 @@ const Uploads = () => {
           <>
             <Upload className="h-12 w-12 text-primary/50 mx-auto mb-4" />
             <p className="text-lg font-medium mb-1">Clique para enviar arquivo</p>
-            <p className="text-sm text-muted-foreground">PDF, TXT, DOCX — máx 20MB</p>
+            <p className="text-sm text-muted-foreground">PDF, TXT, DOCX, Imagens — máx 20MB</p>
           </>
         )}
       </div>
@@ -304,8 +306,8 @@ const Uploads = () => {
                       <div className="text-sm font-medium truncate">{f.filename}</div>
                       <div className="text-xs text-muted-foreground">
                         {f.file_type} • {f.status === "processed"
-                          ? `✅ ${ejson?.flashcards_count || 0} flashcards${ejson?.questions_count ? ` • ${ejson.questions_count} questões` : ""}`
-                          : isProcessing ? "⏳ Processando..." : f.status}
+                          ? `✅ ${ejson?.total_topics || 0} temas identificados`
+                          : isProcessing ? `⏳ ${(ejson?.progress || 0)}% - ${STEP_LABELS[ejson?.step || 'starting']}` : f.status}
                         {" • "}{new Date(f.created_at).toLocaleDateString("pt-BR")}
                       </div>
                     </div>

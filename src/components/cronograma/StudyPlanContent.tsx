@@ -200,7 +200,9 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
     } else if (file.type === "application/pdf" || 
                file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
                file.name.endsWith(".docx") || 
-               file.name.endsWith(".doc")) {
+               file.name.endsWith(".doc") ||
+               file.type.startsWith("image/") ||
+               [".png", ".jpg", ".jpeg", ".webp"].some(ext => file.name.toLowerCase().endsWith(ext))) {
       if (!user) {
         setProcessingEdital(false);
         return;
@@ -216,7 +218,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
           .insert({ 
             user_id: user.id, 
             filename: file.name, 
-            file_type: ext || "pdf", 
+            file_type: ext || "unknown", 
             category: "edital", 
             storage_path: storagePath, 
             status: "uploaded" 
@@ -266,7 +268,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       }
     } else {
       setProcessingEdital(false);
-      toast({ title: "Formato não suportado", description: "Envie PDF, TXT ou DOCX.", variant: "destructive" });
+      toast({ title: "Formato não suportado", description: "Envie PDF, TXT, DOCX ou Imagem.", variant: "destructive" });
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -602,7 +604,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
           </div>
           <div className="space-y-2">
             <Label>Edital do concurso (opcional)</Label>
-            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" className="hidden" onChange={handleEditalUpload} />
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc,.png,.jpg,.jpeg,.webp" className="hidden" onChange={handleEditalUpload} />
             <div 
               className={cn(
                 "border-2 border-dashed border-primary/30 rounded-lg p-4 text-center transition-colors cursor-pointer",

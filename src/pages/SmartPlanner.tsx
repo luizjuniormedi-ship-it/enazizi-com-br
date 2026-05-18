@@ -445,11 +445,15 @@ const SmartPlanner = () => {
           
           anexos.push({ name: file.name, path: filePath });
 
-          // Se for PDF ou TXT, disparar processamento em background (Edge Function)
+          // Se for PDF, DOCX, TXT ou Imagem, disparar processamento em background (Edge Function)
           const isProcessable = file.type === "application/pdf" || 
                                file.name.toLowerCase().endsWith(".pdf") ||
                                file.type === "text/plain" ||
-                               file.name.toLowerCase().endsWith(".txt");
+                               file.name.toLowerCase().endsWith(".txt") ||
+                               file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+                               file.name.toLowerCase().endsWith(".docx") ||
+                               file.type.startsWith("image/") ||
+                               [".png", ".jpg", ".jpeg", ".webp"].some(ext => file.name.toLowerCase().endsWith(ext));
 
           if (isProcessable) {
             const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
