@@ -25,19 +25,17 @@ export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
 
-  let pk = serviceAccount.private_key;
+  const pkB64 = Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64") || "";
+  if (!pkB64) throw new Error("Missing GOOGLE_SA_PRIVATE_KEY_B64 secret");
   
-  // 1. Replace literal \n with real newline
-  pk = pk.replace(/\\n/g, '\n');
+  const pk = atob(pkB64);
   
-  if (logger) logger.info("GOOGLE_AUTH_PK", `PK after replace prefix: ${pk.substring(0, 30)}`);
+  if (logger) logger.info("GOOGLE_AUTH_PK", `PK from B64 prefix: ${pk.substring(0, 30)}`);
 
-  // 2. Remove header, footer and all whitespace
-  const pemHeader = "-----BEGIN PRIVATE KEY-----";
-  const pemFooter = "-----END PRIVATE KEY-----";
+  // 2. Remove header, footer and all whitespace/newlines
   const pemContent = pk
-    .replace(pemHeader, "")
-    .replace(pemFooter, "")
+    .replace("-----BEGIN PRIVATE KEY-----", "")
+    .replace("-----END PRIVATE KEY-----", "")
     .replace(/\n/g, "")
     .replace(/\r/g, "")
     .trim();
@@ -104,17 +102,13 @@ export async function processSingleDriveFile(
   try {
     const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
     const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
-    let private_key = Deno.env.get("GOOGLE_SA_PRIVATE_KEY") || "";
+    const private_key_b64 = Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64") || "";
 
-    if (!client_email || !private_key) {
-      throw new Error("Missing Google Service Account individual secrets (GOOGLE_SA_CLIENT_EMAIL, GOOGLE_SA_PRIVATE_KEY)");
+    if (!client_email || !private_key_b64) {
+      throw new Error("Missing Google Service Account individual secrets (GOOGLE_SA_CLIENT_EMAIL, GOOGLE_SA_PRIVATE_KEY_B64)");
     }
 
-    private_key = private_key.replace(/\\n/g, '\n');
-    if (private_key.startsWith('"') && private_key.endsWith('"')) {
-      private_key = private_key.slice(1, -1);
-    }
-
+    const private_key = atob(private_key_b64);
     const serviceAccount = { client_email, token_uri, private_key };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
