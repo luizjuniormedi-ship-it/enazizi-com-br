@@ -264,6 +264,8 @@ Sempre:
         editalText: materialText ? materialText.slice(0, 5000) : "Use incidência médica Brasil (ENARE, USP, SUS-SP)",
         performance: {
           provided: performanceData || "Perfil novo",
+          existingSubjects: existingSubjects || [],
+
           errors: errorsRes.data || [],
           pendingReviewsCount: revisoesRes.data?.length || 0,
           studentLevel: profileRes.data?.level || "beginner",
