@@ -104,7 +104,7 @@ const DailyPlan = () => {
           year: "numeric", month: "2-digit", day: "2-digit",
         }).format(new Date());
 
-        const [reviewsRes, attemptsRes, todayTemasRes, profileRes] = await Promise.all([
+        const [reviewsRes, attemptsRes, todayTemasRes, profileRes, dailyPlanRes] = await Promise.all([
           supabase
             .from("revisoes")
             .select("id, tema_id, tipo_revisao, data_revisao, status, prioridade, risco_esquecimento")
@@ -129,7 +129,19 @@ const DailyPlan = () => {
             .select("daily_study_hours")
             .eq("user_id", user.id)
             .maybeSingle(),
+          supabase
+            .from("daily_plans")
+            .select("*, daily_plan_tasks(*)")
+            .eq("user_id", user.id)
+            .eq("plan_date", today)
+            .maybeSingle(),
         ]);
+
+        if (dailyPlanRes.data) {
+          setDailyPlan(dailyPlanRes.data);
+          setDailyPlanTasks(dailyPlanRes.data.daily_plan_tasks || []);
+        }
+
 
         if (reviewsRes.error) throw reviewsRes.error;
         if (attemptsRes.error) throw attemptsRes.error;
