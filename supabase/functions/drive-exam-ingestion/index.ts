@@ -41,14 +41,8 @@ export default enterpriseEdgeHandler("drive-exam-ingestion", async ({ req, logge
   // DEFAULT ACTION: LIST AND REGISTER PENDING
   const listAndRegister = async () => {
     try {
-      const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
-      const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
-      const pkPart1 = Deno.env.get("GOOGLE_SA_PK_PART1") || "";
-      const pkPart2 = Deno.env.get("GOOGLE_SA_PK_PART2") || "";
-
-      if (!client_email || !pkPart1 || !pkPart2) {
-        throw new Error("Missing Google Service Account individual secrets");
-      }
+      const client_email = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
+      const token_uri = "https://oauth2.googleapis.com/token";
       
       const serviceAccount = { client_email, token_uri };
 
