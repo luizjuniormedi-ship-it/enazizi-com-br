@@ -110,15 +110,15 @@ async function processInBackground(
     const fileType = (upload.file_type || "").toLowerCase();
     let textChunks: { text: string, pageStart: number, pageEnd: number }[] = [];
 
-    if (fileType === "txt") {
+    if (fileType === "txt" || fileType.includes("text/plain")) {
       const text = await fileData.text();
       textChunks = [{ text, pageStart: 1, pageEnd: 1 }];
-    } else if (fileType === "pdf" || fileType.includes("pdf")) {
+    } else if (fileType === "pdf" || fileType.includes("pdf") || upload.filename.toLowerCase().endsWith(".pdf")) {
       textChunks = await extractPdfTextChunks(fileData);
-    } else if (fileType === "docx" || fileType.includes("wordprocessingml")) {
+    } else if (fileType === "docx" || fileType.includes("wordprocessingml") || upload.filename.toLowerCase().endsWith(".docx")) {
       const text = await extractDocxText(fileData);
       textChunks = [{ text, pageStart: 1, pageEnd: 1 }];
-    } else if (fileType.includes("image") || ["jpg", "jpeg", "png", "webp"].includes(fileType)) {
+    } else if (fileType.includes("image") || ["jpg", "jpeg", "png", "webp"].includes(fileType) || [".jpg", ".jpeg", ".png", ".webp"].some(ext => upload.filename.toLowerCase().endsWith(ext))) {
       // OCR for images
       console.log(`[PROCESS_UPLOAD] Performing OCR on image...`);
       const arrayBuffer = await fileData.arrayBuffer();
@@ -192,13 +192,14 @@ async function processInBackground(
           messages: [
             {
               role: "system",
-              content: `Você é um extrator de tópicos médico rigoroso.
-              Extraia EXCLUSIVAMENTE os tópicos de estudo, disciplinas e conteúdos médicos presentes literalmente no texto fornecido.
+              content: `Você é o motor oficial de extração de tópicos do ENAZIZI.
+              Sua missão é ler o conteúdo de editais, PDFs de estudo ou imagens médicas e extrair EXCLUSIVAMENTE os tópicos de estudo.
               
               REGRAS CRÍTICAS:
               1. MODO STRICT: NÃO invente assuntos fora do texto.
-              2. SEPARAÇÃO POR TÓPICO: Identifique claramente os diferentes temas abordados no texto.
-              3. HIERARQUIA: Mantenha a relação Tema > Subtópico.
+              2. SEPARAÇÃO POR TÓPICO: O texto pode conter vários temas. Separe-os individualmente.
+              3. HIERARQUIA: Identifique a Especialidade (ex: Cardiologia), o Tema (ex: Insuficiência Cardíaca) e o Subtópico (ex: Tratamento na Emergência).
+              4. DIFICULDADE: Estime a dificuldade do tema para um aluno de medicina (facil, medio, dificil).
               
               Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
             },
