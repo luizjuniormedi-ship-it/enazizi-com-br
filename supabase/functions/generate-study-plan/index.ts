@@ -243,7 +243,7 @@ Sempre:
         await supabaseAdmin.from("ai_governance_logs").insert({
           user_id: user.id,
           task_type: "study_plan_generation",
-          model_name: "google/gemini-2.5-flash", // Using the same model as in ai call
+          model_name: "google/gemini-2.0-flash", // Using the same model as in ai call
           payload: { context: userContext },
           response_summary: "Master Planner Generated"
         });
