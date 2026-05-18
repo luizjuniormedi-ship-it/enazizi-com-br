@@ -341,7 +341,7 @@ serve(async (req: Request) => {
         }
         const userId = auth.userId;
 
-        const aiKey = requireEnv("LOVABLE_API_KEY");
+        const aiKey = Deno.env.get("LOVABLE_API_KEY") || requireEnv("LOVABLE_API_KEY");
         let rawBody;
         try {
           rawBody = await req.json();

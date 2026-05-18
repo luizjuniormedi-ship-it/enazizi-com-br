@@ -1,8 +1,9 @@
-import { HelpCircle, Zap, BarChart3, Target, Trophy, XCircle, CheckCircle2, RotateCcw } from "lucide-react";
+import { HelpCircle, Zap, BarChart3, Target, Trophy, XCircle, CheckCircle2, RotateCcw, Sparkles, RefreshCw } from "lucide-react";
 import AgentChat from "@/components/agents/AgentChat";
 import InteractiveQuestionRenderer from "@/components/agents/InteractiveQuestionRenderer";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useCallback, useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ interface SessionStats {
 
 const QuestionGenerator = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const studyCtx = useStudyContext();
   const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
   const [specificTopic, setSpecificTopic] = useState("");
@@ -207,7 +209,13 @@ const QuestionGenerator = () => {
         </div>
 
         <div className="flex-1 flex items-center justify-center">
-          <div className="glass-card p-6 sm:p-8 max-w-lg w-full space-y-6">
+          <div className="glass-card p-6 sm:p-8 max-w-lg w-full space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4">
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 gap-1 animate-pulse">
+                <Sparkles className="h-3 w-3" /> Equalizador Ativo
+              </Badge>
+            </div>
+
             {/* Specialty */}
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-1.5">
@@ -306,9 +314,23 @@ const QuestionGenerator = () => {
               </div>
             </div>
 
-            {/* Quantity */}
+            {/* Quantity and Equalizer */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Quantidade</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Quantidade</label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-[10px] text-primary hover:text-primary/80 gap-1 px-2"
+                  onClick={() => {
+                    setDifficulty("misto");
+                    setQuantity(15);
+                    toast({ title: "Equalizador Ativado", description: "Ajustado para 15 questões com mix de dificuldade." });
+                  }}
+                >
+                  <RefreshCw className="h-3 w-3" /> EQUALIZADOR
+                </Button>
+              </div>
               <div className="flex gap-2">
                 {QUANTITY_OPTIONS.map(q => (
                   <button
