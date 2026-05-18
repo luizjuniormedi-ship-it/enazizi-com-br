@@ -292,7 +292,12 @@ export function useMissionMode() {
         import("@/lib/activityLogger").then(({ logActivity }) => {
           logActivity(user.id, "mission_completed", { total: prev.tasks.length });
         });
+        
+        supabase.functions.invoke("unified-telemetry", {
+          body: { userId: user.id, eventType: "daily_mission_completed", module: "mission" }
+        }).then();
       }
+
 
       return {
         ...prev,
