@@ -329,14 +329,15 @@ const QuestionGenerator = () => {
                     try {
                       const { data } = await supabase
                         .from("performance_metrics")
-                        .select("tema, mastery_score")
+                        .select("topic, mastery_level")
                         .eq("user_id", user?.id)
-                        .order("mastery_score", { ascending: true })
+                        .order("mastery_level", { ascending: true })
                         .limit(3);
                       
-                      if (data && data.length > 0) {
-                        const weakThemes = data.map(d => d.tema).join(", ");
+                      if (data && (data as any[]).length > 0) {
+                        const weakThemes = (data as any[]).map(d => d.topic).join(", ");
                         setSpecificTopic(weakThemes);
+
                         setDifficulty("misto");
                         setQuantity(15);
                         toast({ 
