@@ -7,10 +7,10 @@
 
 const INJECTION_PATTERNS: RegExp[] = [
   // English patterns
-  /ignore\s+(all\s+)?(previous|above|prior|system)\s+(instructions|prompts|rules|context)/i,
-  /forget\s+(all\s+)?(your|previous|the)\s+(instructions|rules|training|context|prompt)/i,
-  /disregard\s+(all\s+)?(previous|above|prior|your)\s+(instructions|prompts|rules)/i,
-  /override\s+(all\s+)?(previous|your|system)\s+(instructions|rules|prompts)/i,
+  /ignore\s+(all\s+)?(previous|above|prior|system)?\s*(instructions|prompts|rules|context)/i,
+  /forget\s+(all\s+)?(your|previous|the)?\s*(instructions|rules|training|context|prompt)/i,
+  /disregard\s+(all\s+)?(previous|above|prior|your)?\s*(instructions|prompts|rules)/i,
+  /override\s+(all\s+)?(previous|your|system)?\s*(instructions|rules|prompts)/i,
   /you\s+are\s+now\s+(a|an|my)\s+/i,
   /pretend\s+(to\s+be|you\s*'?re|that\s+you)/i,
   /act\s+as\s+(if|a|an|my)\s+/i,
@@ -20,7 +20,7 @@ const INJECTION_PATTERNS: RegExp[] = [
   /bypass\s+(your|the|all)\s+(rules|restrictions|filters|safety)/i,
   
   // Portuguese patterns
-  /ignore\s+(todas?\s+)?(as\s+)?(instruções|regras|ordens)\s+(anteriores|acima|prévias)/i,
+  /ignore\s+(todas?\s+)?(as\s+)?(instruções|regras|ordens)?\s*(anteriores|acima|prévias)?/i,
   /esqueça\s+(todas?\s+)?(as\s+)?(instruções|regras|ordens)/i,
   /desconsidere\s+(todas?\s+)?(as\s+)?(instruções|regras)/i,
   /você\s+agora\s+é\s+(um|uma|o|a)\s+/i,
@@ -29,6 +29,7 @@ const INJECTION_PATTERNS: RegExp[] = [
   /mude\s+(sua|de)\s+(personalidade|identidade|papel)/i,
   /revele\s+(seu|o)\s+(prompt|sistema|instruções)/i,
   /modo\s+(desenvolvedor|deus|livre|sem\s+filtro)/i,
+  /seja\s+(um|uma|o|a)\s+(pirata|cachorro|personagem|dan)/i,
 ];
 
 /**
