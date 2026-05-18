@@ -7,7 +7,7 @@
  * Sem dados → DadosInsuficientesCard.
  * Sem mocks. Sem KPIs fake.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, AlertCircle, UserX, Activity, ArrowRight, RefreshCw, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
