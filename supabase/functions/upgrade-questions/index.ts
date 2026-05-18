@@ -65,14 +65,18 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
         }
 
         // Governance log
-        await supabaseAdmin.from("pipeline_governance").insert({
-          pipeline_name: "upgrade-questions",
-          function_name: "upgrade-questions",
-          model_used: ALLOWED_MODELS.reasoning,
-          latency_ms: latency,
-          status: result.quality_tier,
-          metadata: { correlation_id: correlation, question_id: q.id }
-        });
+        try {
+          await supabaseAdmin.from("pipeline_governance").insert({
+            pipeline_name: "upgrade-questions",
+            function_name: "upgrade-questions",
+            model_used: ALLOWED_MODELS.reasoning,
+            latency_ms: latency,
+            status: result.quality_tier,
+            metadata: { correlation_id: correlation, question_id: q.id }
+          });
+        } catch (govErr) {
+          logger.warn("GOVERNANCE_LOG_FAIL", `Failed to log governance: ${govErr.message}`);
+        }
 
       } catch (err) {
         logger.error("UPGRADE_FAIL", `Question ${q.id} failed: ${err.message}`);
