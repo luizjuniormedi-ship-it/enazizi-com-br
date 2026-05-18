@@ -25,7 +25,8 @@ serve(async (req) => {
 
     const accessToken = await getGoogleAccessToken(serviceAccount);
 
-    const listUrl = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+trashed=false&fields=files(id,name,size,mimeType)`;
+    // List ONLY PDFs
+    const listUrl = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType='application/pdf'+and+trashed=false&fields=files(id,name,size,mimeType)`;
     const listResp = await fetch(listUrl, {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
@@ -36,6 +37,10 @@ serve(async (req) => {
 
     const listData = await listResp.json();
     const files = listData.files || [];
+
+    // Clear failed/pending that might be folders
+    await supabaseAdmin.from("drive_ingestion_log").delete().eq("status", "pending");
+    await supabaseAdmin.from("drive_ingestion_log").delete().eq("status", "failed");
 
     let registeredCount = 0;
     for (const file of files) {
