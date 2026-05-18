@@ -21,6 +21,13 @@ serve(async (req) => {
   };
 
   try {
+    console.log("ENV check:", { 
+      hasClientEmail: !!Deno.env.get("GOOGLE_SA_CLIENT_EMAIL"),
+      hasTokenUri: !!Deno.env.get("GOOGLE_SA_TOKEN_URI"),
+      hasPrivateKeyB64: !!Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64"),
+      hasPrivateKey: !!Deno.env.get("GOOGLE_SA_PRIVATE_KEY"),
+    });
+
     const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
     const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
     const private_key_b64 = Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64") || "";
