@@ -196,10 +196,9 @@ async function processInBackground(
               Extraia EXCLUSIVAMENTE os tópicos de estudo, disciplinas e conteúdos médicos presentes literalmente no texto fornecido.
               
               REGRAS CRÍTICAS:
-              1. MODO STRICT: NÃO invente, NÃO infira e NÃO adicione assuntos fora do texto.
-              2. NÃO use conhecimentos prévios para completar o edital.
-              3. Mantenha a hierarquia original se houver.
-              4. Se o texto não contiver tópicos médicos claros, retorne "topics": [].
+              1. MODO STRICT: NÃO invente assuntos fora do texto.
+              2. SEPARAÇÃO POR TÓPICO: Identifique claramente os diferentes temas abordados no texto.
+              3. HIERARQUIA: Mantenha a relação Tema > Subtópico.
               
               Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
             },

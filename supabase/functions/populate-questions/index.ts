@@ -81,16 +81,15 @@ async function processTextToContent(
             role: "system",
             content: `Você é um especialista em educação médica. Sua tarefa é extrair e gerar questões e flashcards a partir do texto fornecido.
             
-            1. QUESTÕES: Extraia questões existentes ou gere novas (caso clínico 450+ chars, 4 alternativas A-D, gabarito e explicação).
-            2. FLASHCARDS: Gere flashcards (Frente/Pergunta com caso clínico curto, Verso/Resposta concisa, Explicação).
-            
-            IDIOMA: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).
-            GERE: 5-10 questões e 5-10 flashcards por bloco.
+            DIRETRIZES CRÍTICAS DE ORGANIZAÇÃO:
+            1. SEPARAÇÃO POR TÓPICO: Para cada item gerado (questão ou flashcard), identifique o tópico médico específico (ex: "Insuficiência Cardíaca", "Pré-natal", "Abdome Agudo").
+            2. INTEGRAÇÃO FSRS: Gere flashcards otimizados para Repetição Espaçada (FSRS). A pergunta deve ser clara e a resposta deve focar no conceito fundamental que precisa ser memorizado.
+            3. QUALIDADE: Questões devem ser casos clínicos densos (450+ caracteres) com justificativas didáticas.
             
             JSON format: 
             {
-              "questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct_index": 0, "explanation": "...", "topic": "..."}],
-              "flashcards": [{"question": "🏥 CASO... ❓ PERGUNTA...", "answer": "...", "explanation": "...", "topic": "..."}]
+              "questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct_index": 0, "explanation": "...", "topic": "Tópico Específico"}],
+              "flashcards": [{"question": "🏥 CASO... ❓ PERGUNTA...", "answer": "...", "explanation": "...", "topic": "Tópico Específico"}]
             }`
           },
           { role: "user", content: `Tema: ${topic}\n\nTexto:\n${chunk}` }
