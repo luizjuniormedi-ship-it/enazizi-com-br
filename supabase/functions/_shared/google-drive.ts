@@ -252,10 +252,11 @@ export async function processSingleDriveFile(
           statement: q.statement,
           options: q.options,
           correct_index: q.correct_index,
-          explanation: q.explanation,
+          explanation: q.explanation || "Sem explicação disponível.",
           topic: q.topic,
           subtopic: q.subtopic,
-          difficulty_level: q.difficulty || 3,
+          difficulty: q.difficulty || 3, // Map to 'difficulty'
+          difficulty_level: q.difficulty || 3, // And 'difficulty_level'
           is_clinical_case: !!q.clinical_case,
           tags: Array.isArray(q.tags) ? q.tags : [],
           source: file.name.replace(".pdf", ""),
@@ -263,7 +264,10 @@ export async function processSingleDriveFile(
           review_status: "approved",
           original_question_id: realQ.id,
           quality_tier: "gold",
-          source_type: "official_exam"
+          source_type: "official_exam",
+          board: q.board,
+          institution: q.institution,
+          year: q.year
         }));
 
       if (bankErr) {
