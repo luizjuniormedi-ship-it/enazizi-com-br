@@ -1,5 +1,5 @@
 import { ALLOWED_MODELS } from "./ai-model-registry.ts";
-import { sanitizeForPostgres } from "./db-utils.ts";
+import { sanitizeForPostgres, generateStatementHash } from "./db-utils.ts";
 
 // Shared Hardcoded Credentials (Temporary for validation)
 export const GOOGLE_SA_EMAIL = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
