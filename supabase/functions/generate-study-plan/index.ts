@@ -263,7 +263,7 @@ Sempre:
           { role: "user", content: `Gere o Master Planner para: ${JSON.stringify(userContext)}` }
         ],
         complexity: "high",
-        model: "google/gemini-2.0-flash"
+        model: "google/gemini-2.5-flash"
       });
 
       const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
@@ -277,10 +277,11 @@ Sempre:
         await supabaseAdmin.from("ai_governance_logs").insert({
           user_id: user.id,
           task_type: "study_plan_generation",
-          model_name: "google/gemini-2.0-flash", // Using the same model as in ai call
+          model_name: "google/gemini-2.5-flash", // Using a valid production model
           payload: { context: userContext },
           response_summary: "Master Planner Generated"
         });
+
       } catch (logErr) {
         logger.warn("GOVERNANCE_LOG_FAIL", logErr.message);
       }
