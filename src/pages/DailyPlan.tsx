@@ -381,13 +381,22 @@ const DailyPlan = () => {
   };
 
   // ── Derived metrics ──
-  const totalItems = scheduledReviews.length + todayTopics.length + Math.min((engineRecs || []).length, 3);
-  const totalDone = completedReviews.size + completedTopics.size;
+  const totalItems = dailyPlanTasks.length > 0 
+    ? dailyPlanTasks.length 
+    : scheduledReviews.length + todayTopics.length + Math.min((engineRecs || []).length, 3);
+    
+  const totalDone = dailyPlanTasks.length > 0
+    ? dailyPlanTasks.filter(t => t.completed).length
+    : completedReviews.size + completedTopics.size;
+
   const overallPct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
+  
   const reviewMinutes = scheduledReviews.reduce((sum, r) => sum + (r.estimatedMinutes || 15), 0);
   const topicMinutes = todayTopics.length * 40;
   const engineMinutes = Math.min((engineRecs || []).length, 3) * 20;
-  const totalMinutes = reviewMinutes + topicMinutes + engineMinutes;
+  const planMinutes = dailyPlanTasks.reduce((sum, t) => sum + (t.estimated_minutes || 0), 0);
+  
+  const totalMinutes = dailyPlanTasks.length > 0 ? planMinutes : reviewMinutes + topicMinutes + engineMinutes;
   const timeUsedPct = dailyMinutes > 0 ? Math.min(100, Math.round((totalMinutes / dailyMinutes) * 100)) : 0;
 
   const formatTime = (mins: number) => {
@@ -395,6 +404,7 @@ const DailyPlan = () => {
     const m = mins % 60;
     return h > 0 ? `${h}h${m > 0 ? `${m}min` : ""}` : `${m}min`;
   };
+
 
   if (loading) {
     return (
