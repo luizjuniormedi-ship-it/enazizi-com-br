@@ -43,18 +43,14 @@ export default enterpriseEdgeHandler("drive-exam-ingestion", async ({ req, logge
     try {
       const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
       const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
-      let private_key = Deno.env.get("GOOGLE_SA_PRIVATE_KEY") || "";
+      const pkPart1 = Deno.env.get("GOOGLE_SA_PK_PART1") || "";
+      const pkPart2 = Deno.env.get("GOOGLE_SA_PK_PART2") || "";
 
-      if (!client_email || !private_key) {
+      if (!client_email || !pkPart1 || !pkPart2) {
         throw new Error("Missing Google Service Account individual secrets");
       }
-
-      private_key = private_key.replace(/\\n/g, '\n');
-      if (private_key.startsWith('"') && private_key.endsWith('"')) {
-        private_key = private_key.slice(1, -1);
-      }
       
-      const serviceAccount = { client_email, token_uri, private_key };
+      const serviceAccount = { client_email, token_uri };
 
       // 1. Google Drive Auth
       const accessToken = await getGoogleAccessToken(serviceAccount, logger);
