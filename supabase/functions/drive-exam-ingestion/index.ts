@@ -114,19 +114,32 @@ serve(async (req) => {
       return new Response(JSON.stringify({ status: "idle", message: "No files to process after scan." }), { headers: corsHeaders });
     }
 
-    // 3. Process Batch
-    logger.info("PIPELINE", `Processing batch of ${pendingFiles.length} files...`);
+    // 3. Process Batch via HTTP triggers (parallel & non-blocking)
+    logger.info("PIPELINE", `Triggering batch of ${pendingFiles.length} files...`);
     const results = [];
-    for (const file of pendingFiles) {
-      logger.info("PIPELINE", `Starting: ${file.file_name}`);
+    
+    // We use a small batch here to not overwhelm the AI gateway or DB, but they run in parallel
+    const triggerPromises = pendingFiles.map(async (file) => {
+      logger.info("PIPELINE", `Triggering process for: ${file.file_name}`);
       try {
-        const result = await processSingleDriveFile(file.file_id, { supabaseAdmin, logger, user });
-        results.push({ file: file.file_name, status: "ok", ...result });
+        // Trigger the specific processor function via HTTP
+        // This allows each file to have its own 60s timeout window
+        fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/drive-process-single-file`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ fileId: file.file_id })
+        }).catch(e => logger.error("TRIGGER_ERROR", `Failed to trigger ${file.file_name}: ${e.message}`));
+        
+        return { file: file.file_name, status: "triggered" };
       } catch (err) {
-        logger.error("PIPELINE_ERROR", `Failed ${file.file_name}: ${err.message}`);
-        results.push({ file: file.file_name, status: "failed", error: err.message });
+        return { file: file.file_name, status: "failed_trigger", error: err.message };
       }
-    }
+    });
+
+    const triggerResults = await Promise.all(triggerPromises);
 
     return new Response(JSON.stringify({ 
       status: "batch_completed", 
