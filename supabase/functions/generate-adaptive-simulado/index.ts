@@ -126,44 +126,25 @@ function buildPrompt(
   errorPatterns: string[],
   questionsNeeded: number
 ): string {
-  const findings = Array.isArray(asset.clinical_findings)
-    ? asset.clinical_findings.join(", ")
-    : String(asset.clinical_findings || "");
-  const distractors = Array.isArray(asset.distractors)
-    ? asset.distractors.join(", ")
-    : String(asset.distractors || "");
+  return `${QUESTION_MOTOR_PREMIUM}
 
-  const focusHints = [];
-  if (errorPatterns.includes("imagem")) focusHints.push("Exija interpretação visual detalhada da imagem.");
-  if (errorPatterns.includes("conduta")) focusHints.push("Foque em decisão terapêutica e conduta.");
-  if (errorPatterns.includes("diagnóstico")) focusHints.push("Foque em diagnóstico diferencial.");
+${SIMULADO_MOTOR_PREMIUM}
 
-  return `IDIOMA: PORTUGUÊS BRASILEIRO. Gere ${questionsNeeded} questão(ões) médica(s) de residência.
+Gere ${questionsNeeded} questão(ões) médica(s) de residência.
 
 ASSET:
 - Tipo: ${asset.image_type}
 - Diagnóstico: ${asset.diagnosis}
-- Achados: ${findings}
-- Distratores: ${distractors}
 - Especialidade: ${asset.specialty || "N/A"}
 - Subtema: ${asset.subtopic || "N/A"}
 
 CONFIGURAÇÃO:
 - Dificuldade: ${difficulty}
 - Banca: ${examStyle}
-${focusHints.length > 0 ? `- Foco especial: ${focusHints.join(" ")}` : ""}
-
-REGRAS:
-- statement >= 400 chars (caso clínico completo: idade, sexo, HDA, exame físico, referência ao exame de imagem)
-- 5 alternativas plausíveis (option_a até option_e)
-- correct_index (0-4)${questionsNeeded > 1 ? ", DIFERENTE em cada questão" : ""}
-- explanation >= 120 chars
-- rationale_map completo (A-E)
-- difficulty: "${difficulty}"
-- exam_style: "${examStyle}"
 
 Retorne APENAS JSON array com ${questionsNeeded} questão(ões).`;
 }
+
 
 // ── Validation ──
 
