@@ -699,8 +699,9 @@ const SmartPlanner = () => {
               Recalcular com Nova Data
             </h2>
             <p className="text-sm text-muted-foreground">
-              O cronograma será regenerado mantendo os {temas.length} temas, redistribuindo revisões.
+              O cronograma será regenerado mantendo seus temas e integrando o conteúdo do seu material mais recente, caso tenha enviado um.
             </p>
+
             <div className="flex items-end gap-4 flex-wrap">
               <div className="space-y-2">
                 <Label>Nova data da prova</Label>
