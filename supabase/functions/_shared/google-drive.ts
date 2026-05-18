@@ -153,23 +153,15 @@ export async function processSingleDriveFile(
         messages: [
           {
             role: "system",
-            content: "Você é um especialista em medicina e extração de dados. Extraia questões médicas de provas em PDF. Retorne APENAS JSON."
+            content: "Você é um especialista em medicina e extração de dados. Extraia questões médicas de provas em PDF."
+          },
+          {
+            role: "user",
+            content: "Extraia questões deste PDF de prova médica. Formato JSON: {\"questions\": [{\"statement\": \"...\", \"options\": [\"A\", \"B\", \"C\", \"D\"], \"correct_index\": 0, \"explanation\": \"...\", \"topic\": \"...\"}]}"
           },
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text: `Extraia TODAS as questões deste PDF de prova médica. Se o arquivo for muito grande, extraia apenas o que couber ou as primeiras 20 páginas.
-                Para cada questão, retorne:
-                - statement: o enunciado completo
-                - options: array com as alternativas (mínimo 4, máximo 5)
-                - correct_index: índice da resposta correta (0-based)
-                - explanation: uma breve explicação do porquê a resposta está correta
-                - topic: a especialidade ou tema (ex: Cardiologia, Pediatria)
-                
-                Formato final: {"questions": [...]}`
-              },
               {
                 type: "image_url",
                 image_url: { url: `data:application/pdf;base64,${base64Pdf}` }
