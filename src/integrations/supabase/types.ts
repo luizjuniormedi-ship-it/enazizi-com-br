@@ -22024,11 +22024,13 @@ export type Database = {
           hidden_from_student: boolean | null
           id: string
           is_favorite: boolean | null
+          is_global: boolean | null
           is_recommended: boolean | null
           last_structuring_at: string | null
           last_structuring_error: string | null
           metadata: Json | null
           notebooklm_export: string | null
+          organization_id: string | null
           pedagogical_interest_score: number | null
           pedagogical_quality_score: number | null
           priority: string | null
@@ -22076,11 +22078,13 @@ export type Database = {
           hidden_from_student?: boolean | null
           id?: string
           is_favorite?: boolean | null
+          is_global?: boolean | null
           is_recommended?: boolean | null
           last_structuring_at?: string | null
           last_structuring_error?: string | null
           metadata?: Json | null
           notebooklm_export?: string | null
+          organization_id?: string | null
           pedagogical_interest_score?: number | null
           pedagogical_quality_score?: number | null
           priority?: string | null
@@ -22128,11 +22132,13 @@ export type Database = {
           hidden_from_student?: boolean | null
           id?: string
           is_favorite?: boolean | null
+          is_global?: boolean | null
           is_recommended?: boolean | null
           last_structuring_at?: string | null
           last_structuring_error?: string | null
           metadata?: Json | null
           notebooklm_export?: string | null
+          organization_id?: string | null
           pedagogical_interest_score?: number | null
           pedagogical_quality_score?: number | null
           priority?: string | null
