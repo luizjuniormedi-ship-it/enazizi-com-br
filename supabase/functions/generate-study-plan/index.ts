@@ -243,10 +243,18 @@ Sempre:
         examDate,
         strictMode,
         editalText: editalText ? editalText.slice(0, 5000) : "Use incidência médica Brasil (ENARE, USP, SUS-SP)",
-        performance: performanceData || "Perfil novo"
+        performance: {
+          provided: performanceData || "Perfil novo",
+          errors: errorsRes.data || [],
+          pendingReviewsCount: revisoesRes.data?.length || 0,
+          studentLevel: profileRes.data?.level || "beginner",
+          targetExams: profileRes.data?.target_exams || [],
+          fsrsRetentionSnapshot: fsrsRes.data?.slice(0, 10) || []
+        }
       };
 
       await supabaseAdmin.from("study_plans").update({ current_step: "Gerando estratégia pedagógica com IA...", progress: 50 }).eq("id", plan.id);
+
 
       const aiResponse = await ai({
         taskType: "planner",
