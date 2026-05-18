@@ -10,8 +10,8 @@ export function sanitizeAiContent(text: string): string {
   // Keep \n, \r, \t
   let cleaned = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
 
-  // 2. Remove markdown artifacts if they wrap the entire text
-  cleaned = cleaned.replace(/^```json\s*/, "").replace(/```$/, "");
+  // 2. Remove markdown artifacts anywhere in the text before parsing
+  cleaned = cleaned.replace(/```json\s*/g, "").replace(/```/g, "");
   
   return cleaned.trim();
 }
