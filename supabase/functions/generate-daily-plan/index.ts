@@ -13,8 +13,8 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
 
   logger.info("DAILY_PLAN_START", "Starting Adaptive Coordinator", { userId: user.id });
 
-  // 1. Fetch current status (reviews, errors, profile, progress)
-  const [revisoesRes, errorsRes, profileRes, studyPlanRes] = await Promise.all([
+  // 1. Fetch current status (reviews, errors, profile, progress, scores)
+  const [revisoesRes, errorsRes, profileRes, studyPlanRes, approvalRes, fsrsRes] = await Promise.all([
     supabaseAdmin.from("revisoes")
       .select("id, tema_id, data_revisao, prioridade, estabilidade, dificuldade")
       .eq("user_id", user.id)
@@ -38,8 +38,19 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
       .eq("status", "completed")
       .order("updated_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle(),
+    supabaseAdmin.from("approval_scores")
+      .select("score, phase, review_score")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabaseAdmin.from("fsrs_cards")
+      .select("stability, difficulty, reps")
+      .eq("user_id", user.id)
+      .limit(30)
   ]);
+
 
   const dailyHours = profileRes.data?.daily_study_hours || 4;
   
@@ -51,8 +62,11 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
     targetExams: profileRes.data?.target_exams || [],
     studentLevel: profileRes.data?.level || "beginner",
     macroPlan: studyPlanRes.data?.plan_json || null,
+    currentScore: approvalRes.data || { score: 0, phase: "base" },
+    fsrsStability: fsrsRes.data?.length ? (fsrsRes.data.reduce((acc, c) => acc + (c.stability || 0), 0) / fsrsRes.data.length) : 0,
     today
   };
+
 
   const systemPrompt = `Você é o Planner Inteligente do ENAZIZI (Coordenador Adaptativo).
 
@@ -121,8 +135,15 @@ PRIORIDADE = (TaxaErro × 3) + (ProbabilidadeDeCair × 3) + (RiscoFSRS × 2) + (
   ],
   "daily_focus": "...",
   "ai_coach_tip": "...",
-  "expected_outcome": "..."
+  "expected_outcome": "...",
+  "diagnostics": {
+    "suggested_score_adjustment": -5 to +5,
+    "suggested_phase": "base|intensive|review|recovery",
+    "recovery_mode": boolean,
+    "cognitive_load_estimate": "low|medium|high"
+  }
 }
+
 
 ────────────────────────────
 6. REGRAS CRÍTICAS
@@ -165,10 +186,16 @@ Sempre:
         source: "ENAZIZI Adaptive Coordinator v2" 
       },
       total_blocks: tasks.length,
-      completed_count: 0
+      completed_count: 0,
+      approval_score: context.currentScore.score + (planJson.diagnostics?.suggested_score_adjustment || 0),
+      phase: planJson.diagnostics?.suggested_phase || context.currentScore.phase,
+      recovery_mode: !!planJson.diagnostics?.recovery_mode,
+      objective: planJson.daily_focus,
+      diagnosis_summary: planJson.expected_outcome
     }, { onConflict: "user_id,plan_date" })
     .select("id")
     .single();
+
 
   if (planErr) throw planErr;
 
