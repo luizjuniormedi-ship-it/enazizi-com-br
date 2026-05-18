@@ -245,33 +245,34 @@ export async function processSingleDriveFile(
       }
 
       // Insert into questions_bank
+      const bankData = sanitizeForPostgres({
+        user_id: user.id,
+        statement: q.statement,
+        options: Array.isArray(q.options) && q.options.length >= 4 ? q.options.slice(0, 5) : ["A", "B", "C", "D"],
+        correct_index: typeof q.correct_index === 'number' && q.correct_index >= 0 && q.correct_index < 5 ? q.correct_index : 0,
+        explanation: q.explanation || "Sem explicação disponível.",
+        topic: q.topic,
+        subtopic: q.subtopic,
+        difficulty: q.difficulty || 3, 
+        difficulty_level: q.difficulty || 3, 
+        is_clinical_case: !!q.clinical_case,
+        tags: Array.isArray(q.tags) ? q.tags : [],
+        source: file.name.replace(".pdf", ""),
+        is_global: true,
+        review_status: "approved",
+        quality_tier: "gold",
+        source_type: "official_exam",
+        board: q.board,
+        institution: q.institution,
+        year: q.year
+      });
+
       const { error: bankErr } = await supabaseAdmin
         .from("questions_bank")
-        .insert(sanitizeForPostgres({
-          user_id: user.id,
-          statement: q.statement,
-          options: q.options,
-          correct_index: q.correct_index,
-          explanation: q.explanation || "Sem explicação disponível.",
-          topic: q.topic,
-          subtopic: q.subtopic,
-          difficulty: q.difficulty || 3, // Map to 'difficulty'
-          difficulty_level: q.difficulty || 3, // And 'difficulty_level'
-          is_clinical_case: !!q.clinical_case,
-          tags: Array.isArray(q.tags) ? q.tags : [],
-          source: file.name.replace(".pdf", ""),
-          is_global: true,
-          review_status: "approved",
-          original_question_id: realQ.id,
-          quality_tier: "gold",
-          source_type: "official_exam",
-          board: q.board,
-          institution: q.institution,
-          year: q.year
-        }));
+        .insert(bankData);
 
       if (bankErr) {
-        logger.error("DB_ERROR_BANK", `Failed to insert into questions_bank: ${bankErr.message}`);
+        logger.error("DB_ERROR_BANK", `Failed to insert into questions_bank: ${bankErr.message}`, { error: bankErr });
         continue;
       }
 
