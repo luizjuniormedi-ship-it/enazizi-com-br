@@ -823,8 +823,8 @@ const SmartPlanner = () => {
               setTemas([]);
               if (subjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
               // [planner-unification-final] Agora usamos o topicMap granular para separar os tópicos corretamente.
-              const { data: latestPlan } = await supabase.from("study_plans").select("plan_json").eq("id", (latestPlanId || latestPlan?.id)).maybeSingle();
-              const plan = latestPlan?.plan_json as any;
+              const { data: latestPlanData } = await supabase.from("study_plans").select("id, plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+              const plan = latestPlanData?.plan_json as any;
               const topicMap: { topic: string; subtopics: string[]; priority_score?: number }[] = plan?.topicMap || [];
               
               const registeredTemas: { id: string; tema: string; especialidade: string }[] = [];
