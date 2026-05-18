@@ -1,10 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import * as jose from "https://deno.land/x/jose@v4.14.4/index.ts"
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-}
+const SA_EMAIL = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
+const SA_TOKEN_URI = "https://oauth2.googleapis.com/token";
+const SA_PRIVATE_KEY_B64 = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDeQwllT5BbX4pbtblw7u+xTtw2J5wv1erns7TNKWbR1sMFp6bwqAzSESz4JRky7ODbmT/0CTiyou/wQ/1FvI5q/6UAnOtSziiuFy2v2dE2CeipH0SqU4ENDy251+ap4q8v59rbAhPcaPVeXqOPA5zd+w6Ldn/0JKhT1Wh3YdaZQhaeT7ZCCBTGtatxGSfaQGjA85VZHwrc5uHpKoaFO+7XAE9hsNq/iRlbC89eUIkE1GG9NHKvYYVR0QP1MO9kF6jAwjAo3d4LkkYxojBukVustkElNzG614SDDt/+igroNkLXrHMjoYze+55AzuMA3HOWZA8dMz7sT1tnbtYiovZjAgMBAAECggEAF9b964F4vOxHBWY9EUl3qT+JrD9cZ98clqS2aGkf77MG8RTV+as00NVpyuYDyWwSBEvwSacxjyud69oHERNT/VMVajbqoNOfFmlDC8EjyRWQAI/riA9z4Kg3od7wDVnUq6FFXsdexP33D5u8FGtxSHgUy822lMPX0EIsNd3nLEHwvNHGVxDFoyeE431S7AE53SS2uwoEb54WKuOw0wubAHf4avc6ZwwJ3n7trKMPQudU1UyihJ2mQqJZTnB2Sxxk72DxrWHUQ20z17QjJ4qZRm5+3orrG/xh0E2hUCS2dhhnu5VsMHd6UHEVo0zV51n4mjjXdAWKTvde6dknQM1qlQKBgQD5l6JUi3aUhVAu43Z2o1D+koVCkxTZwg/rJepeMr2MVdcX5xe4gYFORVHXnA4rc6GZF+li5iwwGy4YMJg9lC95asXzy7ixDGPquCtxsHBgPJOCgisa+w+cdWrDLXhr5iwEAI/MIF5j+fs4q4FcMJrxk2Ic3cOqaAeTwazUZ7FIdQKBgQDj98gpShNAMu7MgjFKOxmEyhi+6FF7GekET6D3g3p3177mDPmOGi3aZbnQ4VoFzR7ovkuYrANj4SjU+mBBqQ91wh1WcgfaoNd0S/XZUj/oX0Osey1jNk2tSUJheQcJs4vFrZumanb45gsL0TFw4hGes7pOR+vmJbbzNq4/D0godwKBgBdUkznv51+urnYTkQk57uI88/PrJ7HLMA2895FikNFDXN3BHjiC8oFMfX/3+GMbZemXkJtMBKligQaF1FU9OsrQrjxBuLvj+psAKB9ybK6yOt+iJ0FYYncvipE/+NetJkQhgU+FXw1dWpxLe8YQTQtzyWIFYLrXCo5HNk6MesfZAoGAY8h7VodT8c/Zcq6yAHnp65PCTR3HPIjU08w++tgT7Q0ERBH90dNnqqbINMPO8acdFmblFAiG21sc0kxdgaAMYlD7InF7OpkYdZEiJWO5EW9RYdfwv/JvAaCFa8Db8cUjMv2QmcEUHlIjF6MTbwOlDsBAli8o9G4hrEeM8ZEw1nUCgYEA95ll1mt9GO9uVv9Tz1EneaMDqK8s4r20GskXu5HJL9Peh78HemLHMofX8r9OQFM6fQXbEdNr12O5DOV0mX/ef/jNLmqCb8+T7vfiVlme0wuZZ91VMBRWRa9cJdMPla8/44A4lBFb9gV9wPJZb/F7VF4p0ORqTNnTRiLbU1cIvbM=";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,25 +20,9 @@ serve(async (req) => {
   };
 
   try {
-    console.log("ENV check:", { 
-      hasClientEmail: !!Deno.env.get("GOOGLE_SA_CLIENT_EMAIL"),
-      hasTokenUri: !!Deno.env.get("GOOGLE_SA_TOKEN_URI"),
-      hasPkPart1: !!Deno.env.get("GOOGLE_SA_PK_PART1"),
-      hasPkPart2: !!Deno.env.get("GOOGLE_SA_PK_PART2"),
-    });
-
-    const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
-    const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
-    const pkPart1 = Deno.env.get("GOOGLE_SA_PK_PART1") || "";
-    const pkPart2 = Deno.env.get("GOOGLE_SA_PK_PART2") || "";
-
-    if (!client_email || !pkPart1 || !pkPart2) {
-      results.error = "MISSING_GOOGLE_SA_SECRETS";
-      return new Response(JSON.stringify(results), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
-    }
-
-    const pemBody = pkPart1 + pkPart2;
-    results.private_key_id = "individual_pk_parts";
+    results.private_key_id = "hardcoded_b64";
+    const client_email = SA_EMAIL;
+    const pemBody = SA_PRIVATE_KEY_B64;
     
     results.step = "jwt_generation";
     const now = Math.floor(Date.now() / 1000);
