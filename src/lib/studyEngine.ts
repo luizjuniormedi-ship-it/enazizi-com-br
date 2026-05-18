@@ -287,6 +287,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
   // Queries that ALWAYS need to run (engine-exclusive with specific filters/joins)
   const [
+    dailyPlanData,
     revisoesData,
     errorBankData,
     desempenhoData,
@@ -298,6 +299,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // Only query these if coreData not provided
     ...conditionalResults
   ] = await Promise.all([
+
     // Fase 1.6 — puxa IDs estruturais via join em temas_estudados
     safe(() => supabase
       .from("daily_plans")
