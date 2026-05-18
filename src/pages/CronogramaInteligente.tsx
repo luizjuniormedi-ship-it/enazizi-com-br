@@ -405,14 +405,32 @@ const CronogramaInteligente = () => {
           
           anexos.push({ name: file.name, path: filePath });
 
-          // Se for PDF, disparar processamento em background (Edge Function)
-          if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+          // Suporte a PDF, DOCX, Imagens e Texto para processamento via IA
+          const isSupported = 
+            file.type === "application/pdf" || 
+            file.type.includes("word") || 
+            file.type.includes("image") || 
+            file.type === "text/plain" ||
+            /\.(pdf|docx|doc|jpg|jpeg|png|webp|txt)$/i.test(file.name);
+
+          if (isSupported) {
+            const fileTypeMap: Record<string, string> = {
+              "application/pdf": "pdf",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+              "application/msword": "doc",
+              "text/plain": "txt"
+            };
+            
+            let fileType = fileTypeMap[file.type] || "pdf";
+            if (file.type.includes("image")) fileType = "image";
+
             const { data: uploadRecord, error: dbError } = await supabase
               .from("uploads")
               .insert(({
                 user_id: user.id,
                 filename: file.name,
-                file_type: "pdf",
+                file_type: fileType,
+
                 category: "material",
                 storage_path: filePath,
                 status: "uploaded",
