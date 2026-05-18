@@ -60,8 +60,9 @@ const Flashcards = () => {
   const [fsrsStates, setFsrsStates] = useState<Map<string, FsrsReviewState>>(new Map());
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>("setup");
-  const [mode, setMode] = useState<"due" | "all" | "sprint">("due");
+  const [mode, setMode] = useState<"due" | "all" | "sprint">(studyCtx?.topic ? "all" : "due");
   const [topicSearch, setTopicSearch] = useState(studyCtx?.topic || "");
+
   const [generateQuantity, setGenerateQuantity] = useState(10);
   const [generatingFromBank, setGeneratingFromBank] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);

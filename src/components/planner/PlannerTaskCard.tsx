@@ -2,9 +2,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   RefreshCw, BookOpen, Brain, Target, AlertTriangle,
-  Play, CheckCircle2, Clock, Flame, Zap, Radar
+  Play, CheckCircle2, Clock, Flame, Zap, Radar, MessageSquare, HelpCircle, Layers
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router-dom";
+import { encodeStudyContext, type StudyContext } from "@/lib/studyContext";
+
 
 export type TaskCategory = "critical_review" | "near_review" | "light_review" | "error_active" | "new_content" | "practice" | "simulado";
 
@@ -103,8 +106,37 @@ export default function PlannerTaskCard({
   estimatedMinutes, priority, overdue, fsrsState, errorCount,
   done, radarHint, onAction, onDone,
 }: Props) {
+  const navigate = useNavigate();
   const config = CATEGORY_CONFIG[category];
   const showRadar = !!radarHint && !done;
+
+  const handleQuickAction = (target: "tutor" | "questions" | "flashcards") => {
+    const ctx: StudyContext = {
+      source: "planner",
+      specialty: specialty || undefined,
+      topic: title,
+      subtopic: subtopic || undefined,
+      difficulty: category === "error_active" ? "dificil" : "intermediario",
+      reason: reason
+    };
+
+    const params = encodeStudyContext(ctx);
+    const queryString = params.toString();
+
+    switch (target) {
+      case "tutor":
+        navigate(`/dashboard/sessao-estudo?${queryString}`);
+        break;
+      case "questions":
+
+        navigate(`/dashboard/gerador-questoes?${queryString}`);
+        break;
+      case "flashcards":
+        navigate(`/dashboard/flashcards?${queryString}`);
+        break;
+    }
+  };
+
 
   return (
     <div className={`rounded-xl border ${done ? "opacity-50 border-border/40" : config.borderColor} ${done ? "" : config.bgColor} p-3 transition-all`}>
@@ -174,19 +206,70 @@ export default function PlannerTaskCard({
 
       {/* Actions */}
       {!done && (
-        <div className="mt-2.5 ml-9 flex items-center gap-2">
-          <Button size="sm" variant="default" className="h-8 text-xs" onClick={onAction}>
-            <Play className="h-3 w-3 mr-1" />
-            Começar
-          </Button>
-          {onDone && (
-            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onDone}>
-              <CheckCircle2 className="h-3 w-3 mr-1" />
-              Marcar feita
+        <div className="mt-3 ml-9 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="default" className="h-8 text-xs px-4" onClick={onAction}>
+              <Play className="h-3 w-3 mr-1" />
+              Começar
             </Button>
-          )}
+            {onDone && (
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onDone}>
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Marcar feita
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 pt-1.5 border-t border-border/20">
+            <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mr-1">Atalhos:</span>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-7 w-7 rounded-lg hover:bg-indigo-500/10 hover:text-indigo-500 border-border/40"
+                    onClick={() => handleQuickAction("tutor")}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-[10px]">Tutor IA</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-7 w-7 rounded-lg hover:bg-amber-500/10 hover:text-amber-500 border-border/40"
+                    onClick={() => handleQuickAction("questions")}
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-[10px]">Gerar Questões</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-7 w-7 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 border-border/40"
+                    onClick={() => handleQuickAction("flashcards")}
+                  >
+                    <Layers className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-[10px]">Flashcards</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       )}
+
     </div>
   );
 }
