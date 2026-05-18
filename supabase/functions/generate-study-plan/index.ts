@@ -30,7 +30,33 @@ Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, wa
 
   waitUntil((async () => {
     try {
-      await supabaseAdmin.from("study_plans").update({ current_step: "Processando dados e analisando edital...", progress: 20 }).eq("id", plan.id);
+      await supabaseAdmin.from("study_plans").update({ current_step: "Analisando telemetria e histórico do aluno...", progress: 15 }).eq("id", plan.id);
+
+      // 1. Fetch rich student context
+      const [revisoesRes, errorsRes, profileRes, fsrsRes] = await Promise.all([
+        supabaseAdmin.from("revisoes")
+          .select("tema_id, status, data_revisao")
+          .eq("user_id", user.id)
+          .eq("status", "pendente")
+          .limit(50),
+        supabaseAdmin.from("error_bank")
+          .select("tema, subtema, vezes_errado")
+          .eq("user_id", user.id)
+          .eq("dominado", false)
+          .order("vezes_errado", { ascending: false })
+          .limit(10),
+        supabaseAdmin.from("profiles")
+          .select("level, study_streak, target_exams")
+          .eq("user_id", user.id)
+          .single(),
+        supabaseAdmin.from("fsrs_cards")
+          .select("card_type, stability, difficulty")
+          .eq("user_id", user.id)
+          .limit(50)
+      ]);
+
+      await supabaseAdmin.from("study_plans").update({ current_step: "Processando edital e mapeando temas...", progress: 25 }).eq("id", plan.id);
+
       
       const systemPrompt = `Você é o motor oficial de geração de cronograma do ENAZIZI.
 
