@@ -91,7 +91,7 @@ export async function processSingleDriveFile(
   fileId: string, 
   { supabaseAdmin, logger, user }: { supabaseAdmin: any, logger: any, user: any }
 ) {
-  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // Increase to 50MB for large medical PDFs
 
   try {
     // Use hardcoded constants
@@ -123,7 +123,7 @@ export async function processSingleDriveFile(
     }
 
     if (file.size && parseInt(file.size) > MAX_FILE_SIZE) {
-      const error = `File too large: ${file.size} bytes. Limit 5MB.`;
+      const error = `File too large: ${file.size} bytes. Limit 50MB.`;
       logger.warn("FILE_SKIP", error);
       await supabaseAdmin.from("drive_ingestion_log").update({ status: 'failed', error_message: error }).eq('file_id', fileId);
       return { status: "skipped", reason: "size_limit" };
