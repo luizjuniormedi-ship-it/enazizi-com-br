@@ -131,26 +131,40 @@ export function UnifiedMissionHero({
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <Enaflix3DButton
-              size="lg"
-              glow
-              iconLeft={<Rocket className="h-5 w-5" />}
-              onClick={async () => {
-                const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
-                const { supabase } = await import("@/integrations/supabase/client");
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                  await getOrchestratorDecision(user.id, "dashboard-hero-primary", {
-                    topic: recommendationTopic,
-                    type: recommendationType,
-                    source: "unified-hero-continue"
-                  });
-                }
-                navigate(primaryHref);
-              }}
-            >
-              Continuar missão
-            </Enaflix3DButton>
+            {hasPlan ? (
+              <Enaflix3DButton
+                size="lg"
+                glow
+                iconLeft={<Rocket className="h-5 w-5" />}
+                onClick={async () => {
+                  const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+                  const { supabase } = await import("@/integrations/supabase/client");
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (user) {
+                    await getOrchestratorDecision(user.id, "dashboard-hero-primary", {
+                      topic: recommendationTopic,
+                      type: recommendationType,
+                      source: "unified-hero-continue"
+                    });
+                  }
+                  navigate(primaryHref);
+                }}
+              >
+                Continuar missão
+              </Enaflix3DButton>
+            ) : (
+              <Enaflix3DButton
+                size="lg"
+                glow
+                variant="violet"
+                iconLeft={generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
+                onClick={handleGenerateDaily}
+                disabled={generating}
+              >
+                {generating ? "Gerando..." : "Gerar Missão do Dia"}
+              </Enaflix3DButton>
+            )}
+
             <Enaflix3DButton
               variant="outline"
               size="lg"
