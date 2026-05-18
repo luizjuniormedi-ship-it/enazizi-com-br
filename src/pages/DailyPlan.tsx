@@ -42,8 +42,8 @@ const reviewTimeEstimates: Record<string, number> = {
 
 /**
  * Daily Plan — Operational layer.
- * Displays today's tasks derived from Planner + Study Engine.
- * Does NOT generate its own planning logic.
+ * Displays today's tasks derived from Adaptive Coordinator (daily_plans) + Study Engine.
+ * Integrates directly with the Master Planner Engine rules.
  */
 const DailyPlan = () => {
   const { user } = useAuth();
@@ -67,6 +67,10 @@ const DailyPlan = () => {
   const [showOverflowReviews, setShowOverflowReviews] = useState(false);
   const [showOverflowTopics, setShowOverflowTopics] = useState(false);
 
+  // Adaptive Coordinator state
+  const [dailyPlan, setDailyPlan] = useState<any>(null);
+  const [dailyPlanTasks, setDailyPlanTasks] = useState<any[]>([]);
+
   // Mission Mode integration
   const { state: missionState, startMission, hasTasks: missionHasTasks } = useMissionMode();
 
@@ -83,9 +87,10 @@ const DailyPlan = () => {
   const [lastCompletedAt, setLastCompletedAt] = useState<number | null>(null);
 
   // Study Engine recommendations (from Planner + performance data)
-  const { data: engineRecs } = useStudyEngine();
+  const { data: engineRecs, adaptive: engineAdaptive } = useStudyEngine();
   const { data: coreData } = useCoreData();
   const resetAt = coreData?.profile.last_study_plan_reset_at ?? null;
+
 
   // ── Load today's data from Planner tables ──
   useEffect(() => {
