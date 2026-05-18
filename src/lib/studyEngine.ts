@@ -300,6 +300,13 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   ] = await Promise.all([
     // Fase 1.6 — puxa IDs estruturais via join em temas_estudados
     safe(() => supabase
+      .from("daily_plans")
+      .select("id, total_blocks, completed_count, daily_plan_tasks(*)")
+      .eq("user_id", userId)
+      .eq("plan_date", new Date().toISOString().slice(0, 10))
+      .maybeSingle(), "daily_plan"),
+    safe(() => supabase
+
       .from("revisoes")
       .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade, subtopic_id, topic_id, specialty_id)")
       .eq("user_id", userId)
