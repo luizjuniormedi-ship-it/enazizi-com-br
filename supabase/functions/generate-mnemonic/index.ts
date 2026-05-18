@@ -334,18 +334,12 @@ serve(async (req: Request) => {
       try {
         console.log(`[MNEMONIC_AUTH_CHECK] Method: ${req.method}, Content-Length: ${req.headers.get("content-length")}`);
         // RE-ENABLE AUTH
-        let userId: string;
-        const authHeader = req.headers.get("Authorization");
-        if (authHeader === "Bearer ADMIN_TEST") {
-          userId = "00000000-0000-0000-0000-000000000000"; // System user
-        } else {
-          const auth = await requireAuth(req);
-          if (!auth.ok) {
-            console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError} - Status: ${auth.response.status}`);
-            return auth.response;
-          }
-          userId = auth.userId;
+        const auth = await requireAuth(req);
+        if (!auth.ok) {
+          console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError} - Status: ${auth.response.status}`);
+          return auth.response;
         }
+        const userId = auth.userId;
 
         const aiKey = requireEnv("LOVABLE_API_KEY");
         let rawBody;
