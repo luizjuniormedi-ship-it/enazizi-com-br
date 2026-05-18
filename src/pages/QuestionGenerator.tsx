@@ -60,6 +60,8 @@ const QuestionGenerator = () => {
   const marathonTotalRef = useRef(0);
   const sendPromptRef = useRef<((prompt: string) => void) | null>(null);
   const initialPromptRef = useRef<string>("");
+  const [loadingWeakTopics, setLoadingWeakTopics] = useState(false);
+
 
   // Listen to InteractiveQuestionCard answers via custom event
   useEffect(() => {
