@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, parseAiJson, cleanQuestionText } from "../_shared/ai-fetch.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { SIMULADO_MOTOR_PREMIUM, QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
