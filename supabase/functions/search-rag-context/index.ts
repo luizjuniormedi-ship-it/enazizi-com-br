@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { createEmbedding } from "../_shared/ai-embeddings.ts";
+import { RAG_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
