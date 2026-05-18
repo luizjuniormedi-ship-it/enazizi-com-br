@@ -227,6 +227,7 @@ export async function processSingleDriveFile(
           quality_score: 0.95,
           source_file: file.name,
           source_drive_id: file.id,
+          source_url: `https://drive.google.com/file/d/${file.id}/view`,
           is_active: true
         }))
         .select("id")
