@@ -24084,6 +24084,16 @@ export type Database = {
         }
         Relationships: []
       }
+      ingestion_dashboard: {
+        Row: {
+          file_count: number | null
+          last_activity: string | null
+          status: string | null
+          total_flashcards: number | null
+          total_questions: number | null
+        }
+        Relationships: []
+      }
       legacy_fsrs_bridge: {
         Row: {
           card_ref_id: string | null
