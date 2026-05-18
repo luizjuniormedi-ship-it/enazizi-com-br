@@ -349,7 +349,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
           setGenerationStep(0);
           
           if (onSubjectsGenerated && plan.subjects && plan.subjects.length > 0) {
-            setGenerationStatusText("Sincronizando módulos...");
+            setGenerationStatusText("Sincronizando módulos e preparando revisões FSRS...");
             const syncResult = await onSubjectsGenerated(plan.subjects);
             if (syncResult) {
               setSyncSummary(syncResult);
