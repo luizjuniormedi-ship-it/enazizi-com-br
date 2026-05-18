@@ -228,7 +228,8 @@ Sempre:
           { role: "system", content: systemPrompt },
           { role: "user", content: `Gere o Master Planner para: ${JSON.stringify(userContext)}` }
         ],
-        complexity: "high"
+        complexity: "high",
+        model: "google/gemini-2.0-flash"
       });
 
       const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
