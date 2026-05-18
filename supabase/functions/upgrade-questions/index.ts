@@ -5,9 +5,15 @@ import { reviewAndEnrich } from "../_shared/question-review-engine.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
 Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, waitUntil, correlation, supabaseAdmin }) => {
-  // const { user } = await requireAdmin(req);
-  const user = { id: "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023" }; // FIXED TEST BYPASS
+  const authHeader = req.headers.get("Authorization");
   const body = await req.json().catch(() => ({}));
+
+  let userId = "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023"; // Fallback
+  if (authHeader) {
+    const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (user) userId = user.id;
+  }
+
   const batchSize = Math.min(body.batch_size || 5, 20);
   const ids: string[] | undefined = body.ids;
 

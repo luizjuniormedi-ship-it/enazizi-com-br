@@ -118,8 +118,32 @@ async function processInBackground(
     } else if (fileType === "docx" || fileType.includes("wordprocessingml")) {
       const text = await extractDocxText(fileData);
       textChunks = [{ text, pageStart: 1, pageEnd: 1 }];
+    } else if (fileType.includes("image") || ["jpg", "jpeg", "png", "webp"].includes(fileType)) {
+      // OCR for images
+      console.log(`[PROCESS_UPLOAD] Performing OCR on image...`);
+      const arrayBuffer = await fileData.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      const ocrResponse = await aiFetch({
+        model: "google/gemini-2.0-flash", // Use a vision capable model
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extraia todo o texto médico/educativo desta imagem. Retorne apenas o texto extraído, sem comentários." },
+              { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}` } }
+            ]
+          }
+        ],
+        timeoutMs: 60000,
+      });
+
+      if (!ocrResponse.ok) throw new Error("Falha no OCR da imagem.");
+      const ocrResult = await ocrResponse.json();
+      const text = ocrResult.choices?.[0]?.message?.content || "";
+      textChunks = [{ text, pageStart: 1, pageEnd: 1 }];
     } else {
-      throw new Error("Unsupported format");
+      throw new Error(`Formato não suportado: ${fileType}`);
     }
 
     if (textChunks.length === 0) {

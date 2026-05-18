@@ -48,14 +48,21 @@ export default function TopRiskStudents({
   onOpenMentor,
   onOpenDrawer,
 }: Props) {
+  const [searchTerm, setSearchTerm] = useState("");
+
   const students = useMemo<RiskStudent[]>(() => {
     const list: RiskStudent[] = Array.isArray(analytics?.atRiskStudents) ? analytics.atRiskStudents : [];
-    return [...list].sort((a, b) => {
-      if (a.risk_level !== b.risk_level) return a.risk_level === "critical" ? -1 : 1;
-      if (a.avg_domain_score !== b.avg_domain_score) return a.avg_domain_score - b.avg_domain_score;
-      return b.days_inactive - a.days_inactive;
-    });
-  }, [analytics]);
+    return [...list]
+      .filter(s => 
+        (s.display_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.risk_reason || "").toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .sort((a, b) => {
+        if (a.risk_level !== b.risk_level) return a.risk_level === "critical" ? -1 : 1;
+        if (a.avg_domain_score !== b.avg_domain_score) return a.avg_domain_score - b.avg_domain_score;
+        return b.days_inactive - a.days_inactive;
+      });
+  }, [analytics, searchTerm]);
 
   if (loading) {
     return (
@@ -122,6 +129,19 @@ export default function TopRiskStudents({
             </Button>
           )}
         </div>
+      </div>
+
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">
+          <Activity className="h-4 w-4" />
+        </div>
+        <input 
+          type="text"
+          placeholder="Buscar aluno por nome ou motivo de risco..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full h-11 bg-white/5 border border-white/10 rounded-2xl pl-10 pr-4 text-sm text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+        />
       </div>
 
       {/* Lista priorizada */}
