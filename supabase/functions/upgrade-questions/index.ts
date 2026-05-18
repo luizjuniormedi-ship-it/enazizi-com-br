@@ -2,6 +2,7 @@
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
 import { reviewAndEnrich } from "../_shared/question-review-engine.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
 Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, waitUntil, correlation, supabaseAdmin }) => {
   // const { user } = await requireAdmin(req);
