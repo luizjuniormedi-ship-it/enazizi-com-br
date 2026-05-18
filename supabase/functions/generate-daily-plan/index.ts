@@ -121,8 +121,9 @@ PRIORIDADE = (TaxaErro × 3) + (ProbabilidadeDeCair × 3) + (RiscoFSRS × 2) + (
   "tasks": [
     {
       "type": "theory|practice|review|error_fix|simulation",
-      "topic": "...",
-      "subject": "...",
+      "title": "Título curto e direto (ex: Aula: Hipertensão)",
+      "topic": "Tópico clínico exato",
+      "subject": "Especialidade/Disciplina",
       "priority": 0-100,
       "estimated_minutes": 0,
       "rationale": "Justificativa pedagógica para esta tarefa",
@@ -132,6 +133,7 @@ PRIORIDADE = (TaxaErro × 3) + (ProbabilidadeDeCair × 3) + (RiscoFSRS × 2) + (
         "error_id": "..."
       }
     }
+
   ],
   "daily_focus": "...",
   "ai_coach_tip": "...",
