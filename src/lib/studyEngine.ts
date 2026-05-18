@@ -4,7 +4,7 @@ import type { CoreDataResult } from "@/hooks/useCoreData";
 import { adjustPlanByApprovalScore, getAdaptiveMode, type PlanWeights, type AdaptiveMode } from "./approvalScoreWeights";
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
 import { retrievability as fsrsRetrievability, State as FsrsState } from "./fsrs";
-import type { StudyTaskType, StudyObjective } from "./studyContext";
+import { type StudyTaskType, type StudyObjective, objectiveFromTaskType } from "./studyContext";
 import { getExamProfile, getMergedExamProfile, applyExamModifiers, type ExamProfile } from "./examProfiles";
 import { fetchCurriculumForEngine, fetchAllCurriculumTopics } from "./curriculumBridge";
 import { saveStudyEngineSnapshot } from "./dualWrite";
@@ -287,6 +287,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
   // Queries that ALWAYS need to run (engine-exclusive with specific filters/joins)
   const [
+    dailyPlanData,
     revisoesData,
     errorBankData,
     desempenhoData,
@@ -298,8 +299,16 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // Only query these if coreData not provided
     ...conditionalResults
   ] = await Promise.all([
+
     // Fase 1.6 — puxa IDs estruturais via join em temas_estudados
     safe(() => supabase
+      .from("daily_plans")
+      .select("id, total_blocks, completed_count, daily_plan_tasks(*)")
+      .eq("user_id", userId)
+      .eq("plan_date", new Date().toISOString().slice(0, 10))
+      .maybeSingle(), "daily_plan"),
+    safe(() => supabase
+
       .from("revisoes")
       .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade, subtopic_id, topic_id, specialty_id)")
       .eq("user_id", userId)
@@ -652,7 +661,55 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     heavyRecovery,
   };
 
+  // ── 0. Daily Plan Tasks (COORDENADOR ADAPTATIVO) ────────────
+  const dailyPlan = dailyPlanData as any;
+  if (dailyPlan && dailyPlan.daily_plan_tasks) {
+    const planTasks = dailyPlan.daily_plan_tasks as any[];
+    planTasks.forEach((t: any, idx: number) => {
+      if (t.completed) return;
+      
+      const typeMap: Record<string, RecommendationType> = {
+        theory: "new",
+        practice: "practice",
+        review: "review",
+        error_fix: "error_review",
+        simulation: "simulado"
+      };
+
+      const moduleMap: Record<string, TargetModule> = {
+        theory: "tutor-v2",
+        practice: "questoes",
+        review: "flashcards",
+        error_fix: "banco-erros",
+        simulation: "simulado"
+      };
+
+      const pathMap: Record<string, string> = {
+        theory: `/dashboard/sessao-estudo?topic=${encodeURIComponent(t.topic || t.title)}&source=daily_plan`,
+        practice: `/dashboard/questoes?topic=${encodeURIComponent(t.topic || t.title)}&source=daily_plan`,
+        review: `/dashboard/flashcards?topic=${encodeURIComponent(t.topic || t.title)}&source=daily_plan`,
+        error_fix: `/dashboard/banco-erros?topic=${encodeURIComponent(t.topic || t.title)}&source=daily_plan`,
+        simulation: `/dashboard/simulados?source=daily_plan`
+      };
+
+      recs.push({
+        id: `plan-${t.id}`,
+        type: typeMap[t.type] || "practice",
+        topic: t.topic || t.title,
+        specialty: t.subject || "Geral",
+        priority: t.priority || 90,
+        reason: t.rationale || "Tarefa priorizada pelo Coordenador Adaptativo.",
+        targetModule: moduleMap[t.type] || "questoes",
+        targetPath: pathMap[t.type] || "/dashboard/questoes",
+        estimatedMinutes: t.estimated_minutes || 20,
+        dailyPlanTaskId: t.id,
+        objective: objectiveFromTaskType(typeMap[t.type] || "practice")
+      });
+    });
+  }
+
   // ── 1. Overdue / pending reviews (GROUPED BY TEMA) ────────────
+
   const seenTopics = new Set<string>();
   const addRec = (rec: StudyRecommendation) => {
     const groupKey = rec._groupKey || `${rec.type}:${rec.topic}`;

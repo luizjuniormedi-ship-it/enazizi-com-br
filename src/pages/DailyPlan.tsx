@@ -95,7 +95,14 @@ const DailyPlan = () => {
   // ── Load today's data from Planner tables ──
   useEffect(() => {
     if (!user) return;
+
+    // Telemetry: mission opened
+    supabase.functions.invoke("unified-telemetry", {
+      body: { userId: user.id, eventType: "daily_mission_opened", module: "daily-plan" }
+    }).then();
+
     const loadToday = async () => {
+
       try {
         setLoading(true);
         // BR timezone (America/Sao_Paulo) – fixes "today" para usuários após 21h BRT
@@ -565,12 +572,37 @@ const DailyPlan = () => {
               title="Missão do Dia Adaptativa"
               subtitle={dailyPlan.objective || "Seu coordenador pedagógico reorganizou seu estudo para hoje."}
               action={
-                dailyPlan.approval_score && (
-                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                    Score Sugerido: {Math.round(dailyPlan.approval_score)}%
-                  </Badge>
-                )
+                <div className="flex items-center gap-2">
+                  {dailyPlan.approval_score && (
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                      Score Sugerido: {Math.round(dailyPlan.approval_score)}%
+                    </Badge>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={async () => {
+                      if (confirm("Deseja regenerar sua missão? Seu progresso atual será preservado, mas novas tarefas serão calculadas.")) {
+                        supabase.functions.invoke("unified-telemetry", {
+                          body: { userId: user!.id, eventType: "daily_mission_regenerated", module: "daily-plan" }
+                        }).then();
+                        
+                        const { error } = await supabase.functions.invoke("generate-daily-plan", {
+                          method: "POST"
+                        });
+                        if (!error) {
+                          window.location.reload();
+                        }
+                      }
+                    }}
+                    className="h-8 text-[10px] font-black uppercase tracking-widest gap-2"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Regenerar
+                  </Button>
+                </div>
               }
+
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -582,12 +614,27 @@ const DailyPlan = () => {
                     "p-5 space-y-4 transition-all group",
                     task.completed && "opacity-40 grayscale"
                   )}
-                  onClick={() => !task.completed && navigate(buildStudyPath({ 
-                    id: task.id, 
-                    topic: task.topic, 
-                    specialty: task.subject || "Medicina",
-                    type: task.type === "theory" ? "new" : task.type === "review" ? "review" : "practice"
-                  } as any, "daily-plan"))}
+                  onClick={() => {
+                    if (task.completed) return;
+                    
+                    // Telemetry: task started
+                    supabase.functions.invoke("unified-telemetry", {
+                      body: { 
+                        userId: user!.id, 
+                        eventType: "daily_mission_task_started", 
+                        module: "daily-plan",
+                        data: { task_id: task.id, type: task.type, topic: task.topic }
+                      }
+                    }).then();
+
+                    navigate(buildStudyPath({ 
+                      id: task.id, 
+                      topic: task.topic, 
+                      specialty: task.subject || "Medicina",
+                      type: task.type === "theory" ? "new" : task.type === "review" ? "review" : "practice"
+                    } as any, "daily-plan"));
+                  }}
+
                 >
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">

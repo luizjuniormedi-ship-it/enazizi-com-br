@@ -16,6 +16,12 @@ import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
 import { humanizeFSRSReason } from "@/lib/humanizedReasons";
 import MissionQuickActions from "@/components/mission-control/MissionQuickActions";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { Zap, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+
 
 interface UnifiedMissionHeroProps {
   firstName: string;
@@ -39,14 +45,79 @@ export function UnifiedMissionHero({
   recommendationType,
   recommendationTopic,
   adaptiveJustification,
-  primaryHref = "/dashboard/sessao-estudo?source=dashboard_hero",
+  primaryHref = "/dashboard/plano-dia?source=dashboard_hero",
   secondaryHref = "/dashboard/flashcards",
   posterUrl = "https://images.unsplash.com/photo-1576091160550-2173bdb999ef?q=80&w=2000&auto=format&fit=crop",
 }: UnifiedMissionHeroProps) {
+
   const navigate = useNavigate();
-  const title = recommendationTitle?.trim() || FALLBACK_TITLE;
-  const rawDesc = recommendationDescription?.trim() || FALLBACK_DESC;
+  const { data: dashData, refetch: refreshDash } = useDashboardData();
+  const [generating, setGenerating] = useState(false);
+
+  const hasPlan = dashData?.stats.hasStudyPlan ?? false;
+  const title = recommendationTitle?.trim() || (hasPlan ? "Missão de Hoje" : FALLBACK_TITLE);
+  const rawDesc = recommendationDescription?.trim() || (hasPlan ? "Continue seu plano adaptativo." : FALLBACK_DESC);
   const desc = humanizeFSRSReason(rawDesc);
+
+  const handleGenerateDaily = async () => {
+    setGenerating(true);
+    const startTime = Date.now();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Telemetry: start
+      if (session?.user) {
+        supabase.functions.invoke("unified-telemetry", {
+          body: { userId: session.user.id, eventType: "daily_mission_generate_clicked", module: "dashboard" }
+        }).then();
+      }
+
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${session?.access_token}` 
+        },
+        body: JSON.stringify({ force: true }),
+      });
+      if (!resp.ok) throw new Error("Falha na Edge Function");
+      
+      const result = await resp.json();
+
+      // Telemetry: success
+      if (session?.user) {
+        supabase.functions.invoke("unified-telemetry", {
+          body: { 
+            userId: session.user.id, 
+            eventType: "daily_mission_generated", 
+            module: "dashboard",
+            data: { latency_ms: Date.now() - startTime, plan_id: result.planId }
+          }
+        }).then();
+      }
+
+      toast({ title: "✅ Missão Gerada!", description: "Sua jornada de hoje está pronta." });
+      await refreshDash();
+    } catch (err: any) {
+      // Telemetry: error
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        supabase.functions.invoke("unified-telemetry", {
+          body: { 
+            userId: session.user.id, 
+            eventType: "daily_mission_error", 
+            module: "dashboard",
+            data: { error: err.message }
+          }
+        }).then();
+      }
+      toast({ title: "Erro", description: "Não foi possível gerar sua missão.", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+
 
   return (
     <div className="px-4 sm:px-8 lg:px-14">
@@ -97,26 +168,40 @@ export function UnifiedMissionHero({
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <Enaflix3DButton
-              size="lg"
-              glow
-              iconLeft={<Rocket className="h-5 w-5" />}
-              onClick={async () => {
-                const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
-                const { supabase } = await import("@/integrations/supabase/client");
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                  await getOrchestratorDecision(user.id, "dashboard-hero-primary", {
-                    topic: recommendationTopic,
-                    type: recommendationType,
-                    source: "unified-hero-continue"
-                  });
-                }
-                navigate(primaryHref);
-              }}
-            >
-              Continuar missão
-            </Enaflix3DButton>
+            {hasPlan ? (
+              <Enaflix3DButton
+                size="lg"
+                glow
+                iconLeft={<Rocket className="h-5 w-5" />}
+                onClick={async () => {
+                  const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+                  const { supabase } = await import("@/integrations/supabase/client");
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (user) {
+                    await getOrchestratorDecision(user.id, "dashboard-hero-primary", {
+                      topic: recommendationTopic,
+                      type: recommendationType,
+                      source: "unified-hero-continue"
+                    });
+                  }
+                  navigate(primaryHref);
+                }}
+              >
+                Continuar missão
+              </Enaflix3DButton>
+            ) : (
+              <Enaflix3DButton
+                size="lg"
+                glow
+                variant="violet"
+                iconLeft={generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
+                onClick={handleGenerateDaily}
+                disabled={generating}
+              >
+                {generating ? "Gerando..." : "Gerar Missão do Dia"}
+              </Enaflix3DButton>
+            )}
+
             <Enaflix3DButton
               variant="outline"
               size="lg"

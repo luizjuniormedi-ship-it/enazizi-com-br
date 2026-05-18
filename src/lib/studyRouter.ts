@@ -47,9 +47,10 @@ export function buildStudyPath(
   if (rec.specialty) params.set("specialty", rec.specialty);
 
   switch (rec.targetModule) {
-    case "tutor": {
+    case "tutor":
+    case "tutor-v2": {
       // Inject tutor-specific context for mission integration
-      params.set("tutor_mode", source === "mission" ? "mission" : "free");
+      params.set("tutor_mode", source === "mission" || source === "daily-plan" ? "mission" : "free");
 
       // Map task type → tutor phase
       const phaseMap: Record<string, string> = {
@@ -63,8 +64,13 @@ export function buildStudyPath(
       params.set("phase", phase);
       params.set("tutor_origin", rec.type);
 
+      // If tutor-v2, go to the newer session path
+      if (rec.targetModule === "tutor-v2") {
+        return `/dashboard/sessao-estudo?${params}`;
+      }
       return `/dashboard/mentor?${params}`;
     }
+
 
     case "questoes":
       return `/dashboard/banco-questoes?${params}`;

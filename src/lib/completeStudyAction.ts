@@ -309,6 +309,19 @@ async function logTelemetry(payload: StudyActionPayload, tablesUpdated: string[]
       tablesUpdated,
       errors: errors.length > 0 ? errors : undefined,
     });
+
+    // Telemetry Phase 2: specific daily mission events
+    if (payload.originModule === "daily-plan" || payload.originModule === "mission") {
+      supabase.functions.invoke("unified-telemetry", {
+        body: { 
+          userId: payload.userId, 
+          eventType: "daily_mission_task_completed", 
+          module: payload.originModule,
+          data: { task_id: payload.taskId, topic: payload.topic, type: payload.taskType }
+        }
+      }).then();
+    }
+
   } catch {
     // telemetry never blocks
   }

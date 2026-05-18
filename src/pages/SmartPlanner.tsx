@@ -378,8 +378,15 @@ const SmartPlanner = () => {
   const handleGenerateDaily = async () => {
     if (!user) return;
     setReprocessing(true);
+    const startTime = Date.now();
     try {
       const { data: session } = await supabase.auth.getSession();
+      
+      // Telemetry: start
+      supabase.functions.invoke("unified-telemetry", {
+        body: { userId: user.id, eventType: "daily_mission_generate_clicked", module: "planner" }
+      }).then();
+
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
         method: "POST",
         headers: { 
@@ -389,14 +396,37 @@ const SmartPlanner = () => {
         body: JSON.stringify({ force: true }),
       });
       if (!resp.ok) throw new Error("Falha na Edge Function");
+      
+      const result = await resp.json();
+
+      // Telemetry: success
+      supabase.functions.invoke("unified-telemetry", {
+        body: { 
+          userId: user.id, 
+          eventType: "daily_mission_generated", 
+          module: "planner",
+          data: { latency_ms: Date.now() - startTime, plan_id: result.planId }
+        }
+      }).then();
+
       toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta." });
       loadData();
-    } catch (err) {
+    } catch (err: any) {
+      // Telemetry: error
+      supabase.functions.invoke("unified-telemetry", {
+        body: { 
+          userId: user.id, 
+          eventType: "daily_mission_error", 
+          module: "planner",
+          data: { error: err.message }
+        }
+      }).then();
       toast({ title: "Erro", description: "Não foi possível gerar o cronograma.", variant: "destructive" });
     } finally {
       setReprocessing(false);
     }
   };
+
 
   // Handlers (preserved from original)
   const handleAddTema = async (
