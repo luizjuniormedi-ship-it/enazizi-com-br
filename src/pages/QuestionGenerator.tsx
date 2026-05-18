@@ -322,11 +322,38 @@ const QuestionGenerator = () => {
                   variant="ghost" 
                   size="sm" 
                   className="h-6 text-[10px] text-primary hover:text-primary/80 gap-1 px-2"
-                  onClick={() => {
-                    setDifficulty("misto");
-                    setQuantity(15);
-                    toast({ title: "Equalizador Ativado", description: "Ajustado para 15 questões com mix de dificuldade." });
+                  onClick={async () => {
+                    setLoadingWeakTopics(true);
+                    try {
+                      const { data } = await supabase
+                        .from("performance_metrics")
+                        .select("tema, mastery_score")
+                        .eq("user_id", user?.id)
+                        .order("mastery_score", { ascending: true })
+                        .limit(3);
+                      
+                      if (data && data.length > 0) {
+                        const weakThemes = data.map(d => d.tema).join(", ");
+                        setSpecificTopic(weakThemes);
+                        setDifficulty("misto");
+                        setQuantity(15);
+                        toast({ 
+                          title: "Equalizador Inteligente Ativado", 
+                          description: `Focando em suas maiores fraquezas: ${weakThemes}. Ajustado para 15 questões mistas.` 
+                        });
+                      } else {
+                        setDifficulty("misto");
+                        setQuantity(15);
+                        toast({ title: "Equalizador Ativado", description: "Ajustado para 15 questões com mix de dificuldade." });
+                      }
+                    } catch (err) {
+                      setDifficulty("misto");
+                      setQuantity(15);
+                    } finally {
+                      setLoadingWeakTopics(false);
+                    }
                   }}
+
                 >
                   <RefreshCw className="h-3 w-3" /> EQUALIZADOR
                 </Button>
