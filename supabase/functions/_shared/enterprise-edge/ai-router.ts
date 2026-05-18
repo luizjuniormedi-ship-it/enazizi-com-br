@@ -119,15 +119,20 @@ export async function callAi(
     const errorText = await res.text();
     logger.error("AI_ERROR", `Model ${model} failed`, { status: res.status, error: errorText });
     
-    await supabaseAdmin.from("ai_incidents").insert({
-      function_name: "ai-router",
-      model_name: model,
-      severity: "critical",
-      incident_type: "gateway_error",
-      message: `AI Gateway error ${res.status}: ${errorText}`,
-      correlation_id: logger.correlationId,
-      metadata: { status: res.status }
-    }).catch(() => {});
+    try {
+      await supabaseAdmin.from("ai_incidents").insert({
+        function_name: "ai-router",
+        model_name: model,
+        severity: "critical",
+        incident_type: "gateway_error",
+        message: `AI Gateway error ${res.status}: ${errorText}`,
+        correlation_id: logger.correlationId,
+        metadata: { status: res.status }
+      });
+    } catch (err) {
+      logger.warn("INCIDENT_LOG_FAIL", "Failed to log AI gateway error incident", { error: err.message });
+    }
+
 
     throw new Error(`AI Gateway error ${res.status}: ${errorText}`);
   }
