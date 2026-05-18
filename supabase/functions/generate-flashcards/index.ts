@@ -11,7 +11,7 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
   const body = await req.json().catch(() => ({}));
   const aiResponse = await callAi({
     model: ALLOWED_MODELS.generation,
-    messages: [{ role: "system", content: "Gerador de Flashcards ENAZIZI" }, { role: "user", content: body.topic || "Geral" }],
+    messages: [{ role: "system", content: FLASHCARD_MOTOR_PREMIUM }, { role: "user", content: `Gere 5 flashcards FSRS sobre: ${body.topic || "Geral"}. Responda apenas com o conteúdo dos cards.` }],
     stream: true,
   }, logger, supabaseAdmin);
   return new Response(aiResponse.body, { headers: { "Content-Type": "text/event-stream" } });
