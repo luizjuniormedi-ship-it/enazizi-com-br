@@ -74,15 +74,20 @@ export async function callAi(
       replacement_model: model
     });
     
-    await supabaseAdmin.from("ai_incidents").insert({
-      function_name: "ai-router",
-      model_name: originalModel,
-      severity: "warning",
-      incident_type: "validation_error",
-      message: `Invalid AI model replaced: ${originalModel}`,
-      correlation_id: logger.correlationId
-    }).catch(() => {});
+    try {
+      await supabaseAdmin.from("ai_incidents").insert({
+        function_name: "ai-router",
+        model_name: originalModel,
+        severity: "warning",
+        incident_type: "validation_error",
+        message: `Invalid AI model replaced: ${originalModel}`,
+        correlation_id: logger.correlationId
+      });
+    } catch (err) {
+      logger.warn("INCIDENT_LOG_FAIL", "Failed to log AI model replacement incident", { error: err.message });
+    }
   }
+
 
   const startTime = Date.now();
   logger.info("AI_CALL", `Calling model ${model}`, { model, taskType: payload.taskType, stream: !!payload.stream });
