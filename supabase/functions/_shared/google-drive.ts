@@ -123,7 +123,7 @@ export async function processSingleDriveFile(
     }
 
     if (file.size && parseInt(file.size) > MAX_FILE_SIZE) {
-      const error = `File too large: ${file.size} bytes. Limit 5MB.`;
+      const error = `File too large: ${file.size} bytes. Limit 50MB.`;
       logger.warn("FILE_SKIP", error);
       await supabaseAdmin.from("drive_ingestion_log").update({ status: 'failed', error_message: error }).eq('file_id', fileId);
       return { status: "skipped", reason: "size_limit" };
