@@ -110,10 +110,17 @@ export async function processSingleDriveFile(
     const accessToken = await getGoogleAccessToken(serviceAccount, logger);
 
     // 2. Get File Metadata
-    const metaResp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,size`, {
+    const metaResp = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,size,mimeType`, {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
     const file = await metaResp.json();
+
+    if (file.mimeType === "application/vnd.google-apps.folder") {
+      const error = `File ${file.name} is a folder, not a PDF. Skipping.`;
+      logger.warn("FILE_SKIP", error);
+      await supabaseAdmin.from("drive_ingestion_log").update({ status: 'failed', error_message: error }).eq('file_id', fileId);
+      return { status: "skipped", reason: "is_folder" };
+    }
 
     if (file.size && parseInt(file.size) > MAX_FILE_SIZE) {
       const error = `File too large: ${file.size} bytes. Limit 5MB.`;
