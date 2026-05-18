@@ -320,10 +320,28 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
         </Button>
       </div>
 
-      {students.length > 0 && (
+      {(students.length > 0 || searchTerm) && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Filtrar por nome..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 h-9" />
+          <Input 
+            placeholder="Buscar aluno por nome ou email..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="pl-9 pr-9 h-10 shadow-sm border-primary/20 focus:border-primary transition-all" 
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {loading && (
+            <div className="absolute right-10 top-1/2 -translate-y-1/2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            </div>
+          )}
         </div>
       )}
 
