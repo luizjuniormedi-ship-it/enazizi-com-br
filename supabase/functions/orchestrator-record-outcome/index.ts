@@ -31,6 +31,8 @@ import {
   corsHeaders, jsonResponse, errorResponse,
   getServiceClient, getUserIdFromRequest,
 } from "../_shared/assistant-helpers.ts";
+import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
