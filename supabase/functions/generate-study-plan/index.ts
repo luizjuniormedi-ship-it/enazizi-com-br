@@ -6,7 +6,7 @@ import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, waitUntil, supabaseAdmin, ai }) => {
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
-  const { examDate, hoursPerDay, daysPerWeek, editalText, strictMode, performanceData } = body;
+  const { examDate, hoursPerDay, daysPerWeek, editalText, strictMode, performanceData, existingSubjects } = body;
 
   logger.info("PLAN_GEN_START", "Starting Master Planner Generation", { 
     userId: user.id, 
