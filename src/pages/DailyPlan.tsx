@@ -572,12 +572,37 @@ const DailyPlan = () => {
               title="Missão do Dia Adaptativa"
               subtitle={dailyPlan.objective || "Seu coordenador pedagógico reorganizou seu estudo para hoje."}
               action={
-                dailyPlan.approval_score && (
-                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                    Score Sugerido: {Math.round(dailyPlan.approval_score)}%
-                  </Badge>
-                )
+                <div className="flex items-center gap-2">
+                  {dailyPlan.approval_score && (
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                      Score Sugerido: {Math.round(dailyPlan.approval_score)}%
+                    </Badge>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={async () => {
+                      if (confirm("Deseja regenerar sua missão? Seu progresso atual será preservado, mas novas tarefas serão calculadas.")) {
+                        supabase.functions.invoke("unified-telemetry", {
+                          body: { userId: user!.id, eventType: "daily_mission_regenerated", module: "daily-plan" }
+                        }).then();
+                        
+                        const { error } = await supabase.functions.invoke("generate-daily-plan", {
+                          method: "POST"
+                        });
+                        if (!error) {
+                          window.location.reload();
+                        }
+                      }
+                    }}
+                    className="h-8 text-[10px] font-black uppercase tracking-widest gap-2"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Regenerar
+                  </Button>
+                </div>
               }
+
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
