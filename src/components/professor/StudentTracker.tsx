@@ -77,10 +77,11 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
     try {
       const res = await callAPI({
         action: "get_students",
-        faculdade: faculdade && faculdade !== "all" ? faculdade : undefined,
-        periodo: periodo && periodo !== "all" ? parseInt(periodo) : undefined,
+        faculdades: faculdade && faculdade !== "all" ? [faculdade] : undefined,
+        periodos: periodo && periodo !== "all" ? [parseInt(periodo)] : undefined,
         query: searchTerm.trim() || undefined,
       });
+
       setStudents(res.students || []);
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
