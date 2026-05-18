@@ -45,29 +45,63 @@ serve(async (req) => {
     const now = Math.floor(Date.now() / 1000);
 
     let pk = credentials.private_key;
-    console.log(`Auth test PK start: ${pk.substring(0, 30)}`);
     
     // 1. Replace literal \n with real newline
     pk = pk.replace(/\\n/g, '\n');
+    console.log(`Auth test PK after replace prefix: ${pk.substring(0, 30)}`);
 
     // 2. Remove header, footer and whitespace
-    const pemContents = pk
-      .replace("-----BEGIN PRIVATE KEY-----", "")
-      .replace("-----END PRIVATE KEY-----", "")
-      .replace(/\s/g, "");
+    const pemHeader = "-----BEGIN PRIVATE KEY-----";
+    const pemFooter = "-----END PRIVATE KEY-----";
+    const pemContent = pk
+      .replace(pemHeader, "")
+      .replace(pemFooter, "")
+      .replace(/\n/g, "")
+      .replace(/\r/g, "")
+      .trim();
 
     // 3. Decode base64
-    const keyData = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+    const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
 
-    const jwt = await new jose.SignJWT({
+    // 4. Import Key using Native Crypto (matching shared logic)
+    const cryptoKey = await crypto.subtle.importKey(
+      "pkcs8",
+      keyData,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    // 5. Generate JWT components
+    const header = { alg: "RS256", typ: "JWT" };
+    const payload = {
       iss: credentials.client_email,
       scope: "https://www.googleapis.com/auth/drive.readonly",
       aud: "https://oauth2.googleapis.com/token",
       exp: now + 3600,
       iat: now,
-    })
-      .setProtectedHeader({ alg: "RS256" })
-      .sign(await jose.importPKCS8(pk.replace(/\\n/g, '\n'), "RS256"));
+    };
+
+    const base64UrlEncode = (obj: any) => {
+      const str = JSON.stringify(obj);
+      return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+    };
+
+    const encodedHeader = base64UrlEncode(header);
+    const encodedPayload = base64UrlEncode(payload);
+    const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+
+    // 6. Sign
+    const signature = await crypto.subtle.sign(
+      "RSASSA-PKCS1-v1_5",
+      cryptoKey,
+      new TextEncoder().encode(unsignedToken)
+    );
+
+    const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+
+    const jwt = `${unsignedToken}.${encodedSignature}`;
 
     results.step = "token_exchange";
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
