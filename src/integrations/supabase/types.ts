@@ -18548,7 +18548,7 @@ export type Database = {
           quality_score: number
           source_drive_id: string | null
           source_file: string | null
-          source_url: string
+          source_url: string | null
           specialty_id: string | null
           statement: string
           statement_hash: string
@@ -18583,7 +18583,7 @@ export type Database = {
           quality_score?: number
           source_drive_id?: string | null
           source_file?: string | null
-          source_url: string
+          source_url?: string | null
           specialty_id?: string | null
           statement: string
           statement_hash: string
@@ -18618,7 +18618,7 @@ export type Database = {
           quality_score?: number
           source_drive_id?: string | null
           source_file?: string | null
-          source_url?: string
+          source_url?: string | null
           specialty_id?: string | null
           statement?: string
           statement_hash?: string
