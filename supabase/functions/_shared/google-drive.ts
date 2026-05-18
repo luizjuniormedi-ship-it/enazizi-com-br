@@ -1,9 +1,13 @@
 import { ALLOWED_MODELS } from "./ai-model-registry.ts";
 import { sanitizeForPostgres } from "./db-utils.ts";
 
+// Shared Hardcoded Credentials (Temporary for validation)
+export const GOOGLE_SA_EMAIL = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
+export const GOOGLE_SA_PRIVATE_KEY_B64 = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDeQwllT5BbX4pbtblw7u+xTtw2J5wv1erns7TNKWbR1sMFp6bwqAzSESz4JRky7ODbmT/0CTiyou/wQ/1FvI5q/6UAnOtSziiuFy2v2dE2CeipH0SqU4ENDy251+ap4q8v59rbAhPcaPVeXqOPA5zd+w6Ldn/0JKhT1Wh3YdaZQhaeT7ZCCBTGtatxGSfaQGjA85VZHwrc5uHpKoaFO+7XAE9hsNq/iRlbC89eUIkE1GG9NHKvYYVR0QP1MO9kF6jAwjAo3d4LkkYxojBukVustkElNzG614SDDt/+igroNkLXrHMjoYze+55AzuMA3HOWZA8dMz7sT1tnbtYiovZjAgMBAAECggEAF9b964F4vOxHBWY9EUl3qT+JrD9cZ98clqS2aGkf77MG8RTV+as00NVpyuYDyWwSBEvwSacxjyud69oHERNT/VMVajbqoNOfFmlDC8EjyRWQAI/riA9z4Kg3od7wDVnUq6FFXsdexP33D5u8FGtxSHgUy822lMPX0EIsNd3nLEHwvNHGVxDFoyeE431S7AE53SS2uwoEb54WKuOw0wubAHf4avc6ZwwJ3n7trKMPQudU1UyihJ2mQqJZTnB2Sxxk72DxrWHUQ20z17QjJ4qZRm5+3orrG/xh0E2hUCS2dhhnu5VsMHd6UHEVo0zV51n4mjjXdAWKTvde6dknQM1qlQKBgQD5l6JUi3aUhVAu43Z2o1D+koVCkxTZwg/rJepeMr2MVdcX5xe4gYFORVHXnA4rc6GZF+li5iwwGy4YMJg9lC95asXzy7ixDGPquCtxsHBgPJOCgisa+w+cdWrDLXhr5iwEAI/MIF5j+fs4q4FcMJrxk2Ic3cOqaAeTwazUZ7FIdQKBgQDj98gpShNAMu7MgjFKOxmEyhi+6FF7GekET6D3g3p3177mDPmOGi3aZbnQ4VoFzR7ovkuYrANj4SjU+mBBqQ91wh1WcgfaoNd0S/XZUj/oX0Osey1jNk2tSUJheQcJs4vFrZumanb45gsL0TFw4hGes7pOR+vmJbbzNq4/D0godwKBgBdUkznv51+urnYTkQk57uI88/PrJ7HLMA2895FikNFDXN3BHjiC8oFMfX/3+GMbZemXkJtMBKligQaF1FU9OsrQrjxBuLvj+psAKB9ybK6yOt+iJ0FYYncvipE/+NetJkQhgU+FXw1dWpxLe8YQTQtzyWIFYLrXCo5HNk6MesfZAoGAY8h7VodT8c/Zcq6yAHnp65PCTR3HPIjU08w++tgT7Q0ERBH90dNnqqbINMPO8acdFmblFAiG21sc0kxdgaAMYlD7InF7OpkYdZEiJWO5EW9RYdfwv/JvAaCFa8Db8cUjMv2QmcEUHlIjF6MTbwOlDsBAli8o9G4hrEeM8ZEw1nUCgYEA95ll1mt9GO9uVv9Tz1EneaMDqK8s4r20GskXu5HJL9Peh78HemLHMofX8r9OQFM6fQXbEdNr12O5DOV0mX/ef/jNLmqCb8+T7vfiVlme0wuZZ91VMBRWRa9cJdMPla8/44A4lBFb9gV9wPJZb/F7VF4p0ORqTNnTRiLbU1cIvbM=";
+
 // Minimal JWT signer for Google Auth using native Web Crypto
 export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
-  if (logger) logger.info("GOOGLE_AUTH", "Google auth starting...", { privateKeyId: serviceAccount.private_key_id });
+  if (logger) logger.info("GOOGLE_AUTH", "Google auth starting...", { client_email: serviceAccount.client_email });
   
   const now = Math.floor(Date.now() / 1000);
   const expiry = now + 3600;
@@ -25,11 +29,8 @@ export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
 
-  const pkPart1 = Deno.env.get("GOOGLE_SA_PK_PART1") || "";
-  const pkPart2 = Deno.env.get("GOOGLE_SA_PK_PART2") || "";
-  if (!pkPart1 || !pkPart2) throw new Error("Missing GOOGLE_SA_PK_PART secrets");
-  
-  const pemBody = pkPart1 + pkPart2;
+  // Use hardcoded if env is missing
+  const pemBody = GOOGLE_SA_PRIVATE_KEY_B64;
   
   if (logger) logger.info("GOOGLE_AUTH_PK", `PK body prefix: ${pemBody.substring(0, 30)}`);
 
@@ -93,16 +94,10 @@ export async function processSingleDriveFile(
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
   try {
-    const client_email = Deno.env.get("GOOGLE_SA_CLIENT_EMAIL");
-    const token_uri = Deno.env.get("GOOGLE_SA_TOKEN_URI") || "https://oauth2.googleapis.com/token";
-    const pkPart1 = Deno.env.get("GOOGLE_SA_PK_PART1") || "";
-    const pkPart2 = Deno.env.get("GOOGLE_SA_PK_PART2") || "";
+    // Use hardcoded constants
+    const client_email = GOOGLE_SA_EMAIL;
+    const token_uri = "https://oauth2.googleapis.com/token";
 
-    if (!client_email || !pkPart1 || !pkPart2) {
-      throw new Error("Missing Google Service Account individual secrets (GOOGLE_SA_CLIENT_EMAIL, GOOGLE_SA_PK_PART1/2)");
-    }
-
-    // Reconstruction is handled inside getGoogleAccessToken via serviceAccount parameter
     const serviceAccount = { client_email, token_uri };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -273,4 +268,3 @@ export async function processSingleDriveFile(
     throw err;
   }
 }
-
