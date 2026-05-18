@@ -9,6 +9,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { fetchDynamicBlueprint } from "../_shared/dynamic-blueprints.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+if (!LOVABLE_API_KEY) {
+  console.error("[question-generator] CRITICAL: LOVABLE_API_KEY missing");
+}
+
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
