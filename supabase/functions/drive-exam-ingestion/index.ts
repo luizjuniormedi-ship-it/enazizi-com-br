@@ -7,34 +7,59 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
-async function listFilesRecursive(folderId: string, accessToken: string, supabase: any, user: any, logger: any, depth = 0) {
-  if (depth > 5) return;
+async function listFilesRecursive(folderId: string, accessToken: string, supabase: any, user: any, logger: any, path: string = "root", depth = 0) {
+  if (depth > 15) return; // Increased depth
   
-  const listUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,size,mimeType)`;
-  const resp = await fetch(listUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-  
-  if (!resp.ok) {
-    logger.error("DRIVE_LIST", `Error listing ${folderId}: ${await resp.text()}`);
-    return;
-  }
+  let pageToken: string | undefined = undefined;
+  let totalInFolder = 0;
 
-  const data = await resp.json();
-  const items = data.files || [];
+  do {
+    const url = new URL("https://www.googleapis.com/drive/v3/files");
+    url.searchParams.set("q", `'${folderId}' in parents and trashed = false`);
+    url.searchParams.set("fields", "nextPageToken, files(id, name, mimeType, size, shortcutDetails)");
+    url.searchParams.set("pageSize", "1000"); // Maximize page size
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
 
-  for (const item of items) {
-    if (item.mimeType === "application/pdf") {
-      await supabase.from("drive_ingestion_log").upsert({
-        file_id: item.id,
-        file_name: item.name,
-        file_size: item.size ? parseInt(item.size) : null,
-        status: 'pending',
-        processed_by: user.id
-      }, { onConflict: 'file_id' });
-    } else if (item.mimeType === "application/vnd.google-apps.folder") {
-      await listFilesRecursive(item.id, accessToken, supabase, user, logger, depth + 1);
+    const resp = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    
+    if (!resp.ok) {
+      logger.error("DRIVE_LIST", `Error listing ${path} (${folderId}): ${await resp.text()}`);
+      return;
     }
+
+    const data = await resp.json();
+    const items = data.files || [];
+    pageToken = data.nextPageToken;
+
+    for (const item of items) {
+      let targetId = item.id;
+      let targetMimeType = item.mimeType;
+
+      // Handle shortcuts
+      if (item.mimeType === "application/vnd.google-apps.shortcut" && item.shortcutDetails) {
+        targetId = item.shortcutDetails.targetId;
+        targetMimeType = item.shortcutDetails.targetMimeType;
+      }
+
+      if (targetMimeType === "application/pdf") {
+        totalInFolder++;
+        await supabase.from("drive_ingestion_log").upsert({
+          file_id: targetId,
+          file_name: item.name,
+          file_size: item.size ? parseInt(item.size) : null,
+          status: 'pending',
+          processed_by: user.id
+        }, { onConflict: 'file_id' });
+      } else if (targetMimeType === "application/vnd.google-apps.folder") {
+        await listFilesRecursive(targetId, accessToken, supabase, user, logger, `${path}/${item.name}`, depth + 1);
+      }
+    }
+  } while (pageToken);
+  
+  if (totalInFolder > 0) {
+    logger.info("SCAN", `Found ${totalInFolder} PDFs in ${path}`);
   }
 }
 
@@ -60,20 +85,23 @@ serve(async (req) => {
       .from("drive_ingestion_log")
       .select("file_id, file_name")
       .eq("status", "pending")
-      .order("file_name", { ascending: true }) // Simplified priority via name for now
+      .order("file_name", { ascending: true }) 
       .limit(3);
 
-    // 2. If no pending, scan Drive
-    if (!pendingFiles || pendingFiles.length === 0) {
-      logger.info("PIPELINE", "No pending files. Starting new scan...");
-      const ROOT_FOLDER_ID = "1sR5ArIv6MWc-1QR4zhfRKNG07queUya-";
-      const client_email = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
-      const token_uri = "https://oauth2.googleapis.com/token";
-      const accessToken = await getGoogleAccessToken({ client_email, token_uri });
+    // 2. Scan Drive (Always scan a bit to keep finding new things)
+    logger.info("PIPELINE", "Checking for new files...");
+    const ROOT_FOLDER_ID = "1sR5ArIv6MWc-1QR4zhfRKNG07queUya-";
+    const client_email = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
+    const token_uri = "https://oauth2.googleapis.com/token";
+    const accessToken = await getGoogleAccessToken({ client_email, token_uri });
 
-      await listFilesRecursive(ROOT_FOLDER_ID, accessToken, supabaseAdmin, user, logger);
-      
-      // Try fetching again after scan
+    // Background scan (don't await fully to avoid timeout)
+    listFilesRecursive(ROOT_FOLDER_ID, accessToken, supabaseAdmin, user, logger).catch(e => logger.error("SCAN_ERROR", e.message));
+    
+    // If we already have files, don't wait for scan to finish
+    if (!pendingFiles || pendingFiles.length === 0) {
+      // Small wait for first few files if empty
+      await new Promise(r => setTimeout(r, 5000));
       const { data: refreshedPending } = await supabaseAdmin
         .from("drive_ingestion_log")
         .select("file_id, file_name")

@@ -9877,6 +9877,33 @@ export type Database = {
         }
         Relationships: []
       }
+      drive_folders_scan: {
+        Row: {
+          files_count: number | null
+          id: string
+          name: string | null
+          parent_id: string | null
+          path: string | null
+          scanned_at: string | null
+        }
+        Insert: {
+          files_count?: number | null
+          id: string
+          name?: string | null
+          parent_id?: string | null
+          path?: string | null
+          scanned_at?: string | null
+        }
+        Update: {
+          files_count?: number | null
+          id?: string
+          name?: string | null
+          parent_id?: string | null
+          path?: string | null
+          scanned_at?: string | null
+        }
+        Relationships: []
+      }
       drive_ingestion_log: {
         Row: {
           created_at: string | null
