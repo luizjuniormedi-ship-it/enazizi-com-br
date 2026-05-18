@@ -91,7 +91,7 @@ export async function processSingleDriveFile(
   fileId: string, 
   { supabaseAdmin, logger, user }: { supabaseAdmin: any, logger: any, user: any }
 ) {
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 
   try {
     // Use hardcoded constants
@@ -208,58 +208,73 @@ export async function processSingleDriveFile(
       if (!q.statement || !q.options || q.options.length < 4) continue;
 
       // Insert into real_exam_questions
+      const questionData = sanitizeForPostgres({
+        statement: q.statement,
+        statement_hash: generateStatementHash(q.statement),
+        options: q.options,
+        correct_index: q.correct_index,
+        explanation: q.explanation,
+        topic: q.topic,
+        subtopic: q.subtopic,
+        board: q.board,
+        year: q.year,
+        institution: q.institution,
+        difficulty: q.difficulty || 3, // Mapping correctly to 'difficulty' column
+        difficulty_level: q.difficulty || 3, // Also keep difficulty_level if exists
+        is_clinical_case: !!q.clinical_case,
+        tags: Array.isArray(q.tags) ? q.tags : [],
+        exam_info: file.name.replace(".pdf", ""),
+        quality_score: 0.95,
+        confidence_score: 0.9,
+        answer_source: "ai_extraction",
+        source_file: file.name,
+        source_drive_id: file.id,
+        source_url: `https://drive.google.com/file/d/${file.id}/view`,
+        is_active: true
+      });
+
       const { data: realQ, error: realErr } = await supabaseAdmin
         .from("real_exam_questions")
-        .insert(sanitizeForPostgres({
-          statement: q.statement,
-          statement_hash: generateStatementHash(q.statement),
-          options: q.options,
-          correct_index: q.correct_index,
-          explanation: q.explanation,
-          topic: q.topic,
-          subtopic: q.subtopic,
-          board: q.board,
-          year: q.year,
-          institution: q.institution,
-          difficulty_level: q.difficulty,
-          is_clinical_case: q.clinical_case,
-          tags: q.tags,
-          exam_info: file.name.replace(".pdf", ""),
-          quality_score: 0.95,
-          source_file: file.name,
-          source_drive_id: file.id,
-          source_url: `https://drive.google.com/file/d/${file.id}/view`,
-          is_active: true
-        }))
+        .insert(questionData)
         .select("id")
         .single();
 
       if (realErr) {
-        logger.error("DB_ERROR", `Failed to insert question: ${realErr.message}`);
+        logger.error("DB_ERROR_REAL", `Failed to insert into real_exam_questions: ${realErr.message}`, { error: realErr, question: q.statement.substring(0, 50) });
         continue;
       }
 
       // Insert into questions_bank
+      const bankData = sanitizeForPostgres({
+        user_id: user.id,
+        statement: q.statement,
+        options: Array.isArray(q.options) && q.options.length >= 4 ? q.options.slice(0, 5) : ["A", "B", "C", "D"],
+        correct_index: typeof q.correct_index === 'number' && q.correct_index >= 0 && q.correct_index < 5 ? q.correct_index : 0,
+        explanation: q.explanation || "Sem explicação disponível.",
+        topic: q.topic,
+        subtopic: q.subtopic,
+        difficulty: q.difficulty || 3, 
+        difficulty_level: q.difficulty || 3, 
+        is_clinical_case: !!q.clinical_case,
+        tags: Array.isArray(q.tags) ? q.tags : [],
+        source: file.name.replace(".pdf", ""),
+        is_global: true,
+        review_status: "approved",
+        quality_tier: "gold",
+        source_type: "official_exam",
+        board: q.board,
+        institution: q.institution,
+        year: q.year
+      });
+
       const { error: bankErr } = await supabaseAdmin
         .from("questions_bank")
-        .insert(sanitizeForPostgres({
-          user_id: user.id,
-          statement: q.statement,
-          options: q.options,
-          correct_index: q.correct_index,
-          explanation: q.explanation,
-          topic: q.topic,
-          subtopic: q.subtopic,
-          difficulty_level: q.difficulty,
-          is_clinical_case: q.clinical_case,
-          tags: q.tags,
-          source: file.name.replace(".pdf", ""),
-          is_global: true,
-          review_status: "approved",
-          original_question_id: realQ.id,
-          quality_tier: "gold",
-          source_type: "official_exam"
-        }));
+        .insert(bankData);
+
+      if (bankErr) {
+        logger.error("DB_ERROR_BANK", `Failed to insert into questions_bank: ${bankErr.message}`, { error: bankErr });
+        continue;
+      }
 
       if (!bankErr) {
         savedCount++;
