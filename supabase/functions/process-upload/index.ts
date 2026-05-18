@@ -125,8 +125,9 @@ async function processInBackground(
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
       
       const ocrResponse = await aiFetch({
-        model: "google/gemini-2.0-flash", // Use a vision capable model
+        model: "google/gemini-2.5-flash", // Use a vision capable model
         messages: [
+
           {
             role: "user",
             content: [
