@@ -7,8 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
-async function listFilesRecursive(folderId: string, accessToken: string, logger: any) {
-  let allFiles: any[] = [];
+async function listFilesRecursive(folderId: string, accessToken: string, supabase: any, user: any, logger: any, depth = 0) {
+  if (depth > 5) return; // Prevent too deep recursion
   
   const listUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,size,mimeType)`;
   const resp = await fetch(listUrl, {
@@ -17,7 +17,7 @@ async function listFilesRecursive(folderId: string, accessToken: string, logger:
   
   if (!resp.ok) {
     logger.error("DRIVE_LIST", `Error listing ${folderId}: ${await resp.text()}`);
-    return [];
+    return;
   }
 
   const data = await resp.json();
@@ -25,14 +25,19 @@ async function listFilesRecursive(folderId: string, accessToken: string, logger:
 
   for (const item of items) {
     if (item.mimeType === "application/pdf") {
-      allFiles.push(item);
+      // Save directly to DB as we find them to avoid memory/timeout issues
+      await supabase.from("drive_ingestion_log").upsert({
+        file_id: item.id,
+        file_name: item.name,
+        file_size: item.size ? parseInt(item.size) : null,
+        status: 'pending',
+        processed_by: user.id
+      }, { onConflict: 'file_id' });
+      logger.info("INGESTION", `Registered: ${item.name}`);
     } else if (item.mimeType === "application/vnd.google-apps.folder") {
-      const subFiles = await listFilesRecursive(item.id, accessToken, logger);
-      allFiles = allFiles.concat(subFiles);
+      await listFilesRecursive(item.id, accessToken, supabase, user, logger, depth + 1);
     }
   }
-
-  return allFiles;
 }
 
 serve(async (req) => {
@@ -58,39 +63,19 @@ serve(async (req) => {
 
     const accessToken = await getGoogleAccessToken(serviceAccount);
 
-    // List PDFs recursively
-    logger.info("INGESTION", "Starting recursive scan...");
-    const pdfFiles = await listFilesRecursive(ROOT_FOLDER_ID, accessToken, logger);
-    logger.info("INGESTION", `Found ${pdfFiles.length} PDFs total`);
-
-    // Clean up old log (which had folders)
-    await supabaseAdmin.from("drive_ingestion_log").delete().neq("status", "completed");
-
-    let registeredCount = 0;
-    for (const file of pdfFiles) {
-      const { data: existing } = await supabaseAdmin
-        .from("drive_ingestion_log")
-        .select("id")
-        .eq("file_id", file.id)
-        .maybeSingle();
-
-      if (!existing) {
-        await supabaseAdmin.from("drive_ingestion_log").insert({
-          file_id: file.id,
-          file_name: file.name,
-          file_size: file.size ? parseInt(file.size) : null,
-          status: 'pending',
-          processed_by: user.id
-        });
-        registeredCount++;
-      }
-    }
+    // List PDFs recursively - this might still timeout, but now it saves as it goes
+    logger.info("INGESTION", "Starting recursive scan (saving to DB)...");
+    
+    // We start the scan in the background by returning a response early or just letting it run
+    // Since we want the user to see progress, we'll try to run it for a bit then return
+    
+    listFilesRecursive(ROOT_FOLDER_ID, accessToken, supabaseAdmin, user, logger)
+      .then(() => logger.info("INGESTION", "Scan completed"))
+      .catch(e => logger.error("INGESTION", `Scan failed: ${e.message}`));
 
     return new Response(JSON.stringify({ 
-      status: "success", 
-      registered: registeredCount, 
-      total_found: pdfFiles.length,
-      pdfs: pdfFiles.slice(0, 10).map(f => f.name)
+      status: "started", 
+      message: "Recursive scan started in background. Check drive_ingestion_log table."
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (err) {
