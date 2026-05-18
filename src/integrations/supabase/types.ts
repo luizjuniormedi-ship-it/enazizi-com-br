@@ -9889,6 +9889,7 @@ export type Database = {
           questions_found: number | null
           questions_saved: number | null
           status: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -9901,6 +9902,7 @@ export type Database = {
           questions_found?: number | null
           questions_saved?: number | null
           status?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -9913,6 +9915,7 @@ export type Database = {
           questions_found?: number | null
           questions_saved?: number | null
           status?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
