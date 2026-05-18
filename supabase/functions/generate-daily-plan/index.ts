@@ -13,8 +13,8 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
 
   logger.info("DAILY_PLAN_START", "Starting Adaptive Coordinator", { userId: user.id });
 
-  // 1. Fetch current status (reviews, errors, profile, progress)
-  const [revisoesRes, errorsRes, profileRes, studyPlanRes] = await Promise.all([
+  // 1. Fetch current status (reviews, errors, profile, progress, scores)
+  const [revisoesRes, errorsRes, profileRes, studyPlanRes, approvalRes, fsrsRes] = await Promise.all([
     supabaseAdmin.from("revisoes")
       .select("id, tema_id, data_revisao, prioridade, estabilidade, dificuldade")
       .eq("user_id", user.id)
@@ -38,8 +38,19 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
       .eq("status", "completed")
       .order("updated_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle(),
+    supabaseAdmin.from("approval_scores")
+      .select("score, phase, review_score")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabaseAdmin.from("fsrs_cards")
+      .select("stability, difficulty, reps")
+      .eq("user_id", user.id)
+      .limit(30)
   ]);
+
 
   const dailyHours = profileRes.data?.daily_study_hours || 4;
   
