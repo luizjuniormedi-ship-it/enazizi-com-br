@@ -85,20 +85,23 @@ serve(async (req) => {
       .from("drive_ingestion_log")
       .select("file_id, file_name")
       .eq("status", "pending")
-      .order("file_name", { ascending: true }) // Simplified priority via name for now
+      .order("file_name", { ascending: true }) 
       .limit(3);
 
-    // 2. If no pending, scan Drive
-    if (!pendingFiles || pendingFiles.length === 0) {
-      logger.info("PIPELINE", "No pending files. Starting new scan...");
-      const ROOT_FOLDER_ID = "1sR5ArIv6MWc-1QR4zhfRKNG07queUya-";
-      const client_email = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
-      const token_uri = "https://oauth2.googleapis.com/token";
-      const accessToken = await getGoogleAccessToken({ client_email, token_uri });
+    // 2. Scan Drive (Always scan a bit to keep finding new things)
+    logger.info("PIPELINE", "Checking for new files...");
+    const ROOT_FOLDER_ID = "1sR5ArIv6MWc-1QR4zhfRKNG07queUya-";
+    const client_email = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
+    const token_uri = "https://oauth2.googleapis.com/token";
+    const accessToken = await getGoogleAccessToken({ client_email, token_uri });
 
-      await listFilesRecursive(ROOT_FOLDER_ID, accessToken, supabaseAdmin, user, logger);
-      
-      // Try fetching again after scan
+    // Background scan (don't await fully to avoid timeout)
+    listFilesRecursive(ROOT_FOLDER_ID, accessToken, supabaseAdmin, user, logger).catch(e => logger.error("SCAN_ERROR", e.message));
+    
+    // If we already have files, don't wait for scan to finish
+    if (!pendingFiles || pendingFiles.length === 0) {
+      // Small wait for first few files if empty
+      await new Promise(r => setTimeout(r, 5000));
       const { data: refreshedPending } = await supabaseAdmin
         .from("drive_ingestion_log")
         .select("file_id, file_name")
