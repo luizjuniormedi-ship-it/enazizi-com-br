@@ -5,6 +5,8 @@ import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
