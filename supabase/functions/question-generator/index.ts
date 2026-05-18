@@ -8,6 +8,8 @@ import { jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { fetchDynamicBlueprint } from "../_shared/dynamic-blueprints.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
+
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
