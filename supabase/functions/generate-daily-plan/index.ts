@@ -198,8 +198,28 @@ Sempre:
     .select("id")
     .single();
 
-
   if (planErr) throw planErr;
+
+  // Bulk insert tasks into operational table
+  if (tasks.length > 0) {
+    const taskInserts = tasks.map((t: any) => ({
+      daily_plan_id: finalPlan.id,
+      user_id: user.id,
+      title: t.title || t.topic,
+      topic: t.topic,
+      subject: t.subject,
+      type: t.type,
+      priority: t.priority,
+      estimated_minutes: t.estimated_minutes,
+      rationale: t.rationale,
+      completed: false
+    }));
+
+    // Clean existing tasks for today to avoid duplicates on regen
+    await supabaseAdmin.from("daily_plan_tasks").delete().eq("daily_plan_id", finalPlan.id);
+    await supabaseAdmin.from("daily_plan_tasks").insert(taskInserts);
+  }
+
 
   // Record governance log
   try {
