@@ -1,8 +1,9 @@
-import { HelpCircle, Zap, BarChart3, Target, Trophy, XCircle, CheckCircle2, RotateCcw } from "lucide-react";
+import { HelpCircle, Zap, BarChart3, Target, Trophy, XCircle, CheckCircle2, RotateCcw, Sparkles, RefreshCw } from "lucide-react";
 import AgentChat from "@/components/agents/AgentChat";
 import InteractiveQuestionRenderer from "@/components/agents/InteractiveQuestionRenderer";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useCallback, useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ interface SessionStats {
 
 const QuestionGenerator = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const studyCtx = useStudyContext();
   const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
   const [specificTopic, setSpecificTopic] = useState("");
