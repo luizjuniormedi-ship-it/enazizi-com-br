@@ -1,33 +1,78 @@
 // generate-daily-plan - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
+import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 
-Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, supabaseAdmin }) => {
+Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, supabaseAdmin, ai }) => {
   const { user } = await requireAuth(req);
-  logger.info("AUTH", "User authenticated", { userId: user.id });
-
   const body = await req.json().catch(() => ({}));
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
 
-  const [revisoesRes, errorsRes] = await Promise.all([
-    supabaseAdmin.from("revisoes").select("id, tema_id, data_revisao").eq("user_id", user.id).eq("status", "pendente").lte("data_revisao", today).limit(5),
-    supabaseAdmin.from("error_bank").select("tema, vezes_errado").eq("user_id", user.id).eq("dominado", false).order("vezes_errado", { ascending: false }).limit(5)
+  logger.info("DAILY_PLAN_START", "Starting daily mission generation", { userId: user.id });
+
+  // 1. Fetch current status (reviews, errors, profile)
+  const [revisoesRes, errorsRes, profileRes] = await Promise.all([
+    supabaseAdmin.from("revisoes")
+      .select("id, tema_id, data_revisao, prioridade")
+      .eq("user_id", user.id)
+      .eq("status", "pendente")
+      .lte("data_revisao", today)
+      .order("prioridade", { ascending: false })
+      .limit(10),
+    supabaseAdmin.from("error_bank")
+      .select("id, tema, subtema, vezes_errado")
+      .eq("user_id", user.id)
+      .eq("dominado", false)
+      .order("vezes_errado", { ascending: false })
+      .limit(5),
+    supabaseAdmin.from("profiles")
+      .select("daily_study_hours, target_exams")
+      .eq("user_id", user.id)
+      .single()
   ]);
 
-  const tasks = [];
-  for (const rev of (revisoesRes.data || [])) {
-    tasks.push({ type: "review", topic: "Revisão", priority: 90, estimated_minutes: 15, meta: { revisao_id: rev.id } });
-  }
-  for (const err of (errorsRes.data || [])) {
-    tasks.push({ type: "error_fix", topic: err.tema, priority: 80, estimated_minutes: 10 });
-  }
+  const dailyHours = profileRes.data?.daily_study_hours || 4;
+  
+  // 2. Build context for AI
+  const context = {
+    pendingReviews: revisoesRes.data || [],
+    topErrors: errorsRes.data || [],
+    dailyHours,
+    targetExams: profileRes.data?.target_exams || []
+  };
+
+  const systemPrompt = `Você é o Estrategista de Missões da ENAZIZI. Sua tarefa é gerar a "Missão do Dia" para um aluno de medicina.
+Crie um conjunto de tarefas equilibrado (Revisão + Reforço de Erros + Prática) que caiba em ${dailyHours} horas.
+
+FORMATO JSON:
+{
+  "tasks": [
+    { "type": "review", "topic": "Cardiologia", "priority": 90, "estimated_minutes": 20, "meta": { "revisao_id": "uuid" } },
+    { "type": "error_fix", "topic": "Pneumologia", "priority": 85, "estimated_minutes": 15 },
+    { "type": "study", "topic": "Ginecologia", "priority": 70, "estimated_minutes": 45 }
+  ]
+}`;
+
+  const aiResponse = await ai({
+    taskType: "planner",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Gere a missão do dia com base: ${JSON.stringify(context)}` }
+    ]
+  });
+
+  const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
+  const tasks = planJson.tasks || [];
 
   const { data: finalPlan, error: planErr } = await supabaseAdmin
     .from("daily_plans")
     .upsert({
       user_id: user.id,
       plan_date: today,
-      plan_json: { tasks, generated_at: new Date().toISOString() },
+      plan_json: { tasks, generated_at: new Date().toISOString(), source: "generate-daily-plan" },
       total_blocks: tasks.length,
       completed_count: 0
     }, { onConflict: "user_id,plan_date" })
@@ -36,7 +81,7 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
 
   if (planErr) throw planErr;
 
-  return new Response(JSON.stringify({ success: true, planId: finalPlan.id }), {
+  return new Response(JSON.stringify({ success: true, planId: finalPlan.id, tasks }), {
     headers: { "Content-Type": "application/json" }
   });
 }));
