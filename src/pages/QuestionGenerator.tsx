@@ -48,7 +48,8 @@ const QuestionGenerator = () => {
   const { toast } = useToast();
   const studyCtx = useStudyContext();
   const [specialty, setSpecialty] = useState<string>(studyCtx?.specialty || "");
-  const [specificTopic, setSpecificTopic] = useState("");
+  const [specificTopic, setSpecificTopic] = useState(studyCtx?.topic || "");
+
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState("intermediario");
   const [examBoard, setExamBoard] = useState("all");
