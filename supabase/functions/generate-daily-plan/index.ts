@@ -135,8 +135,15 @@ PRIORIDADE = (TaxaErro × 3) + (ProbabilidadeDeCair × 3) + (RiscoFSRS × 2) + (
   ],
   "daily_focus": "...",
   "ai_coach_tip": "...",
-  "expected_outcome": "..."
+  "expected_outcome": "...",
+  "diagnostics": {
+    "suggested_score_adjustment": -5 to +5,
+    "suggested_phase": "base|intensive|review|recovery",
+    "recovery_mode": boolean,
+    "cognitive_load_estimate": "low|medium|high"
+  }
 }
+
 
 ────────────────────────────
 6. REGRAS CRÍTICAS
