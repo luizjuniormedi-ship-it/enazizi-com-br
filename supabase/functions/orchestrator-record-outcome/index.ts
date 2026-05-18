@@ -31,6 +31,8 @@ import {
   corsHeaders, jsonResponse, errorResponse,
   getServiceClient, getUserIdFromRequest,
 } from "../_shared/assistant-helpers.ts";
+import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -116,7 +118,24 @@ serve(async (req) => {
       return errorResponse(error.message, 500);
     }
 
+    // --- INTEGRATION: Update Performance Metrics ---
+    if (outcome !== "unknown" && resolvedTopic) {
+      try {
+        await updatePerformanceMetrics(db, {
+          userId,
+          specialty: (decision as any)?.input_snapshot?.specialty || "Geral",
+          topic: resolvedTopic,
+          isCorrect: outcome === "correct",
+          responseTimeSeconds: body.timeToFollowSeconds,
+          difficulty: (decision as any)?.input_snapshot?.difficulty
+        });
+      } catch (perfErr) {
+        console.warn("[orchestrator-record-outcome] Metrics update failed:", perfErr);
+      }
+    }
+
     return jsonResponse({ success: true, outcomeId: (inserted as { id: string }).id });
+
   } catch (e) {
     console.error("[orchestrator-record-outcome]", e);
     return errorResponse(e instanceof Error ? e.message : "Erro interno", 500);

@@ -5,6 +5,8 @@ import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -661,6 +663,26 @@ Responda APENAS em JSON válido.`,
         console.error("Error saving teacher case result:", saveErr);
       }
     }
+
+    // --- INTEGRATION: Update Performance Metrics on Finish ---
+    if (action === "finish" && parsed) {
+      try {
+        const supabaseService = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        await updatePerformanceMetrics(supabaseService, {
+          userId: user.id,
+          specialty: specialty || "Geral",
+          topic: parsed.correct_diagnosis || "Simulação Clínica",
+          isCorrect: (parsed.final_score || 0) >= 70,
+          responseTimeSeconds: (parsed.time_total_minutes || 0) * 60
+        });
+      } catch (perfErr) {
+        console.warn("[clinical-simulation] Performance update failed:", perfErr);
+      }
+    }
+
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
