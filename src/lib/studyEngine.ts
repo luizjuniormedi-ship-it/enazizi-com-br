@@ -433,11 +433,12 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     : conditionalResults[4];
 
   // ── Calculate Proximity Score ──
-  const examDate = (profileData as any)?.exam_date ? new Date((profileData as any).exam_date) : null;
-  const daysUntilExam = examDate ? Math.ceil((examDate.getTime() - Date.now()) / 86400000) : null;
-  const examProximityScore = calculateExamProximityScore(daysUntilExam);
+  const engineExamDate = (profileData as any)?.exam_date ? new Date((profileData as any).exam_date) : null;
+  const engineDaysUntilExam = engineExamDate ? Math.ceil((engineExamDate.getTime() - Date.now()) / 86400000) : null;
+  const examProximityScore = calculateExamProximityScore(engineDaysUntilExam);
 
   // ── Compute avg response time per topic (for priority boost) ──
+
 
   const responseTimeRows = (responseTimeData || []) as any[];
   const responseTimeByTopic = new Map<string, { total: number; count: number }>();
