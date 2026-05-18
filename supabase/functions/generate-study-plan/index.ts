@@ -32,7 +32,26 @@ Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, wa
     try {
       await supabaseAdmin.from("study_plans").update({ current_step: "Analisando telemetria e histórico do aluno...", progress: 15 }).eq("id", plan.id);
 
+      // 0. Fetch latest processed material if editalText is missing
+      let materialText = editalText;
+      if (!materialText) {
+        const { data: lastUpload } = await supabaseAdmin
+          .from("uploads")
+          .select("extracted_text")
+          .eq("user_id", user.id)
+          .eq("status", "processed")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (lastUpload?.extracted_text) {
+          materialText = lastUpload.extracted_text;
+          logger.info("MATERIAL_FOUND", "Using last processed upload as edital text");
+        }
+      }
+
       // 1. Fetch rich student context
+
       const [revisoesRes, errorsRes, profileRes, fsrsRes] = await Promise.all([
         supabaseAdmin.from("revisoes")
           .select("tema_id, status, data_revisao")
