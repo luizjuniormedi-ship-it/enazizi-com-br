@@ -21,7 +21,7 @@ import {
   itemInformation,
 } from "@/lib/triEngine";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, FileText, ChevronLeft, Play, Info, Sparkles, DatabaseZap, Clock, Trophy, Zap, Target, CheckCircle2, TrendingDown, History } from "lucide-react";
+import { Loader2, FileText, ChevronLeft, Play, Info, Sparkles, DatabaseZap, Clock, Trophy, Zap, Target, CheckCircle2, TrendingDown, History, Printer } from "lucide-react";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +44,7 @@ import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
 import { SimuladoProfileCard } from "@/components/enaflix/SimuladoProfileCard";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 
 async function computeRealPerformance(userId: string) {
   const { data: rows } = await supabase
