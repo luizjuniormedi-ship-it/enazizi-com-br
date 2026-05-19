@@ -12,8 +12,8 @@ const corsHeaders = {
 
 const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o|declara[cç][aã]o financeira|declara[cç][oõ]es de interesse|pagamento de qualquer esp[eé]cie|empresa farmac[eê]utica|ind[uú]stria farmac[eê]utica|honor[aá]rio|palestrante remunerado|v[ií]nculo empregat[ií]cio|conflito de interesse|relat[oó]rio de interesse|taxa de inscri|processo seletivo|per[ií]odo de inscri[cç][aã]o|edital de convoca|cronograma do processo|matr[ií]cula dos aprovados|homologa[cç][aã]o|classifica[cç][aã]o final|prazo de recurso|resultado preliminar|documenta[cç][aã]o exigida|valor da taxa|vagas reservadas|candidato inscrito|prova objetiva do processo)/i;
 const MAX_PROCESS_FILE_BYTES = 20 * 1024 * 1024;
-const MAX_PDF_PAGES_TO_PARSE = 100;
-const CHARS_PER_CHUNK = 10000;
+const MAX_PDF_PAGES_TO_PARSE = 200;
+const CHARS_PER_CHUNK = 12000;
 
 async function extractPdfTextChunks(fileData: Blob): Promise<{ text: string, pageStart: number, pageEnd: number }[]> {
   try {
