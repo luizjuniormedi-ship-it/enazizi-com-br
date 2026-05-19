@@ -23,9 +23,9 @@ export function EnaflixMobileNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 h-20 bg-[#0a0a0e]/95 backdrop-blur-3xl border-t border-white/5 z-[100] lg:hidden flex items-center justify-around px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)] supports-[padding:env(safe-area-inset-bottom)]:pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+    <nav className="fixed bottom-0 inset-x-0 h-20 bg-[#0a0a0e]/95 backdrop-blur-3xl border-t border-white/5 z-[100] lg:hidden flex items-center justify-around px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)] supports-[padding:env(safe-area-inset-bottom)]:h-[calc(5rem+env(safe-area-inset-bottom))] supports-[padding:env(safe-area-inset-bottom)]:pb-[env(safe-area-inset-bottom)]">
       {MOBILE_ITEMS.map((item) => {
-        const active = location.pathname === item.to;
+        const active = location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(item.to));
         const Icon = item.icon;
         
         return (
@@ -33,20 +33,36 @@ export function EnaflixMobileNav() {
             key={item.to}
             to={item.to}
             className={cn(
-              "relative flex flex-col items-center gap-1.5 px-3 py-2 transition-all duration-300",
+              "relative flex flex-col items-center gap-1.5 px-3 py-2 transition-all duration-300 active:scale-95 touch-none",
               active ? "text-primary" : "text-white/40"
             )}
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate(10);
+            }}
           >
-            <Icon className={cn(
-              "h-6 w-6 transition-transform duration-300",
-              active ? "scale-110" : "scale-100"
-            )} />
-            <span className="text-[9px] font-black tracking-widest uppercase">{item.label}</span>
+            <div className={cn(
+              "p-1.5 rounded-xl transition-all duration-500 relative",
+              active ? "bg-primary/20 ring-1 ring-primary/30" : "bg-transparent"
+            )}>
+              {active && (
+                <div className="pointer-events-none absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
+              )}
+              <Icon className={cn(
+                "h-6 w-6 relative z-10 transition-all duration-500",
+                active ? "scale-110" : "scale-100 opacity-70"
+              )} />
+            </div>
+            <span className={cn(
+              "text-[9px] font-black tracking-widest uppercase transition-all duration-300",
+              active ? "opacity-100 translate-y-0" : "opacity-50"
+            )}>
+              {item.label}
+            </span>
             
             {active && (
               <motion.div
-                layoutId="mobile-active"
-                className="absolute -top-[1px] inset-x-0 h-[2px] bg-primary shadow-[0_0_15px_rgba(var(--primary),0.8)]"
+                layoutId="mobile-active-indicator"
+                className="absolute -top-[1px] inset-x-4 h-[2px] bg-primary shadow-[0_0_15px_rgba(var(--primary),0.8)] rounded-full"
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               />
             )}
