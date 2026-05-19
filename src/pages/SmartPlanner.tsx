@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Target, BookOpen, CalendarDays, History,
   Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3, RefreshCw,
-  Flame, Zap, ChevronLeft, ArrowRight
+  Flame, Zap, ChevronLeft, ArrowRight, Layers
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
