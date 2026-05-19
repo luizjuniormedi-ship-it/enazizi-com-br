@@ -108,174 +108,76 @@ Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, wa
       
       const systemPrompt = `Você é o motor oficial de geração de cronograma do ENAZIZI.
 
-Sua missão é criar um plano de estudos médico completo, inteligente, realista e adaptativo baseado no perfil do aluno, edital, prova, PDF enviado, desempenho e tempo disponível.
+Sua missão é criar um plano de estudos médico COMPLETO e LONGITUDINAL, cobrindo todo o período desde hoje até a data da prova.
 
-Você NÃO é um gerador genérico de tarefas.
-Você funciona como um estrategista pedagógico de alta performance.
+Você NÃO é um gerador de tarefas para uma única semana. Você deve distribuir todo o conteúdo necessário ao longo das semanas disponíveis.
 
 ────────────────────────────
 1. OBJETIVO
 ────────────────────────────
 
-Criar um cronograma completo e coerente que:
+Criar um cronograma estratégico total que:
 
-- cubra todo o edital;
-- respeite o tempo disponível;
-- priorize temas de maior incidência;
-- priorize disciplinas fracas;
-- integre revisões FSRS;
-- integre simulados;
-- integre Banco de Erros;
-- integre Tutor IA;
-- gere Missão do Dia;
-- adapte-se conforme desempenho futuro.
+- cubra todo o edital fornecido;
+- distribua os temas de forma lógica e progressiva ao longo das semanas;
+- respeite a carga horária semanal disponível;
+- priorize temas de maior incidência e disciplinas onde o aluno tem mais dificuldade;
+- deixe semanas finais para revisão intensiva e simulados.
 
 ────────────────────────────
-2. DADOS DE ENTRADA
+2. REGRAS DE DISTRIBUIÇÃO
 ────────────────────────────
 
-Receber:
-- prova-alvo;
-- data da prova;
-- tempo diário disponível;
-- disciplinas;
-- desempenho atual;
-- erros recentes;
-- tópicos extraídos com evidência (extractedTopics);
-- revisões pendentes;
-- simulados anteriores;
-- nível do aluno;
-- temas prioritários;
-- peso por disciplina;
-- frequência de incidência;
-- risco FSRS;
-- histórico de retenção.
+- Calcule quantas horas totais o aluno tem até a prova.
+- Estime o tempo necessário para cada tema do edital.
+- Aloque os temas nas semanas (week_number).
+- Garanta que temas pré-requisitos venham antes.
+- Se houver pouco tempo, priorize temas de alta incidência (80/20 rule).
 
 ────────────────────────────
-3. REGRA ANTI-ALUCINAÇÃO
-────────────────────────────
-
-O cronograma só pode usar temas com base no edital fornecido (extractedTopics).
-Não inventar assuntos. Não adicionar tema fora do documento.
-Se extractedTopics estiver vazio, use incidência médica Brasil (ENARE, USP, SUS-SP).
-
-────────────────────────────
-4. LÓGICA DE PRIORIZAÇÃO
-────────────────────────────
-
-Prioridade deve considerar:
-
-PRIORIDADE = (TaxaErro × 3) + (ProbabilidadeDeCair × 3) + (RiscoFSRS × 2) + (ProximidadeDaProva × 2) - (DomínioAtual × 2)
-
-Também considerar:
-- tempo sem revisar;
-- recorrência de erro;
-- dificuldade da disciplina;
-- carga horária restante;
-- fadiga cognitiva;
-- equilíbrio semanal.
-
-────────────────────────────
-5. ESTRUTURA DO CRONOGRAMA
-────────────────────────────
-
-Cada dia deve conter:
-1. Aula principal;
-2. Explicação Tutor IA;
-3. Questões;
-4. Revisão FSRS;
-5. Banco de Erros;
-6. Flashcards;
-7. Mini revisão;
-8. Mini simulado (quando necessário);
-9. Resumo do dia.
-
-Cada tarefa precisa ter:
-- título;
-- disciplina;
-- tema;
-- prioridade;
-- duração;
-- tipo;
-- dificuldade;
-- origem;
-- objetivo;
-- integração com outros módulos.
-
-────────────────────────────
-6. ADAPTAÇÃO
-────────────────────────────
-
-O cronograma deve se recalcular automaticamente quando:
-- aluno atrasa tarefas;
-- aluno erra muito;
-- aluno melhora desempenho;
-- surgem revisões vencidas;
-- surgem novos erros;
-- prova se aproxima;
-- tempo diário muda.
-
-────────────────────────────
-7. SAÍDA ESPERADA (JSON OBRIGATÓRIO)
+3. SAÍDA ESPERADA (JSON OBRIGATÓRIO)
 ────────────────────────────
 
 Retorne APENAS um JSON no seguinte formato:
 {
-  "weeklySchedule": [
+  "fullSchedule": [
     {
-      "day": "Segunda-feira",
-      "tasks": [
+      "week_number": 1,
+      "focus": "Título da fase ou foco da semana",
+      "topics": [
         {
-          "title": "...",
-          "subject": "...",
           "topic": "...",
-          "priority": 0-100,
-          "duration": "...min",
-          "type": "theory|practice|review|error_fix",
-          "details": "...",
-          "integration": "Tutor IA + Questões"
+          "discipline": "...",
+          "priority_score": 0-100,
+          "estimated_minutes": 120,
+          "difficulty": "facil|medio|dificil"
         }
       ]
     }
   ],
   "subjects": ["..."],
-  "topicMap": [
-    {
-      "topic": "...",
-      "subtopics": ["...", "..."],
-      "priority_score": 0-100,
-      "source": "edital|incidencia"
-    }
-  ],
   "insights": {
-    "themes_critical": ["..."],
-    "risk_of_delay": "low|medium|high",
-    "recovery_plan": "..."
+    "total_weeks": 0,
+    "feasibility": "low|medium|high",
+    "strategy_summary": "..."
   },
   "metadata": {
-    "engine": "ENAZIZI Master Planner",
-    "version": "2.1"
+    "engine": "ENAZIZI Longitudinal Planner",
+    "version": "3.0"
   }
 }
 
 ────────────────────────────
-8. REGRAS CRÍTICAS
+4. REGRAS CRÍTICAS
 ────────────────────────────
 
-Nunca:
-- criar cronograma impossível;
-- sobrecarregar o aluno;
-- ignorar revisões;
-- inventar conteúdo;
-- gerar tarefas vagas.
-
-Sempre:
-- justificar prioridades;
-- equilibrar teoria/prática/revisão;
-- otimizar retenção.`;
+- Nunca gere apenas uma semana se houver várias semanas até a prova.
+- Se o edital for muito grande para o tempo disponível, sinalize nos insights e priorize o essencial.
+- Mantenha a coerência pedagógica.`;
 
       const userContext = {
         availability: `${hoursPerDay}h/dia, ${daysPerWeek} dias/semana`,
+        totalWeeklyHours: (hoursPerDay || 4) * (daysPerWeek || 5),
         examDate: finalExamDate,
         daysUntilExam,
         weeksUntilExam,
@@ -284,7 +186,6 @@ Sempre:
           topic: t.topic,
           subtopic: t.subtopic,
           discipline: t.discipline,
-          page: t.source_page,
           evidence: t.raw_excerpt
         })).slice(0, 150),
         performance: {
@@ -298,17 +199,17 @@ Sempre:
         }
       };
 
-      await supabaseAdmin.from("study_plans").update({ current_step: "Gerando estratégia pedagógica com IA...", progress: 50 }).eq("id", plan.id);
+      await supabaseAdmin.from("study_plans").update({ current_step: "Gerando estratégia longitudinal com IA...", progress: 50 }).eq("id", plan.id);
 
 
       const aiResponse = await ai({
         taskType: "planner",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Gere o Master Planner para: ${JSON.stringify(userContext)}` }
+          { role: "user", content: `Gere o Plano Longitudinal Completo (${weeksUntilExam} semanas) para: ${JSON.stringify(userContext)}` }
         ],
         complexity: "high",
-        model: "google/gemini-2.5-flash"
+        model: "google/gemini-2.0-flash-001"
       });
 
       const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
