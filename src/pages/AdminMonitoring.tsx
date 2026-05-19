@@ -22,7 +22,8 @@ import { AdaptivePathwaysLog } from "@/components/admin/AdaptivePathwaysLog";
 import { VideoRecommendationAuditTab } from "@/components/monitoring/VideoRecommendationAuditTab";
 import { AdaptiveAuditTab } from "@/components/monitoring/AdaptiveAuditTab";
 import { ScaleGovernanceTab } from "@/components/monitoring/ScaleGovernanceTab";
-import { Scale, Database } from "lucide-react";
+import { GovernanceCockpit } from "@/components/governance/GovernanceCockpit";
+import { Scale, Database, ShieldCheck } from "lucide-react";
 
 export default function AdminMonitoring() {
   const { session } = useAuth();
