@@ -592,12 +592,12 @@ const Simulados = () => {
             throw fnError;
           }
 
-          if (!data?.success) {
-            console.error("[Simulados] Resposta da API sem sucesso:", data);
-            throw new Error(data?.error || "Falha na geração das questões pela IA.");
+          if (!batchData?.success) {
+            console.error("[Simulados] Resposta da API sem sucesso:", batchData);
+            throw new Error(batchData?.error || "Falha na geração das questões pela IA.");
           }
 
-          const batchQs = (data.questions || []).map((q: any) => ({
+          const batchQs = (batchData.questions || []).map((q: any) => ({
             ...q,
             topic: q.topic || config.topics?.[0] || "Geral"
           }));
