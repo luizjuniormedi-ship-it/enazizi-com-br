@@ -168,20 +168,35 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('enazizi_sidebar_collapsed') === 'true';
+  });
+
+  const toggleCollapse = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    localStorage.setItem('enazizi_sidebar_collapsed', String(newState));
+    telemetry.track('sidebar_navigation_clicked', { action: newState ? 'collapse' : 'expand' });
+  };
 
   return (
     <aside className={cn(
-      "bg-[#050508]/60 backdrop-blur-[80px] border-r border-white/5 flex flex-col z-50 shadow-[20px_0_60px_-20px_rgba(0,0,0,1)]",
-      !isMobile && "fixed left-0 top-0 bottom-0 w-64 hidden lg:flex",
+      "bg-[#050508]/60 backdrop-blur-[80px] border-r border-white/5 flex flex-col z-50 shadow-[20px_0_60px_-20px_rgba(0,0,0,1)] transition-all duration-500 ease-in-out",
+      !isMobile && (isCollapsed ? "w-20" : "w-64"),
+      !isMobile && "fixed left-0 top-0 bottom-0 hidden lg:flex",
       isMobile && "w-full h-full",
       className
     )}>
       {/* Brand Header */}
-      <div className="p-8 pb-4">
+      <div className={cn("p-8 pb-4 transition-all duration-500", isCollapsed && !isMobile ? "p-4 flex justify-center" : "p-8")}>
         <Link to="/enaflix" className="flex items-center gap-4 group">
           <div className="relative">
             <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full group-hover:bg-primary/50 transition-all duration-700 group-hover:scale-125" />
-            <div className="relative h-14 w-14 rounded-2xl p-1 bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-2xl transition-transform duration-700 group-hover:rotate-6 group-hover:scale-110">
+            <div className={cn(
+              "relative h-14 w-14 rounded-2xl p-1 bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-2xl transition-all duration-700 group-hover:rotate-6 group-hover:scale-110",
+              isCollapsed && !isMobile ? "h-10 w-10" : "h-14 w-14"
+            )}>
               <img 
                 src={enazizi} 
                 alt="ENAZIZI" 
@@ -189,26 +204,60 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
               />
             </div>
           </div>
-          <div className="flex flex-col">
-            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--primary),0.5)]">ENAZIZI</span>
-            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">Enterprise MVP</span>
-          </div>
+          <AnimatePresence>
+            {(!isCollapsed || isMobile) && (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="flex flex-col"
+              >
+                <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--primary),0.5)]">ENAZIZI</span>
+                <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">Enterprise MVP</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Link>
       </div>
+
+      {/* Collapse Toggle Button (Desktop Only) */}
+      {!isMobile && (
+        <button 
+          onClick={toggleCollapse}
+          className="absolute -right-3 top-10 h-6 w-6 rounded-full bg-white/10 border border-white/10 backdrop-blur-md flex items-center justify-center text-white/40 hover:text-white transition-all z-[60]"
+        >
+          <motion.div
+            animate={{ rotate: isCollapsed ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </motion.div>
+        </button>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-8 scrollbar-hide">
         {NAV_SECTIONS.map((section) => (
           <div key={section.title} className="space-y-3">
-            <h3 className="px-4 text-[9px] font-black tracking-[0.3em] text-white/20 uppercase">
-              {section.title}
-            </h3>
+            <AnimatePresence>
+              {(!isCollapsed || isMobile) && (
+                <motion.h3 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="px-4 text-[9px] font-black tracking-[0.3em] text-white/20 uppercase truncate"
+                >
+                  {section.title}
+                </motion.h3>
+              )}
+            </AnimatePresence>
             <div className="space-y-1">
               {section.items.map((item) => (
                 <SidebarItem
                   key={item.to}
                   {...item}
-                  active={location.pathname === item.to}
+                  label={isCollapsed && !isMobile ? "" : item.label}
+                  active={location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(item.to))}
                 />
               ))}
             </div>
@@ -217,14 +266,23 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
 
         {(isAdmin || isProfessor) && (
           <div className="space-y-3">
-            <h3 className="px-4 text-[9px] font-black tracking-[0.3em] text-white/20 uppercase">
-              ADMINISTRAÇÃO
-            </h3>
+            <AnimatePresence>
+              {(!isCollapsed || isMobile) && (
+                <motion.h3 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="px-4 text-[9px] font-black tracking-[0.3em] text-white/20 uppercase"
+                >
+                  ADMINISTRAÇÃO
+                </motion.h3>
+              )}
+            </AnimatePresence>
             <div className="space-y-1">
               {(isProfessor || isAdmin) && (
                 <SidebarItem
                   to="/professor"
-                  label="Professor"
+                  label={isCollapsed && !isMobile ? "" : "Professor"}
                   icon={GraduationCap}
                   active={location.pathname.startsWith("/professor")}
                 />
@@ -233,27 +291,27 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
                 <>
                   <SidebarItem
                     to="/admin"
-                    label="Admin Hub"
+                    label={isCollapsed && !isMobile ? "" : "Admin Hub"}
                     icon={Shield}
                     active={location.pathname === "/admin" && !location.search}
                   />
                   
-                  <div className="py-2 space-y-1 opacity-80">
+                  <div className={cn("py-2 space-y-1 transition-opacity duration-500", isCollapsed && !isMobile ? "opacity-100" : "opacity-80 ml-4 border-l border-white/5")}>
                     <SidebarItem
                       to="/admin?tab=uploads"
-                      label="Upload Arquivos"
+                      label={isCollapsed && !isMobile ? "" : "Upload Arquivos"}
                       icon={Upload}
                       active={location.search === "?tab=uploads"}
                     />
                     <SidebarItem
                       to="/admin?tab=ingestion"
-                      label="Gerar Questões"
+                      label={isCollapsed && !isMobile ? "" : "Gerar Questões"}
                       icon={Sparkles}
                       active={location.search === "?tab=ingestion"}
                     />
                     <SidebarItem
                       to="/admin?tab=question-review"
-                      label="Aprovar Questões"
+                      label={isCollapsed && !isMobile ? "" : "Aprovar Questões"}
                       icon={UserCheck}
                       active={location.search === "?tab=question-review"}
                     />
@@ -261,13 +319,13 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
 
                   <SidebarItem
                     to="/admin?tab=users-all"
-                    label="Usuários"
+                    label={isCollapsed && !isMobile ? "" : "Usuários"}
                     icon={Users}
                     active={location.search === "?tab=users-all"}
                   />
                   <SidebarItem
                     to="/admin/monitoring"
-                    label="Monitoramento"
+                    label={isCollapsed && !isMobile ? "" : "Monitoramento"}
                     icon={Activity}
                     active={location.pathname === "/admin/monitoring"}
                   />
@@ -279,15 +337,21 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
       </nav>
 
       {/* Footer / User / Global Actions */}
-      <div className="p-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-t border-white/5 space-y-4">
-        <div className="px-2">
-          <ForceUpdateButton 
-            variant="sidebar" 
-            className="w-full justify-start h-10 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white border-white/5"
-          />
-        </div>
+      <div className={cn("p-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-t border-white/5 space-y-4 transition-all duration-500", isCollapsed && !isMobile ? "items-center" : "")}>
+        {!isCollapsed || isMobile ? (
+          <div className="px-2">
+            <ForceUpdateButton 
+              variant="sidebar" 
+              className="w-full justify-start h-10 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white border-white/5"
+            />
+          </div>
+        ) : (
+           <div className="flex justify-center">
+             <ForceUpdateButton variant="ghost" size="icon" className="h-10 w-10 text-white/40" />
+           </div>
+        )}
         
-        <div className="flex items-center justify-around px-2 py-1">
+        <div className={cn("flex items-center justify-around px-2 py-1", isCollapsed && !isMobile ? "flex-col gap-4" : "flex-row")}>
           <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
             <Search className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
           </button>
