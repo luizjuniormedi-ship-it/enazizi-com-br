@@ -347,7 +347,7 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
           </div>
         ) : (
            <div className="flex justify-center">
-             <ForceUpdateButton variant="ghost" size="icon" className="h-10 w-10 text-white/40" />
+             <ForceUpdateButton variant="sidebar" className="h-10 w-10 text-white/40 p-0 flex items-center justify-center bg-white/5 border-white/5" />
            </div>
         )}
         
