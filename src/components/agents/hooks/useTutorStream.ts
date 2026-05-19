@@ -67,7 +67,7 @@ export function useTutorStream() {
       onComplete,
       onError,
       signal,
-    }: StreamResponseOptions): Promise<string | null> => {
+    }: StreamResponseOptions): Promise<{ content: string; metrics?: any } | null> => {
       abortStream();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -210,7 +210,7 @@ export function useTutorStream() {
         if (isJson) {
           const data = await resp.json();
           console.log("[useTutorStream] Received JSON instead of stream:", data);
-          if (data.ok === false || !data.content) {
+          if (data.ok === false || (!data.content && !data.message)) {
             onError?.({ status: resp.status, message: data.message || "Erro na resposta da IA" });
             return null;
           }
@@ -219,7 +219,7 @@ export function useTutorStream() {
           onDelta(content);
           onComplete?.(content);
           setIsStreaming(false);
-          return content;
+          return { content, metrics: data.metrics };
         }
 
         const reader = resp.body.getReader();
@@ -263,10 +263,10 @@ export function useTutorStream() {
         }
 
         onComplete?.(assistantSoFar);
-        return assistantSoFar;
+        return { content: assistantSoFar };
       } catch (e) {
         if ((e as { name?: string })?.name === "AbortError") {
-          return assistantSoFar || null;
+          return assistantSoFar ? { content: assistantSoFar } : null;
         }
         console.error("[useTutorStream] error:", e);
         onError?.({

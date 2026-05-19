@@ -22441,6 +22441,45 @@ export type Database = {
           },
         ]
       }
+      tutor_analogy_memory: {
+        Row: {
+          analogy: string
+          cognitive_profile_match: string | null
+          created_at: string | null
+          efficacy_score: number | null
+          id: string
+          mastery_impact: number | null
+          recovery_success: boolean | null
+          topic: string
+          understanding_impact: string | null
+          user_id: string
+        }
+        Insert: {
+          analogy: string
+          cognitive_profile_match?: string | null
+          created_at?: string | null
+          efficacy_score?: number | null
+          id?: string
+          mastery_impact?: number | null
+          recovery_success?: boolean | null
+          topic: string
+          understanding_impact?: string | null
+          user_id: string
+        }
+        Update: {
+          analogy?: string
+          cognitive_profile_match?: string | null
+          created_at?: string | null
+          efficacy_score?: number | null
+          id?: string
+          mastery_impact?: number | null
+          recovery_success?: boolean | null
+          topic?: string
+          understanding_impact?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tutor_block_transitions: {
         Row: {
           created_at: string | null
@@ -23364,8 +23403,10 @@ export type Database = {
           completion_tokens: number | null
           created_at: string | null
           id: string
+          memory_hit: boolean | null
           prompt_tokens: number | null
           session_id: string | null
+          tokens_saved: number | null
           tutor_generation_ms: number | null
           user_id: string | null
         }
@@ -23375,8 +23416,10 @@ export type Database = {
           completion_tokens?: number | null
           created_at?: string | null
           id?: string
+          memory_hit?: boolean | null
           prompt_tokens?: number | null
           session_id?: string | null
+          tokens_saved?: number | null
           tutor_generation_ms?: number | null
           user_id?: string | null
         }
@@ -23386,10 +23429,54 @@ export type Database = {
           completion_tokens?: number | null
           created_at?: string | null
           id?: string
+          memory_hit?: boolean | null
           prompt_tokens?: number | null
           session_id?: string | null
+          tokens_saved?: number | null
           tutor_generation_ms?: number | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      tutor_session_summary: {
+        Row: {
+          concepts_fragile: string[] | null
+          concepts_mastered: string[] | null
+          created_at: string | null
+          effective_analogies: string[] | null
+          id: string
+          misconceptions_identified: string[] | null
+          next_steps: string[] | null
+          session_id: string
+          summary_compact: string | null
+          token_usage_total: number | null
+          user_id: string
+        }
+        Insert: {
+          concepts_fragile?: string[] | null
+          concepts_mastered?: string[] | null
+          created_at?: string | null
+          effective_analogies?: string[] | null
+          id?: string
+          misconceptions_identified?: string[] | null
+          next_steps?: string[] | null
+          session_id: string
+          summary_compact?: string | null
+          token_usage_total?: number | null
+          user_id: string
+        }
+        Update: {
+          concepts_fragile?: string[] | null
+          concepts_mastered?: string[] | null
+          created_at?: string | null
+          effective_analogies?: string[] | null
+          id?: string
+          misconceptions_identified?: string[] | null
+          next_steps?: string[] | null
+          session_id?: string
+          summary_compact?: string | null
+          token_usage_total?: number | null
+          user_id?: string
         }
         Relationships: []
       }

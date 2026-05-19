@@ -405,15 +405,24 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
         clearTimeout(watchdogTimeout);
 
-        if (convId && assistantSoFar) {
-          await history.persistAssistantMessage(convId, assistantSoFar);
+        const finalContent = result?.content || assistantSoFar;
+        const metrics = result?.metrics;
+
+        if (metrics) {
+          setMessages(prev => prev.map((m, i) => 
+            (i === prev.length - 1 && m.role === "assistant") ? { ...m, metrics } : m
+          ));
+        }
+
+        if (convId && finalContent) {
+          await history.persistAssistantMessage(convId, finalContent);
           history.loadConversations();
         }
 
-        if (assistantSoFar && assistantSoFar.trim().length > 0) {
+        if (finalContent && finalContent.trim().length > 0) {
           memory.persist({
             question: text,
-            answerMarkdown: assistantSoFar,
+            answerMarkdown: finalContent,
             userId: user?.id ?? null,
             topic,
             subtopic,
@@ -421,9 +430,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           }).catch(() => {});
         }
 
-        if (onSaveMessage && assistantSoFar) {
+        if (onSaveMessage && finalContent) {
           try {
-            const count = await onSaveMessage(assistantSoFar);
+            const count = await onSaveMessage(finalContent);
             if (count > 0) {
               setSavedMsgIdxs((prev) => new Set(prev).add(messages.length));
               toast({ title: "✅ Salvo automaticamente!", description: `${count} item(ns) salvo(s).` });

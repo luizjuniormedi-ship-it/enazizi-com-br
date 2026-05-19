@@ -27,6 +27,7 @@ import type { Msg } from "@/components/tutor/TutorConstants";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { logVideoRecommendationEvent } from "@/services/tutorVideoRecommendationService";
 import { humanizeCMEMessage, FRIENDLY_STATUS_LABEL, friendlyStageLabel } from "@/components/cinematic/cmeUserMessages";
+import { MemoryReuseBadge } from "./MemoryReuseBadge";
 
 /** Convert bare URLs in text to markdown links so ReactMarkdown renders them clickable */
 function linkifyBareUrls(text: string): string {
@@ -240,6 +241,13 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
             )}
 
             <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
+              {msg.metrics?.memory_hit && (
+                <MemoryReuseBadge 
+                  className="mb-4"
+                  scope="user"
+                  reuseCount={1}
+                />
+              )}
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
