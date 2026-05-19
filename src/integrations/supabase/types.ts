@@ -8269,38 +8269,59 @@ export type Database = {
       }
       cognitive_analytics: {
         Row: {
+          abandonment_risk: number | null
           average_time_to_mastery: string | null
           cognitive_pressure: number | null
+          collapse_risk: number | null
           computed_at: string | null
+          confidence_score: number | null
+          consistency_index: number | null
           fatigue_score: number | null
           id: string
+          learning_velocity: number | null
+          mastery_index: number | null
           memory_decay_rate: number | null
           overall_retention: number | null
           overload_flag: boolean | null
+          projected_retention_14d: number | null
           recovery_success_rate: number | null
           user_id: string
         }
         Insert: {
+          abandonment_risk?: number | null
           average_time_to_mastery?: string | null
           cognitive_pressure?: number | null
+          collapse_risk?: number | null
           computed_at?: string | null
+          confidence_score?: number | null
+          consistency_index?: number | null
           fatigue_score?: number | null
           id?: string
+          learning_velocity?: number | null
+          mastery_index?: number | null
           memory_decay_rate?: number | null
           overall_retention?: number | null
           overload_flag?: boolean | null
+          projected_retention_14d?: number | null
           recovery_success_rate?: number | null
           user_id: string
         }
         Update: {
+          abandonment_risk?: number | null
           average_time_to_mastery?: string | null
           cognitive_pressure?: number | null
+          collapse_risk?: number | null
           computed_at?: string | null
+          confidence_score?: number | null
+          consistency_index?: number | null
           fatigue_score?: number | null
           id?: string
+          learning_velocity?: number | null
+          mastery_index?: number | null
           memory_decay_rate?: number | null
           overall_retention?: number | null
           overload_flag?: boolean | null
+          projected_retention_14d?: number | null
           recovery_success_rate?: number | null
           user_id?: string
         }
@@ -17009,6 +17030,51 @@ export type Database = {
           },
         ]
       }
+      predictive_recovery_forecasts: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          forecast_type: string
+          id: string
+          payload: Json | null
+          predicted_failure_date: string | null
+          recommended_action: string | null
+          resolved: boolean | null
+          risk_score: number | null
+          target_specialty: string | null
+          target_topic: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          forecast_type: string
+          id?: string
+          payload?: Json | null
+          predicted_failure_date?: string | null
+          recommended_action?: string | null
+          resolved?: boolean | null
+          risk_score?: number | null
+          target_specialty?: string | null
+          target_topic?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          forecast_type?: string
+          id?: string
+          payload?: Json | null
+          predicted_failure_date?: string | null
+          recommended_action?: string | null
+          resolved?: boolean | null
+          risk_score?: number | null
+          target_specialty?: string | null
+          target_topic?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       professor_plan_daily_tasks: {
         Row: {
           completed_at: string | null
@@ -22160,6 +22226,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trajectory_health_scores: {
+        Row: {
+          classification: string
+          consistency_score: number | null
+          created_at: string
+          delay_score: number | null
+          exam_proximity_days: number | null
+          execution_score: number | null
+          fatigue_score: number | null
+          health_score: number
+          id: string
+          longitudinal_risk: number | null
+          metadata: Json | null
+          pre_exam_mode: boolean | null
+          recovery_score: number | null
+          retention_score: number | null
+          simulado_score: number | null
+          user_id: string
+        }
+        Insert: {
+          classification?: string
+          consistency_score?: number | null
+          created_at?: string
+          delay_score?: number | null
+          exam_proximity_days?: number | null
+          execution_score?: number | null
+          fatigue_score?: number | null
+          health_score?: number
+          id?: string
+          longitudinal_risk?: number | null
+          metadata?: Json | null
+          pre_exam_mode?: boolean | null
+          recovery_score?: number | null
+          retention_score?: number | null
+          simulado_score?: number | null
+          user_id: string
+        }
+        Update: {
+          classification?: string
+          consistency_score?: number | null
+          created_at?: string
+          delay_score?: number | null
+          exam_proximity_days?: number | null
+          execution_score?: number | null
+          fatigue_score?: number | null
+          health_score?: number
+          id?: string
+          longitudinal_risk?: number | null
+          metadata?: Json | null
+          pre_exam_mode?: boolean | null
+          recovery_score?: number | null
+          retention_score?: number | null
+          simulado_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       trajectory_opportunities: {
         Row: {
