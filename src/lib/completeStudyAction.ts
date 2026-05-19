@@ -285,6 +285,17 @@ async function syncDailyPlan(userId: string, topic: string, now: string, today: 
   return "daily_plan_tasks";
 }
 
+async function syncStudyPlanItems(userId: string, topic: string, now: string): Promise<string | null> {
+  const { error } = await supabase
+    .from("study_plan_items")
+    .update({ status: "completed", updated_at: now } as any)
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .ilike("topic", `%${topic}%`);
+    
+  return error ? null : "study_plan_items";
+}
+
 async function syncProfessorPlan(userId: string, topic: string, now: string, professorPlanTaskId?: string): Promise<string | null> {
   if (professorPlanTaskId) {
     const { error } = await supabase
