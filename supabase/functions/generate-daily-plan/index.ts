@@ -208,18 +208,20 @@ Sempre:
 
   // Bulk insert tasks into operational table
   if (tasks.length > 0) {
-    const taskInserts = tasks.map((t: any) => ({
+    const taskInserts = tasks.map((t: any, idx: number) => ({
       daily_plan_id: finalPlan.id,
       user_id: user.id,
       title: t.title || t.topic,
       topic: t.topic,
-      subject: t.subject,
-      type: t.type,
-      priority: t.priority,
+      specialty: t.subject,
+      task_type: t.type,
+      priority: String(t.priority),
       estimated_minutes: t.estimated_minutes,
-      rationale: t.rationale,
+      description: t.rationale,
+      ordem: idx,
       completed: false
     }));
+
 
     // Clean existing tasks for today to avoid duplicates on regen
     await supabaseAdmin.from("daily_plan_tasks").delete().eq("daily_plan_id", finalPlan.id);
