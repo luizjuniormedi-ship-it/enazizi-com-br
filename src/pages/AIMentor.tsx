@@ -427,9 +427,9 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
       {/* Footer / Decorative elements */}
       {!hasStarted && (
         <div className="fixed bottom-12 left-0 right-0 z-20 flex justify-center pointer-events-none">
-          <div className="flex items-center gap-8 px-8 py-4 rounded-full bg-white/5 border border-white/5 backdrop-blur-xl opacity-30">
-             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
-               <Brain className="h-4 w-4" /> Cognitive Engine v5
+          <div className="flex items-center gap-8 px-8 py-4 rounded-full bg-white/5 border border-white/5 backdrop-blur-xl opacity-60">
+             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-500">
+               <ShieldCheck className="h-4 w-4" /> Adaptive OS Governance Active
              </div>
              <div className="w-[1px] h-4 bg-white/10" />
              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
