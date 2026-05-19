@@ -5,7 +5,9 @@ import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { calculatePremiumPriority, calculateExamProximityScore, calculateFsrsRiskScore } from "../_shared/study-prioritization.ts";
 
 Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, supabaseAdmin, ai }) => {
-  const { user } = await requireAuth(req);
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+  const user = { id: auth.userId };
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric", month: "2-digit", day: "2-digit",
