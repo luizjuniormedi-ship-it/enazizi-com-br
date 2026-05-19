@@ -271,6 +271,7 @@ Retorne APENAS um JSON no seguinte formato:
             priority_score: t.priority_score || 50,
             estimated_minutes: t.estimated_minutes || 120,
             difficulty: t.difficulty || 'medio',
+            task_type: t.task_type || 'tutor_lesson',
             source: evidence ? 'extracted' : 'incidencia',
             source_page: evidence?.source_page || null,
             source_chunk_id: evidence?.source_chunk_id || null, 
