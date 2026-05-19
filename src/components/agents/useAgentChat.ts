@@ -130,6 +130,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   const { streamResponse } = useTutorStream();
   const { fetchAdaptive, isAdaptiveEnabled } = useTutorAdaptiveContext();
+  const pedSession = usePedagogicalSession();
+
+  // Inicializar sessão pedagógica quando houver conversa e tópico
+  useEffect(() => {
+    if (history.activeConversationId && topic) {
+      pedSession.getOrCreateSession(history.activeConversationId, topic, specialty || undefined);
+    }
+  }, [history.activeConversationId, topic, specialty]);
 
   // Load initial conversation if provided
   useEffect(() => {
