@@ -107,7 +107,14 @@ export type TelemetryEventName =
   | 'mnemonic_reviewed'
   | 'mnemonic_failed_recall'
   | 'mnemonic_optimized'
-  | 'mnemonic_visual_expanded';
+  | 'mnemonic_visual_expanded'
+  | 'sidebar_navigation_clicked'
+  | 'planner_opened'
+  | 'metrics_opened'
+  | 'progress_opened'
+  | 'library_opened'
+  | 'navigation_error'
+  | 'route_load_failed';
 
 
 interface TelemetryProperties {

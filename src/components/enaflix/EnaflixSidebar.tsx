@@ -40,15 +40,16 @@ import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { ForceUpdateButton } from "@/components/layout/ForceUpdateButton";
 import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 const NAV_SECTIONS = [
   {
     title: "PANORAMA",
     items: [
       { to: "/dashboard", label: "Início", icon: Home },
-      { to: "/dashboard/cockpit", label: "Painel de Métricas", icon: LayoutDashboard },
+      { to: "/dashboard/metrics", label: "Painel de Métricas", icon: LayoutDashboard },
       { to: "/dashboard/planner", label: "Hoje (Planner)", icon: Calendar },
-      { to: "/dashboard/analytics", label: "Meu Progresso", icon: BrainCircuit },
+      { to: "/dashboard/progress", label: "Meu Progresso", icon: BrainCircuit },
       { to: "/dashboard/enaflix", label: "Biblioteca ENAFLIX", icon: MonitorPlay },
     ]
   },
@@ -96,6 +97,13 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
   return (
     <Link
       to={to}
+      onClick={() => {
+        telemetry.track('sidebar_navigation_clicked', { target: to, label });
+        if (to === '/dashboard/planner') telemetry.track('planner_opened');
+        if (to === '/dashboard/metrics') telemetry.track('metrics_opened');
+        if (to === '/dashboard/progress') telemetry.track('progress_opened');
+        if (to === '/dashboard/enaflix') telemetry.track('library_opened');
+      }}
       className={cn(
         "group relative z-10 flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-500 overflow-hidden isolate cursor-pointer",
         active 
@@ -200,7 +208,7 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
                 <SidebarItem
                   key={item.to}
                   {...item}
-                  active={location.pathname === item.to || (item.to === "/dashboard" && location.pathname === "/enaflix")}
+                  active={location.pathname === item.to}
                 />
               ))}
             </div>
