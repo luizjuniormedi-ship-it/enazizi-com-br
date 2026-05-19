@@ -437,8 +437,7 @@ const AgentChat = ({
       case 'simplify': prompt = "Pode explicar de forma mais simples e didática?"; break;
       default: prompt = "Próximo bloco.";
     }
-    // Passamos o terceiro argumento como true para indicar que é um acknowledge incremental
-    (chat.handleSend as any)(prompt, undefined, true);
+    (chat.handleSend as any)(prompt, undefined, action);
   }, [chat.handleSend]);
 
   const content = (
@@ -557,6 +556,7 @@ const AgentChat = ({
         topic={topic}
         subtopic={subtopic}
         specialty={specialty}
+        isPedagogicalSession={!!chat.pedSession?.session}
       />
 
       <AgentInputBar

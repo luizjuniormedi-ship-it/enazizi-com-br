@@ -25,24 +25,35 @@ Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil,
   // ── PEDAGOGICAL INCREMENTAL GENERATION ────────────────────────────
   let systemPrompt = ENAZIZI_PROMPT;
   if (pedagogicalContext) {
-    const { currentBlock, tutorMode, cognitiveState, topic } = pedagogicalContext;
+    const { currentBlock, tutorMode, cognitiveState, topic, lastInteraction } = pedagogicalContext;
+    
+    const blockNames = [
+      "Missão Clínica", "Roadmap Cognitivo", "Explicação Leiga", "Fisiopatologia Profunda",
+      "Raciocínio Clínico", "Quadro Clínico e Diagnóstico", "Conduta e Tratamento", 
+      "Pegadinhas de Prova", "Mapa de Decisão", "Questão Guiada", "Correção Comentada",
+      "Active Recall", "Flashcards", "Resumo Ultraobjetivo", "Modo Preceptor"
+    ];
+
     systemPrompt += `\n\n
 ==================================================
-🚀 MODO DE PRECEPTORIA INCREMENTAL ATIVO
+🚨 REGRA ABSOLUTA: GERAÇÃO DE BLOCO ÚNICO
 ==================================================
-IMPORTANTE:
-- Você deve gerar SOMENTE o BLOCO solicitado agora.
-- NÃO avance para blocos futuros.
-- NÃO faça resumos finais antecipados.
-- Sua resposta deve ser focada exclusivamente no objetivo pedagógico do bloco atual.
+Você está no MODO DE PRECEPTORIA ITERATIVA. 
+Sua missão é gerar APENAS UM BLOCO por vez. É PROIBIDO gerar roadmap completo ou outros blocos.
 
-ESTADO DA SESSÃO:
-- Tema: ${topic}
-- Bloco atual: ${currentBlock}
-- Modo: ${tutorMode}
-- Estado Cognitivo: ${cognitiveState}
+BLOCO ATUAL: ${currentBlock}: ${blockNames[currentBlock - 1]}
+TEMA: ${topic}
+MODO ATUAL: ${tutorMode}
+ESTADO COGNITIVO: ${cognitiveState}
+INTERAÇÃO DO ALUNO: ${lastInteraction || "Explique o tema"}
 
-INSTRUÇÃO: Gere o conteúdo para o BLOCO ${currentBlock}. Se o modo for 'recovery', use analogias ultra-didáticas. Se for 'mastery', aumente o desafio clínico.
+REGRAS CRÍTICAS:
+1. FOCO TOTAL: Gere apenas o conteúdo do BLOCO ${currentBlock}.
+2. PROIBIÇÃO: Não escreva sobre blocos futuros, não gere questões se o bloco não for o 10, não gere flashcards se o bloco não for o 13.
+3. ADAPTAÇÃO: Se a interação for 'Aprofundar', 'Simplificar', 'Analogia' ou 'Exemplo Clínico', você deve regenerar ou estender o CONTEÚDO DO BLOCO ATUAL (${currentBlock}) de acordo com o pedido, sem avançar para o próximo número.
+4. PARADA: Pare imediatamente após concluir o conteúdo do bloco solicitado.
+
+Ao terminar, encerre com a pergunta obrigatória: "Antes de avançar, escolha uma opção: A) Entendi, avançar B) Aprofundar C) Simplificar D) Explicar por analogia E) Ver exemplo clínico"
 ==================================================`;
   }
 

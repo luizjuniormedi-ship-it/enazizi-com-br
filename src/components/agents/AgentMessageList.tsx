@@ -30,6 +30,7 @@ interface AgentMessageListProps {
   topic?: string | null;
   subtopic?: string | null;
   specialty?: string | null;
+  isPedagogicalSession?: boolean;
 }
 
 const AgentMessageList = memo(
@@ -40,7 +41,7 @@ const AgentMessageList = memo(
         speakingMsgIdx, savingMsgIdx, savedMsgIdxs, hasOnSaveMessage,
         linkToAgent, selectedUploadIds, renderAssistantMessage,
         onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory, onIncrementalAction,
-        onAddToPlanner, conversationId, topic, subtopic, specialty
+        onAddToPlanner, conversationId, topic, subtopic, specialty, isPedagogicalSession
       },
       ref
     ) => (
@@ -69,6 +70,8 @@ const AgentMessageList = memo(
             onLink={onLink}
             onRegenerateFromMemory={onRegenerateFromMemory}
             onIncrementalAction={onIncrementalAction}
+            isPedagogicalSession={isPedagogicalSession}
+            isLastAssistantMessage={i === messages.length - 1}
             conversationId={conversationId}
             topic={topic || undefined}
             subtopic={subtopic || undefined}

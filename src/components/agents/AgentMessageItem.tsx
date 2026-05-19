@@ -52,7 +52,9 @@ interface AgentMessageItemProps {
   onSave: (idx: number, content: string) => void;
   onLink: (content: string, uploadIds: string[]) => void;
   onRegenerateFromMemory?: (question: string) => void;
-  onIncrementalAction?: (action: string) => void; // Adicionado
+  onIncrementalAction?: (action: string) => void;
+  isPedagogicalSession?: boolean; // Adicionado
+  isLastAssistantMessage?: boolean; // Adicionado
   conversationId?: string;
   topic?: string;
   subtopic?: string;
@@ -72,6 +74,7 @@ const AgentMessageItem = memo(
     msg, index, title, isLoading, hasSpeechSynthesis, speakingMsgIdx, savingMsgIdx,
     isSaved, hasOnSaveMessage, linkToAgent, selectedUploadIds, renderAssistantMessage,
     onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory, onIncrementalAction,
+    isPedagogicalSession, isLastAssistantMessage,
     conversationId, topic, subtopic, specialty
   }: AgentMessageItemProps) => {
     const navigate = useNavigate();
@@ -113,6 +116,12 @@ const AgentMessageItem = memo(
     const validation = useMemo(() => {
       return validateTutorMessageForCME(msg.content, cognitiveBlocks);
     }, [msg.content, cognitiveBlocks]);
+
+    // Lógica para exibir o card de gating real
+    const showConsolidationCard = msg.role === "assistant" && 
+                                 isPedagogicalSession && 
+                                 isLastAssistantMessage && 
+                                 !isLoading;
 
     useEffect(() => {
       if (msg.role === "assistant" && !isLoading && (msg as any).id) {
@@ -216,7 +225,7 @@ const AgentMessageItem = memo(
                         <div className="mt-8 mb-4">
                            <InteractiveCognitiveCard 
                              onAction={(action) => {
-                               console.log("Pedagogical Action:", action);
+                               console.log("Pedagogical Action (Split):", action);
                                if (onIncrementalAction) {
                                  onIncrementalAction(action);
                                }
@@ -229,6 +238,19 @@ const AgentMessageItem = memo(
                   );
                 })}
               </AnimatePresence>
+
+              {showConsolidationCard && (
+                <div className="mt-4">
+                  <InteractiveCognitiveCard 
+                    onAction={(action) => {
+                      console.log("Pedagogical Action (Real Gating):", action);
+                      if (onIncrementalAction) {
+                        onIncrementalAction(action);
+                      }
+                    }}
+                  />
+                </div>
+              )}
 
               {isAllTextUnlocked && hasCognitiveBlocks && (
                 <motion.div 
