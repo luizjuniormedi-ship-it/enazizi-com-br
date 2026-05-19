@@ -3,10 +3,11 @@ console.error("🔥 BUILD_FORENSE", {
   timestamp: Date.now(),
   version: "FORENSE_V1"
 });
-import { memo, useMemo, useEffect } from "react";
+import { memo, useMemo, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle, RefreshCw, BarChart3, LineChart, BookOpen } from "lucide-react";
+import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle, RefreshCw, BarChart3, LineChart, BookOpen, ArrowRight } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
 import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer";
@@ -16,6 +17,7 @@ import { useTutorCME } from "@/hooks/useTutorCME";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
+import { splitPedagogicalSections } from "@/lib/tutor/splitPedagogicalSections";
 import { validateTutorMessageForCME } from "@/lib/tutor/tutorValidation";
 import { 
   Dialog, 
@@ -171,6 +173,31 @@ const AgentMessageItem = memo(
           </div>
         )}
         
+    const [unlockedSections, setUnlockedSections] = useState(1);
+    const pedagogicalSections = useMemo(() => {
+      if (msg.role !== "assistant") return [renderedMarkdown];
+      return splitPedagogicalSections(renderedMarkdown);
+    }, [renderedMarkdown, msg.role]);
+
+    const isAllTextUnlocked = unlockedSections >= pedagogicalSections.length;
+
+    return (
+      <div className={cn(
+        "flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700",
+        msg.role === "user" ? "items-end" : "items-start w-full"
+      )}>
+        {msg.role === "assistant" && (
+          <div className="flex items-center gap-4 group/avatar">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-1 ring-primary/40 shadow-xl bg-black/40">
+              <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
+            </div>
+            <div className="flex flex-col">
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/80">Cognitive Engine</span>
+               <span className="text-xs font-bold text-white/40">IA Mentor Premium</span>
+            </div>
+          </div>
+        )}
+        
         <div
           className={cn(
             "rounded-3xl relative transition-all duration-500",
@@ -183,18 +210,49 @@ const AgentMessageItem = memo(
           )}
         >
           {msg.role === "assistant" ? (
-            <>
-              {renderedMarkdown && renderedMarkdown.trim().length > 0 && (
-                renderAssistantMessage ? (
-                  renderAssistantMessage(renderedMarkdown)
-                ) : (
-                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-base sm:prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-headings:text-white prose-headings:font-black prose-headings:tracking-tighter prose-strong:text-primary prose-strong:font-bold">
-                    <ReactMarkdown components={markdownComponents}>{renderedMarkdown}</ReactMarkdown>
-                  </div>
-                )
-              )}
-              {hasCognitiveBlocks && (
-                <div className="mt-3">
+            <div className="space-y-6">
+              <AnimatePresence mode="popLayout">
+                {pedagogicalSections.slice(0, unlockedSections).map((section, sIdx) => (
+                  <motion.div
+                    key={sIdx}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="relative"
+                  >
+                    {renderAssistantMessage ? (
+                      renderAssistantMessage(section)
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-base sm:prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-headings:text-white prose-headings:font-black prose-headings:tracking-tighter prose-strong:text-primary prose-strong:font-bold">
+                        <ReactMarkdown components={markdownComponents}>{section}</ReactMarkdown>
+                      </div>
+                    )}
+                    
+                    {sIdx === unlockedSections - 1 && !isAllTextUnlocked && (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mt-6 flex justify-center"
+                      >
+                        <button
+                          onClick={() => setUnlockedSections(prev => prev + 1)}
+                          className="group relative flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-sm tracking-tight hover:bg-white/10 hover:border-primary/30 transition-all active:scale-95"
+                        >
+                          <span>Entendi, avançar para {sIdx + 2}</span>
+                          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {isAllTextUnlocked && hasCognitiveBlocks && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-3 pt-6 border-t border-white/5"
+                >
                   <TutorBlockRenderer
                     blocks={cognitiveBlocks}
                     onQuizAnswered={({ correct }) => {
@@ -202,7 +260,7 @@ const AgentMessageItem = memo(
                       adjustMemoryQuality(msg.memoryId, correct ? 3 : -5).catch(() => {});
                     }}
                   />
-                </div>
+                </motion.div>
               )}
 
               {msg.role === "assistant" && msg.bibliography && msg.bibliography.length > 0 && (
