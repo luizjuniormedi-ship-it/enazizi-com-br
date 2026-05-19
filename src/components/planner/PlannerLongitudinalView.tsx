@@ -10,6 +10,7 @@ interface StudyPlanItem {
   id: string;
   week_number: number;
   topic: string;
+  subtopic?: string | null;
   discipline: string;
   status: string;
   priority_score: number;
