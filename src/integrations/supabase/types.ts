@@ -10469,6 +10469,8 @@ export type Database = {
           id: string
           pontuacao_discursiva: number | null
           questoes_respondidas: number
+          recovery_score: number | null
+          retention_score: number | null
           taxa_acerto: number
           tema_atual: string | null
           temas_fracos: Json
@@ -10483,6 +10485,8 @@ export type Database = {
           id?: string
           pontuacao_discursiva?: number | null
           questoes_respondidas?: number
+          recovery_score?: number | null
+          retention_score?: number | null
           taxa_acerto?: number
           tema_atual?: string | null
           temas_fracos?: Json
@@ -10497,6 +10501,8 @@ export type Database = {
           id?: string
           pontuacao_discursiva?: number | null
           questoes_respondidas?: number
+          recovery_score?: number | null
+          retention_score?: number | null
           taxa_acerto?: number
           tema_atual?: string | null
           temas_fracos?: Json
@@ -22435,6 +22441,42 @@ export type Database = {
           },
         ]
       }
+      tutor_block_transitions: {
+        Row: {
+          created_at: string | null
+          id: string
+          latency_ms: number | null
+          next_block: number | null
+          previous_block: number | null
+          session_id: string | null
+          transition_reason: string | null
+          transition_source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          latency_ms?: number | null
+          next_block?: number | null
+          previous_block?: number | null
+          session_id?: string | null
+          transition_reason?: string | null
+          transition_source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          latency_ms?: number | null
+          next_block?: number | null
+          previous_block?: number | null
+          session_id?: string | null
+          transition_reason?: string | null
+          transition_source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tutor_context_snapshots: {
         Row: {
           accuracy: number | null
@@ -22694,6 +22736,39 @@ export type Database = {
           symptom_keywords?: string[] | null
           topic?: string | null
           updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      tutor_learning_memory: {
+        Row: {
+          effective_analogies: string[] | null
+          id: string
+          last_retention_score: number | null
+          mastery_milestones: Json | null
+          misconception_tags: string[] | null
+          topic: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          effective_analogies?: string[] | null
+          id?: string
+          last_retention_score?: number | null
+          mastery_milestones?: Json | null
+          misconception_tags?: string[] | null
+          topic: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          effective_analogies?: string[] | null
+          id?: string
+          last_retention_score?: number | null
+          mastery_milestones?: Json | null
+          misconception_tags?: string[] | null
+          topic?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -23278,6 +23353,42 @@ export type Database = {
           lesson_id?: string | null
           normalized_topic?: string
           session_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      tutor_runtime_metrics: {
+        Row: {
+          audit_ms: number | null
+          block_transition_ms: number | null
+          completion_tokens: number | null
+          created_at: string | null
+          id: string
+          prompt_tokens: number | null
+          session_id: string | null
+          tutor_generation_ms: number | null
+          user_id: string | null
+        }
+        Insert: {
+          audit_ms?: number | null
+          block_transition_ms?: number | null
+          completion_tokens?: number | null
+          created_at?: string | null
+          id?: string
+          prompt_tokens?: number | null
+          session_id?: string | null
+          tutor_generation_ms?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          audit_ms?: number | null
+          block_transition_ms?: number | null
+          completion_tokens?: number | null
+          created_at?: string | null
+          id?: string
+          prompt_tokens?: number | null
+          session_id?: string | null
+          tutor_generation_ms?: number | null
           user_id?: string | null
         }
         Relationships: []
