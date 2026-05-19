@@ -547,49 +547,65 @@ const Simulados = () => {
           
           console.log(`[Simulados] Chamando question-generator para lote ${batchNum}. Count: ${currentBatchSize}`);
           
-          // Fallback manual para caso a lib local falhe
-          const { data, error: fnError } = await supabase.functions.invoke(
-            "question-generator",
-            {
-              body: {
-                stream: false,
-                outputFormat: "json",
-                difficulty: config.difficulty || "misto",
-                timeoutMs: 120000,
-                messages: [{
-                  role: "user",
-                  content: buildPrompt(
-                    config.topics || ["Clínica Médica"],
-                    currentBatchSize,
-                    config.difficulty || "misto",
-                    config.specificTopic,
-                    config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined
-                  )
-                }],
-                generationContext: {
-                  specialty: (config.topics && config.topics[0]) || "Clínica Médica",
-                  topic: (config.topics || ["Clínica Médica"]).join(", "),
-                  subtopic: config.specificTopic,
-                  objective: "practice",
-                  source: "simulado",
+          let batchData: any = null;
+          let batchErr: any = null;
+          
+          try {
+            const batchQs = await generateBatch(
+              config.topics || ["Clínica Médica"],
+              currentBatchSize,
+              config.difficulty || "misto",
+              session?.access_token,
+              config.specificTopic,
+              config.realExamProfile || config.examBoard,
+              avoid,
+              currentJobId,
+              batchNum,
+              config.topicWeights,
+              config.autoDistribution,
+              config.customDistribution,
+              config.includeWeakThemes,
+              config.includePreviousErrors
+            );
+            batchData = { success: true, questions: batchQs };
+          } catch (e) {
+            console.error("[Simulados] generateBatch failed, using direct invoke fallback:", e);
+            const { data, error } = await supabase.functions.invoke(
+              "question-generator",
+              {
+                body: {
+                  stream: false,
+                  outputFormat: "json",
+                  difficulty: config.difficulty || "misto",
+                  timeoutMs: 120000,
+                  messages: [{ role: "user", content: buildPrompt(config.topics || ["Clínica Médica"], currentBatchSize, config.difficulty || "misto", config.specificTopic, config.realExamProfile || config.examBoard) }],
+                  generationContext: {
+                    specialty: (config.topics && config.topics[0]) || "Clínica Médica",
+                    topic: (config.topics || ["Clínica Médica"]).join(", "),
+                    subtopic: config.specificTopic,
+                    objective: "practice",
+                    source: "simulado",
+                  },
+                  targetExam: config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined,
+                  count: currentBatchSize,
+                  imagePercent: config.imagePercent || 0,
+                  avoidStatements: avoid,
+                  jobId: currentJobId,
+                  batchNumber: batchNum,
+                  autoDistribution: config.autoDistribution,
+                  customDistribution: config.customDistribution,
+                  includeWeakThemes: config.includeWeakThemes,
+                  includePreviousErrors: config.includePreviousErrors,
                 },
-                targetExam: config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined,
-                count: currentBatchSize,
-                imagePercent: config.imagePercent || 0,
-                avoidStatements: avoid,
-                jobId: currentJobId,
-                batchNumber: batchNum,
-                autoDistribution: config.autoDistribution,
-                customDistribution: config.customDistribution,
-                includeWeakThemes: config.includeWeakThemes,
-                includePreviousErrors: config.includePreviousErrors,
-              },
-            }
-          );
+              }
+            );
+            batchData = data;
+            batchErr = error;
+          }
 
-          if (fnError) {
-            console.error("[Simulados] Erro na Edge Function invoke:", fnError);
-            throw fnError;
+          if (batchErr) {
+            console.error("[Simulados] Erro na Edge Function invoke:", batchErr);
+            throw batchErr;
           }
 
           if (!batchData?.success) {
