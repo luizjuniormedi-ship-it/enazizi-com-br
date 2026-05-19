@@ -40,7 +40,7 @@ const AgentMessageList = memo(
         speakingMsgIdx, savingMsgIdx, savedMsgIdxs, hasOnSaveMessage,
         linkToAgent, selectedUploadIds, renderAssistantMessage,
         onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory, onIncrementalAction,
-        conversationId, topic, subtopic, specialty
+        onAddToPlanner, conversationId, topic, subtopic, specialty
       },
       ref
     ) => (
