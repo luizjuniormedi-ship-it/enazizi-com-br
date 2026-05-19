@@ -556,6 +556,7 @@ const AgentChat = ({
         topic={topic}
         subtopic={subtopic}
         specialty={specialty}
+        isPedagogicalSession={!!chat.pedSession?.session}
       />
 
       <AgentInputBar
