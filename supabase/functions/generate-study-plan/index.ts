@@ -299,30 +299,51 @@ Sempre:
         await supabaseAdmin.from("ai_governance_logs").insert({
           user_id: user.id,
           task_type: "study_plan_generation",
-          model_name: "google/gemini-2.5-flash", // Using a valid production model
+          model_name: "google/gemini-2.5-flash", 
           payload: { context: userContext },
           response_summary: "Master Planner Generated"
         });
-
       } catch (logErr) {
         logger.warn("GOVERNANCE_LOG_FAIL", logErr.message);
       }
 
+      // Update study_plan with metadata and start/end dates
+      const startDate = new Date().toISOString().split("T")[0];
+      const endDate = examDate || new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0];
+      
       await supabaseAdmin.from("study_plans").update({ 
         plan_json: planJson, 
         status: "completed",
         current_step: "Master Planner Concluído com Sucesso",
-        progress: 100
+        progress: 100,
+        exam_date: examDate,
+        daily_available_minutes: (hoursPerDay || 4) * 60,
+        weekly_available_days: daysPerWeek || 5,
+        start_date: startDate,
+        end_date: endDate,
+        source: materialText ? "pdf_edital" : "manual"
       }).eq("id", plan.id);
 
-      // Trigger automatic FSRS/Sync for the first 10 topics if needed
-      // This helps with the "not separating topics" complaint
-      const topics = planJson.topicMap || [];
-      if (topics.length > 0) {
-        logger.info("SYNC_START", `Syncing ${topics.length} topics to student modules`);
-        // Here we could call an internal function or just log it
-        // The frontend usually handles the detailed sync via cronogramaSync.ts
+      // Populate study_plan_items
+      const topicMap = planJson.topicMap || [];
+      if (topicMap.length > 0) {
+        const itemsToInsert = topicMap.map((t: any, idx: number) => ({
+          study_plan_id: plan.id,
+          user_id: user.id,
+          discipline: t.discipline || t.subject || "Geral",
+          topic: t.topic,
+          subtopic: t.subtopics?.[0] || null,
+          priority_score: t.priority_score || 50,
+          difficulty: t.difficulty || 'medio',
+          source: t.source || 'edital',
+          week_number: Math.floor(idx / 5) + 1, // Simple grouping if not provided
+          status: 'pending'
+        }));
+
+        const { error: itemsErr } = await supabaseAdmin.from("study_plan_items").insert(itemsToInsert);
+        if (itemsErr) logger.error("ITEMS_INSERT_FAIL", itemsErr.message);
       }
+
 
       logger.info("PLAN_GEN_SUCCESS", "Study plan generated successfully", { planId: plan.id });
 

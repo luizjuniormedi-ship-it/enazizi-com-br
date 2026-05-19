@@ -9,8 +9,9 @@ import { Progress } from "@/components/ui/progress";
 import {
   Target, BookOpen, CalendarDays, History,
   Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3, RefreshCw,
-  Flame, Zap, ChevronLeft
+  Flame, Zap, ChevronLeft, ArrowRight
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -409,8 +410,10 @@ const SmartPlanner = () => {
         }
       }).then();
 
-      toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta." });
+      toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta. Redirecionando..." });
+      setTimeout(() => navigate("/dashboard/missao-do-dia"), 1500);
       loadData();
+
     } catch (err: any) {
       // Telemetry: error
       supabase.functions.invoke("unified-telemetry", {
@@ -696,10 +699,14 @@ const SmartPlanner = () => {
                 {reprocessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                 Gerar Missão do Dia
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setActiveTab("onboarding")} className="gap-2">
+                <BookOpen className="h-4 w-4" /> Configurar Cronograma
+              </Button>
               <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)} className="gap-2">
                 <RefreshCw className="h-4 w-4" /> Recalcular Prova
               </Button>
             </div>
+
           }
         />
       </div>
@@ -774,13 +781,18 @@ const SmartPlanner = () => {
 
       {/* Tabs — 4 seções */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={cn("w-full h-auto", plannerV2 ? "grid grid-cols-4" : "grid grid-cols-3")}>
+        <TabsList className={cn("w-full h-auto", plannerV2 ? "grid grid-cols-5" : "grid grid-cols-4")}>
           {plannerV2 && (
             <TabsTrigger value="estrategia" className="text-xs py-2 flex flex-col gap-0.5 items-center">
               <Target className="h-4 w-4" />
               <span>Estratégia</span>
             </TabsTrigger>
           )}
+          <TabsTrigger value="onboarding" className="text-xs py-2 flex flex-col gap-0.5 items-center">
+            <GraduationCap className="h-4 w-4" />
+            <span className="hidden sm:inline">Onboarding</span>
+            <span className="sm:hidden">Plano</span>
+          </TabsTrigger>
           <TabsTrigger value="conteudo" className="text-xs py-2 flex flex-col gap-0.5 items-center">
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Conteúdo</span>
@@ -798,7 +810,21 @@ const SmartPlanner = () => {
           </TabsTrigger>
         </TabsList>
 
+
+        {/* ── ONBOARDING / CONFIG ── */}
+        <TabsContent value="onboarding" className="space-y-4 mt-4">
+          <StudyPlanContent
+            onSyncComplete={async () => { await loadData(); setActiveTab("estrategia"); }}
+            onSubjectsGenerated={async (subjects: string[]) => {
+              if (!user) return;
+              const today2 = new Date().toISOString().split("T")[0];
+              return { temasRegistrados: subjects.length, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
+            }}
+          />
+        </TabsContent>
+
         {/* ── ESTRATÉGIA ── */}
+
         <TabsContent value="estrategia" className="space-y-4 mt-4">
           {/* Strategic Header */}
           <PlannerStrategicHeader
@@ -850,131 +876,21 @@ const SmartPlanner = () => {
             </div>
           )}
 
-          {/* Study Plan Content */}
-          <StudyPlanContent
-            onSyncComplete={async () => { await loadData(); setActiveTab("conteudo"); }}
-            onSubjectsGenerated={async (subjects: string[]) => {
-              if (!user) return;
-              const today2 = new Date().toISOString().split("T")[0];
-              await supabase.from("desempenho_questoes").delete().eq("user_id", user.id);
-              await supabase.from("revisoes").delete().eq("user_id", user.id);
-              await supabase.from("temas_estudados").delete().eq("user_id", user.id);
-              setTemas([]);
-              if (subjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
-              // [planner-unification-final] Agora usamos o topicMap granular para separar os tópicos corretamente.
-              const { data: latestPlanData } = await supabase.from("study_plans").select("id, plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
-              const plan = latestPlanData?.plan_json as any;
-              const topicMap: { topic: string; subtopics: string[]; priority_score?: number }[] = plan?.topicMap || [];
-              
-              const registeredTemas: { id: string; tema: string; especialidade: string }[] = [];
-              let totalReviews = 0;
+          {/* Macro Plan Indicator */}
+          {!loading && config && (
+            <div className="mt-4 pt-4 border-t border-border/40">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full text-[10px] uppercase font-black tracking-widest text-muted-foreground hover:text-foreground"
+                onClick={() => setActiveTab("conteudo")}
+              >
+                Ver Cronograma Macro Completo
+                <ArrowRight className="h-3 w-3 ml-2" />
+              </Button>
+            </div>
+          )}
 
-              // Se tivermos um topicMap detalhado, usamos ele para criar tópicos granulares
-              if (topicMap.length > 0) {
-                for (const entry of topicMap) {
-                  const mainTopic = entry.topic;
-                  const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(mainTopic) || "Clínica Médica";
-                  
-                  // Se não houver subtemas, cria o tema principal
-                  if (!entry.subtopics || entry.subtopics.length === 0) {
-                    const { data, error } = await supabase.from("temas_estudados").insert({
-                      user_id: user.id, 
-                      tema: mainTopic, 
-                      especialidade, 
-                      data_estudo: today2, 
-                      fonte: "plano_estudos", 
-                      dificuldade: "medio", 
-                      status: "ativo"
-                    } as any).select().single();
-                    
-                    if (!error && data) {
-                      const temaId = (data as any).id;
-                      registeredTemas.push({ id: temaId, tema: mainTopic, especialidade });
-                      const reviews = generateReviewsByError(today2, 0);
-                      totalReviews += reviews.length;
-                      await supabase.from("revisoes").insert(reviews.map(r => ({
-                        user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo, data_revisao: r.data, status: "pendente", prioridade: entry.priority_score || 50, risco_esquecimento: "baixo",
-                      })) as any);
-                    }
-                  } else {
-                    // Para cada subtema, cria uma entrada separada para o FSRS
-                    for (const sub of entry.subtopics) {
-                      const fullTema = `${mainTopic}: ${sub}`;
-                      const { data, error } = await supabase.from("temas_estudados").insert({
-                        user_id: user.id, 
-                        tema: fullTema, 
-                        especialidade, 
-                        data_estudo: today2, 
-                        fonte: "plano_estudos", 
-                        dificuldade: "medio", 
-                        subtopico: sub,
-                        status: "ativo"
-                      } as any).select().single();
-                      
-                      if (!error && data) {
-                        const temaId = (data as any).id;
-                        registeredTemas.push({ id: temaId, tema: fullTema, especialidade });
-                        const reviews = generateReviewsByError(today2, 0);
-                        totalReviews += reviews.length;
-                        await supabase.from("revisoes").insert(reviews.map(r => ({
-                          user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo, data_revisao: r.data, status: "pendente", prioridade: entry.priority_score || 50, risco_esquecimento: "baixo",
-                        })) as any);
-                      }
-                    }
-                  }
-                }
-              } else {
-                // Fallback para o comportamento anterior se não houver topicMap
-                for (const subject of subjects) {
-                  const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(subject) || "Medicina Preventiva";
-                  const { data, error } = await supabase.from("temas_estudados").insert({
-                    user_id: user.id, tema: subject, especialidade, data_estudo: today2, fonte: "plano_estudos", dificuldade: "medio", status: "ativo",
-                  } as any).select().single();
-                  if (error || !data) continue;
-                  const temaId = (data as any).id;
-                  registeredTemas.push({ id: temaId, tema: subject, especialidade });
-                  const reviews = generateReviewsByError(today2, 0);
-                  totalReviews += reviews.length;
-                  await supabase.from("revisoes").insert(reviews.map(r => ({
-                    user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo, data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
-                  })) as any);
-                }
-              }
-              let flashcardsCriados = 0;
-              let questoesVinculadas = 0;
-              if (registeredTemas.length > 0) {
-                try {
-                  const syncResult = await syncTemasToModules(user.id, registeredTemas);
-                  flashcardsCriados = syncResult.flashcardsCriados;
-                  questoesVinculadas = syncResult.questoesVinculadas;
-                } catch (err) { console.error("Sync error:", err); }
-
-                // Create baseline approval score if none exists
-                const { data: existingScore } = await supabase
-                  .from("approval_scores")
-                  .select("id")
-                  .eq("user_id", user.id)
-                  .limit(1)
-                  .maybeSingle();
-                if (!existingScore) {
-                  await supabase.from("approval_scores").insert({
-                    user_id: user.id,
-                    score: 0,
-                    accuracy: 0,
-                    review_score: 0,
-                    consistency_score: 0,
-                    domain_score: 0,
-                    error_penalty: 0,
-                    simulation_score: 0,
-                    phase: "base",
-                  } as any);
-                }
-
-                await loadData();
-              }
-              return { temasRegistrados: registeredTemas.length, flashcardsCriados, questoesVinculadas, revisoesAgendadas: totalReviews };
-            }}
-          />
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 gap-2">
