@@ -216,8 +216,10 @@ const AgentMessageItem = memo(
                         <div className="mt-8 mb-4">
                            <InteractiveCognitiveCard 
                              onAction={(action) => {
-                               // Implementar lógica de roteamento adaptativo aqui
                                console.log("Pedagogical Action:", action);
+                               if (onIncrementalAction) {
+                                 onIncrementalAction(action);
+                               }
                                setUnlockedSections(prev => prev + 1);
                              }}
                            />
