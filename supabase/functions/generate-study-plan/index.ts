@@ -56,17 +56,17 @@ Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, wa
         lastUploadId = lastUpload.id;
       }
 
-      // 1. Resolve Final Exam Date
+      // 1. Resolve Final Exam Date (Priority: Manual > Extracted)
       const finalExamDate = examDate || detectedExamDate;
       if (!finalExamDate) {
-        throw new Error("Data da prova não informada e não detectada no edital.");
+        throw new Error("Data da prova não informada e não detectada no edital. Por favor, informe a data manualmente.");
       }
 
       // Validate date
       const examDateObj = new Date(finalExamDate);
       const today = new Date();
       if (examDateObj < today) {
-        throw new Error("A data da prova informada já passou.");
+        throw new Error("A data da prova informada já passou. Por favor, escolha uma data futura.");
       }
 
       const daysUntilExam = Math.ceil((examDateObj.getTime() - today.getTime()) / 86400000);
@@ -104,7 +104,6 @@ Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, wa
 
       await supabaseAdmin.from("study_plans").update({ current_step: "Processando evidências e mapeando temas...", progress: 25 }).eq("id", plan.id);
 
-
       
       const systemPrompt = `Você é o motor oficial de geração de cronograma do ENAZIZI.
 
@@ -141,7 +140,7 @@ Receber:
 - disciplinas;
 - desempenho atual;
 - erros recentes;
-- PDFs/editais;
+- tópicos extraídos com evidência (extractedTopics);
 - revisões pendentes;
 - simulados anteriores;
 - nível do aluno;
@@ -152,24 +151,12 @@ Receber:
 - histórico de retenção.
 
 ────────────────────────────
-3. PROCESSAMENTO DE PDF (SE HOUVER)
+3. REGRA ANTI-ALUCINAÇÃO
 ────────────────────────────
 
-Se houver conteúdo de PDF:
-1. Extrair TODO o conteúdo;
-2. Dividir em chunks;
-3. Consolidar tópicos;
-4. Remover duplicados;
-5. Detectar temas reais;
-6. Rejeitar temas inventados;
-7. Validar coerência;
-8. Marcar origem de cada tópico.
-
-PROIBIDO:
-- inventar assuntos;
-- adicionar tema fora do documento;
-- ignorar páginas;
-- criar tópicos genéricos.
+O cronograma só pode usar temas com base no edital fornecido (extractedTopics).
+Não inventar assuntos. Não adicionar tema fora do documento.
+Se extractedTopics estiver vazio, use incidência médica Brasil (ENARE, USP, SUS-SP).
 
 ────────────────────────────
 4. LÓGICA DE PRIORIZAÇÃO
@@ -266,7 +253,7 @@ Retorne APENAS um JSON no seguinte formato:
   },
   "metadata": {
     "engine": "ENAZIZI Master Planner",
-    "version": "2.0"
+    "version": "2.1"
   }
 }
 
@@ -310,7 +297,6 @@ Sempre:
         }
       };
 
-
       await supabaseAdmin.from("study_plans").update({ current_step: "Gerando estratégia pedagógica com IA...", progress: 50 }).eq("id", plan.id);
 
 
@@ -330,7 +316,7 @@ Sempre:
         throw new Error("Erro na estrutura do Master Planner: weeklySchedule ausente.");
       }
 
-      // Record governance log with model name to avoid constraint violation
+      // Record governance log
       try {
         await supabaseAdmin.from("ai_governance_logs").insert({
           user_id: user.id,
@@ -345,39 +331,51 @@ Sempre:
 
       // Update study_plan with metadata and start/end dates
       const startDate = new Date().toISOString().split("T")[0];
-      const endDate = examDate || new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0];
+      const totalAvailableMinutes = (hoursPerDay || 4) * (daysPerWeek || 5) * weeksUntilExam * 60;
       
       await supabaseAdmin.from("study_plans").update({ 
         plan_json: planJson, 
         status: "completed",
         current_step: "Master Planner Concluído com Sucesso",
         progress: 100,
-        exam_date: examDate,
+        exam_date: finalExamDate,
         daily_available_minutes: (hoursPerDay || 4) * 60,
         weekly_available_days: daysPerWeek || 5,
+        total_available_minutes: totalAvailableMinutes,
         start_date: startDate,
-        end_date: endDate,
-        source: materialText ? "pdf_edital" : "manual"
+        end_date: finalExamDate,
+        source: extractedTopics && extractedTopics.length > 0 ? "pdf_edital" : "manual"
       }).eq("id", plan.id);
 
       // Populate study_plan_items
       const topicMap = planJson.topicMap || [];
       if (topicMap.length > 0) {
-        const itemsToInsert = topicMap.map((t: any, idx: number) => ({
-          study_plan_id: plan.id,
-          user_id: user.id,
-          discipline: t.discipline || t.subject || "Geral",
-          topic: t.topic,
-          subtopic: t.subtopics?.[0] || null,
-          priority_score: t.priority_score || 50,
-          difficulty: t.difficulty || 'medio',
-          source: t.source || 'edital',
-          week_number: Math.floor(idx / 5) + 1, // Simple grouping if not provided
-          status: 'pending'
-        }));
+        const itemsToInsert = topicMap.map((t: any, idx: number) => {
+          // Find original evidence if available
+          const evidence = extractedTopics?.find(et => et.topic === t.topic);
+          
+          return {
+            study_plan_id: plan.id,
+            user_id: user.id,
+            discipline: t.discipline || t.subject || evidence?.discipline || "Geral",
+            topic: t.topic,
+            subtopic: t.subtopics?.[0] || evidence?.subtopic || null,
+            priority_score: t.priority_score || 50,
+            difficulty: t.difficulty || 'medio',
+            source: evidence ? 'extracted' : 'incidencia',
+            source_page: evidence?.source_page,
+            source_chunk_id: evidence?.id, // Correct ID from database
+            raw_excerpt: evidence?.raw_excerpt,
+            week_number: Math.floor(idx / 5) + 1,
+            status: 'pending'
+          };
+        });
 
-        const { error: itemsErr } = await supabaseAdmin.from("study_plan_items").insert(itemsToInsert);
-        if (itemsErr) logger.error("ITEMS_INSERT_FAIL", itemsErr.message);
+        // Insert in small batches to avoid limits
+        for (let i = 0; i < itemsToInsert.length; i += 20) {
+          const { error: itemsErr } = await supabaseAdmin.from("study_plan_items").insert(itemsToInsert.slice(i, i + 20));
+          if (itemsErr) logger.error("ITEMS_INSERT_FAIL", itemsErr.message);
+        }
       }
 
 
