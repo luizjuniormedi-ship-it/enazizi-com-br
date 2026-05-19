@@ -467,7 +467,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     
     return () => clearTimeout(timer);
   }, [sessionChecked, pendingSession, initialPrompt, user, isLoading, handleSend]);
-  }, [initialPrompt, user, sessionChecked, pendingSession, isLoading, handleSend]);
 
   // Cleanup no unmount
   useEffect(() => {
