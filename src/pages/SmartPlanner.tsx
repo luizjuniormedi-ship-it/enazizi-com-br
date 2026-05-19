@@ -410,8 +410,10 @@ const SmartPlanner = () => {
         }
       }).then();
 
-      toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta." });
+      toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta. Redirecionando..." });
+      setTimeout(() => navigate("/dashboard/missao-do-dia"), 1500);
       loadData();
+
     } catch (err: any) {
       // Telemetry: error
       supabase.functions.invoke("unified-telemetry", {
