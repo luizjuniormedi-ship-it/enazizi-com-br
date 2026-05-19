@@ -401,9 +401,10 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
                       <PedagogicalHeaderBridge
                         messages={messages}
                         onRetry={(p) => onSendRef.current?.(p)}
-                      />
-                    )}
-                  />
+                        />
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
             </motion.div>
