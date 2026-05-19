@@ -7,7 +7,7 @@ import { memo, useMemo, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle, RefreshCw, BarChart3, LineChart, BookOpen, ArrowRight } from "lucide-react";
+import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle, RefreshCw, BarChart3, LineChart, BookOpen, ArrowRight, Brain } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
 import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer";
@@ -187,40 +187,56 @@ const AgentMessageItem = memo(
           {msg.role === "assistant" ? (
             <div className="space-y-6">
               <AnimatePresence mode="popLayout">
-                {pedagogicalSections.slice(0, unlockedSections).map((section, sIdx) => (
-                  <motion.div
-                    key={sIdx}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="relative"
-                  >
-                    {renderAssistantMessage ? (
-                      renderAssistantMessage(section)
-                    ) : (
-                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-base sm:prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-headings:text-white prose-headings:font-black prose-headings:tracking-tighter prose-strong:text-primary prose-strong:font-bold">
-                        <ReactMarkdown components={markdownComponents}>{section}</ReactMarkdown>
-                      </div>
-                    )}
-                    
-                    {sIdx === unlockedSections - 1 && !isAllTextUnlocked && (
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="mt-8 mb-4 flex justify-center"
-                      >
-                        <button
-                          onClick={() => setUnlockedSections(prev => prev + 1)}
-                          className="group relative flex items-center gap-4 px-10 py-5 rounded-[24px] bg-primary text-white font-black text-sm uppercase tracking-[0.1em] hover:scale-105 hover:shadow-[0_0_30px_rgba(var(--primary),0.4)] transition-all active:scale-95 border border-white/20"
+                {pedagogicalSections.slice(0, unlockedSections).map((section, sIdx) => {
+                  const isLastUnlocked = sIdx === unlockedSections - 1;
+                  const isBlocked = !isAllTextUnlocked && isLastUnlocked;
+                  
+                  return (
+                    <motion.div
+                      key={sIdx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                      className="relative"
+                    >
+                      {renderAssistantMessage ? (
+                        renderAssistantMessage(section)
+                      ) : (
+                        <div className={cn(
+                          "prose prose-sm dark:prose-invert max-w-none prose-p:text-base sm:prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-headings:text-white prose-headings:font-black prose-headings:tracking-tighter prose-strong:text-primary prose-strong:font-bold",
+                          isBlocked && "pb-4"
+                        )}>
+                          <ReactMarkdown components={markdownComponents}>{section}</ReactMarkdown>
+                        </div>
+                      )}
+                      
+                      {isBlocked && (
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="mt-8 mb-4 flex flex-col items-center gap-4 py-8 px-6 rounded-[32px] bg-primary/10 border border-primary/20 backdrop-blur-md"
                         >
-                          <div className="absolute inset-0 bg-white/10 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <span>Compreendido, Próxima Etapa</span>
-                          <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </motion.div>
-                ))}
+                          <div className="flex items-center gap-3 text-primary mb-2">
+                            <Brain className="h-6 w-6 animate-pulse" />
+                            <span className="text-sm font-black uppercase tracking-widest">Gating Pedagógico Ativo</span>
+                          </div>
+                          <p className="text-center text-white/70 text-sm mb-4 max-w-md">
+                            O Tutor interrompeu o avanço para garantir a consolidação deste bloco. 
+                            Escolha como quer prosseguir:
+                          </p>
+                          <button
+                            onClick={() => setUnlockedSections(prev => prev + 1)}
+                            className="group relative flex items-center gap-4 px-10 py-5 rounded-[24px] bg-primary text-white font-black text-sm uppercase tracking-[0.1em] hover:scale-105 hover:shadow-[0_0_30px_rgba(var(--primary),0.4)] transition-all active:scale-95 border border-white/20"
+                          >
+                            <div className="absolute inset-0 bg-white/10 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <span>Compreendido, Próxima Etapa</span>
+                            <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform" />
+                          </button>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
 
               {isAllTextUnlocked && hasCognitiveBlocks && (
