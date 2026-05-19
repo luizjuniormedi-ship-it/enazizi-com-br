@@ -1,4 +1,4 @@
-import { BarChart3, TrendingUp, Stethoscope, GraduationCap, ChevronDown, ChevronUp, Target, Activity, Clock } from "lucide-react";
+import { BarChart3, TrendingUp, Stethoscope, GraduationCap, ChevronDown, ChevronUp, Target, Activity, Clock, Zap } from "lucide-react";
 import type { StudyPerformance } from "@/components/tutor/TutorConstants";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,15 +11,23 @@ interface TutorMetricsBarProps {
 }
 
 const TutorMetricsBar = ({ performance, metricsCollapsed, setMetricsCollapsed, userId }: TutorMetricsBarProps) => {
-  const [extraMetrics, setExtraMetrics] = useState({ retention: 0, recovery: 0, latency: 0 });
+  const [extraMetrics, setExtraMetrics] = useState({ retention: 0, recovery: 0, latency: 0, memoryHits: 0 });
 
   useEffect(() => {
     if (!userId) return;
     const fetchExtra = async () => {
       const { data: prog } = await supabase.from("enazizi_progress").select("retention_score, recovery_score").eq("user_id", userId).maybeSingle();
-      const { data: run } = await supabase.from("tutor_runtime_metrics").select("tutor_generation_ms").eq("user_id", userId).order("created_at", { ascending: false }).limit(5);
+      const { data: run } = await supabase.from("tutor_runtime_metrics").select("tutor_generation_ms, memory_hit").eq("user_id", userId).order("created_at", { ascending: false }).limit(20);
+      
       const lat = run && run.length > 0 ? Math.round(run.reduce((a, c) => a + (c.tutor_generation_ms || 0), 0) / run.length / 100) / 10 : 0;
-      setExtraMetrics({ retention: Number(prog?.retention_score) || 0, recovery: Number(prog?.recovery_score) || 0, latency: lat });
+      const hits = run ? run.filter(r => r.memory_hit).length : 0;
+      
+      setExtraMetrics({ 
+        retention: Number(prog?.retention_score) || 0, 
+        recovery: Number(prog?.recovery_score) || 0, 
+        latency: lat,
+        memoryHits: hits
+      });
     };
     fetchExtra();
   }, [userId]);
@@ -41,6 +49,9 @@ const TutorMetricsBar = ({ performance, metricsCollapsed, setMetricsCollapsed, u
         </span>
         <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 font-semibold shrink-0">
           <Clock className="h-2.5 w-2.5" /> {extraMetrics.latency}s
+        </span>
+        <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-semibold shrink-0">
+          <Zap className="h-2.5 w-2.5" /> {extraMetrics.memoryHits} hits
         </span>
         <span className="px-1.5 py-0.5 rounded bg-secondary text-muted-foreground shrink-0">{performance.questoes_respondidas}Q</span>
         <span className={`px-1.5 py-0.5 rounded font-semibold ${performance.taxa_acerto >= 70 ? "bg-success/10 text-success" : performance.taxa_acerto >= 50 ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive"}`}>{performance.taxa_acerto}%</span>
