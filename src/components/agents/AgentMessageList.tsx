@@ -96,6 +96,7 @@ const AgentMessageList = memo(
             specialty={specialty} 
             sessionId={conversationId} 
             content={messages[messages.length - 1]?.content}
+            onAddToPlanner={onAddToPlanner}
           />
         )}
       </div>
