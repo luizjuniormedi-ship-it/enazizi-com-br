@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { Brain, Check, Search, Zap, HelpCircle, MinusCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export type PedagogicalAction = 'continue' | 'deepen' | 'analogy' | 'clinical' | 'simplify';
 
@@ -110,5 +111,3 @@ function ActionButton({ icon: Icon, label, onClick, primary = false }: {
     </button>
   );
 }
-
-import { cn } from "@/lib/utils";
