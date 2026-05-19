@@ -72,15 +72,21 @@ export default function PlannerLongitudinalView({ planId }: { planId: string | n
             <CalendarDays className="h-4 w-4 text-primary" />
             Cronograma Total — {weeks.length} Semanas
           </h3>
-          <p className="text-[10px] text-muted-foreground">Distribuição total de conteúdo até a prova.</p>
+          <p className="text-[10px] text-muted-foreground">Distribuição macro até {items[0]?.week_number ? 'a prova' : 'o final'}.</p>
         </div>
         <div className="text-right">
           <div className="text-xl font-black text-primary">{progress}%</div>
-          <div className="text-[9px] uppercase tracking-tighter text-muted-foreground">Progresso Total</div>
+          <div className="text-[9px] uppercase tracking-tighter text-muted-foreground">Viabilidade Trajetória</div>
         </div>
       </div>
 
-      <Progress value={progress} className="h-1.5" />
+      <div className="px-1 space-y-1">
+        <Progress value={progress} className="h-1.5" />
+        <div className="flex justify-between text-[8px] uppercase font-bold tracking-tighter opacity-50">
+          <span>Início</span>
+          <span>Aprovação</span>
+        </div>
+      </div>
 
       <div className="space-y-4">
         {weeks.map(weekNum => {
