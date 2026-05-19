@@ -138,11 +138,11 @@ export default function PlannerLongitudinalView({ planId, durationDays = 30 }: {
         <Button 
           variant="outline" 
           size="sm" 
-          className="h-8 text-[10px] uppercase font-black tracking-widest gap-2"
+          className="h-8 text-[10px] uppercase font-black tracking-widest gap-2 bg-white/5 border-white/10 hover:bg-white/10"
           onClick={handlePrint}
         >
           <Printer className="h-3.5 w-3.5" />
-          Imprimir Planner
+          PDF / Impressão
         </Button>
       </div>
 
