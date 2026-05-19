@@ -288,13 +288,20 @@ Sempre:
 
       const userContext = {
         availability: `${hoursPerDay}h/dia, ${daysPerWeek} dias/semana`,
-        examDate,
+        examDate: finalExamDate,
+        daysUntilExam,
+        weeksUntilExam,
         strictMode,
-        editalText: materialText ? materialText.slice(0, 5000) : "Use incidência médica Brasil (ENARE, USP, SUS-SP)",
+        extractedTopics: extractedTopics?.map(t => ({
+          topic: t.topic,
+          subtopic: t.subtopic,
+          discipline: t.discipline,
+          page: t.source_page,
+          evidence: t.raw_excerpt
+        })).slice(0, 150),
         performance: {
           provided: performanceData || "Perfil novo",
           existingSubjects: existingSubjects || [],
-
           errors: errorsRes.data || [],
           pendingReviewsCount: revisoesRes.data?.length || 0,
           studentLevel: profileRes.data?.level || "beginner",
@@ -302,6 +309,7 @@ Sempre:
           fsrsRetentionSnapshot: fsrsRes.data?.slice(0, 10) || []
         }
       };
+
 
       await supabaseAdmin.from("study_plans").update({ current_step: "Gerando estratégia pedagógica com IA...", progress: 50 }).eq("id", plan.id);
 
