@@ -174,10 +174,11 @@ Sempre:
     taskType: "planner",
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content: `Gere a Missão do Dia adaptativa com base no contexto: ${JSON.stringify(context)}` }
+      { role: "user", content: `Gere a Missão do Dia adaptativa estruturada com Aquecimento, Teoria/Tutor, Questões, FSRS, Erros, Flashcards, Simulado e Resumo. Use o contexto real do aluno: ${JSON.stringify(context)}` }
     ],
-    complexity: "medium"
+    complexity: "high"
   });
+
 
   const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
   const tasks = planJson.tasks || [];
