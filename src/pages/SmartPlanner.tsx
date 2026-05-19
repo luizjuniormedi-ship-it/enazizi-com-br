@@ -655,15 +655,25 @@ const SmartPlanner = () => {
     try {
       const { data: session } = await supabase.auth.getSession();
       const existingSubjects = temas.map(t => t.tema);
+      
+      // Get user study configuration or use defaults
+      const hours = config?.meta_questoes_dia ? Math.max(1, Math.floor(config.meta_questoes_dia / 10)) : 4;
+      const days = config?.meta_revisoes_semana ? Math.min(7, Math.max(1, config.meta_revisoes_semana / 4)) : 5;
+
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
-        body: JSON.stringify({ examDate: format(newExamDate, "yyyy-MM-dd"), hoursPerDay: 4, daysPerWeek: 5, existingSubjects }),
+        body: JSON.stringify({ 
+          examDate: format(newExamDate, "yyyy-MM-dd"), 
+          hoursPerDay: hours, 
+          daysPerWeek: days, 
+          existingSubjects 
+        }),
       });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error || "Erro ao reprocessar");
       setShowReprocess(false);
-      toast({ title: "✅ Cronograma recalculado!", description: "Revisões redistribuídas com a nova data." });
+      toast({ title: "✅ Cronograma recalculado!", description: "Sua trajetória longitudinal foi atualizada com a nova data." });
       loadData();
     } catch (err: any) {
       toast({ title: "Erro ao reprocessar", description: err.message, variant: "destructive" });
