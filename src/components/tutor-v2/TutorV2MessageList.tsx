@@ -148,6 +148,17 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
               {msg.metadata?.question_review && (
                 <QuestionReviewBoard review={msg.metadata.question_review} />
               )}
+
+              {/* Gating Real Tutor 3.0 */}
+              {msg.role === "assistant" && idx === messages.length - 1 && !isTyping && (
+                <div className="mt-8">
+                  <InteractiveCognitiveCard 
+                    onAction={(action) => {
+                      if (onIncrementalAction) onIncrementalAction(action);
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Message Metadata Footer / Reasoning Bar */}
