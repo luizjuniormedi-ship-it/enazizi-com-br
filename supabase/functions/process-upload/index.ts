@@ -155,17 +155,21 @@ async function processInBackground(
       return;
     }
 
-    // Save chunks to DB
-    const chunkInserts = textChunks.map((chunk, idx) => sanitizeForPostgres({
-      upload_id: uploadId,
-      user_id: userId,
-      chunk_index: idx,
-      page_start: chunk.pageStart,
-      page_end: chunk.pageEnd,
-      raw_text: chunk.text,
-      status: "pending"
-    }));
-    await supabaseAdmin.from("planner_pdf_chunks").insert(chunkInserts);
+    // Save chunks to DB first to get IDs
+    const { data: insertedChunks, error: chunkErr } = await supabaseAdmin
+      .from("planner_pdf_chunks")
+      .insert(textChunks.map((chunk, idx) => sanitizeForPostgres({
+        upload_id: uploadId,
+        user_id: userId,
+        chunk_index: idx,
+        page_start: chunk.pageStart,
+        page_end: chunk.pageEnd,
+        raw_text: chunk.text,
+        status: "pending"
+      })))
+      .select("id, chunk_index");
+
+    if (chunkErr) throw chunkErr;
 
     await supabaseAdmin.from("uploads").update({ 
       extracted_text: textChunks.map(c => c.text).join("\n\n").slice(0, 50000),
@@ -179,29 +183,29 @@ async function processInBackground(
     const allExtractedTopics: any[] = [];
     let mainTopic = "Clínica Médica";
 
-    // First pass: look for important dates (especially exam date)
-    const allText = textChunks.map(c => c.text).join("\n\n").slice(0, 15000); // Analyze start of document for dates
-    const dateDetectionResponse = await aiFetch({
-      model: ALLOWED_MODELS.generation,
-      messages: [
-        {
-          role: "system",
-          content: `Você é um especialista em editais médicos. 
-          Sua tarefa é identificar a DATA DA PROVA (exame/certame) no texto fornecido.
-          Retorne APENAS um JSON no formato: {"exam_date": "YYYY-MM-DD" | null, "other_dates": [{"label": "...", "date": "YYYY-MM-DD"}]}.
-          Ignore datas passadas se houver datas futuras. Priorize "data da prova", "prova objetiva", "exame".`
-        },
-        { role: "user", content: `Extraia datas importantes deste edital:\n\n${allText}` }
-      ],
-      timeoutMs: 30000,
-    });
+    // Analyze start of document for dates
+    const initialText = textChunks.map(c => c.text).join("\n\n").slice(0, 15000); 
+    try {
+      const dateResponse = await aiFetch({
+        model: ALLOWED_MODELS.generation,
+        messages: [
+          {
+            role: "system",
+            content: `Você é um especialista em editais médicos. 
+            Identifique a DATA DA PROVA no texto.
+            Retorne JSON: {"exam_date": "YYYY-MM-DD" | null, "reason": "..."}`
+          },
+          { role: "user", content: `Extraia a data da prova:\n\n${initialText}` }
+        ],
+        timeoutMs: 30000,
+      });
 
-    if (dateDetectionResponse.ok) {
-      const dateJson = parseAiJson((await dateDetectionResponse.json()).choices?.[0]?.message?.content || "{}");
-      if (dateJson.exam_date) {
-        detectedExamDate = dateJson.exam_date;
-        console.log(`[PROCESS_UPLOAD] Detected exam date: ${detectedExamDate}`);
+      if (dateResponse.ok) {
+        const dateJson = parseAiJson((await dateResponse.json()).choices?.[0]?.message?.content || "{}");
+        if (dateJson.exam_date) detectedExamDate = dateJson.exam_date;
       }
+    } catch (e) {
+      console.warn("[PROCESS_UPLOAD] Date detection failed", e);
     }
 
     for (let i = 0; i < textChunks.length; i++) {
@@ -212,7 +216,7 @@ async function processInBackground(
         total_chunks: textChunks.length 
       });
 
-      console.log(`[PROCESS_UPLOAD] Processing chunk ${i + 1}/${textChunks.length}: ${textChunks[i].text.slice(0, 100)}...`);
+      const chunkId = insertedChunks.find(c => c.chunk_index === i)?.id;
       try {
         const chunkResponse = await aiFetch({
           model: ALLOWED_MODELS.generation,
@@ -220,87 +224,52 @@ async function processInBackground(
             {
               role: "system",
               content: `Você é o motor oficial de extração de tópicos do ENAZIZI.
-              Sua missão é ler o conteúdo de editais, PDFs de estudo ou imagens médicas e extrair EXCLUSIVAMENTE os tópicos de estudo.
-              
-              REGRAS CRÍTICAS:
-              1. MODO STRICT: NÃO invente assuntos fora do texto.
-              2. SEPARAÇÃO POR TÓPICO: O texto pode conter vários temas. Separe-os individualmente.
-              3. HIERARQUIA: Identifique a Especialidade (ex: Cardiologia), o Tema (ex: Insuficiência Cardíaca) e o Subtópico (ex: Tratamento na Emergência).
-              4. DIFICULDADE: Estime a dificuldade do tema para um aluno de medicina (facil, medio, dificil).
-              5. EVIDÊNCIA: Extraia o trecho original do texto (raw_excerpt) e o número da página (se disponível).
-              
-              Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "...", "raw_excerpt": "...", "page": number}]}`
+              Extraia EXCLUSIVAMENTE tópicos de estudo.
+              Retorne JSON: {"is_medicine": true, "topics": [{"tema": "...", "especialidade": "...", "subtopico": "...", "raw_excerpt": "...", "page": number, "confidence": 0-1}]}`
             },
-            { role: "user", content: `Extraia os tópicos deste trecho (Parte ${i+1}/${textChunks.length}, Páginas ${textChunks[i].pageStart}-${textChunks[i].pageEnd}):\n\n${textChunks[i].text}` }
+            { role: "user", content: `Extraia tópicos (Parte ${i+1}):\n\n${textChunks[i].text}` }
           ],
           timeoutMs: 45000,
         });
 
-
         if (chunkResponse.ok) {
-          const aiRawResult = (await chunkResponse.json()).choices?.[0]?.message?.content || "";
-          console.log(`[PROCESS_UPLOAD] AI Raw Response for chunk ${i}:`, aiRawResult);
-          const parsed = parseAiJson(aiRawResult);
-          // Filter out potential hallucinations at this stage if they look generic or unrelated
-          if (parsed.is_medicine !== false) {
-            if (parsed.main_topic && i === 0) mainTopic = parsed.main_topic;
-            if (parsed.topics) {
-              const taggedTopics = parsed.topics.map((t: any) => ({ 
-                ...t, 
-                _chunk_index: i,
-                _source_chunk_id: chunkInserts[i].id // This will be assigned after insertion if possible, but let's just use the index for now
-              }));
-              allExtractedTopics.push(...taggedTopics);
-            }
+          const parsed = parseAiJson((await chunkResponse.json()).choices?.[0]?.message?.content || "{}");
+          if (parsed.topics && parsed.topics.length > 0) {
+            const topicsToInsert = parsed.topics.map((t: any) => sanitizeForPostgres({
+              user_id: userId,
+              upload_id: uploadId,
+              discipline: t.especialidade,
+              topic: t.tema,
+              subtopic: t.subtopico,
+              source_page: t.page || textChunks[i].pageStart,
+              source_chunk_id: chunkId,
+              raw_excerpt: t.raw_excerpt,
+              confidence_score: t.confidence || 0.8,
+              validation_status: 'extracted'
+            }));
             
-            // Note: chunkInserts was prepared but not yet inserted when chunkInserts was defined
-            // Let's fix that sequence
-
+            await supabaseAdmin.from("planner_extracted_topics").insert(topicsToInsert);
+            allExtractedTopics.push(...parsed.topics);
           }
+          await supabaseAdmin.from("planner_pdf_chunks").update({ status: "completed" }).eq("id", chunkId);
         }
       } catch (err) {
-        console.error(`[PROCESS_UPLOAD] Chunk ${i} extraction failed:`, err);
+        console.error(`[PROCESS_UPLOAD] Chunk ${i} failed:`, err);
       }
     }
 
-    // 4. Consolidation
-    await updateProgress(supabaseAdmin, uploadId, { step: "consolidating", progress: 75 });
-    const uniqueTopics = Array.from(new Map(allExtractedTopics.map(item => [JSON.stringify(item), item])).values());
-
-    // Filter and count chunks for reporting
-    const completedChunks = allExtractedTopics.filter(t => t.chunk_index !== undefined).length; // This logic needs adjustment because allExtractedTopics is a flat array of topics
-    
-    // Better stats: count how many chunks actually returned topics
-    const chunkStats = textChunks.map((_, i) => ({
-      index: i,
-      status: allExtractedTopics.some(t => t._chunk_index === i) ? "completed" : "failed"
-    }));
-
-    await supabaseAdmin.from("planner_extracted_topics").insert(sanitizeForPostgres({
-      upload_id: uploadId,
-      user_id: userId,
-      topics_json: uniqueTopics,
-      coverage_stats: { 
-        total_chunks: textChunks.length, 
-        completed_chunks: chunkStats.filter(s => s.status === "completed").length,
-        chunk_details: chunkStats,
-        total_topics: uniqueTopics.length
-      }
-    }));
-
-    // 5. Update Status
+    // 4. Update Status
     await supabaseAdmin.from("uploads").update({
       status: "processed",
       extracted_json: {
-        suggested_topics: uniqueTopics,
-        main_topic: mainTopic,
+        detected_exam_date: detectedExamDate,
+        suggested_topics: allExtractedTopics.slice(0, 100), // Keep a sample in JSON
         progress: 100,
         step: "done",
-        enriching: true,
-        total_topics: uniqueTopics.length,
-        total_chunks: textChunks.length
+        total_topics: allExtractedTopics.length
       }
     }).eq("id", uploadId);
+
 
     // 6. Enrichment - Disabled in strict mode, but we keep it minimal for non-strict contexts if needed.
     // However, per instructions, we should disable automatic enrichment that might cause drift.
