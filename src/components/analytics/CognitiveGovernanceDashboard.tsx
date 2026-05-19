@@ -70,7 +70,7 @@ export const CognitiveGovernanceDashboard = () => {
   const chartData = healthData?.slice().reverse().map(h => ({
     date: new Date(h.created_at).toLocaleDateString(),
     score: h.health_score,
-    retention: (h.retention_rate || 0) * 100
+    retention: (h.retention_factor || 0)
   }));
 
   const getStateColor = (state: string) => {
