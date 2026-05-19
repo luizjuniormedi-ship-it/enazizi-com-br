@@ -17,6 +17,14 @@ const IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const GLOBAL_TIMEOUT_MS = 110_000;
 const AGENT_TIMEOUT_MS = 45_000;
 
+// ═══ COGNITIVE LAYERS ═══
+// LAYER 1 — Conceito Clínico (Precisão Médica)
+// LAYER 2 — Associação Cognitiva (Acrônimo + Emoção)
+// LAYER 3 — Reforço Visual (Pixar-style Exagerado)
+// LAYER 4 — Repetição Espaçada (FSRS Ready)
+// LAYER 5 — Recuperação Ativa (Active Recall)
+
+
 // ═══ TYPES ═══
 interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; regenerate_image_only?: boolean; original_result_id?: string; auto_extract_terms?: boolean; }
 
