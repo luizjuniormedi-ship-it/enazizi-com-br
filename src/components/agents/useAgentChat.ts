@@ -173,19 +173,21 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   }, [messages]);
 
   const handleSend = useCallback(
-    async (overridePrompt?: string, contextOverride?: string, isIncrementalAcknowledge: boolean = false) => {
+    async (overridePrompt?: string, contextOverride?: string, pedagogicalInteraction?: string) => {
       const requestId = crypto.randomUUID();
       const startTime = Date.now();
-      console.log(`[TUTOR] SEND_STARTED id=${requestId} incremental=${isIncrementalAcknowledge}`);
+      console.log(`[TUTOR] SEND_STARTED id=${requestId} interaction=${pedagogicalInteraction}`);
 
-      // Se for um acknowledge de bloco, incrementamos o bloco atual na sessão
-      if (isIncrementalAcknowledge && pedSession.session) {
-        const nextBlock = pedSession.session.currentBlock + 1;
-        await pedSession.updateSession({ 
-          currentBlock: nextBlock,
-          completedBlocks: [...pedSession.session.completedBlocks, pedSession.session.currentBlock]
-        });
-        console.log(`[TUTOR] Incremented block to ${nextBlock}`);
+      // Lógica de Gating Incremental Real
+      if (pedagogicalInteraction && pedSession.session) {
+        if (pedagogicalInteraction === 'continue') {
+          const nextBlock = pedSession.session.currentBlock + 1;
+          await pedSession.updateSession({ 
+            currentBlock: nextBlock,
+            completedBlocks: [...pedSession.session.completedBlocks, pedSession.session.currentBlock]
+          });
+        }
+        // Se for aprofundar/simplificar/etc, mantemos o bloco atual mas registramos no metadata
       }
 
       const text = overridePrompt || input.trim();
