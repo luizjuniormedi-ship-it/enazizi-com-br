@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders, getServiceClient, getUserIdFromRequest, jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
 import { auditPedagogicalQuality } from "../_shared/cognitive-governance-helpers.ts";
+import { buildPedagogicalContext, saveTutorMemory } from "../_shared/tutor-memory-helpers.ts";
 
 const SYSTEM_PROMPT_V3 = `
 Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
@@ -22,7 +23,7 @@ ESTRUTURA OBRIGATÓRIA DA RESPOSTA (Siga rigorosamente):
 11. Flashcards: Sugestões para o ANKI/FSRS.
 12. Resumo Ultraobjetivo: O que levar para a vida.
 13. Fluxograma Decisório: Representação textual do algoritmo.
-14. Integração Farmacológica: Drogas, doses e mecanismos.
+14. Integração Farmacológica: Drogas, doses e mechanisms.
 15. Modo Preceptor: Feedback socrático sobre o desempenho do aluno.
 
 DIRETRIZES:
@@ -32,6 +33,7 @@ DIRETRIZES:
 - Seja rigoroso com guidelines (Harrison, Nelson, Sabiston).
 - Adapte a profundidade com base no FSRS e Mastery State fornecidos.
 - Se detectar cansaço ou erro recorrente, ative RECOVERY MODE.
+- MEMÓRIA LONGITUDINAL: Utilize o histórico de explicações e analogias já fornecidas para evitar redundância e garantir continuidade.
 `;
 
 serve(async (req) => {
@@ -41,29 +43,60 @@ serve(async (req) => {
   try {
     const supabase = getServiceClient();
     const userId = await getUserIdFromRequest(req);
-    const { message, history, context, topic, fsrsContext, masteryState } = await req.json();
+    const { message, history, context, topic, fsrsContext, masteryState, sessionId } = await req.json();
 
-    // 1. Context Window Trimming - Keep only last 6 messages
-    const trimmedHistory = history.slice(-6).map((m: any) => ({
-      role: m.role,
-      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
-    }));
+    // 1. Build Longitudinal Memory Context (Phase 5)
+    const memoryContext = await buildPedagogicalContext(supabase, userId, topic || 'Geral');
+    let isMemoryHit = false;
+    let fastPathResponse = null;
 
-    // 2. Prepare AI Call with FSRS and Mastery Integration
+    // 2. Fast Path Check (Phase 4)
+    // If user asks for a review of a topic already in memory and mastery is high
+    if (message.toLowerCase().includes("revisão") || message.toLowerCase().includes("resumo")) {
+      const relevantBlock = memoryContext.cached_blocks.find(b => 
+        b.topic.toLowerCase() === (topic || '').toLowerCase()
+      );
+      if (relevantBlock && memoryContext.previous_mastery === 'mastered') {
+        isMemoryHit = true;
+        fastPathResponse = `[FAST PATH MEMORY]\nCom base no seu domínio prévio deste tema, aqui está sua revisão personalizada:\n\n${relevantBlock.generated_content}`;
+      }
+    }
+
+    if (isMemoryHit && fastPathResponse) {
+      return jsonResponse({
+        content: fastPathResponse,
+        metrics: {
+          latency_ms: Date.now() - startTime,
+          memory_hit: true,
+          tokens_saved: 1500 // Estimated
+        }
+      });
+    }
+
+    // 3. Prepare AI Call with Memory Integration
     const cognitiveContext = `
 [COGNITIVE STATE]
-Mastery: ${masteryState || 'initial'}
+Mastery: ${masteryState || memoryContext.previous_mastery || 'initial'}
 FSRS Context: ${JSON.stringify(fsrsContext || {})}
 Topic: ${topic || 'Geral'}
+
+[LONGITUDINAL MEMORY]
+Prior Explanations: ${memoryContext.prior_blocks_summary}
+Effective Analogies: ${memoryContext.effective_analogies.join(", ")}
+Known Misconceptions: ${memoryContext.known_misconceptions.join(", ")}
+Cognitive Pattern: ${memoryContext.cognitive_pattern}
     `;
 
     const messages = [
       { role: "system", content: `${SYSTEM_PROMPT_V3}\n${cognitiveContext}` },
-      ...trimmedHistory,
+      ...history.slice(-6).map((m: any) => ({
+        role: m.role,
+        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+      })),
       { role: "user", content: message }
     ];
 
-    // 3. Call AI (Using proxy to AI Gateway)
+    // 4. Call AI
     const aiResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/ai-proxy`, {
       method: 'POST',
       headers: {
@@ -74,7 +107,7 @@ Topic: ${topic || 'Geral'}
         messages,
         model: "gpt-4o",
         temperature: 0.7,
-        stream: false // Hotfix goal: stable first, streaming can be separate
+        stream: false
       })
     });
 
@@ -82,15 +115,17 @@ Topic: ${topic || 'Geral'}
     const aiText = aiResult.choices?.[0]?.message?.content || "Erro ao gerar resposta.";
     const generationTime = Date.now() - startTime;
 
-    // 4. Async Governance & Telemetry (Non-blocking)
-    const auditPromise = auditPedagogicalQuality(aiText, JSON.stringify(context || {}));
-    
-    // Fire and forget (almost) but we handle it after response to not block user
+    // 5. Async Memory Storage & Telemetry (Non-blocking)
     (async () => {
       try {
-        const auditStart = Date.now();
-        const audit = await auditPromise;
-        const auditDuration = Date.now() - auditStart;
+        // Save new memory block
+        await saveTutorMemory(supabase, userId, {
+          topic: topic || 'Geral',
+          content: aiText,
+          sessionId
+        });
+
+        const audit = await auditPedagogicalQuality(aiText, JSON.stringify(context || {}));
 
         await supabase.from("pedagogical_quality_audits").insert({
           content_type: 'tutor_v3_premium',
@@ -99,32 +134,27 @@ Topic: ${topic || 'Geral'}
           guideline_compliance_passed: audit.guideline_compliance_passed,
           safety_check_passed: audit.safety_check_passed,
           detected_hallucinations: audit.detected_hallucinations,
-          audit_log: { context, topic, userId, generationTime }
+          audit_log: { context, topic, userId, generationTime, memory_hit: isMemoryHit }
         });
 
         await supabase.from("tutor_runtime_metrics").insert({
           user_id: userId,
           tutor_generation_ms: generationTime,
-          audit_ms: auditDuration,
           prompt_tokens: aiResult.usage?.prompt_tokens || 0,
-          completion_tokens: aiResult.usage?.completion_tokens || 0
-        });
-
-        // Trigger health updates
-        await supabase.functions.invoke('pedagogical-health-governor', {
-          body: { userId, sessionOutcome: { score: audit.quality_score } },
-          headers: { Authorization: req.headers.get('Authorization')! }
+          completion_tokens: aiResult.usage?.completion_tokens || 0,
+          memory_hit: isMemoryHit
         });
       } catch (e) {
         console.error("[TutorV3Premium] Async Background Error:", e);
       }
     })();
 
-    // 5. Return Response Quickly
     return jsonResponse({
       content: aiText,
       metrics: {
-        latency_ms: generationTime
+        latency_ms: generationTime,
+        memory_hit: isMemoryHit,
+        tokens_used: aiResult.usage?.total_tokens || 0
       }
     });
 
@@ -133,3 +163,4 @@ Topic: ${topic || 'Geral'}
     return errorResponse(error.message, 500);
   }
 });
+
