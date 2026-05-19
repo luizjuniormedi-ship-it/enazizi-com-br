@@ -20707,6 +20707,7 @@ export type Database = {
           linked_flashcards: string[] | null
           linked_questions: string[] | null
           linked_tutor_session: string | null
+          metadata: Json | null
           planned_date: string | null
           priority_score: number | null
           raw_excerpt: string | null
@@ -20716,6 +20717,7 @@ export type Database = {
           status: string | null
           study_plan_id: string
           subtopic: string | null
+          task_type: string | null
           topic: string
           updated_at: string | null
           user_id: string
@@ -20731,6 +20733,7 @@ export type Database = {
           linked_flashcards?: string[] | null
           linked_questions?: string[] | null
           linked_tutor_session?: string | null
+          metadata?: Json | null
           planned_date?: string | null
           priority_score?: number | null
           raw_excerpt?: string | null
@@ -20740,6 +20743,7 @@ export type Database = {
           status?: string | null
           study_plan_id: string
           subtopic?: string | null
+          task_type?: string | null
           topic: string
           updated_at?: string | null
           user_id: string
@@ -20755,6 +20759,7 @@ export type Database = {
           linked_flashcards?: string[] | null
           linked_questions?: string[] | null
           linked_tutor_session?: string | null
+          metadata?: Json | null
           planned_date?: string | null
           priority_score?: number | null
           raw_excerpt?: string | null
@@ -20764,6 +20769,7 @@ export type Database = {
           status?: string | null
           study_plan_id?: string
           subtopic?: string | null
+          task_type?: string | null
           topic?: string
           updated_at?: string | null
           user_id?: string

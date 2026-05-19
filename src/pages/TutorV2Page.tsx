@@ -48,8 +48,16 @@ export default function TutorV2Page() {
         .insert({
           user_id: user.id,
           topic: finalTopic,
+          subtopic: studyCtx?.subtopic || null,
+          specialty: studyCtx?.specialty || null,
           mode: 'livre',
-          status: 'active'
+          status: 'active',
+          metadata: {
+            source: studyCtx?.source || 'direct',
+            difficulty: studyCtx?.difficulty || 'medio',
+            reason: studyCtx?.reason || null,
+            task_type: studyCtx?.taskType || null,
+          }
         })
         .select()
         .single();
