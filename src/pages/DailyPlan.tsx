@@ -606,7 +606,7 @@ const DailyPlan = () => {
             />
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {dailyPlanTasks.sort((a, b) => (a.priority || 0) - (b.priority || 0)).map((task) => (
+              {dailyPlanTasks.sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map((task) => (
                 <EnaflixCinematicCard
                   key={task.id}
                   variant="lesson"
@@ -623,23 +623,22 @@ const DailyPlan = () => {
                         userId: user!.id, 
                         eventType: "daily_mission_task_started", 
                         module: "daily-plan",
-                        data: { task_id: task.id, type: task.type, topic: task.topic }
+                        data: { task_id: task.id, type: task.task_type || task.type, topic: task.topic }
                       }
                     }).then();
 
                     navigate(buildStudyPath({ 
                       id: task.id, 
                       topic: task.topic, 
-                      specialty: task.subject || "Medicina",
-                      type: task.type === "theory" ? "new" : task.type === "review" ? "review" : "practice"
-                    } as any, "daily-plan"));
+                      specialty: task.subject || task.specialty || "Medicina",
+                      task_type: task.task_type || task.type
+                    }, "daily-plan"));
                   }}
-
                 >
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <EnaflixBadge type={task.type === "error_fix" ? "urgente" : "ia"} />
+                        <EnaflixBadge type={task.task_type === "error_recovery" ? "urgente" : "ia"} />
                         <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
                           {task.estimated_minutes}min
                         </span>
@@ -648,7 +647,7 @@ const DailyPlan = () => {
                         {task.title}
                       </h3>
                       <p className="text-[10px] text-white/50 uppercase font-black tracking-wider">
-                        {task.subject}
+                        {task.subject || task.specialty}
                       </p>
                     </div>
                     {task.completed ? (
@@ -660,9 +659,9 @@ const DailyPlan = () => {
                     )}
                   </div>
                   
-                  {task.rationale && (
+                  {(task.description) && (
                     <p className="text-xs text-white/40 line-clamp-2 italic">
-                      "{task.rationale}"
+                      "{task.description}"
                     </p>
                   )}
 
@@ -676,6 +675,7 @@ const DailyPlan = () => {
                 </EnaflixCinematicCard>
               ))}
             </div>
+
 
             {dailyPlan.diagnosis_summary && (
               <EnaflixCinematicCard className="p-4 bg-primary/5 border-primary/20">
