@@ -123,6 +123,7 @@ const SmartPlanner = () => {
       setTargetExams((profileRes.data?.target_exams as string[]) || []);
       setRecoveryMode(!!recoveryRes.data);
       setHeavyRecoveryPhase(recoveryRes.data?.mode === "heavy" ? (recoveryRes.data?.phase || 1) : undefined);
+      setPlanId(studyPlanRes.data?.id || null);
     } catch (err) {
       console.error("[SmartPlanner.loadData] failed:", err);
       // Fallback: don't show toast if it's just a background sync
