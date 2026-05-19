@@ -86,16 +86,14 @@ export function UnifiedMissionHero({
       const result = await resp.json();
 
       // Telemetry: success
-      if (session?.user) {
-        supabase.functions.invoke("unified-telemetry", {
-          body: { 
-            userId: session.user.id, 
-            eventType: "daily_mission_generated", 
-            module: "dashboard",
-            data: { latency_ms: Date.now() - startTime, plan_id: result.planId }
-          }
-        }).then();
-      }
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track('session_progress', { 
+          action: 'daily_mission_generated', 
+          module: "dashboard",
+          latency_ms: Date.now() - startTime, 
+          plan_id: result.planId 
+        });
+      });
 
       toast({ title: "✅ Missão Gerada!", description: "Sua jornada de hoje está pronta." });
       await refreshDash();
