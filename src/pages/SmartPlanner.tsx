@@ -97,7 +97,7 @@ const SmartPlanner = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const [temasRes, revisoesRes, desRes, configRes, approvalRes, chanceRes, fsrsRes, errorRes, profileRes, recoveryRes] = await Promise.all([
+      const [temasRes, revisoesRes, desRes, configRes, approvalRes, chanceRes, fsrsRes, errorRes, profileRes, recoveryRes, studyPlanRes] = await Promise.all([
         supabase.from("temas_estudados").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_estudo", { ascending: false }),
         supabase.from("revisoes").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_revisao", { ascending: true }),
         supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).gt("data_registro", resetAt || "1900-01-01T00:00:00Z").order("data_registro", { ascending: false }),
@@ -108,6 +108,7 @@ const SmartPlanner = () => {
         supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").order("vezes_errado", { ascending: false }).limit(20),
         supabase.from("profiles").select("exam_date, target_exams").eq("user_id", user.id).maybeSingle(),
         recoveryFlagEnabled ? supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").maybeSingle() : Promise.resolve({ data: null, error: null }),
+        supabase.from("study_plans").select("id").eq("user_id", user.id).eq("status", "completed").order("updated_at", { ascending: false }).limit(1).maybeSingle()
       ]);
 
       setTemas((temasRes.data as any[]) || []);
