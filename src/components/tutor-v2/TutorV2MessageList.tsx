@@ -10,15 +10,17 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { InteractiveCognitiveCard } from "../tutor/pedagogical/InteractiveCognitiveCard";
 
 
 
 interface TutorV2MessageListProps {
   messages: any[];
   isTyping: boolean;
+  onIncrementalAction?: (action: string) => void;
 }
 
-export default function TutorV2MessageList({ messages, isTyping }: TutorV2MessageListProps) {
+export default function TutorV2MessageList({ messages, isTyping, onIncrementalAction }: TutorV2MessageListProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -145,6 +147,17 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
 
               {msg.metadata?.question_review && (
                 <QuestionReviewBoard review={msg.metadata.question_review} />
+              )}
+
+              {/* Gating Real Tutor 3.0 */}
+              {msg.role === "assistant" && idx === messages.length - 1 && !isTyping && (
+                <div className="mt-8">
+                  <InteractiveCognitiveCard 
+                    onAction={(action) => {
+                      if (onIncrementalAction) onIncrementalAction(action);
+                    }}
+                  />
+                </div>
               )}
             </div>
 

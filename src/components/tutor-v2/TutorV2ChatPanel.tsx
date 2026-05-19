@@ -34,13 +34,13 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
     }
   }, [messages, isTyping]);
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
     if (!text.trim() || isTyping || !user) return;
     setError(null);
     triggerInteraction({ 
       state: 'thinking', 
       type: 'motivation', 
-      speech: "Analisando seu raciocínio médico..." 
+      speech: pedagogicalInteraction === 'continue' ? "Preparando o próximo bloco cognitivo..." : "Analisando seu raciocínio médico..." 
     });
 
     // Optimistic update
@@ -80,7 +80,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       await addMessage(user.id, "user", text);
 
       // Call AI
-      const response = await TutorV2Service.sendMessage(session.id, text);
+      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
 
       if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
       if (response?.fallback) {
@@ -189,7 +189,22 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recuperando histórico cognitivo...</p>
             </div>
           ) : (
-            <TutorV2MessageList messages={messages} isTyping={isTyping} />
+            <TutorV2MessageList 
+              messages={messages} 
+              isTyping={isTyping} 
+              onIncrementalAction={(action) => {
+                let prompt = "";
+                switch (action) {
+                  case 'continue': prompt = "Compreendido, pode prosseguir para o próximo bloco da aula."; break;
+                  case 'deepen': prompt = "Gostaria de aprofundar mais este ponto técnico. Pode detalhar?"; break;
+                  case 'analogy': prompt = "Pode me dar uma analogia diferente para este conceito?"; break;
+                  case 'clinical': prompt = "Me dê um exemplo clínico de plantão real sobre isso."; break;
+                  case 'simplify': prompt = "Pode explicar de forma mais simples e didática?"; break;
+                  default: prompt = "Próximo bloco.";
+                }
+                handleSendMessage(prompt, action);
+              }}
+            />
           )}
 
           {error && (

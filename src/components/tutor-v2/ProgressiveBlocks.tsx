@@ -166,55 +166,7 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
         })}
       </AnimatePresence>
 
-      {hasMore ? (
-        <motion.div
-          key={`checkpoint-${revealed}`}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-8 p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/20 ring-1 ring-white/5 shadow-2xl backdrop-blur-sm"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                Checkpoint Cognitivo • {revealed}/{parsedContent.length}
-              </span>
-            </div>
-          </div>
-          <p className="text-[14px] text-slate-200 leading-relaxed mb-5">
-            Deseja aprofundar em <strong className="text-indigo-300 font-bold">{currentTitle}</strong> ou podemos prosseguir com o raciocínio clínico?
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={focusInput}
-              className="h-10 px-4 text-[11px] font-black uppercase tracking-widest gap-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-2xl"
-            >
-              <HelpCircle className="h-4 w-4" /> Tenho uma dúvida
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                setRevealed((n) => Math.min(parsedContent.length, n + 1));
-                setExpandedBlocks(prev => ({ ...prev, [revealed]: true }));
-              }}
-              className="h-10 px-5 text-[11px] font-black uppercase tracking-widest gap-2 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/30 rounded-2xl shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Avançar <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </motion.div>
-      ) : (
-        <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-4">
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400/50">
-            Fim da Transmissão Cognitiva
-          </span>
-          <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
-            <Check className="h-3 w-3" /> Aula Completa
-          </span>
-        </div>
-      )}
+      {/* Checkpoint removido para usar Gating 3.0 Server-Side */}
     </div>
   );
 }

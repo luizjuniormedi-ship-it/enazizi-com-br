@@ -123,7 +123,7 @@ export default function TutorV2Page() {
 
               <div className="text-left">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Tutor IA V2</h1>
+                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Adaptive OS 3.0</h1>
                   <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Premium</span>
                 </div>
                 <p className="text-sm text-indigo-400/80 font-bold uppercase tracking-[0.2em] mt-2">Sessão Ativa • Protocolo Feynman</p>
