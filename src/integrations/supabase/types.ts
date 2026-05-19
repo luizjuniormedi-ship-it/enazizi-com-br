@@ -8555,6 +8555,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cognitive_states: {
+        Row: {
+          created_at: string | null
+          id: string
+          intensity: number | null
+          metadata: Json | null
+          state: Database["public"]["Enums"]["cognitive_state_type"]
+          trigger_source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          intensity?: number | null
+          metadata?: Json | null
+          state: Database["public"]["Enums"]["cognitive_state_type"]
+          trigger_source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          intensity?: number | null
+          metadata?: Json | null
+          state?: Database["public"]["Enums"]["cognitive_state_type"]
+          trigger_source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cognitive_telemetry: {
         Row: {
           alternative_changed: boolean | null
@@ -10592,6 +10622,42 @@ export type Database = {
           id?: string
           severity?: string | null
           stack_trace?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      error_pattern_analytics: {
+        Row: {
+          correlation_disciplines: string[] | null
+          created_at: string | null
+          frequency: number | null
+          id: string
+          impact_on_planner: number | null
+          last_occurrence_at: string | null
+          pattern_name: string | null
+          suggested_recovery_actions: string[] | null
+          user_id: string | null
+        }
+        Insert: {
+          correlation_disciplines?: string[] | null
+          created_at?: string | null
+          frequency?: number | null
+          id?: string
+          impact_on_planner?: number | null
+          last_occurrence_at?: string | null
+          pattern_name?: string | null
+          suggested_recovery_actions?: string[] | null
+          user_id?: string | null
+        }
+        Update: {
+          correlation_disciplines?: string[] | null
+          created_at?: string | null
+          frequency?: number | null
+          id?: string
+          impact_on_planner?: number | null
+          last_occurrence_at?: string | null
+          pattern_name?: string | null
+          suggested_recovery_actions?: string[] | null
           user_id?: string | null
         }
         Relationships: []
@@ -13845,6 +13911,48 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_knowledge_edges: {
+        Row: {
+          created_at: string | null
+          id: string
+          relationship_type: string | null
+          source_node_id: string | null
+          target_node_id: string | null
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          relationship_type?: string | null
+          source_node_id?: string | null
+          target_node_id?: string | null
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          relationship_type?: string | null
+          source_node_id?: string | null
+          target_node_id?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_knowledge_edges_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "medical_knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_knowledge_edges_target_node_id_fkey"
+            columns: ["target_node_id"]
+            isOneToOne: false
+            referencedRelation: "medical_knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medical_knowledge_graph: {
         Row: {
           created_at: string | null
@@ -13872,6 +13980,33 @@ export type Database = {
           source_entity?: string
           strength?: number | null
           target_entity?: string
+        }
+        Relationships: []
+      }
+      medical_knowledge_nodes: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          label: string
+          metadata: Json | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label: string
+          metadata?: Json | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          label?: string
+          metadata?: Json | null
         }
         Relationships: []
       }
@@ -15811,6 +15946,45 @@ export type Database = {
           session_stamina_minutes?: number | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      pedagogical_quality_audits: {
+        Row: {
+          audit_log: Json | null
+          content_type: string | null
+          created_at: string | null
+          detected_hallucinations: string[] | null
+          guideline_compliance_passed: boolean | null
+          id: string
+          interaction_id: string | null
+          medical_coherence_passed: boolean | null
+          quality_score: number | null
+          safety_check_passed: boolean | null
+        }
+        Insert: {
+          audit_log?: Json | null
+          content_type?: string | null
+          created_at?: string | null
+          detected_hallucinations?: string[] | null
+          guideline_compliance_passed?: boolean | null
+          id?: string
+          interaction_id?: string | null
+          medical_coherence_passed?: boolean | null
+          quality_score?: number | null
+          safety_check_passed?: boolean | null
+        }
+        Update: {
+          audit_log?: Json | null
+          content_type?: string | null
+          created_at?: string | null
+          detected_hallucinations?: string[] | null
+          guideline_compliance_passed?: boolean | null
+          id?: string
+          interaction_id?: string | null
+          medical_coherence_passed?: boolean | null
+          quality_score?: number | null
+          safety_check_passed?: boolean | null
         }
         Relationships: []
       }
@@ -23636,6 +23810,38 @@ export type Database = {
         }
         Relationships: []
       }
+      user_knowledge_graph_mastery: {
+        Row: {
+          id: string
+          last_interaction_at: string | null
+          mastery_level: number | null
+          node_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          last_interaction_at?: string | null
+          mastery_level?: number | null
+          node_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          last_interaction_at?: string | null
+          mastery_level?: number | null
+          node_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_knowledge_graph_mastery_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "medical_knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_missions: {
         Row: {
           completed_tasks: Json
@@ -25635,6 +25841,18 @@ export type Database = {
         | "ready"
         | "failed"
       cme_worker_status: "online" | "offline" | "maintenance" | "draining"
+      cognitive_state_type:
+        | "hyperfocus"
+        | "fatigue"
+        | "saturation"
+        | "ansiedade"
+        | "baixa_energia"
+        | "alta_performance"
+        | "recuperacao"
+        | "desorganizacao"
+        | "burnout_inicial"
+        | "queda_motivacional"
+        | "estabilidade_ideal"
       content_status:
         | "draft"
         | "processing"
@@ -25937,6 +26155,19 @@ export const Constants = {
         "failed",
       ],
       cme_worker_status: ["online", "offline", "maintenance", "draining"],
+      cognitive_state_type: [
+        "hyperfocus",
+        "fatigue",
+        "saturation",
+        "ansiedade",
+        "baixa_energia",
+        "alta_performance",
+        "recuperacao",
+        "desorganizacao",
+        "burnout_inicial",
+        "queda_motivacional",
+        "estabilidade_ideal",
+      ],
       content_status: [
         "draft",
         "processing",

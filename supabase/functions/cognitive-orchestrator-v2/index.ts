@@ -1,90 +1,86 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { requireAuth } from "../_shared/require-auth.ts";
-import { aiFetch } from "../_shared/ai-fetch.ts";
-
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, getServiceClient, getUserIdFromRequest, jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
+import { calculatePlannerPriority } from "../_shared/cognitive-governance-helpers.ts";
 
 serve(async (req) => {
-    if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-    try {
-        const auth = await requireAuth(req);
-        if (!auth.ok) return auth.response;
-        
-        const { userId } = auth;
-        const body = await req.json();
-        const { context, module } = body;
+  try {
+    const supabase = getServiceClient();
+    const userId = await getUserIdFromRequest(req);
 
-        const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-        const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+    // 1. Gather all inputs for the Master Planner 2.1 Formula
+    // Formula: PRIORIDADE = (TaxaErro × 3) + (ProbabilidadeDeCair × 3) + (RiscoFSRS × 2) + (ProximidadeDaProva × 2) + (ImpactoClínico × 2) + (FraquezaLongitudinal × 2) - (Domínio × 2)
 
-        // Multi-Agent Orchestration
-        console.log(`[OrchestratorV2] Invoking orchestration for user ${userId} in module ${module}`);
+    const [health, profile, errors, fsrs, exam] = await Promise.all([
+      supabase.from("pedagogical_health_indices").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("profiles").select("exam_date, level").eq("user_id", userId).maybeSingle(),
+      supabase.from("error_bank").select("*").eq("user_id", userId).eq("dominado", false),
+      supabase.from("user_topic_profiles").select("*").eq("user_id", userId),
+      supabase.from("curriculum_weights").select("*") // Mock or real table with weights per topic
+    ]);
 
-        // 1. Gather comprehensive state for agents
-        const [
-            analytics,
-            lastErrors,
-            fsrsState
-        ] = await Promise.all([
-            supabase.from("cognitive_analytics").select("*").eq("user_id", userId).maybeSingle(),
-            supabase.from("error_bank").select("*").eq("user_id", userId).eq("dominado", false).limit(5),
-            supabase.from("fsrs_cards").select("*").eq("user_id", userId).lte("due", new Date().toISOString())
-        ]);
+    const examDate = profile.data?.exam_date ? new Date(profile.data.exam_date) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+    const daysToExam = Math.max(1, Math.ceil((examDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
 
-        // 2. Specialized Prompts (Supervisor level)
-        const supervisorPrompt = `Você é o ENAZIZI Cognitive Orchestrator. 
-Sua missão é coordenar Agentes Especializados para otimizar o aprendizado do aluno.
+    // 2. Identify Topics to prioritize
+    const topicScores = fsrs.data?.map(t => {
+      const errorCount = errors.data?.filter(e => e.tema === t.topic).length || 0;
+      const weight = exam.data?.find(w => w.topic === t.topic)?.weight || 0.5;
+      
+      const priority = calculatePlannerPriority({
+        errorRate: errorCount / 10,
+        probOfFalling: weight,
+        fsrsRisk: (1 - (t.retention || 0)),
+        daysToExam: daysToExam,
+        clinicalImpact: weight * 1.2, // Clinical impact often correlates with weight
+        longitudinalWeakness: (t.lapses || 0) / 5,
+        mastery: (t.stability || 0) / 100
+      });
 
-ESTADO DO ALUNO:
-- Retenção: ${analytics.data?.overall_retention || 0}%
-- Fadiga: ${analytics.data?.fatigue_score || 0}
-- Pressão Cognitiva: ${analytics.data?.cognitive_pressure || 0}
-- Pendências FSRS: ${fsrsState.data?.length || 0}
-- Erros Críticos: ${lastErrors.data?.map(e => e.tema).join(', ') || 'Nenhum'}
+      return { topic: t.topic, priority, discipline: t.discipline };
+    }) || [];
 
-CONTEXTO ATUAL:
-${JSON.stringify(context)}
+    const sortedTopics = topicScores.sort((a, b) => b.priority - a.priority).slice(0, 5);
 
-DECIDA:
-1. Qual agente supervisor deve assumir? (Tutor, Planner, Recovery)
-2. Há risco de alucinação ou drift?
-3. Nível de profundidade necessário (1-5).
-4. Resposta estruturada JSON.`;
+    // 3. Detect Recovery Mode
+    const healthScore = health.data?.health_score || 100;
+    const isRecoveryMode = healthScore < 60 || (health.data?.metadata?.detected_cognitive_state === 'fatigue');
 
-        const aiRes = await aiFetch({
-            model: "google/gemini-2.5-flash",
-            messages: [{ role: "system", content: supervisorPrompt }, { role: "user", content: "Determine next cognitive action." }],
-            userId
-        });
+    // 4. Generate Daily Plan Projections
+    const plan = sortedTopics.map((t, idx) => ({
+      title: isRecoveryMode ? `[RECOVERY] Revisão guiada: ${t.topic}` : `Dominar: ${t.topic}`,
+      topic: t.topic,
+      priority: t.priority,
+      duration: isRecoveryMode ? "20min" : "45min",
+      type: isRecoveryMode ? "review" : "study",
+      recovery_active: isRecoveryMode
+    }));
 
-        const decision = await aiRes.json();
-        
-        // Log outcome for F9/F10 logic (closing loop)
-        await supabase.from("orchestrator_decisions").insert({
-            user_id: userId,
-            decision_type: "agent_orchestration",
-            decision_output: decision,
-            input_snapshot: { analytics: analytics.data, module }
-        });
+    // 5. Governance Log
+    await supabase.from("governance_logs").insert({
+      user_id: userId,
+      event_type: "planner_orchestration",
+      details: {
+        topics_count: topicScores.length,
+        top_priority_topic: sortedTopics[0]?.topic,
+        is_recovery_mode: isRecoveryMode,
+        health_score: healthScore
+      }
+    });
 
-        return new Response(JSON.stringify({
-            ok: true,
-            decision: decision.choices?.[0]?.message?.content,
-            requestId: crypto.randomUUID()
-        }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+    return jsonResponse({
+      success: true,
+      plan,
+      is_recovery_mode: isRecoveryMode,
+      health_score: healthScore,
+      days_to_exam: daysToExam
+    });
 
-    } catch (e) {
-        return new Response(JSON.stringify({ error: e.message }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
-    }
+  } catch (error) {
+    console.error("[CognitiveOrchestratorV2] Error:", error);
+    return errorResponse(error.message, 500);
+  }
 });
