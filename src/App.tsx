@@ -220,9 +220,9 @@ const App = () => (
                   <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="plano-estudos" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="revisoes" element={<Navigate to="/dashboard/planner" replace />} />
-                  <Route path="estudar" element={<Navigate to="/dashboard/chatgpt" replace />} />
+                  <Route path="estudar" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="chat" element={<Navigate to="/dashboard/chatgpt" replace />} />
+                  <Route path="chat" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="simulado" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="error-bank" element={<Navigate to="/dashboard/banco-erros" replace />} />
