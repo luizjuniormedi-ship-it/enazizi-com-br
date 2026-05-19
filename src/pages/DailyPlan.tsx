@@ -154,7 +154,26 @@ const DailyPlan = () => {
             method: "POST"
           });
           
-          if (!invokeErr && result?.planId) {
+          if (invokeErr) {
+            console.error("[DailyPlan] Error generating plan:", invokeErr);
+            if (invokeErr.message?.includes("Crie um cronograma")) {
+              toast({ 
+                title: "Cronograma Necessário", 
+                description: "Vá ao Painel de Métricas para configurar seu plano de estudos.",
+                variant: "destructive" 
+              });
+            } else {
+              toast({ 
+                title: "Erro ao gerar missão", 
+                description: "Não foi possível criar sua missão automática agora.",
+                variant: "destructive" 
+              });
+            }
+            setLoading(false);
+            return;
+          }
+
+          if (result?.planId) {
             // Re-fetch now that it's generated
             const { data: newPlan } = await supabase
               .from("daily_plans")
