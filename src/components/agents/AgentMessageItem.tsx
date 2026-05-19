@@ -71,7 +71,7 @@ const AgentMessageItem = memo(
   ({
     msg, index, title, isLoading, hasSpeechSynthesis, speakingMsgIdx, savingMsgIdx,
     isSaved, hasOnSaveMessage, linkToAgent, selectedUploadIds, renderAssistantMessage,
-    onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory,
+    onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory, onIncrementalAction,
     conversationId, topic, subtopic, specialty
   }: AgentMessageItemProps) => {
     const navigate = useNavigate();
