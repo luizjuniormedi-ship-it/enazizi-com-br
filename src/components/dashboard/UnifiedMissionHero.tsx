@@ -81,7 +81,19 @@ export function UnifiedMissionHero({
         },
         body: JSON.stringify({ force: true }),
       });
-      if (!resp.ok) throw new Error("Falha na Edge Function");
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        if (errData.type === "NO_STUDY_PLAN") {
+          toast({ 
+            title: "Cronograma Necessário", 
+            description: "Crie um cronograma no Painel de Métricas antes de gerar a missão.",
+            variant: "destructive" 
+          });
+          setGenerating(false);
+          return;
+        }
+        throw new Error(errData.error || "Falha na Edge Function");
+      }
       
       const result = await resp.json();
 
