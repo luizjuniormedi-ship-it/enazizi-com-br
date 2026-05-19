@@ -16863,6 +16863,30 @@ export type Database = {
           },
         ]
       }
+      planner_telemetry: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
@@ -20794,6 +20818,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "study_tasks_study_plan_id_fkey"
+            columns: ["study_plan_id"]
+            isOneToOne: false
+            referencedRelation: "study_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_trajectories: {
+        Row: {
+          created_at: string | null
+          current_week: number
+          exam_date: string | null
+          id: string
+          risk_level: string | null
+          status: string | null
+          study_plan_id: string | null
+          telemetry_json: Json | null
+          total_weeks: number
+          updated_at: string | null
+          user_id: string
+          viability_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_week?: number
+          exam_date?: string | null
+          id?: string
+          risk_level?: string | null
+          status?: string | null
+          study_plan_id?: string | null
+          telemetry_json?: Json | null
+          total_weeks: number
+          updated_at?: string | null
+          user_id: string
+          viability_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_week?: number
+          exam_date?: string | null
+          id?: string
+          risk_level?: string | null
+          status?: string | null
+          study_plan_id?: string | null
+          telemetry_json?: Json | null
+          total_weeks?: number
+          updated_at?: string | null
+          user_id?: string
+          viability_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_trajectories_study_plan_id_fkey"
             columns: ["study_plan_id"]
             isOneToOne: false
             referencedRelation: "study_plans"
@@ -25603,6 +25680,10 @@ export type Database = {
       }
       calculate_cme_media_health_score: {
         Args: { lesson_id: string }
+        Returns: number
+      }
+      calculate_plan_viability: {
+        Args: { target_user_id: string }
         Returns: number
       }
       check_feature_access: {
