@@ -133,6 +133,7 @@ Criar um cronograma estratégico total que:
 - Aloque os temas nas semanas (week_number).
 - Garanta que temas pré-requisitos venham antes.
 - Se houver pouco tempo, priorize temas de alta incidência (80/20 rule).
+- Atribua um "task_type" para cada item.
 
 ────────────────────────────
 3. SAÍDA ESPERADA (JSON OBRIGATÓRIO)
@@ -148,6 +149,7 @@ Retorne APENAS um JSON no seguinte formato:
         {
           "topic": "...",
           "discipline": "...",
+          "task_type": "tutor_lesson|question_practice|fsrs_review|error_recovery|flashcards|mini_simulado|summary|rest_block",
           "priority_score": 0-100,
           "estimated_minutes": 120,
           "difficulty": "facil|medio|dificil"
@@ -163,7 +165,7 @@ Retorne APENAS um JSON no seguinte formato:
   },
   "metadata": {
     "engine": "ENAZIZI Longitudinal Planner",
-    "version": "3.0"
+    "version": "3.1"
   }
 }
 
@@ -171,6 +173,7 @@ Retorne APENAS um JSON no seguinte formato:
 4. REGRAS CRÍTICAS
 ────────────────────────────
 
+- GERE O CRONOGRAMA COMPLETO ATÉ A PROVA. Se houver 12 semanas, gere 12 semanas no array fullSchedule.
 - Nunca gere apenas uma semana se houver várias semanas até a prova.
 - Se o edital for muito grande para o tempo disponível, sinalize nos insights e priorize o essencial.
 - Mantenha a coerência pedagógica.`;
