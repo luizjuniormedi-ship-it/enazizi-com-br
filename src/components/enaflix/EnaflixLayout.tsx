@@ -26,6 +26,18 @@ export function EnaflixLayout({ children }: Props) {
   // Sidebar for Admin/Professor or in standard student view
   const showSidebar = !isImmersive || isAdmin || isProfessor;
 
+  // Telemetry: Track page opens
+  useEffect(() => {
+    telemetry.track('session_progress', { 
+      action: 'route_opened', 
+      path: location.pathname,
+      search: location.search
+    });
+    
+    // Smooth scroll to top on route change
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.pathname, location.search]);
+
   // Derive sidebar collapsed state to adjust main padding
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
