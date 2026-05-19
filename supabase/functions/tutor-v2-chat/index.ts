@@ -601,32 +601,70 @@ serve(async (req) => {
     }
 
     // 2. Build AI Prompt
+    const blockNames = [
+      "Missão Clínica", "Roadmap Cognitivo", "Explicação Leiga", "Fisiopatologia Profunda",
+      "Raciocínio Clínico", "Quadro Clínico e Diagnóstico", "Conduta e Tratamento", 
+      "Pegadinhas de Prova", "Mapa de Decisão", "Questão Guiada", "Correção Comentada",
+      "Active Recall", "Flashcards", "Resumo Ultraobjetivo", "Modo Preceptor"
+    ];
+
+    // Se houver uma sessão pedagógica ativa (tabela nova), usamos ela. Caso contrário, usamos o estágio do orquestrador v2.
+    // Para migrar para o 3.0 real no V2, vamos forçar o uso da estrutura de blocos 1-15.
+    
+    // Buscar ou criar sessão pedagógica 3.0 linkada a esta tutor_session
+    const { data: pedSession } = await supabase
+      .from("pedagogical_sessions")
+      .select("*")
+      .eq("conversation_id", sessionId)
+      .maybeSingle();
+
+    let currentBlock = 1;
+    if (pedSession) {
+      currentBlock = pedSession.current_block;
+      // Se a interação foi 'continue', avançamos no banco antes de gerar
+      if (pedagogicalInteraction === 'continue') {
+        currentBlock += 1;
+        await supabase.from("pedagogical_sessions").update({ current_block: currentBlock }).eq("id", pedSession.id);
+      }
+    } else {
+      // Criar a sessão 3.0 se não existir
+      await supabase.from("pedagogical_sessions").insert({
+        user_id: userId,
+        conversation_id: sessionId,
+        topic: session.topic,
+        specialty: session.specialty,
+        current_block: 1
+      });
+    }
+
     const systemPrompt = `${PROMPT_COMPLETO}
 
-ESTADO COGNITIVO DO ALUNO (AUDITORIA v2026):
-- Tema: ${session.topic}
-- Especialidade: ${session.specialty || 'Geral'}
-- Estágio da Aula: ${currentStage.toUpperCase()}
-- Missão Ativa: ${context.mission?.title || 'Exploração Livre'}
-- Erros Recorrentes (Error Bank): ${context.detected_gaps?.join(', ') || 'Nenhuma detectada'}
-- Status FSRS: ${context.fsrs?.pending_reviews || 0} revisões pendentes.
-- Carga Cognitiva Atual: ${context.cognitive_load || 'Normal'}
-- Desempenho Geral: ${context.performance_score || 'Não calculado'}
-- Nível de Dificuldade: ${context.difficulty_level || 'Médio'}
-- Estilo de Banca Alvo: ${context.target_exam_style || 'ENARE'}
-- Simulados Pendentes: ${context.pending_simulados_count || 0}
-- Plano de Estudo (Planner): ${context.planner_status || 'Ativo'}
+==================================================
+🚨 REGRA ABSOLUTA: TUTOR IA 3.0 PREMIUM - GERAÇÃO INCREMENTAL
+==================================================
+Você está no MODO DE PRECEPTORIA ITERATIVA. 
+É TERMINANTEMENTE PROIBIDO gerar o roadmap completo, múltiplos blocos ou antecipar o resumo final.
 
+INSTRUÇÃO ATUAL:
+Gere EXCLUSIVAMENTE o BLOCO ${currentBlock}: ${blockNames[currentBlock - 1] || "Conteúdo Médico"}.
 
-INSTRUÇÃO OPERACIONAL V3 (MÉTODO ENAZIZI PREMIUM):
-1. Prioridade absoluta: Estágio ${currentStage.toUpperCase()}.
-2. COMPORTAMENTO PRECEPTOR: Não entregue o conteúdo de uma vez. Comece provocando o raciocínio.
-3. INTERATIVIDADE: Termine o bloco com uma pergunta clínica ou um checkpoint de entendimento.
-4. LINGUAGEM "AO VIVO": Use transições como "Veja bem...", "Imagine que...", "Isso é o que separa o interno do especialista".
-5. VISUALIZAÇÃO: Use analogias que criem imagens mentais claras da fisiopatologia.
-6. Se o aluno estiver no meio de um raciocínio, guie-o em vez de dar a resposta pronta.
-7. Mantenha a densidade técnica, mas quebre em micro-seções para não cansar.
-${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
+TEMA: ${session.topic}
+MODO ATUAL: ${pedSession?.tutor_mode || 'normal'}
+INTERAÇÃO DO ALUNO: ${pedagogicalInteraction || "Explique o tema"}
+
+REGRAS DE OURO:
+1. FOCO TOTAL: Gere apenas o conteúdo do bloco solicitado.
+2. PARADA OBRIGATÓRIA: Assim que terminar a explicação do bloco, PARE.
+3. SAÍDA FINAL: Você deve encerrar sua resposta com:
+"Antes de avançar, escolha uma opção:
+A) Entendi, avançar
+B) Aprofundar
+C) Simplificar
+D) Explicar por analogia
+E) Ver exemplo clínico"
+
+4. ADAPTAÇÃO: Se a interação for 'Aprofundar', 'Simplificar', 'Analogia' ou 'Exemplo Clínico', você deve regenerar ou estender o CONTEÚDO DO BLOCO ATUAL (${currentBlock}) mantendo-se focado nele.
+==================================================`;
 
     const messages = [
       { role: "system", content: systemPrompt },
