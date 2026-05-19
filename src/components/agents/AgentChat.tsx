@@ -552,6 +552,7 @@ const AgentChat = ({
         onSave={chat.handleSaveMessage}
         onLink={onLink}
         onRegenerateFromMemory={chat.regenerateFromMemory}
+        onIncrementalAction={onIncrementalAction}
         conversationId={chat.activeConversationId || undefined}
         topic={topic}
         subtopic={subtopic}
