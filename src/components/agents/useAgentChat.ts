@@ -30,6 +30,8 @@ interface UseAgentChatOptions {
   specialty?: string | null;
   /** Optional initial conversation to load. */
   initialConversationId?: string | null;
+  fsrsContext?: { dueCards: number; totalDue: number };
+  masteryState?: string;
 }
 
 /**
@@ -57,6 +59,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     subtopic = null,
     specialty = null,
     initialConversationId = null,
+    fsrsContext,
+    masteryState,
   } = opts;
 
   const navigate = useNavigate();
@@ -356,6 +360,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             topic: topic || undefined,
             subtopic: subtopic || undefined,
             specialty: specialty || undefined,
+            fsrsContext,
+            masteryState,
             requestId,
             sessionId: history.activeConversationId || undefined,
             pedagogicalContext: pedSession.session ? {
