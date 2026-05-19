@@ -54,7 +54,8 @@ export type CinematicModule =
   | "planner"
   | "professor"
   | "admin"
-  | "ranking";
+  | "ranking"
+  | "governance";
 
 const moduleHueMap: Record<CinematicModule, string> = {
   dashboard: "var(--hue-dashboard)",
@@ -67,6 +68,7 @@ const moduleHueMap: Record<CinematicModule, string> = {
   professor: "var(--hue-professor)",
   admin: "var(--hue-admin)",
   ranking: "var(--hue-ranking)",
+  governance: "var(--hue-governance, 262)",
 };
 
 export interface CinematicCardProps
