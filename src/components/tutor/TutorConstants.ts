@@ -1,4 +1,13 @@
-export type Msg = { role: "user" | "assistant"; content: string };
+export type Msg = { 
+  role: "user" | "assistant"; 
+  content: string;
+  metrics?: {
+    latency_ms?: number;
+    memory_hit?: boolean;
+    tokens_saved?: number;
+    tokens_used?: number;
+  };
+};
 
 export interface Conversation { id: string; title: string; created_at: string; }
 export interface Upload { id: string; filename: string; category: string | null; extracted_text: string | null; }
