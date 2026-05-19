@@ -436,6 +436,9 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
   // 3. Sempre sincronizar daily plan (prefer canonical ID)
   await safe(() => syncDailyPlan(userId, topic, now, today, payload.dailyPlanTaskId), "daily_plan");
 
+  // 4. Sincronizar itens do cronograma longitudinal
+  await safe(() => syncStudyPlanItems(userId, topic, now), "study_plan_items");
+
   // 4. Validação de falso positivo — Bug 4
   if (taskType === "review" && !tablesUpdated.includes("revisoes")) {
     errors.push("revisoes: nenhuma revisão pendente encontrada");
