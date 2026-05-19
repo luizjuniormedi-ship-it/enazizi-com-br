@@ -80,9 +80,14 @@ export default function PlannerLongitudinalView({ planId }: { planId: string | n
     
     // Telemetry
     import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
-      telemetry.track("planner_topic_opened", {
+      telemetry.track("planner_task_started", {
         topic: item.topic,
         week: item.week_number,
+        task_type: item.task_type,
+        source: "longitudinal_planner"
+      });
+      telemetry.track("tutor_opened_from_planner", {
+        topic: item.topic,
         task_type: item.task_type
       });
     });
