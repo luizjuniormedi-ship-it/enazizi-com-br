@@ -1,0 +1,3 @@
+ALTER TABLE public.tutor_runtime_metrics 
+ADD COLUMN IF NOT EXISTS memory_hit BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS tokens_saved INTEGER DEFAULT 0;

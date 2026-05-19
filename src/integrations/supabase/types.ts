@@ -23403,8 +23403,10 @@ export type Database = {
           completion_tokens: number | null
           created_at: string | null
           id: string
+          memory_hit: boolean | null
           prompt_tokens: number | null
           session_id: string | null
+          tokens_saved: number | null
           tutor_generation_ms: number | null
           user_id: string | null
         }
@@ -23414,8 +23416,10 @@ export type Database = {
           completion_tokens?: number | null
           created_at?: string | null
           id?: string
+          memory_hit?: boolean | null
           prompt_tokens?: number | null
           session_id?: string | null
+          tokens_saved?: number | null
           tutor_generation_ms?: number | null
           user_id?: string | null
         }
@@ -23425,8 +23429,10 @@ export type Database = {
           completion_tokens?: number | null
           created_at?: string | null
           id?: string
+          memory_hit?: boolean | null
           prompt_tokens?: number | null
           session_id?: string | null
+          tokens_saved?: number | null
           tutor_generation_ms?: number | null
           user_id?: string | null
         }
