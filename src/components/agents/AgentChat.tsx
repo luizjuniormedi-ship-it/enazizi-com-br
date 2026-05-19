@@ -1,7 +1,7 @@
 console.error("🔥 BUILD_FORENSE", {
   component: "AgentChat.tsx",
   timestamp: Date.now(),
-  version: "FORENSE_V1"
+  version: "PEDAGOGICAL_INCREMENTAL_V1"
 });
 
 // Forensics Log Store
@@ -427,6 +427,20 @@ const AgentChat = ({
   const onToggleAutoSpeak = useCallback(() => chat.setAutoSpeak((v) => !v), [chat.setAutoSpeak]);
   const onToggleShowUploads = useCallback(() => chat.setShowUploads((v) => !v), [chat.setShowUploads]);
 
+  const onIncrementalAction = useCallback((action: string) => {
+    let prompt = "";
+    switch (action) {
+      case 'continue': prompt = "Compreendido, pode prosseguir para o próximo bloco da aula."; break;
+      case 'deepen': prompt = "Gostaria de aprofundar mais este ponto técnico. Pode detalhar?"; break;
+      case 'analogy': prompt = "Pode me dar uma analogia diferente para este conceito?"; break;
+      case 'clinical': prompt = "Me dê um exemplo clínico de plantão real sobre isso."; break;
+      case 'simplify': prompt = "Pode explicar de forma mais simples e didática?"; break;
+      default: prompt = "Próximo bloco.";
+    }
+    // Passamos o terceiro argumento como true para indicar que é um acknowledge incremental
+    (chat.handleSend as any)(prompt, undefined, true);
+  }, [chat.handleSend]);
+
   const content = (
     <div className={`flex flex-col animate-in fade-in duration-1000 min-w-0 w-full relative h-full selection:bg-primary/30 ${chat.isFullscreen ? "fixed inset-0 z-[100] bg-black" : ""}`}>
       {/* Decorative Atmosphere inside chat */}
@@ -538,6 +552,7 @@ const AgentChat = ({
         onSave={chat.handleSaveMessage}
         onLink={onLink}
         onRegenerateFromMemory={chat.regenerateFromMemory}
+        onIncrementalAction={onIncrementalAction}
         conversationId={chat.activeConversationId || undefined}
         topic={topic}
         subtopic={subtopic}

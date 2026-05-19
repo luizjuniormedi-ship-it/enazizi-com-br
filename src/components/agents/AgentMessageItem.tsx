@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { humanizeCMEMessage, FRIENDLY_STATUS_LABEL, friendlyStageLabel } from "@/components/cinematic/cmeUserMessages";
+import { InteractiveCognitiveCard } from "@/components/tutor/pedagogical/InteractiveCognitiveCard";
 
 interface AgentMessageItemProps {
   msg: Msg;
@@ -51,6 +52,7 @@ interface AgentMessageItemProps {
   onSave: (idx: number, content: string) => void;
   onLink: (content: string, uploadIds: string[]) => void;
   onRegenerateFromMemory?: (question: string) => void;
+  onIncrementalAction?: (action: string) => void; // Adicionado
   conversationId?: string;
   topic?: string;
   subtopic?: string;
@@ -69,7 +71,7 @@ const AgentMessageItem = memo(
   ({
     msg, index, title, isLoading, hasSpeechSynthesis, speakingMsgIdx, savingMsgIdx,
     isSaved, hasOnSaveMessage, linkToAgent, selectedUploadIds, renderAssistantMessage,
-    onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory,
+    onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory, onIncrementalAction,
     conversationId, topic, subtopic, specialty
   }: AgentMessageItemProps) => {
     const navigate = useNavigate();
@@ -211,28 +213,17 @@ const AgentMessageItem = memo(
                       )}
                       
                       {isBlocked && (
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="mt-8 mb-4 flex flex-col items-center gap-4 py-8 px-6 rounded-[32px] bg-primary/10 border border-primary/20 backdrop-blur-md"
-                        >
-                          <div className="flex items-center gap-3 text-primary mb-2">
-                            <Brain className="h-6 w-6 animate-pulse" />
-                            <span className="text-sm font-black uppercase tracking-widest">Gating Pedagógico Ativo</span>
-                          </div>
-                          <p className="text-center text-white/70 text-sm mb-4 max-w-md">
-                            O Tutor interrompeu o avanço para garantir a consolidação deste bloco. 
-                            Escolha como quer prosseguir:
-                          </p>
-                          <button
-                            onClick={() => setUnlockedSections(prev => prev + 1)}
-                            className="group relative flex items-center gap-4 px-10 py-5 rounded-[24px] bg-primary text-white font-black text-sm uppercase tracking-[0.1em] hover:scale-105 hover:shadow-[0_0_30px_rgba(var(--primary),0.4)] transition-all active:scale-95 border border-white/20"
-                          >
-                            <div className="absolute inset-0 bg-white/10 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <span>Compreendido, Próxima Etapa</span>
-                            <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform" />
-                          </button>
-                        </motion.div>
+                        <div className="mt-8 mb-4">
+                           <InteractiveCognitiveCard 
+                             onAction={(action) => {
+                               console.log("Pedagogical Action:", action);
+                               if (onIncrementalAction) {
+                                 onIncrementalAction(action);
+                               }
+                               setUnlockedSections(prev => prev + 1);
+                             }}
+                           />
+                        </div>
                       )}
                     </motion.div>
                   );

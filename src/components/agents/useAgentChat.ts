@@ -9,6 +9,7 @@ import { useTutorHistory } from "./hooks/useTutorHistory";
 import { useTutorContext } from "./hooks/useTutorContext";
 import { useTutorStream } from "./hooks/useTutorStream";
 import { useTutorAdaptiveContext } from "./hooks/useTutorAdaptiveContext";
+import { usePedagogicalSession } from "@/hooks/usePedagogicalSession";
 import { useTutorMemoryBridge } from "./hooks/useTutorMemoryBridge";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
@@ -129,6 +130,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   const { streamResponse } = useTutorStream();
   const { fetchAdaptive, isAdaptiveEnabled } = useTutorAdaptiveContext();
+  const pedSession = usePedagogicalSession();
+
+  // Inicializar sessão pedagógica quando houver conversa e tópico
+  useEffect(() => {
+    if (history.activeConversationId && topic) {
+      pedSession.getOrCreateSession(history.activeConversationId, topic, specialty || undefined);
+    }
+  }, [history.activeConversationId, topic, specialty]);
 
   // Load initial conversation if provided
   useEffect(() => {
@@ -164,10 +173,20 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   }, [messages]);
 
   const handleSend = useCallback(
-    async (overridePrompt?: string, contextOverride?: string) => {
+    async (overridePrompt?: string, contextOverride?: string, isIncrementalAcknowledge: boolean = false) => {
       const requestId = crypto.randomUUID();
       const startTime = Date.now();
-      console.log(`[TUTOR] SEND_STARTED id=${requestId}`);
+      console.log(`[TUTOR] SEND_STARTED id=${requestId} incremental=${isIncrementalAcknowledge}`);
+
+      // Se for um acknowledge de bloco, incrementamos o bloco atual na sessão
+      if (isIncrementalAcknowledge && pedSession.session) {
+        const nextBlock = pedSession.session.currentBlock + 1;
+        await pedSession.updateSession({ 
+          currentBlock: nextBlock,
+          completedBlocks: [...pedSession.session.completedBlocks, pedSession.session.currentBlock]
+        });
+        console.log(`[TUTOR] Incremented block to ${nextBlock}`);
+      }
 
       const text = overridePrompt || input.trim();
       if (!text || isLoading || sendCooldown || !user) {
@@ -336,7 +355,13 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             subtopic: subtopic || undefined,
             specialty: specialty || undefined,
             requestId,
-            sessionId: history.activeConversationId || undefined
+            sessionId: history.activeConversationId || undefined,
+            pedagogicalContext: pedSession.session ? {
+              currentBlock: pedSession.session.currentBlock,
+              tutorMode: pedSession.session.tutorMode,
+              cognitiveState: pedSession.session.cognitiveState,
+              topic: pedSession.session.topic
+            } : undefined
           },
           signal: controller.signal,
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
