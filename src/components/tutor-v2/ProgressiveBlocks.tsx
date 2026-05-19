@@ -170,9 +170,6 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
     </div>
   );
 }
-    </div>
-  );
-}
 
 function StructuredBoard({ data }: { data: any }) {
   if (data.type === 'clinical_flow') {
