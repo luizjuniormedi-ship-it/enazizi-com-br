@@ -96,10 +96,31 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
         .eq("user_id", user.id)
         .maybeSingle()
     ]);
-
+    
+    const studyPlanData = studyPlanRes.data;
     const profileData = profileRes.data;
     const healthData = healthRes.data;
     const memoryData = memoryRes.data;
+    
+    let currentWeekItems: any[] = [];
+    let currentWeekNumber = 1;
+
+    if (studyPlanData) {
+      const startDate = studyPlanData.start_date ? new Date(studyPlanData.start_date) : new Date();
+      const diffTime = Math.abs(new Date().getTime() - startDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      currentWeekNumber = Math.max(1, Math.ceil(diffDays / 7));
+      
+      const { data: weekItems } = await supabaseAdmin
+        .from("study_plan_items")
+        .select("topic, subtopic, discipline, priority_score, difficulty")
+        .eq("study_plan_id", studyPlanData.id)
+        .eq("week_number", currentWeekNumber)
+        .eq("status", "pending")
+        .limit(10);
+      
+      currentWeekItems = weekItems || [];
+    }
 
     if (!profileData) {
       logger.warn("PROFILE_MISSING", "User profile not found", { userId: user.id });
