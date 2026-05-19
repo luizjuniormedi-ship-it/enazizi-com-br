@@ -88,6 +88,7 @@ const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "Prac
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
 const Enaflix = lazyWithRetry(() => import("./pages/Enaflix"), "Enaflix");
 const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixPage");
+const GovernanceMetrics = lazyWithRetry(() => import("./pages/GovernanceMetrics"), "GovernanceMetrics");
 
 const VideoLessonsExplore = lazyWithRetry(() => import("./pages/VideoLessonsExplore"), "VideoLessonsExplore");
 const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"), "VideoLessonPlayer");
@@ -169,10 +170,11 @@ const App = () => (
               <Route path="/settings" element={<Navigate to="/dashboard/perfil" replace />} />
               
               <Route element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                <Route path="/enaflix" element={<EnaflixPage />} />
+                <Route path="/enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
                 <Route path="/dashboard">
-                  <Route index element={<EnaflixPage />} />
-                  <Route path="cockpit" element={<Dashboard />} />
+                  <Route index element={<Dashboard />} />
+                  <Route path="cockpit" element={<Navigate to="/dashboard/metrics" replace />} />
+                  <Route path="metrics" element={<GovernanceMetrics />} />
                   
                   {/* Rotas Reais de Funcionalidades */}
                   <Route path="planner" element={<SmartPlanner />} />
@@ -202,7 +204,8 @@ const App = () => (
                   <Route path="prova-pratica" element={<PracticalExam />} />
                   <Route path="feynman" element={<FeynmanTrainer />} />
                   <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
-                  <Route path="analytics" element={<Analytics />} />
+                  <Route path="progress" element={<Analytics />} />
+                  <Route path="analytics" element={<Navigate to="/dashboard/progress" replace />} />
                   <Route path="predictor" element={<PerformancePredictor />} />
                   <Route path="mapa-dominio" element={<MedicalDomainMap />} />
                   <Route path="proficiencia" element={<StudentSimulados />} />
