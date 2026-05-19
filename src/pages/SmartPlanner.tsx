@@ -84,6 +84,7 @@ const SmartPlanner = () => {
   const [targetExams, setTargetExams] = useState<string[]>([]);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [heavyRecoveryPhase, setHeavyRecoveryPhase] = useState<number | undefined>();
+  const [planId, setPlanId] = useState<string | null>(null);
 
 
 
