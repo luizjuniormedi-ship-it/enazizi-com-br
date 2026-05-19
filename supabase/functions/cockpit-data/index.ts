@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
         id: "mnem-review",
         title: `Reforçar mnemônico: ${mnemUseful[0].tema}`,
         cta: "Abrir",
-        route: `/dashboard/mnemonic-studio-v2?result=${mnemUseful[0].result_id}`,
+        route: `/dashboard/mnemonico?result=${mnemUseful[0].result_id}`,
         priority: "quick",
       });
     } else if (errors[0]) {
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
         title: `Criar mnemônico para ${temaCompleto}`,
         cta: "Criar agora",
         // auto=1 dispara geração automática ao abrir o Studio
-        route: `/dashboard/mnemonic-studio-v2?tema=${encodeURIComponent(temaCompleto)}&auto=1`,
+        route: `/dashboard/mnemonico?tema=${encodeURIComponent(temaCompleto)}&auto=1`,
         priority: "quick",
       });
     }
