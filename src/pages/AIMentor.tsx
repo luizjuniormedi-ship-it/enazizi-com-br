@@ -396,12 +396,12 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
                   
                   {(() => { console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AIMentor.tsx :: RENDER=AgentChat"); return null; })()}
                   <AgentChat
-                    title="ENAZIZI Adaptive OS"
+                    title="Tutor IA V3 Premium"
                     subtitle="Sistema Operacional Pedagógico Adaptativo"
                     icon={<ShieldCheck className="h-6 w-6 text-primary" />}
                     welcomeMessage="🩺 Sessão pedagógica ativa. Vou guiar você por uma jornada estruturada: Introdução → Leigo → Técnico → Clínico → Recall → Questões → Resumo Feynman. Qual será nossa missão de hoje?"
                     placeholder="Continue sua missão… (ex: 'aprofunde a fisiopatologia da ICC')"
-                    functionName="mentor-chat"
+                    functionName="tutor-v3-premium"
                     quickActions={quickActions}
                     onSendRef={onSendRef}
                     initialPrompt={pendingPrompt || undefined}
