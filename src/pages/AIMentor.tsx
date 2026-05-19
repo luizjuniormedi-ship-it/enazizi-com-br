@@ -380,13 +380,15 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
                   <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none" />
                   
                   {(() => { console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AIMentor.tsx :: RENDER=AgentChat"); return null; })()}
-                  <AgentChat
-                    title="ENAZIZI Cognitive Engine"
-                    subtitle="Núcleo de Inteligência Médica Premium"
-                    icon={<Sparkles className="h-6 w-6 text-primary animate-pulse" />}
-                    welcomeMessage="🩺 Sessão pedagógica ativa. Vou guiar você por uma jornada estruturada: Introdução → Leigo → Técnico → Clínico → Recall → Questões → Resumo Feynman. Qual será nossa missão de hoje?"
-                    placeholder="Continue sua missão… (ex: 'aprofunde a fisiopatologia da ICC')"
-                    functionName="mentor-chat"
+                  <div className="flex flex-col h-full overflow-hidden">
+                    <CognitiveGovernanceDashboard />
+                    <AgentChat
+                      title="ENAZIZI Cognitive Engine"
+                      subtitle="Núcleo de Inteligência Médica Premium"
+                      icon={<Sparkles className="h-6 w-6 text-primary animate-pulse" />}
+                      welcomeMessage="🩺 Sessão pedagógica ativa. Sou seu Preceptor Médico V3. Minha missão é guiar você pela fisiopatologia profunda e raciocínio clínico de elite. Qual será nossa missão de hoje?"
+                      placeholder="Continue sua missão… (ex: 'aprofunde a fisiopatologia da ICC')"
+                      functionName="tutor-v3-premium"
                     quickActions={quickActions}
                     onSendRef={onSendRef}
                     initialPrompt={pendingPrompt || undefined}
