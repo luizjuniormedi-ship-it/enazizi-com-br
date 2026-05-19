@@ -314,9 +314,11 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   }, [initialTopic, initialSessionId, hasStarted]);
 
   const handleStart = (prompt: string) => {
+    // Definimos o prompt pendente IMEDIATAMENTE para que o AgentChat o pegue no mount
     setPendingPrompt(prompt);
     setIsCinematicLoading(true);
-    // Reduzi o delay para 800ms para ser mais ágil
+    
+    // Pequeno delay para a animação cinematográfica
     setTimeout(() => {
       setHasStarted(true);
       setIsCinematicLoading(false);
