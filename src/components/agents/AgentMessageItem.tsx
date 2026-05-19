@@ -52,7 +52,9 @@ interface AgentMessageItemProps {
   onSave: (idx: number, content: string) => void;
   onLink: (content: string, uploadIds: string[]) => void;
   onRegenerateFromMemory?: (question: string) => void;
-  onIncrementalAction?: (action: string) => void; // Adicionado
+  onIncrementalAction?: (action: string) => void;
+  isPedagogicalSession?: boolean; // Adicionado
+  isLastAssistantMessage?: boolean; // Adicionado
   conversationId?: string;
   topic?: string;
   subtopic?: string;
