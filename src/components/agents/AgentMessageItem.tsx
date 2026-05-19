@@ -117,6 +117,12 @@ const AgentMessageItem = memo(
       return validateTutorMessageForCME(msg.content, cognitiveBlocks);
     }, [msg.content, cognitiveBlocks]);
 
+    // Lógica para exibir o card de gating real
+    const showConsolidationCard = msg.role === "assistant" && 
+                                 isPedagogicalSession && 
+                                 isLastAssistantMessage && 
+                                 !isLoading;
+
     useEffect(() => {
       if (msg.role === "assistant" && !isLoading && (msg as any).id) {
         logEligibility({
