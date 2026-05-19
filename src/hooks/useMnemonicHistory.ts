@@ -10,5 +10,6 @@ export function useMnemonicHistory(filters: HistoryFilters = {}) {
     queryFn: () => fetchMnemonicHistory(filters),
     enabled: !!user,
     staleTime: 30_000,
+    gcTime: 1000 * 60 * 60, // 60 min GC
   });
 }

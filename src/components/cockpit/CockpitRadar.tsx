@@ -12,7 +12,7 @@ const LABELS: Record<string, string> = {
   questoes: "Questões",
   revisaoFsrs: "Revisão FSRS",
   simulados: "Simulados",
-  tutorIa: "Tutor IA",
+  tutorIa: "Tutor IA V3",
 };
 
 export default function CockpitRadar({ radar }: Props) {

@@ -187,11 +187,13 @@ export default function MnemonicGeneratorPage() {
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
         setResult(res.data);
         setResultError(null);
+        telemetry.track('mnemonic_generated', { tema, is_auto: isAutoMode, score: res.data.score_final });
         toast.success(isAutoMode ? "Mnemônico gerado automaticamente!" : "Mnemônico gerado!");
       } else {
         const msg = res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.";
         setResult(null);
         setResultError(msg);
+        telemetry.track('mnemonic_rejected', { tema, reason: res.error || 'validation_failed' });
         toast.error(msg);
       }
     } catch (err: any) {
@@ -234,7 +236,10 @@ export default function MnemonicGeneratorPage() {
   const handleFavorite = useCallback(() => {
     if (!result) return;
     favoriteMutation.mutate(result.result_id, {
-      onSuccess: (isFav) => toast.success(isFav ? "Favoritado!" : "Removido."),
+      onSuccess: (isFav) => {
+        telemetry.track('mnemonic_saved', { tema: result.tema, result_id: result.result_id, favorite: isFav });
+        toast.success(isFav ? "Favoritado!" : "Removido.");
+      },
       onError: (err) => toast.error(err.message),
     });
   }, [result, favoriteMutation]);
@@ -283,6 +288,7 @@ export default function MnemonicGeneratorPage() {
       const answer = `${result.tema}\n\n${(result as any).explicacao_associacao || result.explicacao_didatica}`;
       const { error } = await supabase.from("flashcards").insert({ user_id: user.id, question, answer, topic: result.tema, is_global: false });
       if (error) throw error;
+      telemetry.track('mnemonic_used_in_flashcard', { tema: result.tema, result_id: result.result_id });
       toast.success("Flashcard criado!");
     } catch (err: any) { toast.error(err.message || "Erro."); }
     finally { setSavingFlashcard(false); }
@@ -298,6 +304,7 @@ export default function MnemonicGeneratorPage() {
       if (existing) { toast.info("Já está na revisão!"); return; }
       const { error } = await supabase.from("fsrs_cards").insert({ user_id: user.id, card_ref_id: result.result_id, card_type: "mnemonic", due: new Date().toISOString(), stability: 0, difficulty: 0, elapsed_days: 0, scheduled_days: 0, reps: 0, lapses: 0, state: 0 });
       if (error) throw error;
+      telemetry.track('mnemonic_reviewed', { tema: result.tema, result_id: result.result_id });
       toast.success("Adicionado à revisão espaçada!");
     } catch (err: any) { toast.error(err.message || "Erro."); }
     finally { setSavingFsrs(false); }

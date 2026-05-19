@@ -98,7 +98,16 @@ export type TelemetryEventName =
   | 'online_transition'
   | 'hydration_mismatch'
   | 'memory_pressure'
-  | 'cognitive_decision_created';
+  | 'cognitive_decision_created'
+  | 'mnemonic_generated'
+  | 'mnemonic_saved'
+  | 'mnemonic_rejected'
+  | 'mnemonic_used_in_flashcard'
+  | 'mnemonic_used_in_tutor'
+  | 'mnemonic_reviewed'
+  | 'mnemonic_failed_recall'
+  | 'mnemonic_optimized'
+  | 'mnemonic_visual_expanded';
 
 
 interface TelemetryProperties {
