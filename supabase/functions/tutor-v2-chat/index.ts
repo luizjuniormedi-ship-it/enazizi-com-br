@@ -839,12 +839,21 @@ E) Ver exemplo clínico"
         blocks_found: foundBlocks,
         blocks_missing: missingBlocks,
         hallucination_warning: hallucinationWarning,
-        cognitive_load: context.cognitive_load || 0.0,
-        detected_gaps: context.detected_gaps || [],
+        cognitive_load: (context as any).cognitive_load || 0.0,
+        detected_gaps: (context as any).detected_gaps || [],
         planner_signals: [{ type: "adaptive_replan", priority: pedagogicalScore > 80 ? "low" : "high" }],
         error_signals: (qReview.active === false && missingBlocks.length > 5) ? [{ type: "pedagogical_gap", blocks: missingBlocks }] : [],
         latency_ms: latency,
         model_used: providerResult.model
+      });
+
+      await supabase.from("tutor_runtime_metrics").insert({
+        user_id: userId,
+        session_id: sessionId,
+        tutor_generation_ms: providerResult.latencyMs,
+        audit_ms: latency - providerResult.latencyMs,
+        prompt_tokens: 0,
+        completion_tokens: 0
       });
     }
 
