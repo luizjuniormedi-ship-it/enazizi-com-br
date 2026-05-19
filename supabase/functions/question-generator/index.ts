@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { aiFetch, cleanQuestionText } from "../_shared/ai-fetch.ts";
+import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { aiFetch, cleanQuestionText, parseAiJson } from "../_shared/ai-fetch.ts";
 import { logAiUsage, buildPromptHash, getCachedAIResponse, saveAIResponseToCache, logAIUsage, CACHE_TTL_DAYS } from "../_shared/ai-cache.ts";
 import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection, IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
 import { validateQuestionBatch } from "../_shared/ai-validation.ts";
@@ -25,32 +25,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, supabaseAdmin, ai }) => {
+  const { user } = await requireAuth(req);
+  const body = await req.json().catch(() => ({}));
 
-  try {
-    // Auth FIRST — block IA generation without valid user JWT
-    const auth = await requireAuth(req);
-    if (!auth.ok) return auth.response;
+  logger.info("QUESTION_GEN_START", "Starting Adaptive Simulado Generation", { userId: user.id });
 
-    // Consume and log headers for debug
-    const authHeader = req.headers.get("Authorization");
-    const clientPlatform = req.headers.get("x-client-info");
-    
-    // Initialize Supabase client early for quality routing
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-    
-    const rawBody = await req.text();
-    let body: any = {};
-    try {
-      body = JSON.parse(rawBody);
-    } catch (e) {
-      console.warn("[question-generator] Failed to parse JSON body:", e);
-      body = {};
-    }
+  const { 
+    messages: rawMessages, 
+    userContext, 
+    difficulty, 
+    outputFormat, 
+    avoidStatements, 
+    generationContext, 
+    targetExam, 
+    count,
+    topicWeights,
+    specialty,
+    includeWeakThemes,
+    includePreviousErrors
+  } = body;
 
     const { 
       messages: rawMessages, 
@@ -359,7 +353,37 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
 
       console.log(`[AUDIT] generation_start | targetExam: "${safeTargetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty} | blueprintFound: ${blueprintFound} | hasDistribution: ${!!activeDistribution}`);
 
-      // ── Loop 4A: cache lookup for GENERIC requests only.
+      // ... use aiWrapper for the call
+      const aiResponse = await ai({
+        taskType: "generation",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Gere ${requestedCount} questões médicas em JSON conforme o blueprint.` }
+        ],
+        complexity: "high"
+      });
+
+      const rawContent = aiResponse.choices?.[0]?.message?.content || "[]";
+      let questions = parseAiJson(rawContent);
+
+      if (Array.isArray(questions)) {
+        questions = questions.map(q => ({
+          ...q,
+          topic: q.topic || specialty || "Geral",
+          metadata: { generation_engine: "ENAZIZI Question Motor v3.0" }
+        }));
+      }
+
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(questions) } }] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Default response if not JSON mode (legacy or simple chat)
+    return new Response(JSON.stringify({ success: true, message: "Use outputFormat: json para simulados." }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+}));
       // Bypass when: jobId (personalized batch), userContext, avoidStatements,
       // or any personal payload that needs novelty per user.
       const isGenericRequest =

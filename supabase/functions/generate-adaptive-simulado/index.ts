@@ -198,20 +198,16 @@ function scoreQuestion(q: any, asset: any): number {
 
 // ── Main handler ──
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, logger, supabaseAdmin, ai }) => {
+  const { user } = await requireAuth(req);
+  const body = await req.json().catch(() => ({}));
 
-  try {
-    const auth = await requireAuth(req);
-    if (!auth.ok) return auth.response;
-    const user = { id: auth.userId };
+  logger.info("ADAPTIVE_SIM_START", "Analyzing performance and generating adaptive blueprint", { userId: user.id });
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const sb = createClient(supabaseUrl, serviceRoleKey);
-
-    const body = await req.json().catch(() => ({}));
-    const targetCount = Math.min(body.target_question_count || 20, 30);
+  const targetCount = Math.min(body.target_question_count || 20, 30);
+  
+  // Logic to calculate distribution based on user history...
+  // ... for this phase, we ensure it uses the unified AI wrapper and retry logic.
 
     // ── 1. Build performance profile ──
     const performance: PerformanceInput = body.performance || {
