@@ -91,7 +91,7 @@ serve(async (req) => {
     });
 
     // 6. Asynchronously trigger health governor for background updates
-    edgeFunctions.invoke('pedagogical-health-governor', {
+    supabase.functions.invoke('pedagogical-health-governor', {
       body: { userId },
       headers: { Authorization: req.headers.get('Authorization')! }
     }).catch(e => console.error("Async Health Update Error:", e));
