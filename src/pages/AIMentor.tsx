@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, forwardRef } from "react";
-import { Sparkles, Brain, Mic, ArrowRight, Zap, GraduationCap, ChevronRight, ArrowLeft } from "lucide-react";
+import { Sparkles, Brain, Mic, ArrowRight, Zap, GraduationCap, ChevronRight, ArrowLeft, ShieldCheck, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
