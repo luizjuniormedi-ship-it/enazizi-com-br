@@ -16358,38 +16358,63 @@ export type Database = {
       }
       planner_extracted_topics: {
         Row: {
-          coverage_stats: Json | null
+          confidence_score: number | null
           created_at: string | null
+          discipline: string | null
           id: string
-          topics_json: Json
+          raw_excerpt: string | null
+          source_chunk_id: string | null
+          source_page: number | null
+          study_plan_id: string | null
+          subtopic: string | null
+          topic: string | null
           updated_at: string | null
-          upload_id: string
           user_id: string
+          validation_status: string | null
         }
         Insert: {
-          coverage_stats?: Json | null
+          confidence_score?: number | null
           created_at?: string | null
+          discipline?: string | null
           id?: string
-          topics_json: Json
+          raw_excerpt?: string | null
+          source_chunk_id?: string | null
+          source_page?: number | null
+          study_plan_id?: string | null
+          subtopic?: string | null
+          topic?: string | null
           updated_at?: string | null
-          upload_id: string
           user_id: string
+          validation_status?: string | null
         }
         Update: {
-          coverage_stats?: Json | null
+          confidence_score?: number | null
           created_at?: string | null
+          discipline?: string | null
           id?: string
-          topics_json?: Json
+          raw_excerpt?: string | null
+          source_chunk_id?: string | null
+          source_page?: number | null
+          study_plan_id?: string | null
+          subtopic?: string | null
+          topic?: string | null
           updated_at?: string | null
-          upload_id?: string
           user_id?: string
+          validation_status?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "planner_extracted_topics_upload_id_fkey"
-            columns: ["upload_id"]
+            foreignKeyName: "planner_extracted_topics_source_chunk_id_fkey"
+            columns: ["source_chunk_id"]
             isOneToOne: false
-            referencedRelation: "uploads"
+            referencedRelation: "planner_pdf_chunks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planner_extracted_topics_study_plan_id_fkey"
+            columns: ["study_plan_id"]
+            isOneToOne: false
+            referencedRelation: "study_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -16403,8 +16428,11 @@ export type Database = {
           id: string
           page_end: number | null
           page_start: number | null
+          processing_status: string | null
           raw_text: string
           status: string | null
+          study_plan_id: string | null
+          token_count: number | null
           updated_at: string | null
           upload_id: string
           user_id: string
@@ -16417,8 +16445,11 @@ export type Database = {
           id?: string
           page_end?: number | null
           page_start?: number | null
+          processing_status?: string | null
           raw_text: string
           status?: string | null
+          study_plan_id?: string | null
+          token_count?: number | null
           updated_at?: string | null
           upload_id: string
           user_id: string
@@ -16431,13 +16462,23 @@ export type Database = {
           id?: string
           page_end?: number | null
           page_start?: number | null
+          processing_status?: string | null
           raw_text?: string
           status?: string | null
+          study_plan_id?: string | null
+          token_count?: number | null
           updated_at?: string | null
           upload_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "planner_pdf_chunks_study_plan_id_fkey"
+            columns: ["study_plan_id"]
+            isOneToOne: false
+            referencedRelation: "study_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "planner_pdf_chunks_upload_id_fkey"
             columns: ["upload_id"]
@@ -20167,7 +20208,10 @@ export type Database = {
           linked_tutor_session: string | null
           planned_date: string | null
           priority_score: number | null
+          raw_excerpt: string | null
           source: string | null
+          source_chunk_id: string | null
+          source_page: number | null
           status: string | null
           study_plan_id: string
           subtopic: string | null
@@ -20188,7 +20232,10 @@ export type Database = {
           linked_tutor_session?: string | null
           planned_date?: string | null
           priority_score?: number | null
+          raw_excerpt?: string | null
           source?: string | null
+          source_chunk_id?: string | null
+          source_page?: number | null
           status?: string | null
           study_plan_id: string
           subtopic?: string | null
@@ -20209,7 +20256,10 @@ export type Database = {
           linked_tutor_session?: string | null
           planned_date?: string | null
           priority_score?: number | null
+          raw_excerpt?: string | null
           source?: string | null
+          source_chunk_id?: string | null
+          source_page?: number | null
           status?: string | null
           study_plan_id?: string
           subtopic?: string | null
@@ -20237,6 +20287,7 @@ export type Database = {
           error_message: string | null
           exam_date: string | null
           exam_name: string | null
+          feasibility_status: string | null
           id: string
           organization_id: string | null
           plan_json: Json | null
@@ -20244,6 +20295,8 @@ export type Database = {
           source: string | null
           start_date: string | null
           status: string | null
+          total_available_minutes: number | null
+          total_required_minutes: number | null
           updated_at: string
           user_id: string
           weekly_available_days: number | null
@@ -20256,6 +20309,7 @@ export type Database = {
           error_message?: string | null
           exam_date?: string | null
           exam_name?: string | null
+          feasibility_status?: string | null
           id?: string
           organization_id?: string | null
           plan_json?: Json | null
@@ -20263,6 +20317,8 @@ export type Database = {
           source?: string | null
           start_date?: string | null
           status?: string | null
+          total_available_minutes?: number | null
+          total_required_minutes?: number | null
           updated_at?: string
           user_id: string
           weekly_available_days?: number | null
@@ -20275,6 +20331,7 @@ export type Database = {
           error_message?: string | null
           exam_date?: string | null
           exam_name?: string | null
+          feasibility_status?: string | null
           id?: string
           organization_id?: string | null
           plan_json?: Json | null
@@ -20282,6 +20339,8 @@ export type Database = {
           source?: string | null
           start_date?: string | null
           status?: string | null
+          total_available_minutes?: number | null
+          total_required_minutes?: number | null
           updated_at?: string
           user_id?: string
           weekly_available_days?: number | null
