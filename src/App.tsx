@@ -120,12 +120,17 @@ const PageLoader = () => (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      refetchOnWindowFocus: false,
-      retry: 1,
-      // Performance optimization: prevent initial loading states for cached queries
-      refetchOnMount: false,
+      staleTime: 10 * 60 * 1000, // 10 minutes default
+      gcTime: 30 * 60 * 1000,    // 30 minutes cache duration
+      refetchOnWindowFocus: true,
+      retry: (failureCount, error: any) => {
+        if (failureCount >= 3) return false;
+        // Don't retry on certain errors
+        if (error?.status === 404 || error?.status === 401 || error?.status === 403) return false;
+        return true;
+      },
+      refetchOnMount: true,
+      refetchOnReconnect: 'always',
     },
   },
 });

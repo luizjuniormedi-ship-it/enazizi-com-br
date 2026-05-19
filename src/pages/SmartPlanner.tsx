@@ -384,9 +384,9 @@ const SmartPlanner = () => {
       const { data: session } = await supabase.auth.getSession();
       
       // Telemetry: start
-      supabase.functions.invoke("unified-telemetry", {
-        body: { userId: user.id, eventType: "daily_mission_generate_clicked", module: "planner" }
-      }).then();
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track('session_progress', { action: 'daily_mission_generate_clicked', module: "planner" });
+      });
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
         method: "POST",

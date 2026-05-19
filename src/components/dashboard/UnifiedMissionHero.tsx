@@ -66,11 +66,12 @@ export function UnifiedMissionHero({
       const { data: { session } } = await supabase.auth.getSession();
       
       // Telemetry: start
-      if (session?.user) {
-        supabase.functions.invoke("unified-telemetry", {
-          body: { userId: session.user.id, eventType: "daily_mission_generate_clicked", module: "dashboard" }
-        }).then();
-      }
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track('session_progress', { 
+          action: 'daily_mission_generate_clicked', 
+          module: "dashboard" 
+        });
+      });
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
         method: "POST",
@@ -85,32 +86,26 @@ export function UnifiedMissionHero({
       const result = await resp.json();
 
       // Telemetry: success
-      if (session?.user) {
-        supabase.functions.invoke("unified-telemetry", {
-          body: { 
-            userId: session.user.id, 
-            eventType: "daily_mission_generated", 
-            module: "dashboard",
-            data: { latency_ms: Date.now() - startTime, plan_id: result.planId }
-          }
-        }).then();
-      }
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track('session_progress', { 
+          action: 'daily_mission_generated', 
+          module: "dashboard",
+          latency_ms: Date.now() - startTime, 
+          plan_id: result.planId 
+        });
+      });
 
       toast({ title: "✅ Missão Gerada!", description: "Sua jornada de hoje está pronta." });
       await refreshDash();
     } catch (err: any) {
       // Telemetry: error
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        supabase.functions.invoke("unified-telemetry", {
-          body: { 
-            userId: session.user.id, 
-            eventType: "daily_mission_error", 
-            module: "dashboard",
-            data: { error: err.message }
-          }
-        }).then();
-      }
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track('navigation_error', { 
+          reason: 'daily_mission_error', 
+          module: "dashboard",
+          error: err.message 
+        });
+      });
       toast({ title: "Erro", description: "Não foi possível gerar sua missão.", variant: "destructive" });
     } finally {
       setGenerating(false);
@@ -176,8 +171,10 @@ export function UnifiedMissionHero({
                 onClick={async () => {
                   const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
                   const { supabase } = await import("@/integrations/supabase/client");
+                  const { telemetry } = await import("@/lib/pedagogicalTelemetry");
                   const { data: { user } } = await supabase.auth.getUser();
                   if (user) {
+                    telemetry.track('sidebar_navigation_clicked', { target: primaryHref, label: 'Continuar missão' });
                     await getOrchestratorDecision(user.id, "dashboard-hero-primary", {
                       topic: recommendationTopic,
                       type: recommendationType,
@@ -209,8 +206,10 @@ export function UnifiedMissionHero({
               onClick={async () => {
                 const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
                 const { supabase } = await import("@/integrations/supabase/client");
+                const { telemetry } = await import("@/lib/pedagogicalTelemetry");
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
+                  telemetry.track('sidebar_navigation_clicked', { target: secondaryHref, label: 'Ver revisões' });
                   await getOrchestratorDecision(user.id, "dashboard-hero-secondary", {
                     topic: recommendationTopic,
                     source: "unified-hero-reviews"
