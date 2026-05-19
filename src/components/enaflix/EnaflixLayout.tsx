@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { EnaflixSidebar } from "./EnaflixSidebar";
 import { EnaflixMobileNav } from "./EnaflixMobileNav";
 import { EnaflixOverlayNav } from "./EnaflixOverlayNav";
@@ -7,6 +7,7 @@ import { EnaflixBackgroundFX } from "./EnaflixBackgroundFX";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
   children: ReactNode;
