@@ -114,6 +114,9 @@ export default function PlannerStrategicHeader({
     : getPhaseByProgress(approvalScore);
 
   const retentionRisk = overdueReviews > 10 ? "alto" : overdueReviews > 3 ? "moderado" : "baixo";
+  
+  // Longitudinal Hardening: Risk based on proximity vs score
+  const trajectoryRisk = daysLeft !== null && approvalScore < (100 - (daysLeft * 0.5)) ? "high" : "low";
 
   return (
     <div className="space-y-3">

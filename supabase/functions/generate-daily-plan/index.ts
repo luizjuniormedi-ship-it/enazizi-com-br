@@ -245,7 +245,7 @@ SAÍDA ESPERADA (JSON):
 
     const tasks = planJson.tasks || [];
 
-    // 6. DB Persistence with verification
+    // 6. DB Persistence with verification & Longitudinal Sync
     const { data: finalPlan, error: planErr } = await supabaseAdmin
       .from("daily_plans")
       .upsert({
@@ -254,7 +254,12 @@ SAÍDA ESPERADA (JSON):
         plan_json: { 
           ...planJson,
           generated_at: new Date().toISOString(), 
-          source: "ENAZIZI Adaptive Coordinator v2.5" 
+          source: "ENAZIZI Adaptive Coordinator v3.0",
+          longitudinal_metadata: {
+            current_week: currentWeekNumber,
+            days_until_exam: daysUntilExamVal,
+            viability_at_generation: context.pedagogicalHealth.health_score
+          }
         },
         total_blocks: tasks.length,
         completed_count: 0,
