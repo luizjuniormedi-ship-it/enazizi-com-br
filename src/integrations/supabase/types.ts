@@ -14658,25 +14658,35 @@ export type Database = {
           aprovado_pedagogico: boolean
           associacoes_json: Json
           associacoes_visuais_json: Json
+          auditor_medical_feedback: string | null
+          auditor_pedagogical_feedback: string | null
           cena_visual: string | null
+          clinical_relevance: number | null
           created_at: string
+          emotional_strength: number | null
           explicacao_didatica: string | null
           explicacao_tecnica: string | null
           frase_mnemonica: string
           id: string
           image_url: string | null
           is_latest: boolean
+          layering_json: Json | null
+          memory_impact_score: number | null
           prompt_imagem: string | null
+          recall_speed: number | null
           request_id: string
+          retention_prediction: number | null
           score_final: number
           score_linguistico: number | null
           score_medico: number
           score_pedagogico: number
           sigla: string
+          simplicity: number | null
           tema: string
           updated_at: string
           user_id: string
           versao: number
+          visual_strength: number | null
         }
         Insert: {
           alertas_json?: Json
@@ -14685,25 +14695,35 @@ export type Database = {
           aprovado_pedagogico?: boolean
           associacoes_json?: Json
           associacoes_visuais_json?: Json
+          auditor_medical_feedback?: string | null
+          auditor_pedagogical_feedback?: string | null
           cena_visual?: string | null
+          clinical_relevance?: number | null
           created_at?: string
+          emotional_strength?: number | null
           explicacao_didatica?: string | null
           explicacao_tecnica?: string | null
           frase_mnemonica: string
           id?: string
           image_url?: string | null
           is_latest?: boolean
+          layering_json?: Json | null
+          memory_impact_score?: number | null
           prompt_imagem?: string | null
+          recall_speed?: number | null
           request_id: string
+          retention_prediction?: number | null
           score_final?: number
           score_linguistico?: number | null
           score_medico?: number
           score_pedagogico?: number
           sigla: string
+          simplicity?: number | null
           tema: string
           updated_at?: string
           user_id: string
           versao?: number
+          visual_strength?: number | null
         }
         Update: {
           alertas_json?: Json
@@ -14712,25 +14732,35 @@ export type Database = {
           aprovado_pedagogico?: boolean
           associacoes_json?: Json
           associacoes_visuais_json?: Json
+          auditor_medical_feedback?: string | null
+          auditor_pedagogical_feedback?: string | null
           cena_visual?: string | null
+          clinical_relevance?: number | null
           created_at?: string
+          emotional_strength?: number | null
           explicacao_didatica?: string | null
           explicacao_tecnica?: string | null
           frase_mnemonica?: string
           id?: string
           image_url?: string | null
           is_latest?: boolean
+          layering_json?: Json | null
+          memory_impact_score?: number | null
           prompt_imagem?: string | null
+          recall_speed?: number | null
           request_id?: string
+          retention_prediction?: number | null
           score_final?: number
           score_linguistico?: number | null
           score_medico?: number
           score_pedagogico?: number
           sigla?: string
+          simplicity?: number | null
           tema?: string
           updated_at?: string
           user_id?: string
           versao?: number
+          visual_strength?: number | null
         }
         Relationships: [
           {
