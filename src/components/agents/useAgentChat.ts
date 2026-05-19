@@ -345,7 +345,13 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             subtopic: subtopic || undefined,
             specialty: specialty || undefined,
             requestId,
-            sessionId: history.activeConversationId || undefined
+            sessionId: history.activeConversationId || undefined,
+            pedagogicalContext: pedSession.session ? {
+              currentBlock: pedSession.session.currentBlock,
+              tutorMode: pedSession.session.tutorMode,
+              cognitiveState: pedSession.session.cognitiveState,
+              topic: pedSession.session.topic
+            } : undefined
           },
           signal: controller.signal,
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
