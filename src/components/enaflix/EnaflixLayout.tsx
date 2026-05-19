@@ -41,7 +41,7 @@ export function EnaflixLayout({ children }: Props) {
 
       {/* Consistente Top Navigation for Students in subpages */}
       {showTopNav && (
-        <EnaflixOverlayNav onClose={() => navigate("/enaflix")} />
+        <EnaflixOverlayNav onClose={() => navigate("/dashboard")} />
       )}
 
       {/* Main Content Area - Adjust padding if sidebar is hidden */}
