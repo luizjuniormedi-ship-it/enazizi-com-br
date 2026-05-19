@@ -19,7 +19,7 @@ import {
   buildComplementPrompt,
   logComplianceTelemetry,
 } from "@/lib/tutor/protocolCompliance";
-
+import { CognitiveGovernanceDashboard } from "@/components/analytics/CognitiveGovernanceDashboard";
 import { cn } from "@/lib/utils";
 
 const quickActions = [
