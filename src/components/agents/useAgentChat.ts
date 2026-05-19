@@ -615,5 +615,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     // Toast / user (used by upload handler)
     toast,
     user,
+    pedSession,
   };
 }
