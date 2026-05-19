@@ -118,7 +118,7 @@ export default function PlannerLongitudinalView({ planId }: { planId: string | n
   const progress = Math.round((totalCompleted / items.length) * 100);
 
   return (
-    <div className="space-y-6 print:m-0 print:p-0" ref={printRef}>
+    <div className="space-y-6 print:m-0 print:p-0 print-container" ref={printRef}>
       {/* Legend & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex flex-wrap gap-2">
