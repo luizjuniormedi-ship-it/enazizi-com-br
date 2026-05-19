@@ -41,6 +41,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Film, Sparkles, Play, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useFsrsDueCount } from "@/hooks/useFsrsDueCount";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
