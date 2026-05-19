@@ -696,10 +696,14 @@ const SmartPlanner = () => {
                 {reprocessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                 Gerar Missão do Dia
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setActiveTab("onboarding")} className="gap-2">
+                <BookOpen className="h-4 w-4" /> Configurar Cronograma
+              </Button>
               <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)} className="gap-2">
                 <RefreshCw className="h-4 w-4" /> Recalcular Prova
               </Button>
             </div>
+
           }
         />
       </div>
