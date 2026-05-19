@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Server, RefreshCw, Wifi, WifiOff, XCircle,
-  LayoutDashboard, Users, BarChart3, ShieldAlert, Zap, Activity, GitMerge, Film, Brain,
+  LayoutDashboard, Users, BarChart3, ShieldAlert, Zap, Activity, GitMerge, Film, Brain, Scale, ShieldCheck
 } from "lucide-react";
 import { DashboardData, MentorSummary, StudentRow, RiskAlert } from "@/components/monitoring/MonitoringTypes";
 import { OverviewTab } from "@/components/monitoring/OverviewTab";
@@ -22,7 +22,7 @@ import { AdaptivePathwaysLog } from "@/components/admin/AdaptivePathwaysLog";
 import { VideoRecommendationAuditTab } from "@/components/monitoring/VideoRecommendationAuditTab";
 import { AdaptiveAuditTab } from "@/components/monitoring/AdaptiveAuditTab";
 import { ScaleGovernanceTab } from "@/components/monitoring/ScaleGovernanceTab";
-import { Scale, Database } from "lucide-react";
+import { GovernanceCockpit } from "@/components/governance/GovernanceCockpit";
 
 export default function AdminMonitoring() {
   const { session } = useAuth();
@@ -137,6 +137,10 @@ export default function AdminMonitoring() {
               <LayoutDashboard className="h-3.5 w-3.5" />
               Visão Geral
             </TabsTrigger>
+            <TabsTrigger value="governance" className="text-xs gap-1.5 font-bold text-primary">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Governança OS
+            </TabsTrigger>
             <TabsTrigger value="students" className="text-xs gap-1.5">
               <Users className="h-3.5 w-3.5" />
               Alunos
@@ -187,6 +191,9 @@ export default function AdminMonitoring() {
 
           <TabsContent value="overview">
             <OverviewTab d={d} mentorSummary={mentorData?.summary} students={students} />
+          </TabsContent>
+          <TabsContent value="governance">
+            <GovernanceCockpit />
           </TabsContent>
           <TabsContent value="students">
             <StudentsTab students={students} />

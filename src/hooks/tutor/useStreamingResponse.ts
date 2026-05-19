@@ -2,6 +2,7 @@ import { useRef, useCallback } from "react";
 import type { Msg } from "@/components/tutor/TutorConstants";
 import { supabase } from "@/integrations/supabase/client";
 import { emitShadowEvent } from "@/lib/shadowAdaptive";
+import { auditTutorResponse } from "@/utils/pedagogicalAudit";
 
 interface StreamOptions {
   url: string;
@@ -131,6 +132,26 @@ export function useStreamingResponse() {
       }
 
       const finalText = accumulatorRef.current;
+      
+      // Layer 4 Quality Lock - Governance Audit
+      const audit = auditTutorResponse(finalText);
+      if (!audit.isValid || audit.incidents.length > 0) {
+        console.warn("[QualityLock] Pedagogical incidents detected:", audit.incidents);
+        // Log incident to DB (Async, don't block UI)
+        void supabase.from("ai_governance_logs").insert({
+          function_name: "tutor_v3_streaming",
+          model_name: "gpt-4o",
+          incident_type: audit.score < 40 ? "hallucination" : "pedagogical_error",
+          severity: audit.score < 40 ? "high" : "low",
+          details: { 
+            incidents: audit.incidents, 
+            score: audit.score, 
+            metadata: audit.metadata,
+            topic: (body as any)?.topic 
+          }
+        });
+      }
+
       onComplete(finalText, lastData);
       return finalText;
     } catch (e) {
