@@ -33,25 +33,52 @@ Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, wa
     try {
       await supabaseAdmin.from("study_plans").update({ current_step: "Analisando telemetria e histórico do aluno...", progress: 15 }).eq("id", plan.id);
 
-      // 0. Fetch latest processed material if editalText is missing
+      // 0. Fetch latest processed material and detected exam date
       let materialText = editalText;
-      if (!materialText) {
-        const { data: lastUpload } = await supabaseAdmin
-          .from("uploads")
-          .select("extracted_text")
-          .eq("user_id", user.id)
-          .eq("status", "processed")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (lastUpload?.extracted_text) {
+      let detectedExamDate: string | null = null;
+      let lastUploadId: string | null = null;
+      
+      const { data: lastUpload } = await supabaseAdmin
+        .from("uploads")
+        .select("id, extracted_text, extracted_json")
+        .eq("user_id", user.id)
+        .eq("status", "processed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (lastUpload) {
+        if (!materialText && lastUpload.extracted_text) {
           materialText = lastUpload.extracted_text;
           logger.info("MATERIAL_FOUND", "Using last processed upload as edital text");
         }
+        detectedExamDate = (lastUpload.extracted_json as any)?.detected_exam_date;
+        lastUploadId = lastUpload.id;
       }
 
-      // 1. Fetch rich student context
+      // 1. Resolve Final Exam Date
+      const finalExamDate = examDate || detectedExamDate;
+      if (!finalExamDate) {
+        throw new Error("Data da prova não informada e não detectada no edital.");
+      }
+
+      // Validate date
+      const examDateObj = new Date(finalExamDate);
+      const today = new Date();
+      if (examDateObj < today) {
+        throw new Error("A data da prova informada já passou.");
+      }
+
+      const daysUntilExam = Math.ceil((examDateObj.getTime() - today.getTime()) / 86400000);
+      const weeksUntilExam = Math.max(1, Math.floor(daysUntilExam / 7));
+
+      // 2. Fetch extracted topics with evidence
+      const { data: extractedTopics } = await supabaseAdmin
+        .from("planner_extracted_topics")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("upload_id", lastUploadId)
+        .eq("validation_status", "extracted");
 
       const [revisoesRes, errorsRes, profileRes, fsrsRes] = await Promise.all([
         supabaseAdmin.from("revisoes")
@@ -75,7 +102,8 @@ Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, wa
           .limit(50)
       ]);
 
-      await supabaseAdmin.from("study_plans").update({ current_step: "Processando edital e mapeando temas...", progress: 25 }).eq("id", plan.id);
+      await supabaseAdmin.from("study_plans").update({ current_step: "Processando evidências e mapeando temas...", progress: 25 }).eq("id", plan.id);
+
 
       
       const systemPrompt = `Você é o motor oficial de geração de cronograma do ENAZIZI.
