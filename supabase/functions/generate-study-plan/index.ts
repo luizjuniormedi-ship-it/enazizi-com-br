@@ -72,13 +72,14 @@ Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, wa
       const daysUntilExam = Math.ceil((examDateObj.getTime() - today.getTime()) / 86400000);
       const weeksUntilExam = Math.max(1, Math.floor(daysUntilExam / 7));
 
-      // 2. Fetch extracted topics with evidence
+      // 2. Fetch extracted topics with evidence (Strictly from the linked upload)
       const { data: extractedTopics } = await supabaseAdmin
         .from("planner_extracted_topics")
         .select("*")
         .eq("user_id", user.id)
         .eq("upload_id", lastUploadId)
-        .eq("validation_status", "extracted");
+        .eq("validation_status", "extracted")
+        .not("raw_excerpt", "is", null);
 
       const [revisoesRes, errorsRes, profileRes, fsrsRes] = await Promise.all([
         supabaseAdmin.from("revisoes")
@@ -351,7 +352,7 @@ Sempre:
       const topicMap = planJson.topicMap || [];
       if (topicMap.length > 0) {
         const itemsToInsert = topicMap.map((t: any, idx: number) => {
-          // Find original evidence if available
+          // Find original evidence if available - Anti-hallucination check
           const evidence = extractedTopics?.find(et => et.topic === t.topic);
           
           return {
@@ -363,17 +364,25 @@ Sempre:
             priority_score: t.priority_score || 50,
             difficulty: t.difficulty || 'medio',
             source: evidence ? 'extracted' : 'incidencia',
-            source_page: evidence?.source_page,
-            source_chunk_id: evidence?.id, // Correct ID from database
-            raw_excerpt: evidence?.raw_excerpt,
+            source_page: evidence?.source_page || null,
+            source_chunk_id: evidence?.source_chunk_id || null, 
+            raw_excerpt: evidence?.raw_excerpt || null,
             week_number: Math.floor(idx / 5) + 1,
             status: 'pending'
           };
         });
 
+        // Filter items that must have evidence if strictMode is on (implicit policy)
+        const filteredItems = itemsToInsert.filter(item => {
+          if (extractedTopics && extractedTopics.length > 0) {
+             return item.source === 'extracted';
+          }
+          return true; // Fallback to incidence only if no PDF was provided
+        });
+
         // Insert in small batches to avoid limits
-        for (let i = 0; i < itemsToInsert.length; i += 20) {
-          const { error: itemsErr } = await supabaseAdmin.from("study_plan_items").insert(itemsToInsert.slice(i, i + 20));
+        for (let i = 0; i < filteredItems.length; i += 20) {
+          const { error: itemsErr } = await supabaseAdmin.from("study_plan_items").insert(filteredItems.slice(i, i + 20));
           if (itemsErr) logger.error("ITEMS_INSERT_FAIL", itemsErr.message);
         }
       }

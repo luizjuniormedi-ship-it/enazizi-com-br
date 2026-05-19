@@ -224,31 +224,41 @@ async function processInBackground(
             {
               role: "system",
               content: `Você é o motor oficial de extração de tópicos do ENAZIZI.
-              Extraia EXCLUSIVAMENTE tópicos de estudo.
+              Extraia EXCLUSIVAMENTE tópicos de estudo que aparecem LITERALMENTE no texto fornecido.
+              
+              REGRAS CRÍTICAS:
+              1. NÃO INVENTE temas que não estão no texto.
+              2. Capture o 'raw_excerpt' exato do texto que justifica a existência do tópico.
+              3. Identifique a disciplina médica correta (Cardiologia, Pediatria, etc).
+              4. Atribua um 'confidence' de 0 a 1 baseado na clareza do tópico no texto.
+              
               Retorne JSON: {"is_medicine": true, "topics": [{"tema": "...", "especialidade": "...", "subtopico": "...", "raw_excerpt": "...", "page": number, "confidence": 0-1}]}`
             },
-            { role: "user", content: `Extraia tópicos (Parte ${i+1}):\n\n${textChunks[i].text}` }
+            { role: "user", content: `Extraia tópicos do material médico (Parte ${i+1}):\n\n${textChunks[i].text}` }
           ],
           timeoutMs: 45000,
         });
 
         if (chunkResponse.ok) {
-          const parsed = parseAiJson((await chunkResponse.json()).choices?.[0]?.message?.content || "{}");
+          const rawContent = (await chunkResponse.json()).choices?.[0]?.message?.content || "{}";
+          const parsed = parseAiJson(rawContent);
+          
           if (parsed.topics && parsed.topics.length > 0) {
             const topicsToInsert = parsed.topics.map((t: any) => sanitizeForPostgres({
               user_id: userId,
               upload_id: uploadId,
-              discipline: t.especialidade,
+              discipline: t.especialidade || t.discipline || "Geral",
               topic: t.tema,
               subtopic: t.subtopico,
               source_page: t.page || textChunks[i].pageStart,
               source_chunk_id: chunkId,
-              raw_excerpt: t.raw_excerpt,
+              raw_excerpt: t.raw_excerpt || "Excerto não capturado pela IA",
               confidence_score: t.confidence || 0.8,
               validation_status: 'extracted'
             }));
             
-            await supabaseAdmin.from("planner_extracted_topics").insert(topicsToInsert);
+            const { error: insertErr } = await supabaseAdmin.from("planner_extracted_topics").insert(topicsToInsert);
+            if (insertErr) console.error("[PROCESS_UPLOAD] Error inserting topics:", insertErr);
             allExtractedTopics.push(...parsed.topics);
           }
           await supabaseAdmin.from("planner_pdf_chunks").update({ status: "completed" }).eq("id", chunkId);
