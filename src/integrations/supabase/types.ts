@@ -16359,6 +16359,7 @@ export type Database = {
       planner_extracted_topics: {
         Row: {
           confidence_score: number | null
+          coverage_stats: Json | null
           created_at: string | null
           discipline: string | null
           id: string
@@ -16368,12 +16369,14 @@ export type Database = {
           study_plan_id: string | null
           subtopic: string | null
           topic: string | null
+          topics_json: Json | null
           updated_at: string | null
           user_id: string
           validation_status: string | null
         }
         Insert: {
           confidence_score?: number | null
+          coverage_stats?: Json | null
           created_at?: string | null
           discipline?: string | null
           id?: string
@@ -16383,12 +16386,14 @@ export type Database = {
           study_plan_id?: string | null
           subtopic?: string | null
           topic?: string | null
+          topics_json?: Json | null
           updated_at?: string | null
           user_id: string
           validation_status?: string | null
         }
         Update: {
           confidence_score?: number | null
+          coverage_stats?: Json | null
           created_at?: string | null
           discipline?: string | null
           id?: string
@@ -16398,6 +16403,7 @@ export type Database = {
           study_plan_id?: string | null
           subtopic?: string | null
           topic?: string | null
+          topics_json?: Json | null
           updated_at?: string | null
           user_id?: string
           validation_status?: string | null
