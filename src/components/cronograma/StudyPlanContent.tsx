@@ -574,7 +574,28 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
             Novo Plano
           </Button>
         </div>
-      </div>
+            </div>
+
+            {showDateConflict && detectedExamDate && (
+              <div className="md:col-span-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-3">
+                <div className="flex items-center gap-2 text-amber-500">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm font-bold uppercase tracking-tight">Conflito de Datas Detectado</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Encontramos a data <strong>{format(detectedExamDate, "dd/MM/yyyy")}</strong> no edital, mas você informou <strong>{examDate ? format(examDate, "dd/MM/yyyy") : ""}</strong>. Qual deseja usar?
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-8 text-[10px] uppercase font-black" onClick={() => { setExamDate(detectedExamDate); setShowDateConflict(false); }}>
+                    Usar do Edital
+                  </Button>
+                  <Button size="sm" variant="secondary" className="h-8 text-[10px] uppercase font-black" onClick={() => setShowDateConflict(false)}>
+                    Manter a Minha
+                  </Button>
+                </div>
+              </div>
+            )}
+
 
       {showConfig && (
         <div className="glass-card p-6 space-y-5">
