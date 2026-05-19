@@ -298,6 +298,65 @@ const AgentMessageItem = memo(
             </div>
           )}
         </div>
+
+        {/* Telemetria Realtime Expandida */}
+        <Dialog open={state.status !== 'idle'} onOpenChange={(open) => !open && resetState()}>
+          <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 animate-pulse" />
+            {!isAdmin ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-amber-500">
+                    <Sparkles className="h-5 w-5" />
+                    Geração da aula
+                  </DialogTitle>
+                  <DialogDescription className="text-slate-400 text-xs">
+                    {state.status === 'failed'
+                      ? humanizeCMEMessage(state.error)
+                      : (FRIENDLY_STATUS_LABEL[state.status === 'ready' ? 'ready' : 'processing'])}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span className="truncate pr-2">{friendlyStageLabel(state.progress)}</span>
+                      <span className="tabular-nums text-amber-500">{state.progress}%</span>
+                    </div>
+                    <Progress value={state.progress} className="h-1.5 bg-white/5" />
+                  </div>
+                </div>
+                <DialogFooter className="flex sm:justify-end gap-2 items-center">
+                  <Button variant="ghost" onClick={resetState} className="text-xs h-8">
+                    Fechar
+                  </Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-amber-500">
+                    <Sparkles className="h-5 w-5" />
+                    CME Cinematic Factory Enterprise
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-5">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                      <span>STAGE: {state.message || state.status}</span>
+                      <span className="text-amber-500">{state.progress}%</span>
+                    </div>
+                    <Progress value={state.progress} className="h-1 bg-white/10" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={resetState} className="text-xs h-8">
+                    Close Admin Console
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
