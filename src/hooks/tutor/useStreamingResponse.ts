@@ -2,6 +2,7 @@ import { useRef, useCallback } from "react";
 import type { Msg } from "@/components/tutor/TutorConstants";
 import { supabase } from "@/integrations/supabase/client";
 import { emitShadowEvent } from "@/lib/shadowAdaptive";
+import { auditTutorResponse } from "@/utils/pedagogicalAudit";
 
 interface StreamOptions {
   url: string;
