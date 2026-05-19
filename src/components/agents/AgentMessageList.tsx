@@ -70,6 +70,8 @@ const AgentMessageList = memo(
             onLink={onLink}
             onRegenerateFromMemory={onRegenerateFromMemory}
             onIncrementalAction={onIncrementalAction}
+            isPedagogicalSession={isPedagogicalSession}
+            isLastAssistantMessage={i === messages.length - 1}
             conversationId={conversationId}
             topic={topic || undefined}
             subtopic={subtopic || undefined}
