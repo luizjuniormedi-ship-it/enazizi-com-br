@@ -255,7 +255,18 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
             
             if (updated?.extracted_text || updated?.status === "processed" || updated?.status === "completed") {
               setEditalText(updated.extracted_text || "");
+              const detected = (updated?.extracted_json as any)?.detected_exam_date;
+              if (detected) {
+                const detectedDate = new Date(detected);
+                setDetectedExamDate(detectedDate);
+                if (examDate && format(examDate, "yyyy-MM-dd") !== detected) {
+                  setShowDateConflict(true);
+                } else if (!examDate) {
+                  setExamDate(detectedDate);
+                }
+              }
               toast({ title: "Edital processado!", description: `Conteúdo extraído de ${file.name}.` });
+
               setProcessingEdital(false);
               clearInterval(pollInterval);
             } else if (updated?.status === "error" || attempts >= maxAttempts) {
