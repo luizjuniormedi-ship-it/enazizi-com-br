@@ -66,11 +66,12 @@ export function UnifiedMissionHero({
       const { data: { session } } = await supabase.auth.getSession();
       
       // Telemetry: start
-      if (session?.user) {
-        supabase.functions.invoke("unified-telemetry", {
-          body: { userId: session.user.id, eventType: "daily_mission_generate_clicked", module: "dashboard" }
-        }).then();
-      }
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track('session_progress', { 
+          action: 'daily_mission_generate_clicked', 
+          module: "dashboard" 
+        });
+      });
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
         method: "POST",
