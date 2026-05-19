@@ -9,7 +9,7 @@ import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "
 Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil, supabaseAdmin }) => {
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
-  const { messages, conversationId, jsonResponse } = body;
+  const { messages, conversationId, jsonResponse, pedagogicalContext } = body;
 
   // ── INJECTION GUARD ──────────────────────────────────────────────
   const lastUserMessage = [...(messages || [])].reverse().find((m: any) => m.role === "user")?.content || "";
@@ -22,9 +22,33 @@ Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil,
   }
   // ── END INJECTION GUARD ──────────────────────────────────────────
 
+  // ── PEDAGOGICAL INCREMENTAL GENERATION ────────────────────────────
+  let systemPrompt = ENAZIZI_PROMPT;
+  if (pedagogicalContext) {
+    const { currentBlock, tutorMode, cognitiveState, topic } = pedagogicalContext;
+    systemPrompt += `\n\n
+==================================================
+🚀 MODO DE PRECEPTORIA INCREMENTAL ATIVO
+==================================================
+IMPORTANTE:
+- Você deve gerar SOMENTE o BLOCO solicitado agora.
+- NÃO avance para blocos futuros.
+- NÃO faça resumos finais antecipados.
+- Sua resposta deve ser focada exclusivamente no objetivo pedagógico do bloco atual.
+
+ESTADO DA SESSÃO:
+- Tema: ${topic}
+- Bloco atual: ${currentBlock}
+- Modo: ${tutorMode}
+- Estado Cognitivo: ${cognitiveState}
+
+INSTRUÇÃO: Gere o conteúdo para o BLOCO ${currentBlock}. Se o modo for 'recovery', use analogias ultra-didáticas. Se for 'mastery', aumente o desafio clínico.
+==================================================`;
+  }
+
   const aiResponse = await callAi({
     model: ALLOWED_MODELS.generation,
-    messages: [{ role: "system", content: ENAZIZI_PROMPT }, ...messages],
+    messages: [{ role: "system", content: systemPrompt }, ...messages],
     stream: !jsonResponse,
     max_tokens: 4000,
   }, logger, supabaseAdmin);
