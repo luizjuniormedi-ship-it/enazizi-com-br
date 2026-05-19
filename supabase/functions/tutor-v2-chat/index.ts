@@ -496,7 +496,7 @@ serve(async (req) => {
     if (!auth.ok) return auth.response;
     const { userId } = auth;
 
-    const { sessionId, message } = await req.json();
+    const { sessionId, message, pedagogicalInteraction } = await req.json();
     if (!sessionId || !message || typeof message !== "string") {
       return new Response(JSON.stringify({ ok: false, error: "INVALID_REQUEST", message: "Sessão e mensagem são obrigatórias.", requestId }), {
         status: 400,
