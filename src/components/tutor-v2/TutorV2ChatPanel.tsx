@@ -80,7 +80,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       await addMessage(user.id, "user", text);
 
       // Call AI
-      const response = await TutorV2Service.sendMessage(session.id, text);
+      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
 
       if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
       if (response?.fallback) {
