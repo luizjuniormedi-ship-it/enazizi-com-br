@@ -10476,6 +10476,36 @@ export type Database = {
         }
         Relationships: []
       }
+      engine_governance_logs: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          engine_name: string
+          event_type: string
+          id: string
+          resolved: boolean | null
+          severity: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          engine_name: string
+          event_type: string
+          id?: string
+          resolved?: boolean | null
+          severity?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          engine_name?: string
+          event_type?: string
+          id?: string
+          resolved?: boolean | null
+          severity?: string | null
+        }
+        Relationships: []
+      }
       error_bank: {
         Row: {
           categoria_erro: string | null
@@ -15676,6 +15706,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pedagogical_health_indices: {
+        Row: {
+          cognitive_load: number | null
+          consistency_score: number | null
+          created_at: string | null
+          fatigue_index: number | null
+          health_score: number | null
+          id: string
+          metadata: Json | null
+          retention_factor: number | null
+          risk_of_abandonment: number | null
+          user_id: string
+        }
+        Insert: {
+          cognitive_load?: number | null
+          consistency_score?: number | null
+          created_at?: string | null
+          fatigue_index?: number | null
+          health_score?: number | null
+          id?: string
+          metadata?: Json | null
+          retention_factor?: number | null
+          risk_of_abandonment?: number | null
+          user_id: string
+        }
+        Update: {
+          cognitive_load?: number | null
+          consistency_score?: number | null
+          created_at?: string | null
+          fatigue_index?: number | null
+          health_score?: number | null
+          id?: string
+          metadata?: Json | null
+          retention_factor?: number | null
+          risk_of_abandonment?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pedagogical_insights: {
         Row: {
           error_rate: number | null
@@ -15706,6 +15775,42 @@ export type Database = {
           retention_score?: number | null
           topic_id?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      pedagogical_memory_layer: {
+        Row: {
+          difficulty_tolerance: number | null
+          error_patterns: string[] | null
+          id: string
+          longitudinal_data: Json | null
+          optimal_study_hours: number[] | null
+          preferred_teaching_style: string | null
+          session_stamina_minutes: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          difficulty_tolerance?: number | null
+          error_patterns?: string[] | null
+          id?: string
+          longitudinal_data?: Json | null
+          optimal_study_hours?: number[] | null
+          preferred_teaching_style?: string | null
+          session_stamina_minutes?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          difficulty_tolerance?: number | null
+          error_patterns?: string[] | null
+          id?: string
+          longitudinal_data?: Json | null
+          optimal_study_hours?: number[] | null
+          preferred_teaching_style?: string | null
+          session_stamina_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -17501,6 +17606,42 @@ export type Database = {
           summary_json?: Json | null
           total_tests?: number
           warning_tests?: number
+        }
+        Relationships: []
+      }
+      quality_lock_validations: {
+        Row: {
+          audit_notes: string | null
+          auditor_model: string | null
+          coherence_score: number | null
+          content_id: string
+          content_type: string
+          created_at: string | null
+          hallucination_check: boolean | null
+          id: string
+          valid_pedagogical_depth: boolean | null
+        }
+        Insert: {
+          audit_notes?: string | null
+          auditor_model?: string | null
+          coherence_score?: number | null
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          hallucination_check?: boolean | null
+          id?: string
+          valid_pedagogical_depth?: boolean | null
+        }
+        Update: {
+          audit_notes?: string | null
+          auditor_model?: string | null
+          coherence_score?: number | null
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          hallucination_check?: boolean | null
+          id?: string
+          valid_pedagogical_depth?: boolean | null
         }
         Relationships: []
       }
