@@ -93,6 +93,8 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [daysPerWeek, setDaysPerWeek] = useState("5");
   const [editalText, setEditalText] = useState("");
   const [editalFileName, setEditalFileName] = useState("");
+  const [detectedExamDate, setDetectedExamDate] = useState<Date | null>(null);
+  const [showDateConflict, setShowDateConflict] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [planId, setPlanId] = useState<string | null>(null);
@@ -101,6 +103,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [subjects, setSubjects] = useState<string[]>([]);
   const [topicMap, setTopicMap] = useState<TopicMapItem[]>([]);
   const [detectedSpecialty, setDetectedSpecialty] = useState("");
+
   const [tips, setTips] = useState("");
   const [strictMode, setStrictMode] = useState(true);
   const [generating, setGenerating] = useState(false);
