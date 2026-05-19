@@ -121,54 +121,61 @@ async function generateBatch(
   includePreviousErrors?: boolean
 ): Promise<SimQuestion[]> {
   console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard, autoDistribution });
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({
-      stream: false,
-      outputFormat: "json",
-      difficulty,
-      timeoutMs: 120000,
-      messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
-      ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
-      generationContext: { 
-        specialty: topics[0], 
-        topic: topics.join(", "), 
-        subtopic: specificTopic, 
-        objective: "practice", 
-        source: "simulado",
-        topicDistribution: customDistribution || topicWeights,
-        targetExam: examBoard
-      },
-      targetExam: examBoard,
-      jobId,
-      batchNumber,
-      topicWeights: customDistribution || topicWeights,
-      autoDistribution,
-      customDistribution,
-      includeWeakThemes,
-      includePreviousErrors
-    }),
-  });
-  if (!res.ok) throw new Error(`Erro ${res.status}`);
-  const json = await res.json();
-  const content = json.choices?.[0]?.message?.content || "";
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-  if (jsonMatch) return mapQuestions(JSON.parse(jsonMatch[0]), topics);
   
-  // Fallback: check tool_calls if JSON was returned in that format
-  const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
-  if (toolCall?.function?.arguments) {
+  let attempts = 0;
+  const maxAttempts = 3;
+  
+  while (attempts < maxAttempts) {
     try {
-      const tc = JSON.parse(toolCall.function.arguments);
-      const qs = Array.isArray(tc.questions) ? tc.questions : [];
-      if (qs.length > 0) return mapQuestions(qs, topics);
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          stream: false,
+          outputFormat: "json",
+          difficulty,
+          timeoutMs: 120000,
+          messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
+          ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
+          generationContext: { 
+            specialty: topics[0], 
+            topic: topics.join(", "), 
+            subtopic: specificTopic, 
+            objective: "practice", 
+            source: "simulado",
+            topicDistribution: customDistribution || topicWeights,
+            targetExam: examBoard
+          },
+          targetExam: examBoard,
+          jobId,
+          batchNumber,
+          topicWeights: customDistribution || topicWeights,
+          autoDistribution,
+          customDistribution,
+          includeWeakThemes,
+          includePreviousErrors
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const json = await res.json();
+      const content = json.choices?.[0]?.message?.content || "";
+      const questions = parseQuestionsFromText(content);
+      
+      if (questions.length > 0) return mapQuestions(questions, topics);
+      
+      attempts++;
+      console.warn(`[SIMULADO_GEN] Batch empty, attempt ${attempts}/${maxAttempts}`);
     } catch (e) {
-      console.error("Error parsing tool_calls fallback:", e);
+      attempts++;
+      console.error(`[SIMULADO_GEN] Batch failed, attempt ${attempts}/${maxAttempts}:`, e);
+      if (attempts >= maxAttempts) throw e;
+      await new Promise(r => setTimeout(r, 2000 * attempts));
     }
   }
   
