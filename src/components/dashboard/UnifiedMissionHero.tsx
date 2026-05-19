@@ -171,8 +171,10 @@ export function UnifiedMissionHero({
                 onClick={async () => {
                   const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
                   const { supabase } = await import("@/integrations/supabase/client");
+                  const { telemetry } = await import("@/lib/pedagogicalTelemetry");
                   const { data: { user } } = await supabase.auth.getUser();
                   if (user) {
+                    telemetry.track('sidebar_navigation_clicked', { target: primaryHref, label: 'Continuar missão' });
                     await getOrchestratorDecision(user.id, "dashboard-hero-primary", {
                       topic: recommendationTopic,
                       type: recommendationType,
