@@ -121,6 +121,7 @@ export default function PlannerLongitudinalView({ planId }: { planId: string | n
                         </Badge>
                       </div>
                       <div className="text-[9px] text-muted-foreground mt-0.5">
+                        {item.subtopic && <span className="mr-2 text-white/60">{item.subtopic} •</span>}
                         {item.estimated_minutes} min • Prioridade: {item.priority_score}
                       </div>
                     </div>
