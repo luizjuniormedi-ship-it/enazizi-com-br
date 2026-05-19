@@ -52,6 +52,7 @@ function blockToStep(type: TutorBlockType | string): Step | null {
 interface Props {
   blockTypes: Array<TutorBlockType | string>;
   className?: string;
+  activeIdx?: number;
 }
 
 /**
@@ -59,59 +60,84 @@ interface Props {
  * Mostra a progressão pedagógica (Ensinar → Raciocinar → Aplicar → Testar → Corrigir → Reforçar)
  * destacando os estágios já cobertos pelos blocos atuais da resposta.
  */
-export function TutorBlockTimeline({ blockTypes, className }: Props) {
+export function TutorBlockTimeline({ blockTypes, className, activeIdx = 99 }: Props) {
   const reached = new Set<Step>();
-  blockTypes.forEach((t) => {
+  blockTypes.forEach((t, i) => {
     const s = blockToStep(t);
-    if (s) reached.add(s);
+    // Only show as reached if it's within the unlocked index
+    if (s && i <= activeIdx) reached.add(s);
   });
 
-  if (reached.size === 0) return null;
+  const currentStep = blockToStep(blockTypes[activeIdx]);
+
+  if (blockTypes.length === 0) return null;
 
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/40 bg-background/40 p-2.5 backdrop-blur-sm",
+        "rounded-2xl border border-white/10 bg-black/40 p-3 backdrop-blur-xl shadow-2xl",
         className,
       )}
       aria-label="Progressão cognitiva da resposta"
     >
-      <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        Progressão cognitiva
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+          Arquitetura Cognitiva
+        </div>
+        <div className="flex gap-1">
+          {blockTypes.map((_, i) => (
+            <div 
+              key={i} 
+              className={cn(
+                "h-1 w-4 rounded-full transition-all duration-500",
+                i <= activeIdx ? "bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "bg-white/10"
+              )} 
+            />
+          ))}
+        </div>
       </div>
+      
       <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <AnimatePresence>
-
-        {ORDER.map((step, idx) => {
-          const active = reached.has(step);
-          const meta = STEP_META[step];
-          return (
-            <div key={step} className="flex shrink-0 items-center gap-1">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                className={cn(
-                  "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-all",
-                  active
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border/40 bg-muted/30 text-muted-foreground/60",
-                )}
-              >
-                {meta.icon}
-                <span className="font-medium">{meta.label}</span>
-              </motion.div>
-              {idx < ORDER.length - 1 && (
-                <div
+          {ORDER.map((step, idx) => {
+            const isReached = reached.has(step);
+            const isCurrent = currentStep === step;
+            const meta = STEP_META[step];
+            
+            return (
+              <div key={step} className="flex shrink-0 items-center gap-1">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ 
+                    opacity: 1, 
+                    scale: isCurrent ? 1.05 : 1,
+                    filter: isReached || isCurrent ? "blur(0px)" : "blur(1px)"
+                  }}
                   className={cn(
-                    "h-px w-2 sm:w-3",
-                    active && reached.has(ORDER[idx + 1]) ? "bg-primary/40" : "bg-border/40",
+                    "flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[10px] font-bold transition-all duration-500",
+                    isReached
+                      ? "border-primary/40 bg-primary/20 text-primary shadow-lg shadow-primary/10"
+                      : isCurrent
+                        ? "border-primary bg-primary/10 text-primary animate-pulse"
+                        : "border-white/5 bg-white/5 text-white/20",
                   )}
-                />
-              )}
-            </div>
-          );
-        })}
+                >
+                  <span className={cn("transition-transform duration-500", isCurrent && "scale-110")}>
+                    {meta.icon}
+                  </span>
+                  <span className="tracking-tight">{meta.label}</span>
+                </motion.div>
+                {idx < ORDER.length - 1 && (
+                  <div
+                    className={cn(
+                      "h-px w-2 sm:w-4 transition-all duration-700",
+                      isReached ? "bg-primary/40" : "bg-white/5",
+                    )}
+                  />
+                )}
+              </div>
+            );
+          })}
         </AnimatePresence>
       </div>
     </div>

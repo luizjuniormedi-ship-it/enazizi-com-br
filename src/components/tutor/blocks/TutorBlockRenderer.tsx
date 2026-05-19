@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import { SummaryBlock } from "./SummaryBlock";
 import { DeepDiveBlock } from "./DeepDiveBlock";
 import { MiniQuizBlock } from "./MiniQuizBlock";
@@ -54,7 +55,7 @@ export function TutorBlockRenderer({
   onActionClick,
 }: Props) {
   const sync = useTutorAdaptiveSync();
-  const [visibleCount, setVisibleCount] = useState(0);
+  const [unlockedCount, setUnlockedCount] = useState(1);
 
   // ── Fase 3: validação Zod + sanitização ──────────────────────────────────
   const { safeBlocks, rejected } = useMemo(() => {
@@ -70,17 +71,9 @@ export function TutorBlockRenderer({
     return { safeBlocks: sorted, rejected: v.rejected };
   }, [blocks]);
 
-  // Efeito de Streaming Cognitivo: revela blocos progressivamente
+  // Reset unlockedCount when blocks change (new message)
   useEffect(() => {
-    if (safeBlocks.length > 0) {
-      setVisibleCount(0);
-      const timers = safeBlocks.map((_, idx) => 
-        setTimeout(() => {
-          setVisibleCount(prev => prev + 1);
-        }, idx * 600) // 600ms entre cada bloco pedagógico
-      );
-      return () => timers.forEach(t => clearTimeout(t));
-    }
+    setUnlockedCount(1);
   }, [safeBlocks.length]);
 
   // Telemetria: log silencioso de blocos rejeitados (apenas dev/console).
@@ -119,23 +112,26 @@ export function TutorBlockRenderer({
   }
 
   return (
-    <div className="space-y-4">
-      <TutorBlockTimeline blockTypes={safeBlocks.map((b) => b.type)} />
+    <div className="space-y-6">
+      <TutorBlockTimeline 
+        blockTypes={safeBlocks.map((b) => b.type)} 
+        activeIdx={unlockedCount - 1}
+      />
       
-      <div className="space-y-4">
+      <div className="space-y-8">
         <AnimatePresence>
           {safeBlocks.map((block, i) => {
-            if (i >= visibleCount) return null;
+            if (i >= unlockedCount) return null;
 
             return (
               <motion.div
                 key={`${block.type}-${i}`}
                 initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
                 className={cn(
-                  "relative",
-                  i === visibleCount - 1 && i < safeBlocks.length - 1 && "after:absolute after:inset-x-0 after:-bottom-4 after:h-4 after:bg-gradient-to-b after:from-primary/5 after:to-transparent"
+                  "relative p-1 rounded-3xl transition-all duration-500",
+                  i === unlockedCount - 1 && "ring-1 ring-primary/20 bg-primary/5 shadow-2xl shadow-primary/5"
                 )}
               >
                 {(() => {
@@ -168,6 +164,10 @@ export function TutorBlockRenderer({
                               block_type: "mini_quiz",
                             });
                             onQuizAnswered?.({ ...p, block });
+                            // Auto-unlock next block on quiz answer if it's the current one
+                            if (i === unlockedCount - 1 && unlockedCount < safeBlocks.length) {
+                              setTimeout(() => setUnlockedCount(prev => prev + 1), 1000);
+                            }
                           }}
                         />
                       );
@@ -191,6 +191,24 @@ export function TutorBlockRenderer({
                       return null;
                   }
                 })()}
+
+                {/* Gate Button */}
+                {i === unlockedCount - 1 && unlockedCount < safeBlocks.length && block.type !== "mini_quiz" && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-6 flex justify-center"
+                  >
+                    <button
+                      onClick={() => setUnlockedCount(prev => prev + 1)}
+                      className="group relative flex items-center gap-3 px-8 py-4 rounded-2xl bg-primary text-white font-bold text-sm tracking-tight hover:scale-105 transition-all shadow-xl shadow-primary/20 active:scale-95"
+                    >
+                      <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span>Entendi o conceito, avançar</span>
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </motion.div>
+                )}
               </motion.div>
             );
           })}
