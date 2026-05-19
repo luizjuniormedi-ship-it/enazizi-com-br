@@ -4,10 +4,8 @@ import { requireAuth } from "../_shared/require-auth.ts";
 import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { calculatePremiumPriority, calculateExamProximityScore, calculateFsrsRiskScore } from "../_shared/study-prioritization.ts";
 
-
 Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, supabaseAdmin, ai }) => {
   const { user } = await requireAuth(req);
-  const body = await req.json().catch(() => ({}));
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric", month: "2-digit", day: "2-digit",
@@ -15,8 +13,8 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
 
   logger.info("DAILY_PLAN_START", "Starting Adaptive Coordinator", { userId: user.id });
 
-  // 1. Fetch current status (reviews, errors, profile, progress, scores)
-  const [revisoesRes, errorsRes, profileRes, studyPlanRes, approvalRes, fsrsRes] = await Promise.all([
+  // 1. Fetch current status (reviews, errors, profile, progress, scores, health, memory)
+  const [revisoesRes, errorsRes, profileRes, studyPlanRes, approvalRes, fsrsRes, healthRes, memoryRes] = await Promise.all([
     supabaseAdmin.from("revisoes")
       .select("id, tema_id, data_revisao, prioridade, estabilidade, dificuldade")
       .eq("user_id", user.id)
@@ -69,24 +67,19 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
 
   // Calculate real days until exam
   const examDate = profileData?.exam_date ? new Date(profileData.exam_date) : null;
-  const daysUntilExam = examDate 
+  const daysUntilExamVal = examDate 
     ? Math.max(0, Math.ceil((examDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : 90;
 
-
-
-  const dailyHours = profileRes.data?.daily_study_hours || 4;
-  
-  // 2. Pre-calculate Prioritization Variables
-  const daysUntilExam = profileRes.data?.target_exams?.[0] ? 60 : 90; // Placeholder until we have specific target dates per exam
-  const proximityScore = calculateExamProximityScore(daysUntilExam);
+  const dailyHours = profileData?.daily_study_hours || 4;
+  const proximityScore = calculateExamProximityScore(daysUntilExamVal);
 
   // 3. Build context for AI with calculated priorities
   const context = {
     pendingReviews: (revisoesRes.data || []).map(r => ({
       ...r,
       master_priority: calculatePremiumPriority({
-        errorRate: 0.2, // Need to fetch from performance_metrics if available
+        errorRate: 0.2, 
         fallProbability: 0.5,
         fsrsRisk: calculateFsrsRiskScore(r.estabilidade),
         examProximity: proximityScore,
@@ -98,103 +91,56 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
       master_priority: calculatePremiumPriority({
         errorRate: Math.min(1, (e.vezes_errado || 1) / 5),
         fallProbability: 0.7,
-        fsrsRisk: 0.8, // High risk if actively making errors
+        fsrsRisk: 0.8, 
         examProximity: proximityScore,
         currentMastery: 0.1
       })
     })),
     dailyHours,
-    targetExams: profileRes.data?.target_exams || [],
-    studentLevel: profileRes.data?.level || "beginner",
+    targetExams: profileData?.target_exams || [],
+    studentLevel: profileData?.level || "beginner",
     macroPlan: studyPlanRes.data?.plan_json || null,
     currentScore: approvalRes.data || { score: 0, phase: "base" },
-    fsrsStability: fsrsRes.data?.length ? (fsrsRes.data.reduce((acc, c) => acc + (c.stability || 0), 0) / fsrsRes.data.length) : 0,
+    fsrsStability: fsrsRes.data?.length ? (fsrsRes.data.reduce((acc: number, c: any) => acc + (c.stability || 0), 0) / fsrsRes.data.length) : 0,
     proximityScore,
     pedagogicalHealth: healthData || { health_score: 100 },
     learningMemory: memoryData || {},
-    isPreExamMode: daysUntilExam < 15,
-    daysUntilExam,
+    isPreExamMode: daysUntilExamVal < 15,
+    daysUntilExam: daysUntilExamVal,
     today
   };
 
-
-
-
   const systemPrompt = `Você é o Planner Inteligente do ENAZIZI (Coordenador Adaptativo).
-
 Sua missão é adaptar diariamente o estudo do aluno usando desempenho real, FSRS, Banco de Erros, simulados e telemetria cognitiva.
 
-Você NÃO cria apenas tarefas. Você toma decisões pedagógicas adaptativas em tempo real.
+LÓGICA DE PRIORIZAÇÃO E ADAPTAÇÃO:
+1. PRIORIDADE = (TaxaErro * 3) + (ProbabilidadeCair * 3) + (RiscoFSRS * 2) + (ProximidadeProva * 2) - (Domínio * 2)
+2. Se PedagogicalHealth < 70: REDUZA a carga horária em 30%. Aumente blocos de recuperação.
+3. Se fatigue_index > 80: Substitua blocos teóricos longos por Micro-revisões ou Tutor IA focado.
+4. Modo Pré-Prova (daysUntilExam < 15): FOCO TOTAL em Simulados e Revisão Rápida de Erros. Reduza teoria inédita.
+5. Use learningMemory para sugerir o melhor horário para cada bloco.
 
-────────────────────────────
-1. OBJETIVO
-────────────────────────────
+MISSÃO DO DIA (ESTRUTURA):
+Gere um JSON com "tasks" contendo: Aquecimento, Teoria/Tutor, Questões, FSRS, Erros, Flashcards, Simulado e Resumo.
 
-Decidir: o que estudar hoje, o que revisar, o que recuperar, o que priorizar.
-Atuar como um coordenador pedagógico de alta performance.
-
-────────────────────────────
-2. LÓGICA DE PRIORIZAÇÃO (OBRIGATÓRIA)
-────────────────────────────
-
-Você DEVE calcular a prioridade de cada tema usando a seguinte fórmula mental:
-PRIORIDADE = (TaxaErro × 3) + (ProbabilidadeDeCair × 3) + (RiscoFSRS × 2) + (ProximidadeDaProva × 2) - (DomínioAtual × 2)
-
-────────────────────────────
-3. MISSÃO DO DIA (ESTRUTURA)
-────────────────────────────
-
-Monte a sequência ideal para hoje:
-1. Aquecimento Rápido (Mental/Foco);
-2. Aula principal (Teoria) ou Tutor IA;
-3. Questões guiadas com correção focada;
-4. Revisões FSRS (Espaçada);
-5. Recuperação de erros (Banco de Erros);
-6. Flashcards (Memorização);
-7. Mini simulado (Validação);
-8. Resumo final e performance.
-
-────────────────────────────
-4. SAÍDA ESPERADA (JSON)
-────────────────────────────
-
+SAÍDA ESPERADA (JSON):
 {
   "tasks": [
     {
       "type": "tutor_lesson|question_practice|fsrs_review|error_recovery|flashcards|mini_simulado|summary",
-      "title": "Título curto e direto",
-      "topic": "Tópico clínico exato",
-      "subject": "Especialidade/Disciplina",
+      "title": "...",
+      "topic": "...",
+      "subject": "...",
       "priority": 0-100,
       "estimated_minutes": 0,
-      "rationale": "Justificativa pedagógica baseada no desempenho",
-      "objectives": ["...", "..."]
+      "rationale": "...",
+      "objectives": ["..."]
     }
   ],
-  "daily_focus": "Tema principal do dia",
-  "ai_coach_tip": "Dica de performance",
-  "expected_outcome": "O que o aluno deve dominar ao fim do dia"
-}
-`;
-
-
-
-────────────────────────────
-6. REGRAS CRÍTICAS
-────────────────────────────
-
-Nunca:
-- ignorar revisão vencida;
-- ignorar erro recorrente;
-- gerar sobrecarga;
-- criar tarefas genéricas;
-- repetir conteúdo sem motivo.
-
-Sempre:
-- priorizar retenção;
-- otimizar aprovação;
-- adaptar dificuldade;
-- explicar decisões.`;
+  "daily_focus": "...",
+  "ai_coach_tip": "...",
+  "expected_outcome": "..."
+}`;
 
   const aiResponse = await ai({
     taskType: "planner",
@@ -205,11 +151,9 @@ Sempre:
     complexity: "high"
   });
 
-
   const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
   const tasks = planJson.tasks || [];
 
-  // Upsert daily plan
   const { data: finalPlan, error: planErr } = await supabaseAdmin
     .from("daily_plans")
     .upsert({
@@ -218,7 +162,7 @@ Sempre:
       plan_json: { 
         ...planJson,
         generated_at: new Date().toISOString(), 
-        source: "ENAZIZI Adaptive Coordinator v2" 
+        source: "ENAZIZI Adaptive Coordinator v2.1" 
       },
       total_blocks: tasks.length,
       completed_count: 0,
@@ -233,7 +177,6 @@ Sempre:
 
   if (planErr) throw planErr;
 
-  // Bulk insert tasks into operational table
   if (tasks.length > 0) {
     const taskInserts = tasks.map((t: any, idx: number) => ({
       daily_plan_id: finalPlan.id,
@@ -249,24 +192,8 @@ Sempre:
       completed: false
     }));
 
-
-    // Clean existing tasks for today to avoid duplicates on regen
     await supabaseAdmin.from("daily_plan_tasks").delete().eq("daily_plan_id", finalPlan.id);
     await supabaseAdmin.from("daily_plan_tasks").insert(taskInserts);
-  }
-
-
-  // Record governance log
-  try {
-    await supabaseAdmin.from("ai_governance_logs").insert({
-      user_id: user.id,
-      task_type: "daily_plan_generation",
-      model_name: "google/gemini-2.5-flash", // Using standard model for daily
-      payload: { context_summary: "Daily adaptive generation" },
-      response_summary: `Generated ${tasks.length} tasks`
-    });
-  } catch (logErr) {
-    logger.warn("GOVERNANCE_LOG_FAIL", logErr.message);
   }
 
   return new Response(JSON.stringify({ 
