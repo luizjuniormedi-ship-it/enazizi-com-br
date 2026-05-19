@@ -808,7 +808,20 @@ const SmartPlanner = () => {
         </TabsList>
 
 
+        {/* ── ONBOARDING / CONFIG ── */}
+        <TabsContent value="onboarding" className="space-y-4 mt-4">
+          <StudyPlanContent
+            onSyncComplete={async () => { await loadData(); setActiveTab("estrategia"); }}
+            onSubjectsGenerated={async (subjects: string[]) => {
+              if (!user) return;
+              const today2 = new Date().toISOString().split("T")[0];
+              return { temasRegistrados: subjects.length, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
+            }}
+          />
+        </TabsContent>
+
         {/* ── ESTRATÉGIA ── */}
+
         <TabsContent value="estrategia" className="space-y-4 mt-4">
           {/* Strategic Header */}
           <PlannerStrategicHeader
