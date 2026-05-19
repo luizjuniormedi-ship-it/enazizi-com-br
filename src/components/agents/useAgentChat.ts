@@ -405,8 +405,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
         clearTimeout(watchdogTimeout);
 
-        if (convId && assistantSoFar) {
-          await history.persistAssistantMessage(convId, assistantSoFar);
+        const finalContent = result?.content || assistantSoFar;
+        const metrics = result?.metrics;
+
+        if (metrics) {
+          setMessages(prev => prev.map((m, i) => 
+            (i === prev.length - 1 && m.role === "assistant") ? { ...m, metrics } : m
+          ));
+        }
+
+        if (convId && finalContent) {
+          await history.persistAssistantMessage(convId, finalContent);
           history.loadConversations();
         }
 
