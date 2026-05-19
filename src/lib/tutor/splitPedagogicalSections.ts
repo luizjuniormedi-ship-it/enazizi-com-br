@@ -1,30 +1,35 @@
 
 /**
  * Splits a pedagogical message into sections based on the 15-block structure.
+ * Handles both numbered sections and emoji-prefixed sections.
  */
 export function splitPedagogicalSections(markdown: string): string[] {
   if (!markdown) return [];
 
-  // Match headers like "1. 🎯 Missão Clínica" or "1. Missão Clínica"
-  // The regex looks for a number followed by a dot at the start of a line or after a newline.
-  const sectionRegex = /\n?\d+\.\s+[\uD800-\uDBFF\uDC00-\uDFFF\w\s]+:/g;
-  
-  // Actually, the headers in the prompt are like "1. 🎯 Missão Clínica:"
-  // But they might not have the colon.
-  
   const sections: string[] = [];
   
-  // We want to find the positions of the headers
-  const headerPositions: number[] = [];
-  // Regex: line start, number, dot, space, (optional emoji), space, title (anything non-newline)
-  const headerRegex = /(?:^|\n)\d+\.\s+[\uD800-\uDBFF\uDC00-\uDFFF]*\s*[^:\n]{2,50}:?/g;
+  // Regex to find headers: 
+  // 1. Matches "1. 🎯 Title" or "1. Title" or "🔄 Title"
+  // 2. Looks for start of string or newline
+  // 3. Optional number + dot OR specific emojis like 🔄
+  const headerRegex = /(?:^|\n)(?:\d+\.|\uD83D\uDD04|🔄)\s+[\u2000-\u32FF\uD83C-\uD83E\uDC00-\uDFFF]*\s*[^:\n]{2,}/g;
   
+  const headerPositions: number[] = [];
   let match;
-  while ((match = headerRegex.exec(markdown)) !== null) {
+  
+  // Use a copy of the regex to avoid state issues if it were global and reused elsewhere
+  const regex = new RegExp(headerRegex);
+  
+  while ((match = regex.exec(markdown)) !== null) {
     headerPositions.push(match.index);
   }
   
   if (headerPositions.length === 0) {
+    // If no clear headers found, try splitting by double newlines as a fallback
+    // but only if it's long
+    if (markdown.length > 500) {
+      return markdown.split(/\n\n+/).filter(Boolean);
+    }
     return [markdown];
   }
   
@@ -32,7 +37,8 @@ export function splitPedagogicalSections(markdown: string): string[] {
   for (let i = 0; i < headerPositions.length; i++) {
     const start = headerPositions[i];
     const end = i < headerPositions.length - 1 ? headerPositions[i + 1] : markdown.length;
-    sections.push(markdown.slice(start, end).trim());
+    let chunk = markdown.slice(start, end).trim();
+    if (chunk) sections.push(chunk);
   }
   
   // If there's content before the first header, add it as a section
