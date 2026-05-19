@@ -134,7 +134,8 @@ export function useStreamingResponse() {
       const finalText = accumulatorRef.current;
       
       // Layer 4 Quality Lock - Governance Audit
-      const audit = auditTutorResponse(finalText);
+      const isIncremental = !!(body as any)?.pedagogicalContext;
+      const audit = auditTutorResponse(finalText, isIncremental);
       if (!audit.isValid || audit.incidents.length > 0) {
         console.warn("[QualityLock] Pedagogical incidents detected:", audit.incidents);
         // Log incident to DB (Async, don't block UI)

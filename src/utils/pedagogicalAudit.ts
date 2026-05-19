@@ -15,17 +15,22 @@ export interface AuditResult {
   };
 }
 
-export function auditTutorResponse(text: string): AuditResult {
+export function auditTutorResponse(text: string, isIncremental: boolean = false): AuditResult {
   const incidents: string[] = [];
   let score = 100;
 
   // 1. Check for basic block structure (numbered sections or emojis)
-  const blockRegex = /(?:\d+\.\s|🎯|🧬|🚨|📊|🛠️|💊|🔬|🧠|⚠️|🗂️|💡|📝|🔄)/g;
+  const blockRegex = /(?:\d+\.\s|🎯|🧬|🚨|📊|🛠️|💊|🔬|🧠|⚠️|🗂️|💡|📝|🔄|# BLOCO)/g;
   const blocks = text.match(blockRegex) || [];
   
-  if (blocks.length < 5) {
-    incidents.push("Insufficient pedagogical depth (too few blocks)");
+  if (!isIncremental && blocks.length < 5) {
+    incidents.push("Insufficient pedagogical depth (too few blocks in monolithic response)");
     score -= 30;
+  }
+
+  if (isIncremental && blocks.length === 0) {
+    incidents.push("Zero pedagogical markers detected in block");
+    score -= 20;
   }
 
   // 2. Check for "Próximo Passo" (The core of adaptive loops)
