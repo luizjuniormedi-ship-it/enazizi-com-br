@@ -214,8 +214,8 @@ Retorne APENAS um JSON no seguinte formato:
 
       const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
       
-      if (!planJson.weeklySchedule) {
-        throw new Error("Erro na estrutura do Master Planner: weeklySchedule ausente.");
+      if (!planJson.fullSchedule) {
+        throw new Error("Erro na estrutura do Master Planner: fullSchedule ausente.");
       }
 
       // Record governance log
@@ -223,9 +223,9 @@ Retorne APENAS um JSON no seguinte formato:
         await supabaseAdmin.from("ai_governance_logs").insert({
           user_id: user.id,
           task_type: "study_plan_generation",
-          model_name: "google/gemini-2.5-flash", 
+          model_name: "google/gemini-2.0-flash-001", 
           payload: { context: userContext },
-          response_summary: "Master Planner Generated"
+          response_summary: "Longitudinal Master Planner Generated"
         });
       } catch (logErr) {
         logger.warn("GOVERNANCE_LOG_FAIL", logErr.message);
@@ -249,47 +249,44 @@ Retorne APENAS um JSON no seguinte formato:
         source: extractedTopics && extractedTopics.length > 0 ? "pdf_edital" : "manual"
       }).eq("id", plan.id);
 
-      // Populate study_plan_items
-      const topicMap = planJson.topicMap || [];
-      if (topicMap.length > 0) {
-        const itemsToInsert = topicMap.map((t: any, idx: number) => {
-          // Find original evidence if available - Anti-hallucination check
+      // Populate study_plan_items from the full longitudinal schedule
+      const fullSchedule = planJson.fullSchedule || [];
+      const itemsToInsert: any[] = [];
+
+      fullSchedule.forEach((week: any) => {
+        const weekNum = week.week_number;
+        const topics = week.topics || [];
+
+        topics.forEach((t: any) => {
           const evidence = extractedTopics?.find(et => et.topic === t.topic);
-          
-          return {
+          itemsToInsert.push({
             study_plan_id: plan.id,
             user_id: user.id,
             discipline: t.discipline || t.subject || evidence?.discipline || "Geral",
             topic: t.topic,
             subtopic: t.subtopics?.[0] || evidence?.subtopic || null,
             priority_score: t.priority_score || 50,
+            estimated_minutes: t.estimated_minutes || 120,
             difficulty: t.difficulty || 'medio',
             source: evidence ? 'extracted' : 'incidencia',
             source_page: evidence?.source_page || null,
             source_chunk_id: evidence?.source_chunk_id || null, 
             raw_excerpt: evidence?.raw_excerpt || null,
-            week_number: Math.floor(idx / 5) + 1,
+            week_number: weekNum,
             status: 'pending'
-          };
+          });
         });
+      });
 
-        // Filter items that must have evidence if strictMode is on (implicit policy)
-        const filteredItems = itemsToInsert.filter(item => {
-          if (extractedTopics && extractedTopics.length > 0) {
-             return item.source === 'extracted';
-          }
-          return true; // Fallback to incidence only if no PDF was provided
-        });
-
-        // Insert in small batches to avoid limits
-        for (let i = 0; i < filteredItems.length; i += 20) {
-          const { error: itemsErr } = await supabaseAdmin.from("study_plan_items").insert(filteredItems.slice(i, i + 20));
+      if (itemsToInsert.length > 0) {
+        // Insert in batches
+        for (let i = 0; i < itemsToInsert.length; i += 20) {
+          const { error: itemsErr } = await supabaseAdmin.from("study_plan_items").insert(itemsToInsert.slice(i, i + 20));
           if (itemsErr) logger.error("ITEMS_INSERT_FAIL", itemsErr.message);
         }
       }
 
-
-      logger.info("PLAN_GEN_SUCCESS", "Study plan generated successfully", { planId: plan.id });
+      logger.info("PLAN_GEN_SUCCESS", "Study plan generated successfully", { planId: plan.id, itemsCount: itemsToInsert.length });
 
     } catch (err) {
       logger.error("PLAN_GEN_ERROR", err.message, { planId: plan.id });
