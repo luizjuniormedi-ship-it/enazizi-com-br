@@ -17,6 +17,7 @@ import { InteractiveCognitiveCard } from "../tutor/pedagogical/InteractiveCognit
 interface TutorV2MessageListProps {
   messages: any[];
   isTyping: boolean;
+  onIncrementalAction?: (action: string) => void;
 }
 
 export default function TutorV2MessageList({ messages, isTyping }: TutorV2MessageListProps) {
