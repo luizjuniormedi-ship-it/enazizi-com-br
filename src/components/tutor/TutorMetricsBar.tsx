@@ -91,7 +91,8 @@ const TutorMetricsBar = ({ performance, metricsCollapsed, setMetricsCollapsed, u
         </div>
       </div>
     )}
-  </div>
+    </div>
+  );
 };
 
 export default TutorMetricsBar;
