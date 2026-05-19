@@ -4,32 +4,61 @@ import type { StudyPerformance } from "@/components/tutor/TutorConstants";
 
 export function useChatProgress(userId: string | undefined) {
   const [enaziziStep, setEnaziziStep] = useState(1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const saveEnaziziStep = useCallback(async (step: number, tema?: string | null, performance?: StudyPerformance, sessionQuestions?: number) => {
-    if (!userId) return;
-    setEnaziziStep(step);
-    const dbData = {
-      user_id: userId,
-      estado_atual: step,
-      tema_atual: tema !== undefined ? tema : null,
-      questoes_respondidas: (performance?.questoes_respondidas || 0) + (sessionQuestions || 0),
-      taxa_acerto: performance?.taxa_acerto || 0,
-      pontuacao_discursiva: performance?.pontuacao_discursiva || null,
-      temas_fracos: (performance?.temas_fracos || []) as any,
-      historico_estudo: [] as any,
-      ultima_interacao: new Date().toISOString(),
-    };
-    const { data: existing } = await supabase
-      .from("enazizi_progress")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (existing) {
-      await supabase.from("enazizi_progress").update(dbData).eq("user_id", userId);
-    } else {
-      await supabase.from("enazizi_progress").insert(dbData);
+    if (!userId || isTransitioning) return;
+    
+    // Sequence Validation (Prevenir Skip)
+    if (step > enaziziStep + 1 && enaziziStep !== 1) {
+      console.warn(`[BlockGuard] Tentativa de skip detectada: ${enaziziStep} -> ${step}. Bloqueado.`);
+      return;
     }
-  }, [userId]);
+
+    setIsTransitioning(true);
+    const startTransition = Date.now();
+    
+    try {
+      setEnaziziStep(step);
+      const dbData = {
+        user_id: userId,
+        estado_atual: step,
+        tema_atual: tema !== undefined ? tema : null,
+        questoes_respondidas: (performance?.questoes_respondidas || 0) + (sessionQuestions || 0),
+        taxa_acerto: performance?.taxa_acerto || 0,
+        pontuacao_discursiva: performance?.pontuacao_discursiva || null,
+        temas_fracos: (performance?.temas_fracos || []) as any,
+        historico_estudo: [] as any,
+        ultima_interacao: new Date().toISOString(),
+      };
+
+      const { data: existing } = await supabase
+        .from("enazizi_progress")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from("enazizi_progress").update(dbData).eq("user_id", userId);
+      } else {
+        await supabase.from("enazizi_progress").insert(dbData);
+      }
+
+      // Telemetria de Transição
+      await supabase.from("tutor_block_transitions").insert({
+        user_id: userId,
+        previous_block: enaziziStep,
+        next_block: step,
+        transition_source: 'user_action',
+        latency_ms: Date.now() - startTransition
+      });
+
+    } catch (err) {
+      console.error("[useChatProgress] Error saving step:", err);
+    } finally {
+      setIsTransitioning(false);
+    }
+  }, [userId, enaziziStep, isTransitioning]);
 
   const getPhaseMap = useCallback((currentTopic: string) => {
     return {

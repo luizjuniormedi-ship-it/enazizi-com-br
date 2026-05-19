@@ -105,10 +105,12 @@ const AgentChat = ({
   topic, subtopic, specialty, pedagogicalHeader, hideUploadsPicker, initialConversationId,
 }: AgentChatProps) => {
   const navigate = useNavigate();
+  const { totalDue, dueByTopic } = useFsrsDueCount();
   const chat = useAgentChat({
     functionName, welcomeMessage, welcomeMessageWithUploads, autoPromptAfterUpload,
     quickActions, onSaveMessage, previousContentLoader, initialPrompt, onSendRef,
     topic, subtopic, specialty, initialConversationId,
+    fsrsContext: topic ? { dueCards: dueByTopic(topic), totalDue } : undefined,
   });
 
   const { isAdmin } = useAdminCheck();
