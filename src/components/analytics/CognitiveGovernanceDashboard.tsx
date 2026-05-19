@@ -157,7 +157,7 @@ export const CognitiveGovernanceDashboard = () => {
           <Activity className="h-4 w-4 text-blue-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{Math.round((currentHealth?.recovery_efficiency || 0) * 100)}%</div>
+          <div className="text-2xl font-bold">{Math.round(((currentHealth as any)?.recovery_efficiency || 0) * 100)}%</div>
           <p className="text-xs text-muted-foreground mt-1">Capacidade de resposta pós-erro</p>
         </CardContent>
       </Card>
