@@ -225,7 +225,7 @@ const AgentMessageItem = memo(
                         <div className="mt-8 mb-4">
                            <InteractiveCognitiveCard 
                              onAction={(action) => {
-                               console.log("Pedagogical Action:", action);
+                               console.log("Pedagogical Action (Split):", action);
                                if (onIncrementalAction) {
                                  onIncrementalAction(action);
                                }
@@ -238,6 +238,19 @@ const AgentMessageItem = memo(
                   );
                 })}
               </AnimatePresence>
+
+              {showConsolidationCard && (
+                <div className="mt-4">
+                  <InteractiveCognitiveCard 
+                    onAction={(action) => {
+                      console.log("Pedagogical Action (Real Gating):", action);
+                      if (onIncrementalAction) {
+                        onIncrementalAction(action);
+                      }
+                    }}
+                  />
+                </div>
+              )}
 
               {isAllTextUnlocked && hasCognitiveBlocks && (
                 <motion.div 
