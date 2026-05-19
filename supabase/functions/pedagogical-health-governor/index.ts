@@ -66,6 +66,12 @@ serve(async (req) => {
       });
     }
 
+    // 6. Update enazizi_progress with scores
+    await supabase.from("enazizi_progress").update({
+      retention_score: Math.round(healthData.retention_rate * 100),
+      recovery_score: Math.round(healthData.recovery_efficiency * 100)
+    }).eq("user_id", userId);
+
     return jsonResponse({
       success: true,
       health_score: healthData.health_score,

@@ -571,18 +571,26 @@ serve(async (req) => {
     try {
       console.log("[TUTOR_V2] Calling orchestrator and context-builder...", { requestId });
       
+      const { data: fsrsStats } = await supabase.from("legacy_fsrs_bridge").select("due, stability, difficulty").eq("user_id", userId).limit(100);
+      const fsrsContext = fsrsStats ? {
+        due_cards: fsrsStats.filter((c: any) => new Date(c.due) <= new Date()).length,
+        average_stability: fsrsStats.reduce((a: any, c: any) => a + (c.stability || 0), 0) / (fsrsStats.length || 1),
+        forgetting_risk: fsrsStats.filter((c: any) => (c.stability || 0) < 5).length / (fsrsStats.length || 1)
+      } : {};
+
       const [contextRes, orchestratorRes] = await Promise.all([
         supabase.functions.invoke("tutor-v2-context-builder", {
           headers: { Authorization: `Bearer ${auth.token}` }
         }),
         supabase.functions.invoke("tutor-orchestrator-v2", {
           headers: { Authorization: `Bearer ${auth.token}` },
-          body: { sessionId, userMessage: message, history, context: {} }
+          body: { sessionId, userMessage: message, history: history?.slice(-6), context: { fsrs: fsrsContext } }
         })
       ]);
 
       if (contextRes.error) console.warn("[TUTOR_V2] context-builder error:", contextRes.error);
       else context = contextRes.data?.context || {};
+      if (context) (context as any).fsrs = fsrsContext;
 
       if (orchestratorRes.error) console.warn("[TUTOR_V2] orchestrator error:", orchestratorRes.error);
       else orchestratorData = orchestratorRes.data;
@@ -831,12 +839,21 @@ E) Ver exemplo clínico"
         blocks_found: foundBlocks,
         blocks_missing: missingBlocks,
         hallucination_warning: hallucinationWarning,
-        cognitive_load: context.cognitive_load || 0.0,
-        detected_gaps: context.detected_gaps || [],
+        cognitive_load: (context as any).cognitive_load || 0.0,
+        detected_gaps: (context as any).detected_gaps || [],
         planner_signals: [{ type: "adaptive_replan", priority: pedagogicalScore > 80 ? "low" : "high" }],
         error_signals: (qReview.active === false && missingBlocks.length > 5) ? [{ type: "pedagogical_gap", blocks: missingBlocks }] : [],
         latency_ms: latency,
         model_used: providerResult.model
+      });
+
+      await supabase.from("tutor_runtime_metrics").insert({
+        user_id: userId,
+        session_id: sessionId,
+        tutor_generation_ms: providerResult.latencyMs,
+        audit_ms: latency - providerResult.latencyMs,
+        prompt_tokens: 0,
+        completion_tokens: 0
       });
     }
 

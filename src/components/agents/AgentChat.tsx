@@ -41,6 +41,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Film, Sparkles, Play, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useFsrsDueCount } from "@/hooks/useFsrsDueCount";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -105,10 +106,12 @@ const AgentChat = ({
   topic, subtopic, specialty, pedagogicalHeader, hideUploadsPicker, initialConversationId,
 }: AgentChatProps) => {
   const navigate = useNavigate();
+  const { totalDue, dueByTopic } = useFsrsDueCount();
   const chat = useAgentChat({
     functionName, welcomeMessage, welcomeMessageWithUploads, autoPromptAfterUpload,
     quickActions, onSaveMessage, previousContentLoader, initialPrompt, onSendRef,
     topic, subtopic, specialty, initialConversationId,
+    fsrsContext: topic ? { dueCards: dueByTopic(topic), totalDue } : undefined,
   });
 
   const { isAdmin } = useAdminCheck();
