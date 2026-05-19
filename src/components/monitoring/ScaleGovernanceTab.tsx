@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MetricCard } from "./MonitoringMetricCard";
+import { Badge } from "@/components/ui/badge";
 import { TrendingUp, DollarSign, Database, ShieldCheck, AlertTriangle, Activity, Heart, Brain, SearchCheck } from "lucide-react";
+
 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie
@@ -25,7 +27,7 @@ export function ScaleGovernanceTab() {
         { data: qualityValidations }
       ] = await Promise.all([
         supabase.from("questions_bank").select("lifecycle_state"),
-        supabase.from("ai_cost_metrics" as any).select("cost_usd, feature_name, created_at").order("created_at", { ascending: true }),
+        supabase.from("ai_cost_metrics" as any).select("*").order("created_at", { ascending: true }),
         supabase.from("governance_queues").select("*").order("created_at", { ascending: false }).limit(10),
         supabase.from("pedagogical_health_indices").select("*").order("created_at", { ascending: false }).limit(20),
         supabase.from("quality_lock_validations").select("*").order("created_at", { ascending: false }).limit(10)
@@ -38,15 +40,15 @@ export function ScaleGovernanceTab() {
       });
 
       const lifecycleData = Object.entries(counts).map(([name, value]) => ({ name, value }));
-      const totalCost = costs?.reduce((acc, curr) => acc + Number(curr.cost_usd), 0) || 0;
+      
+      const totalCost = (costs as any[])?.reduce((acc, curr) => acc + Number(curr.cost_usd), 0) || 0;
       
       const costByFeature: Record<string, number> = {};
-      costs?.forEach(c => {
+      (costs as any[])?.forEach(c => {
         costByFeature[c.feature_name] = (costByFeature[c.feature_name] || 0) + Number(c.cost_usd);
       });
       const featureCostData = Object.entries(costByFeature).map(([name, value]) => ({ name, value }));
 
-      // Process Health Data for chart
       const healthHistory = healthLogs?.map(h => ({
         date: new Date(h.created_at).toLocaleDateString('pt-BR'),
         score: Number(h.health_score),
@@ -71,6 +73,7 @@ export function ScaleGovernanceTab() {
     },
     refetchInterval: 60000
   });
+
 
 
   if (isLoading) return <div className="h-64 flex items-center justify-center">Carregando governança...</div>;
