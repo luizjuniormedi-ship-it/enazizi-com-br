@@ -9,6 +9,7 @@ import { useTutorHistory } from "./hooks/useTutorHistory";
 import { useTutorContext } from "./hooks/useTutorContext";
 import { useTutorStream } from "./hooks/useTutorStream";
 import { useTutorAdaptiveContext } from "./hooks/useTutorAdaptiveContext";
+import { usePedagogicalSession } from "@/hooks/usePedagogicalSession";
 import { useTutorMemoryBridge } from "./hooks/useTutorMemoryBridge";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
