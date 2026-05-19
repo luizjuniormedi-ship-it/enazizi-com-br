@@ -21,7 +21,7 @@ export default function CockpitMnemonics({ useful, bad }: Props) {
           <Brain className="h-5 w-5 text-accent" />
           <h2 className="text-lg font-semibold">🧠 O que mais está te ajudando a memorizar</h2>
         </div>
-        <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/mnemonic-studio-v2")} className="gap-1">
+        <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/mnemonico")} className="gap-1">
           <Plus className="h-3 w-3" /> Criar mnemônico
         </Button>
       </div>
@@ -52,7 +52,7 @@ export default function CockpitMnemonics({ useful, bad }: Props) {
                       size="sm"
                       variant="ghost"
                       className="h-7 text-xs mt-1 px-2"
-                      onClick={() => navigate(`/dashboard/mnemonic-studio-v2?result=${m.result_id}`)}
+                      onClick={() => navigate(`/dashboard/mnemonico?result=${m.result_id}`)}
                     >
                       Revisar
                     </Button>
@@ -83,7 +83,7 @@ export default function CockpitMnemonics({ useful, bad }: Props) {
                       variant="default"
                       className="h-7 text-xs mt-1 gap-1"
                       onClick={() =>
-                        navigate(`/dashboard/mnemonic-studio-v2?regenerate=${m.result_id}&tema=${encodeURIComponent(m.tema)}`)
+                        navigate(`/dashboard/mnemonico?regenerate=${m.result_id}&tema=${encodeURIComponent(m.tema)}`)
                       }
                     >
                       <RefreshCw className="h-3 w-3" /> Gerar nova versão
