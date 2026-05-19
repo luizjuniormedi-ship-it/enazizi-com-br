@@ -81,7 +81,7 @@ export default function TutorV2Page() {
         
         <div className="text-center space-y-3">
           <p className="text-[12px] font-black uppercase tracking-[0.4em] text-white/90 animate-pulse">
-            {bootStatus || "Sincronizando Tutor V2"}
+            {bootStatus || "Sincronizando Tutor V3"}
           </p>
           <div className="h-1 w-48 bg-white/5 rounded-full overflow-hidden mx-auto">
             <motion.div 
@@ -123,7 +123,7 @@ export default function TutorV2Page() {
 
               <div className="text-left">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Adaptive OS 3.0</h1>
+                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Tutor IA V3</h1>
                   <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Premium</span>
                 </div>
                 <p className="text-sm text-indigo-400/80 font-bold uppercase tracking-[0.2em] mt-2">Sessão Ativa • Protocolo Feynman</p>

@@ -153,11 +153,11 @@ const App = () => (
               <Route path="/term" element={<Navigate to="/termos" replace />} />
               <Route path="/privacy" element={<Navigate to="/privacidade" replace />} />
               
-              <Route path="/chatgpt" element={<Navigate to="/dashboard/chatgpt" replace />} />
-              <Route path="/mentor-ai" element={<Navigate to="/dashboard/chatgpt" replace />} />
-              <Route path="/ai-mentor" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/mentor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/ai-mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/study" element={<Navigate to="/dashboard/cronograma" replace />} />
-              <Route path="/study-session" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/study-session" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/simulations" element={<Navigate to="/dashboard/simulados" replace />} />
               <Route path="/questions" element={<Navigate to="/dashboard/questoes" replace />} />
               <Route path="/planner" element={<Navigate to="/dashboard/cronograma" replace />} />
@@ -182,8 +182,8 @@ const App = () => (
                   <Route path="simulados" element={<Simulados />} />
                   <Route path="flashcards" element={<Flashcards />} />
                   <Route path="banco-erros" element={<ErrorBank />} />
-                  <Route path="chatgpt" element={<ChatGPT />} />
-                  <Route path="mentor" element={<AIMentor />} />
+                  <Route path="chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="agentes" element={<AgentsHub />} />
                   <Route path="banco-questoes" element={<QuestionsBank />} />
                   <Route path="gerador-questoes" element={<QuestionGenerator />} />
@@ -220,9 +220,9 @@ const App = () => (
                   <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="plano-estudos" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="revisoes" element={<Navigate to="/dashboard/planner" replace />} />
-                  <Route path="estudar" element={<Navigate to="/dashboard/chatgpt" replace />} />
-                  <Route path="tutor" element={<Navigate to="/dashboard/chatgpt" replace />} />
-                  <Route path="chat" element={<Navigate to="/dashboard/chatgpt" replace />} />
+                  <Route path="estudar" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="chat" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="simulado" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="error-bank" element={<Navigate to="/dashboard/banco-erros" replace />} />

@@ -164,7 +164,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
               icon={Sparkles}
               title="Tutor Mentor"
               description="Dúvida pontual"
-              onClick={() => trackAndGo("open_tutor", "/dashboard/mentor")}
+              onClick={() => trackAndGo("open_tutor", "/dashboard/sessao-estudo")}
             />
           </div>
         </Section>
