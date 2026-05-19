@@ -43,12 +43,31 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
   const blurPx = 2 + scrollProgress * 16; 
   const shadowAlpha = scrollProgress * 0.55;
 
+  // Derive sidebar collapsed state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('enazizi_sidebar_collapsed') === 'true';
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsSidebarCollapsed(localStorage.getItem('enazizi_sidebar_collapsed') === 'true');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    const interval = setInterval(handleStorageChange, 500);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const showSidebarPadding = (isAdmin || isProfessor || location.pathname === "/dashboard" || location.pathname === "/enaflix");
+
   return (
     <header
       className={cn(
         "fixed top-0 inset-x-0 z-50 transition-[background-color,box-shadow,backdrop-filter,left] duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-        // Se a sidebar estiver visível (desktop), a topbar deve respeitar o recuo
-        (isAdmin || isProfessor || location.pathname === "/dashboard" || location.pathname === "/enaflix") ? "lg:left-64" : "left-0"
+        showSidebarPadding ? (isSidebarCollapsed ? "lg:left-20" : "lg:left-64") : "left-0"
       )}
       style={{
         backgroundColor: `rgba(10, 10, 18, ${bgAlpha})`,
