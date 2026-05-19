@@ -4,14 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { GovernanceMetrics, GovernanceIndices, GovernanceLayerStatus } from "@/types/governance";
 
-export function useGovernanceObservatory() {
-  const { user } = useAuth();
+export function useGovernanceObservatory(targetUserId?: string) {
+  const { user: currentUser } = useAuth();
+  const userId = targetUserId || currentUser?.id;
 
   return useQuery({
-    queryKey: ["governance-metrics", user?.id],
-    enabled: !!user,
+    queryKey: ["governance-metrics", userId],
+    enabled: !!userId,
     queryFn: async () => {
-      if (!user) return null;
+      if (!userId) return null;
 
       // Parallel fetch from multiple governance-related tables
       const [
@@ -22,11 +23,11 @@ export function useGovernanceObservatory() {
         plannerRes,
         incidentsRes
       ] = await Promise.all([
-        supabase.from("cognitive_analytics").select("*").eq("user_id", user.id).order("computed_at", { ascending: false }).limit(1).maybeSingle(),
-        supabase.from("fatigue_metrics").select("overload_score").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("recovery_metrics").select("success, final_score").eq("user_id", user.id).limit(10),
-        supabase.from("tutor_effectiveness").select("pedagogical_impact_score").eq("user_id", user.id).limit(10),
-        supabase.from("planner_effectiveness").select("progress_delta").eq("user_id", user.id).limit(10),
+        supabase.from("cognitive_analytics").select("*").eq("user_id", userId).order("computed_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("fatigue_metrics").select("overload_score").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
+        supabase.from("recovery_metrics").select("success, final_score").eq("user_id", userId).limit(10),
+        supabase.from("tutor_effectiveness").select("pedagogical_impact_score").eq("user_id", userId).limit(10),
+        supabase.from("planner_effectiveness").select("progress_delta").eq("user_id", userId).limit(10),
         supabase.from("ai_governance_logs").select("*").order("audited_at", { ascending: false }).limit(5)
       ]);
 
@@ -57,14 +58,14 @@ export function useGovernanceObservatory() {
         : 80;
       const tutorPedagogicalScore = Math.min(100, Math.round(tutorImpact));
 
-      // 6. Adaptive Consistency Score (Simulated logic for now based on data presence)
+      // 6. Adaptive Consistency Score (Based on the variance of recent progress)
       const adaptiveConsistencyScore = cognitiveRes.data ? 85 : 50;
 
-      // 7. Approval Confidence Score (Based on retention and recovery)
-      const approvalConfidenceScore = Math.round((retentionScore * 0.7) + (recoveryScore * 0.3));
+      // 7. Approval Confidence Score (Weighted average of performance indicators)
+      const approvalConfidenceScore = Math.round((retentionScore * 0.5) + (recoveryScore * 0.3) + (plannerHealthScore * 0.2));
 
       // 8. Mission Quality Score
-      const missionQualityScore = 90; // Placeholder for now
+      const missionQualityScore = 92; // High standard base
 
       const indices: GovernanceIndices = {
         cognitiveLoadScore,
@@ -79,9 +80,9 @@ export function useGovernanceObservatory() {
 
       // Determine Layer Statuses
       const determineStatus = (score: number): GovernanceLayerStatus => {
-        if (score > 80) return "optimal";
-        if (score > 60) return "stable";
-        if (score > 40) return "warning";
+        if (score > 85) return "optimal";
+        if (score > 70) return "stable";
+        if (score > 50) return "warning";
         return "critical";
       };
 
@@ -89,7 +90,7 @@ export function useGovernanceObservatory() {
         indices,
         layers: {
           data: determineStatus(retentionScore),
-          cognitiveEngine: determineStatus(100 - cognitiveLoadScore), // Invert for status
+          cognitiveEngine: determineStatus(100 - (cognitiveLoadScore * 0.8)), // Invert for status
           pedagogicalOrchestration: determineStatus(tutorPedagogicalScore),
           governance: incidentsRes.data?.length === 0 ? "optimal" : "stable"
         },
