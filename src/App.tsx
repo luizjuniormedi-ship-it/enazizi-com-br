@@ -153,9 +153,9 @@ const App = () => (
               <Route path="/term" element={<Navigate to="/termos" replace />} />
               <Route path="/privacy" element={<Navigate to="/privacidade" replace />} />
               
-              <Route path="/chatgpt" element={<Navigate to="/dashboard/chatgpt" replace />} />
-              <Route path="/mentor-ai" element={<Navigate to="/dashboard/chatgpt" replace />} />
-              <Route path="/ai-mentor" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/mentor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/ai-mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/study" element={<Navigate to="/dashboard/cronograma" replace />} />
               <Route path="/study-session" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/simulations" element={<Navigate to="/dashboard/simulados" replace />} />
@@ -182,8 +182,8 @@ const App = () => (
                   <Route path="simulados" element={<Simulados />} />
                   <Route path="flashcards" element={<Flashcards />} />
                   <Route path="banco-erros" element={<ErrorBank />} />
-                  <Route path="chatgpt" element={<ChatGPT />} />
-                  <Route path="mentor" element={<AIMentor />} />
+                  <Route path="chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="agentes" element={<AgentsHub />} />
                   <Route path="banco-questoes" element={<QuestionsBank />} />
                   <Route path="gerador-questoes" element={<QuestionGenerator />} />
