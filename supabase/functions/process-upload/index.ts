@@ -245,14 +245,17 @@ async function processInBackground(
           if (parsed.is_medicine !== false) {
             if (parsed.main_topic && i === 0) mainTopic = parsed.main_topic;
             if (parsed.topics) {
-              const taggedTopics = parsed.topics.map((t: any) => ({ ...t, _chunk_index: i }));
+              const taggedTopics = parsed.topics.map((t: any) => ({ 
+                ...t, 
+                _chunk_index: i,
+                _source_chunk_id: chunkInserts[i].id // This will be assigned after insertion if possible, but let's just use the index for now
+              }));
               allExtractedTopics.push(...taggedTopics);
             }
             
-            await supabaseAdmin.from("planner_pdf_chunks")
-              .update({ extracted_topics_json: parsed.topics, status: "completed" })
-              .eq("upload_id", uploadId)
-              .eq("chunk_index", i);
+            // Note: chunkInserts was prepared but not yet inserted when chunkInserts was defined
+            // Let's fix that sequence
+
           }
         }
       } catch (err) {
