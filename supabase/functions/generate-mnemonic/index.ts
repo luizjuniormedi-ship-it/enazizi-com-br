@@ -530,35 +530,6 @@ serve(async (req: Request) => {
 
 
 
-        // ── Loop 4A: persist successful generic generation in global cache.
-        // Skipped automatically if not eligible (image-only / auto-extract / no terms).
-        // Skipped on audit failure (we wouldn't reach here — fallback path returns earlier).
-        if (cacheEligible && cacheSemanticHash) {
-          // Strip per-request identifiers before caching so global cache stays generic
-          const { request_id: _r, result_id: _i, image_url: _u, image_failed: _f, ...generic } = successData;
-          await saveAIResponseToCache({
-            module: "mnemonic",
-            scope: "global",
-            semanticHash: cacheSemanticHash,
-            response: generic,
-            modelUsed: AI_MODEL,
-            ttlDays: CACHE_TTL_DAYS.mnemonic,
-            specialty: payload.tema,
-          });
-        }
-
-        return jsonResponse({ success: true, data: successData });
-
-      } catch (error) {
-        console.error("[MASTER_PIPELINE] Erro:", error);
-        if (requestId && db) await updateRequestStatus(db, requestId, "failed");
-        return jsonResponse({
-          success: false, error: error instanceof Error ? error.message : "Erro desconhecido",
-          code: "PIPELINE_ERROR", requestId: requestId || requestIdForError
-        }, error instanceof AuthError ? 401 : error instanceof RateLimitError ? 429 : 500);
-      }
-    };
-
 
   return Promise.race([mainPipeline(), globalTimeout]);
   } catch (fatalError) {
