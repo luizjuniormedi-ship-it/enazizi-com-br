@@ -20,7 +20,7 @@ interface TutorV2MessageListProps {
   onIncrementalAction?: (action: string) => void;
 }
 
-export default function TutorV2MessageList({ messages, isTyping }: TutorV2MessageListProps) {
+export default function TutorV2MessageList({ messages, isTyping, onIncrementalAction }: TutorV2MessageListProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
