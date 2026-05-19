@@ -174,6 +174,7 @@ Retorne APENAS um JSON no seguinte formato:
 ────────────────────────────
 
 - GERE O CRONOGRAMA COMPLETO ATÉ A PROVA. Se houver 12 semanas, gere 12 semanas no array fullSchedule.
+- RETORNE O ARRAY fullSchedule COM TODAS AS SEMANAS NECESSÁRIAS. NÃO TRUNQUE A RESPOSTA.
 - Nunca gere apenas uma semana se houver várias semanas até a prova.
 - Se o edital for muito grande para o tempo disponível, sinalize nos insights e priorize o essencial.
 - Mantenha a coerência pedagógica.`;
