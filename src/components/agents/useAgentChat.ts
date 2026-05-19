@@ -362,7 +362,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
               currentBlock: pedSession.session.currentBlock,
               tutorMode: pedSession.session.tutorMode,
               cognitiveState: pedSession.session.cognitiveState,
-              topic: pedSession.session.topic
+              topic: pedSession.session.topic,
+              lastInteraction: pedagogicalInteraction
             } : undefined
           },
           signal: controller.signal,
