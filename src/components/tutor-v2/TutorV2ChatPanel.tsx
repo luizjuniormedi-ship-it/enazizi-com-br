@@ -34,13 +34,13 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
     }
   }, [messages, isTyping]);
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
     if (!text.trim() || isTyping || !user) return;
     setError(null);
     triggerInteraction({ 
       state: 'thinking', 
       type: 'motivation', 
-      speech: "Analisando seu raciocínio médico..." 
+      speech: pedagogicalInteraction === 'continue' ? "Preparando o próximo bloco cognitivo..." : "Analisando seu raciocínio médico..." 
     });
 
     // Optimistic update
