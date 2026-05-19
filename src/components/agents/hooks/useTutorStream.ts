@@ -67,7 +67,7 @@ export function useTutorStream() {
       onComplete,
       onError,
       signal,
-    }: StreamResponseOptions): Promise<string | null> => {
+    }: StreamResponseOptions): Promise<{ content: string; metrics?: any } | null> => {
       abortStream();
       const controller = new AbortController();
       abortRef.current = controller;
