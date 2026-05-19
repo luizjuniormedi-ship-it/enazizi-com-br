@@ -37,6 +37,7 @@ import PlannerStrategicHeader from "@/components/planner/PlannerStrategicHeader"
 import PlannerTaskCard, { type TaskCategory } from "@/components/planner/PlannerTaskCard";
 import PlannerFSRSSection from "@/components/planner/PlannerFSRSSection";
 import PlannerErrorZone from "@/components/planner/PlannerErrorZone";
+import PlannerLongitudinalView from "@/components/planner/PlannerLongitudinalView";
 
 // Types and algorithms from cronograma
 import {
