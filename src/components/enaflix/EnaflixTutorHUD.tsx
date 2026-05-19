@@ -20,7 +20,7 @@ interface Props {
 }
 
 function TutorHUDBase({
-  title = "Tutor IA",
+  title = "Tutor IA V3",
   subtitle = "Assistente médico cinematográfico",
   status = "idle",
   children,

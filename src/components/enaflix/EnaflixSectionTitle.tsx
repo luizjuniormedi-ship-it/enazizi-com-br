@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
  * Compatível com layout Netflix-style (poster rows + dashboards).
  *
  *   <EnaflixSectionTitle
- *      kicker="Tutor IA"
+ *      kicker="Tutor IA V3"
  *      title="Continue de onde parou"
  *      action={<Button>Ver tudo</Button>}
  *   />

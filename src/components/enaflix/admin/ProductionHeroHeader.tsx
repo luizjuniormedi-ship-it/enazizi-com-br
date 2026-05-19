@@ -44,7 +44,7 @@ export function ProductionHeroHeader({ total, published, structuring, pendingRev
           Central de Produção ENAFLIX
         </h1>
         <p className="mt-3 text-sm sm:text-base text-white/60 max-w-2xl">
-          Aulas baseadas no comportamento real dos alunos no Tutor IA, Questões e Flashcards.
+          Aulas baseadas no comportamento real dos alunos no Tutor IA V3, Questões e Flashcards.
         </p>
       </motion.div>
 
