@@ -13,11 +13,11 @@ export function splitPedagogicalSections(markdown: string): string[] {
   // But they might not have the colon.
   
   const sections: string[] = [];
-  let lastIndex = 0;
   
   // We want to find the positions of the headers
   const headerPositions: number[] = [];
-  const headerRegex = /(?:^|\n)\d+\.\s+[\u2000-\u32FF\uD83C-\uD83E\uDC00-\uDFFF]?\s*[^:\n]+:?/g;
+  // Regex: line start, number, dot, space, (optional emoji), space, title (anything non-newline)
+  const headerRegex = /(?:^|\n)\d+\.\s+[\uD800-\uDBFF\uDC00-\uDFFF]*\s*[^:\n]{2,50}:?/g;
   
   let match;
   while ((match = headerRegex.exec(markdown)) !== null) {
