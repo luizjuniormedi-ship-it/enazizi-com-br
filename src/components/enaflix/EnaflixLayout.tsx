@@ -8,6 +8,7 @@ import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 interface Props {
   children: ReactNode;
