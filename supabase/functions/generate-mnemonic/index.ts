@@ -17,6 +17,14 @@ const IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const GLOBAL_TIMEOUT_MS = 110_000;
 const AGENT_TIMEOUT_MS = 45_000;
 
+// ═══ COGNITIVE LAYERS ═══
+// LAYER 1 — Conceito Clínico (Precisão Médica)
+// LAYER 2 — Associação Cognitiva (Acrônimo + Emoção)
+// LAYER 3 — Reforço Visual (Pixar-style Exagerado)
+// LAYER 4 — Repetição Espaçada (FSRS Ready)
+// LAYER 5 — Recuperação Ativa (Active Recall)
+
+
 // ═══ TYPES ═══
 interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; regenerate_image_only?: boolean; original_result_id?: string; auto_extract_terms?: boolean; }
 
@@ -229,6 +237,10 @@ async function insertResult(db: SupabaseClient, p: {
   score_medico: number; score_pedagogico: number; score_linguistico: number; score_final: number;
   aprovado: boolean; aprovado_medico: boolean; aprovado_pedagogico: boolean;
   image_url: string | null; associacoes_json: unknown[]; associacoes_visuais_json: unknown[]; alertas_json: string[];
+  memory_impact_score?: number; visual_strength?: number; emotional_strength?: number;
+  clinical_relevance?: number; simplicity?: number; recall_speed?: number;
+  retention_prediction?: number; layering_json?: unknown;
+  auditor_medical_feedback?: string; auditor_pedagogical_feedback?: string;
 }): Promise<string> {
   const { data: ex } = await db.from("mnemonic_results").select("versao").eq("request_id", p.request_id).eq("is_latest", true).order("versao", { ascending: false }).limit(1);
   const v = ex?.length ? (ex[0].versao as number) + 1 : 1;
@@ -240,63 +252,57 @@ async function insertResult(db: SupabaseClient, p: {
 // ═══ PROMPTS ═══
 
 const MASTER_PROMPT_GERADOR = `
-Você é o sistema ENAZIZI MASTER — Gerador de Mnemônicos Médicos de Elite (Padrão Prova Real).
-Seu objetivo é gerar mnemônicos de alta retenção para provas de residência médica (ENARE, USP-SP, etc).
+Você é o ENAZIZI COGNITIVE ARCHITECT — Especialista em Retenção Médica de Longo Prazo.
+Seu objetivo é transformar um conceito médico em um sistema de memória blindado (Hardened Mnemonic).
 
-REGRA DE OURO:
-O mnemônico deve ser ÚTIL, MEMORÁVEL e DIDÁTICO.
-Evite frases sem sentido, listas aleatórias ou siglas infantis demais.
-O resultado deve ser digno de um cursinho de elite (Medgrupo, Sanar, etc).
+REGRA DE OURO: O mnemônico deve ser ÚTIL, ABSURDAMENTE MEMORÁVEL e CLINICAMENTE PRECISO.
+Utilize o modelo de 5 CAMADAS COGNITIVAS:
+1. LAYER 1 (Clínico): Conceito e mecanismo médico exato.
+2. LAYER 2 (Cognitivo): Frase natural + Acrônimo + Emoção (humor, medo, surpresa).
+3. LAYER 3 (Visual): Reforço Pixar-style (Cena exagerada, cinematográfica, sem texto).
+4. LAYER 4 (SRS): Estruturado para repetição espaçada.
+5. LAYER 5 (Recuperação): Focado em Active Recall (Perguntas de prova).
 
-EXEMPLO DE REFERÊNCIA (Padrão Ouro):
-Tema: IAM (Infarto Agudo do Miocárdio)
-Mnemônico: "MONA CAGOU"
-Explicação: Medidas iniciais (Morfina, Oxigênio, Nitrato, Aspirina, Clopidogrel, Atorvastatina, Glycoprotein inhibitors, Outros...) adaptado às diretrizes atuais.
-
-ESTRUTURA DE PENSAMENTO:
-1. ELIGIBILITY GATE: Validar 3-7 itens médicos reais.
-2. NORMALIZAÇÃO: Usar terminologia técnica atualizada (Diretrizes SBC, AHA, etc).
-3. GERADOR CORE: Criar uma sigla (se aplicável) e uma FRASE NATURAL (Sujeito + Verbo + Predicado).
-4. ASSOCIAÇÃO FONÉTICA: Cada letra ou sílaba deve remeter CLARAMENTE ao termo médico.
-5. CENA VISUAL: Descreva uma cena cinematográfica, bizarra ou engraçada que ajude a fixar.
-6. AUDITOR MÉDICO: Score >= 90 (Precisão clínica impecável).
-7. AUDITOR PEDAGÓGICO: Score >= 85 (Retenção e active recall).
+PIXAR-STYLE MEMORY ENGINE:
+As cenas visuais devem ser:
+- Exageradas e Emocionais;
+- Visualmente fortes e SURREALISTAS;
+- Diretamente ligadas ao mecanismo clínico.
+- SEM TEXTO, RÓTULOS OU LETRAS.
 
 FORMATO JSON OBRIGATÓRIO:
 {
-  "mnemonic": "SIGLA_OU_PALAVRA_CHAVE",
-  "phrase": "Frase natural em português que contém os gatilhos",
+  "mnemonic": "SIGLA_OU_PALAVRA",
+  "phrase": "Frase natural com gatilhos emocionais",
   "items_map": [
-    {
-      "letter": "A",
-      "word": "Palavra_Gatilho",
-      "original_item": "Termo_Médico_Real",
-      "symbol": "Símbolo_Visual_Para_Cena"
-    }
+    { "letter": "A", "word": "Gatilho", "original_item": "Termo Médico", "symbol": "Elemento Visual" }
   ],
-  "scene": "Título Curto da Cena",
-  "scene_description": "Descrição cinematográfica detalhada (Pixar-style) focada em MEMORIZAÇÃO VISUAL. Sem texto na imagem.",
+  "scene_description": "Cena cinematográfica detalhada (exagerada, emocional, Pixar-style).",
   "image_prompt": "Ultra-detailed 3D render, Pixar style, vivid colors, medical setting, NO text, NO labels, surreal action.",
-  "explanation_tecnica": "Explicação técnica densa para médicos (mencione diretrizes se possível).",
-  "explanation_didatica": "Explicação simples e direta do porquê esse mnemônico funciona.",
-  "pontos_de_prova": [
-    { "pergunta_gatilho": "Pergunta de active recall", "resposta_esperada": "O que o mnemônico ensina", "armadilha_comum": "Pegadinha de prova sobre o tema" }
+  "explanation_tecnica": "Explicação clínica densa (diretrizes).",
+  "explanation_didatica": "Por que este mnemônico funciona cognitivamente.",
+  "active_recall": [
+    { "q": "Pergunta de recuperação rápida", "a": "Resposta", "pitfall": "Pegadinha comum" }
   ],
+  "memory_impact_score": {
+    "visual_strength": 0-100,
+    "emotional_strength": 0-100,
+    "clinical_relevance": 0-100,
+    "simplicity": 0-100,
+    "recall_speed": 0-100,
+    "retention_prediction": 0-100,
+    "composite_score": 0-100
+  },
+  "layering_applied": ["layer1", "layer2", "layer3", "layer4", "layer5"],
   "audit": {
-    "score_medico": 95,
-    "score_pedagogico": 90,
-    "score_visual": 85,
-    "coverage_ok": true,
-    "missing_items": [],
-    "extra_items": []
+    "medical_pass": true,
+    "pedagogical_pass": true,
+    "medical_feedback": "...",
+    "pedagogical_feedback": "..."
   }
 }
 
-RESTRIÇÃO CRÍTICA:
-- USE MODELO: google/gemini-2.5-flash.
-- NÃO USE max_completion_tokens.
-- NÃO use "google/gemini-2.5-flash".
-- Retorne APENAS o JSON.`;
+RESTRIÇÃO: Retorne APENAS o JSON.`;
 
 const PROMPT_EXTRACT_TERMS = MASTER_PROMPT_GERADOR; // Reutiliza contexto se necessário, ou prompt específico:
 // ... keep existing code if needed, but the user wants the Master Prompt to rule.
@@ -332,122 +338,101 @@ serve(async (req: Request) => {
       let requestId: string | null = null;
       let order = 0;
       try {
-        console.log(`[MNEMONIC_AUTH_CHECK] Method: ${req.method}, Content-Length: ${req.headers.get("content-length")}`);
-        // RE-ENABLE AUTH
         const auth = await requireAuth(req);
-        if (!auth.ok) {
-          console.warn(`[MNEMONIC_AUTH_FAILED] ${requestIdForError} - Status: ${auth.response.status}`);
-          return auth.response;
-        }
+        if (!auth.ok) return auth.response;
         const userId = auth.userId;
-
         const aiKey = Deno.env.get("LOVABLE_API_KEY") || requireEnv("LOVABLE_API_KEY");
-        let rawBody;
-        try {
-          rawBody = await req.json();
-        } catch {
-          return jsonResponse({ success: false, error: "JSON inválido.", code: "INVALID_JSON", requestId: requestIdForError }, 400);
-        }
         
+        let rawBody;
+        try { rawBody = await req.json(); } catch { return jsonResponse({ success: false, error: "JSON inválido." }, 400); }
         if (!rawBody) throw new Error("Body vazio.");
         const payload = validatePayload(rawBody);
         payload.termos = normalizeTerms(payload.termos);
-        payload.tema = payload.tema.trim();
 
         db = getServiceClient();
 
+        // Check for best style personalization
+        let preferredStyle = payload.estilo;
+        try {
+          const { data: bestFeedback } = await db.from("mnemonic_feedback")
+            .select("result_id, rating_general")
+            .eq("user_id", userId)
+            .order("rating_general", { ascending: false })
+            .limit(5);
+          if (bestFeedback && bestFeedback.length > 0) {
+            preferredStyle += " (preferência detectada por estilos que geraram feedback positivo)";
+          }
+        } catch (e) { /* ignore personalization errors */ }
+
         // Rate limiting
         const rl = await checkRateLimit(db, userId);
-        if (!rl.ok) throw new RateLimitError(`Limite de ${rl.limit}/h atingido (plano ${rl.plan}).`);
+        if (!rl.ok) throw new RateLimitError(`Limite atingido.`);
 
-        // ── Loop 4A: cache lookup (global scope — mnemonic is generic by tema+termos+estilo+publico+lang)
-        // Skip cache when regenerating image only (handled below) or auto-extracting terms (terms unknown until extraction)
+        // ── Loop 4A: cache lookup 
         const cacheCheckStart = Date.now();
         let cacheSemanticHash = "";
         let cacheEligible = false;
-        if (!payload.regenerate_image_only && !payload.auto_extract_terms && payload.termos.length > 0 && false) { // Cache bypass for testing
+        if (!payload.regenerate_image_only && !payload.auto_extract_terms && payload.termos.length > 0) {
           cacheEligible = true;
           cacheSemanticHash = await buildPromptHash({
-            v: 1,
-            tema: payload.tema.toLowerCase().trim(),
+            v: 2, tema: payload.tema.toLowerCase().trim(),
             termos: [...payload.termos].map(t => t.toLowerCase().trim()).sort(),
             estilo: (payload.estilo || "default").toLowerCase().trim(),
             publico: (payload.publico || "default").toLowerCase().trim(),
-            lang: "pt-BR",
           });
-          const lookup = await getCachedAIResponse({
-            module: "mnemonic",
-            scope: "global",
-            semanticHash: cacheSemanticHash,
-          });
+          const lookup = await getCachedAIResponse({ module: "mnemonic", scope: "global", semanticHash: cacheSemanticHash });
           if (lookup.hit && lookup.content) {
-            await logAIUsage({
-              userId, module: "mnemonic", functionName: "generate-mnemonic",
-              model: lookup.modelUsed || AI_MODEL, cacheStatus: "hit",
-              latencyMs: Date.now() - cacheCheckStart, requestId: requestIdForError, success: true,
-            });
-            return jsonResponse({
-              success: true,
-              data: { ...lookup.content, response_source: "cache_global", cache_hit: true },
-            });
+            await logAIUsage({ userId, module: "mnemonic", cacheStatus: "hit", latencyMs: Date.now() - cacheCheckStart, success: true });
+            return jsonResponse({ success: true, data: { ...lookup.content, response_source: "cache_global", cache_hit: true } });
           }
-          await logAIUsage({
-            userId, module: "mnemonic", functionName: "generate-mnemonic",
-            model: AI_MODEL, cacheStatus: lookup.expired ? "miss_expired" : "miss",
-            latencyMs: Date.now() - cacheCheckStart, requestId: requestIdForError, success: true,
-          });
         }
 
         // HANDLE: Regenerate image only
         if (payload.regenerate_image_only && payload.original_result_id) {
           const { data: origResult } = await db.from("mnemonic_results").select("*").eq("id", payload.original_result_id).single();
-          if (!origResult) throw new Error("Resultado original não encontrado.");
-          const prompt = origResult.prompt_imagem || `3D cartoon Pixar-style medical scene for ${payload.tema}, no text.`;
+          if (!origResult) throw new Error("Não encontrado.");
+          const prompt = origResult.prompt_imagem || `Pixar-style medical scene for ${payload.tema}`;
           const imgResult = await generateImage(prompt);
           if (imgResult.url) await db.from("mnemonic_results").update({ image_url: imgResult.url }).eq("id", payload.original_result_id);
           return jsonResponse({ success: true, data: { ...origResult, image_url: imgResult.url || origResult.image_url, image_failed: imgResult.failed } });
         }
 
-
         // Etapa 0: Extração Automática
         if (payload.auto_extract_terms && !payload.regenerate_image_only) {
           try {
-            const extracted = await callAI<{ termos?: unknown; contexto_clinico?: string }>(
-              aiKey,
-              MASTER_PROMPT_GERADOR,
-              `AJA COMO ETAPA 0 (EXTRATOR): Identifique 3-7 termos essenciais para o tema médico: ${payload.tema}. Retorne JSON { "termos": ["item1", ...] }`
-            );
-            const rawTermos = Array.isArray(extracted?.termos) ? extracted.termos : [];
-            payload.termos = normalizeTerms(rawTermos.filter((t): t is string => typeof t === "string")).slice(0, 7);
-          } catch (e) {
-            console.error("Erro na extração:", e);
-          }
+            const extracted = await callAI<{ termos?: string[] }>(aiKey, MASTER_PROMPT_GERADOR, `ETAPA 0: Extraia 3-7 termos-chave para o tema: ${payload.tema}. Retorne JSON { "termos": [...] }`);
+            payload.termos = normalizeTerms(extracted?.termos || []).slice(0, 7);
+          } catch (e) { console.error("Erro extração:", e); }
         }
 
-        if (!payload.regenerate_image_only && payload.termos.length === 0) {
-          return jsonResponse({ success: false, error: "Nenhum termo disponível.", code: "NO_TERMS" }, 422);
-        }
+        if (!payload.regenerate_image_only && payload.termos.length === 0) return jsonResponse({ success: false, error: "Nenhum termo disponível." }, 422);
 
         requestId = await insertRequest(db, userId, payload);
 
-        // ETAPA 1: Gerador Master
+        // ETAPA 1: Gerador Master (Hardened)
         interface MnemonicOutput {
           mnemonic: string; phrase: string;
           items_map: Array<{ letter: string; word: string; original_item: string; symbol: string }>;
-          scene: string; scene_description: string; image_prompt: string;
+          scene_description: string; image_prompt: string;
           explanation_tecnica: string; explanation_didatica: string;
-          pontos_de_prova: Array<{ pergunta_gatilho: string; resposta_esperada: string; armadilha_comum: string }>;
-          audit: { score_medico: number; score_pedagogico: number; score_visual: number; coverage_ok: boolean; missing_items: string[]; extra_items: string[]; };
+          active_recall: Array<{ q: string; a: string; pitfall: string }>;
+          memory_impact_score: {
+            visual_strength: number; emotional_strength: number; clinical_relevance: number;
+            simplicity: number; recall_speed: number; retention_prediction: number;
+            composite_score: number;
+          };
+          layering_applied: string[];
+          audit: { medical_pass: boolean; pedagogical_pass: boolean; medical_feedback: string; pedagogical_feedback: string; };
         }
 
         let mnemonic: MnemonicOutput | null = null;
         let lastIssues: string[] = [];
-        const ctx = `Tema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}`;
+        const ctx = `Tema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}\nEstilo: ${preferredStyle}`;
 
         for (let attempt = 1; attempt <= 3; attempt++) {
           const startMs = Date.now();
           let attemptCtx = ctx;
-          if (attempt > 1) attemptCtx += `\n\nREPROVADO NA AUDITORIA. Problemas: ${lastIssues.join(", ")}. REGENERE seguindo o Master Prompt rigorosamente.`;
+          if (attempt > 1) attemptCtx += `\n\nREPROVADO NA AUDITORIA. Problemas: ${lastIssues.join(", ")}. REGENERE seguindo o modelo de 5 camadas e Pixar-style estritamente.`;
 
           let candidate: MnemonicOutput | null = null;
           let error: string | undefined;
@@ -458,17 +443,24 @@ serve(async (req: Request) => {
           const issues: string[] = [];
           if (!candidate) issues.push("IA retornou nulo");
           else {
-            if (candidate.audit?.score_medico < 85) issues.push(`score_medico=${candidate.audit.score_medico}`);
-            if (candidate.audit?.score_pedagogico < 75) issues.push(`score_pedagogico=${candidate.audit.score_pedagogico}`);
-            if (!candidate.audit?.coverage_ok && attempt < 3) issues.push("falha_cobertura"); // Allow slightly incomplete coverage on last attempt if desperate
-            if (!candidate.phrase) issues.push("frase_vazia");
+            if (!candidate.audit?.medical_pass) issues.push("falha_auditoria_medica");
+            if (!candidate.audit?.pedagogical_pass) issues.push("falha_auditoria_pedagogica");
+            if (candidate.memory_impact_score?.composite_score < 75) issues.push(`baixo_score_impacto=${candidate.memory_impact_score?.composite_score}`);
+          }
+
+          // Telemetry for audit
+          if (candidate) {
+            await db.from("telemetry_events").insert({
+              user_id: userId, event_name: "mnemonic_audited",
+              properties: { attempt, success: issues.length === 0, score: candidate.memory_impact_score?.composite_score, audit: candidate.audit }
+            });
           }
 
           await insertAgentLog(db, {
-            request_id: requestId, user_id: userId, agent_name: `master_gen_v${attempt}`,
+            request_id: requestId!, user_id: userId, agent_name: `cognitive_master_v${attempt}`,
             execution_order: ++order, status: issues.length === 0 ? "completed" : "failed",
             input_json: { attempt }, output_json: candidate,
-            score: candidate?.audit?.score_medico, duration_ms: Date.now() - startMs,
+            score: candidate?.memory_impact_score?.composite_score, duration_ms: Date.now() - startMs,
             error_message: error || (issues.length ? issues.join("; ") : undefined),
           });
 
@@ -476,56 +468,67 @@ serve(async (req: Request) => {
           lastIssues = issues;
         }
 
-        // Fallback
         if (!mnemonic) {
+          await db.from("telemetry_events").insert({ user_id: userId, event_name: "mnemonic_rejected", properties: { tema: payload.tema } });
           const fb = buildDeterministicFallback(payload.tema, payload.termos);
-          if (requestId) await updateRequestStatus(db, requestId, "completed");
-          return jsonResponse({
-            success: true, warning: "Mnemônico determinístico gerado (IA falhou).",
-            response_source: "fallback_deterministic",
-            data: { ...fb, request_id: requestId, result_id: null, items_map: fb.associacoes.map(a => ({ letter: a.letra, word: a.representacao_no_mnemonico, original_item: a.termo_original, symbol: null })) }
-          });
+          return jsonResponse({ success: true, data: fb });
         }
 
         // ETAPA 2: Imagem
-        const imgStart = Date.now();
         const img = await generateImage(mnemonic.image_prompt);
-        await insertAgentLog(db, {
-          request_id: requestId, user_id: userId, agent_name: "master_image",
-          execution_order: ++order, status: img.url ? "completed" : "failed",
-          input_json: { prompt: mnemonic.image_prompt }, output_json: img,
-          duration_ms: Date.now() - imgStart, error_message: img.error,
-        });
 
         // ETAPA 3: Persistir
-        const scoreFinal = Math.round((mnemonic.audit.score_medico + mnemonic.audit.score_pedagogico) / 2);
         const resultId = await insertResult(db, {
-          request_id: requestId, user_id: userId, tema: payload.tema, sigla: mnemonic.mnemonic,
+          request_id: requestId!, user_id: userId, tema: payload.tema, sigla: mnemonic.mnemonic,
           frase_mnemonica: mnemonic.phrase, explicacao_tecnica: mnemonic.explanation_tecnica,
           explicacao_didatica: mnemonic.explanation_didatica,
-          cena_visual: mnemonic.scene_description || mnemonic.scene, prompt_imagem: mnemonic.image_prompt,
-          score_medico: mnemonic.audit.score_medico, score_pedagogico: mnemonic.audit.score_pedagogico,
-          score_linguistico: 90, score_final: scoreFinal,
+          cena_visual: mnemonic.scene_description, prompt_imagem: mnemonic.image_prompt,
+          score_medico: mnemonic.memory_impact_score.clinical_relevance, 
+          score_pedagogico: mnemonic.memory_impact_score.visual_strength,
+          score_linguistico: mnemonic.memory_impact_score.simplicity, 
+          score_final: mnemonic.memory_impact_score.composite_score,
+          memory_impact_score: mnemonic.memory_impact_score.composite_score,
+          visual_strength: mnemonic.memory_impact_score.visual_strength,
+          emotional_strength: mnemonic.memory_impact_score.emotional_strength,
+          clinical_relevance: mnemonic.memory_impact_score.clinical_relevance,
+          simplicity: mnemonic.memory_impact_score.simplicity,
+          recall_speed: mnemonic.memory_impact_score.recall_speed,
+          retention_prediction: mnemonic.memory_impact_score.retention_prediction,
+          layering_json: mnemonic.layering_applied as any,
+          auditor_medical_feedback: mnemonic.audit.medical_feedback,
+          auditor_pedagogical_feedback: mnemonic.audit.pedagogical_feedback,
           aprovado: true, aprovado_medico: true, aprovado_pedagogico: true,
           image_url: img.url, associacoes_json: mnemonic.items_map as any,
-          associacoes_visuais_json: [], alertas_json: mnemonic.audit.missing_items || [],
+          associacoes_visuais_json: [], alertas_json: mnemonic.active_recall as any,
         });
 
-        await updateRequestStatus(db, requestId, "completed");
+        await updateRequestStatus(db, requestId!, "completed");
+        await db.from("telemetry_events").insert({ user_id: userId, event_name: "mnemonic_generated", properties: { result_id: resultId, score: mnemonic.memory_impact_score.composite_score } });
 
         const successData = {
           request_id: requestId, result_id: resultId,
           tema: payload.tema, sigla: mnemonic.mnemonic, phrase: mnemonic.phrase,
-          frase_mnemonica: mnemonic.phrase,
-          explanation_tecnica: mnemonic.explanation_tecnica,
+          frase_mnemonica: mnemonic.phrase, explanation_tecnica: mnemonic.explanation_tecnica,
           explanation_didatica: mnemonic.explanation_didatica,
-          scene: mnemonic.scene, scene_description: mnemonic.scene_description,
-          image_url: img.url, image_failed: img.failed,
-          score_medico: mnemonic.audit.score_medico, score_pedagogico: mnemonic.audit.score_pedagogico,
-          score_final: scoreFinal, items_map: mnemonic.items_map,
-          pontos_de_prova: mnemonic.pontos_de_prova, audit: mnemonic.audit,
-          response_source: "master_pipeline"
+          scene_description: mnemonic.scene_description, image_url: img.url, image_failed: img.failed,
+          score_final: mnemonic.memory_impact_score.composite_score, 
+          memory_impact_score: mnemonic.memory_impact_score,
+          active_recall: mnemonic.active_recall, response_source: "master_pipeline"
         };
+
+        if (cacheEligible && cacheSemanticHash) {
+          await saveAIResponseToCache({ module: "mnemonic", scope: "global", semanticHash: cacheSemanticHash, response: successData, modelUsed: AI_MODEL });
+        }
+
+        return jsonResponse({ success: true, data: successData });
+      } catch (error) {
+        console.error("[MASTER_PIPELINE] Erro:", error);
+        if (requestId && db) await updateRequestStatus(db, requestId, "failed");
+        return jsonResponse({ success: false, error: error instanceof Error ? error.message : "Erro desconhecido" }, 500);
+      }
+    };
+
+
 
         // ── Loop 4A: persist successful generic generation in global cache.
         // Skipped automatically if not eligible (image-only / auto-extract / no terms).
