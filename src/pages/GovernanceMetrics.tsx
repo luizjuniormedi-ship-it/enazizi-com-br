@@ -13,7 +13,7 @@ const GovernanceMetrics = () => {
   return (
     <div className="space-y-8 animate-fade-in pb-20">
       <CinematicHero
-        module="governance"
+        module="analytics"
         eyebrow={<><ShieldCheck className="h-3.5 w-3.5" /> Transparência Algorítmica</>}
         title="Painel de Métricas"
         subtitle="Acompanhe a integridade do seu ecossistema cognitivo e a eficácia da governança pedagógica do ENAZIZI."
