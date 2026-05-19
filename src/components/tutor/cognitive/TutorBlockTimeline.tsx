@@ -52,6 +52,7 @@ function blockToStep(type: TutorBlockType | string): Step | null {
 interface Props {
   blockTypes: Array<TutorBlockType | string>;
   className?: string;
+  activeIdx?: number;
 }
 
 /**

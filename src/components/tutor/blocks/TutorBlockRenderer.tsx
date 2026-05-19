@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import { SummaryBlock } from "./SummaryBlock";
 import { DeepDiveBlock } from "./DeepDiveBlock";
 import { MiniQuizBlock } from "./MiniQuizBlock";
