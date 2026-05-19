@@ -173,10 +173,20 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   }, [messages]);
 
   const handleSend = useCallback(
-    async (overridePrompt?: string, contextOverride?: string) => {
+    async (overridePrompt?: string, contextOverride?: string, isIncrementalAcknowledge: boolean = false) => {
       const requestId = crypto.randomUUID();
       const startTime = Date.now();
-      console.log(`[TUTOR] SEND_STARTED id=${requestId}`);
+      console.log(`[TUTOR] SEND_STARTED id=${requestId} incremental=${isIncrementalAcknowledge}`);
+
+      // Se for um acknowledge de bloco, incrementamos o bloco atual na sessão
+      if (isIncrementalAcknowledge && pedSession.session) {
+        const nextBlock = pedSession.session.currentBlock + 1;
+        await pedSession.updateSession({ 
+          currentBlock: nextBlock,
+          completedBlocks: [...pedSession.session.completedBlocks, pedSession.session.currentBlock]
+        });
+        console.log(`[TUTOR] Incremented block to ${nextBlock}`);
+      }
 
       const text = overridePrompt || input.trim();
       if (!text || isLoading || sendCooldown || !user) {
