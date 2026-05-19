@@ -99,17 +99,13 @@ export function UnifiedMissionHero({
       await refreshDash();
     } catch (err: any) {
       // Telemetry: error
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        supabase.functions.invoke("unified-telemetry", {
-          body: { 
-            userId: session.user.id, 
-            eventType: "daily_mission_error", 
-            module: "dashboard",
-            data: { error: err.message }
-          }
-        }).then();
-      }
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track('navigation_error', { 
+          reason: 'daily_mission_error', 
+          module: "dashboard",
+          error: err.message 
+        });
+      });
       toast({ title: "Erro", description: "Não foi possível gerar sua missão.", variant: "destructive" });
     } finally {
       setGenerating(false);
