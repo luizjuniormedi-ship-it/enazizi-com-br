@@ -16077,6 +16077,60 @@ export type Database = {
           },
         ]
       }
+      pedagogical_sessions: {
+        Row: {
+          cognitive_state: string | null
+          completed_blocks: number[] | null
+          comprehension_score: number | null
+          conversation_id: string | null
+          created_at: string | null
+          current_block: number | null
+          difficulty_level: number | null
+          id: string
+          metadata: Json | null
+          specialty: string | null
+          topic: string
+          total_blocks: number | null
+          tutor_mode: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cognitive_state?: string | null
+          completed_blocks?: number[] | null
+          comprehension_score?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          current_block?: number | null
+          difficulty_level?: number | null
+          id?: string
+          metadata?: Json | null
+          specialty?: string | null
+          topic: string
+          total_blocks?: number | null
+          tutor_mode?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cognitive_state?: string | null
+          completed_blocks?: number[] | null
+          comprehension_score?: number | null
+          conversation_id?: string | null
+          created_at?: string | null
+          current_block?: number | null
+          difficulty_level?: number | null
+          id?: string
+          metadata?: Json | null
+          specialty?: string | null
+          topic?: string
+          total_blocks?: number | null
+          tutor_mode?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       performance_by_topic: {
         Row: {
           accuracy: number
