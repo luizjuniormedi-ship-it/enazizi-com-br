@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Target, BookOpen, CalendarDays, History,
   Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3, RefreshCw,
-  Flame, Zap, ChevronLeft, ArrowRight
+  Flame, Zap, ChevronLeft, ArrowRight, Layers
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import PlannerStrategicHeader from "@/components/planner/PlannerStrategicHeader"
 import PlannerTaskCard, { type TaskCategory } from "@/components/planner/PlannerTaskCard";
 import PlannerFSRSSection from "@/components/planner/PlannerFSRSSection";
 import PlannerErrorZone from "@/components/planner/PlannerErrorZone";
+import PlannerLongitudinalView from "@/components/planner/PlannerLongitudinalView";
 
 // Types and algorithms from cronograma
 import {
@@ -83,6 +84,7 @@ const SmartPlanner = () => {
   const [targetExams, setTargetExams] = useState<string[]>([]);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [heavyRecoveryPhase, setHeavyRecoveryPhase] = useState<number | undefined>();
+  const [planId, setPlanId] = useState<string | null>(null);
 
 
 
@@ -95,7 +97,7 @@ const SmartPlanner = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const [temasRes, revisoesRes, desRes, configRes, approvalRes, chanceRes, fsrsRes, errorRes, profileRes, recoveryRes] = await Promise.all([
+      const [temasRes, revisoesRes, desRes, configRes, approvalRes, chanceRes, fsrsRes, errorRes, profileRes, recoveryRes, studyPlanRes] = await Promise.all([
         supabase.from("temas_estudados").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_estudo", { ascending: false }),
         supabase.from("revisoes").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_revisao", { ascending: true }),
         supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).gt("data_registro", resetAt || "1900-01-01T00:00:00Z").order("data_registro", { ascending: false }),
@@ -106,6 +108,7 @@ const SmartPlanner = () => {
         supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").order("vezes_errado", { ascending: false }).limit(20),
         supabase.from("profiles").select("exam_date, target_exams").eq("user_id", user.id).maybeSingle(),
         recoveryFlagEnabled ? supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").maybeSingle() : Promise.resolve({ data: null, error: null }),
+        supabase.from("study_plans").select("id").eq("user_id", user.id).eq("status", "completed").order("updated_at", { ascending: false }).limit(1).maybeSingle()
       ]);
 
       setTemas((temasRes.data as any[]) || []);
@@ -120,6 +123,7 @@ const SmartPlanner = () => {
       setTargetExams((profileRes.data?.target_exams as string[]) || []);
       setRecoveryMode(!!recoveryRes.data);
       setHeavyRecoveryPhase(recoveryRes.data?.mode === "heavy" ? (recoveryRes.data?.phase || 1) : undefined);
+      setPlanId(studyPlanRes.data?.id || null);
     } catch (err) {
       console.error("[SmartPlanner.loadData] failed:", err);
       // Fallback: don't show toast if it's just a background sync
@@ -651,15 +655,25 @@ const SmartPlanner = () => {
     try {
       const { data: session } = await supabase.auth.getSession();
       const existingSubjects = temas.map(t => t.tema);
+      
+      // Get user study configuration or use defaults
+      const hours = config?.meta_questoes_dia ? Math.max(1, Math.floor(config.meta_questoes_dia / 10)) : 4;
+      const days = config?.meta_revisoes_semana ? Math.min(7, Math.max(1, config.meta_revisoes_semana / 4)) : 5;
+
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
-        body: JSON.stringify({ examDate: format(newExamDate, "yyyy-MM-dd"), hoursPerDay: 4, daysPerWeek: 5, existingSubjects }),
+        body: JSON.stringify({ 
+          examDate: format(newExamDate, "yyyy-MM-dd"), 
+          hoursPerDay: hours, 
+          daysPerWeek: days, 
+          existingSubjects 
+        }),
       });
       const result = await resp.json();
       if (!resp.ok) throw new Error(result.error || "Erro ao reprocessar");
       setShowReprocess(false);
-      toast({ title: "✅ Cronograma recalculado!", description: "Revisões redistribuídas com a nova data." });
+      toast({ title: "✅ Cronograma recalculado!", description: "Sua trajetória longitudinal foi atualizada com a nova data." });
       loadData();
     } catch (err: any) {
       toast({ title: "Erro ao reprocessar", description: err.message, variant: "destructive" });
@@ -781,17 +795,17 @@ const SmartPlanner = () => {
 
       {/* Tabs — 4 seções */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={cn("w-full h-auto", plannerV2 ? "grid grid-cols-5" : "grid grid-cols-4")}>
+        <TabsList className={cn("w-full h-auto", plannerV2 ? "grid grid-cols-6" : "grid grid-cols-5")}>
           {plannerV2 && (
             <TabsTrigger value="estrategia" className="text-xs py-2 flex flex-col gap-0.5 items-center">
               <Target className="h-4 w-4" />
               <span>Estratégia</span>
             </TabsTrigger>
           )}
-          <TabsTrigger value="onboarding" className="text-xs py-2 flex flex-col gap-0.5 items-center">
-            <GraduationCap className="h-4 w-4" />
-            <span className="hidden sm:inline">Onboarding</span>
-            <span className="sm:hidden">Plano</span>
+          <TabsTrigger value="longitudinal" className="text-xs py-2 flex flex-col gap-0.5 items-center">
+            <Layers className="h-4 w-4" />
+            <span className="hidden sm:inline">Cronograma Total</span>
+            <span className="sm:hidden">Total</span>
           </TabsTrigger>
           <TabsTrigger value="conteudo" className="text-xs py-2 flex flex-col gap-0.5 items-center">
             <BookOpen className="h-4 w-4" />
@@ -808,8 +822,18 @@ const SmartPlanner = () => {
             <span className="hidden sm:inline">Histórico</span>
             <span className="sm:hidden">Hist.</span>
           </TabsTrigger>
+          <TabsTrigger value="onboarding" className="text-xs py-2 flex flex-col gap-0.5 items-center">
+            <GraduationCap className="h-4 w-4" />
+            <span className="hidden sm:inline">Config</span>
+            <span className="sm:hidden">Config</span>
+          </TabsTrigger>
         </TabsList>
 
+
+        {/* ── LONGITUDINAL ── */}
+        <TabsContent value="longitudinal" className="space-y-4 mt-4">
+          <PlannerLongitudinalView planId={planId} />
+        </TabsContent>
 
         {/* ── ONBOARDING / CONFIG ── */}
         <TabsContent value="onboarding" className="space-y-4 mt-4">
@@ -817,7 +841,6 @@ const SmartPlanner = () => {
             onSyncComplete={async () => { await loadData(); setActiveTab("estrategia"); }}
             onSubjectsGenerated={async (subjects: string[]) => {
               if (!user) return;
-              const today2 = new Date().toISOString().split("T")[0];
               return { temasRegistrados: subjects.length, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
             }}
           />

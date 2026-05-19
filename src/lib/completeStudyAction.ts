@@ -285,6 +285,17 @@ async function syncDailyPlan(userId: string, topic: string, now: string, today: 
   return "daily_plan_tasks";
 }
 
+async function syncStudyPlanItems(userId: string, topic: string, now: string): Promise<string | null> {
+  const { error } = await supabase
+    .from("study_plan_items")
+    .update({ status: "completed", updated_at: now } as any)
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .ilike("topic", `%${topic}%`);
+    
+  return error ? null : "study_plan_items";
+}
+
 async function syncProfessorPlan(userId: string, topic: string, now: string, professorPlanTaskId?: string): Promise<string | null> {
   if (professorPlanTaskId) {
     const { error } = await supabase
@@ -424,6 +435,9 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
 
   // 3. Sempre sincronizar daily plan (prefer canonical ID)
   await safe(() => syncDailyPlan(userId, topic, now, today, payload.dailyPlanTaskId), "daily_plan");
+
+  // 4. Sincronizar itens do cronograma longitudinal
+  await safe(() => syncStudyPlanItems(userId, topic, now), "study_plan_items");
 
   // 4. Validação de falso positivo — Bug 4
   if (taskType === "review" && !tablesUpdated.includes("revisoes")) {
