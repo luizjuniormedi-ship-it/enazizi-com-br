@@ -208,7 +208,7 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
                 <SidebarItem
                   key={item.to}
                   {...item}
-                  active={location.pathname === item.to || (item.to === "/dashboard" && location.pathname === "/enaflix")}
+                  active={location.pathname === item.to}
                 />
               ))}
             </div>
