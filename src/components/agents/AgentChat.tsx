@@ -1,7 +1,7 @@
 console.error("🔥 BUILD_FORENSE", {
   component: "AgentChat.tsx",
   timestamp: Date.now(),
-  version: "FORENSE_V1"
+  version: "PEDAGOGICAL_INCREMENTAL_V1"
 });
 
 // Forensics Log Store
