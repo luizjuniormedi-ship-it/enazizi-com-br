@@ -132,7 +132,7 @@ export default function TutorContinueCard() {
           className="shrink-0 border-primary/20 text-primary font-bold hover:bg-primary/5 rounded-xl h-10 px-4 transition-all hover:scale-[1.02]"
           onClick={() => {
             trackAction('tutor_continue_clicked', { conversation_id: session.conversationId });
-            navigate(`/dashboard/sessao-estudo?conversation=${session.conversationId}&source=dashboard_continue`);
+            navigate(`/dashboard/sessao-estudo/${session.conversationId}?source=dashboard_continue`);
           }}
         >
           Retomar conversa
