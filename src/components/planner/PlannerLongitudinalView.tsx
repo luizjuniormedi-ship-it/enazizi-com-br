@@ -36,7 +36,7 @@ const TASK_TYPE_CONFIG: Record<string, { label: string; icon: any; color: string
   rest_block: { label: "Descanso", icon: Clock, color: "text-slate-500", bgColor: "bg-slate-500/10" },
 };
 
-export default function PlannerLongitudinalView({ planId }: { planId: string | null }) {
+export default function PlannerLongitudinalView({ planId, durationDays = 30 }: { planId: string | null, durationDays?: number }) {
   const [items, setItems] = useState<StudyPlanItem[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -72,7 +72,8 @@ export default function PlannerLongitudinalView({ planId }: { planId: string | n
       topic: item.topic,
       subtopic: item.subtopic || undefined,
       difficulty: item.priority_score > 70 ? "dificil" : "intermediario",
-      reason: `Tarefa do cronograma — Semana ${item.week_number}`
+      reason: `Tarefa do cronograma — Semana ${item.week_number}`,
+      taskType: item.task_type as any
     };
 
     const params = encodeStudyContext(ctx);

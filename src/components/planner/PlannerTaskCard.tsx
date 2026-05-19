@@ -117,7 +117,8 @@ export default function PlannerTaskCard({
       topic: title,
       subtopic: subtopic || undefined,
       difficulty: category === "error_active" ? "dificil" : "intermediario",
-      reason: reason
+      reason: reason,
+      taskType: category === "practice" ? "practice" : category === "simulado" ? "simulado" : "review"
     };
 
     const params = encodeStudyContext(ctx);

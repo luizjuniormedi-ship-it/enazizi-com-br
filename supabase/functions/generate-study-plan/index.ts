@@ -7,7 +7,7 @@ import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, waitUntil, supabaseAdmin, ai }) => {
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
-  const { examDate, hoursPerDay, daysPerWeek, editalText, strictMode, performanceData, existingSubjects } = body;
+  const { examDate, hoursPerDay, daysPerWeek, editalText, strictMode, performanceData, existingSubjects, durationDays, plannerType } = body;
 
   logger.info("PLAN_GEN_START", "Starting Master Planner Generation", { 
     userId: user.id, 
@@ -251,7 +251,9 @@ Retorne APENAS um JSON no seguinte formato:
         total_available_minutes: totalAvailableMinutes,
         start_date: startDate,
         end_date: finalExamDate,
-        source: extractedTopics && extractedTopics.length > 0 ? "pdf_edital" : "manual"
+        source: extractedTopics && extractedTopics.length > 0 ? "pdf_edital" : "manual",
+        duration_days: durationDays || daysUntilExam,
+        planner_type: plannerType || "longitudinal"
       }).eq("id", plan.id);
 
       // Populate study_plan_items from the full longitudinal schedule

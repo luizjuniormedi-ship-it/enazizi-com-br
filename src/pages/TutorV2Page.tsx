@@ -26,6 +26,7 @@ export default function TutorV2Page() {
   // Auto-start session if coming from study context
   useEffect(() => {
     if (studyCtx?.topic && user && !sessionId && !isCreating) {
+      console.log("[TUTOR_AUTO_START] Detected context for topic:", studyCtx.topic);
       handleStartSession(studyCtx.topic);
     }
   }, [studyCtx?.topic, user, sessionId]);
