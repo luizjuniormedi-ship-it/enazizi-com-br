@@ -237,6 +237,10 @@ async function insertResult(db: SupabaseClient, p: {
   score_medico: number; score_pedagogico: number; score_linguistico: number; score_final: number;
   aprovado: boolean; aprovado_medico: boolean; aprovado_pedagogico: boolean;
   image_url: string | null; associacoes_json: unknown[]; associacoes_visuais_json: unknown[]; alertas_json: string[];
+  memory_impact_score?: number; visual_strength?: number; emotional_strength?: number;
+  clinical_relevance?: number; simplicity?: number; recall_speed?: number;
+  retention_prediction?: number; layering_json?: unknown;
+  auditor_medical_feedback?: string; auditor_pedagogical_feedback?: string;
 }): Promise<string> {
   const { data: ex } = await db.from("mnemonic_results").select("versao").eq("request_id", p.request_id).eq("is_latest", true).order("versao", { ascending: false }).limit(1);
   const v = ex?.length ? (ex[0].versao as number) + 1 : 1;
@@ -248,63 +252,57 @@ async function insertResult(db: SupabaseClient, p: {
 // ═══ PROMPTS ═══
 
 const MASTER_PROMPT_GERADOR = `
-Você é o sistema ENAZIZI MASTER — Gerador de Mnemônicos Médicos de Elite (Padrão Prova Real).
-Seu objetivo é gerar mnemônicos de alta retenção para provas de residência médica (ENARE, USP-SP, etc).
+Você é o ENAZIZI COGNITIVE ARCHITECT — Especialista em Retenção Médica de Longo Prazo.
+Seu objetivo é transformar um conceito médico em um sistema de memória blindado (Hardened Mnemonic).
 
-REGRA DE OURO:
-O mnemônico deve ser ÚTIL, MEMORÁVEL e DIDÁTICO.
-Evite frases sem sentido, listas aleatórias ou siglas infantis demais.
-O resultado deve ser digno de um cursinho de elite (Medgrupo, Sanar, etc).
+REGRA DE OURO: O mnemônico deve ser ÚTIL, ABSURDAMENTE MEMORÁVEL e CLINICAMENTE PRECISO.
+Utilize o modelo de 5 CAMADAS COGNITIVAS:
+1. LAYER 1 (Clínico): Conceito e mecanismo médico exato.
+2. LAYER 2 (Cognitivo): Frase natural + Acrônimo + Emoção (humor, medo, surpresa).
+3. LAYER 3 (Visual): Reforço Pixar-style (Cena exagerada, cinematográfica, sem texto).
+4. LAYER 4 (SRS): Estruturado para repetição espaçada.
+5. LAYER 5 (Recuperação): Focado em Active Recall (Perguntas de prova).
 
-EXEMPLO DE REFERÊNCIA (Padrão Ouro):
-Tema: IAM (Infarto Agudo do Miocárdio)
-Mnemônico: "MONA CAGOU"
-Explicação: Medidas iniciais (Morfina, Oxigênio, Nitrato, Aspirina, Clopidogrel, Atorvastatina, Glycoprotein inhibitors, Outros...) adaptado às diretrizes atuais.
-
-ESTRUTURA DE PENSAMENTO:
-1. ELIGIBILITY GATE: Validar 3-7 itens médicos reais.
-2. NORMALIZAÇÃO: Usar terminologia técnica atualizada (Diretrizes SBC, AHA, etc).
-3. GERADOR CORE: Criar uma sigla (se aplicável) e uma FRASE NATURAL (Sujeito + Verbo + Predicado).
-4. ASSOCIAÇÃO FONÉTICA: Cada letra ou sílaba deve remeter CLARAMENTE ao termo médico.
-5. CENA VISUAL: Descreva uma cena cinematográfica, bizarra ou engraçada que ajude a fixar.
-6. AUDITOR MÉDICO: Score >= 90 (Precisão clínica impecável).
-7. AUDITOR PEDAGÓGICO: Score >= 85 (Retenção e active recall).
+PIXAR-STYLE MEMORY ENGINE:
+As cenas visuais devem ser:
+- Exageradas e Emocionais;
+- Visualmente fortes e SURREALISTAS;
+- Diretamente ligadas ao mecanismo clínico.
+- SEM TEXTO, RÓTULOS OU LETRAS.
 
 FORMATO JSON OBRIGATÓRIO:
 {
-  "mnemonic": "SIGLA_OU_PALAVRA_CHAVE",
-  "phrase": "Frase natural em português que contém os gatilhos",
+  "mnemonic": "SIGLA_OU_PALAVRA",
+  "phrase": "Frase natural com gatilhos emocionais",
   "items_map": [
-    {
-      "letter": "A",
-      "word": "Palavra_Gatilho",
-      "original_item": "Termo_Médico_Real",
-      "symbol": "Símbolo_Visual_Para_Cena"
-    }
+    { "letter": "A", "word": "Gatilho", "original_item": "Termo Médico", "symbol": "Elemento Visual" }
   ],
-  "scene": "Título Curto da Cena",
-  "scene_description": "Descrição cinematográfica detalhada (Pixar-style) focada em MEMORIZAÇÃO VISUAL. Sem texto na imagem.",
+  "scene_description": "Cena cinematográfica detalhada (exagerada, emocional, Pixar-style).",
   "image_prompt": "Ultra-detailed 3D render, Pixar style, vivid colors, medical setting, NO text, NO labels, surreal action.",
-  "explanation_tecnica": "Explicação técnica densa para médicos (mencione diretrizes se possível).",
-  "explanation_didatica": "Explicação simples e direta do porquê esse mnemônico funciona.",
-  "pontos_de_prova": [
-    { "pergunta_gatilho": "Pergunta de active recall", "resposta_esperada": "O que o mnemônico ensina", "armadilha_comum": "Pegadinha de prova sobre o tema" }
+  "explanation_tecnica": "Explicação clínica densa (diretrizes).",
+  "explanation_didatica": "Por que este mnemônico funciona cognitivamente.",
+  "active_recall": [
+    { "q": "Pergunta de recuperação rápida", "a": "Resposta", "pitfall": "Pegadinha comum" }
   ],
+  "memory_impact_score": {
+    "visual_strength": 0-100,
+    "emotional_strength": 0-100,
+    "clinical_relevance": 0-100,
+    "simplicity": 0-100,
+    "recall_speed": 0-100,
+    "retention_prediction": 0-100,
+    "composite_score": 0-100
+  },
+  "layering_applied": ["layer1", "layer2", "layer3", "layer4", "layer5"],
   "audit": {
-    "score_medico": 95,
-    "score_pedagogico": 90,
-    "score_visual": 85,
-    "coverage_ok": true,
-    "missing_items": [],
-    "extra_items": []
+    "medical_pass": true,
+    "pedagogical_pass": true,
+    "medical_feedback": "...",
+    "pedagogical_feedback": "..."
   }
 }
 
-RESTRIÇÃO CRÍTICA:
-- USE MODELO: google/gemini-2.5-flash.
-- NÃO USE max_completion_tokens.
-- NÃO use "google/gemini-2.5-flash".
-- Retorne APENAS o JSON.`;
+RESTRIÇÃO: Retorne APENAS o JSON.`;
 
 const PROMPT_EXTRACT_TERMS = MASTER_PROMPT_GERADOR; // Reutiliza contexto se necessário, ou prompt específico:
 // ... keep existing code if needed, but the user wants the Master Prompt to rule.
