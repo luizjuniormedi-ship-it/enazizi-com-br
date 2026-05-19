@@ -31,71 +31,55 @@ export function buildStudyContext(
  * including query params so the target module can auto-start.
  */
 export function buildStudyPath(
-  rec: StudyRecommendation,
+  rec: any, // flexible for direct task objects
   source: StudySource = "mission"
 ): string {
   const ctx = buildStudyContext(rec, source);
   const params = encodeStudyContext(ctx);
 
-  // Mission context — allows module to report back completion
   if (rec.id) params.set("sc_task_id", rec.id);
   params.set("sc_origin", source);
-
-  // Legacy compat params
   params.set("origin", "guided");
   if (rec.topic) params.set("topic", rec.topic);
   if (rec.specialty) params.set("specialty", rec.specialty);
 
-  switch (rec.targetModule) {
-    case "tutor":
-    case "tutor-v2": {
-      // Inject tutor-specific context for mission integration
-      params.set("tutor_mode", source === "mission" || source === "daily-plan" ? "mission" : "free");
+  // New task types mapping from Coordenador Adaptativo
+  const taskType = rec.task_type || rec.type;
+  
+  switch (taskType) {
+    case "tutor_lesson":
+    case "theory":
+      params.set("tutor_mode", "mission");
+      params.set("phase", "lesson");
+      return `/dashboard/sessao-estudo?${params}`;
 
-      // Map task type → tutor phase
-      const phaseMap: Record<string, string> = {
-        error_review: "correction",
-        review: "fixation",
-        new: "lesson",
-        practice: "fixation",
-        clinical: "fixation",
-      };
-      const phase = phaseMap[rec.type] || "lesson";
-      params.set("phase", phase);
-      params.set("tutor_origin", rec.type);
-
-      // If tutor-v2, go to the newer session path
-      if (rec.targetModule === "tutor-v2") {
-        return `/dashboard/sessao-estudo?${params}`;
-      }
-      return `/dashboard/mentor?${params}`;
-    }
-
-
-    case "questoes":
+    case "question_practice":
+    case "practice":
       return `/dashboard/banco-questoes?${params}`;
 
+    case "fsrs_review":
+    case "review":
     case "flashcards":
       return `/dashboard/flashcards?${params}`;
 
+    case "error_recovery":
+    case "error_fix":
+      return `/dashboard/banco-erros?${params}`;
+
+    case "mini_simulado":
+    case "simulation":
     case "simulado":
       return `/dashboard/simulados?${params}`;
 
-    case "plantao":
-      params.set("difficulty", "intermediário");
-      return `/dashboard/simulacao-clinica?${params}`;
-
-    case "anamnese":
-      params.set("difficulty", "intermediário");
-      return `/dashboard/anamnese?${params}`;
-
-    case "banco-erros":
-      return `/dashboard/banco-erros?${params}`;
-
-    case "cronograma":
-      return `/dashboard/planner?${params}`;
+    case "summary":
+      return `/dashboard/plano-dia?sc_view=summary`;
 
     default:
-      return rec.targetPath;
+      // Backward compatibility for TargetModule string
+      if (rec.targetModule === "tutor-v2" || rec.targetModule === "tutor") {
+        return `/dashboard/sessao-estudo?${params}`;
+      }
+      return rec.targetPath || `/dashboard/${rec.targetModule || 'cockpit'}?${params}`;
   }
 }
+
