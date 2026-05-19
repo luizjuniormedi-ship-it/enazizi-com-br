@@ -197,15 +197,15 @@ export function TutorBlockRenderer({
                   <motion.div 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="mt-6 flex justify-center"
+                    className="mt-8 flex justify-center"
                   >
                     <button
                       onClick={() => setUnlockedCount(prev => prev + 1)}
-                      className="group relative flex items-center gap-3 px-8 py-4 rounded-2xl bg-primary text-white font-bold text-sm tracking-tight hover:scale-105 transition-all shadow-xl shadow-primary/20 active:scale-95"
+                      className="group relative flex items-center gap-4 px-10 py-5 rounded-[24px] bg-primary text-white font-black text-sm uppercase tracking-[0.1em] hover:scale-105 hover:shadow-[0_0_30px_rgba(var(--primary),0.4)] transition-all active:scale-95 border border-white/20"
                     >
-                      <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <span>Entendi o conceito, avançar</span>
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      <div className="absolute inset-0 bg-white/10 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span>Dominei esta parte, avançar</span>
+                      <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform" />
                     </button>
                   </motion.div>
                 )}
