@@ -90,7 +90,13 @@ serve(async (req) => {
       audit_log: { context, topic, userId }
     });
 
-    // 6. Return Response
+    // 6. Asynchronously trigger health governor for background updates
+    edgeFunctions.invoke('pedagogical-health-governor', {
+      body: { userId },
+      headers: { Authorization: req.headers.get('Authorization')! }
+    }).catch(e => console.error("Async Health Update Error:", e));
+
+    // 7. Return Response
     return jsonResponse({
       content: aiText,
       audit: {
