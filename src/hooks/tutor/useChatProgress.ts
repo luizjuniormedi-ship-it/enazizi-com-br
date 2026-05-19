@@ -74,6 +74,7 @@ export function useChatProgress(userId: string | undefined) {
       "update": { prompt: `Atualize meu painel de desempenho com base nesta sessão sobre ${currentTopic}. Mostre: questões respondidas, taxa de acerto, temas fracos, desempenho clínico e discursivo.`, step: 13 },
       "consolidation": { prompt: `Agora inicie o BLOCO DE CONSOLIDAÇÃO sobre ${currentTopic}. Gere 5 questões objetivas sequenciais (uma por vez, espere minha resposta antes de enviar a próxima). Cada questão deve ter caso clínico curto + alternativas A–E. Após cada resposta, diga se acertou ou errou com breve explicação. Ao final das 5, apresente um resumo: acertos/erros, taxa, pontos fracos detectados e recomendação de próximo tema.`, step: 14 },
       "feynman": { prompt: `🧠 MÉTODO FEYNMAN — Agora é sua vez de ensinar! Explique o tema "${currentTopic}" com suas próprias palavras, como se estivesse ensinando para alguém SEM formação médica (um leigo completo). Use linguagem simples, analogias do dia a dia e exemplos práticos. Não use jargão médico — traduza TUDO. Após minha explicação, avalie em 4 critérios (nota 0-10 cada): ✨ Clareza (linguagem acessível?), 📋 Completude (cobriu os pontos essenciais?), 🎯 Precisão (informações corretas?), 💬 Simplicidade (evitou jargão?). Identifique as LACUNAS exatas do meu conhecimento e sugira como reformular as partes fracas.`, step: 15 },
+      "retention": { prompt: `Gere um relatório final de retenção e recuperação sobre ${currentTopic}. Analise meu desempenho nesta sessão, projete meu esquecimento (FSRS) e sugira o próximo momento ideal para revisão.`, step: 16 },
     } as Record<string, { prompt: string; step: number }>;
   }, []);
 
@@ -91,6 +92,7 @@ export function useChatProgress(userId: string | undefined) {
       12: { key: "update", label: "Atualizar Painel", icon: "📈", desc: "Revisão do seu desempenho na sessão" },
       13: { key: "consolidation", label: "Consolidação", icon: "🔁", desc: "5 questões rápidas para consolidar o aprendizado" },
       14: { key: "feynman", label: "Método Feynman", icon: "💡", desc: "Explique o tema com suas palavras como se fosse para um leigo" },
+      15: { key: "retention", label: "Relatório de Retenção", icon: "📊", desc: "Análise final de retenção e projeção FSRS" },
     };
     return phaseByStep[step] || null;
   }, []);
