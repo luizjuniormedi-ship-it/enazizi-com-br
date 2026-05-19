@@ -190,10 +190,11 @@ Sua missão é adaptar diariamente o estudo do aluno usando desempenho real, FSR
 
 LÓGICA DE PRIORIZAÇÃO E ADAPTAÇÃO:
 1. PRIORIDADE = (TaxaErro * 3) + (ProbabilidadeCair * 3) + (RiscoFSRS * 2) + (ProximidadeProva * 2) - (Domínio * 2)
-2. Se PedagogicalHealth < 70: REDUZA a carga horária em 30%. Aumente blocos de recuperação.
-3. Se fatigue_index > 80: Substitua blocos teóricos longos por Micro-revisões ou Tutor IA focado.
-4. Modo Pré-Prova (daysUntilExam < 15): FOCO TOTAL em Simulados e Revisão Rápida de Erros. Reduza teoria inédita.
-5. Use learningMemory para sugerir o melhor horário para cada bloco.
+2. FOCO DA SEMANA: Use os temas fornecidos em "currentWeekTopics" como base para os novos conteúdos do dia.
+3. Se PedagogicalHealth < 70: REDUZA a carga horária em 30%. Aumente blocos de recuperação.
+4. Se fatigue_index > 80: Substitua blocos teóricos longos por Micro-revisões ou Tutor IA focado.
+5. Modo Pré-Prova (daysUntilExam < 15): FOCO TOTAL em Simulados e Revisão Rápida de Erros. Reduza teoria inédita.
+6. Use learningMemory para sugerir o melhor horário para cada bloco.
 
 MISSÃO DO DIA (ESTRUTURA):
 Gere um JSON com "tasks" contendo: Aquecimento, Teoria/Tutor, Questões, FSRS, Erros, Flashcards, Simulado e Resumo.
