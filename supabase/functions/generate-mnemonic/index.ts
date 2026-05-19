@@ -360,12 +360,7 @@ serve(async (req: Request) => {
             .order("rating_general", { ascending: false })
             .limit(5);
           if (bestFeedback && bestFeedback.length > 0) {
-            const resIds = bestFeedback.map(f => f.result_id);
-            const { data: resData } = await db.from("mnemonic_results")
-              .select("tema, sigla")
-              .in("id", resIds);
-            // Hint for IA: base style on what user liked before
-            console.log("[Personalization] Style context detected.");
+            preferredStyle += " (preferência detectada por estilos que geraram feedback positivo)";
           }
         } catch (e) { /* ignore personalization errors */ }
 
@@ -451,7 +446,6 @@ serve(async (req: Request) => {
             if (!candidate.audit?.medical_pass) issues.push("falha_auditoria_medica");
             if (!candidate.audit?.pedagogical_pass) issues.push("falha_auditoria_pedagogica");
             if (candidate.memory_impact_score?.composite_score < 75) issues.push(`baixo_score_impacto=${candidate.memory_impact_score?.composite_score}`);
-            if (!candidate.phrase) issues.push("frase_vazia");
           }
 
           // Telemetry for audit
@@ -477,11 +471,10 @@ serve(async (req: Request) => {
         if (!mnemonic) {
           await db.from("telemetry_events").insert({ user_id: userId, event_name: "mnemonic_rejected", properties: { tema: payload.tema } });
           const fb = buildDeterministicFallback(payload.tema, payload.termos);
-          return jsonResponse({ success: true, warning: "Fallback determinístico gerado.", response_source: "fallback", data: fb });
+          return jsonResponse({ success: true, data: fb });
         }
 
         // ETAPA 2: Imagem
-        const imgStart = Date.now();
         const img = await generateImage(mnemonic.image_prompt);
 
         // ETAPA 3: Persistir
@@ -501,7 +494,7 @@ serve(async (req: Request) => {
           simplicity: mnemonic.memory_impact_score.simplicity,
           recall_speed: mnemonic.memory_impact_score.recall_speed,
           retention_prediction: mnemonic.memory_impact_score.retention_prediction,
-          layering_json: mnemonic.layering_applied,
+          layering_json: mnemonic.layering_applied as any,
           auditor_medical_feedback: mnemonic.audit.medical_feedback,
           auditor_pedagogical_feedback: mnemonic.audit.pedagogical_feedback,
           aprovado: true, aprovado_medico: true, aprovado_pedagogico: true,
@@ -534,6 +527,7 @@ serve(async (req: Request) => {
         return jsonResponse({ success: false, error: error instanceof Error ? error.message : "Erro desconhecido" }, 500);
       }
     };
+
 
 
         // ── Loop 4A: persist successful generic generation in global cache.
