@@ -615,7 +615,7 @@ const Simulados = () => {
 
           const batchQs = (batchData.questions || []).map((q: any) => ({
             ...q,
-            topic: q.topic || config.topics?.[0] || "Geral"
+            topic: q.topic || q.specialty || (config.topics && config.topics[0]) || "Geral"
           }));
           
           if (batchQs.length === 0) {
@@ -628,7 +628,7 @@ const Simulados = () => {
             throw new Error("Não foi possível gerar questões. A IA retornou um resultado vazio.");
           }
           
-          allGenerated = [...allGenerated, ...batchQs];
+          allGenerated = deduplicateQuestions([...allGenerated, ...batchQs]);
           setQuestions(allGenerated);
           setPartialCount(allGenerated.length);
           currentTry = 0;

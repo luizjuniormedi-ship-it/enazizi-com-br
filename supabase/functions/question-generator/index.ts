@@ -120,7 +120,7 @@ REGRAS CRÍTICAS DE QUALIDADE (PADRÃO OURO):
    - EXAME FÍSICO DETALHADO: PA, FC, FR, Temp, SpO2 (sempre com valores numéricos).
    - EXAMES COMPLEMENTARES: Apresentar resultados com valores de referência quando necessário.
    - Mínimo 450 caracteres. Termine sempre com a pergunta direta.
-4. ALTERNATIVAS: Exatamente 4 opções (A, B, C, D) plausíveis. PROIBIDO 5 alternativas. Evite "todas corretas" ou "nenhuma correta".
+4. ALTERNATIVAS: Exatamente 4 opções (A, B, C, D) plausíveis. PROIBIDO 5 alternativas. NUNCA use Letra E. Evite "todas corretas" ou "nenhuma correta".
 5. EXPLICAÇÃO (explanation): Analise individualmente cada alternativa (por que correta/errada).
    - Inclua "🧑‍⚕️ Explicação Simplificada" al final.
    - 📚 Mini-revisão do tema (3-5 linhas).
