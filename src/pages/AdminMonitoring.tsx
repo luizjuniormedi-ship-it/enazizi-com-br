@@ -138,48 +138,13 @@ export default function AdminMonitoring() {
               <LayoutDashboard className="h-3.5 w-3.5" />
               Visão Geral
             </TabsTrigger>
+            <TabsTrigger value="governance" className="text-xs gap-1.5 font-bold text-primary">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Governança OS
+            </TabsTrigger>
             <TabsTrigger value="students" className="text-xs gap-1.5">
               <Users className="h-3.5 w-3.5" />
-              Alunos
-              {students.length > 0 && (
-                <Badge variant="secondary" className="text-[9px] h-4 px-1 ml-0.5">
-                  {students.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="text-xs gap-1.5">
-              <BarChart3 className="h-3.5 w-3.5" />
-              Desempenho
-            </TabsTrigger>
-            <TabsTrigger value="risk" className="text-xs gap-1.5">
-              <ShieldAlert className="h-3.5 w-3.5" />
-              Riscos
-              {riskCount > 0 && (
-                <Badge variant="destructive" className="text-[9px] h-4 px-1 ml-0.5">
-                  {riskCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="text-xs gap-1.5">
-              <Zap className="h-3.5 w-3.5" />
-              IA
-            </TabsTrigger>
-            <TabsTrigger value="adaptive" className="text-xs gap-1.5">
-              <GitMerge className="h-3.5 w-3.5" />
-              ACE Loop
-            </TabsTrigger>
-            <TabsTrigger value="system" className="text-xs gap-1.5">
-              <Activity className="h-3.5 w-3.5" />
-              Sistema
-            </TabsTrigger>
-            <TabsTrigger value="video-audit" className="text-xs gap-1.5">
-              <Film className="h-3.5 w-3.5" />
-              Auditoria Vídeo
-            </TabsTrigger>
-            <TabsTrigger value="cognitive-audit" className="text-xs gap-1.5">
-              <Brain className="h-3.5 w-3.5 text-primary" />
-              Auditoria Cognitiva
-            </TabsTrigger>
+...
             <TabsTrigger value="scale-governance" className="text-xs gap-1.5">
               <Scale className="h-3.5 w-3.5 text-primary" />
               Governança de Escala
