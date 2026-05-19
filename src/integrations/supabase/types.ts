@@ -20154,42 +20154,137 @@ export type Database = {
         }
         Relationships: []
       }
+      study_plan_items: {
+        Row: {
+          completion_percent: number | null
+          created_at: string | null
+          difficulty: string | null
+          discipline: string
+          estimated_minutes: number | null
+          id: string
+          linked_flashcards: string[] | null
+          linked_questions: string[] | null
+          linked_tutor_session: string | null
+          planned_date: string | null
+          priority_score: number | null
+          source: string | null
+          status: string | null
+          study_plan_id: string
+          subtopic: string | null
+          topic: string
+          updated_at: string | null
+          user_id: string
+          week_number: number | null
+        }
+        Insert: {
+          completion_percent?: number | null
+          created_at?: string | null
+          difficulty?: string | null
+          discipline: string
+          estimated_minutes?: number | null
+          id?: string
+          linked_flashcards?: string[] | null
+          linked_questions?: string[] | null
+          linked_tutor_session?: string | null
+          planned_date?: string | null
+          priority_score?: number | null
+          source?: string | null
+          status?: string | null
+          study_plan_id: string
+          subtopic?: string | null
+          topic: string
+          updated_at?: string | null
+          user_id: string
+          week_number?: number | null
+        }
+        Update: {
+          completion_percent?: number | null
+          created_at?: string | null
+          difficulty?: string | null
+          discipline?: string
+          estimated_minutes?: number | null
+          id?: string
+          linked_flashcards?: string[] | null
+          linked_questions?: string[] | null
+          linked_tutor_session?: string | null
+          planned_date?: string | null
+          priority_score?: number | null
+          source?: string | null
+          status?: string | null
+          study_plan_id?: string
+          subtopic?: string | null
+          topic?: string
+          updated_at?: string | null
+          user_id?: string
+          week_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_plan_items_study_plan_id_fkey"
+            columns: ["study_plan_id"]
+            isOneToOne: false
+            referencedRelation: "study_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_plans: {
         Row: {
           created_at: string
           current_step: string | null
+          daily_available_minutes: number | null
+          end_date: string | null
           error_message: string | null
+          exam_date: string | null
+          exam_name: string | null
           id: string
           organization_id: string | null
           plan_json: Json | null
           progress: number | null
+          source: string | null
+          start_date: string | null
           status: string | null
           updated_at: string
           user_id: string
+          weekly_available_days: number | null
         }
         Insert: {
           created_at?: string
           current_step?: string | null
+          daily_available_minutes?: number | null
+          end_date?: string | null
           error_message?: string | null
+          exam_date?: string | null
+          exam_name?: string | null
           id?: string
           organization_id?: string | null
           plan_json?: Json | null
           progress?: number | null
+          source?: string | null
+          start_date?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
+          weekly_available_days?: number | null
         }
         Update: {
           created_at?: string
           current_step?: string | null
+          daily_available_minutes?: number | null
+          end_date?: string | null
           error_message?: string | null
+          exam_date?: string | null
+          exam_name?: string | null
           id?: string
           organization_id?: string | null
           plan_json?: Json | null
           progress?: number | null
+          source?: string | null
+          start_date?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string
+          weekly_available_days?: number | null
         }
         Relationships: [
           {
