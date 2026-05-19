@@ -30,6 +30,7 @@ interface AgentMessageListProps {
   topic?: string | null;
   subtopic?: string | null;
   specialty?: string | null;
+  isPedagogicalSession?: boolean;
 }
 
 const AgentMessageList = memo(
