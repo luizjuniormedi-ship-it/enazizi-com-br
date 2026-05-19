@@ -39,6 +39,17 @@ export default function TutorV2Page() {
     setBootStatus("Inicializando sessão...");
     console.log("[TUTOR_SESSION_BOOT] Topic:", finalTopic);
 
+    // Telemetry: context loaded
+    if (studyCtx) {
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track("tutor_context_loaded", {
+          topic: finalTopic,
+          source: studyCtx.source,
+          task_type: studyCtx.taskType
+        });
+      });
+    }
+
     try {
       setTimeout(() => setBootStatus("Consultando literatura médica..."), 1000);
       setTimeout(() => setBootStatus("Carregando sua memória cognitiva..."), 2000);
