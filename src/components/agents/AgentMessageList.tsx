@@ -24,6 +24,7 @@ interface AgentMessageListProps {
   onLink: (content: string, uploadIds: string[]) => void;
   onRegenerateFromMemory?: (question: string) => void;
   onIncrementalAction?: (action: string) => void;
+  onAddToPlanner?: () => void;
   /** CME integration props */
   conversationId?: string;
   topic?: string | null;
