@@ -172,16 +172,42 @@ async function processInBackground(
       extracted_json: { step: "text_extracted", progress: 20, total_chunks: textChunks.length }
     }).eq("id", uploadId);
 
-    // 3. Topic Extraction
-    await updateProgress(supabaseAdmin, uploadId, { step: "extracting_topics", progress: 30, current_chunk: 0, total_chunks: textChunks.length });
+    // 3. Date and Topic Extraction
+    await updateProgress(supabaseAdmin, uploadId, { step: "analyzing_document", progress: 30, current_chunk: 0, total_chunks: textChunks.length });
     
+    let detectedExamDate: string | null = null;
     const allExtractedTopics: any[] = [];
     let mainTopic = "Clínica Médica";
+
+    // First pass: look for important dates (especially exam date)
+    const allText = textChunks.map(c => c.text).join("\n\n").slice(0, 15000); // Analyze start of document for dates
+    const dateDetectionResponse = await aiFetch({
+      model: ALLOWED_MODELS.generation,
+      messages: [
+        {
+          role: "system",
+          content: `Você é um especialista em editais médicos. 
+          Sua tarefa é identificar a DATA DA PROVA (exame/certame) no texto fornecido.
+          Retorne APENAS um JSON no formato: {"exam_date": "YYYY-MM-DD" | null, "other_dates": [{"label": "...", "date": "YYYY-MM-DD"}]}.
+          Ignore datas passadas se houver datas futuras. Priorize "data da prova", "prova objetiva", "exame".`
+        },
+        { role: "user", content: `Extraia datas importantes deste edital:\n\n${allText}` }
+      ],
+      timeoutMs: 30000,
+    });
+
+    if (dateDetectionResponse.ok) {
+      const dateJson = parseAiJson((await dateDetectionResponse.json()).choices?.[0]?.message?.content || "{}");
+      if (dateJson.exam_date) {
+        detectedExamDate = dateJson.exam_date;
+        console.log(`[PROCESS_UPLOAD] Detected exam date: ${detectedExamDate}`);
+      }
+    }
 
     for (let i = 0; i < textChunks.length; i++) {
       await updateProgress(supabaseAdmin, uploadId, { 
         step: "extracting_topics", 
-        progress: Math.floor(30 + (i / textChunks.length) * 40), 
+        progress: Math.floor(40 + (i / textChunks.length) * 40), 
         current_chunk: i + 1, 
         total_chunks: textChunks.length 
       });
@@ -201,13 +227,15 @@ async function processInBackground(
               2. SEPARAÇÃO POR TÓPICO: O texto pode conter vários temas. Separe-os individualmente.
               3. HIERARQUIA: Identifique a Especialidade (ex: Cardiologia), o Tema (ex: Insuficiência Cardíaca) e o Subtópico (ex: Tratamento na Emergência).
               4. DIFICULDADE: Estime a dificuldade do tema para um aluno de medicina (facil, medio, dificil).
+              5. EVIDÊNCIA: Extraia o trecho original do texto (raw_excerpt) e o número da página (se disponível).
               
-              Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
+              Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "...", "raw_excerpt": "...", "page": number}]}`
             },
-            { role: "user", content: `Extraia os tópicos deste trecho (Parte ${i+1}/${textChunks.length}):\n\n${textChunks[i].text}` }
+            { role: "user", content: `Extraia os tópicos deste trecho (Parte ${i+1}/${textChunks.length}, Páginas ${textChunks[i].pageStart}-${textChunks[i].pageEnd}):\n\n${textChunks[i].text}` }
           ],
           timeoutMs: 45000,
         });
+
 
         if (chunkResponse.ok) {
           const aiRawResult = (await chunkResponse.json()).choices?.[0]?.message?.content || "";
