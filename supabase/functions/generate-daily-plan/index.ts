@@ -31,7 +31,7 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
       .order("vezes_errado", { ascending: false })
       .limit(5),
     supabaseAdmin.from("profiles")
-      .select("daily_study_hours, target_exams, level, study_streak")
+      .select("daily_study_hours, target_exams, level, study_streak, exam_date")
       .eq("user_id", user.id)
       .single(),
     supabaseAdmin.from("study_plans")
@@ -50,8 +50,29 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
     supabaseAdmin.from("fsrs_cards")
       .select("stability, difficulty, reps")
       .eq("user_id", user.id)
-      .limit(30)
+      .limit(30),
+    supabaseAdmin.from("pedagogical_health_indices")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabaseAdmin.from("pedagogical_memory_layer")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle()
   ]);
+
+  const profileData = profileRes.data;
+  const healthData = healthRes.data;
+  const memoryData = memoryRes.data;
+
+  // Calculate real days until exam
+  const examDate = profileData?.exam_date ? new Date(profileData.exam_date) : null;
+  const daysUntilExam = examDate 
+    ? Math.max(0, Math.ceil((examDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+    : 90;
+
 
 
   const dailyHours = profileRes.data?.daily_study_hours || 4;
@@ -89,8 +110,13 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
     currentScore: approvalRes.data || { score: 0, phase: "base" },
     fsrsStability: fsrsRes.data?.length ? (fsrsRes.data.reduce((acc, c) => acc + (c.stability || 0), 0) / fsrsRes.data.length) : 0,
     proximityScore,
+    pedagogicalHealth: healthData || { health_score: 100 },
+    learningMemory: memoryData || {},
+    isPreExamMode: daysUntilExam < 15,
+    daysUntilExam,
     today
   };
+
 
 
 
