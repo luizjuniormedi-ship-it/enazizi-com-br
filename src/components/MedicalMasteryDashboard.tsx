@@ -125,7 +125,7 @@ function MasteryCard({ metric }: { metric: MasteryMetric }) {
           </div>
           <div className="space-y-1">
             <div className="text-[9px] font-black uppercase tracking-[0.1em] text-white/40 flex items-center gap-1.5">
-              <Ghost className="h-3 w-3 text-blue-300" /> Tutor Dep.
+              <Ghost className="h-3 w-3 text-blue-300" /> Tutor V3 Dep.
             </div>
             <div className="text-[13px] font-black text-white">{(metric.dependency_factor * 100).toFixed(1)}%</div>
           </div>

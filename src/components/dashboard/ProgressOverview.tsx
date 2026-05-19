@@ -162,7 +162,7 @@ function ProgressOverview() {
           <CinematicMetricHalo
             module="dashboard"
             icon={Target}
-            label="Aprovação"
+            label="Aprovação V3"
             value={approvalScore}
             displayValue={hasApproval ? undefined : "—"}
             suffix={hasApproval ? "%" : undefined}
