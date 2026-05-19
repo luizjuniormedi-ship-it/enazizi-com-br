@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { humanizeCMEMessage, FRIENDLY_STATUS_LABEL, friendlyStageLabel } from "@/components/cinematic/cmeUserMessages";
+import { InteractiveCognitiveCard } from "@/components/tutor/pedagogical/InteractiveCognitiveCard";
 
 interface AgentMessageItemProps {
   msg: Msg;
