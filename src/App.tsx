@@ -194,7 +194,7 @@ const App = () => (
                   <Route path="videoaulas" element={<VideoLessonsLibrary />} />
                   <Route path="videoaulas/explorar" element={<VideoLessonsExplore />} />
                   <Route path="videoaulas/:id" element={<VideoLessonPlayer />} />
-                  <Route path="enaflix" element={<Enaflix />} />
+                  <Route path="enaflix" element={<EnaflixPage />} />
                   <Route path="uploads" element={<Uploads />} />
                   <Route path="diagnostico" element={<Diagnostic />} />
                   <Route path="simulacao-clinica" element={<ClinicalSimulation />} />
