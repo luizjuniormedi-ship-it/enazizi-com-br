@@ -314,6 +314,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   }, [initialTopic, initialSessionId, hasStarted]);
 
   const handleStart = (prompt: string) => {
+    console.debug("[AIMentor] handleStart triggered with:", prompt);
     // Definimos o prompt pendente IMEDIATAMENTE
     setPendingPrompt(prompt);
     setIsCinematicLoading(true);
@@ -323,13 +324,18 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
       setHasStarted(true);
       setIsCinematicLoading(false);
       
-      // Garantimos que o AgentChat receba o comando para disparar se o initialPrompt não for suficiente
-      setTimeout(() => {
+      // DISPARO CRÍTICO: Garantimos que o AgentChat receba o comando para disparar
+      // Usamos um intervalo curto para garantir que o componente AgentChat já montou
+      const retryTrigger = setInterval(() => {
         if (onSendRef.current) {
-          console.debug("[AIMentor] Manually triggering handleSend with prompt:", prompt);
+          console.debug("[AIMentor] System ready, triggering handleSend with:", prompt);
           onSendRef.current(prompt);
+          clearInterval(retryTrigger);
         }
-      }, 500);
+      }, 100);
+
+      // Timeout de segurança para não rodar infinitamente
+      setTimeout(() => clearInterval(retryTrigger), 3000);
     }, 800);
   };
 

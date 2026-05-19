@@ -457,10 +457,16 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     if (initialPromptFiredRef.current) return;
     if (!user || isLoading) return;
 
+    console.debug("[useAgentChat] Auto-firing initialPrompt:", initialPrompt);
     initialPromptFiredRef.current = true;
-    const timer = setTimeout(() => handleSend(initialPrompt), 500);
+    
+    // Pequeno delay para garantir estabilidade do mount
+    const timer = setTimeout(() => {
+      handleSend(initialPrompt);
+    }, 300);
+    
     return () => clearTimeout(timer);
-  }, [initialPrompt, user, sessionChecked, pendingSession, isLoading, handleSend]);
+  }, [sessionChecked, pendingSession, initialPrompt, user, isLoading, handleSend]);
 
   // Cleanup no unmount
   useEffect(() => {
