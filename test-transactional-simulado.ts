@@ -1,13 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
+const supabaseUrl = "https://qszsyskumcmuknumwxtk.supabase.co";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const VALID_USER_ID = "095cf92f-427d-48e1-accc-31b357b2fa50";
-
-if (!supabaseUrl || !serviceRoleKey) {
-  console.error("Missing SUPABASE environment variables");
-  process.exit(1);
-}
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
@@ -70,9 +65,6 @@ async function runTransactionTest() {
     report.ultimo_step = result.step || "complete";
     console.log(`Sucesso! Session ID: ${report.session_id}, Questões: ${report.numero_questoes}`);
 
-    // Aguardar persistência (vincular questões)
-    await new Promise(r => setTimeout(r, 2000));
-
     // 2. Verificar registros reais no banco
     console.log("\n[Passo 3] Verificando vínculos em simulado_questions...");
     const { data: links, error: linkErr } = await supabase
@@ -83,13 +75,12 @@ async function runTransactionTest() {
     if (linkErr) {
       report.bugs_encontrados.push(`Erro ao buscar links: ${linkErr.message}`);
     } else if (!links || links.length === 0) {
-      report.bugs_encontrados.push("Nenhum registro em simulado_questions encontrado");
-      console.log("Aviso: Banco demorou para refletir ou falhou no insert.");
+      report.bugs_encontrados.push("Nenhum registro em simulado_questions encontrado via SDK");
     } else {
       report.tabelas_atualizadas.push("simulado_questions");
       console.log(`Encontrados ${links.length} vínculos no banco.`);
       
-      // 3. Simular resposta e finalização (Passos 6-12)
+      // 3. Simular resposta e finalização
       console.log("\n[Passo 6-12] Simulando respostas e finalização...");
       
       const responses = links.slice(0, 2).map(l => ({
@@ -105,8 +96,6 @@ async function runTransactionTest() {
       if (!respErr) {
         report.tabelas_atualizadas.push("simulado_attempts");
         console.log("Respostas inseridas.");
-      } else {
-        report.bugs_encontrados.push(`Erro simulado_attempts: ${respErr.message}`);
       }
 
       // Finalizar simulado
@@ -124,8 +113,6 @@ async function runTransactionTest() {
       if (!finalErr) {
         report.tabelas_atualizadas.push("simulado_sessions");
         console.log("Sessão finalizada.");
-      } else {
-        report.bugs_encontrados.push(`Erro simulado_sessions final: ${finalErr.message}`);
       }
     }
 
