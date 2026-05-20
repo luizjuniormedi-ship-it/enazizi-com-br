@@ -115,7 +115,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     let systemPrompt = QUESTION_MOTOR_PREMIUM;
     systemPrompt += buildBancaBlock(safeExamProfile);
 
-    const model = normalizeModel(body?.model ?? AI_MODELS.FAST);
+    const model = normalizeModel(body?.model);
+    const cognitiveState = body?.cognitiveState || (body?.userProfile?.cognitive_state as any);
 
     console.log("AI model resolved", {
       correlation_id: correlationId,
