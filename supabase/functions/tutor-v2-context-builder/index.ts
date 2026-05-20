@@ -8,6 +8,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Tutor V2 Context Builder — ALOS Integration
+ * Fetches real pedagogical state for the AI Tutor.
+ */
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -21,44 +25,48 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 1. Fetch Error Bank
-    let errors = [];
-    try {
-      const { data } = await supabase.from("user_errors").select("*").eq("user_id", userId).limit(5);
-      if (data) errors = data;
-    } catch (e) { console.warn("Table user_errors not found or error:", e); }
+    // 1. Fetch Error Bank (Real ALOS Table)
+    const { data: errorBank } = await supabase
+      .from("error_bank")
+      .select("tema, subtema, vezes_errado, conteudo")
+      .eq("user_id", userId)
+      .eq("dominado", false)
+      .order("vezes_errado", { ascending: false })
+      .limit(10);
 
-    // 2. Fetch Planner/Mission
-    let mission = null;
-    try {
-      const { data } = await supabase.from("user_missions").select("*").eq("user_id", userId).eq("status", "active").maybeSingle();
-      if (data) mission = data;
-    } catch (e) { console.warn("Table user_missions not found or error:", e); }
+    // 2. Fetch Cognitive State
+    const { data: cogState } = await supabase
+      .from("cognitive_states")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    // 3. Fetch FSRS status
-    let fsrs = null;
-    try {
-      const { data } = await supabase.from("user_fsrs_stats").select("*").eq("user_id", userId).maybeSingle();
-      if (data) fsrs = data;
-    } catch (e) { console.warn("Table user_fsrs_stats not found or error:", e); }
+    // 3. Fetch FSRS Status (Summary)
+    const { data: fsrsSummary } = await supabase
+      .from("fsrs_cards")
+      .select("id, topic, stability, difficulty, due")
+      .eq("user_id", userId)
+      .order("due", { ascending: true })
+      .limit(5);
 
-    // 4. Memory & Cognitive Metrics
-    let memory_chunks_used = 0;
-    try {
-      const { data } = await supabase.from("tutor_memory_search_logs").select("chunks_found").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle();
-      if (data) memory_chunks_used = data.chunks_found;
-    } catch (e) { console.warn("Table tutor_memory_search_logs not found or error:", e); }
+    // 4. Fetch Active Planner/Mission
+    const { data: dailyPlan } = await supabase
+      .from("daily_plans")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .maybeSingle();
 
     return new Response(JSON.stringify({ 
       ok: true, 
       context: {
         user_id: userId,
-        errors: errors || [],
-        mission: mission,
-        fsrs: fsrs,
-        memory_chunks_used: memory_chunks_used,
-        cognitive_load: 0.45, // Placeholder for actual calculation
-        detected_gaps: (errors || []).map((e: any) => e.topic)
+        errors: errorBank || [],
+        cognitive_state: cogState || { retention_score: 50, cognitive_load: 10 },
+        fsrs_overview: fsrsSummary || [],
+        active_plan: dailyPlan,
+        detected_gaps: (errorBank || []).map((e: any) => e.tema),
+        pedagogical_mode: cogState?.metadata?.anomaly_detected ? 'recovery' : 'standard'
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

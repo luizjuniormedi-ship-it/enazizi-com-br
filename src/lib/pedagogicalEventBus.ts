@@ -87,6 +87,23 @@ export const pedagogicalEventBus = {
         return null;
       }
 
+      // Async trigger for the consumer Edge Function
+      // This ensures the "Event Bus" logic runs immediately
+      (async () => {
+        try {
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pedagogical-event-consumer`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+            },
+            body: JSON.stringify({ event: data })
+          }).catch(e => console.error("[COG_EVENT_RUNTIME] Consumer trigger failed:", e));
+        } catch (e) {
+          console.error("[COG_EVENT_RUNTIME] Consumer auth failure:", e);
+        }
+      })();
+
       // Sync cognitive state stream locally for UI reactivity
       this.updateLocalCognitiveStream(payload);
       

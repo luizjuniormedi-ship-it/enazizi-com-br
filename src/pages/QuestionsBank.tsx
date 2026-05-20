@@ -289,21 +289,10 @@ const QuestionsBank = () => {
       }
     }, user.id);
 
-    // Update medical domain map
+    // Medical domain map and Error Bank are now handled asynchronously by the ALOS Event Bus
+    // to ensure architectural consistency and prevent UI blocking.
     if (practiceQuestion.topic) {
       await updateDomainMap(user.id, [{ topic: practiceQuestion.topic, correct: isCorrect }]);
-    }
-
-    // Log wrong answer to error_bank
-    if (!isCorrect) {
-      await logErrorToBank({
-        userId: user.id,
-        tema: practiceQuestion.topic || "Geral",
-        tipoQuestao: "objetiva",
-        conteudo: practiceQuestion.statement,
-        motivoErro: `Marcou "${practiceQuestion.options[selected]}" — Correta: "${practiceQuestion.options[practiceQuestion.correct_index]}"`,
-        categoriaErro: "conceito",
-      });
     }
   };
 
