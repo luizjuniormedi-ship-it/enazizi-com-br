@@ -131,7 +131,8 @@ const boot = async () => {
 
   const storedRelease = localStorage.getItem(RELEASE_KEY);
 
-  if (storedRelease && storedRelease !== APP_RELEASE) {
+  // Skip release checks and hard resets in preview environments to prevent reload loops
+  if (!isPreviewHost && !isInIframe && storedRelease && storedRelease !== APP_RELEASE) {
     await performHardAppReset({
       preserveSessionEntries: loginRefreshSignature
         ? [[LOGIN_REFRESH_SIGNATURE_KEY, loginRefreshSignature]]
