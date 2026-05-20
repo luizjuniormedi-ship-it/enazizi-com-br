@@ -96,13 +96,13 @@ export interface AIRunResult {
 
 // Modelos validados em produção via Lovable AI Gateway.
 const MODELS = {
-  flash: { provider: "openai", model: "openai/gpt-4o" } as ModelRef,
-  flashStable: { provider: "openai", model: "openai/gpt-4o" } as ModelRef,
-  flashLite: { provider: "openai", model: "openai/gpt-4o-mini" } as ModelRef,
-  pro: { provider: "openai", model: "openai/gpt-4o" } as ModelRef,
-  gpt5Mini: { provider: "openai", model: "openai/gpt-4o-mini" } as ModelRef,
-  gpt5: { provider: "openai", model: "openai/gpt-4o" } as ModelRef,
-  geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
+  flash: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+  flashStable: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+  flashLite: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
+  pro: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+  gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
+  gpt5: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+  geminiFallback: { provider: "lovable-ai", model: "google/gemini-2-flash" } as ModelRef,
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
@@ -365,7 +365,7 @@ async function callOnce(
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${gatewayKey}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
