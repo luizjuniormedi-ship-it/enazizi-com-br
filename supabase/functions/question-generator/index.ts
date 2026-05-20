@@ -75,6 +75,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const authHeader = req.headers.get("Authorization");
     // Hardening check for service role
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    // Se o Authorization header contiver a service role key, pulamos requireAuth
     const isServiceRole = !!(authHeader && serviceRoleKey && (authHeader === `Bearer ${serviceRoleKey}` || authHeader.includes(serviceRoleKey)));
     
     let userId;
