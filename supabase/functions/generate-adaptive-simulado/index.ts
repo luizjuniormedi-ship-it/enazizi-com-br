@@ -93,7 +93,19 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       taskType: "simulados",
       messages: [
         { role: "system", content: QUESTION_MOTOR_PREMIUM + "\n" + SIMULADO_MOTOR_PREMIUM },
-        { role: "user", content: `Gere exatamente ${deficit} questões médicas adaptativas sobre o tema: ${topicToGen}. Foque em padrões de diagnóstico, tratamento e conduta clínica. Use exatamente 4 alternativas (A-D). Retorne APENAS um JSON array válido, sem blocos de código markdown.` }
+        { role: "user", content: `Gere exatamente ${deficit} questões médicas adaptativas sobre o tema: ${topicToGen}. Foque em padrões de diagnóstico, tratamento e conduta clínica. Use exatamente 4 alternativas (A-D). 
+        
+        RETORNE APENAS UM JSON ARRAY VÁLIDO COM ESTAS CHAVES:
+        [
+          {
+            "statement": "enunciado clínico...",
+            "options": ["A", "B", "C", "D"],
+            "correct": 0,
+            "explanation": "comentário...",
+            "topic": "${topicToGen}",
+            "difficulty": "hard"
+          }
+        ]` }
       ],
       complexity: "alta",
       userId
