@@ -42,10 +42,10 @@ export class CognitiveSnapshotEngine {
     const snapshotData = {
       user_id: userId,
       source_event_id: sourceEventId,
-      cognitive_state: cogRes.data || {},
-      planner_state: plannerRes.data || {},
-      fsrs_state: fsrsRes.data || {},
-      tutor_context: { last_topics: cogRes.data?.metadata?.last_topics || [] },
+      cognitive_state: (cogRes.data as any) || {},
+      planner_state: (plannerRes.data as any) || {},
+      fsrs_state: (fsrsRes.data as any) || {},
+      tutor_context: { last_topics: (cogRes.data as any)?.metadata?.last_topics || [] },
       difficulty_state: { stress: fsrsRes.data?.cognitive_stress_index || 0 },
       fatigue_state: { fatigue: fsrsRes.data?.fatigue_index || 0 }
     };
@@ -79,10 +79,14 @@ export class CognitiveSnapshotEngine {
     console.warn(`[COG_SNAPSHOT] ROLLING BACK to snapshot ${snapshotId}`);
 
     // Deterministic Rollback Sequence
+    const cog = snapshot.cognitive_state as any;
+    const plan = snapshot.planner_state as any;
+    const fsrs = snapshot.fsrs_state as any;
+
     await Promise.all([
-      supabase.from('cognitive_states').upsert(snapshot.cognitive_state),
-      supabase.from('study_plans').upsert(snapshot.planner_state),
-      supabase.from('adaptive_student_profiles').upsert(snapshot.fsrs_state)
+      supabase.from('cognitive_states').upsert(cog),
+      supabase.from('study_plans').upsert(plan),
+      supabase.from('adaptive_student_profiles').upsert(fsrs)
     ]);
 
     return true;

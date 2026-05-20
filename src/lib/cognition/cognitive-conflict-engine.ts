@@ -29,11 +29,13 @@ export class CognitiveConflictEngine {
 
     if (!remoteState) return;
 
-    if (remoteState.event_hash !== localStateHash) {
+    // Use type casting to avoid TS error on new column
+    const remoteHash = (remoteState as any).event_hash;
+
+    if (remoteHash && remoteHash !== localStateHash) {
       console.warn("[COG_CONFLICT] Divergence detected! Initiating reconciliation.");
       
       // Resolve: Last Valid Write Wins (Default strategy)
-      // In advanced mode, this could trigger a merge or a partial replay
       return this.reconcile(userId);
     }
   }

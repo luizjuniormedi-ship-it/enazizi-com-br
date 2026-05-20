@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { PedagogicalEventPayload, pedagogicalEventBus } from "./pedagogicalEventBus";
+import { PedagogicalEventPayload, pedagogicalEventBus } from "../pedagogicalEventBus";
 
 /**
  * PHASE 2: Deterministic Event Ordering Engine
@@ -16,8 +16,6 @@ const EVENT_DEPENDENCIES: Record<string, string[]> = {
 
 export class EventOrderingEngine {
   private static instance: EventOrderingEngine;
-  private processingQueue: Map<string, PedagogicalEventPayload[]> = new Map();
-  private isProcessing: boolean = false;
 
   private constructor() {}
 
@@ -75,7 +73,8 @@ export class EventOrderingEngine {
   /**
    * Valida se as dependências do evento foram satisfeitas.
    */
-  async validateDependencies(eventType: string, correlationId: string): Promise<boolean> {
+  async validateDependencies(eventType: string, correlationId?: string): Promise<boolean> {
+    if (!correlationId) return true;
     const dependencies = EVENT_DEPENDENCIES[eventType] || [];
     if (dependencies.length === 0) return true;
 
