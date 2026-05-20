@@ -20,14 +20,33 @@ export function useCognitiveOrchestrator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
+      // We use adaptive_student_profiles as the source of truth for metrics
+      const { data: profile, error: profError } = await supabase
         .from("adaptive_student_profiles")
-        .select("cognitive_stress_index, fatigue_index, overload_risk, response_speed_index, current_session_mode")
+        .select("cognitive_stress_index, fatigue_index, overall_friction_score, response_speed_index, current_session_mode")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
-      return data as unknown as CognitiveState;
+      if (profError) throw profError;
+
+      // And cognitive_states for the qualitative state
+      const { data: cogState } = await supabase
+        .from("cognitive_states")
+        .select("state")
+        .eq("user_id", user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      return {
+        stress_index: profile?.cognitive_stress_index || 0,
+        fatigue_index: profile?.fatigue_index || 0,
+        overload_risk: profile?.overall_friction_score || 0,
+        response_speed_index: profile?.response_speed_index || 0,
+        current_session_mode: (profile?.current_session_mode as SessionMode) || 'balanced',
+        state: cogState?.state || 'novato',
+        retention_score: 50 // Placeholder
+      };
     },
   });
 
@@ -36,15 +55,13 @@ export function useCognitiveOrchestrator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase
+      await supabase
         .from("adaptive_student_profiles")
         .update({ 
           current_session_mode: mode,
           recovery_mode_active: mode === 'recovery'
         })
         .eq("user_id", user.id);
-      
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cognitive-orchestration"] });

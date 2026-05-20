@@ -45,6 +45,8 @@ import { SimuladoProfileCard } from "@/components/enaflix/SimuladoProfileCard";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
+import { evaluateCognitivePressure } from "@/lib/pedagogical/cognitive-pressure-engine";
+import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 
 async function computeRealPerformance(userId: string) {
   const { data: rows } = await supabase
@@ -218,6 +220,7 @@ const Simulados = () => {
   const [showConfigStep, setShowConfigStep] = useState(false);
   const [configToVerify, setConfigToVerify] = useState<any>(null);
 
+  const { data: cogOrch } = useCognitiveOrchestrator();
   const adaptive = useAdaptiveSimulado();
   const [adaptivePreviewMeta, setAdaptivePreviewMeta] = useState<AdaptiveMeta | null>(null);
   const [adaptivePreviewLoading, setAdaptivePreviewLoading] = useState(false);
@@ -382,6 +385,15 @@ const Simulados = () => {
 
     const questionCount = config.count || 10;
     
+    // Cognitive Pressure Control
+    if (cogOrch?.fatigue_index && cogOrch.fatigue_index > 80) {
+      toast({
+        title: "Fadiga detectada",
+        description: "Seu nível de cansaço está alto. Reduzimos a dificuldade do simulado para proteger sua retenção.",
+      });
+      config.difficulty = "facil";
+    }
+
     configRef.current = config;
     setMode(config.mode || "estudo");
     

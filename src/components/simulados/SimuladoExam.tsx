@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
+import { calibrateDifficulty } from "@/lib/pedagogical/adaptive-difficulty-engine";
+import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
+import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ReactMarkdown from "react-markdown";
@@ -46,6 +48,25 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set(initialState?.flaggedQuestions ?? []));
   const [revealedQuestions, setRevealedQuestions] = useState<Set<number>>(new Set(initialState?.revealedQuestions ?? []));
   const timerRef = useRef<NodeJS.Timeout>();
+  
+  const { data: cogOrch } = useCognitiveOrchestrator();
+  const [adaptiveDifficulty, setAdaptiveDifficulty] = useState<any>(null);
+
+  // Auto-calibrate difficulty on mount and state change
+  useEffect(() => {
+    if (cogOrch) {
+      const calibration = calibrateDifficulty({
+        state: cogOrch.state,
+        retention_score: cogOrch.retention_score,
+        cognitive_load: cogOrch.overload_risk,
+        error_pressure: cogOrch.stress_index,
+        fatigue_level: cogOrch.fatigue_index,
+        trajectory_health: 50 // Default fallback
+      });
+      setAdaptiveDifficulty(calibration);
+      console.log("[ADAPTIVE_ENGINE] Recalibrated:", calibration);
+    }
+  }, [cogOrch]);
 
   // Refs to avoid stale closures in timer
   const selectedAnswersRef = useRef(selectedAnswers);
@@ -220,6 +241,11 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
             <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary font-black text-[10px] uppercase tracking-widest px-2.5 h-6 rounded-lg">
               {String(q.topic || "").replace(/\s*\(.*$/, "").trim() || q.topic}
             </Badge>
+            {adaptiveDifficulty && (
+              <Badge variant="outline" className="bg-indigo-500/5 border-indigo-500/20 text-indigo-600 font-black text-[10px] uppercase tracking-widest px-2.5 h-6 rounded-lg flex items-center gap-1">
+                <Sparkles className="h-3 w-3" /> {adaptiveDifficulty.target_difficulty}
+              </Badge>
+            )}
             {!isRevealed && userAnswer === undefined && (
               <Badge variant="outline" className="bg-amber-500/5 border-amber-500/20 text-amber-600 font-black text-[10px] uppercase tracking-widest px-2.5 h-6 rounded-lg">
                 PENDENTE

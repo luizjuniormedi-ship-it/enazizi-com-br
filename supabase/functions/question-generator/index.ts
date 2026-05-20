@@ -6,8 +6,8 @@ import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 
 /**
- * ENAZIZI — HOTFIX QUESTION-GENERATOR v3.5
- * Core logic for generating and SAVING questions with high resilience.
+ * ENAZIZI — ADAPTIVE QUESTION-GENERATOR v4.0
+ * Includes Difficulty Engine calibration and cognitive awareness.
  */
 
 Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext) => {
@@ -116,19 +116,29 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       systemPrompt += buildBancaBlock(safeExamProfile);
 
       const model = normalizeModel(body?.model || AI_MODELS.FAST);
-      const cognitiveState = body?.cognitiveState || (body?.userProfile?.cognitive_state as any);
+      
+      // Load Cognitive State for Difficulty Calibration
+      const { data: cogState } = await supabaseAdmin
+        .from("cognitive_states")
+        .select("*")
+        .eq("user_id", userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       const userPrompt = `Gere exatamente ${deficit} questões médicas de múltipla escolha.
       TEMA: ${topics.join(", ")}
       ESPECIALIDADE: ${specialty}
-      DIFICULDADE: ${difficulty}
+      DIFICULDADE_ALVO: ${difficulty}
+      COGNITIVE_STATE: ${cogState?.state || 'balanced'}
+      PRESSURE: ${cogState?.intensity || 0}/100
       BANCA: ${examBoard || "Geral"}
       
-      REGRAS:
-      1. Caso clínico denso.
-      2. Exatamente 4 alternativas (A-D).
-      3. Explicação técnica.
-      4. Retorne APENAS um JSON array.`;
+      REGRAS ADAPTATIVAS:
+      - Se COGNITIVE_STATE for 'recuperacao' ou 'retencao_fraca', gere questões mais conceituais e didáticas.
+      - Se COGNITIVE_STATE for 'dominio' ou 'consolidacao', gere casos complexos com pegadinhas avançadas.
+      - Use exatamente 4 alternativas (A-D).
+      - Retorne APENAS um JSON array.`;
 
       const aiResponse = await ai({
         model,

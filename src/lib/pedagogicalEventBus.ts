@@ -107,6 +107,11 @@ export const pedagogicalEventBus = {
       // Sync cognitive state stream locally for UI reactivity
       this.updateLocalCognitiveStream(payload);
       
+      // Phase 10: Auto-Adaptive Trigger
+      if (payload.event_type === 'question_answered' || payload.event_type === 'simulado_error_detected') {
+        window.dispatchEvent(new CustomEvent('ena:cognitive_recalibration', { detail: payload }));
+      }
+      
       return data;
     } catch (err) {
       console.error("[COG_EVENT_RUNTIME] Dispatch fatal error:", err);
