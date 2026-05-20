@@ -80,7 +80,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       taskType: "simulados",
       messages: [
         { role: "system", content: QUESTION_MOTOR_PREMIUM + "\n" + SIMULADO_MOTOR_PREMIUM },
-        { role: "user", content: `Gere exatamente ${deficit} questões médicas adaptativas sobre ${topicToGen}. Foque em padrões de erro comuns. Retorne apenas JSON array.` }
+        { role: "user", content: `Gere exatamente ${deficit} questões médicas adaptativas sobre ${topicToGen}. Foque em padrões de erro comuns. Use exatamente 4 alternativas (A-D). Retorne APENAS JSON array.` }
       ],
       complexity: "alta",
       userId
