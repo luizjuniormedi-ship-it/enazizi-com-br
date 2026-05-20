@@ -20350,6 +20350,13 @@ export type Database = {
             foreignKeyName: "simulado_answers_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
+            referencedRelation: "simulado_health"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "simulado_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
             referencedRelation: "simulado_sessions"
             referencedColumns: ["id"]
           },
@@ -20442,9 +20449,11 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          is_ai_generated: boolean | null
           is_correct: boolean | null
           order_index: number
           question_id: string | null
+          question_snapshot: Json | null
           selected_answer: number | null
           session_id: string
           time_spent_seconds: number | null
@@ -20452,9 +20461,11 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           is_correct?: boolean | null
           order_index: number
           question_id?: string | null
+          question_snapshot?: Json | null
           selected_answer?: number | null
           session_id: string
           time_spent_seconds?: number | null
@@ -20462,9 +20473,11 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          is_ai_generated?: boolean | null
           is_correct?: boolean | null
           order_index?: number
           question_id?: string | null
+          question_snapshot?: Json | null
           selected_answer?: number | null
           session_id?: string
           time_spent_seconds?: number | null
@@ -20476,6 +20489,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulado_questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "simulado_health"
+            referencedColumns: ["session_id"]
           },
           {
             foreignKeyName: "simulado_questions_session_id_fkey"
@@ -20561,40 +20581,52 @@ export type Database = {
       simulado_sessions: {
         Row: {
           correct_count: number | null
+          difficulty: string | null
+          discipline: string | null
           finished_at: string | null
           id: string
           metadata: Json | null
           mode: string
           score: number | null
+          source: string | null
           started_at: string | null
           status: string | null
           time_limit_seconds: number | null
+          topic: string | null
           total_questions: number
           user_id: string
         }
         Insert: {
           correct_count?: number | null
+          difficulty?: string | null
+          discipline?: string | null
           finished_at?: string | null
           id?: string
           metadata?: Json | null
           mode: string
           score?: number | null
+          source?: string | null
           started_at?: string | null
           status?: string | null
           time_limit_seconds?: number | null
+          topic?: string | null
           total_questions: number
           user_id: string
         }
         Update: {
           correct_count?: number | null
+          difficulty?: string | null
+          discipline?: string | null
           finished_at?: string | null
           id?: string
           metadata?: Json | null
           mode?: string
           score?: number | null
+          source?: string | null
           started_at?: string | null
           status?: string | null
           time_limit_seconds?: number | null
+          topic?: string | null
           total_questions?: number
           user_id?: string
         }
@@ -25915,6 +25947,36 @@ export type Database = {
           subtopic_count: number | null
           topic: string | null
           total_questions: number | null
+        }
+        Relationships: []
+      }
+      simulado_health: {
+        Row: {
+          mode: string | null
+          questions_loaded: number | null
+          session_id: string | null
+          started_at: string | null
+          status: string | null
+          total_questions: number | null
+          user_id: string | null
+        }
+        Insert: {
+          mode?: string | null
+          questions_loaded?: never
+          session_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          total_questions?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          mode?: string | null
+          questions_loaded?: never
+          session_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          total_questions?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
