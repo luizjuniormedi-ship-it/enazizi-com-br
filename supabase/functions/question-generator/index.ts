@@ -1,65 +1,128 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
-import { aiFetch, cleanQuestionText, parseAiJson } from "../_shared/ai-fetch.ts";
+import { cleanQuestionText, parseAiJson } from "../_shared/ai-fetch.ts";
 import { QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
-Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, supabaseAdmin, ai }) => {
-  const { user } = await requireAuth(req);
-  const body = await req.json().catch(() => ({}));
+/**
+ * ENAZIZI — HOTFIX QUESTION-GENERATOR 500 UNDEFINED.ID
+ * Core logic for generating questions with high resilience.
+ */
 
-  const { 
-    difficulty = "misto", 
-    count = 5,
-    generationContext = {},
-    targetExam,
-    topicWeights
-  } = body;
+Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
+  const { requestId, correlationId } = correlation;
+  let step = "start";
 
-  const requestedCount = Math.min(Number(count), 15);
-  const specialty = body.specialty || generationContext.specialty || "Clínica Médica";
-  const topics = body.topics || (generationContext.topic ? [generationContext.topic] : [specialty]);
-  const examBoard = targetExam || body.examBoard;
+  // Helper for standardized error responses
+  const jsonError = (code: string, status: number, details: Record<string, any> = {}) => {
+    logger.error(`STEP_FAIL_${step}`, code, { ...details, correlation_id: correlationId, request_id: requestId });
+    return new Response(JSON.stringify({
+      success: false,
+      error: code,
+      correlation_id: correlationId,
+      request_id: requestId,
+      step,
+      ...details
+    }), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  };
 
-  logger.info("QUESTION_GEN_START", `Generating ${requestedCount} questions for ${specialty}`, { userId: user.id, topics, examBoard });
+  try {
+    // 1. Validate Input
+    step = "parse_body";
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return jsonError("EMPTY_BODY", 400);
+    }
 
-  // Try to find existing questions in bank first to avoid AI costs if possible
-  if (body.preferBank) {
-      const { data: bankQs } = await supabaseAdmin
+    const { 
+      difficulty = "misto", 
+      count = 5,
+      generationContext = {},
+      targetExam,
+      topicWeights,
+      mode = "study" // default mode
+    } = body;
+
+    const requestedCount = Math.min(Number(count) || 5, 15);
+    const specialty = body.specialty || generationContext?.specialty || "Clínica Médica";
+    const topics = body.topics || (generationContext?.topic ? [generationContext.topic] : [specialty]);
+    const examBoard = targetExam || body.examBoard;
+
+    // 2. Auth Validation
+    step = "auth_validation";
+    const authResult = await requireAuth(req);
+    if (!authResult.ok) {
+      return authResult.response;
+    }
+    const userId = authResult.userId;
+
+    if (!userId) {
+      return jsonError("AUTH_USER_NOT_FOUND", 401);
+    }
+
+    logger.info("QUESTION_GEN_START", `Generating ${requestedCount} questions`, { 
+      userId, 
+      topics, 
+      examBoard, 
+      correlationId 
+    });
+
+    // 3. Exam Profile Resolution
+    step = "load_profile";
+    const bancaResolution = resolveBanca(examBoard || "default");
+    const safeExamProfile = bancaResolution.profile || {
+      key: "default-enare",
+      label: "ENARE",
+      difficulty: 3,
+      style: "residencia_medica",
+      specialtyWeights: {}
+    };
+
+    // 4. Try Bank Questions first if preferred
+    step = "load_bank_questions";
+    if (body.preferBank) {
+      const { data: bankQs, error: bankError } = await supabaseAdmin
         .from("questions_bank")
         .select("*")
         .eq("topic", specialty)
         .limit(requestedCount);
       
-      if (bankQs && bankQs.length >= requestedCount) {
-          logger.info("QUESTION_GEN_BANK_HIT", `Found ${bankQs.length} questions in bank`);
-          return new Response(JSON.stringify({ 
-            success: true, 
-            questions: bankQs,
-            choices: [{ message: { content: JSON.stringify(bankQs) } }] 
-          }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" }
-          });
+      if (!bankError && bankQs && bankQs.length >= requestedCount) {
+        logger.info("QUESTION_GEN_BANK_HIT", `Found ${bankQs.length} questions in bank`);
+        return new Response(JSON.stringify({ 
+          success: true, 
+          questions: bankQs,
+          correlation_id: correlationId,
+          request_id: requestId,
+          mode: "bank"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
       }
-  }
+      
+      logger.info("QUESTION_GEN_BANK_MISS", "Switching to AI generation", { bankError: bankError?.message });
+    }
 
-  const bancaInfo = resolveBanca(examBoard || "default");
-  let systemPrompt = QUESTION_MOTOR_PREMIUM;
-  systemPrompt += buildBancaBlock(bancaInfo.profile);
+    // 5. AI Generation
+    step = "generate_ai_questions";
+    let systemPrompt = QUESTION_MOTOR_PREMIUM;
+    systemPrompt += buildBancaBlock(safeExamProfile);
 
-  const userPrompt = `Gere exatamente ${requestedCount} questões médicas de múltipla escolha.
-  TEMA: ${topics.join(", ")}
-  ESPECIALIDADE: ${specialty}
-  DIFICULDADE: ${difficulty}
-  ${examBoard ? `ESTILO DA BANCA: ${examBoard}` : ""}
-  
-  REGRAS:
-  1. Caso clínico denso (400+ caracteres).
-  2. 5 alternativas (A-E).
-  3. Explicação detalhada.
-  4. Retorne APENAS um JSON array.`;
+    const userPrompt = `Gere exatamente ${requestedCount} questões médicas de múltipla escolha.
+    TEMA: ${topics.join(", ")}
+    ESPECIALIDADE: ${specialty}
+    DIFICULDADE: ${difficulty}
+    ${examBoard ? `ESTILO DA BANCA: ${examBoard}` : ""}
+    
+    REGRAS:
+    1. Caso clínico denso (400+ caracteres).
+    2. 5 alternativas (A-E).
+    3. Explicação detalhada.
+    4. Retorne APENAS um JSON array.`;
 
-  try {
     const aiResponse = await ai({
       taskType: "generation",
       messages: [
@@ -69,57 +132,84 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
       complexity: "high"
     });
 
-    const rawContent = aiResponse.choices?.[0]?.message?.content || "[]";
+    const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
     let questions = parseAiJson(rawContent);
 
     if (!Array.isArray(questions) || questions.length === 0) {
-        throw new Error("Falha ao gerar questões válidas via IA.");
+      throw new Error("Falha ao gerar questões válidas via IA.");
     }
 
-    // Format and sanitize
-    const formattedQuestions = questions.map(q => ({
-        statement: cleanQuestionText(q.statement || q.content || ""),
-        options: Array.isArray(q.options) ? q.options : [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean),
-        correct: typeof q.correct === 'number' ? q.correct : (typeof q.correct_index === 'number' ? q.correct_index : 0),
-        explanation: cleanQuestionText(q.explanation || q.rationale || ""),
-        topic: q.topic || specialty,
-        difficulty: q.difficulty || difficulty,
-        metadata: { 
-            generation_engine: "ENAZIZI Question Motor v3.2",
-            generated_at: new Date().toISOString()
-        }
+    // 6. Persistence & Formatting
+    step = "persist_questions";
+    const formattedQuestions = questions.map((q: any) => ({
+      statement: cleanQuestionText(q?.statement || q?.content || ""),
+      options: Array.isArray(q?.options) ? q.options : [q?.option_a, q?.option_b, q?.option_c, q?.option_d, q?.option_e].filter(Boolean),
+      correct: typeof q?.correct === 'number' ? q.correct : (typeof q?.correct_index === 'number' ? q.correct_index : 0),
+      explanation: cleanQuestionText(q?.explanation || q?.rationale || ""),
+      topic: q?.topic || specialty,
+      difficulty: q?.difficulty || difficulty,
+      metadata: { 
+        generation_engine: "ENAZIZI Question Motor v3.2",
+        generated_at: new Date().toISOString(),
+        correlation_id: correlationId
+      }
     }));
 
-    // Optionally save to questions_bank for future use
     if (body.saveToBank) {
-        await supabaseAdmin.from("questions_bank").insert(
-            formattedQuestions.map(q => ({
-                user_id: user.id,
-                statement: q.statement,
-                options: q.options,
-                correct_index: q.correct,
-                explanation: q.explanation,
-                topic: q.topic,
-                difficulty: q.difficulty,
-                is_global: true,
-                review_status: 'pending'
-            }))
-        );
+      const { error: insertError } = await supabaseAdmin.from("questions_bank").insert(
+        formattedQuestions.map((q: any) => ({
+          user_id: userId,
+          statement: q.statement,
+          options: q.options,
+          correct_index: q.correct,
+          explanation: q.explanation,
+          topic: q.topic,
+          difficulty: q.difficulty,
+          is_global: true,
+          review_status: 'pending'
+        }))
+      );
+      if (insertError) {
+        logger.warn("BANK_INSERT_FAILED", insertError.message);
+      }
     }
 
+    step = "return_response";
     return new Response(JSON.stringify({ 
       success: true, 
       questions: formattedQuestions,
-      choices: [{ message: { content: JSON.stringify(formattedQuestions) } }] 
+      correlation_id: correlationId,
+      request_id: requestId,
+      mode: "ai"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
-  } catch (err: any) {
-    logger.error("QUESTION_GEN_FAIL", err.message);
-    return new Response(JSON.stringify({ error: err.message, success: false }), { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+  } catch (error: any) {
+    logger.critical("QUESTION_GENERATOR_FAILED", error?.message, {
+      correlation_id: correlationId,
+      request_id: requestId,
+      step,
+      stack: error?.stack
+    });
+
+    // Alert Governance
+    try {
+      await supabaseAdmin.from("ai_incidents").insert({
+        function_name: "question-generator",
+        severity: "critical",
+        incident_type: "runtime_error",
+        message: error?.message || "Unknown error",
+        stack_trace: error?.stack,
+        correlation_id: correlationId,
+        metadata: { step, request_id: requestId }
+      });
+    } catch (alertErr) {
+      console.error("Failed to log alert to ai_incidents", alertErr);
+    }
+
+    return jsonError("QUESTION_GENERATOR_RUNTIME_ERROR", 500, {
+      message: error?.message || "Erro interno no gerador de questões"
     });
   }
 }));
