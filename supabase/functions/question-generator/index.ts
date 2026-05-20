@@ -247,19 +247,33 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       }
 
       if (Array.isArray(aiQuestions) && aiQuestions.length > 0) {
-        const formattedAi = aiQuestions.slice(0, deficit).map((q: any) => ({
-          statement: cleanQuestionText(q?.statement || q?.content || ""),
-          options: Array.isArray(q?.options) ? q.options.slice(0, 4) : [q?.option_a, q?.option_b, q?.option_c, q?.option_d].filter(Boolean),
-          correct: typeof q?.correct === 'number' ? q.correct : (typeof q?.correct_index === 'number' ? q.correct_index : 0),
-          explanation: cleanQuestionText(q?.explanation || q?.rationale || ""),
-          topic: q?.topic || topics[0],
-          difficulty: q?.difficulty || difficulty,
-          _source: "generated"
-        }));
+        const formattedAi = aiQuestions.slice(0, deficit).map((q: any) => {
+          const statement = cleanQuestionText(q?.statement || q?.enunciado || q?.enunciado_clinico || q?.content || "");
+          const rawOptions = q?.options || q?.alternativas;
+          let options = [];
+          
+          if (Array.isArray(rawOptions)) {
+            options = rawOptions.slice(0, 4);
+          } else if (typeof rawOptions === 'object' && rawOptions !== null) {
+            options = [rawOptions.A, rawOptions.B, rawOptions.C, rawOptions.D].filter(o => o !== undefined);
+          } else {
+            options = [q?.option_a, q?.option_b, q?.option_c, q?.option_d].filter(Boolean);
+          }
+
+          return {
+            statement,
+            options,
+            correct: typeof q?.correct === 'number' ? q.correct : (typeof q?.correct_index === 'number' ? q.correct_index : 0),
+            explanation: cleanQuestionText(q?.explanation || q?.rationale || q?.comentário || ""),
+            topic: q?.topic || topics[0],
+            difficulty: q?.difficulty || difficulty,
+            _source: "generated"
+          };
+        }).filter(q => q.statement && q.options.length >= 2);
 
         console.log("STEP_7_VALIDATE_QUESTIONS", {
           count: formattedAi.length,
-          first_question: formattedAi[0]
+          first_question_preview: formattedAi[0]?.statement?.substring(0, 50)
         });
 
         // Persist to bank if requested
