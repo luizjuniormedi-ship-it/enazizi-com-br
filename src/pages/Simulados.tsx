@@ -535,8 +535,9 @@ const Simulados = () => {
           let batchErr: any = null;
           
           try {
+            console.log(`[Simulados] Lote ${batchNum}: Chamando question-generator. Count: ${currentBatchSize}`);
             const batchQs = await generateBatch(
-              config.topics || ["Clínica Médica"],
+              config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
               currentBatchSize,
               config.difficulty || "misto",
               session?.access_token,
@@ -553,34 +554,30 @@ const Simulados = () => {
               config.mode || "estudo"
             );
             batchData = { success: true, questions: batchQs };
+            console.log(`[Simulados] Lote ${batchNum} finalizado com sucesso. Recebidas ${batchQs.length} questões.`);
           } catch (e) {
-            console.error("[Simulados] generateBatch failed, using direct invoke fallback:", e);
+            console.error("[Simulados] generateBatch falhou, tentando invoke direto:", e);
             const { data, error } = await supabase.functions.invoke(
               "question-generator",
               {
                 body: {
-                  stream: false,
-                  outputFormat: "json",
-                  difficulty: config.difficulty || "misto",
-                  timeoutMs: 120000,
-                  messages: [{ role: "user", content: buildPrompt(config.topics || ["Clínica Médica"], currentBatchSize, config.difficulty || "misto", config.specificTopic, config.realExamProfile || config.examBoard) }],
-                  generationContext: {
-                    specialty: (config.topics && config.topics[0]) || "Clínica Médica",
-                    topic: (config.topics || ["Clínica Médica"]).join(", "),
-                    subtopic: config.specificTopic,
-                    objective: "practice",
-                    source: "simulado",
-                  },
-                  targetExam: config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined,
                   count: currentBatchSize,
-                  imagePercent: config.imagePercent || 0,
+                  difficulty: config.difficulty || "misto",
+                  specialty: (config.topics && config.topics[0]) || "Clínica Médica",
+                  topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+                  targetExam: config.realExamProfile || config.examBoard,
+                  mode: config.mode || "estudo",
+                  generationContext: {
+                    subtopic: config.specificTopic,
+                    topicWeights: config.topicWeights,
+                    autoDistribution: config.autoDistribution,
+                    customDistribution: config.customDistribution,
+                    includeWeakThemes: config.includeWeakThemes,
+                    includePreviousErrors: config.includePreviousErrors,
+                  },
                   avoidStatements: avoid,
                   jobId: currentJobId,
                   batchNumber: batchNum,
-                  autoDistribution: config.autoDistribution,
-                  customDistribution: config.customDistribution,
-                  includeWeakThemes: config.includeWeakThemes,
-                  includePreviousErrors: config.includePreviousErrors,
                 },
               }
             );

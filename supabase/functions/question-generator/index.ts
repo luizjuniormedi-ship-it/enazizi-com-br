@@ -148,6 +148,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     }
 
     // 5. AI Fallback if needed
+    // IMPORTANT: Even if bank has questions, we might need more to reach requestedCount
     if (questions.length < requestedCount) {
       step = "generate_ai_questions";
       source = questions.length === 0 ? "ai" : "mixed";
