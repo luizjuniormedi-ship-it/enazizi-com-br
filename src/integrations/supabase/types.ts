@@ -2022,6 +2022,24 @@ export type Database = {
           },
         ]
       }
+      alos_system_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          updated_at: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          updated_at?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       anamnesis_interactions: {
         Row: {
           category: string | null
