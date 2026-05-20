@@ -49,6 +49,14 @@ const ForgotPassword = () => {
     <div className="min-h-screen flex items-center justify-center bg-[#050508] relative p-6">
       <EnaflixBackgroundFX intensity="subtle" />
       
+      <button
+        onClick={() => navigate(-1)}
+        className="fixed top-6 left-6 z-[100] flex items-center gap-2 text-white/50 hover:text-white transition-all group px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10"
+      >
+        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+        <span className="text-[10px] font-black uppercase tracking-widest">Voltar</span>
+      </button>
+      
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
