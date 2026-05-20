@@ -118,7 +118,8 @@ async function generateBatch(
   autoDistribution?: boolean,
   customDistribution?: any[],
   includeWeakThemes?: boolean,
-  includePreviousErrors?: boolean
+  includePreviousErrors?: boolean,
+  mode: SimuladoMode = "estudo"
 ): Promise<SimQuestion[]> {
   console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard, autoDistribution });
   
