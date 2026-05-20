@@ -11266,6 +11266,72 @@ export type Database = {
         }
         Relationships: []
       }
+      flashcard_decks: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          discipline: string | null
+          id: string
+          name: string
+          topic: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          discipline?: string | null
+          id?: string
+          name: string
+          topic?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          discipline?: string | null
+          id?: string
+          name?: string
+          topic?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      flashcard_uploads: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          extracted_text: string | null
+          filename: string
+          id: string
+          status: string | null
+          storage_path: string
+          total_cards_generated: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          extracted_text?: string | null
+          filename: string
+          id?: string
+          status?: string | null
+          storage_path: string
+          total_cards_generated?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          extracted_text?: string | null
+          filename?: string
+          id?: string
+          status?: string | null
+          storage_path?: string
+          total_cards_generated?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       flashcards: {
         Row: {
           answer: string
@@ -11413,57 +11479,89 @@ export type Database = {
       }
       fsrs_cards: {
         Row: {
+          back: string | null
           card_ref_id: string
           card_type: string
           created_at: string
+          deck_id: string | null
           difficulty: number
+          discipline: string | null
           due: string
           elapsed_days: number
+          explanation: string | null
+          front: string | null
           id: string
           lapses: number
           last_review: string | null
+          last_reviewed_at: string | null
           reps: number
+          retrievability: number | null
           scheduled_days: number
           stability: number
           state: number
+          topic: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          back?: string | null
           card_ref_id: string
           card_type?: string
           created_at?: string
+          deck_id?: string | null
           difficulty?: number
+          discipline?: string | null
           due?: string
           elapsed_days?: number
+          explanation?: string | null
+          front?: string | null
           id?: string
           lapses?: number
           last_review?: string | null
+          last_reviewed_at?: string | null
           reps?: number
+          retrievability?: number | null
           scheduled_days?: number
           stability?: number
           state?: number
+          topic?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          back?: string | null
           card_ref_id?: string
           card_type?: string
           created_at?: string
+          deck_id?: string | null
           difficulty?: number
+          discipline?: string | null
           due?: string
           elapsed_days?: number
+          explanation?: string | null
+          front?: string | null
           id?: string
           lapses?: number
           last_review?: string | null
+          last_reviewed_at?: string | null
           reps?: number
+          retrievability?: number | null
           scheduled_days?: number
           stability?: number
           state?: number
+          topic?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fsrs_cards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_decks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fsrs_parameters: {
         Row: {
@@ -20149,6 +20247,54 @@ export type Database = {
           },
         ]
       }
+      simulado_questions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_correct: boolean | null
+          order_index: number
+          question_id: string | null
+          selected_answer: number | null
+          session_id: string
+          time_spent_seconds: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          order_index: number
+          question_id?: string | null
+          selected_answer?: number | null
+          session_id: string
+          time_spent_seconds?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          order_index?: number
+          question_id?: string | null
+          selected_answer?: number | null
+          session_id?: string
+          time_spent_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulado_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulado_questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "simulado_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       simulado_selection_runs: {
         Row: {
           banca: string | null
@@ -20218,6 +20364,48 @@ export type Database = {
           source_pool_textual?: number
           user_id?: string | null
           user_profile?: string | null
+        }
+        Relationships: []
+      }
+      simulado_sessions: {
+        Row: {
+          correct_count: number | null
+          finished_at: string | null
+          id: string
+          metadata: Json | null
+          mode: string
+          score: number | null
+          started_at: string | null
+          status: string | null
+          time_limit_seconds: number | null
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          correct_count?: number | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          mode: string
+          score?: number | null
+          started_at?: string | null
+          status?: string | null
+          time_limit_seconds?: number | null
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          correct_count?: number | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          mode?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string | null
+          time_limit_seconds?: number | null
+          total_questions?: number
+          user_id?: string
         }
         Relationships: []
       }
