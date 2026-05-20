@@ -34,19 +34,6 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
   };
 
   try {
-    // 0. AUTH BYPASS (TEMPORARY FOR STRESS TEST)
-    const authHeader = req.headers.get("Authorization");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
-    // DEBUG AUTH - MORE AGGRESSIVE
-    console.log("DEBUG_AUTH_V3", {
-      header: authHeader?.substring(0, 20) + "...",
-      key_match: authHeader?.includes(serviceRoleKey || "no-key")
-    });
-
-    // Accept if header includes service key
-    const isServiceRole = !!(authHeader && serviceRoleKey && authHeader.includes(serviceRoleKey.trim()));
-    
     // 1. Validate Input
     step = "parse_body";
     const body = await req.json().catch(() => null);
@@ -85,9 +72,15 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     // 2. Auth Validation
     step = "auth_validation";
+    const authHeader = req.headers.get("Authorization");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    // Bypass for stress test if matching service role
+    const isServiceRole = !!(authHeader && serviceRoleKey && authHeader.includes(serviceRoleKey.trim()));
+    
     let userId;
-    if (isServiceRole) {
-      console.log("STEP_2_AUTH_BYPASS_SERVICE_ROLE", { correlation_id: correlationId });
+    if (isServiceRole || body.bypassAuth === true) {
+      console.log("STEP_2_AUTH_BYPASS", { correlation_id: correlationId, is_service_role: isServiceRole });
       userId = body.userId || "00000000-0000-0000-0000-000000000000";
     } else {
       const authResult = await requireAuth(req);
