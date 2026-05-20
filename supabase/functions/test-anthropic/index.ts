@@ -12,20 +12,17 @@ serve(async (req) => {
 
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY') || ''
   
-  // Debug validation: Check for invisible characters
-  const hasInvisibles = /[^\x20-\x7E]/.test(apiKey)
-  const length = apiKey.length
-  const prefix = apiKey.substring(0, 7)
+  // Create a character map to see exactly what's in the string
+  const charCodes = Array.from(apiKey).map(c => ({
+    char: c === '\n' ? '\\n' : c === '\r' ? '\\r' : c,
+    code: c.charCodeAt(0)
+  })).slice(0, 20)
 
   return new Response(
     JSON.stringify({ 
-      ok: false, 
-      debug: {
-        length,
-        prefix,
-        hasInvisibles,
-        message: "Check logs for character codes"
-      }
+      length: apiKey.length,
+      prefix: apiKey.substring(0, 15),
+      charCodes
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
