@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
-import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown, Image, Swords, CheckCircle2, Clock } from "lucide-react";
+import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown, Image, Swords, CheckCircle2, Clock, DatabaseZap, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CinematicHero } from "@/components/cinematic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
