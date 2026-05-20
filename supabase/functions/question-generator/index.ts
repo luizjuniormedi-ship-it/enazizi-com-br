@@ -58,7 +58,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       createSession = true
     } = body;
 
-    const requestedCount = Math.min(Number(count) || 5, 20);
+    const requestedCount = Math.min(Number(count) || 5, 50);
     const specialty = body.specialty || generationContext?.specialty || "Clínica Médica";
     const topics = Array.isArray(body.topics) ? body.topics : (generationContext?.topic ? [generationContext.topic] : [specialty]);
     const examBoard = targetExam || body.examBoard;

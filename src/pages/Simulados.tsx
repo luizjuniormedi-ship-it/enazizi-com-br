@@ -504,10 +504,17 @@ const Simulados = () => {
         else currentJobId = job.id;
       }
 
-      const BATCH_SIZE_AI = 5;
+      const BATCH_SIZE_AI = 20; // Increased batch size to reduce calls
       let currentTry = 0;
       
       while (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
+        // SAFETY LIMIT: If we are in a loop but not progressing, break
+        if (currentTry > 10) {
+          console.error("[Simulados] Too many attempts, breaking loop to avoid UI freeze.");
+          break;
+        }
+        currentTry++;
+
         const remaining = requestedTotal - allGenerated.length;
         const currentBatchSize = Math.min(BATCH_SIZE_AI, remaining);
         const batchNum = Math.floor(allGenerated.length / BATCH_SIZE_AI) + 1;
