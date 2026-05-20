@@ -121,9 +121,10 @@ async function generateBatch(
   customDistribution?: any[],
   includeWeakThemes?: boolean,
   includePreviousErrors?: boolean,
-  mode: SimuladoMode = "estudo"
+  mode: SimuladoMode = "estudo",
+  avoidIds?: string[]
 ): Promise<SimQuestion[]> {
-  console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard, autoDistribution });
+  console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard, autoDistribution, avoidIdsCount: avoidIds?.length });
   
   try {
     const { data, error } = await supabase.functions.invoke("question-generator", {
@@ -134,6 +135,8 @@ async function generateBatch(
         topics,
         targetExam: examBoard,
         mode,
+        avoidIds,
+        avoidStatements: avoidStatements,
         generationContext: {
           subtopic: specificTopic,
           topicWeights,
