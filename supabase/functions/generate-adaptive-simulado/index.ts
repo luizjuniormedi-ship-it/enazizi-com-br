@@ -6,8 +6,8 @@ import { SIMULADO_MOTOR_PREMIUM, QUESTION_MOTOR_PREMIUM } from "../_shared/premi
 import { AI_MODELS, normalizeModelStrict } from "../_shared/ai-models.ts";
 
 /**
- * ENAZIZI — GENERATE ADAPTIVE SIMULADO
- * Fixed with AI Routing Governance Layer.
+ * ENAZIZI — GENERATE ADAPTIVE SIMULADO v3.5
+ * Fixed with persistence of non-bank questions and better error handling.
  */
 Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
   const { requestId, correlationId } = correlation;
@@ -62,7 +62,6 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   if (deficit > 0) {
     const topicToGen = weakTopics[0] || "Clínica Médica";
     
-    // Use Strict Model Normalization
     const model = normalizeModelStrict(
       body.model || 
       Deno.env.get("AI_MODEL") || 
@@ -92,7 +91,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     if (Array.isArray(generated)) {
       questions.push(...generated.slice(0, deficit).map(q => ({
         statement: cleanQuestionText(q.statement || q.content || ""),
-        options: q.options || [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean),
+        options: q.options || [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean).slice(0, 4),
         correct: typeof q.correct === 'number' ? q.correct : (typeof q.correct_index === 'number' ? q.correct_index : 0),
         explanation: cleanQuestionText(q.explanation || q.rationale || ""),
         topic: q.topic || topicToGen,
@@ -112,6 +111,10 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     mode: 'adaptativo',
     total_questions: questions.length,
     status: 'active',
+    discipline: questions[0]?.topic || "Clínica Médica",
+    topic: questions[0]?.topic,
+    difficulty: 'adaptativo',
+    source: questions.every(q => q._source === 'bank') ? 'bank' : (questions.every(q => q._source === 'generated') ? 'ai' : 'mixed'),
     metadata: { 
       adaptive_meta: performance,
       correlation_id: correlationId,
@@ -119,26 +122,26 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     }
   }).select().single();
 
-  if (sessErr) throw sessErr;
+  if (sessErr || !session?.id) {
+    throw new Error(`Falha ao criar sessão: ${sessErr?.message || 'ID não retornado'}`);
+  }
 
   // Link questions
-  if (questions.some(q => q.id)) {
-    const questionsToLink = questions
-      .filter(q => q.id)
-      .map((q, idx) => ({
-        session_id: session.id,
-        question_id: q.id,
-        order_index: idx
-      }));
-    
-    if (questionsToLink.length > 0) {
-      await supabaseAdmin.from("simulado_questions").insert(questionsToLink);
-    }
-  }
+  const linkData = questions.map((q, idx) => ({
+    session_id: session.id,
+    question_id: q.id || null,
+    order_index: idx,
+    question_snapshot: q.id ? null : q,
+    is_ai_generated: q._source === "generated"
+  }));
+
+  const { error: linkErr } = await supabaseAdmin.from("simulado_questions").insert(linkData);
+  if (linkErr) logger.warn("LINK_QUESTIONS_FAILED", linkErr.message);
 
   return new Response(JSON.stringify({
     success: true,
     sessionId: session.id,
+    session_id: session.id, // For compatibility
     questions: questions,
     total: questions.length,
     correlation_id: correlationId,
