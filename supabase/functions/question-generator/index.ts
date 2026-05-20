@@ -1,46 +1,70 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { aiFetch, cleanQuestionText, parseAiJson } from "../_shared/ai-fetch.ts";
-import { logAiUsage, buildPromptHash, getCachedAIResponse, saveAIResponseToCache, logAIUsage, CACHE_TTL_DAYS } from "../_shared/ai-cache.ts";
-import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection, IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
-import { validateQuestionBatch } from "../_shared/ai-validation.ts";
-import { PROFILES, resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
-import { jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { fetchDynamicBlueprint } from "../_shared/dynamic-blueprints.ts";
-import { requireAuth } from "../_shared/require-auth.ts";
 import { QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
+import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, supabaseAdmin, ai }) => {
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
 
   const { 
-    messages: rawMessages, 
-    userContext, 
-    difficulty, 
-    outputFormat, 
-    avoidStatements, 
-    generationContext, 
-    targetExam, 
-    count,
-    topicWeights,
-    specialty
+    difficulty = "misto", 
+    count = 5,
+    generationContext = {},
+    targetExam,
+    topicWeights
   } = body;
 
-  const isJsonMode = outputFormat === "json";
-  const requestedCount = Math.min(Number(count ?? 10), 20);
-  const safeTargetExam = String(targetExam || "default");
-  const bancaInfo = resolveBanca(safeTargetExam);
+  const requestedCount = Math.min(Number(count), 15);
+  const specialty = body.specialty || generationContext.specialty || "Clínica Médica";
+  const topics = body.topics || (generationContext.topic ? [generationContext.topic] : [specialty]);
+  const examBoard = targetExam || body.examBoard;
 
+  logger.info("QUESTION_GEN_START", `Generating ${requestedCount} questions for ${specialty}`, { userId: user.id, topics, examBoard });
+
+  // Try to find existing questions in bank first to avoid AI costs if possible
+  if (body.preferBank) {
+      const { data: bankQs } = await supabaseAdmin
+        .from("questions_bank")
+        .select("*")
+        .eq("topic", specialty)
+        .limit(requestedCount);
+      
+      if (bankQs && bankQs.length >= requestedCount) {
+          logger.info("QUESTION_GEN_BANK_HIT", `Found ${bankQs.length} questions in bank`);
+          return new Response(JSON.stringify({ 
+            success: true, 
+            questions: bankQs,
+            choices: [{ message: { content: JSON.stringify(bankQs) } }] 
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+      }
+  }
+
+  const bancaInfo = resolveBanca(examBoard || "default");
   let systemPrompt = QUESTION_MOTOR_PREMIUM;
   systemPrompt += buildBancaBlock(bancaInfo.profile);
 
-  if (isJsonMode) {
+  const userPrompt = `Gere exatamente ${requestedCount} questões médicas de múltipla escolha.
+  TEMA: ${topics.join(", ")}
+  ESPECIALIDADE: ${specialty}
+  DIFICULDADE: ${difficulty}
+  ${examBoard ? `ESTILO DA BANCA: ${examBoard}` : ""}
+  
+  REGRAS:
+  1. Caso clínico denso (400+ caracteres).
+  2. 5 alternativas (A-E).
+  3. Explicação detalhada.
+  4. Retorne APENAS um JSON array.`;
+
+  try {
     const aiResponse = await ai({
       taskType: "generation",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Gere ${requestedCount} questões médicas em JSON. Especialidade: ${specialty || (generationContext && generationContext.specialty) || "Geral"}.` }
+        { role: "user", content: userPrompt }
       ],
       complexity: "high"
     });
@@ -48,51 +72,54 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     const rawContent = aiResponse.choices?.[0]?.message?.content || "[]";
     let questions = parseAiJson(rawContent);
 
-    if (Array.isArray(questions)) {
-      questions = questions.map(q => ({
-        ...q,
-        topic: q.topic || specialty || "Geral",
-        metadata: { generation_engine: "ENAZIZI Question Motor v3.1 (Unified ALOS)" }
-      }));
+    if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error("Falha ao gerar questões válidas via IA.");
     }
 
-    // Persistência Longitudinal do Simulado no Banco de Dados
-    if (questions.length > 0) {
-      const { data: session } = await supabaseAdmin.from("simulado_sessions").insert({
-        user_id: user.id,
-        mode: body.mode || 'estudo',
-        total_questions: questions.length,
-        status: 'active',
-        metadata: { ...generationContext, source: 'ai_generator' }
-      }).select().single();
+    // Format and sanitize
+    const formattedQuestions = questions.map(q => ({
+        statement: cleanQuestionText(q.statement || q.content || ""),
+        options: Array.isArray(q.options) ? q.options : [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean),
+        correct: typeof q.correct === 'number' ? q.correct : (typeof q.correct_index === 'number' ? q.correct_index : 0),
+        explanation: cleanQuestionText(q.explanation || q.rationale || ""),
+        topic: q.topic || specialty,
+        difficulty: q.difficulty || difficulty,
+        metadata: { 
+            generation_engine: "ENAZIZI Question Motor v3.2",
+            generated_at: new Date().toISOString()
+        }
+    }));
 
-      if (session) {
-        await supabaseAdmin.from("simulado_questions").insert(
-          questions.map((_, idx) => ({
-            session_id: session.id,
-            order_index: idx
-          }))
+    // Optionally save to questions_bank for future use
+    if (body.saveToBank) {
+        await supabaseAdmin.from("questions_bank").insert(
+            formattedQuestions.map(q => ({
+                user_id: user.id,
+                statement: q.statement,
+                options: q.options,
+                correct_index: q.correct,
+                explanation: q.explanation,
+                topic: q.topic,
+                difficulty: q.difficulty,
+                is_global: true,
+                review_status: 'pending'
+            }))
         );
-      }
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      questions, 
-      choices: [{ message: { content: JSON.stringify(questions) } }] 
+      questions: formattedQuestions,
+      choices: [{ message: { content: JSON.stringify(formattedQuestions) } }] 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
+
+  } catch (err: any) {
+    logger.error("QUESTION_GEN_FAIL", err.message);
+    return new Response(JSON.stringify({ error: err.message, success: false }), { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
   }
-
-  // Fallback for chat
-  const aiResponse = await ai({
-    taskType: "reasoning",
-    messages: [{ role: "system", content: systemPrompt }, ...(rawMessages || [])],
-    complexity: "medium"
-  });
-
-  return new Response(JSON.stringify(aiResponse), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" }
-  });
 }));
