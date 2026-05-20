@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { useAuth } from "@/hooks/useAuth";
 import { useTutorV2Messages } from "./hooks/useTutorV2Messages";
 import { TutorV2Service } from "./services/TutorV2Service";
@@ -113,6 +114,23 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
           type: 'feedback',
           speech: response?.questionReview?.is_correct ? "Excelente raciocínio!" : "Percebi um ponto de confusão aqui."
         });
+
+        // Emit ALOS Event for Tutor Interaction
+        await pedagogicalEventBus.emit({
+          event_type: 'tutor_question_answered',
+          module: 'tutor',
+          source: 'frontend',
+          entity_type: 'tutor_session',
+          entity_id: session.id,
+          study_context: {
+            topic: session.topic
+          },
+          metadata: {
+            is_correct: response?.questionReview?.is_correct,
+            question_type: response?.questionReview?.question_type,
+            student_answer: response?.questionReview?.student_answer
+          }
+        }, user.id);
       } else {
         triggerInteraction({
           state: 'teaching',
