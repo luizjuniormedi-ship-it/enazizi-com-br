@@ -11296,6 +11296,56 @@ export type Database = {
         }
         Relationships: []
       }
+      flashcard_generation_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          status: string
+          topic: string | null
+          total_cards_expected: number | null
+          total_cards_generated: number | null
+          updated_at: string
+          upload_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          status?: string
+          topic?: string | null
+          total_cards_expected?: number | null
+          total_cards_generated?: number | null
+          updated_at?: string
+          upload_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          status?: string
+          topic?: string | null
+          total_cards_expected?: number | null
+          total_cards_generated?: number | null
+          updated_at?: string
+          upload_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_generation_jobs_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flashcard_uploads: {
         Row: {
           created_at: string | null
@@ -11488,6 +11538,7 @@ export type Database = {
           created_at: string
           deck_id: string | null
           difficulty: number
+          difficulty_fsrs: number | null
           discipline: string | null
           due: string
           elapsed_days: number
@@ -11513,6 +11564,7 @@ export type Database = {
           created_at?: string
           deck_id?: string | null
           difficulty?: number
+          difficulty_fsrs?: number | null
           discipline?: string | null
           due?: string
           elapsed_days?: number
@@ -11538,6 +11590,7 @@ export type Database = {
           created_at?: string
           deck_id?: string | null
           difficulty?: number
+          difficulty_fsrs?: number | null
           discipline?: string | null
           due?: string
           elapsed_days?: number
@@ -20163,6 +20216,57 @@ export type Database = {
             columns: ["decision_id"]
             isOneToOne: false
             referencedRelation: "orchestrator_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulado_answers: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          id: string
+          is_correct: boolean | null
+          question_id: string | null
+          selected_answer: number | null
+          session_id: string
+          time_spent_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          is_correct?: boolean | null
+          question_id?: string | null
+          selected_answer?: number | null
+          session_id: string
+          time_spent_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          is_correct?: boolean | null
+          question_id?: string | null
+          selected_answer?: number | null
+          session_id?: string
+          time_spent_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulado_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulado_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "simulado_sessions"
             referencedColumns: ["id"]
           },
         ]
