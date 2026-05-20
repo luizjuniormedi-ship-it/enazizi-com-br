@@ -181,11 +181,23 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       PRESSURE: ${cogState?.intensity || 0}/100
       BANCA: ${examBoard || "Geral"}
       
+      FORMATO DE RESPOSTA OBRIGATÓRIO (JSON):
+      [
+        {
+          "statement": "enunciado",
+          "options": ["alt A", "alt B", "alt C", "alt D"],
+          "correct": 0,
+          "explanation": "comentário completo",
+          "difficulty": "médio",
+          "topic": "TEP"
+        }
+      ]
+      
       REGRAS ADAPTATIVAS:
       - Se COGNITIVE_STATE for 'recuperacao' ou 'retencao_fraca', gere questões mais conceituais e didáticas.
       - Se COGNITIVE_STATE for 'dominio' ou 'consolidacao', gere casos complexos com pegadinhas avançadas.
       - Use exatamente 4 alternativas (A-D).
-      - Retorne APENAS um JSON array.`;
+      - Retorne APENAS o JSON array bruto, sem markdown.`;
 
       console.log("STEP_4_AI_CALL_INIT", { model, deficit, topics, correlation_id: correlationId });
 
@@ -235,19 +247,40 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       }
 
       if (Array.isArray(aiQuestions) && aiQuestions.length > 0) {
-        const formattedAi = aiQuestions.slice(0, deficit).map((q: any) => ({
-          statement: cleanQuestionText(q?.statement || q?.content || ""),
-          options: Array.isArray(q?.options) ? q.options.slice(0, 4) : [q?.option_a, q?.option_b, q?.option_c, q?.option_d].filter(Boolean),
-          correct: typeof q?.correct === 'number' ? q.correct : (typeof q?.correct_index === 'number' ? q.correct_index : 0),
-          explanation: cleanQuestionText(q?.explanation || q?.rationale || ""),
-          topic: q?.topic || topics[0],
-          difficulty: q?.difficulty || difficulty,
-          _source: "generated"
-        }));
+        const formattedAi = aiQuestions.slice(0, deficit).map((q: any) => {
+          const statement = cleanQuestionText(q?.statement || q?.enunciado || q?.enunciado_clinico || q?.content || "");
+          const rawOptions = q?.options || q?.alternativas;
+          let options = [];
+          
+          if (Array.isArray(rawOptions)) {
+            options = rawOptions.slice(0, 4);
+          } else if (typeof rawOptions === 'object' && rawOptions !== null) {
+            options = [rawOptions.A, rawOptions.B, rawOptions.C, rawOptions.D].filter(o => o !== undefined);
+          } else {
+            options = [q?.option_a, q?.option_b, q?.option_c, q?.option_d].filter(Boolean);
+          }
+
+          // Converter dificuldade textual para numérica se necessário
+          let difficultyLevel = q?.difficulty || difficulty;
+          if (typeof difficultyLevel === 'string') {
+            const diffMap: any = { 'fácil': 1, 'médio': 2, 'médio-difícil': 3, 'difícil': 4, 'misto': 2 };
+            difficultyLevel = diffMap[difficultyLevel.toLowerCase()] || 2;
+          }
+
+          return {
+            statement,
+            options,
+            correct: typeof q?.correct === 'number' ? q.correct : (typeof q?.correct_index === 'number' ? q.correct_index : 0),
+            explanation: cleanQuestionText(q?.explanation || q?.rationale || q?.comentário || ""),
+            topic: q?.topic || topics[0],
+            difficulty: difficultyLevel,
+            _source: "generated"
+          };
+        }).filter(q => q.statement && q.options.length >= 2);
 
         console.log("STEP_7_VALIDATE_QUESTIONS", {
           count: formattedAi.length,
-          first_question: formattedAi[0]
+          first_question_preview: formattedAi[0]?.statement?.substring(0, 50)
         });
 
         // Persist to bank if requested
@@ -270,6 +303,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             questions.push(...savedQs.map((q: any) => ({ ...q, correct: q.correct_index, _source: "generated_saved" })));
           } else {
             logger.warn("BANK_SAVE_FAILED", saveErr?.message);
+            console.error("BANK_SAVE_FAILED", saveErr?.message);
             questions.push(...formattedAi);
           }
         } else {
