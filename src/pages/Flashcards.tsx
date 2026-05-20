@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { createPortal } from "react-dom";
 import FlashcardExam, { type FlashcardItem } from "@/components/flashcards/FlashcardExam";
+import { FlashcardUpload } from "@/components/flashcards/FlashcardUpload";
 import { EnaflixActionCard } from "@/components/enaflix/EnaflixActionCard";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
