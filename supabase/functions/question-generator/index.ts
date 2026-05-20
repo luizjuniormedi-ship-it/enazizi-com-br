@@ -215,16 +215,22 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         
         // Link questions
         step = "link_questions";
-        const linkData = questions.map((q: any, idx: number) => ({
-          session_id: sessionId,
-          question_id: q.id || null, 
-          order_index: idx,
-          question_snapshot: q.id ? null : q,
-          is_ai_generated: q._source === "generated" || q._source === "generated_saved"
-        }));
+        const linkData = questions
+          .filter(q => q && (q.id || q.statement)) // Hardening against null questions
+          .map((q: any, idx: number) => ({
+            session_id: sessionId,
+            question_id: q.id || null, 
+            order_index: idx,
+            question_snapshot: q.id ? null : q,
+            is_ai_generated: q._source === "generated" || q._source === "generated_saved"
+          }));
 
-        const { error: linkErr } = await supabaseAdmin.from("simulado_questions").insert(linkData);
-        if (linkErr) logger.warn("LINK_QUESTIONS_FAILED", linkErr.message);
+        if (linkData.length > 0) {
+          const { error: linkErr } = await supabaseAdmin.from("simulado_questions").insert(linkData);
+          if (linkErr) logger.warn("LINK_QUESTIONS_FAILED", linkErr.message);
+        } else {
+          logger.warn("LINK_QUESTIONS_SKIP", "No valid questions to link");
+        }
       }
     }
 

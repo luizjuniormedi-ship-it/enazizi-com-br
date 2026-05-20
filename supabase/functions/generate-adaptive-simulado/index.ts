@@ -88,7 +88,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       ],
       complexity: "alta",
       userId
-    });
+    }, { retries: 2 }); // Allow retries for simulados to avoid empty results
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
     let generated = [];
