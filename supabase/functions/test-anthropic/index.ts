@@ -10,7 +10,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+  let apiKey = Deno.env.get('ANTHROPIC_API_KEY')
   
   if (!apiKey) {
     return new Response(
@@ -19,8 +19,11 @@ serve(async (req) => {
     )
   }
 
+  // Clean the API key from any potential non-ByteString characters (like newlines or trailing spaces)
+  apiKey = apiKey.trim().replace(/[\r\n]/g, '')
+
   try {
-    console.log("Testing Anthropic API with model claude-3-5-sonnet-20241022...")
+    console.log("Testing Anthropic API with model claude-3-5-haiku-20241022...")
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -38,7 +41,16 @@ serve(async (req) => {
       }),
     })
 
-    const data = await response.json()
+    const text = await response.text()
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Invalid JSON response from Anthropic", raw: text }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (!response.ok) {
       console.error("Anthropic API Error:", data)
