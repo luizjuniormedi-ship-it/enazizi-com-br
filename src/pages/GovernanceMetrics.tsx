@@ -25,8 +25,12 @@ const GovernanceMetrics = () => {
         }
       />
 
-      <div className="px-1">
+      <div className="px-1 space-y-12">
         <GovernanceCockpit />
+        
+        <div className="border-t border-white/5 pt-12">
+          <AlosRuntimeObservatory />
+        </div>
       </div>
     </div>
   );
