@@ -55,7 +55,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       topicWeights,
       mode = "study",
       saveToBank = true,
-      createSession = true
+      createSession = true,
+      avoidIds = [],
+      avoidStatements = []
     } = body;
 
     const requestedCount = Math.min(Number(count) || 5, 50);
@@ -126,11 +128,16 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const forceAi = body.forceAi === true;
 
     if (!forceAi) {
-      const { data: bankQs, error: bankError } = await supabaseAdmin
+      let query = supabaseAdmin
         .from("questions_bank")
         .select("*")
-        .in("topic", topics)
-        .limit(requestedCount);
+        .in("topic", topics);
+
+      if (Array.isArray(avoidIds) && avoidIds.length > 0) {
+        query = query.not("id", "in", `(${avoidIds.join(",")})`);
+      }
+
+      const { data: bankQs, error: bankError } = await query.limit(requestedCount);
       
       if (!bankError && bankQs && bankQs.length > 0) {
         questions = bankQs.map((q: any) => ({
@@ -174,14 +181,19 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         .limit(1)
         .maybeSingle();
 
-      const userPrompt = `Gere exatamente ${deficit} questões médicas de múltipla escolha.
+      let userPrompt = `Gere exatamente ${deficit} questões médicas de múltipla escolha.
       TEMA: ${topics.join(", ")}
       ESPECIALIDADE: ${specialty}
       DIFICULDADE_ALVO: ${difficulty}
       COGNITIVE_STATE: ${cogState?.state || 'balanced'}
       PRESSURE: ${cogState?.intensity || 0}/100
-      BANCA: ${examBoard || "Geral"}
-      
+      BANCA: ${examBoard || "Geral"}`;
+
+      if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
+        userPrompt += `\nEVITE os seguintes enunciados (não repita): ${avoidStatements.map(s => s.substring(0, 100)).slice(0, 10).join(" | ")}`;
+      }
+
+      userPrompt += `\n
       FORMATO DE RESPOSTA OBRIGATÓRIO (JSON):
       [
         {
