@@ -19457,6 +19457,42 @@ export type Database = {
           },
         ]
       }
+      rag_knowledge_base: {
+        Row: {
+          board: string | null
+          content: string
+          created_at: string | null
+          id: string
+          source: string | null
+          specialty: string
+          tags: string[] | null
+          topic: string
+          updated_at: string | null
+        }
+        Insert: {
+          board?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          source?: string | null
+          specialty: string
+          tags?: string[] | null
+          topic: string
+          updated_at?: string | null
+        }
+        Update: {
+          board?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          source?: string | null
+          specialty?: string
+          tags?: string[] | null
+          topic?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       rag_processing_jobs: {
         Row: {
           created_at: string
