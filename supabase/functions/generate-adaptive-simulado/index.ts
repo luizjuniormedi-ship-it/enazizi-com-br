@@ -209,8 +209,8 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   // Logic to calculate distribution based on user history...
   // ... for this phase, we ensure it uses the unified AI wrapper and retry logic.
 
-    // ── 1. Build performance profile ──
-    const performance: PerformanceInput = body.performance || {
+  // ── 1. Build performance profile ──
+  const performance: PerformanceInput = body.performance || {
       by_modality: { ecg: 70, xray: 60, ct: 40, us: 45, pathology: 30, ophthalmology: 35, dermatology: 65 },
       by_difficulty: { easy: 80, medium: 55, hard: 35 },
       response_time: { ecg: 90, xray: 120, ct: 160, us: 170, pathology: 180, ophthalmology: 190 },
