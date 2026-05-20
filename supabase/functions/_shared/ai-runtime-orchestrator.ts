@@ -96,14 +96,13 @@ export interface AIRunResult {
 
 // Modelos validados em produção via Lovable AI Gateway.
 const MODELS = {
-  flash: { provider: "lovable-ai", model: "google/gemini-3-flash-preview" } as ModelRef,
-  flashStable: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
-  flashLite: { provider: "lovable-ai", model: "google/gemini-2.5-flash-lite" } as ModelRef,
-  pro: { provider: "lovable-ai", model: "google/gemini-2.5-pro" } as ModelRef,
-  gpt5Mini: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
-  gpt5: { provider: "lovable-ai", model: "google/gemini-2.5-pro" } as ModelRef,
-
-
+  flash: { provider: "openai", model: "openai/gpt-4o" } as ModelRef,
+  flashStable: { provider: "openai", model: "openai/gpt-4o" } as ModelRef,
+  flashLite: { provider: "openai", model: "openai/gpt-4o-mini" } as ModelRef,
+  pro: { provider: "openai", model: "openai/gpt-4o" } as ModelRef,
+  gpt5Mini: { provider: "openai", model: "openai/gpt-4o-mini" } as ModelRef,
+  gpt5: { provider: "openai", model: "openai/gpt-4o" } as ModelRef,
+  geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
@@ -144,7 +143,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
   if (cognitiveLoad === "high") {
     return wrap(
       MODELS.flashLite,
-      [MODELS.flash, MODELS.flashStable],
+      [MODELS.flash, MODELS.geminiFallback],
       "cognitive_load_high → modelo rápido + Feynman light",
       PROMPT_PROFILES.feynman_light,
     );
@@ -154,7 +153,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
   if (budget === "economy") {
     return wrap(
       MODELS.flashLite,
-      [MODELS.flash, MODELS.flashStable],
+      [MODELS.flash, MODELS.geminiFallback],
       "budget_mode=economy",
       PROMPT_PROFILES.fast_review,
     );
@@ -165,19 +164,19 @@ export function selectAIModel(input: AISelectInput): AISelection {
       // Pergunta simples → modelo mais barato
       if (complexity === "low") {
         return wrap(
-          MODELS.flash,
-          [MODELS.flashStable, MODELS.flashLite],
-          "tutor_chat low complexity → flash padrão",
+          MODELS.flashLite,
+          [MODELS.flash, MODELS.geminiFallback],
+          "tutor_chat low complexity → flash mini",
           PROMPT_PROFILES.fast_review,
         );
       }
 
       // Farmacologia → precisão
       if (/farmaco|farmacologia|drug|posolog/i.test(specialty)) {
-        const primary = budget === "premium" ? MODELS.gpt5 : MODELS.gpt5Mini;
+        const primary = MODELS.gpt5;
         return wrap(
           primary,
-          [MODELS.flash, MODELS.flashStable],
+          [MODELS.flash, MODELS.geminiFallback],
           "tutor_chat farmacologia → reasoning preciso",
           PROMPT_PROFILES.pharmacology_deep,
         );
@@ -186,19 +185,19 @@ export function selectAIModel(input: AISelectInput): AISelection {
       // Preventiva / SUS
       if (/preventiv|sus|saúde\s+coletiva|saude\s+coletiva|epidemio/i.test(specialty)) {
         return wrap(
-          MODELS.gpt5Mini,
-          [MODELS.flash, MODELS.flashStable],
-          "tutor_chat preventiva/SUS → google/gemini-2.5-flash",
+          MODELS.flash,
+          [MODELS.flashLite, MODELS.geminiFallback],
+          "tutor_chat preventiva/SUS → openai/gpt-4o",
           PROMPT_PROFILES.preventive_sus,
         );
       }
 
       // Raciocínio clínico profundo
       if (input.requiresReasoning || complexity === "high") {
-        const primary = budget === "premium" ? MODELS.gpt5 : MODELS.gpt5Mini;
+        const primary = MODELS.gpt5;
         return wrap(
           primary,
-          [MODELS.pro, MODELS.flash, MODELS.flashStable],
+          [MODELS.flash, MODELS.geminiFallback],
           "tutor_chat reasoning profundo",
           PROMPT_PROFILES.clinical_reasoning,
         );
@@ -207,7 +206,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
       // Default tutor
       return wrap(
         MODELS.flash,
-        [MODELS.flashStable, MODELS.gpt5Mini],
+        [MODELS.flashLite, MODELS.geminiFallback],
         "tutor_chat default balanced",
         PROMPT_PROFILES.feynman_full,
       );
@@ -215,11 +214,11 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
     case "lesson_generation":
     case "cme_script": {
-      const primary = budget === "premium" ? MODELS.pro : MODELS.flash;
+      const primary = MODELS.flash;
       return wrap(
         primary,
-        [MODELS.flash, MODELS.flashStable],
-        "lesson/cme → equilibrado/premium",
+        [MODELS.flashLite, MODELS.geminiFallback],
+        "lesson/cme → equilibrado",
         PROMPT_PROFILES.lesson_builder,
       );
     }
@@ -227,7 +226,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
     case "mnemonic":
       return wrap(
         MODELS.flash,
-        [MODELS.flashStable, MODELS.gpt5Mini],
+        [MODELS.flashLite, MODELS.geminiFallback],
         "mnemonic → rápido + auditor",
         PROMPT_PROFILES.mnemonic_builder,
       );
@@ -235,17 +234,17 @@ export function selectAIModel(input: AISelectInput): AISelection {
     case "flashcard":
       return wrap(
         MODELS.flashLite,
-        [MODELS.flash, MODELS.flashStable],
+        [MODELS.flash, MODELS.geminiFallback],
         "flashcard → barato",
         PROMPT_PROFILES.fast_review,
       );
 
     case "question_generation":
     case "simulado_review": {
-      const primary = budget === "premium" ? MODELS.gpt5 : MODELS.gpt5Mini;
+      const primary = MODELS.flash;
       return wrap(
         primary,
-        [MODELS.pro, MODELS.flash, MODELS.flashStable],
+        [MODELS.flashLite, MODELS.geminiFallback],
         "questão/simulado → reasoning",
         PROMPT_PROFILES.question_explainer,
       );
@@ -253,8 +252,8 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
     case "planner":
       return wrap(
-        MODELS.gpt5Mini,
-        [MODELS.flash, MODELS.flashStable],
+        MODELS.flash,
+        [MODELS.flashLite, MODELS.geminiFallback],
         "planner → reasoning leve",
         PROMPT_PROFILES.clinical_reasoning,
       );
@@ -262,7 +261,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
     default:
       return wrap(
         MODELS.flash,
-        [MODELS.flashStable],
+        [MODELS.geminiFallback],
         "fallback default → flash",
         PROMPT_PROFILES.fast_review,
       );
@@ -297,7 +296,10 @@ function wrap(
 // Execução
 // ---------------------------------------------------------------------------
 
-function getGatewayKey(): string {
+function getAIKey(provider: string): string {
+  if (provider === "openai") {
+    return Deno.env.get("OPENAI_API_KEY") || "";
+  }
   return (
     Deno.env.get("LOVABLE_API_KEY") ||
     Deno.env.get("AI_GATEWAY_API_KEY") ||
@@ -344,21 +346,22 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 
 async function callOnce(
   ref: ModelRef,
-  gatewayKey: string,
+  apiKey: string,
   messages: Array<{ role: string; content: string }>,
   maxTokens: number = AI_MAX_TOKENS,
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
-    const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model);
+    const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model) || ref.model === "openai/gpt-5.5";
     const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
     const body: Record<string, unknown> = {
       model: ref.model,
       messages,
       [tokenField]: maxTokens,
     };
+    const url = ref.provider === "openai" ? "https://api.openai.com/v1/chat/completions" : AI_GATEWAY_URL;
     const res = await fetchWithTimeout(
-      AI_GATEWAY_URL,
+      url,
       {
         method: "POST",
         headers: {
@@ -521,33 +524,7 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   const selection = selectAIModel(input);
   const totalStart = Date.now();
   const attempts: AIAttempt[] = [];
-  const gatewayKey = getGatewayKey();
 
-  // Sem chave → emergency direto
-  if (!gatewayKey) {
-    const result: AIRunResult & { success: boolean } = {
-      content: input.emergencyTemplate || defaultEmergency(input),
-      provider: "template",
-      model: "emergency_template_response",
-      fallbackUsed: true,
-      attempts: [
-        {
-          ...selection,
-          success: false,
-          code: "AI_PROVIDER_NOT_CONFIGURED",
-          message: "Nenhuma chave de IA configurada (LOVABLE_API_KEY ausente).",
-          latency_ms: 0,
-        },
-      ],
-      latencyMs: 0,
-      selection,
-      errorCode: "AI_PROVIDER_NOT_CONFIGURED",
-      success: false,
-    };
-    await logRun(input.supabase, input, selection, { ...result, success: false });
-    const { success: _s, ...rest } = result;
-    return rest;
-  }
 
   const fullChain: ModelRef[] = [
     { provider: selection.provider, model: selection.model },
@@ -565,7 +542,12 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
                       input.taskType === "clinical_reasoning" ||
                       input.taskType === "simulado_review";
     const maxTokens = needsDeep ? AI_MAX_TOKENS_DEEP : AI_MAX_TOKENS;
-    const r = await callOnce(ref, gatewayKey, input.messages, maxTokens);
+    const apiKey = getAIKey(ref.provider);
+    if (!apiKey) {
+      attempts.push({ ...ref, success: false, code: "AI_AUTH_ERROR", message: `Missing key for provider ${ref.provider}`, latency_ms: 0 });
+      continue;
+    }
+    const r = await callOnce(ref, apiKey, input.messages, maxTokens);
     attempts.push(r.attempt);
     if (r.attempt.success && r.content) {
       const result: AIRunResult = {
