@@ -15898,6 +15898,69 @@ export type Database = {
         }
         Relationships: []
       }
+      pedagogical_events: {
+        Row: {
+          cognitive_context: Json | null
+          consumed_by: Json | null
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          idempotency_key: string | null
+          metadata: Json | null
+          module: string
+          organization_id: string | null
+          retry_count: number | null
+          severity: string
+          source: string
+          status: string | null
+          study_context: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cognitive_context?: Json | null
+          consumed_by?: Json | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json | null
+          module: string
+          organization_id?: string | null
+          retry_count?: number | null
+          severity?: string
+          source: string
+          status?: string | null
+          study_context?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cognitive_context?: Json | null
+          consumed_by?: Json | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          idempotency_key?: string | null
+          metadata?: Json | null
+          module?: string
+          organization_id?: string | null
+          retry_count?: number | null
+          severity?: string
+          source?: string
+          status?: string | null
+          study_context?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pedagogical_health_indices: {
         Row: {
           cognitive_load: number | null
@@ -26073,6 +26136,15 @@ export type Database = {
           p_payload: Json
           p_response: Json
           p_status: string
+        }
+        Returns: undefined
+      }
+      mark_pedagogical_event_consumed: {
+        Args: {
+          consumer_name: string
+          event_id: string
+          result_metadata?: Json
+          success: boolean
         }
         Returns: undefined
       }
