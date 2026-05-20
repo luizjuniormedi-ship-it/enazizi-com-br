@@ -352,68 +352,72 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     selectedProfile.totalQuestions,
   );
 
-  const handleStart = (forceAi = false) => {
-    if (mode === "adaptativo") {
-      const count = customCount ? parseInt(customCount) : questionCount;
-      onStart({ topics: [], count, difficulty: "adaptativo", timePerQuestion: 3, mode: "adaptativo" });
-      return;
-    }
-    if (mode === "prova_real" || mode === "tri") {
-      const profile = selectedProfile;
-      const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
-      const count = generationMethod === "custom" ? customTotalQuestions : profile.totalQuestions;
-      const timePerQ = profile.timeMinutes / count;
-      
-      onStart({
-        topics: topicsFromProfile,
-        count,
-        difficulty: mode === "tri" ? "tri" : "prova_real",
-        timePerQuestion: timePerQ,
-        mode: forceAi ? ("ai_generation" as any) : mode,
-        examBoard: realExamBoard,
-        realExamProfile: realExamBoard,
-        dynamicDistribution: dynamicDistribution?.source === "curriculum_weights"
-          ? dynamicDistribution
-          : undefined,
-        topicWeights: profile.topicWeights,
-        autoDistribution: generationMethod === "automatic",
-        customDistribution: generationMethod === "custom" ? customDistribution : undefined,
-        includeWeakThemes,
-        includePreviousErrors,
-      });
-      return;
-    }
-    const count = customCount ? parseInt(customCount) : questionCount;
-
-    // Resolve fonte de tópicos: manual > banca específica > GERAL (Todas as bancas)
-    let finalTopics = selectedTopics;
-    let resolvedWeights: any[] | undefined;
-    let resolvedExamBoard: string | undefined = examBoard !== "all" ? examBoard : undefined;
-
-    if (finalTopics.length === 0) {
-      const profileKey = examBoard !== "all" ? examBoard : "GERAL";
-      const profile = EXAM_PROFILES[profileKey] || EXAM_PROFILES.GERAL;
-      if (profile?.topicWeights?.length) {
-        finalTopics = profile.topicWeights.map((tw: any) => tw.topic);
-        resolvedWeights = profile.topicWeights;
-        if (examBoard === "all") resolvedExamBoard = "GERAL";
-      } else {
-        finalTopics = ["Clínica Médica"];
+  const handleStart = async (forceAi = false) => {
+    try {
+      if (mode === "adaptativo") {
+        const count = customCount ? parseInt(customCount) : questionCount;
+        onStart({ topics: [], count, difficulty: "adaptativo", timePerQuestion: 3, mode: "adaptativo" });
+        return;
       }
-    }
+      if (mode === "prova_real" || mode === "tri") {
+        const profile = selectedProfile;
+        const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
+        const count = generationMethod === "custom" ? customTotalQuestions : profile.totalQuestions;
+        const timePerQ = profile.timeMinutes / count;
+        
+        onStart({
+          topics: topicsFromProfile,
+          count,
+          difficulty: mode === "tri" ? "tri" : "prova_real",
+          timePerQuestion: timePerQ,
+          mode: forceAi ? ("ai_generation" as any) : mode,
+          examBoard: realExamBoard,
+          realExamProfile: realExamBoard,
+          dynamicDistribution: dynamicDistribution?.source === "curriculum_weights"
+            ? dynamicDistribution
+            : undefined,
+          topicWeights: profile.topicWeights,
+          autoDistribution: generationMethod === "automatic",
+          customDistribution: generationMethod === "custom" ? customDistribution : undefined,
+          includeWeakThemes,
+          includePreviousErrors,
+        });
+        return;
+      }
+      const count = customCount ? parseInt(customCount) : questionCount;
 
-    onStart({
-      topics: finalTopics,
-      count,
-      difficulty,
-      timePerQuestion,
-      mode: forceAi ? ("ai_generation" as any) : mode,
-      specificTopic: specificTopic.trim() || undefined,
-      examBoard: resolvedExamBoard,
-      imagePercent,
-      topicWeights: resolvedWeights,
-      autoDistribution: selectedTopics.length === 0 && !!resolvedWeights,
-    });
+      // Resolve fonte de tópicos: manual > banca específica > GERAL (Todas as bancas)
+      let finalTopics = selectedTopics;
+      let resolvedWeights: any[] | undefined;
+      let resolvedExamBoard: string | undefined = examBoard !== "all" ? examBoard : undefined;
+
+      if (finalTopics.length === 0) {
+        const profileKey = examBoard !== "all" ? examBoard : "GERAL";
+        const profile = EXAM_PROFILES[profileKey] || EXAM_PROFILES.GERAL;
+        if (profile?.topicWeights?.length) {
+          finalTopics = profile.topicWeights.map((tw: any) => tw.topic);
+          resolvedWeights = profile.topicWeights;
+          if (examBoard === "all") resolvedExamBoard = "GERAL";
+        } else {
+          finalTopics = ["Clínica Médica"];
+        }
+      }
+
+      onStart({
+        topics: finalTopics,
+        count,
+        difficulty,
+        timePerQuestion,
+        mode: forceAi ? ("ai_generation" as any) : mode,
+        specificTopic: specificTopic.trim() || undefined,
+        examBoard: resolvedExamBoard,
+        imagePercent,
+        topicWeights: resolvedWeights,
+        autoDistribution: selectedTopics.length === 0 && !!resolvedWeights,
+      });
+    } catch (error) {
+      console.error("SIMULADO_START_ERROR", error);
+    }
   };
 
   const totalTime = mode === "prova_real" || mode === "tri"
