@@ -304,8 +304,12 @@ async function processInBackground(
       console.error("[PROCESS_UPLOAD] Enrichment error:", enrichErr);
     }
     
-    // We don't update counts here anymore as populate-questions will handle it asynchronously.
-    // We only ensure the status is 'processed' for the extraction phase.
+    // Finalize specific flashcard job if module was flashcards
+    const { data: uploadInfo } = await supabaseAdmin.from("uploads").select("filename, storage_path").eq("id", uploadId).single();
+    await supabaseAdmin.from("flashcard_uploads").update({ 
+      status: "completed",
+      total_cards_generated: 0 // Will be updated by generate-flashcards
+    }).eq("id", uploadId);
 
     const ragDocId = (upload.extracted_json as any)?.rag_doc_id;
     if (ragDocId) {
