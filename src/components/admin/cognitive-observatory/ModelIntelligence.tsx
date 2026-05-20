@@ -108,7 +108,12 @@ export const ModelIntelligence: React.FC = () => {
           <TableBody>
             {stats?.map((model: any) => (
               <TableRow key={model.name} className="border-slate-800 hover:bg-slate-900/50">
-                <TableCell className="font-mono text-[11px] text-slate-300">{model.name}</TableCell>
+                <TableCell className="font-mono text-[11px] text-slate-300">
+                  <div className="flex flex-col">
+                    <span>{model.name}</span>
+                    <span className="text-[8px] text-slate-500 uppercase">{model.provider} • {model.category}</span>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden">
