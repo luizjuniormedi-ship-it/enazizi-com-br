@@ -192,6 +192,14 @@ const Dashboard = () => {
 
       {debugPanel}
 
+      {isDebug && (
+        <div className="mx-4 sm:mx-8 lg:mx-14 relative z-10">
+          <Suspense fallback={null}>
+            <CognitiveValidation />
+          </Suspense>
+        </div>
+      )}
+
       {cockpitTimedOut && isDataMissing && (
         <div className="mx-4 sm:mx-8 lg:mx-14 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
