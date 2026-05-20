@@ -160,129 +160,90 @@ const Flashcards = () => {
     return result;
   }, [mode, dueCards, allCards, topicSearch, sprintConfig.cardCount]);
 
-  const handleGenerateFromBank = async (autoStart = true) => {
+  const handleSearchExisting = async () => {
     if (!user) return;
     const search = topicSearch.trim();
     if (!search) {
-      toast({ title: "Digite um tema", description: "Informe o tema para buscar questões no banco.", variant: "destructive" });
+      toast({ title: "Digite um tema", description: "Informe o tema para buscar cards existentes.", variant: "destructive" });
       return;
     }
-    setGeneratingFromBank(true);
+
+    setLoading(true);
     try {
-      // 1. Tentar buscar no banco local primeiro
-      const { data: existing } = await supabase
+      const searchPattern = `%${search}%`;
+      const { data, error } = await supabase
         .from("flashcards")
-        .select("question")
-        .eq("user_id", user.id);
-      const existingHashes = new Set((existing || []).map(f => f.question?.slice(0, 80).toLowerCase()));
+        .select("id, question, answer, topic, is_global, user_id")
+        .or(`topic.ilike.${searchPattern},question.ilike.${searchPattern}`)
+        .limit(100);
 
-      const limit = Math.min(generateQuantity + 15, 60);
-      const [{ data: bankQ }, { data: realQ }] = await Promise.all([
-        supabase
-          .from("questions_bank")
-          .select("statement, explanation, options, correct_index, topic")
-          .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
-          .eq("is_global", true)
-          .limit(limit),
-        supabase
-          .from("real_exam_questions")
-          .select("statement, explanation, options, correct_index, topic")
-          .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
-          .eq("is_active", true)
-          .limit(limit),
-      ]);
-
-      const allQuestions = [...(bankQ || []), ...(realQ || [])];
-      let newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
-      
-      console.log(`[FLASHCARDS] Encontradas ${allQuestions.length} questões no banco.`);
-
-      for (const q of allQuestions) {
-        if (!q || newCards.length >= generateQuantity) break;
-        const hash = q.statement?.slice(0, 80).toLowerCase();
-        if (!hash || existingHashes.has(hash)) continue;
-        existingHashes.add(hash);
-
-        const opts = Array.isArray(q.options) ? q.options as string[] : [];
-        const correctOpt = q.correct_index != null && opts[q.correct_index]
-          ? `✅ ${opts[q.correct_index]}`
-          : "";
-        const answer = [correctOpt, q.explanation ? `\n\n🧠 ${q.explanation}` : ""].join("").trim();
-        if (!answer) continue;
-
-        newCards.push({
-          user_id: user.id,
-          question: q.statement,
-          answer,
-          topic: q.topic || search,
-        });
-      }
-
-      // 2. Se não encontrou no banco, usar IA
-      if (newCards.length < 5) {
-        toast({ title: "Buscando na IA...", description: "Não encontramos questões suficientes no banco. Acionando motor de geração..." });
-        
-        const { data, error: genError } = await supabase.functions.invoke("generate-flashcards", {
-            body: { 
-                topic: search, 
-                quantity: generateQuantity,
-                discipline: "Geral"
-            }
-        });
-
-        if (genError) throw genError;
-        if (data?.success) {
-            await fetchData();
-            if (autoStart) {
-                setMode("all");
-                setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
-                setPhase("active");
-            }
-            return;
-        }
-      }
-
-      if (newCards.length === 0) {
-        toast({ title: "Nenhuma questão encontrada", description: `Não encontramos questões novas para "${search}".` });
-        setGeneratingFromBank(false);
-        return;
-      }
-
-      const { error, data: inserted } = await supabase.from("flashcards").insert(newCards).select("id, question, answer, topic, is_global, user_id");
       if (error) throw error;
-
-      // Também registrar no FSRS
-      if (inserted) {
-          await supabase.from("fsrs_cards").insert(
-              inserted.map(f => ({
-                  user_id: user.id,
-                  card_ref_id: f.id,
-                  card_type: 'flashcard',
-                  front: f.question,
-                  back: f.answer,
-                  topic: f.topic,
-                  due: new Date().toISOString(),
-                  stability: 0,
-                  difficulty: 3,
-                  elapsed_days: 0,
-                  scheduled_days: 0,
-                  reps: 0,
-                  lapses: 0,
-                  state: 0
-              }))
-          );
-      }
-
-      toast({ title: `${newCards.length} flashcards gerados!`, description: `Prontos para revisão de "${search}".` });
-      await fetchData();
-
-      if (autoStart && inserted && inserted.length > 0) {
+      
+      if (!data || data.length === 0) {
+        toast({ 
+          title: "Nenhum card encontrado", 
+          description: "Não encontramos cards existentes com este tema. Deseja gerar novos com IA?",
+          action: (
+            <Button size="sm" onClick={() => handleGenerateWithAI(true)}>
+              Gerar com IA
+            </Button>
+          )
+        });
+      } else {
+        setAllCards(data);
         setMode("all");
-        setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
         setPhase("active");
+        toast({ title: `${data.length} cards encontrados`, description: `Iniciando revisão de "${search}".` });
       }
     } catch (e: any) {
-      toast({ title: "Erro ao gerar", description: e.message, variant: "destructive" });
+      toast({ title: "Erro na busca", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateWithAI = async (autoStart = true) => {
+    if (!user) return;
+    const search = topicSearch.trim();
+    if (!search) {
+      toast({ title: "Digite um tema", description: "Informe o tema para a IA gerar novos flashcards.", variant: "destructive" });
+      return;
+    }
+    
+    setGeneratingFromBank(true);
+    try {
+      toast({ title: "Gerando com IA...", description: "O motor pedagógico está criando novos cards personalizados." });
+      
+      const { data, error: genError } = await supabase.functions.invoke("generate-flashcards", {
+        body: { 
+          topic: search, 
+          quantity: generateQuantity,
+          discipline: "Clínica Médica",
+          mode: "ai_generation"
+        }
+      });
+
+      if (genError) throw genError;
+      
+      if (data?.success) {
+        toast({ 
+          title: "Geração Concluída!", 
+          description: `${data.generated_count || data.count || generateQuantity} novos flashcards foram criados e salvos.` 
+        });
+        
+        await fetchData();
+        
+        if (autoStart) {
+          setMode("all");
+          setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
+          setPhase("active");
+        }
+      } else {
+        throw new Error(data?.error || "Falha na geração via IA");
+      }
+    } catch (e: any) {
+      console.error("[FLASHCARD_GEN_ERROR]", e);
+      toast({ title: "Erro na geração", description: e.message, variant: "destructive" });
     } finally {
       setGeneratingFromBank(false);
     }
@@ -433,7 +394,7 @@ const Flashcards = () => {
             description="Use a IA para criar novos cards a partir de temas médicos."
             icon={Sparkles}
             variant="primary"
-            onClick={() => handleGenerateFromBank(true)}
+            onClick={() => handleGenerateWithAI(true)}
           />
           <EnaflixActionCard
             title="Importar Conteúdo"
@@ -679,19 +640,32 @@ const Flashcards = () => {
               </div>
             </div>
 
-            <Button
-              size="lg"
-              className="w-full h-14 gap-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow-sm"
-              onClick={() => handleGenerateFromBank(true)}
-              disabled={generatingFromBank || !topicSearch.trim()}
-            >
-              {generatingFromBank ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <DatabaseZap className="h-5 w-5" />
-              )}
-              Gerar {generateQuantity} Flashcards e Iniciar
-            </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full h-14 gap-3 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold"
+                onClick={handleSearchExisting}
+                disabled={generatingFromBank || !topicSearch.trim()}
+              >
+                <Search className="h-5 w-5" />
+                Buscar existentes
+              </Button>
+
+              <Button
+                size="lg"
+                className="w-full h-14 gap-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow-sm"
+                onClick={() => handleGenerateWithAI(true)}
+                disabled={generatingFromBank || !topicSearch.trim()}
+              >
+                {generatingFromBank ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-5 w-5" />
+                )}
+                Gerar com IA
+              </Button>
+            </div>
           </div>
         </div>
       </EnaflixSection>
