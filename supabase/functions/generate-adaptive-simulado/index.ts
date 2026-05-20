@@ -36,6 +36,8 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     .filter(([_, score]) => score < 60)
     .map(([topic]) => topic);
 
+  logger.info("BANK_CHECK_START", `Checking bank for ${weakTopics.length} weak topics`, { weakTopics });
+
   if (weakTopics.length > 0) {
     const { data: bankQs, error: bankErr } = await supabaseAdmin
       .from("questions_bank")
@@ -43,7 +45,9 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       .in("topic", weakTopics)
       .limit(targetCount);
     
-    if (!bankErr && bankQs) {
+    if (bankErr) {
+      logger.error("BANK_FETCH_ERROR", bankErr.message);
+    } else if (bankQs) {
       questions.push(...bankQs.map(q => ({
         id: q.id,
         statement: q.statement,
@@ -54,6 +58,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
         difficulty: q.difficulty,
         _source: "bank"
       })));
+      logger.info("BANK_HIT", `Found ${bankQs.length} questions in bank`);
     }
   }
 
