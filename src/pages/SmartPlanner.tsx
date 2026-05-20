@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
