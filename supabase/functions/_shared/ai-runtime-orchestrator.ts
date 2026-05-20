@@ -359,8 +359,9 @@ async function callOnce(
       messages,
       [tokenField]: maxTokens,
     };
+    const url = ref.provider === "openai" ? "https://api.openai.com/v1/chat/completions" : AI_GATEWAY_URL;
     const res = await fetchWithTimeout(
-      AI_GATEWAY_URL,
+      url,
       {
         method: "POST",
         headers: {
