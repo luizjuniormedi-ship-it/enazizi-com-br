@@ -8602,6 +8602,7 @@ export type Database = {
           metadata: Json | null
           state: Database["public"]["Enums"]["cognitive_state_type"]
           trigger_source: string | null
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -8611,6 +8612,7 @@ export type Database = {
           metadata?: Json | null
           state: Database["public"]["Enums"]["cognitive_state_type"]
           trigger_source?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
@@ -8620,6 +8622,7 @@ export type Database = {
           metadata?: Json | null
           state?: Database["public"]["Enums"]["cognitive_state_type"]
           trigger_source?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []
