@@ -43,7 +43,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
       generationContext = {},
       targetExam,
       topicWeights,
-      mode = "study" // default mode
+      mode = "study"
     } = body;
 
     const requestedCount = Math.min(Number(count) || 5, 15);
@@ -54,8 +54,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     // 2. Auth Validation
     step = "auth_validation";
     const authResult = await requireAuth(req);
-    if (!authResult.ok) {
-      return authResult.response;
+    if (!authResult || !authResult.ok) {
+      return authResult?.response || jsonError("AUTH_FAILED", 401);
     }
     const userId = authResult.userId;
 
@@ -73,6 +73,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     // 3. Exam Profile Resolution
     step = "load_profile";
     const bancaResolution = resolveBanca(examBoard || "default");
+    if (!bancaResolution) {
+      throw new Error("Banca resolution failed unexpectedly");
+    }
     const safeExamProfile = bancaResolution.profile || {
       key: "default-enare",
       label: "ENARE",
