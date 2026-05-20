@@ -75,14 +75,46 @@ export function useCognitiveObservatory() {
         }
     });
 
+    const snapshotsQuery = useQuery({
+        queryKey: ["cognitive-snapshots", user?.id],
+        enabled: !!user,
+        queryFn: async () => {
+            const { data } = await supabase
+                .from("cognitive_snapshots")
+                .select("*")
+                .eq("user_id", user!.id)
+                .order("timestamp", { ascending: false })
+                .limit(10);
+            return data;
+        }
+    });
+
+    const eventLineageQuery = useQuery({
+        queryKey: ["event-lineage", user?.id],
+        enabled: !!user,
+        queryFn: async () => {
+            const { data } = await supabase
+                .from("pedagogical_event_versions")
+                .select("*")
+                .eq("user_id", user!.id)
+                .order("sequence_number", { ascending: false })
+                .limit(50);
+            return data;
+        }
+    });
+
     return {
         health: healthQuery.data,
         isLoadingHealth: healthQuery.isLoading,
         retention: retentionQuery.data,
         isLoadingRetention: retentionQuery.isLoading,
+        snapshots: snapshotsQuery.data,
+        lineage: eventLineageQuery.data,
         refetch: () => {
             healthQuery.refetch();
             retentionQuery.refetch();
+            snapshotsQuery.refetch();
+            eventLineageQuery.refetch();
         }
     };
 }
