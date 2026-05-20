@@ -10,23 +10,63 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY') || ''
+  let apiKey = Deno.env.get('ANTHROPIC_API_KEY')
   
-  // Debug validation: Check for invisible characters
-  const hasInvisibles = /[^\x20-\x7E]/.test(apiKey)
-  const length = apiKey.length
-  const prefix = apiKey.substring(0, 7)
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Missing ANTHROPIC_API_KEY secret" }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
 
-  return new Response(
-    JSON.stringify({ 
-      ok: false, 
-      debug: {
-        length,
-        prefix,
-        hasInvisibles,
-        message: "Check logs for character codes"
-      }
-    }),
-    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  )
+  // Final safety trim
+  apiKey = apiKey.trim()
+
+  try {
+    console.log("Testing Anthropic API with model claude-3-5-sonnet-20241022...")
+    
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 100,
+        messages: [
+          { role: 'user', content: 'Diga oi em portugues' }
+        ],
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return new Response(
+        JSON.stringify({ 
+          ok: false, 
+          status: response.status, 
+          error: data.error?.message || "Unknown error",
+          debug_prefix: apiKey.substring(0, 10)
+        }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        ok: true, 
+        response: data.content[0].text 
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ ok: false, error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
 })
