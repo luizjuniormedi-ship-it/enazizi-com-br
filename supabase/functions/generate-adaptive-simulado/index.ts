@@ -42,7 +42,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     correlation_id: correlationId
   });
 
-  const targetCount = Math.min(Number(body.target_question_count) || 10, 30);
+  const targetCount = Math.min(Number(body.target_question_count) || 10, 100);
   const topicToGen = body.topic || body.discipline || "Clínica Médica";
   const mode = body.mode || 'adaptive';
   const isForcedAi = mode === 'ai_generation' || mode === 'prova_real' || mode === 'tri';
