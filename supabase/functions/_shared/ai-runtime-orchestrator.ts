@@ -102,16 +102,16 @@ const MODELS = {
   pro: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
   gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
   gpt5: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
-  geminiFallback: { provider: "lovable-ai", model: "google/gemini-2-flash" } as ModelRef,
+  geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "google/gemini-2.5-flash-lite": "low",
-  "google/gemini-3-flash-preview": "low",
   "google/gemini-2.5-flash": "low",
   "google/gemini-2.5-pro": "medium",
-  "google/gemini-2.5-flash": "medium",
-  "google/gemini-2.5-pro": "high",
+  "openai/gpt-4o-mini": "low",
+  "openai/gpt-4o": "medium",
+  "openai/gpt-5.5": "high",
 };
 
 // Perfis de prompt (apenas marcadores nesta fase; o prompt real é montado
