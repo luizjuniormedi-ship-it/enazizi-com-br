@@ -83,20 +83,24 @@ export async function callAi(
     const provider = model.split('/')[0] || "unknown";
 
     try {
-      logger.info("AI_CALL_ATTEMPT", `Trying model ${model}`, { 
-        model, 
-        taskType: payload.taskType,
-        cognitiveState: payload.cognitiveState 
-      });
-
       const tokenParam = getTokenParameterName(model);
       const normalizedPayload: any = { ...payload, model };
       
-      // Strip internal routing fields
+      // Sanitização Final: Eliminar qualquer campo extra de modelo
       delete normalizedPayload.taskType;
       delete normalizedPayload.cognitiveState;
       delete normalizedPayload.complexity;
       delete normalizedPayload.userId;
+      delete normalizedPayload.modelName;
+      delete normalizedPayload.ai_model;
+      delete normalizedPayload.selectedModel;
+
+      logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Attempting model ${model}`, { 
+        correlation_id: logger.correlationId,
+        resolvedModel: model,
+        originalModel: payload.model,
+        taskType: payload.taskType
+      });
 
       if (payload.max_tokens && tokenParam === "max_completion_tokens") {
         normalizedPayload.max_completion_tokens = payload.max_tokens;
