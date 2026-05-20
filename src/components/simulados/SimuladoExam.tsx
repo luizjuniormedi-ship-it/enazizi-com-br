@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +38,7 @@ interface SimuladoExamProps {
 
 const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, onStateChange }: SimuladoExamProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [current, setCurrent] = useState(initialState?.current ?? 0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>(initialState?.selectedAnswers ?? {});
   const [timeLeft, setTimeLeft] = useState(initialState?.timeLeft ?? timeSeconds);
@@ -96,11 +99,37 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
     return `${h > 0 ? `${h}:` : ""}${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  const selectAnswer = (questionIdx: number, optionIdx: number) => {
+  const selectAnswer = async (questionIdx: number, optionIdx: number) => {
     if (isStudyMode && revealedQuestions.has(questionIdx)) return;
+    
+    const question = questions[questionIdx];
+    const isCorrect = optionIdx === question.correct;
+    
     setSelectedAnswers(prev => ({ ...prev, [questionIdx]: optionIdx }));
     if (isStudyMode) {
       setRevealedQuestions(prev => new Set(prev).add(questionIdx));
+    }
+
+    // Emit event
+    if (user) {
+      await pedagogicalEventBus.emit({
+        event_type: isCorrect ? 'simulado_question_answered' : 'simulado_error_detected',
+        module: 'simulado',
+        source: 'frontend',
+        severity: isCorrect ? 'info' : 'warning',
+        entity_type: 'question',
+        entity_id: question.bankId || undefined,
+        study_context: {
+          topic: question.topic,
+          difficulty: question._questionMode || 'standard'
+        },
+        metadata: {
+          is_correct: isCorrect,
+          option_selected: optionIdx,
+          correct_option: question.correct,
+          mode: mode
+        }
+      }, user.id);
     }
   };
 
