@@ -3,6 +3,7 @@ import { cleanQuestionText, parseAiJson } from "../_shared/ai-fetch.ts";
 import { QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 
 /**
  * ENAZIZI — HOTFIX QUESTION-GENERATOR 500 UNDEFINED.ID
@@ -114,6 +115,15 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     let systemPrompt = QUESTION_MOTOR_PREMIUM;
     systemPrompt += buildBancaBlock(safeExamProfile);
 
+    const model = normalizeModel(body?.model ?? AI_MODELS.FAST);
+
+    console.log("AI model resolved", {
+      correlation_id: correlationId,
+      request_id: requestId,
+      step,
+      model
+    });
+
     const userPrompt = `Gere exatamente ${requestedCount} questões médicas de múltipla escolha.
     TEMA: ${topics.join(", ")}
     ESPECIALIDADE: ${specialty}
@@ -127,12 +137,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     4. Retorne APENAS um JSON array.`;
 
     const aiResponse = await ai({
-      taskType: "generation",
+      model,
+      taskType: "parsing", // Using parsing task for question generation logic
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
-      ],
-      complexity: "high"
+      ]
     });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";

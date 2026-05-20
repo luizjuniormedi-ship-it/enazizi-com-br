@@ -4,29 +4,40 @@
  */
 
 export const AI_MODELS = {
-  generation: "openai/gpt-5-mini",
-  extraction: "openai/gpt-5-mini",
-  reasoning: "openai/gpt-5",
-  embeddings: "text-embedding-3-small",
+  FAST: "google/gemini-2.5-flash",
+  REASONING: "google/gemini-2.5-pro",
+  CHEAP: "google/gemini-2.5-flash-lite",
+  FALLBACK: "openai/gpt-5.5"
 } as const;
-
-export type AIModelKey = keyof typeof AI_MODELS;
 
 /**
  * Validates if a model name is allowed.
  */
 export function validateModel(model: string): boolean {
-  const allowedPrefixes = ["openai/gpt-5", "gpt-3.5", "o1-", "o3-", "text-embedding-"];
-  const isAllowed = allowedPrefixes.some(prefix => model.startsWith(prefix)) || 
-                    Object.values(AI_MODELS).includes(model as any);
+  const allowedModels = [
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-pro",
+    "google/gemini-2.5-flash-lite",
+    "openai/gpt-4o",
+    "openai/gpt-4o-mini",
+    "openai/gpt-5.5",
+    "openai/gpt-5.5-pro",
+    "openai/gpt-5.4-mini",
+    "openai/text-embedding-3-small"
+  ];
   
-  return isAllowed;
+  return allowedModels.includes(model);
 }
 
 /**
  * Returns the correct token parameter name based on the model.
  */
 export function getTokenParameterName(model: string): "max_tokens" | "max_completion_tokens" {
-  const isReasoningModel = /^o[13]/i.test(model) || model.includes("/o1") || model.includes("/o3");
+  const isReasoningModel = /^o[13]/i.test(model) || 
+                          model.includes("/o1") || 
+                          model.includes("/o3") ||
+                          model.includes("gpt-5");
   return isReasoningModel ? "max_completion_tokens" : "max_tokens";
 }
+
+export type AIModelKey = keyof typeof AI_MODELS;
