@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { createPortal } from "react-dom";
 import FlashcardExam, { type FlashcardItem } from "@/components/flashcards/FlashcardExam";
+import { FlashcardUpload } from "@/components/flashcards/FlashcardUpload";
 import { EnaflixActionCard } from "@/components/enaflix/EnaflixActionCard";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
@@ -531,7 +532,9 @@ const Flashcards = () => {
           subtitle="Foco total na retenção de longo prazo com algoritmos de repetição espaçada (FSRS)."
         />
       </div>
-
+      <div className="px-4 sm:px-8 lg:px-14">
+        <FlashcardUpload userId={user?.id || ""} onSuccess={fetchData} />
+      </div>
 
       {pendingSession && (
         <div className="px-4 sm:px-8 lg:px-14">

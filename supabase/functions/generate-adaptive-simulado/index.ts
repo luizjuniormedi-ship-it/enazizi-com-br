@@ -1,9 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, parseAiJson, cleanQuestionText } from "../_shared/ai-fetch.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { SIMULADO_MOTOR_PREMIUM, QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
-
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -209,25 +208,25 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   // Logic to calculate distribution based on user history...
   // ... for this phase, we ensure it uses the unified AI wrapper and retry logic.
 
-    // ── 1. Build performance profile ──
-    const performance: PerformanceInput = body.performance || {
-      by_modality: { ecg: 70, xray: 60, ct: 40, us: 45, pathology: 30, ophthalmology: 35, dermatology: 65 },
-      by_difficulty: { easy: 80, medium: 55, hard: 35 },
-      response_time: { ecg: 90, xray: 120, ct: 160, us: 170, pathology: 180, ophthalmology: 190 },
-      error_patterns: [],
-    };
+  // ── 1. Build performance profile ──
+  const performance: PerformanceInput = body.performance || {
+    by_modality: { ecg: 70, xray: 60, ct: 40, us: 45, pathology: 30, ophthalmology: 35, dermatology: 65 },
+    by_difficulty: { easy: 80, medium: 55, hard: 35 },
+    response_time: { ecg: 90, xray: 120, ct: 160, us: 170, pathology: 180, ophthalmology: 190 },
+    error_patterns: [],
+  };
 
-    // Robustness: ensure we have at least some modalities if empty
-    if (!performance.by_modality || Object.keys(performance.by_modality).length === 0 || (Object.keys(performance.by_modality).length === 1 && performance.by_modality["text"])) {
-      performance.by_modality = { ecg: 50, xray: 50, dermatology: 50, ct: 50, us: 50, pathology: 50, ophthalmology: 50 };
-    }
+  // Robustness: ensure we have at least some modalities if empty
+  if (!performance.by_modality || Object.keys(performance.by_modality).length === 0 || (Object.keys(performance.by_modality).length === 1 && performance.by_modality["text"])) {
+    performance.by_modality = { ecg: 50, xray: 50, dermatology: 50, ct: 50, us: 50, pathology: 50, ophthalmology: 50 };
+  }
 
-    const analysis = analyzePerformance(performance);
-    const allocations = buildAllocations(analysis, targetCount, performance.error_patterns || []);
+  const analysis = analyzePerformance(performance);
+  const allocations = buildAllocations(analysis, targetCount, performance.error_patterns || []);
 
-    // ── 2. Fetch published questions from DB (prefer existing) ──
-    const questions: any[] = [];
-    const meta = {
+  // ── 2. Fetch published questions from DB (prefer existing) ──
+  const questions: any[] = [];
+  const meta = {
       focus: analysis[0]?.modality || "mixed",
       strategy: `Targeting ${analysis.filter(a => a.level === "FRAQUEZA_CRITICA").length} critical weaknesses`,
       weakness_targeted: analysis.filter(a => a.level === "FRAQUEZA_CRITICA").map(a => a.modality).join(", ") || "none",
@@ -235,9 +234,9 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     };
 
     // Try to serve from existing published questions first (editorial quality gated)
-    for (const alloc of allocations) {
-      const { data: existing } = await sb
-        .from("medical_image_questions")
+  for (const alloc of allocations) {
+    const { data: existing } = await supabaseAdmin
+      .from("medical_image_questions")
         .select(`
           id, statement, option_a, option_b, option_c, option_d, option_e,
           correct_index, explanation, rationale_map, difficulty, exam_style,
@@ -295,7 +294,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
         .filter(m => ["ct", "us", "pathology", "ophthalmology", "xray", "dermatology"].includes(m));
 
       if (priorityModalities.length > 0) {
-        const { data: assets } = await sb
+        const { data: assets } = await supabaseAdmin
           .from("medical_image_assets")
           .select("id, asset_code, image_type, diagnosis, clinical_findings, distractors, difficulty, specialty, subtopic, image_url")
           .eq("is_active", true)
@@ -309,27 +308,25 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
           for (const asset of assets) {
             if (questions.length >= targetCount) break;
 
-            try {
-              const prompt = buildPrompt(
-                asset,
-                "hard",
-                analysis[0]?.accuracy < 50 ? "ENARE" : "USP",
-                performance.error_patterns || [],
-                questionsPerAsset
-              );
+          try {
+            const prompt = buildPrompt(
+              asset,
+              "hard",
+              analysis[0]?.accuracy < 50 ? "ENARE" : "USP",
+              performance.error_patterns || [],
+              questionsPerAsset
+            );
 
-              const response = await aiFetch({
-                messages: [{ role: "user", content: prompt }],
-                model: "google/gemini-2.5-flash",
-                maxTokens: 12000,
-                timeoutMs: 80000, // Increase timeout
-                maxRetries: 2, // Ensure retries
-              });
+            const response = await ai({
+              messages: [{ role: "user", content: prompt }],
+              taskType: "generation",
+              complexity: "medium",
+            });
 
-              if (!response.ok) continue;
+            if (!response) continue;
 
-              const aiData = await response.json();
-              const rawContent = aiData.choices?.[0]?.message?.content || "";
+            const aiData = response;
+            const rawContent = aiData.choices?.[0]?.message?.content || "";
               const parsed = parseAiJson(rawContent);
               const arr = Array.isArray(parsed) ? parsed : [parsed];
 
@@ -378,28 +375,43 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       }
     }
 
-    // ── 4. Shuffle to avoid predictable order ──
-    for (let i = questions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [questions[i], questions[j]] = [questions[j], questions[i]];
-    }
-
-    return new Response(JSON.stringify({
-      success: true,
-      questions: questions.slice(0, targetCount),
-      meta,
-      total: Math.min(questions.length, targetCount),
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
-  } catch (e) {
-    console.error("[FATAL] generate-adaptive-simulado:", e);
-    return new Response(JSON.stringify({
-      error: e instanceof Error ? e.message : "Erro desconhecido",
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  // ── 4. Shuffle to avoid predictable order ──
+  for (let i = questions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questions[i], questions[j]] = [questions[j], questions[i]];
   }
-});
+
+  // ── 5. Persist Session in DB ──
+  const sessionResponse = await supabaseAdmin.from("simulado_sessions").insert({
+    user_id: user.id,
+    mode: body.mode || 'adaptativo',
+    total_questions: questions.length,
+    status: 'active',
+    metadata: { ...meta, is_adaptive: true }
+  }).select().single();
+
+  const session = sessionResponse.data;
+  const sessionErr = sessionResponse.error;
+
+  if (sessionErr) logger.error("SESSION_PERSIST_FAIL", sessionErr.message);
+
+  if (session && questions.length > 0) {
+    await supabaseAdmin.from("simulado_questions").insert(
+      questions.map((q, idx) => ({
+        session_id: session.id,
+        question_id: q.bankId || null,
+        order_index: idx
+      }))
+    );
+  }
+
+  return new Response(JSON.stringify({
+    success: true,
+    sessionId: session?.id,
+    questions: questions.slice(0, targetCount),
+    meta,
+    total: Math.min(questions.length, targetCount),
+  }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}));

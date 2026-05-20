@@ -56,6 +56,26 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
       }));
     }
 
+    // Persistência Longitudinal do Simulado no Banco de Dados
+    if (questions.length > 0) {
+      const { data: session } = await supabaseAdmin.from("simulado_sessions").insert({
+        user_id: user.id,
+        mode: body.mode || 'estudo',
+        total_questions: questions.length,
+        status: 'active',
+        metadata: { ...generationContext, source: 'ai_generator' }
+      }).select().single();
+
+      if (session) {
+        await supabaseAdmin.from("simulado_questions").insert(
+          questions.map((_, idx) => ({
+            session_id: session.id,
+            order_index: idx
+          }))
+        );
+      }
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       questions, 
