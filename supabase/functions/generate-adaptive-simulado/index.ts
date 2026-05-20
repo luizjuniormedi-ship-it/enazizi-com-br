@@ -13,14 +13,38 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   const { requestId, correlationId } = correlation;
   
   const authResult = await requireAuth(req);
-  if (!authResult.ok) return authResult.response;
+  if (!authResult.ok) {
+    console.error("STEP_2_AUTH_FAILED", { correlation_id: correlationId });
+    return authResult.response;
+  }
   const userId = authResult.userId;
   const body = await req.json().catch(() => ({}));
 
-  logger.info("ADAPTIVE_SIM_START", "Analyzing performance and generating adaptive blueprint", { userId });
+  console.log("STEP_1_REQUEST_RECEIVED", {
+    body,
+    correlation_id: correlationId,
+    request_id: requestId
+  });
+
+  console.log("STEP_2_AUTH_OK", {
+    user_id: userId,
+    correlation_id: correlationId
+  });
 
   const targetCount = Math.min(Number(body.target_question_count) || 10, 30);
-  
+  const topicToGen = body.topic || body.discipline || "Clínica Médica";
+  const mode = body.mode || 'adaptive';
+  const isForcedAi = mode === 'ai_generation' || mode === 'prova_real' || mode === 'tri';
+
+  console.log("STEP_3_PAYLOAD_VALIDATED", {
+    topic: topicToGen,
+    discipline: body.discipline,
+    quantity: targetCount,
+    mode
+  });
+
+  logger.info("ADAPTIVE_SIM_START", "Analyzing performance and generating adaptive blueprint", { userId });
+
   // 1. Performance profile
   const performance = body.performance || {
     by_modality: { "Clínica Médica": 50 },
@@ -29,16 +53,13 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     error_patterns: [],
   };
 
-  // 2. Fetch from bank first (only if not forced AI generation)
   const questions: any[] = [];
   const modalityScores = performance.by_modality || {};
   const weakTopics = Object.entries(modalityScores as Record<string, number>)
     .filter(([_, score]) => score < 60)
     .map(([topic]) => topic);
 
-  const mode = body.mode || 'adaptive';
-  const isForcedAi = mode === 'ai_generation';
-
+  // 2. Fetch from bank first (only if not forced AI generation)
   if (!isForcedAi) {
     logger.info("BANK_CHECK_START", `Checking bank for ${weakTopics.length} weak topics`, { weakTopics });
 
@@ -72,13 +93,17 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   // 3. AI Generation for deficit
   const deficit = targetCount - questions.length;
   if (deficit > 0) {
-    const topicToGen = body.topic || body.discipline || weakTopics[0] || "Clínica Médica";
-    
     const model = normalizeModelStrict(
       body.model || 
       Deno.env.get("AI_MODEL") || 
       AI_MODELS.FAST
     );
+
+    console.log("STEP_4_AI_REQUEST", {
+      model,
+      prompt_size: 1000, // Approximate
+      correlation_id: correlationId
+    });
 
     logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Generating ${deficit} questions via AI`, { 
       resolvedModel: model,
@@ -107,23 +132,42 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       ],
       complexity: "alta",
       userId
-    }, { retries: 2 }); // Allow retries for simulados to avoid empty results
+    }, { retries: 2 });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
+    
+    console.log("STEP_5_AI_RESPONSE_RAW", {
+      response_preview: rawContent?.slice(0, 1000),
+      response_length: rawContent?.length,
+      correlation_id: correlationId
+    });
+
+    console.log("STEP_6_PARSE_START");
     let generated = [];
     try {
       generated = parseAiJson(rawContent);
+      console.log("STEP_6_PARSE_SUCCESS", {
+        generated_questions_count: generated?.length
+      });
     } catch (e) {
-      logger.error("AI_PARSE_ERROR", `Failed to parse AI response: ${e.message}`, { rawContent });
+      console.error("STEP_6_PARSE_FAILED", {
+        raw_response: rawContent,
+        parse_error: e.message
+      });
       // Fallback: try to find anything that looks like a JSON array
       const match = rawContent.match(/\[\s*{[\s\S]*}\s*\]/);
       if (match) {
-        generated = JSON.parse(match[0]);
+        try {
+          generated = JSON.parse(match[0]);
+          console.log("STEP_6_PARSE_SUCCESS_FALLBACK", { count: generated?.length });
+        } catch (innerE) {
+          console.error("STEP_6_PARSE_FALLBACK_FAILED", { error: innerE.message });
+        }
       }
     }
     
     if (Array.isArray(generated) && generated.length > 0) {
-      questions.push(...generated.slice(0, deficit).map(q => {
+      const mappedQuestions = generated.slice(0, deficit).map(q => {
         // Robust mapping for variations in AI keys
         const statement = cleanQuestionText(q.statement || q.content || q.enunciado || q.enunciado_clinico || "");
         
@@ -161,17 +205,27 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
           difficulty: q.difficulty || "hard",
           _source: "generated"
         };
-      }));
+      });
+
+      console.log("STEP_7_VALIDATE_QUESTIONS", {
+        count: mappedQuestions.length,
+        first_question: mappedQuestions[0]
+      });
+
+      questions.push(...mappedQuestions);
     } else {
+      console.warn("STEP_6_PARSE_EMPTY", "AI returned empty or invalid question array");
       logger.warn("NO_QUESTIONS_GENERATED", "AI returned empty or invalid question array");
     }
   }
 
   if (questions.length === 0) {
+    console.error("PIPELINE_STALL_NO_QUESTIONS", { correlation_id: correlationId });
     throw new Error("Não foi possível obter questões para o simulado.");
   }
 
   // 4. Create Session
+  console.log("STEP_8_PERSIST_START");
   const { data: session, error: sessErr } = await supabaseAdmin.from("simulado_sessions").insert({
     user_id: userId,
     mode: 'adaptativo',
@@ -181,7 +235,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     topic: questions[0]?.topic,
     difficulty: 'adaptativo',
     source: questions.every(q => q._source === 'bank') ? 'bank' : (questions.every(q => q._source === 'generated') ? 'ai' : 'mixed'),
-    started_at: new Date().toISOString(), // Use started_at instead of created_at
+    started_at: new Date().toISOString(),
     metadata: { 
       adaptive_meta: performance,
       correlation_id: correlationId,
@@ -190,8 +244,17 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   }).select().single();
 
   if (sessErr || !session?.id) {
+    console.error("STEP_8_PERSIST_FAILED", {
+      error: sessErr?.message,
+      correlation_id: correlationId
+    });
     throw new Error(`Falha ao criar sessão: ${sessErr?.message || 'ID não retornado'}`);
   }
+
+  console.log("STEP_9_SESSION_CREATED", {
+    session_id: session.id,
+    correlation_id: correlationId
+  });
 
   // Link questions
   const linkData = questions.map((q, idx) => ({
@@ -203,7 +266,18 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   }));
 
   const { error: linkErr } = await supabaseAdmin.from("simulado_questions").insert(linkData);
-  if (linkErr) logger.warn("LINK_QUESTIONS_FAILED", linkErr.message);
+  if (linkErr) {
+    console.error("STEP_8_LINK_QUESTIONS_FAILED", {
+      error: linkErr.message,
+      correlation_id: correlationId
+    });
+    logger.warn("LINK_QUESTIONS_FAILED", linkErr.message);
+  } else {
+    console.log("STEP_8_PERSIST_SUCCESS", {
+      inserted_questions: questions.length,
+      session_id: session.id
+    });
+  }
 
   return new Response(JSON.stringify({
     success: true,
