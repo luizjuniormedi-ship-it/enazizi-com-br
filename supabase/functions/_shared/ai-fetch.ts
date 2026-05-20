@@ -353,29 +353,27 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       "OpenAI",
     );
 
-    console.log("[AI_PIPELINE_AFTER_FALLBACK]", {
+    console.log("[AI_PIPELINE_AFTER_GEMINI_FALLBACK]", {
       status: response.status,
       ok: response.ok,
-      provider: "openai",
+      provider: "gemini-fallback",
       timestamp: new Date().toISOString()
     });
 
     if (!response.ok) {
       const errText = await response.clone().text();
-      console.error(`OpenAI fallback failed (${response.status}):`, errText.slice(0, 300));
+      console.error(`Gemini fallback failed (${response.status}):`, errText.slice(0, 300));
 
       await logPipelineAlert({
         source,
-        message: `OpenAI Fallback Error: ${response.status}`,
+        message: `Gemini Fallback Error: ${response.status}`,
         alert_type: "fallback_error",
         error_stack: errText,
         http_status: response.status,
-        model_used: openaiModel,
+        model_used: "google/gemini-2.5-flash",
         severity: "critical"
       });
 
-      if (response.status === 429) throw new Error("AI_RATE_LIMITED");
-      if (response.status === 402) throw new Error("AI_CREDITS_EXHAUSTED");
       throw new Error("AI_SERVICE_UNAVAILABLE");
     }
 
@@ -383,14 +381,14 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   } catch (err) {
     if (err instanceof Error && (err.message.startsWith("AI_") || err.message.startsWith("VALIDATION_ERROR") || err.message.startsWith("GATEWAY_ERROR"))) throw err;
     
-    console.error("OpenAI all retries failed:", err);
+    console.error("Gemini fallback all retries failed:", err);
     await logPipelineAlert({
       source,
-      message: "OpenAI Fetch Exception",
+      message: "Gemini Fallback Fetch Exception",
       alert_type: "fallback_exception",
       error_stack: err instanceof Error ? err.stack : String(err),
       severity: "critical",
-      model_used: openaiModel
+      model_used: "google/gemini-2.5-flash"
     });
     throw new Error("AI_SERVICE_UNAVAILABLE");
   }
