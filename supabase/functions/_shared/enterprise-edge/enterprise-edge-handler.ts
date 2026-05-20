@@ -27,7 +27,7 @@ export interface EnterpriseContext {
   /**
    * High-level AI call with integrated governance, quality lock, and cost tracking.
    */
-  ai: (request: AiRequest, options?: { skipQualityLock?: boolean, retries?: number }) => Promise<any>;
+  ai: (request: AiRequest & { cognitiveState?: CognitiveState, complexity?: "baixa" | "média" | "alta" }, options?: { skipQualityLock?: boolean, retries?: number }) => Promise<any>;
 }
 
 export type EnterpriseHandler = (ctx: EnterpriseContext) => Promise<Response>;
