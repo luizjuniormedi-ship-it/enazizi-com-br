@@ -394,7 +394,7 @@ const Flashcards = () => {
             description="Use a IA para criar novos cards a partir de temas médicos."
             icon={Sparkles}
             variant="primary"
-            onClick={() => handleGenerateFromBank(true)}
+            onClick={() => handleGenerateWithAI(true)}
           />
           <EnaflixActionCard
             title="Importar Conteúdo"
