@@ -36,13 +36,13 @@ export function validateAiQuality(
   }
 
   // 2. Pedagogical Check (ENAZIZI 15 Blocks)
-  if (context.taskType === "tutor_deep") {
+  if (context.taskType === "tutor_deep" || context.taskType === "tutor") {
     const mandatoryKeywords = [
-      "MISSÃO DA SESSÃO", "ROADMAP COGNITIVO", "EXPLICAÇÃO LEIGA", 
-      "EXPLICAÇÃO TÉCNICA", "FISIOPATOLOGIA VISUAL", "RACIOCÍNIO CLÍNICO",
-      "DIAGNÓSTICO DIFERENCIAL", "PEGADINHAS DE PROVA", "DIRETRIZES",
-      "QUESTÃO GUIADA", "CORREÇÃO COMENTADA", "ACTIVE RECALL",
-      "FLASHCARDS AUTOMÁTICOS", "RESUMO ESTRATÉGICO", "PLANO DE RECUPERAÇÃO"
+      "MISSÃO CLÍNICA", "ROADMAP COGNITIVO", "EXPLICAÇÃO LEIGA", 
+      "FISIOPATOLOGIA PROFUNDA", "RACIOCÍNIO CLÍNICO", "DIAGNÓSTICO",
+      "CONDUTA", "PEGADINHAS DE PROVA", "ACTIVE RECALL",
+      "QUESTÃO RESIDÊNCIA", "FLASHCARDS", "RESUMO ULTRAOBJETIVO",
+      "FLUXOGRAMA DECISÓRIO", "INTEGRAÇÃO FARMACOLÓGICA", "MODO PRECEPTOR"
     ];
     
     let blocksFound = 0;
