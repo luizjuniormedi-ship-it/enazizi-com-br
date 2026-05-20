@@ -211,23 +211,23 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
 
   // ── 1. Build performance profile ──
   const performance: PerformanceInput = body.performance || {
-      by_modality: { ecg: 70, xray: 60, ct: 40, us: 45, pathology: 30, ophthalmology: 35, dermatology: 65 },
-      by_difficulty: { easy: 80, medium: 55, hard: 35 },
-      response_time: { ecg: 90, xray: 120, ct: 160, us: 170, pathology: 180, ophthalmology: 190 },
-      error_patterns: [],
-    };
+    by_modality: { ecg: 70, xray: 60, ct: 40, us: 45, pathology: 30, ophthalmology: 35, dermatology: 65 },
+    by_difficulty: { easy: 80, medium: 55, hard: 35 },
+    response_time: { ecg: 90, xray: 120, ct: 160, us: 170, pathology: 180, ophthalmology: 190 },
+    error_patterns: [],
+  };
 
-    // Robustness: ensure we have at least some modalities if empty
-    if (!performance.by_modality || Object.keys(performance.by_modality).length === 0 || (Object.keys(performance.by_modality).length === 1 && performance.by_modality["text"])) {
-      performance.by_modality = { ecg: 50, xray: 50, dermatology: 50, ct: 50, us: 50, pathology: 50, ophthalmology: 50 };
-    }
+  // Robustness: ensure we have at least some modalities if empty
+  if (!performance.by_modality || Object.keys(performance.by_modality).length === 0 || (Object.keys(performance.by_modality).length === 1 && performance.by_modality["text"])) {
+    performance.by_modality = { ecg: 50, xray: 50, dermatology: 50, ct: 50, us: 50, pathology: 50, ophthalmology: 50 };
+  }
 
-    const analysis = analyzePerformance(performance);
-    const allocations = buildAllocations(analysis, targetCount, performance.error_patterns || []);
+  const analysis = analyzePerformance(performance);
+  const allocations = buildAllocations(analysis, targetCount, performance.error_patterns || []);
 
-    // ── 2. Fetch published questions from DB (prefer existing) ──
-    const questions: any[] = [];
-    const meta = {
+  // ── 2. Fetch published questions from DB (prefer existing) ──
+  const questions: any[] = [];
+  const meta = {
       focus: analysis[0]?.modality || "mixed",
       strategy: `Targeting ${analysis.filter(a => a.level === "FRAQUEZA_CRITICA").length} critical weaknesses`,
       weakness_targeted: analysis.filter(a => a.level === "FRAQUEZA_CRITICA").map(a => a.modality).join(", ") || "none",
