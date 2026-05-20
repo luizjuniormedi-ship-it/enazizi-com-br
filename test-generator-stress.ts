@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
+const VALID_USER_ID = "095cf92f-427d-48e1-accc-31b357b2fa50"; // ID real do banco para evitar FK violation
+
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
