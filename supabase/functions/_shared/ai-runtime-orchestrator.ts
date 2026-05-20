@@ -296,7 +296,10 @@ function wrap(
 // Execução
 // ---------------------------------------------------------------------------
 
-function getGatewayKey(): string {
+function getAIKey(provider: string): string {
+  if (provider === "openai") {
+    return Deno.env.get("OPENAI_API_KEY") || "";
+  }
   return (
     Deno.env.get("LOVABLE_API_KEY") ||
     Deno.env.get("AI_GATEWAY_API_KEY") ||
