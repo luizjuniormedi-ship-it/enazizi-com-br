@@ -4,7 +4,7 @@ import { calibrateDifficulty } from "@/lib/pedagogical/adaptive-difficulty-engin
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
+import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ReactMarkdown from "react-markdown";
@@ -60,7 +60,8 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
         retention_score: cogOrch.retention_score,
         cognitive_load: cogOrch.overload_risk,
         error_pressure: cogOrch.stress_index,
-        fatigue_level: cogOrch.fatigue_index
+        fatigue_level: cogOrch.fatigue_index,
+        trajectory_health: 50 // Default fallback
       });
       setAdaptiveDifficulty(calibration);
       console.log("[ADAPTIVE_ENGINE] Recalibrated:", calibration);
