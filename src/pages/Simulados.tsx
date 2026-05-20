@@ -409,6 +409,7 @@ const Simulados = () => {
               body: {
                 target_question_count: config.count || 20,
                 performance: perf,
+                mode: "ai_generation"
               },
             }
           );
