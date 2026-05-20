@@ -115,6 +115,7 @@ export async function callAi(
         headers: {
           "Authorization": `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
+          "X-Correlation-Id": logger.correlationId
         },
         body: JSON.stringify(normalizedPayload),
         signal: controller.signal

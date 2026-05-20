@@ -111,6 +111,8 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       correlation_id: correlationId
     });
     
+    console.log("STEP_4_AI_CALL_INIT", { model, deficit, topic: topicToGen, correlation_id: correlationId });
+    
     const aiResponse = await ai({
       model,
       taskType: "simulados",
@@ -133,6 +135,8 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       complexity: "alta",
       userId
     }, { retries: 2 });
+
+    console.log("STEP_5_AI_RAW_RESULT_RECEIVED", { correlation_id: correlationId, has_choices: !!aiResponse?.choices });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
     

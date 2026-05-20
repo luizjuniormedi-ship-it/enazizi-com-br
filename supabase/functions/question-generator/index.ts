@@ -174,6 +174,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       - Use exatamente 4 alternativas (A-D).
       - Retorne APENAS um JSON array.`;
 
+      console.log("STEP_4_AI_CALL_INIT", { model, deficit, topics, correlation_id: correlationId });
+
       const aiResponse = await ai({
         model,
         taskType: "simulados", 
@@ -184,6 +186,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         ],
         userId
       });
+
+      console.log("STEP_5_AI_RAW_RESULT_RECEIVED", { correlation_id: correlationId, has_choices: !!aiResponse?.choices });
 
       const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
       
