@@ -29,8 +29,19 @@ const GovernanceMetrics = () => {
       <div className="px-1 space-y-12">
         <GovernanceCockpit />
         
-        <div className="border-t border-white/5 pt-12">
-          <AlosRuntimeObservatory />
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <AlosRuntimeObservatory />
+          </div>
+          <div className="space-y-6">
+            <Card className="p-6 bg-card/50 border-white/10">
+              <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
+                <Zap className="h-5 w-5 text-warning" />
+                Rhythm & Persistence
+              </h3>
+              <CognitiveRhythmMonitor />
+            </Card>
+          </div>
         </div>
       </div>
     </div>
