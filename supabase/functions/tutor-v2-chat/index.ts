@@ -655,6 +655,7 @@ serve(async (req) => {
       });
     }
 
+    const cogState = (context as any).cognitive_state || { state: 'novato' };
     const systemPrompt = `${PROMPT_COMPLETO}
 
 ==================================================
@@ -662,6 +663,17 @@ serve(async (req) => {
 ==================================================
 Você está no MODO DE PRECEPTORIA ITERATIVA. 
 É TERMINANTEMENTE PROIBIDO gerar o roadmap completo, múltiplos blocos ou antecipar o resumo final.
+
+CONTEXTO COGNITIVO DO ALUNO:
+- Estado: ${cogState.state?.toUpperCase()}
+- Pressão de Erro: ${cogState.error_pressure || 0}%
+- Retenção: ${cogState.retention_score || 0}%
+
+ADAPTAÇÃO PEDAGÓGICA (BASEADO NO ESTADO):
+${cogState.state === 'novato' ? '- Use linguagem simples, muitas analogias, evite termos técnicos sem explicação.' : ''}
+${cogState.state === 'dominio' ? '- Seja direto, use terminologia técnica avançada, foque em nuances e exceções.' : ''}
+${cogState.state === 'retencao_fraca' ? '- Use o Modo Socrático, peça confirmação de conceitos básicos antes de avançar.' : ''}
+${cogState.state === 'risco_esquecimento' ? '- Foque em revisão ativa (active recall) e mnemônicos.' : ''}
 
 INSTRUÇÃO ATUAL:
 Gere EXCLUSIVAMENTE o BLOCO ${currentBlock}: ${blockNames[currentBlock - 1] || "Conteúdo Médico"}.
