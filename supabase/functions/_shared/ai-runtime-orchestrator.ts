@@ -542,7 +542,12 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
                       input.taskType === "clinical_reasoning" ||
                       input.taskType === "simulado_review";
     const maxTokens = needsDeep ? AI_MAX_TOKENS_DEEP : AI_MAX_TOKENS;
-    const r = await callOnce(ref, gatewayKey, input.messages, maxTokens);
+    const apiKey = getAIKey(ref.provider);
+    if (!apiKey) {
+      attempts.push({ ...ref, success: false, code: "AI_AUTH_ERROR", message: `Missing key for provider ${ref.provider}`, latency_ms: 0 });
+      continue;
+    }
+    const r = await callOnce(ref, apiKey, input.messages, maxTokens);
     attempts.push(r.attempt);
     if (r.attempt.success && r.content) {
       const result: AIRunResult = {
