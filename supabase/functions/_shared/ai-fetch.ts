@@ -328,25 +328,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     }
   }
 
-  // Fallback to OpenAI
-  if (!OPENAI_API_KEY) {
-    await logPipelineAlert({
-      source,
-      message: "AI Credits Exhausted (No OpenAI Key)",
-      alert_type: "credits_exhausted",
-      severity: "critical"
-    });
-    throw new Error("AI_CREDITS_EXHAUSTED");
-  }
+  // Fallback to Gemini (via Lovable Gateway)
+  if (LOVABLE_API_KEY) {
+    const fallbackModel = "google/gemini-2.5-flash";
+    const fallbackPayload = buildPayload(fallbackModel);
+    
+    console.log("[AI_PIPELINE_GEMINI_FALLBACK]", { source, model: fallbackModel });
 
-  const openaiModel = normalizedModel.replace("openai/", "");
-  const openaiPayload = buildPayload(openaiModel, true);
-
-  console.log("[AI_PIPELINE_FALLBACK]", {
-    originalModel: normalizedModel,
-    openaiModel,
-    timestamp: new Date().toISOString()
-  });
 
   try {
     const response = await fetchWithRetry(
