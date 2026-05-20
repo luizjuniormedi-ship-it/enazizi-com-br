@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { runAI, type AIComplexity, type AICognitiveLoad } from "../_shared/ai-runtime-orchestrator.ts";
+import { getKnowledgeCache, saveKnowledgeCache, extractTopic } from "../_shared/knowledge-cache.ts";
 import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "../_shared/injection-guard.ts";
 
 const corsHeaders = {
@@ -656,6 +657,20 @@ serve(async (req) => {
     }
 
     const cogState = (context as any).cognitive_state || { state: 'novato' };
+
+    // --- KNOWLEDGE CACHE LOGIC ---
+    let cachedContext = "";
+    const detectedTopicInfo = extractTopic(message);
+    const effectiveTopic = detectedTopicInfo?.topic || session.topic;
+    
+    if (effectiveTopic) {
+      const cacheData = await getKnowledgeCache(supabase, effectiveTopic);
+      if (cacheData) {
+        cachedContext = `\n\nCONTEXTO DISPONÍVEL (CACHE): \n${cacheData.content}\n`;
+        console.log("[KNOWLEDGE_CACHE_HIT]", { topic: effectiveTopic, requestId });
+      }
+    }
+
     const systemPrompt = `${PROMPT_COMPLETO}
 
 ==================================================
@@ -663,6 +678,7 @@ serve(async (req) => {
 ==================================================
 Você está no MODO DE PRECEPTORIA ITERATIVA. 
 É TERMINANTEMENTE PROIBIDO gerar o roadmap completo, múltiplos blocos ou antecipar o resumo final.
+${cachedContext}
 
 CONTEXTO COGNITIVO DO ALUNO:
 - Estado: ${cogState.state?.toUpperCase()}
@@ -823,6 +839,16 @@ E) Ver exemplo clínico"
       if (questionReview.correct_answer && questionReview.is_correct == null) {
         questionReview.is_correct = questionReview.correct_answer === qReview.studentAnswer;
       }
+    }
+
+    // Save to Cache if it's new content
+    if (!cachedContext && detectedTopicInfo && assistantMessage.length > 300) {
+      saveKnowledgeCache(
+        supabase,
+        detectedTopicInfo.topic,
+        detectedTopicInfo.specialty,
+        assistantMessage
+      ).catch(err => console.error("[CACHE_SAVE_ERROR_ASYNC]", err));
     }
 
     // 3. Save Assistant Message
