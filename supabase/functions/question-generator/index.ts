@@ -10,7 +10,8 @@ import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
  * Core logic for generating and SAVING questions with high resilience.
  */
 
-Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
+Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext) => {
+  const { req, logger, supabaseAdmin, ai, correlation } = enterpriseContext;
   const { requestId, correlationId } = correlation;
   let step = "start";
 
@@ -92,7 +93,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
       .limit(requestedCount);
     
     if (!bankError && bankQs && bankQs.length > 0) {
-      questions = bankQs.map(q => ({
+      questions = bankQs.map((q: any) => ({
         id: q.id,
         statement: q.statement,
         options: q.options,
@@ -158,7 +159,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
         // Persist to bank if requested
         if (saveToBank) {
           const { data: savedQs, error: saveErr } = await supabaseAdmin.from("questions_bank").insert(
-            formattedAi.map(q => ({
+            formattedAi.map((q: any) => ({
               user_id: userId,
               statement: q.statement,
               options: q.options,
@@ -172,7 +173,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
           ).select();
           
           if (!saveErr && savedQs) {
-            questions.push(...savedQs.map(q => ({ ...q, correct: q.correct_index, _source: "generated_saved" })));
+            questions.push(...savedQs.map((q: any) => ({ ...q, correct: q.correct_index, _source: "generated_saved" })));
           } else {
             logger.warn("BANK_SAVE_FAILED", saveErr?.message);
             questions.push(...formattedAi);
@@ -214,7 +215,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
         
         // Link questions
         step = "link_questions";
-        const linkData = questions.map((q, idx) => ({
+        const linkData = questions.map((q: any, idx: number) => ({
           session_id: sessionId,
           question_id: q.id || null, 
           order_index: idx,
@@ -251,4 +252,4 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
       message: error?.message || "Erro interno no gerador de questões"
     });
   }
-});
+}));
