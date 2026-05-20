@@ -30,7 +30,10 @@ async function generateBatch(batchSize: number, specialty: string, topic: string
     },
     count: batchSize,
     forceAi: true,
-    bypassAuth: true // NOVO CAMPO PARA TESTE
+    bypassAuth: true,
+    userId: VALID_USER_ID,
+    createSession: false, // Evita poluir o banco com sessões de teste
+    saveToBank: false     // Evita poluir o banco de questões
   };
 
   const { data, error } = await supabase.functions.invoke("question-generator", {
