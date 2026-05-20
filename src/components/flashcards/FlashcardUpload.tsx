@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, FileText, Loader2, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface FlashcardUploadProps {
@@ -37,8 +37,9 @@ export const FlashcardUpload = ({ onSuccess, userId }: FlashcardUploadProps) => 
       setProgress(30);
       setStatus("Registrando material...");
 
-      const { data: uploadData, error: dbError } = await supabase
-        .from('uploads')
+      // Using any casting to avoid strict TS errors on generated types while they update
+      const { data: uploadData, error: dbError } = await (supabase
+        .from('uploads') as any)
         .insert({
           user_id: userId,
           filename: file.name,
@@ -55,8 +56,7 @@ export const FlashcardUpload = ({ onSuccess, userId }: FlashcardUploadProps) => 
       setProgress(50);
       setStatus("Iniciando extração e geração de flashcards...");
 
-      // Chama a Edge Function para processar
-      const { data, error: functionError } = await supabase.functions.invoke('process-upload', {
+      const { error: functionError } = await supabase.functions.invoke('process-upload', {
         body: { uploadId: uploadData.id, module: 'flashcards' }
       });
 
@@ -65,7 +65,6 @@ export const FlashcardUpload = ({ onSuccess, userId }: FlashcardUploadProps) => 
       setProgress(80);
       setStatus("Processando texto e gerando cards via IA...");
 
-      // Inicia polling opcional ou apenas aguarda o início
       toast({
         title: "Sucesso!",
         description: "O material está sendo processado. Os flashcards aparecerão em instantes.",
