@@ -338,15 +338,16 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
 
   try {
     const response = await fetchWithRetry(
-      OPENAI_API,
+      LOVABLE_GATEWAY,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(openaiPayload),
+        body: JSON.stringify(fallbackPayload),
       },
+
       maxRetries,
       timeoutMs,
       "OpenAI",
