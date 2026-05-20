@@ -25,6 +25,7 @@ export interface PedagogicalEventPayload {
   entity_id?: string;
   study_context?: {
     discipline?: string;
+    specialty?: string;
     topic?: string;
     subtopic?: string;
     difficulty?: string;
