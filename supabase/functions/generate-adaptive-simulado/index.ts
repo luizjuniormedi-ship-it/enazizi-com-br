@@ -29,37 +29,44 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     error_patterns: [],
   };
 
-  // 2. Fetch from bank first
+  // 2. Fetch from bank first (only if not forced AI generation)
   const questions: any[] = [];
   const modalityScores = performance.by_modality || {};
   const weakTopics = Object.entries(modalityScores as Record<string, number>)
     .filter(([_, score]) => score < 60)
     .map(([topic]) => topic);
 
-  logger.info("BANK_CHECK_START", `Checking bank for ${weakTopics.length} weak topics`, { weakTopics });
+  const mode = body.mode || 'adaptive';
+  const isForcedAi = mode === 'ai_generation';
 
-  if (weakTopics.length > 0) {
-    const { data: bankQs, error: bankErr } = await supabaseAdmin
-      .from("questions_bank")
-      .select("*")
-      .in("topic", weakTopics)
-      .limit(targetCount);
-    
-    if (bankErr) {
-      logger.error("BANK_FETCH_ERROR", bankErr.message);
-    } else if (bankQs) {
-      questions.push(...bankQs.map(q => ({
-        id: q.id,
-        statement: q.statement,
-        options: q.options,
-        correct: q.correct_index,
-        explanation: q.explanation,
-        topic: q.topic,
-        difficulty: q.difficulty,
-        _source: "bank"
-      })));
-      logger.info("BANK_HIT", `Found ${bankQs.length} questions in bank`);
+  if (!isForcedAi) {
+    logger.info("BANK_CHECK_START", `Checking bank for ${weakTopics.length} weak topics`, { weakTopics });
+
+    if (weakTopics.length > 0) {
+      const { data: bankQs, error: bankErr } = await supabaseAdmin
+        .from("questions_bank")
+        .select("*")
+        .in("topic", weakTopics)
+        .limit(targetCount);
+      
+      if (bankErr) {
+        logger.error("BANK_FETCH_ERROR", bankErr.message);
+      } else if (bankQs) {
+        questions.push(...bankQs.map(q => ({
+          id: q.id,
+          statement: q.statement,
+          options: q.options,
+          correct: q.correct_index,
+          explanation: q.explanation,
+          topic: q.topic,
+          difficulty: q.difficulty,
+          _source: "bank"
+        })));
+        logger.info("BANK_HIT", `Found ${bankQs.length} questions in bank`);
+      }
     }
+  } else {
+    logger.info("FORCED_AI_GENERATION", "Skipping bank search as requested by mode");
   }
 
   // 3. AI Generation for deficit
