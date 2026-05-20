@@ -90,9 +90,9 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       const { data: insertedFlashcards, error: flashError } = await supabaseAdmin.from("flashcards").insert(
         cards.map((c: any) => ({
           user_id: userId,
-          question: c.front,
-          answer: c.back,
-          explanation: c.explanation,
+          question: c.front || c.frente || c.pergunta || "",
+          answer: c.back || c.verso || c.resposta || "",
+          explanation: c.explanation || c.explicacao || c.justificativa || "",
           topic: topic,
           is_global: false
         }))
