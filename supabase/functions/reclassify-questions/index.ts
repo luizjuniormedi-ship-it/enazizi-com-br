@@ -161,6 +161,7 @@ ${questionsList}`;
             await supabase
               .from("flashcards")
               .insert({
+                user_id: "a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023",
                 question: fcContent.question,
                 answer: fcContent.answer,
                 explanation: fcContent.explanation,
