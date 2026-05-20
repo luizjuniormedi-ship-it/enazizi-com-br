@@ -9,6 +9,8 @@ import { StructuredLogger } from "./structured-logger.ts";
 import { createSafeWaitUntil, SafeWaitUntil } from "./safe-wait-until.ts";
 import { callAi, AiRequest } from "./ai-router.ts";
 import { validateAiQuality, QualityCheckResult } from "./ai-quality-lock.ts";
+import { AiRoutingEngine, CognitiveState, AiTaskType } from "./ai-routing-engine.ts";
+import { CognitiveAiOrchestrator } from "./cognitive-ai-orchestrator.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
