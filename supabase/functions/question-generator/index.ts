@@ -3,6 +3,7 @@ import { cleanQuestionText, parseAiJson } from "../_shared/ai-fetch.ts";
 import { QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 
 /**
  * ENAZIZI — HOTFIX QUESTION-GENERATOR 500 UNDEFINED.ID
