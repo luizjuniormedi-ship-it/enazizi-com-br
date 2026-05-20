@@ -20,41 +20,32 @@ export function useCognitiveOrchestrator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { data, error } = await supabase
-        .from("cognitive_states")
-        .select("*")
+      // We use adaptive_student_profiles as the source of truth for metrics
+      const { data: profile, error: profError } = await supabase
+        .from("adaptive_student_profiles")
+        .select("cognitive_stress_index, fatigue_index, overall_friction_score, response_speed_index, current_session_mode")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (error) throw error;
-      
-      // Fallback for legacy data/profile structure
-      if (!data) {
-        const { data: profile } = await supabase
-          .from("adaptive_student_profiles")
-          .select("cognitive_stress_index, fatigue_index, overload_risk, response_speed_index, current_session_mode")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        
-        return {
-          stress_index: profile?.cognitive_stress_index || 0,
-          fatigue_index: profile?.fatigue_index || 0,
-          overload_risk: profile?.overload_risk || 0,
-          response_speed_index: profile?.response_speed_index || 0,
-          current_session_mode: (profile?.current_session_mode as SessionMode) || 'balanced',
-          state: 'novato',
-          retention_score: 50
-        };
-      }
+      if (profError) throw profError;
+
+      // And cognitive_states for the qualitative state
+      const { data: cogState } = await supabase
+        .from("cognitive_states")
+        .select("state")
+        .eq("user_id", user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       return {
-        stress_index: data.error_pressure || 0,
-        fatigue_index: data.fatigue_level || 0,
-        overload_risk: data.cognitive_load || 0,
-        response_speed_index: data.response_speed_index || 0,
-        current_session_mode: data.state === 'recuperacao' ? 'recovery' : 'balanced',
-        state: data.state,
-        retention_score: data.retention_score
+        stress_index: profile?.cognitive_stress_index || 0,
+        fatigue_index: profile?.fatigue_index || 0,
+        overload_risk: profile?.overall_friction_score || 0,
+        response_speed_index: profile?.response_speed_index || 0,
+        current_session_mode: (profile?.current_session_mode as SessionMode) || 'balanced',
+        state: cogState?.state || 'novato',
+        retention_score: 50 // Placeholder
       };
     },
   });
@@ -64,22 +55,13 @@ export function useCognitiveOrchestrator() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Update both for compatibility
-      await Promise.all([
-        supabase
-          .from("adaptive_student_profiles")
-          .update({ 
-            current_session_mode: mode,
-            recovery_mode_active: mode === 'recovery'
-          })
-          .eq("user_id", user.id),
-        supabase
-          .from("cognitive_states")
-          .update({ 
-            state: mode === 'recovery' ? 'recuperacao' : undefined 
-          })
-          .eq("user_id", user.id)
-      ]);
+      await supabase
+        .from("adaptive_student_profiles")
+        .update({ 
+          current_session_mode: mode,
+          recovery_mode_active: mode === 'recovery'
+        })
+        .eq("user_id", user.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cognitive-orchestration"] });
