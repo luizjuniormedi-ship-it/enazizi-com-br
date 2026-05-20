@@ -156,7 +156,7 @@ Retorne JSON: {"question": "...", "answer": "...", "explanation": "..."}`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.0-flash",
+            model: "google/gemini-2.5-flash",
             messages: [
               { role: "system", content: "Você é um especialista em medicina." },
               { role: "user", content: flashcardPrompt }
