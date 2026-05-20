@@ -15924,11 +15924,16 @@ export type Database = {
           entity_id: string | null
           entity_type: string | null
           event_type: string
+          failed_reason: string | null
           id: string
           idempotency_key: string | null
           metadata: Json | null
           module: string
+          next_retry_at: string | null
           organization_id: string | null
+          priority: string | null
+          recursion_depth: number | null
+          replay_id: string | null
           retry_count: number | null
           severity: string
           source: string
@@ -15944,11 +15949,16 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           event_type: string
+          failed_reason?: string | null
           id?: string
           idempotency_key?: string | null
           metadata?: Json | null
           module: string
+          next_retry_at?: string | null
           organization_id?: string | null
+          priority?: string | null
+          recursion_depth?: number | null
+          replay_id?: string | null
           retry_count?: number | null
           severity?: string
           source: string
@@ -15964,11 +15974,16 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           event_type?: string
+          failed_reason?: string | null
           id?: string
           idempotency_key?: string | null
           metadata?: Json | null
           module?: string
+          next_retry_at?: string | null
           organization_id?: string | null
+          priority?: string | null
+          recursion_depth?: number | null
+          replay_id?: string | null
           retry_count?: number | null
           severity?: string
           source?: string
@@ -26306,6 +26321,14 @@ export type Database = {
       refresh_video_cognitive_heatmap: {
         Args: { p_video_lesson_id: string }
         Returns: undefined
+      }
+      replay_pedagogical_events: {
+        Args: {
+          p_replay_reason?: string
+          p_start_date?: string
+          p_user_id: string
+        }
+        Returns: string
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
