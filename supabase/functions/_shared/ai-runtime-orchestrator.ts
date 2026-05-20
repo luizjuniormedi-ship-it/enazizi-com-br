@@ -214,11 +214,11 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
     case "lesson_generation":
     case "cme_script": {
-      const primary = budget === "premium" ? MODELS.pro : MODELS.flash;
+      const primary = MODELS.flash;
       return wrap(
         primary,
-        [MODELS.flash, MODELS.flashStable],
-        "lesson/cme → equilibrado/premium",
+        [MODELS.flashLite, MODELS.geminiFallback],
+        "lesson/cme → equilibrado",
         PROMPT_PROFILES.lesson_builder,
       );
     }
@@ -226,7 +226,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
     case "mnemonic":
       return wrap(
         MODELS.flash,
-        [MODELS.flashStable, MODELS.gpt5Mini],
+        [MODELS.flashLite, MODELS.geminiFallback],
         "mnemonic → rápido + auditor",
         PROMPT_PROFILES.mnemonic_builder,
       );
@@ -234,17 +234,17 @@ export function selectAIModel(input: AISelectInput): AISelection {
     case "flashcard":
       return wrap(
         MODELS.flashLite,
-        [MODELS.flash, MODELS.flashStable],
+        [MODELS.flash, MODELS.geminiFallback],
         "flashcard → barato",
         PROMPT_PROFILES.fast_review,
       );
 
     case "question_generation":
     case "simulado_review": {
-      const primary = budget === "premium" ? MODELS.gpt5 : MODELS.gpt5Mini;
+      const primary = MODELS.flash;
       return wrap(
         primary,
-        [MODELS.pro, MODELS.flash, MODELS.flashStable],
+        [MODELS.flashLite, MODELS.geminiFallback],
         "questão/simulado → reasoning",
         PROMPT_PROFILES.question_explainer,
       );
@@ -252,8 +252,8 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
     case "planner":
       return wrap(
-        MODELS.gpt5Mini,
-        [MODELS.flash, MODELS.flashStable],
+        MODELS.flash,
+        [MODELS.flashLite, MODELS.geminiFallback],
         "planner → reasoning leve",
         PROMPT_PROFILES.clinical_reasoning,
       );
@@ -261,7 +261,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
     default:
       return wrap(
         MODELS.flash,
-        [MODELS.flashStable],
+        [MODELS.geminiFallback],
         "fallback default → flash",
         PROMPT_PROFILES.fast_review,
       );
