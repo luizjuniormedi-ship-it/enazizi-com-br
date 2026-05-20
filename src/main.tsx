@@ -64,9 +64,14 @@ const removeReleaseQueryParam = () => {
 };
 
 const mountApp = () => {
+  devLog("[App] Montando aplicação...");
   const rootElement = document.getElementById("root");
-  if (!rootElement) return;
+  if (!rootElement) {
+    devLog("[App] Erro: Elemento root não encontrado!");
+    return;
+  }
   createRoot(rootElement).render(<App />);
+  devLog("[App] Aplicação montada com sucesso.");
 };
 
 const registerProductionServiceWorker = () => {
@@ -131,7 +136,8 @@ const boot = async () => {
 
   const storedRelease = localStorage.getItem(RELEASE_KEY);
 
-  if (storedRelease && storedRelease !== APP_RELEASE) {
+  // Skip release checks and hard resets in preview environments to prevent reload loops
+  if (!isPreviewHost && !isInIframe && storedRelease && storedRelease !== APP_RELEASE) {
     await performHardAppReset({
       preserveSessionEntries: loginRefreshSignature
         ? [[LOGIN_REFRESH_SIGNATURE_KEY, loginRefreshSignature]]
@@ -146,6 +152,7 @@ const boot = async () => {
   removeReleaseQueryParam();
 
   if (isPreviewHost || isInIframe) {
+    devLog("[Boot] Ambiente de preview/iframe detectado, montando app sem PWA.");
     mountApp();
     unregisterServiceWorkers().catch(() => {});
     return;
