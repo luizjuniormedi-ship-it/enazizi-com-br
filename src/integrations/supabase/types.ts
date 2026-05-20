@@ -10591,6 +10591,7 @@ export type Database = {
           dominado_em: string | null
           id: string
           motivo_erro: string | null
+          question_id: string | null
           subtema: string | null
           subtema_norm: string | null
           tema: string
@@ -10609,6 +10610,7 @@ export type Database = {
           dominado_em?: string | null
           id?: string
           motivo_erro?: string | null
+          question_id?: string | null
           subtema?: string | null
           subtema_norm?: string | null
           tema: string
@@ -10627,6 +10629,7 @@ export type Database = {
           dominado_em?: string | null
           id?: string
           motivo_erro?: string | null
+          question_id?: string | null
           subtema?: string | null
           subtema_norm?: string | null
           tema?: string
