@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
-import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
