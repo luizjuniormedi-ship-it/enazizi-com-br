@@ -2,7 +2,8 @@
 import { GovernanceCockpit } from "@/components/governance/GovernanceCockpit";
 import { CinematicHero } from "@/components/cinematic";
 import AlosRuntimeObservatory from "@/components/observatory/AlosRuntimeObservatory";
-import { Activity, ShieldCheck, Search } from "lucide-react";
+import { CognitiveRhythmMonitor } from "@/components/CognitiveRhythmMonitor";
+import { Activity, ShieldCheck, Search, Zap } from "lucide-react";
 import { useEffect } from "react";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
 
