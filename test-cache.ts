@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "@supabase/supabase-js";
 import { getKnowledgeCache, extractTopic } from "./supabase/functions/_shared/knowledge-cache.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
