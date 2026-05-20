@@ -1,18 +1,19 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { ChevronLeft, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft, FileText, ArrowLeft } from "lucide-react";
 
 const Terms = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-[#050508] text-white p-6 md:p-12">
       <div className="max-w-4xl mx-auto">
-        <Link 
-          to="/" 
-          className="inline-flex items-center text-primary hover:text-primary/80 transition-colors mb-8 group"
+        <button 
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center text-primary hover:text-primary/80 transition-colors mb-8 group gap-2"
         >
-          <ChevronLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-          Voltar para Home
-        </Link>
+          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-xs font-black uppercase tracking-widest">Voltar</span>
+        </button>
 
         <div className="glass-card p-8 md:p-12 space-y-8">
           <div className="flex items-center gap-4 mb-4">
