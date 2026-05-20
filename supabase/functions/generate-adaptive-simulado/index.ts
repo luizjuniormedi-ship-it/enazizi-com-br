@@ -309,27 +309,25 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
           for (const asset of assets) {
             if (questions.length >= targetCount) break;
 
-            try {
-              const prompt = buildPrompt(
-                asset,
-                "hard",
-                analysis[0]?.accuracy < 50 ? "ENARE" : "USP",
-                performance.error_patterns || [],
-                questionsPerAsset
-              );
+          try {
+            const prompt = buildPrompt(
+              asset,
+              "hard",
+              analysis[0]?.accuracy < 50 ? "ENARE" : "USP",
+              performance.error_patterns || [],
+              questionsPerAsset
+            );
 
-              const response = await aiFetch({
-                messages: [{ role: "user", content: prompt }],
-                model: "google/gemini-2.5-flash",
-                maxTokens: 12000,
-                timeoutMs: 80000, // Increase timeout
-                maxRetries: 2, // Ensure retries
-              });
+            const response = await ai({
+              messages: [{ role: "user", content: prompt }],
+              taskType: "generation",
+              complexity: "medium",
+            });
 
-              if (!response.ok) continue;
+            if (!response) continue;
 
-              const aiData = await response.json();
-              const rawContent = aiData.choices?.[0]?.message?.content || "";
+            const aiData = response;
+            const rawContent = aiData.choices?.[0]?.message?.content || "";
               const parsed = parseAiJson(rawContent);
               const arr = Array.isArray(parsed) ? parsed : [parsed];
 
