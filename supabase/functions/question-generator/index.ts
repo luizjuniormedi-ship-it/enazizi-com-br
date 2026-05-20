@@ -37,22 +37,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     // 0. AUTH BYPASS DEBUG (TEMPORARY FOR STRESS TEST)
     const authHeader = req.headers.get("Authorization");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     
-    // DEBUG AUTH
-    console.log("DEBUG_AUTH_VALS", {
-      has_auth: !!authHeader,
-      auth_starts_bearer: authHeader?.startsWith("Bearer "),
-      auth_len: authHeader?.length,
-      service_key_len: serviceRoleKey?.length,
-      is_match_service: authHeader === `Bearer ${serviceRoleKey}`,
-      is_match_anon: authHeader === `Bearer ${anonKey}`
-    });
-
-    const isServiceRole = !!(
-      (authHeader && serviceRoleKey && (authHeader === `Bearer ${serviceRoleKey}` || authHeader.includes(serviceRoleKey))) ||
-      (authHeader && anonKey && (authHeader === `Bearer ${anonKey}` || authHeader.includes(anonKey)))
-    );
+    // Bypass check: if header contains the service key string anywhere (hardening against Bearer vs raw)
+    const isServiceRole = !!(authHeader && serviceRoleKey && authHeader.includes(serviceRoleKey.trim()));
     
     // 1. Validate Input
     step = "parse_body";
