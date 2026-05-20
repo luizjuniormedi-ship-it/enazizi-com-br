@@ -640,19 +640,32 @@ const Flashcards = () => {
               </div>
             </div>
 
-            <Button
-              size="lg"
-              className="w-full h-14 gap-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow-sm"
-              onClick={() => handleGenerateFromBank(true)}
-              disabled={generatingFromBank || !topicSearch.trim()}
-            >
-              {generatingFromBank ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <DatabaseZap className="h-5 w-5" />
-              )}
-              Gerar {generateQuantity} Flashcards e Iniciar
-            </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full h-14 gap-3 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold"
+                onClick={handleSearchExisting}
+                disabled={generatingFromBank || !topicSearch.trim()}
+              >
+                <Search className="h-5 w-5" />
+                Buscar existentes
+              </Button>
+
+              <Button
+                size="lg"
+                className="w-full h-14 gap-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow-sm"
+                onClick={() => handleGenerateWithAI(true)}
+                disabled={generatingFromBank || !topicSearch.trim()}
+              >
+                {generatingFromBank ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-5 w-5" />
+                )}
+                Gerar com IA
+              </Button>
+            </div>
           </div>
         </div>
       </EnaflixSection>
