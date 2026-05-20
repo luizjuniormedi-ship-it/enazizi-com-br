@@ -143,7 +143,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
   if (cognitiveLoad === "high") {
     return wrap(
       MODELS.flashLite,
-      [MODELS.flash, MODELS.flashStable],
+      [MODELS.flash, MODELS.geminiFallback],
       "cognitive_load_high → modelo rápido + Feynman light",
       PROMPT_PROFILES.feynman_light,
     );
@@ -153,7 +153,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
   if (budget === "economy") {
     return wrap(
       MODELS.flashLite,
-      [MODELS.flash, MODELS.flashStable],
+      [MODELS.flash, MODELS.geminiFallback],
       "budget_mode=economy",
       PROMPT_PROFILES.fast_review,
     );
