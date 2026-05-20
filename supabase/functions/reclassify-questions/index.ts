@@ -22,10 +22,9 @@ serve(async (req) => {
     }
 
     // 1. Busca questões da tabela real_exam_questions que ainda não foram classificadas corretamente
-    // Prioriza questões que têm source_file e que ainda não têm classified_at
     const { data: questions, error: fetchError } = await supabase
       .from("real_exam_questions")
-      .select("id, statement, options, source_file, topic, subtopic")
+      .select("id, statement, options, source_file, topic, subtopic, correct_index")
       .is("classified_at", null)
       .not("source_file", "is", null)
       .order("created_at", { ascending: false })
@@ -60,7 +59,7 @@ Retorne JSON no formato: [{"id": "uuid", "topic": "...", "subtopic": "...", "tag
 Questoes:
 ${questionsList}`;
 
-    console.log("Calling Gemini via Lovable AI Gateway...");
+    console.log("Calling Gemini for classification...");
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -85,7 +84,6 @@ ${questionsList}`;
     const aiData = await aiResponse.json();
     let classifications;
     try {
-      // Handle different possible response structures from the gateway
       const content = aiData.choices[0].message.content;
       const parsed = JSON.parse(content);
       classifications = Array.isArray(parsed) ? parsed : (parsed.classifications || parsed.results || []);
@@ -94,13 +92,14 @@ ${questionsList}`;
       throw new Error("Invalid JSON from AI");
     }
 
-    const results = [];
     const now = new Date().toISOString();
+    const results = [];
 
-    for (const item of classifications) {
-      console.log(`Processing classification for question ${item.id}`);
+    // Processar atualizações e geração de flashcards
+    const processPromises = classifications.map(async (item: any) => {
+      console.log(`Processing question ${item.id}`);
       
-      // 3. Atualiza cada questao no banco com os novos campos
+      // Update real_exam_questions
       const { error: updateError } = await supabase
         .from("real_exam_questions")
         .update({
@@ -117,11 +116,11 @@ ${questionsList}`;
 
       if (updateError) {
         console.error(`Error updating real_exam_questions for ${item.id}:`, updateError);
-        continue;
+        return null;
       }
 
-      // 4. Apos classificar em real_exam_questions, TAMBEM atualiza a mesma questao em questions_bank (se existir)
-      const { error: bankError } = await supabase
+      // Update questions_bank
+      await supabase
         .from("questions_bank")
         .update({
           topic: item.topic,
@@ -135,66 +134,58 @@ ${questionsList}`;
         })
         .eq("original_question_id", item.id);
 
-      if (bankError) {
-        console.log(`Note: No corresponding entry in questions_bank for ${item.id} or error occurred:`, bankError.message);
-      }
-
-      // 5. Para cada questao classificada, gera 1 flashcard focado no tema
-      // Buscamos o enunciado para gerar o flashcard
+      // Generate flashcard
       const q = questions.find(question => question.id === item.id);
       if (q) {
-        const flashcardPrompt = `Com base nesta questão médica, crie um flashcard (pergunta e resposta curta) para estudo.
-Questão: ${q.statement}
-Resposta correta index: ${q.correct_index}
+        try {
+          const fcResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { role: "system", content: "Você é um especialista em medicina." },
+                { role: "user", content: `Com base nesta questão médica, crie um flashcard (pergunta e resposta curta) para estudo.\nQuestão: ${q.statement}\nResposta correta index: ${q.correct_index}\nRetorne JSON: {"question": "...", "answer": "...", "explanation": "..."}` }
+              ],
+              response_format: { type: "json_object" }
+            }),
+          });
 
-Retorne JSON: {"question": "...", "answer": "...", "explanation": "..."}`;
-
-        const fcResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: "Você é um especialista em medicina." },
-              { role: "user", content: flashcardPrompt }
-            ],
-            response_format: { type: "json_object" }
-          }),
-        });
-
-        if (fcResponse.ok) {
-          const fcData = await fcResponse.json();
-          const fcContent = JSON.parse(fcData.choices[0].message.content);
-          
-          const { error: fcInsertError } = await supabase
-            .from("flashcards")
-            .insert({
-              question: fcContent.question,
-              answer: fcContent.answer,
-              explanation: fcContent.explanation,
-              topic: item.topic,
-              subtopic: item.subtopic,
-              difficulty: item.difficulty,
-              is_global: true,
-              generation_method: "reclassify-pipeline",
-              metadata: { original_question_id: item.id }
-            });
+          if (fcResponse.ok) {
+            const fcData = await fcResponse.json();
+            const fcContent = JSON.parse(fcData.choices[0].message.content);
             
-          if (fcInsertError) {
-            console.error(`Error inserting flashcard for ${item.id}:`, fcInsertError);
+            await supabase
+              .from("flashcards")
+              .insert({
+                question: fcContent.question,
+                answer: fcContent.answer,
+                explanation: fcContent.explanation,
+                topic: item.topic,
+                subtopic: item.subtopic,
+                difficulty: item.difficulty,
+                is_global: true,
+                generation_method: "reclassify-pipeline",
+                metadata: { original_question_id: item.id }
+              });
           }
+        } catch (e) {
+          console.error(`Flashcard generation failed for ${item.id}:`, e);
         }
       }
 
-      results.push({ id: item.id, topic: item.topic, subtopic: item.subtopic });
-    }
+      return { id: item.id, topic: item.topic, subtopic: item.subtopic };
+    });
+
+    const processedResults = await Promise.all(processPromises);
+    const validResults = processedResults.filter(r => r !== null);
 
     return new Response(JSON.stringify({ 
-      processed: results.length, 
-      results,
+      processed: validResults.length, 
+      results: validResults,
       timestamp: now
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
