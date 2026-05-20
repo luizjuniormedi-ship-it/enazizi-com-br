@@ -260,13 +260,20 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             options = [q?.option_a, q?.option_b, q?.option_c, q?.option_d].filter(Boolean);
           }
 
+          // Converter dificuldade textual para numérica se necessário
+          let difficultyLevel = q?.difficulty || difficulty;
+          if (typeof difficultyLevel === 'string') {
+            const diffMap: any = { 'fácil': 1, 'médio': 2, 'médio-difícil': 3, 'difícil': 4, 'misto': 2 };
+            difficultyLevel = diffMap[difficultyLevel.toLowerCase()] || 2;
+          }
+
           return {
             statement,
             options,
             correct: typeof q?.correct === 'number' ? q.correct : (typeof q?.correct_index === 'number' ? q.correct_index : 0),
             explanation: cleanQuestionText(q?.explanation || q?.rationale || q?.comentário || ""),
             topic: q?.topic || topics[0],
-            difficulty: q?.difficulty || difficulty,
+            difficulty: difficultyLevel,
             _source: "generated"
           };
         }).filter(q => q.statement && q.options.length >= 2);
@@ -296,6 +303,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             questions.push(...savedQs.map((q: any) => ({ ...q, correct: q.correct_index, _source: "generated_saved" })));
           } else {
             logger.warn("BANK_SAVE_FAILED", saveErr?.message);
+            console.error("BANK_SAVE_FAILED", saveErr?.message);
             questions.push(...formattedAi);
           }
         } else {
