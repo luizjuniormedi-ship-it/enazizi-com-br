@@ -42,18 +42,38 @@ async function generateBatch(batchSize: number, specialty: string, topic: string
 async function runStressTest() {
   console.log("=== INICIANDO TESTE DE ESTRESSE: GERADOR DE QUESTÕES ===");
   
-  // Teste 1: 10 questões (reduzido para validar se a autorização funciona agora)
-  console.log("\n[Teste 1] Validando acesso com Service Role...");
-  try {
-    const data = await generateBatch(5, "Clínica Médica", "Clínica Médica");
-    if (data?.questions) {
-      console.log(`  Sucesso: ${data.questions.length} questões geradas.`);
-    } else {
-      console.log("  Falha: Resposta vazia");
+  // Teste 1: 100 questões (em lotes de 20 para ser mais eficiente)
+  console.log("\n[Teste 1] Gerando 100 questões gerais (Lotes de 20)...");
+  let totalGenerated = 0;
+  for (let i = 1; i <= 5; i++) {
+    try {
+      process.stdout.write(`Lote ${i}/5... `);
+      const data = await generateBatch(20, "Clínica Médica", "Clínica Médica");
+      if (data?.questions) {
+        totalGenerated += data.questions.length;
+        console.log(`OK (${data.questions.length} questões)`);
+      } else {
+        console.log("Falha: Resposta vazia");
+      }
+    } catch (e) {
+      console.error("\nErro no lote:", e.message);
     }
-  } catch (e) {
-    console.error("  Erro de Autorização/Execução:", e.message);
-    console.log("  Nota: O gerador exige um JWT de usuário real. O script service_role não é suficiente para o middleware requireAuth.");
+  }
+  console.log(`Total geral gerado: ${totalGenerated}/100`);
+
+  // Teste 2: Por Banca (USP e UNICAMP)
+  const bancas = ["USP", "UNICAMP", "ENARE", "SUS-SP"];
+  console.log("\n[Teste 2] Gerando questões por banca específica...");
+  for (const banca of bancas) {
+    try {
+      process.stdout.write(`Banca: ${banca}... `);
+      const data = await generateBatch(5, "Pediatria", "Imunização", banca);
+      if (data?.questions) {
+        console.log(`OK (${data.questions.length} questões)`);
+      }
+    } catch (e) {
+      console.error(`\nErro na banca ${banca}:`, e.message);
+    }
   }
 
   console.log("\n=== TESTE FINALIZADO ===");
