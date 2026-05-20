@@ -159,6 +159,7 @@ async function generateBatch(
 function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
     .map((q: any) => ({
+      id: q.id,
       statement: String(q.statement || ""),
       options: Array.isArray(q.options) ? q.options.map(String) : [],
       correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
@@ -535,8 +536,9 @@ const Simulados = () => {
         
         try {
           const avoid = allGenerated.map(q => q.statement);
+          const avoidIds = allGenerated.map(q => q.id).filter(Boolean) as string[];
           
-          console.log(`[Simulados] Chamando question-generator para lote ${batchNum}. Count: ${currentBatchSize}`);
+          console.log(`[Simulados] Chamando question-generator para lote ${batchNum}. Count: ${currentBatchSize}. AvoidIds: ${avoidIds.length}`);
           
           let batchData: any = null;
           let batchErr: any = null;
@@ -558,7 +560,8 @@ const Simulados = () => {
               config.customDistribution,
               config.includeWeakThemes,
               config.includePreviousErrors,
-              config.mode || "estudo"
+              config.mode || "estudo",
+              avoidIds
             );
             batchData = { success: true, questions: batchQs };
             console.log(`[Simulados] Lote ${batchNum} finalizado com sucesso. Recebidas ${batchQs.length} questões.`);
@@ -583,6 +586,7 @@ const Simulados = () => {
                     includePreviousErrors: config.includePreviousErrors,
                   },
                   avoidStatements: avoid,
+                  avoidIds: avoidIds,
                   jobId: currentJobId,
                   batchNumber: batchNum,
                 },
