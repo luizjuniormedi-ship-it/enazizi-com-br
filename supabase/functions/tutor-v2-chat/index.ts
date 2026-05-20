@@ -19,80 +19,18 @@ type TutorContext = {
   cognitive_load?: number | string | null;
 };
 
-type ProviderConfig = {
-  provider: "lovable-ai";
-  model: string;
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-type ProviderAttempt = ProviderConfig & {
-  success: boolean;
-  status?: number;
-  code?: string;
-  message?: string;
-  latency_ms: number;
+type TutorContext = {
+  mission?: { title?: string } | null;
+  detected_gaps?: string[] | null;
+  fsrs?: { pending_reviews?: number } | null;
+  cognitive_load?: number | string | null;
 };
-
-type ProviderResult = {
-  content: string;
-  provider: string;
-  model: string;
-  fallbackUsed: boolean;
-  attempts: ProviderAttempt[];
-  latencyMs: number;
-};
-
-function getGatewayKey() {
-  return Deno.env.get("LOVABLE_API_KEY") ||
-    Deno.env.get("AI_GATEWAY_API_KEY") ||
-    Deno.env.get("LOVABLE_AI_GATEWAY_KEY") ||
-    "";
-}
-
-function getEnvPresence() {
-  return {
-    LOVABLE_API_KEY: Boolean(Deno.env.get("LOVABLE_API_KEY")),
-    OPENAI_API_KEY: Boolean(Deno.env.get("OPENAI_API_KEY")),
-    GEMINI_API_KEY: Boolean(Deno.env.get("GEMINI_API_KEY")),
-    AI_GATEWAY_API_KEY: Boolean(Deno.env.get("AI_GATEWAY_API_KEY")),
-    LOVABLE_AI_GATEWAY_KEY: Boolean(Deno.env.get("LOVABLE_AI_GATEWAY_KEY")),
-  };
-}
-
-function extractProviderError(status: number | undefined, bodyText: string, err?: unknown) {
-  const fallbackMessage = err instanceof Error ? err.message : bodyText || "Provider unavailable";
-  let code = status ? `HTTP_${status}` : "AI_PROVIDER_ERROR";
-  let message = fallbackMessage;
-
-  try {
-    const parsed = JSON.parse(bodyText);
-    const providerError = parsed?.error || parsed;
-    code = providerError?.code || providerError?.type || code;
-    message = providerError?.message || parsed?.message || message;
-  } catch {
-    if (status === 401 || status === 403) code = "AI_AUTH_ERROR";
-    else if (status === 402) code = "AI_QUOTA_EXHAUSTED";
-    else if (status === 404) code = "AI_MODEL_NOT_FOUND";
-    else if (status === 429) code = "AI_RATE_LIMITED";
-    else if (status && status >= 500) code = "AI_PROVIDER_UNAVAILABLE";
-  }
-
-  if (err instanceof DOMException && err.name === "AbortError") {
-    code = "TIMEOUT";
-    message = "AI provider request timed out";
-  }
-
-  return { code, message: String(message).slice(0, 300) };
-}
-
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 async function recordTutorEvent(
   supabase: any,
@@ -122,93 +60,7 @@ async function recordTutorEvent(
   }
 }
 
-async function callProvider(
-  provider: ProviderConfig,
-  gatewayKey: string,
-  messages: Array<{ role: string; content: string }>,
-  requestId: string,
-): Promise<{ content?: string; attempt: ProviderAttempt }> {
-  const attemptStart = Date.now();
-
-  try {
-    const response = await fetchWithTimeout(
-      AI_GATEWAY_URL,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${gatewayKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: provider.model,
-          messages,
-          max_tokens: AI_MAX_TOKENS,
-        }),
-      },
-      AI_TIMEOUT_MS,
-    );
-
-    const latency_ms = Date.now() - attemptStart;
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      const parsedError = extractProviderError(response.status, responseText);
-      console.error("[TUTOR_V2_AI_PROVIDER_ERROR]", {
-        provider: provider.provider,
-        model: provider.model,
-        status: response.status,
-        code: parsedError.code,
-        message: parsedError.message,
-        requestId,
-      });
-      return { attempt: { ...provider, success: false, status: response.status, ...parsedError, latency_ms } };
-    }
-
-    let parsed: any;
-    try {
-      parsed = JSON.parse(responseText);
-    } catch {
-      const parsedError = { code: "AI_INVALID_JSON", message: "AI provider returned invalid JSON" };
-      console.error("[TUTOR_V2_AI_PROVIDER_ERROR]", {
-        provider: provider.provider,
-        model: provider.model,
-        status: response.status,
-        code: parsedError.code,
-        message: parsedError.message,
-        requestId,
-      });
-      return { attempt: { ...provider, success: false, status: response.status, ...parsedError, latency_ms } };
-    }
-
-    const content = parsed?.choices?.[0]?.message?.content;
-    if (!content || typeof content !== "string") {
-      const parsedError = { code: "AI_EMPTY_RESPONSE", message: "AI provider returned no assistant content" };
-      console.error("[TUTOR_V2_AI_PROVIDER_ERROR]", {
-        provider: provider.provider,
-        model: provider.model,
-        status: response.status,
-        code: parsedError.code,
-        message: parsedError.message,
-        requestId,
-      });
-      return { attempt: { ...provider, success: false, status: response.status, ...parsedError, latency_ms } };
-    }
-
-    return { content, attempt: { ...provider, success: true, status: response.status, latency_ms } };
-  } catch (err) {
-    const latency_ms = Date.now() - attemptStart;
-    const parsedError = extractProviderError(undefined, "", err);
-    console.error("[TUTOR_V2_AI_PROVIDER_ERROR]", {
-      provider: provider.provider,
-      model: provider.model,
-      status: undefined,
-      code: parsedError.code,
-      message: parsedError.message,
-      requestId,
-    });
-    return { attempt: { ...provider, success: false, ...parsedError, latency_ms } };
-  }
-}
+// callProvider is no longer used, we use runAI from shared orchestrator instead.
 
 // ============================================================
 // QUESTION_REVIEW_MODE — Stage A (backend only, backward compatible)
@@ -350,136 +202,7 @@ Active recall:
 Próxima ação: tente novamente em instantes para eu aprofundar com raciocínio adaptativo completo.`;
 }
 
-async function resolveTutorAiResponse(
-  supabase: any,
-  input: {
-    messages: Array<{ role: string; content: string }>;
-    userId: string;
-    sessionId: string;
-    topic: string;
-    userMessage: string;
-    requestId: string;
-  }
-): Promise<ProviderResult> {
-  const gatewayKey = getGatewayKey();
-  const envPresence = getEnvPresence();
-  console.log("[TUTOR_V2_AI_ENV_STATUS]", envPresence);
-
-  if (!gatewayKey) {
-    await recordTutorEvent(supabase, {
-      userId: input.userId,
-      sessionId: input.sessionId,
-      topic: input.topic,
-      eventType: "ai_provider_error",
-      outcome: "not_configured",
-      payload: {
-        provider: "lovable-ai",
-        model: PRIMARY_MODEL,
-        error_code: "AI_PROVIDER_NOT_CONFIGURED",
-        latency_ms: 0,
-        fallback_used: true,
-        success: false,
-        env_presence: envPresence,
-        request_id: input.requestId,
-      },
-    });
-    return {
-      content: buildEmergencyTemplate(input.topic, input.userMessage),
-      provider: "template",
-      model: "emergency_template_response",
-      fallbackUsed: true,
-      attempts: [{ provider: "lovable-ai", model: PRIMARY_MODEL, success: false, code: "AI_PROVIDER_NOT_CONFIGURED", message: "O provedor de IA do Tutor não está configurado.", latency_ms: 0 }],
-      latencyMs: 0,
-    };
-  }
-
-  const providers: ProviderConfig[] = [
-    { provider: "lovable-ai", model: PRIMARY_MODEL },
-    { provider: "lovable-ai", model: FALLBACK_MODEL },
-  ];
-
-  const attempts: ProviderAttempt[] = [];
-  const totalStart = Date.now();
-
-  for (const provider of providers) {
-    const result = await callProvider(provider, gatewayKey, input.messages, input.requestId);
-    attempts.push(result.attempt);
-
-    if (!result.attempt.success) {
-      await recordTutorEvent(supabase, {
-        userId: input.userId,
-        sessionId: input.sessionId,
-        topic: input.topic,
-        eventType: "ai_provider_error",
-        outcome: result.attempt.code || "provider_error",
-        payload: {
-          provider: provider.provider,
-          model: provider.model,
-          error_code: result.attempt.code,
-          latency_ms: result.attempt.latency_ms,
-          fallback_used: true,
-          success: false,
-          request_id: input.requestId,
-        },
-      });
-      continue;
-    }
-
-    const fallbackUsed = attempts.length > 1;
-    if (fallbackUsed) {
-      await recordTutorEvent(supabase, {
-        userId: input.userId,
-        sessionId: input.sessionId,
-        topic: input.topic,
-        eventType: "ai_provider_recovered",
-        outcome: "fallback_model_success",
-        payload: {
-          provider: provider.provider,
-          model: provider.model,
-          latency_ms: result.attempt.latency_ms,
-          fallback_used: true,
-          success: true,
-          request_id: input.requestId,
-        },
-      });
-    }
-
-    return {
-      content: result.content!,
-      provider: provider.provider,
-      model: provider.model,
-      fallbackUsed,
-      attempts,
-      latencyMs: Date.now() - totalStart,
-    };
-  }
-
-  await recordTutorEvent(supabase, {
-    userId: input.userId,
-    sessionId: input.sessionId,
-    topic: input.topic,
-    eventType: "ai_provider_fallback_used",
-    outcome: "emergency_template_response",
-    payload: {
-      provider: "template",
-      model: "emergency_template_response",
-      error_code: attempts.at(-1)?.code || "AI_PROVIDER_UNAVAILABLE",
-      latency_ms: Date.now() - totalStart,
-      fallback_used: true,
-      success: true,
-      request_id: input.requestId,
-    },
-  });
-
-  return {
-    content: buildEmergencyTemplate(input.topic, input.userMessage),
-    provider: "template",
-    model: "emergency_template_response",
-    fallbackUsed: true,
-    attempts,
-    latencyMs: Date.now() - totalStart,
-  };
-}
+// resolveTutorAiResponse is no longer used, we use runAI directly in the serve function.
 
 serve(async (req) => {
   const requestId = crypto.randomUUID();

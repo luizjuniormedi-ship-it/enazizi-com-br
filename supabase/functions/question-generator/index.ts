@@ -134,6 +134,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         .in("topic", topics);
 
       if (Array.isArray(avoidIds) && avoidIds.length > 0) {
+        // PostgREST "in" filter expects (val1,val2,...)
         query = query.not("id", "in", `(${avoidIds.join(",")})`);
       }
 
