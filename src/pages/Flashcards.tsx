@@ -169,6 +169,7 @@ const Flashcards = () => {
     }
     setGeneratingFromBank(true);
     try {
+      // 1. Tentar buscar no banco local primeiro
       const { data: existing } = await supabase
         .from("flashcards")
         .select("question")
@@ -192,7 +193,8 @@ const Flashcards = () => {
       ]);
 
       const allQuestions = [...(bankQ || []), ...(realQ || [])];
-      const newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
+      let newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
+      
       for (const q of allQuestions) {
         if (newCards.length >= generateQuantity) break;
         const hash = q.statement?.slice(0, 80).toLowerCase();
@@ -214,6 +216,30 @@ const Flashcards = () => {
         });
       }
 
+      // 2. Se não encontrou no banco, usar IA
+      if (newCards.length < 5) {
+        toast({ title: "Buscando na IA...", description: "Não encontramos questões suficientes no banco. Acionando motor de geração..." });
+        
+        const { data, error: genError } = await supabase.functions.invoke("generate-flashcards", {
+            body: { 
+                topic: search, 
+                quantity: generateQuantity,
+                discipline: "Geral"
+            }
+        });
+
+        if (genError) throw genError;
+        if (data?.success) {
+            await fetchData();
+            if (autoStart) {
+                setMode("all");
+                setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
+                setPhase("active");
+            }
+            return;
+        }
+      }
+
       if (newCards.length === 0) {
         toast({ title: "Nenhuma questão encontrada", description: `Não encontramos questões novas para "${search}".` });
         setGeneratingFromBank(false);
@@ -223,11 +249,32 @@ const Flashcards = () => {
       const { error, data: inserted } = await supabase.from("flashcards").insert(newCards).select("id, question, answer, topic, is_global, user_id");
       if (error) throw error;
 
+      // Também registrar no FSRS
+      if (inserted) {
+          await supabase.from("fsrs_cards").insert(
+              inserted.map(f => ({
+                  user_id: user.id,
+                  card_ref_id: f.id,
+                  card_type: 'flashcard',
+                  front: f.question,
+                  back: f.answer,
+                  topic: f.topic,
+                  due: new Date().toISOString(),
+                  stability: 0,
+                  difficulty: 3,
+                  elapsed_days: 0,
+                  scheduled_days: 0,
+                  reps: 0,
+                  lapses: 0,
+                  state: 0
+              }))
+          );
+      }
+
       toast({ title: `${newCards.length} flashcards gerados!`, description: `Prontos para revisão de "${search}".` });
       await fetchData();
 
       if (autoStart && inserted && inserted.length > 0) {
-        // Auto-start session with the newly generated cards
         setMode("all");
         setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
         setPhase("active");

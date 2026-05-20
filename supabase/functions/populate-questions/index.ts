@@ -144,8 +144,31 @@ async function processTextToContent(
         }));
 
         if (flashcards.length > 0) {
-          const { error } = await supabaseAdmin.from("flashcards").insert(flashcards);
-          if (!error) fCount = flashcards.length;
+          const { data: inserted, error } = await supabaseAdmin.from("flashcards").insert(flashcards).select();
+          if (!error && inserted) {
+            fCount = flashcards.length;
+            
+            // Also insert into fsrs_cards for scheduling
+            await supabaseAdmin.from("fsrs_cards").insert(
+              inserted.map((f: any) => ({
+                user_id: userId,
+                card_ref_id: f.id,
+                card_type: 'flashcard',
+                front: f.question,
+                back: f.answer,
+                explanation: f.explanation,
+                topic: f.topic,
+                due: new Date().toISOString(),
+                stability: 0,
+                difficulty: 3,
+                elapsed_days: 0,
+                scheduled_days: 0,
+                reps: 0,
+                lapses: 0,
+                state: 0
+              }))
+            );
+          }
         }
       }
 
