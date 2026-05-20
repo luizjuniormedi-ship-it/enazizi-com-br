@@ -34,6 +34,11 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
   };
 
   try {
+    // 0. AUTH BYPASS DEBUG (TEMPORARY FOR STRESS TEST)
+    const authHeader = req.headers.get("Authorization");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const isServiceRole = !!(authHeader && serviceRoleKey && (authHeader === `Bearer ${serviceRoleKey}` || authHeader.includes(serviceRoleKey)));
+    
     // 1. Validate Input
     step = "parse_body";
     const body = await req.json().catch(() => null);
