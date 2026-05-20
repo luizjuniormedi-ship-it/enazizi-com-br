@@ -346,7 +346,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
 
 async function callOnce(
   ref: ModelRef,
-  gatewayKey: string,
+  apiKey: string,
   messages: Array<{ role: string; content: string }>,
   maxTokens: number = AI_MAX_TOKENS,
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
