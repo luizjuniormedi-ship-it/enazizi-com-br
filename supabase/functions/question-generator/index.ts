@@ -77,19 +77,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     // 2. Auth Validation
     step = "auth_validation";
-    const authHeader = req.headers.get("Authorization");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
-    // DEBUG AUTH
-    console.log("DEBUG_AUTH_CHECK", {
-      has_auth: !!authHeader,
-      has_service_key: !!serviceRoleKey,
-      auth_starts_bearer: authHeader?.startsWith("Bearer "),
-      is_match: authHeader === `Bearer ${serviceRoleKey}`
-    });
-
-    const isServiceRole = !!(authHeader && serviceRoleKey && (authHeader === `Bearer ${serviceRoleKey}` || authHeader.includes(serviceRoleKey)));
-    
+    // We already checked isServiceRole at the start
     let userId;
     if (isServiceRole) {
       console.log("STEP_2_AUTH_BYPASS_SERVICE_ROLE", { correlation_id: correlationId });
