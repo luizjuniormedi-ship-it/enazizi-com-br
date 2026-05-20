@@ -181,14 +181,19 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         .limit(1)
         .maybeSingle();
 
-      const userPrompt = `Gere exatamente ${deficit} questões médicas de múltipla escolha.
+      let userPrompt = `Gere exatamente ${deficit} questões médicas de múltipla escolha.
       TEMA: ${topics.join(", ")}
       ESPECIALIDADE: ${specialty}
       DIFICULDADE_ALVO: ${difficulty}
       COGNITIVE_STATE: ${cogState?.state || 'balanced'}
       PRESSURE: ${cogState?.intensity || 0}/100
-      BANCA: ${examBoard || "Geral"}
-      
+      BANCA: ${examBoard || "Geral"}`;
+
+      if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
+        userPrompt += `\nEVITE os seguintes enunciados (não repita): ${avoidStatements.map(s => s.substring(0, 100)).slice(0, 10).join(" | ")}`;
+      }
+
+      userPrompt += `\n
       FORMATO DE RESPOSTA OBRIGATÓRIO (JSON):
       [
         {
