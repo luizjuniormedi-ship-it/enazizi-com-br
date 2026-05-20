@@ -72,16 +72,27 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     // 2. Auth Validation
     step = "auth_validation";
-    const authResult = await requireAuth(req);
-    if (!authResult || !authResult.ok) {
-      console.error("STEP_2_AUTH_FAILED", { correlation_id: correlationId });
-      return authResult?.response || jsonError("AUTH_FAILED", 401);
+    const authHeader = req.headers.get("Authorization");
+    const isServiceRole = authHeader?.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "never-match-this-random-string");
+    
+    let userId;
+    if (isServiceRole) {
+      console.log("STEP_2_AUTH_BYPASS_SERVICE_ROLE", { correlation_id: correlationId });
+      // Usar um ID de sistema ou o primeiro admin se for service_role (para fins de teste/estresse)
+      userId = body.userId || "00000000-0000-0000-0000-000000000000";
+    } else {
+      const authResult = await requireAuth(req);
+      if (!authResult || !authResult.ok) {
+        console.error("STEP_2_AUTH_FAILED", { correlation_id: correlationId });
+        return authResult?.response || jsonError("AUTH_FAILED", 401);
+      }
+      userId = authResult.userId;
     }
-    const userId = authResult.userId;
 
     console.log("STEP_2_AUTH_OK", {
       user_id: userId,
-      correlation_id: correlationId
+      correlation_id: correlationId,
+      is_service_role: isServiceRole
     });
 
     logger.info("QUESTION_GEN_START", `Generating ${requestedCount} questions`, { 
