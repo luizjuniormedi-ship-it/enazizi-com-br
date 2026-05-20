@@ -1,30 +1,36 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
+import { parseAiJson } from "../_shared/ai-fetch.ts";
 import { FLASHCARD_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
-import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
+import { AI_MODELS, normalizeModelStrict } from "../_shared/ai-models.ts";
 
-Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, supabaseAdmin, ai }) => {
-  const { user } = await (async () => {
-    const authHeader = req.headers.get("Authorization")!;
-    const { data: { user } } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
-    return { user };
-  })();
+/**
+ * ENAZIZI — GENERATE FLASHCARDS
+ * Fixed with AI Routing Governance Layer and Strict Model Normalization.
+ */
+Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
+  const { requestId, correlationId } = correlation;
+  const authResult = await requireAuth(req);
+  if (!authResult.ok) return authResult.response;
   
-  if (!user) return new Response("Unauthorized", { status: 401 });
-
-  const body = await req.json();
+  const userId = authResult.userId;
+  const body = await req.json().catch(() => ({}));
   const { topic, uploadId, discipline, quantity = 10 } = body;
 
-  logger.info("FLASHCARD_GEN_START", `Generating ${quantity} flashcards for topic: ${topic}`, { userId: user.id, uploadId });
+  logger.info("FLASHCARD_GEN_START", `Generating ${quantity} flashcards for topic: ${topic}`, { userId, uploadId });
 
   // 1. Create Job
-  const { data: job } = await supabaseAdmin.from("flashcard_generation_jobs").insert({
-    user_id: user.id,
+  const { data: job, error: jobErr } = await supabaseAdmin.from("flashcard_generation_jobs").insert({
+    user_id: userId,
     upload_id: uploadId,
     topic: topic,
     status: 'processing',
-    total_cards_expected: quantity
+    total_cards_expected: quantity,
+    correlation_id: correlationId
   }).select().single();
+
+  if (jobErr) throw jobErr;
 
   try {
     let contextText = "";
@@ -33,22 +39,38 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       contextText = upload?.extracted_text || "";
     }
 
+    // Use Strict Model Normalization
+    const model = normalizeModelStrict(
+      body.model || 
+      Deno.env.get("AI_MODEL") || 
+      AI_MODELS.FAST
+    );
+
+    logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Generating ${quantity} flashcards via AI`, { 
+      resolvedModel: model,
+      topic,
+      correlation_id: correlationId
+    });
+
     const aiResponse = await ai({
+      model,
       taskType: "flashcards",
       messages: [
         { role: "system", content: FLASHCARD_MOTOR_PREMIUM },
         { role: "user", content: `Gere exatamente ${quantity} flashcards sobre o tema: ${topic || 'Medicina'}. ${contextText ? `Use este contexto: ${contextText.slice(0, 15000)}` : ''}
-        Retorne JSON array: [{"front": "...", "back": "...", "explanation": "...", "difficulty": 1-5}]` }
+        Retorne APENAS JSON array: [{"front": "...", "back": "...", "explanation": "...", "difficulty": 1-5}]` }
       ],
-      complexity: "high"
+      complexity: "alta",
+      userId
     });
 
-    const cards = parseAiJson(aiResponse.choices?.[0]?.message?.content || "[]");
+    const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
+    const cards = parseAiJson(rawContent);
 
     if (cards.length > 0) {
       const { data: deck } = await supabaseAdmin.from("flashcard_decks")
         .upsert({ 
-          user_id: user.id, 
+          user_id: userId, 
           name: topic || "Novo Deck", 
           topic: topic, 
           discipline: discipline || "Geral" 
@@ -57,7 +79,7 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
 
       const { data: insertedCards, error: insertError } = await supabaseAdmin.from("fsrs_cards").insert(
         cards.map((c: any) => ({
-          user_id: user.id,
+          user_id: userId,
           deck_id: deck.id,
           front: c.front,
           back: c.back,
@@ -73,16 +95,16 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
           lapses: 0,
           state: 0,
           card_type: 'flashcard',
-          card_ref_id: crypto.randomUUID() // Temporary until we decide on ref strategy
+          card_ref_id: crypto.randomUUID()
         }))
       ).select();
 
       if (insertError) throw insertError;
 
-      // Also insert into old flashcards table for compatibility if needed
+      // Compatibility insert
       await supabaseAdmin.from("flashcards").insert(
         cards.map((c: any) => ({
-          user_id: user.id,
+          user_id: userId,
           question: c.front,
           answer: c.back,
           explanation: c.explanation,
@@ -98,7 +120,6 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         updated_at: new Date().toISOString()
       }).eq("id", job.id);
 
-      // Format as text for AgentChat compatibility
       const messageContent = cards.map((c: any, i: number) => 
         `**FLASHCARD ${i+1}**\nCASO CLÍNICO: ${c.front}\nRESPOSTA: ${c.back}\nEXPLICAÇÃO CLÍNICA: ${c.explanation || ''}\n---`
       ).join('\n\n');
@@ -108,17 +129,19 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         count: cards.length,
         jobId: job.id,
         cards: insertedCards,
-        message: messageContent, // For AgentChat
-        content: messageContent  // For useTutorStream
+        message: messageContent,
+        content: messageContent,
+        correlation_id: correlationId,
+        request_id: requestId
       }), {
-        headers: { "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     } else {
       throw new Error("Nenhum flashcard foi gerado pela IA.");
     }
 
   } catch (err: any) {
-    logger.error("FLASHCARD_GEN_FAIL", err.message, { jobId: job?.id });
+    logger.error("FLASHCARD_GEN_FAIL", err.message, { jobId: job?.id, correlation_id: correlationId });
     if (job) {
       await supabaseAdmin.from("flashcard_generation_jobs").update({
         status: 'failed',
@@ -126,6 +149,14 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         updated_at: new Date().toISOString()
       }).eq("id", job.id);
     }
-    return new Response(JSON.stringify({ error: err.message, success: false }), { status: 500, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ 
+      error: err.message, 
+      success: false,
+      correlation_id: correlationId,
+      request_id: requestId
+    }), { 
+      status: 500, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
   }
 }));
