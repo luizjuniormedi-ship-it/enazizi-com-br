@@ -53,7 +53,7 @@ serve(async (req) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash-exp", // Example of a good reasoning model
+        model: "google/gemini-2.5-flash-exp", // Example of a good reasoning model
         messages: [{ role: "user", content: auditPrompt }],
         response_format: { type: "json_object" }
       })
