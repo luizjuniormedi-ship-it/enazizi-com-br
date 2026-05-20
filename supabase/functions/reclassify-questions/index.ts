@@ -149,7 +149,7 @@ Resposta correta index: ${q.correct_index}
 
 Retorne JSON: {"question": "...", "answer": "...", "explanation": "..."}`;
 
-        const fcResponse = await fetch("https://api.lovable.dev/v1/ai/chat", {
+        const fcResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${LOVABLE_API_KEY}`,
