@@ -125,6 +125,47 @@ async function fetchWithRetry(
 export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const source = (Deno.env.get("FUNCTION_NAME") || "unknown-edge-function");
 
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+  // 1. Try direct OpenAI first if available
+  if (OPENAI_API_KEY) {
+    try {
+      const rawModel = options.model || ALLOWED_MODELS.generation;
+      const normalizedModel = normalizeModel(rawModel);
+      const openaiModel = normalizedModel.replace("openai/", "");
+      
+      // If it's explicitly a google/gemini model, we might want to skip or handle differently,
+      // but the request asks for GPT-4o as primary.
+      
+      const payload = buildPayload("gpt-4o", true); // Force GPT-4o as primary per mission
+      
+      console.log("[AI_PIPELINE_DIRECT_OPENAI]", { source, model: "gpt-4o" });
+      
+      const response = await fetchWithRetry(
+        OPENAI_API,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+        options.maxRetries ?? 2,
+        options.timeoutMs ?? 90000,
+        "OpenAI-Primary",
+      );
+
+      if (response.ok) return response;
+      
+      console.warn("[AI_PIPELINE_DIRECT_OPENAI_FAILED]", response.status);
+    } catch (err) {
+      console.error("[AI_PIPELINE_DIRECT_OPENAI_EXCEPTION]", err);
+    }
+  }
+
+
   // Rate limit check
   cleanupRateLimitMap();
   if (options.userId && !checkRateLimit(options.userId)) {
