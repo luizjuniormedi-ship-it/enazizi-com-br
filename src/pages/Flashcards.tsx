@@ -228,7 +228,7 @@ const Flashcards = () => {
       if (data?.success) {
         toast({ 
           title: "Geração Concluída!", 
-          description: `${data.count || generateQuantity} novos flashcards foram criados e salvos.` 
+          description: `${data.generated_count || data.count || generateQuantity} novos flashcards foram criados e salvos.` 
         });
         
         await fetchData();
