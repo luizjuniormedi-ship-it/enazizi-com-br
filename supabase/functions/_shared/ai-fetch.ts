@@ -180,8 +180,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     throw new Error("AI_RATE_LIMITED");
   }
 
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  // Removed redundant key fetch
 
   // 1. Normalize Model & Apply Safe Mode
   let rawModel = options.model || ALLOWED_MODELS.generation;
