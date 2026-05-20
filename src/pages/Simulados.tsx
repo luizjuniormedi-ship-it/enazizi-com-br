@@ -130,6 +130,7 @@ async function generateBatch(
         specialty: topics[0] || "Clínica Médica",
         topics,
         targetExam: examBoard,
+        mode: configRef.current?.mode || "estudo",
         generationContext: {
           subtopic: specificTopic,
           topicWeights,
@@ -139,8 +140,12 @@ async function generateBatch(
     });
 
     if (error) throw error;
-    if (!data?.success) throw new Error(data?.error || "Falha na geração");
+    if (!data?.success) {
+      console.error("[SIMULADO_GEN] Generator returned error:", data);
+      throw new Error(data?.error || "Falha na geração");
+    }
 
+    console.log("[DEBUG] Questions generated, session created:", data.session_id);
     return mapQuestions(data.questions || [], topics);
   } catch (e) {
     console.error("[SIMULADO_GEN] Batch failed:", e);
