@@ -50,13 +50,19 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
     logger.info("BOOT", "Function initialized");
 
-    const aiWrapper = async (request: AiRequest, options: { skipQualityLock?: boolean, retries?: number } = {}) => {
+    const aiWrapper = async (request: AiRequest & { cognitiveState?: CognitiveState, complexity?: "baixa" | "média" | "alta" }, options: { skipQualityLock?: boolean, retries?: number } = {}) => {
       const maxRetries = options.retries ?? 1;
       let lastError = null;
 
+      // Ensure userId is passed for routing decisions if not present
+      const userId = (request as any).userId;
+
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const response = await callAi(request, logger, supabaseAdmin);
+          const response = await callAi({
+            ...request,
+            userId: userId || correlation.userId
+          }, logger, supabaseAdmin);
           
           if (request.stream) return response;
 
