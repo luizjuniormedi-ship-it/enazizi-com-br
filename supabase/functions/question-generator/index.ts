@@ -73,12 +73,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     // 2. Auth Validation
     step = "auth_validation";
     const authHeader = req.headers.get("Authorization");
-    const isServiceRole = authHeader?.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "never-match-this-random-string");
+    // Hardening check for service role
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const isServiceRole = !!(authHeader && serviceRoleKey && (authHeader === `Bearer ${serviceRoleKey}` || authHeader.includes(serviceRoleKey)));
     
     let userId;
     if (isServiceRole) {
       console.log("STEP_2_AUTH_BYPASS_SERVICE_ROLE", { correlation_id: correlationId });
-      // Usar um ID de sistema ou o primeiro admin se for service_role (para fins de teste/estresse)
+      // Use system ID or provided userId
       userId = body.userId || "00000000-0000-0000-0000-000000000000";
     } else {
       const authResult = await requireAuth(req);
