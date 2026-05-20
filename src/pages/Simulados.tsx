@@ -131,7 +131,7 @@ async function generateBatch(
         specialty: topics[0] || "Clínica Médica",
         topics,
         targetExam: examBoard,
-        mode: configRef.current?.mode || "estudo",
+        mode,
         generationContext: {
           subtopic: specificTopic,
           topicWeights,
