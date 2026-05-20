@@ -8594,6 +8594,48 @@ export type Database = {
         }
         Relationships: []
       }
+      cognitive_snapshots: {
+        Row: {
+          cognitive_state: Json
+          difficulty_state: Json | null
+          fatigue_state: Json | null
+          fsrs_state: Json
+          id: string
+          metadata: Json | null
+          planner_state: Json
+          source_event_id: string | null
+          timestamp: string | null
+          tutor_context: Json
+          user_id: string
+        }
+        Insert: {
+          cognitive_state: Json
+          difficulty_state?: Json | null
+          fatigue_state?: Json | null
+          fsrs_state: Json
+          id?: string
+          metadata?: Json | null
+          planner_state: Json
+          source_event_id?: string | null
+          timestamp?: string | null
+          tutor_context: Json
+          user_id: string
+        }
+        Update: {
+          cognitive_state?: Json
+          difficulty_state?: Json | null
+          fatigue_state?: Json | null
+          fsrs_state?: Json
+          id?: string
+          metadata?: Json | null
+          planner_state?: Json
+          source_event_id?: string | null
+          timestamp?: string | null
+          tutor_context?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       cognitive_state_history: {
         Row: {
           created_at: string | null
@@ -16148,6 +16190,63 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      pedagogical_event_versions: {
+        Row: {
+          cognitive_state_after: Json | null
+          cognitive_state_before: Json | null
+          correlation_id: string
+          created_at: string | null
+          event_hash: string
+          event_id: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          parent_event_id: string | null
+          processed_at: string | null
+          processing_latency_ms: number | null
+          retry_count: number | null
+          sequence_number: number
+          source_module: string
+          user_id: string
+        }
+        Insert: {
+          cognitive_state_after?: Json | null
+          cognitive_state_before?: Json | null
+          correlation_id: string
+          created_at?: string | null
+          event_hash: string
+          event_id: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          parent_event_id?: string | null
+          processed_at?: string | null
+          processing_latency_ms?: number | null
+          retry_count?: number | null
+          sequence_number: number
+          source_module: string
+          user_id: string
+        }
+        Update: {
+          cognitive_state_after?: Json | null
+          cognitive_state_before?: Json | null
+          correlation_id?: string
+          created_at?: string | null
+          event_hash?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          parent_event_id?: string | null
+          processed_at?: string | null
+          processing_latency_ms?: number | null
+          retry_count?: number | null
+          sequence_number?: number
+          source_module?: string
+          user_id?: string
         }
         Relationships: []
       }
