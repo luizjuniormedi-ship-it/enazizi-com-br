@@ -98,11 +98,18 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         updated_at: new Date().toISOString()
       }).eq("id", job.id);
 
+      // Format as text for AgentChat compatibility
+      const messageContent = cards.map((c: any, i: number) => 
+        `**FLASHCARD ${i+1}**\nCASO CLÍNICO: ${c.front}\nRESPOSTA: ${c.back}\nEXPLICAÇÃO CLÍNICA: ${c.explanation || ''}\n---`
+      ).join('\n\n');
+
       return new Response(JSON.stringify({ 
         success: true, 
         count: cards.length,
         jobId: job.id,
-        cards: insertedCards
+        cards: insertedCards,
+        message: messageContent, // For AgentChat
+        content: messageContent  // For useTutorStream
       }), {
         headers: { "Content-Type": "application/json" }
       });
