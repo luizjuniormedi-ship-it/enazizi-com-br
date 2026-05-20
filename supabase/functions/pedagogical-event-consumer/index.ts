@@ -44,11 +44,42 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
     switch (event.event_type) {
       case 'simulado_error_detected':
       case 'tutor_question_answered':
-        if (event.metadata?.is_correct === false) {
+      case 'question_answered': // Added generic case
+        const isCorrect = event.metadata?.is_correct === true;
+        
+        if (!isCorrect) {
           updates.error_pressure = Math.min(100, (cogState.error_pressure || 0) + 15);
           updates.cognitive_load = Math.min(100, (cogState.cognitive_load || 0) + 5);
           updates.retention_score = Math.max(0, (cogState.retention_score || 0) - 2);
           
+          // SIDE EFFECT: Register in Error Bank
+          // Fetch question details if not in metadata
+          let statement = event.metadata?.statement;
+          if (!statement && event.entity_id) {
+            const { data: q } = await supabaseAdmin
+              .from("questions_bank")
+              .select("statement")
+              .eq("id", event.entity_id)
+              .maybeSingle();
+            statement = q?.statement;
+          }
+
+          if (statement || event.study_context?.topic) {
+            await supabaseAdmin.from("error_bank").upsert({
+              user_id: user.id,
+              tema: event.study_context?.topic || "Geral",
+              subtema: event.study_context?.subtopic || null,
+              question_id: event.entity_id || null,
+              conteudo: statement?.slice(0, 500) || null,
+              tipo_questao: event.module === 'simulado' ? 'simulado' : 'objetiva',
+              vezes_errado: 1, // Trigger in DB will increment or we use RPC
+              updated_at: new Date().toISOString()
+            }, { 
+              onConflict: 'user_id, tema, subtema, question_id' 
+            });
+            // Note: DB Trigger tr_sync_error_to_fsrs handles FSRS creation
+          }
+
           // Trigger Autonomous Recovery Intervention
           if (updates.error_pressure > 70) {
             metadata.anomaly_detected = 'high_error_pressure';
@@ -62,6 +93,20 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
               metadata: { type: 'error_pressure_peak', current_value: updates.error_pressure }
             });
           }
+        } else {
+          // If correct, ease pressure
+          updates.error_pressure = Math.max(0, (cogState.error_pressure || 0) - 5);
+          updates.retention_score = Math.min(100, (cogState.retention_score || 0) + 1);
+        }
+
+        // Always log attempt for performance tracking
+        if (event.entity_id) {
+          await supabaseAdmin.from("practice_attempts").insert({
+            user_id: user.id,
+            question_id: event.entity_id,
+            correct: isCorrect,
+            metadata: { event_id: event.id }
+          });
         }
         break;
 
@@ -84,7 +129,20 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
         .eq("id", cogState.id);
     }
 
-    // 4. Finalize Consumption (Audit Trail)
+    // 4. Trigger Autonomous Planner if needed (peak detected or critical update)
+    if (updates.error_pressure > 50 || updates.cognitive_load > 80 || event.event_type === 'planner_task_completed') {
+      // Async call to planner engine
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/autonomous-planner-engine`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user.id })
+      }).catch(e => logger.error("PLANNER_TRIGGER_FAIL", e.message));
+    }
+
+    // 5. Finalize Consumption (Audit Trail)
     await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
       event_id: event.id,
       consumer_name: "cognitive-event-runtime-v2.5",
@@ -107,4 +165,3 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
     return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
   }
 }));
-
