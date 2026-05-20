@@ -9,7 +9,7 @@ export const AI_MODELS = {
   FAST: "google/gemini-2.5-flash",
   REASONING: "google/gemini-2.5-pro",
   CHEAP: "google/gemini-2.5-flash-lite",
-  FALLBACK: "openai/gpt-5.5"
+  FALLBACK: "openai/gpt-4o"
 } as const;
 
 export const BLOCKED_MODELS = [

@@ -66,8 +66,8 @@ export class AiRoutingEngine {
         };
       case "simulados":
         return { 
-          model: AI_MODELS.FALLBACK, // Using GPT-5.5 as requested for adaptive simulados
-          reason: "Simulados require high reliability and complex structuring." 
+          model: AI_MODELS.REASONING, 
+          reason: "Simulados require high reliability and complex structuring. Using reasoning model." 
         };
       case "mnemônicos":
         return { 

@@ -107,6 +107,9 @@ export async function callAi(
         delete normalizedPayload.max_tokens;
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
       const res = await fetch(LOVABLE_GATEWAY, {
         method: "POST",
         headers: {
@@ -114,7 +117,8 @@ export async function callAi(
           "Content-Type": "application/json",
         },
         body: JSON.stringify(normalizedPayload),
-      });
+        signal: controller.signal
+      }).finally(() => clearTimeout(timeoutId));
 
       const latency = Date.now() - startTime;
 
