@@ -152,6 +152,7 @@ const boot = async () => {
   removeReleaseQueryParam();
 
   if (isPreviewHost || isInIframe) {
+    devLog("[Boot] Ambiente de preview/iframe detectado, montando app sem PWA.");
     mountApp();
     unregisterServiceWorkers().catch(() => {});
     return;
