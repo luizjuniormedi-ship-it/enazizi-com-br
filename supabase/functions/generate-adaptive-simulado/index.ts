@@ -385,13 +385,16 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     }
 
     // ── 5. Persist Session in DB ──
-    const { data: session, error: sessionErr } = await supabaseAdmin.from("simulado_sessions").insert({
+    const sessionResponse = await supabaseAdmin.from("simulado_sessions").insert({
         user_id: user.id,
         mode: body.mode || 'adaptativo',
         total_questions: questions.length,
         status: 'active',
         metadata: { ...meta, is_adaptive: true }
     }).select().single();
+
+    const session = sessionResponse.data;
+    const sessionErr = sessionResponse.error;
 
     if (sessionErr) logger.error("SESSION_PERSIST_FAIL", sessionErr.message);
 
