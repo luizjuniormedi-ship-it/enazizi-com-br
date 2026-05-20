@@ -295,7 +295,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
         .filter(m => ["ct", "us", "pathology", "ophthalmology", "xray", "dermatology"].includes(m));
 
       if (priorityModalities.length > 0) {
-        const { data: assets } = await sb
+        const { data: assets } = await supabaseAdmin
           .from("medical_image_assets")
           .select("id, asset_code, image_type, diagnosis, clinical_findings, distractors, difficulty, specialty, subtopic, image_url")
           .eq("is_active", true)
