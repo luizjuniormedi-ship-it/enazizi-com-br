@@ -11,10 +11,6 @@ if (!supabaseUrl || !serviceRoleKey) {
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 async function generateBatch(batchSize: number, specialty: string, topic: string, board?: string) {
-  // Simular um usuário real (usando o service role como bypass ou injetando um ID se o generator permitir)
-  // Como o generator usa requireAuth, precisamos de um token de usuário válido ou rodar localmente sem requireAuth
-  // No caso de script de teste com service_role, o generator precisa suportar bypass de service_role.
-  
   const payload = {
     stream: false,
     outputFormat: "json",
@@ -31,17 +27,12 @@ async function generateBatch(batchSize: number, specialty: string, topic: string
       board: board || "Geral"
     },
     count: batchSize,
-    forceAi: true // Forçar IA para evitar cache do banco no teste
+    forceAi: true,
+    bypassAuth: true // NOVO CAMPO PARA TESTE
   };
 
   const { data, error } = await supabase.functions.invoke("question-generator", {
-    body: payload,
-    headers: {
-      // Usar a service role no header de Authorization para simular bypass ou privilégio admin
-      // Nota: o middleware requireAuth geralmente rejeita service_role se esperar um JWT de usuário.
-      // Tentaremos passar o service role key.
-      "Authorization": `Bearer ${serviceRoleKey}`
-    }
+    body: payload
   });
 
   if (error) throw error;
