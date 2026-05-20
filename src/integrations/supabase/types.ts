@@ -19459,37 +19459,49 @@ export type Database = {
       }
       rag_knowledge_base: {
         Row: {
+          access_count: number | null
           board: string | null
           content: string
           created_at: string | null
           id: string
+          last_accessed_at: string | null
           source: string | null
           specialty: string
           tags: string[] | null
+          token_count: number | null
           topic: string
           updated_at: string | null
+          version: number | null
         }
         Insert: {
+          access_count?: number | null
           board?: string | null
           content: string
           created_at?: string | null
           id?: string
+          last_accessed_at?: string | null
           source?: string | null
           specialty: string
           tags?: string[] | null
+          token_count?: number | null
           topic: string
           updated_at?: string | null
+          version?: number | null
         }
         Update: {
+          access_count?: number | null
           board?: string | null
           content?: string
           created_at?: string | null
           id?: string
+          last_accessed_at?: string | null
           source?: string | null
           specialty?: string
           tags?: string[] | null
+          token_count?: number | null
           topic?: string
           updated_at?: string | null
+          version?: number | null
         }
         Relationships: []
       }
