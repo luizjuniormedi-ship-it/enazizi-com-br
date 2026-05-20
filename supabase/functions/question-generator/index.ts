@@ -181,11 +181,23 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       PRESSURE: ${cogState?.intensity || 0}/100
       BANCA: ${examBoard || "Geral"}
       
+      FORMATO DE RESPOSTA OBRIGATÓRIO (JSON):
+      [
+        {
+          "statement": "enunciado",
+          "options": ["alt A", "alt B", "alt C", "alt D"],
+          "correct": 0,
+          "explanation": "comentário completo",
+          "difficulty": "médio",
+          "topic": "TEP"
+        }
+      ]
+      
       REGRAS ADAPTATIVAS:
       - Se COGNITIVE_STATE for 'recuperacao' ou 'retencao_fraca', gere questões mais conceituais e didáticas.
       - Se COGNITIVE_STATE for 'dominio' ou 'consolidacao', gere casos complexos com pegadinhas avançadas.
       - Use exatamente 4 alternativas (A-D).
-      - Retorne APENAS um JSON array.`;
+      - Retorne APENAS o JSON array bruto, sem markdown.`;
 
       console.log("STEP_4_AI_CALL_INIT", { model, deficit, topics, correlation_id: correlationId });
 
