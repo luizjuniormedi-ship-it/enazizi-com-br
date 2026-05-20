@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
-import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown, Image, Swords, CheckCircle2, Clock } from "lucide-react";
+import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown, Image, Swords, CheckCircle2, Clock, DatabaseZap, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CinematicHero } from "@/components/cinematic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -351,7 +352,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     selectedProfile.totalQuestions,
   );
 
-  const handleStart = () => {
+  const handleStart = (forceAi = false) => {
     if (mode === "adaptativo") {
       const count = customCount ? parseInt(customCount) : questionCount;
       onStart({ topics: [], count, difficulty: "adaptativo", timePerQuestion: 3, mode: "adaptativo" });
@@ -368,7 +369,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         count,
         difficulty: mode === "tri" ? "tri" : "prova_real",
         timePerQuestion: timePerQ,
-        mode,
+        mode: forceAi ? ("ai_generation" as any) : mode,
         examBoard: realExamBoard,
         realExamProfile: realExamBoard,
         dynamicDistribution: dynamicDistribution?.source === "curriculum_weights"
@@ -406,7 +407,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       count,
       difficulty,
       timePerQuestion,
-      mode,
+      mode: forceAi ? ("ai_generation" as any) : mode,
       specificTopic: specificTopic.trim() || undefined,
       examBoard: resolvedExamBoard,
       imagePercent,
@@ -838,7 +839,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   <div className="flex gap-2">
                     <Button 
                       className="flex-1 h-12 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90"
-                      onClick={handleStart}
+                      onClick={() => handleStart()}
                     >
                       Usar Sugestão e Iniciar
                     </Button>
@@ -974,7 +975,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                     </Button>
                     <Button 
                       className="flex-[2] h-12 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90"
-                      onClick={handleStart}
+                      onClick={() => handleStart()}
                     >
                       Gerar Simulado Personalizado
                     </Button>
@@ -1215,24 +1216,37 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </div>
           )}
 
-          <Button
-            size="lg"
-            className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[13px] shadow-glow-sm ${
-              mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : 
-              mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : 
-              mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : 
-              mode === "adaptativo" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
-            }`}
-            onClick={handleStart}
-            data-testid="iniciar-simulado-button"
-            disabled={
-              // Sempre permite quando há banca (inclusive "all"=GERAL), modo banca/adaptativo, tópico ou specificTopic
-              mode === "estudo" && selectedTopics.length === 0 && !specificTopic && !examBoard
-            }
-          >
-            {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {mode === "adaptativo" ? `INICIAR SIMULADO ADAPTATIVO (${customCount || questionCount} QUESTÕES)` : mode === "estudo" ? "INICIAR MODO ESTUDO" : mode === "extremo" ? "INICIAR PROVA EXTREMA" : mode === "prova_real" ? `INICIAR PROVA REAL ${selectedProfile.name}` : mode === "tri" ? `INICIAR TRI ${selectedProfile.name}` : "INICIAR SIMULADO"} {mode !== "adaptativo" ? `(${mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} QUESTÕES)` : ""}
-          </Button>
+          <div className={cn("grid grid-cols-1 gap-4", mode !== "adaptativo" && "sm:grid-cols-2")}>
+            {mode !== "adaptativo" && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 rounded-2xl font-black uppercase tracking-widest text-[13px] border-white/10 bg-white/5 hover:bg-white/10 text-white"
+                onClick={() => handleStart()}
+                disabled={mode === "estudo" && selectedTopics.length === 0 && !specificTopic && !examBoard}
+              >
+                <DatabaseZap className="h-4 w-4 mr-2" />
+                Montar com Banco
+              </Button>
+            )}
+
+            <Button
+              size="lg"
+              className={cn(
+                "h-14 rounded-2xl font-black uppercase tracking-widest text-[13px] shadow-glow-sm",
+                mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : 
+                mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : 
+                mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : 
+                mode === "adaptativo" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
+              )}
+              onClick={() => handleStart(true)}
+              data-testid="iniciar-simulado-button"
+              disabled={mode === "estudo" && selectedTopics.length === 0 && !specificTopic && !examBoard}
+            >
+              {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              {mode === "adaptativo" ? `Gerar Simulado IA (${customCount || questionCount} QUESTÕES)` : `Gerar com IA (${mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} Q)`}
+            </Button>
+          </div>
         </div>
       )}
     </div>
