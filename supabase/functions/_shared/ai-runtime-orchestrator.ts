@@ -164,19 +164,19 @@ export function selectAIModel(input: AISelectInput): AISelection {
       // Pergunta simples → modelo mais barato
       if (complexity === "low") {
         return wrap(
-          MODELS.flash,
-          [MODELS.flashStable, MODELS.flashLite],
-          "tutor_chat low complexity → flash padrão",
+          MODELS.flashLite,
+          [MODELS.flash, MODELS.geminiFallback],
+          "tutor_chat low complexity → flash mini",
           PROMPT_PROFILES.fast_review,
         );
       }
 
       // Farmacologia → precisão
       if (/farmaco|farmacologia|drug|posolog/i.test(specialty)) {
-        const primary = budget === "premium" ? MODELS.gpt5 : MODELS.gpt5Mini;
+        const primary = MODELS.gpt5;
         return wrap(
           primary,
-          [MODELS.flash, MODELS.flashStable],
+          [MODELS.flash, MODELS.geminiFallback],
           "tutor_chat farmacologia → reasoning preciso",
           PROMPT_PROFILES.pharmacology_deep,
         );
@@ -185,19 +185,19 @@ export function selectAIModel(input: AISelectInput): AISelection {
       // Preventiva / SUS
       if (/preventiv|sus|saúde\s+coletiva|saude\s+coletiva|epidemio/i.test(specialty)) {
         return wrap(
-          MODELS.gpt5Mini,
-          [MODELS.flash, MODELS.flashStable],
-          "tutor_chat preventiva/SUS → google/gemini-2.5-flash",
+          MODELS.flash,
+          [MODELS.flashLite, MODELS.geminiFallback],
+          "tutor_chat preventiva/SUS → openai/gpt-4o",
           PROMPT_PROFILES.preventive_sus,
         );
       }
 
       // Raciocínio clínico profundo
       if (input.requiresReasoning || complexity === "high") {
-        const primary = budget === "premium" ? MODELS.gpt5 : MODELS.gpt5Mini;
+        const primary = MODELS.gpt5;
         return wrap(
           primary,
-          [MODELS.pro, MODELS.flash, MODELS.flashStable],
+          [MODELS.flash, MODELS.geminiFallback],
           "tutor_chat reasoning profundo",
           PROMPT_PROFILES.clinical_reasoning,
         );
@@ -206,7 +206,7 @@ export function selectAIModel(input: AISelectInput): AISelection {
       // Default tutor
       return wrap(
         MODELS.flash,
-        [MODELS.flashStable, MODELS.gpt5Mini],
+        [MODELS.flashLite, MODELS.geminiFallback],
         "tutor_chat default balanced",
         PROMPT_PROFILES.feynman_full,
       );
