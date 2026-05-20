@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
@@ -268,15 +269,25 @@ const QuestionsBank = () => {
     // Award XP
     await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
 
-    // Rastreamento pedagógico para automação ENAFLIX
-    const { trackStudyActivity } = await import("@/lib/educationalEngine");
-    trackStudyActivity({
-      userId: user.id,
-      topic: practiceQuestion.topic || "Geral",
-      questionsCount: 1,
-      errorsCount: isCorrect ? 0 : 1,
-      studyTimeSeconds: 60, // Estimativa por questão
-    });
+    // ENAZIZI ALOS Event Bus integration
+    await pedagogicalEventBus.emit({
+      event_type: isCorrect ? 'planner_task_completed' : 'simulado_error_detected',
+      module: 'simulado',
+      source: 'frontend',
+      severity: isCorrect ? 'info' : 'warning',
+      entity_type: 'question',
+      entity_id: practiceQuestion.id,
+      study_context: {
+        topic: practiceQuestion.topic || "Geral",
+        subtopic: practiceQuestion.subtopic || undefined,
+        difficulty: String(practiceQuestion.correct_index) // placeholder for question diff
+      },
+      metadata: {
+        is_correct: isCorrect,
+        selected_option: selected,
+        correct_option: practiceQuestion.correct_index
+      }
+    }, user.id);
 
     // Update medical domain map
     if (practiceQuestion.topic) {
@@ -432,7 +443,7 @@ const QuestionsBank = () => {
                       params.set("sc_objective", "correction");
                       params.set("sc_taskType", "error_review");
                       params.set("sc_reason", `Errou questão: "${practiceQuestion.options[practiceQuestion.correct_index]}"`);
-                      navigate(`/dashboard/mentor?${params.toString()}`);
+                      navigate(`/dashboard/sessao-estudo?${params.toString()}`);
                     }}
                   >
                     <GraduationCap className="h-5 w-5" />

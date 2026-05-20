@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +52,18 @@ export default function TutorV2Page() {
     };
 
     try {
-      setBootStatus("Sincronizando memória cognitiva...");
+      await pedagogicalEventBus.emit({
+        event_type: 'tutor_session_created',
+        module: 'tutor',
+        source: 'frontend',
+        entity_type: 'tutor_session',
+        study_context: {
+          topic: finalTopic,
+          specialty: studyCtx?.specialty || null,
+          subtopic: studyCtx?.subtopic || null
+        },
+        metadata: hydrationMetadata
+      }, user.id);
       
       // Create session in pedagogical_sessions for longitudinal tracking
       const { data: pedSession, error: pedErr } = await supabase

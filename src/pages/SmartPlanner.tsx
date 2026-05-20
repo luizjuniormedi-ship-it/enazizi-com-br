@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -415,6 +416,16 @@ const SmartPlanner = () => {
       }).then();
 
       toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta. Redirecionando..." });
+      
+      // Emit ALOS Event
+      await pedagogicalEventBus.emit({
+        event_type: 'daily_mission_generated',
+        module: 'planner',
+        source: 'frontend',
+        entity_type: 'daily_plan',
+        entity_id: result.planId
+      }, user.id);
+
       setTimeout(() => navigate("/dashboard/missao-do-dia"), 1500);
       loadData();
 

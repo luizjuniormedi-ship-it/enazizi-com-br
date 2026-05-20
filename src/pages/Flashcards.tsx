@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
@@ -293,6 +294,23 @@ const Flashcards = () => {
         [Rating.Easy]: scheduledDays > 0 ? `Próxima em ${scheduledDays} dias` : "Revisar em breve",
       };
       toast({ title: labels[rating] || "Revisado" });
+
+      // Emit ALOS Event
+      await pedagogicalEventBus.emit({
+        event_type: 'fsrs_review_completed',
+        module: 'fsrs',
+        source: 'frontend',
+        entity_type: 'flashcard',
+        entity_id: cardId,
+        study_context: {
+          topic: card.topic || "Geral",
+        },
+        metadata: {
+          rating,
+          scheduled_days: scheduledDays,
+          is_correct: isCorrect
+        }
+      }, user.id);
     } catch (err) {
       console.error("Review error:", err);
       toast({

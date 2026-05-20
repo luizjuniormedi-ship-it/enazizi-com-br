@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -187,7 +188,25 @@ export default function MnemonicGeneratorPage() {
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
         setResult(res.data);
         setResultError(null);
-        telemetry.track('mnemonic_generated', { tema, is_auto: isAutoMode, score: res.data.score_final });
+        // Emit ALOS Event
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user && res.data) {
+            pedagogicalEventBus.emit({
+              event_type: 'mnemonic_generated',
+              module: 'content',
+              source: 'frontend',
+              entity_type: 'mnemonic',
+              entity_id: res.data.result_id,
+              study_context: {
+                topic: tema.trim()
+              },
+              metadata: {
+                score: res.data.score_final,
+                is_auto: isAutoMode
+              }
+            }, user.id);
+          }
+        });
         toast.success(isAutoMode ? "Mnemônico gerado automaticamente!" : "Mnemônico gerado!");
       } else {
         const msg = res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.";
