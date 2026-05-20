@@ -2,6 +2,7 @@
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
+import { getKnowledgeCache, saveKnowledgeCache, extractTopic } from "../_shared/knowledge-cache.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "../_shared/injection-guard.ts";
@@ -24,9 +25,21 @@ Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil,
 
   // ── PEDAGOGICAL INCREMENTAL GENERATION ────────────────────────────
   let systemPrompt = ENAZIZI_PROMPT;
+  let cachedContext = "";
+  
   if (pedagogicalContext) {
     const { currentBlock, tutorMode, cognitiveState, topic, lastInteraction } = pedagogicalContext;
     
+    // Check Cache
+    const detectedTopicInfo = extractTopic(lastUserMessage) || (topic ? { topic, specialty: "" } : null);
+    if (detectedTopicInfo?.topic) {
+      const cacheData = await getKnowledgeCache(supabaseAdmin, detectedTopicInfo.topic);
+      if (cacheData) {
+        cachedContext = `\n\nCONTEXTO DISPONÍVEL (CACHE): \n${cacheData.content}\n`;
+        logger.info("[MENTOR_CHAT_CACHE_HIT]", { topic: detectedTopicInfo.topic });
+      }
+    }
+
     const blockNames = [
       "Missão Clínica", "Roadmap Cognitivo", "Explicação Leiga", "Fisiopatologia Profunda",
       "Raciocínio Clínico", "Quadro Clínico e Diagnóstico", "Conduta e Tratamento", 
@@ -40,6 +53,7 @@ Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil,
 ==================================================
 Você está no MODO DE PRECEPTORIA ITERATIVA. 
 Sua missão é gerar APENAS UM BLOCO por vez. É PROIBIDO gerar roadmap completo ou outros blocos.
+${cachedContext}
 
 BLOCO ATUAL: ${currentBlock}: ${blockNames[currentBlock - 1]}
 TEMA: ${topic}
@@ -69,6 +83,17 @@ Ao terminar, encerre com a pergunta obrigatória: "Antes de avançar, escolha um
     const content = data.choices?.[0]?.message?.content || "";
     if (conversationId) {
       waitUntil(supabaseAdmin.from("chat_messages").insert({ conversation_id: conversationId, role: "assistant", content, user_id: user.id }));
+      
+      // Save to Cache
+      const detectedTopicInfo = extractTopic(lastUserMessage) || (pedagogicalContext?.topic ? { topic: pedagogicalContext.topic, specialty: "" } : null);
+      if (!cachedContext && detectedTopicInfo?.topic && content.length > 300) {
+        saveKnowledgeCache(
+          supabaseAdmin,
+          detectedTopicInfo.topic,
+          detectedTopicInfo.specialty || "Geral",
+          content
+        ).catch(e => logger.error("[MENTOR_CACHE_SAVE_ERROR]", e));
+      }
     }
     return new Response(JSON.stringify({ ok: true, content }), { headers: { "Content-Type": "application/json" } });
   }
