@@ -235,9 +235,9 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     };
 
     // Try to serve from existing published questions first (editorial quality gated)
-    for (const alloc of allocations) {
-      const { data: existing } = await sb
-        .from("medical_image_questions")
+  for (const alloc of allocations) {
+    const { data: existing } = await supabaseAdmin
+      .from("medical_image_questions")
         .select(`
           id, statement, option_a, option_b, option_c, option_d, option_e,
           correct_index, explanation, rationale_map, difficulty, exam_style,
