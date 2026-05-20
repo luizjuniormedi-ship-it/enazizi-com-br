@@ -1,7 +1,10 @@
 
 import { GovernanceCockpit } from "@/components/governance/GovernanceCockpit";
 import { CinematicHero } from "@/components/cinematic";
-import { Activity, ShieldCheck } from "lucide-react";
+import AlosRuntimeObservatory from "@/components/observatory/AlosRuntimeObservatory";
+import { CognitiveRhythmMonitor } from "@/components/CognitiveRhythmMonitor";
+import { Card } from "@/components/ui/card";
+import { Activity, ShieldCheck, Search, Zap } from "lucide-react";
 import { useEffect } from "react";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
 
@@ -24,8 +27,23 @@ const GovernanceMetrics = () => {
         }
       />
 
-      <div className="px-1">
+      <div className="px-1 space-y-12">
         <GovernanceCockpit />
+        
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <AlosRuntimeObservatory />
+          </div>
+          <div className="space-y-6">
+            <Card className="p-6 bg-card/50 border-white/10">
+              <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
+                <Zap className="h-5 w-5 text-warning" />
+                Rhythm & Persistence
+              </h3>
+              <CognitiveRhythmMonitor />
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

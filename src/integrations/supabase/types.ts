@@ -16080,6 +16080,7 @@ export type Database = {
         Row: {
           cognitive_context: Json | null
           consumed_by: Json | null
+          correlation_id: string | null
           created_at: string | null
           entity_id: string | null
           entity_type: string | null
@@ -16105,6 +16106,7 @@ export type Database = {
         Insert: {
           cognitive_context?: Json | null
           consumed_by?: Json | null
+          correlation_id?: string | null
           created_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
@@ -16130,6 +16132,7 @@ export type Database = {
         Update: {
           cognitive_context?: Json | null
           consumed_by?: Json | null
+          correlation_id?: string | null
           created_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
@@ -25764,6 +25767,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pedagogical_lineage: {
+        Row: {
+          consumed_by: Json | null
+          correlation_id: string | null
+          event_id: string | null
+          event_type: string | null
+          matching_event_id: string | null
+          module: string | null
+          propagation_latency: string | null
+          recursion_depth: number | null
+          request_id: string | null
+          resulting_cognitive_state:
+            | Database["public"]["Enums"]["cognitive_state_type"]
+            | null
+          retry_count: number | null
+          status: string | null
+          timestamp: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       performance_unified: {
         Row: {
           data_registro: string | null
@@ -26775,6 +26799,13 @@ export type Database = {
         | "burnout_inicial"
         | "queda_motivacional"
         | "estabilidade_ideal"
+        | "novato"
+        | "exposto"
+        | "retencao_fraca"
+        | "praticando"
+        | "consolidacao"
+        | "dominio"
+        | "risco_esquecimento"
       content_status:
         | "draft"
         | "processing"
@@ -27089,6 +27120,13 @@ export const Constants = {
         "burnout_inicial",
         "queda_motivacional",
         "estabilidade_ideal",
+        "novato",
+        "exposto",
+        "retencao_fraca",
+        "praticando",
+        "consolidacao",
+        "dominio",
+        "risco_esquecimento",
       ],
       content_status: [
         "draft",

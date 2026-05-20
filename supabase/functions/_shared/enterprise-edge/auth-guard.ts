@@ -20,7 +20,8 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
   if (!authHeader) throw new Error("UNAUTHORIZED: Missing authorization header");
 
   const token = authHeader.replace("Bearer ", "");
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  const user = data?.user;
 
   if (error || !user) throw new Error("UNAUTHORIZED: Invalid or expired token");
 
@@ -30,7 +31,7 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
     .select("role")
     .eq("user_id", user.id)
     .eq("role", "admin")
-    .single();
+    .maybeSingle();
 
   return {
     user,
