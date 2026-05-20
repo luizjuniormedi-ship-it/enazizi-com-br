@@ -524,33 +524,7 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   const selection = selectAIModel(input);
   const totalStart = Date.now();
   const attempts: AIAttempt[] = [];
-  const gatewayKey = getGatewayKey();
 
-  // Sem chave → emergency direto
-  if (!gatewayKey) {
-    const result: AIRunResult & { success: boolean } = {
-      content: input.emergencyTemplate || defaultEmergency(input),
-      provider: "template",
-      model: "emergency_template_response",
-      fallbackUsed: true,
-      attempts: [
-        {
-          ...selection,
-          success: false,
-          code: "AI_PROVIDER_NOT_CONFIGURED",
-          message: "Nenhuma chave de IA configurada (LOVABLE_API_KEY ausente).",
-          latency_ms: 0,
-        },
-      ],
-      latencyMs: 0,
-      selection,
-      errorCode: "AI_PROVIDER_NOT_CONFIGURED",
-      success: false,
-    };
-    await logRun(input.supabase, input, selection, { ...result, success: false });
-    const { success: _s, ...rest } = result;
-    return rest;
-  }
 
   const fullChain: ModelRef[] = [
     { provider: selection.provider, model: selection.model },
