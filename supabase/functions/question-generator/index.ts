@@ -139,11 +139,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
 
     const aiResponse = await ai({
       model,
-      taskType: "parsing", // Using parsing task for question generation logic
+      taskType: "simulados", 
+      cognitiveState: cognitiveState,
+      complexity: body.difficulty === "difícil" ? "alta" : (body.difficulty === "médio" ? "média" : "baixa"),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
-      ]
+      ],
+      userId
     });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
