@@ -140,7 +140,7 @@ Gerar questões médicas de alta qualidade para:
 Cada questão deve ter (em JSON ou formato texto conforme solicitado):
 
 - enunciado clínico (rico em detalhes: idade, sexo, vitais, HDA);
-- alternativas A-D (Exatamente 4);
+- alternativas A-D (Exatamente 4); NUNCA use 5 alternativas.
 - apenas uma correta;
 - comentário técnico detalhado;
 - justificativa alternativa por alternativa;

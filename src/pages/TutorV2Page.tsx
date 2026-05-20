@@ -26,6 +26,7 @@ export default function TutorV2Page() {
   // Auto-start session if coming from study context
   useEffect(() => {
     if (studyCtx?.topic && user && !sessionId && !isCreating) {
+      console.log("[TUTOR_AUTO_START] Detected context for topic:", studyCtx.topic);
       handleStartSession(studyCtx.topic);
     }
   }, [studyCtx?.topic, user, sessionId]);
@@ -36,23 +37,39 @@ export default function TutorV2Page() {
     if (!finalTopic.trim() || !user || isCreating) return;
     
     setIsCreating(true);
-    setBootStatus("Inicializando sessão...");
+    setBootStatus("Inicializando preceptor...");
     console.log("[TUTOR_SESSION_BOOT] Topic:", finalTopic);
 
-    // Telemetry: context loaded
-    if (studyCtx) {
-      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
-        telemetry.track("tutor_context_loaded", {
-          topic: finalTopic,
-          source: studyCtx.source,
-          task_type: studyCtx.taskType
-        });
-      });
-    }
+    // Context hydration for ALOS
+    const hydrationMetadata = {
+      source: studyCtx?.source || 'direct',
+      difficulty: studyCtx?.difficulty || 'medio',
+      reason: studyCtx?.reason || null,
+      task_type: studyCtx?.taskType || null,
+      source_plan_id: studyCtx?.priority ? String(studyCtx.priority) : null,
+      initial_topic: finalTopic
+    };
 
     try {
-      setTimeout(() => setBootStatus("Consultando literatura médica..."), 1000);
-      setTimeout(() => setBootStatus("Carregando sua memória cognitiva..."), 2000);
+      setBootStatus("Sincronizando memória cognitiva...");
+      
+      // Create session in pedagogical_sessions for longitudinal tracking
+      const { data: pedSession, error: pedErr } = await supabase
+        .from("pedagogical_sessions")
+        .insert({
+          user_id: user.id,
+          topic: finalTopic,
+          specialty: studyCtx?.specialty || null,
+          tutor_mode: 'normal',
+          cognitive_state: 'stable',
+          metadata: hydrationMetadata
+        })
+        .select()
+        .single();
+
+      if (pedErr) console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr);
+
+      setBootStatus("Consultando literatura médica...");
       
       const { data, error } = await (supabase
         .from("tutor_sessions") as any)
@@ -64,10 +81,8 @@ export default function TutorV2Page() {
           mode: 'livre',
           status: 'active',
           metadata: {
-            source: studyCtx?.source || 'direct',
-            difficulty: studyCtx?.difficulty || 'medio',
-            reason: studyCtx?.reason || null,
-            task_type: studyCtx?.taskType || null,
+            ...hydrationMetadata,
+            pedagogical_session_id: pedSession?.id
           }
         })
         .select()

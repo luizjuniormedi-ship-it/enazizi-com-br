@@ -182,6 +182,7 @@ const Uploads = () => {
   };
 
   const handleDelete = async (upload: UploadRecord) => {
+    if (!confirm("Tem certeza que deseja excluir este arquivo e todos os dados extraídos dele?")) return;
     const { error } = await supabase.from("uploads").delete().eq("id", upload.id);
     if (!error) {
       setFiles((prev) => prev.filter((f) => f.id !== upload.id));

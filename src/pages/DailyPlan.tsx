@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { useCoreData } from "@/hooks/useCoreData";
-import { encodeStudyContext, type StudyContext } from "@/lib/studyContext";
+import { encodeStudyContext, type StudyContext, objectiveFromTaskType } from "@/lib/studyContext";
 import DailyPlanProgress from "@/components/daily-plan/DailyPlanProgress";
 import MasteryBadge, { getMasteryLevel } from "@/components/daily-plan/MasteryBadge";
 import MicroQuizDialog from "@/components/daily-plan/MicroQuizDialog";
@@ -318,14 +318,14 @@ const DailyPlan = () => {
     navigate(`${path}?${params.toString()}`);
   };
 
-  const goToTutor = (topic: string, specialty: string, objective: "review" | "new_content", subtopico?: string | null) => {
-    navigateWithContext("/dashboard/mentor", {
+  const goToTutor = (topic: string, specialty: string, objective: "review" | "new_content", subtopico?: string | null, task_type?: string) => {
+    navigateWithContext("/dashboard/sessao-estudo", {
       source: "daily-plan",
       specialty,
       topic,
       subtopic: subtopico || undefined,
       objective,
-      taskType: objective === "review" ? "review" : "new",
+      taskType: (task_type as any) || (objective === "review" ? "review" : "new"),
     });
   };
 

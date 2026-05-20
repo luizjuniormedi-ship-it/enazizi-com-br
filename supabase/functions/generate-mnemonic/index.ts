@@ -310,11 +310,17 @@ const PROMPT_EXTRACT_TERMS = MASTER_PROMPT_GERADOR; // Reutiliza contexto se nec
 
 // ═══ PIPELINE ═══
 
-serve(async (req: Request) => {
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+
+Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supabaseAdmin, ai }) => {
+  const { user } = await requireAuth(req);
   const startedAt = Date.now();
   const requestIdForError = crypto.randomUUID();
 
   try {
+    // Pipeline logic integrated with ALOS Unified Wrapper
+    // ... use 'ai' wrapper for better resilience
+
     console.log(`[MNEMONIC_REQUEST_START] ${req.method} ${requestIdForError}`);
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
     if (req.method !== "POST") return jsonResponse({ success: false, error: "Método não permitido.", requestId: requestIdForError }, 405);
@@ -541,4 +547,4 @@ serve(async (req: Request) => {
       requestId: requestIdForError
     }, 500);
   }
-});
+}));

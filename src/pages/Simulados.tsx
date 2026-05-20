@@ -21,7 +21,7 @@ import {
   itemInformation,
 } from "@/lib/triEngine";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, FileText, ChevronLeft, Play, Info, Sparkles, DatabaseZap, Clock, Trophy, Zap, Target, CheckCircle2, TrendingDown, History } from "lucide-react";
+import { Loader2, FileText, ChevronLeft, Play, Info, Sparkles, DatabaseZap, Clock, Trophy, Zap, Target, CheckCircle2, TrendingDown, History, Printer } from "lucide-react";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +44,7 @@ import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
 import { SimuladoProfileCard } from "@/components/enaflix/SimuladoProfileCard";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
+import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 
 async function computeRealPerformance(userId: string) {
   const { data: rows } = await supabase
@@ -120,54 +121,61 @@ async function generateBatch(
   includePreviousErrors?: boolean
 ): Promise<SimQuestion[]> {
   console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard, autoDistribution });
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({
-      stream: false,
-      outputFormat: "json",
-      difficulty,
-      timeoutMs: 120000,
-      messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
-      ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
-      generationContext: { 
-        specialty: topics[0], 
-        topic: topics.join(", "), 
-        subtopic: specificTopic, 
-        objective: "practice", 
-        source: "simulado",
-        topicDistribution: customDistribution || topicWeights,
-        targetExam: examBoard
-      },
-      targetExam: examBoard,
-      jobId,
-      batchNumber,
-      topicWeights: customDistribution || topicWeights,
-      autoDistribution,
-      customDistribution,
-      includeWeakThemes,
-      includePreviousErrors
-    }),
-  });
-  if (!res.ok) throw new Error(`Erro ${res.status}`);
-  const json = await res.json();
-  const content = json.choices?.[0]?.message?.content || "";
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-  if (jsonMatch) return mapQuestions(JSON.parse(jsonMatch[0]), topics);
   
-  // Fallback: check tool_calls if JSON was returned in that format
-  const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
-  if (toolCall?.function?.arguments) {
+  let attempts = 0;
+  const maxAttempts = 3;
+  
+  while (attempts < maxAttempts) {
     try {
-      const tc = JSON.parse(toolCall.function.arguments);
-      const qs = Array.isArray(tc.questions) ? tc.questions : [];
-      if (qs.length > 0) return mapQuestions(qs, topics);
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          stream: false,
+          outputFormat: "json",
+          difficulty,
+          timeoutMs: 120000,
+          messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
+          ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
+          generationContext: { 
+            specialty: topics[0], 
+            topic: topics.join(", "), 
+            subtopic: specificTopic, 
+            objective: "practice", 
+            source: "simulado",
+            topicDistribution: customDistribution || topicWeights,
+            targetExam: examBoard
+          },
+          targetExam: examBoard,
+          jobId,
+          batchNumber,
+          topicWeights: customDistribution || topicWeights,
+          autoDistribution,
+          customDistribution,
+          includeWeakThemes,
+          includePreviousErrors
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const json = await res.json();
+      const content = json.choices?.[0]?.message?.content || "";
+      const questions = parseQuestionsFromText(content);
+      
+      if (questions.length > 0) return mapQuestions(questions, topics);
+      
+      attempts++;
+      console.warn(`[SIMULADO_GEN] Batch empty, attempt ${attempts}/${maxAttempts}`);
     } catch (e) {
-      console.error("Error parsing tool_calls fallback:", e);
+      attempts++;
+      console.error(`[SIMULADO_GEN] Batch failed, attempt ${attempts}/${maxAttempts}:`, e);
+      if (attempts >= maxAttempts) throw e;
+      await new Promise(r => setTimeout(r, 2000 * attempts));
     }
   }
   
@@ -539,59 +547,75 @@ const Simulados = () => {
           
           console.log(`[Simulados] Chamando question-generator para lote ${batchNum}. Count: ${currentBatchSize}`);
           
-          // Fallback manual para caso a lib local falhe
-          const { data, error: fnError } = await supabase.functions.invoke(
-            "question-generator",
-            {
-              body: {
-                stream: false,
-                outputFormat: "json",
-                difficulty: config.difficulty || "misto",
-                timeoutMs: 120000,
-                messages: [{
-                  role: "user",
-                  content: buildPrompt(
-                    config.topics || ["Clínica Médica"],
-                    currentBatchSize,
-                    config.difficulty || "misto",
-                    config.specificTopic,
-                    config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined
-                  )
-                }],
-                generationContext: {
-                  specialty: (config.topics && config.topics[0]) || "Clínica Médica",
-                  topic: (config.topics || ["Clínica Médica"]).join(", "),
-                  subtopic: config.specificTopic,
-                  objective: "practice",
-                  source: "simulado",
+          let batchData: any = null;
+          let batchErr: any = null;
+          
+          try {
+            const batchQs = await generateBatch(
+              config.topics || ["Clínica Médica"],
+              currentBatchSize,
+              config.difficulty || "misto",
+              session?.access_token,
+              config.specificTopic,
+              config.realExamProfile || config.examBoard,
+              avoid,
+              currentJobId,
+              batchNum,
+              config.topicWeights,
+              config.autoDistribution,
+              config.customDistribution,
+              config.includeWeakThemes,
+              config.includePreviousErrors
+            );
+            batchData = { success: true, questions: batchQs };
+          } catch (e) {
+            console.error("[Simulados] generateBatch failed, using direct invoke fallback:", e);
+            const { data, error } = await supabase.functions.invoke(
+              "question-generator",
+              {
+                body: {
+                  stream: false,
+                  outputFormat: "json",
+                  difficulty: config.difficulty || "misto",
+                  timeoutMs: 120000,
+                  messages: [{ role: "user", content: buildPrompt(config.topics || ["Clínica Médica"], currentBatchSize, config.difficulty || "misto", config.specificTopic, config.realExamProfile || config.examBoard) }],
+                  generationContext: {
+                    specialty: (config.topics && config.topics[0]) || "Clínica Médica",
+                    topic: (config.topics || ["Clínica Médica"]).join(", "),
+                    subtopic: config.specificTopic,
+                    objective: "practice",
+                    source: "simulado",
+                  },
+                  targetExam: config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined,
+                  count: currentBatchSize,
+                  imagePercent: config.imagePercent || 0,
+                  avoidStatements: avoid,
+                  jobId: currentJobId,
+                  batchNumber: batchNum,
+                  autoDistribution: config.autoDistribution,
+                  customDistribution: config.customDistribution,
+                  includeWeakThemes: config.includeWeakThemes,
+                  includePreviousErrors: config.includePreviousErrors,
                 },
-                targetExam: config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined,
-                count: currentBatchSize,
-                imagePercent: config.imagePercent || 0,
-                avoidStatements: avoid,
-                jobId: currentJobId,
-                batchNumber: batchNum,
-                autoDistribution: config.autoDistribution,
-                customDistribution: config.customDistribution,
-                includeWeakThemes: config.includeWeakThemes,
-                includePreviousErrors: config.includePreviousErrors,
-              },
-            }
-          );
-
-          if (fnError) {
-            console.error("[Simulados] Erro na Edge Function invoke:", fnError);
-            throw fnError;
+              }
+            );
+            batchData = data;
+            batchErr = error;
           }
 
-          if (!data?.success) {
-            console.error("[Simulados] Resposta da API sem sucesso:", data);
-            throw new Error(data?.error || "Falha na geração das questões pela IA.");
+          if (batchErr) {
+            console.error("[Simulados] Erro na Edge Function invoke:", batchErr);
+            throw batchErr;
           }
 
-          const batchQs = (data.questions || []).map((q: any) => ({
+          if (!batchData?.success) {
+            console.error("[Simulados] Resposta da API sem sucesso:", batchData);
+            throw new Error(batchData?.error || "Falha na geração das questões pela IA.");
+          }
+
+          const batchQs = (batchData.questions || []).map((q: any) => ({
             ...q,
-            topic: q.topic || config.topics?.[0] || "Geral"
+            topic: q.topic || q.specialty || (config.topics && config.topics[0]) || "Geral"
           }));
           
           if (batchQs.length === 0) {
@@ -604,7 +628,7 @@ const Simulados = () => {
             throw new Error("Não foi possível gerar questões. A IA retornou um resultado vazio.");
           }
           
-          allGenerated = [...allGenerated, ...batchQs];
+          allGenerated = deduplicateQuestions([...allGenerated, ...batchQs]);
           setQuestions(allGenerated);
           setPartialCount(allGenerated.length);
           currentTry = 0;
