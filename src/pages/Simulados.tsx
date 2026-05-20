@@ -537,7 +537,8 @@ const Simulados = () => {
               config.autoDistribution,
               config.customDistribution,
               config.includeWeakThemes,
-              config.includePreviousErrors
+              config.includePreviousErrors,
+              config.mode || "estudo"
             );
             batchData = { success: true, questions: batchQs };
           } catch (e) {
