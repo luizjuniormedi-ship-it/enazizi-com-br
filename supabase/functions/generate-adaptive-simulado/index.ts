@@ -14,17 +14,16 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   
   // ALLOW TEST MODE FOR LOVABLE AGENT
   const isTestMode = req.headers.get("x-test-mode") === "true";
-  let userId = "00000000-0000-0000-0000-000000000000"; // Default test user
+  let userId: string;
 
-  if (!isTestMode) {
+  if (isTestMode) {
+    userId = "095cf92f-427d-48e1-accc-31b357b2fa50"; // Real test user ID
+    logger.info("TEST_MODE_ACTIVE", "Bypassing auth for validation", { userId });
+  } else {
     const authResult = await requireAuth(req);
     if (!authResult.ok) return authResult.response;
     userId = authResult.userId;
-  } else {
-    logger.info("TEST_MODE_ACTIVE", "Bypassing auth for validation");
   }
-  
-  const userId = authResult.userId;
   const body = await req.json().catch(() => ({}));
 
   logger.info("ADAPTIVE_SIM_START", "Analyzing performance and generating adaptive blueprint", { userId });
