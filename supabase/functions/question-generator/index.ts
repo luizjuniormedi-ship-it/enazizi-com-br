@@ -115,6 +115,15 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     let systemPrompt = QUESTION_MOTOR_PREMIUM;
     systemPrompt += buildBancaBlock(safeExamProfile);
 
+    const model = normalizeModel(body?.model ?? AI_MODELS.FAST);
+
+    console.log("AI model resolved", {
+      correlation_id: correlationId,
+      request_id: requestId,
+      step,
+      model
+    });
+
     const userPrompt = `Gere exatamente ${requestedCount} questões médicas de múltipla escolha.
     TEMA: ${topics.join(", ")}
     ESPECIALIDADE: ${specialty}
@@ -128,12 +137,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     4. Retorne APENAS um JSON array.`;
 
     const aiResponse = await ai({
-      taskType: "generation",
+      model,
+      taskType: "parsing", // Using parsing task for question generation logic
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
-      ],
-      complexity: "high"
+      ]
     });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
