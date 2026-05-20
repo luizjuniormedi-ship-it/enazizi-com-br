@@ -839,7 +839,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   <div className="flex gap-2">
                     <Button 
                       className="flex-1 h-12 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90"
-                      onClick={handleStart}
+                      onClick={() => handleStart()}
                     >
                       Usar Sugestão e Iniciar
                     </Button>
@@ -975,7 +975,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                     </Button>
                     <Button 
                       className="flex-[2] h-12 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90"
-                      onClick={handleStart}
+                      onClick={() => handleStart()}
                     >
                       Gerar Simulado Personalizado
                     </Button>
@@ -1239,7 +1239,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : 
                 mode === "adaptativo" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
               )}
-              onClick={() => handleStart()}
+              onClick={() => handleStart(true)}
               data-testid="iniciar-simulado-button"
               disabled={mode === "estudo" && selectedTopics.length === 0 && !specificTopic && !examBoard}
             >
