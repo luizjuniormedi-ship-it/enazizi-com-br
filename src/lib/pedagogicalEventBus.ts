@@ -157,9 +157,13 @@ export const pedagogicalEventBus = {
    * Atualiza cache local do estado cognitivo (Optimistic UI)
    */
   updateLocalCognitiveStream(payload: PedagogicalEventPayload) {
-    // Invalidação de queries do Tanstack Query para refletir mudanças adaptativas
-    // No ALOS, o estado cognitivo é a verdade absoluta da UI
-    console.log("[COG_EVENT_RUNTIME] Cognitive stream synchronization update.");
+    console.log("[COG_EVENT_RUNTIME] Cognitive stream synchronization update.", payload.event_type);
+    
+    // Auto-Snapshot on critical events
+    if (['question_answered', 'mission_completed'].includes(payload.event_type)) {
+      // Snapshot is already triggered in emit()
+    }
   }
+
 };
 

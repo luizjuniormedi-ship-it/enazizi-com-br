@@ -26804,7 +26804,7 @@ export type Database = {
           result_metadata?: Json
           success: boolean
         }
-        Returns: undefined
+        Returns: boolean
       }
       mark_stale_cme_jobs_failed: { Args: never; Returns: undefined }
       match_rag_chunks: {
