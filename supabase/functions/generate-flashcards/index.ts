@@ -86,32 +86,8 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         })
         .select().single();
 
-      const { data: insertedCards, error: insertError } = await supabaseAdmin.from("fsrs_cards").insert(
-        cards.map((c: any) => ({
-          user_id: userId,
-          deck_id: deck.id,
-          front: c.front,
-          back: c.back,
-          explanation: c.explanation,
-          topic: topic,
-          discipline: discipline || "Geral",
-          difficulty: c.difficulty || 3,
-          due: new Date().toISOString(),
-          stability: 0,
-          elapsed_days: 0,
-          scheduled_days: 0,
-          reps: 0,
-          lapses: 0,
-          state: 0,
-          card_type: 'flashcard',
-          card_ref_id: crypto.randomUUID()
-        }))
-      ).select();
-
-      if (insertError) throw insertError;
-
-      // Compatibility insert
-      await supabaseAdmin.from("flashcards").insert(
+      // 1. Insert into flashcards first to get IDs
+      const { data: insertedFlashcards, error: flashError } = await supabaseAdmin.from("flashcards").insert(
         cards.map((c: any) => ({
           user_id: userId,
           question: c.front,
@@ -120,7 +96,41 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
           topic: topic,
           is_global: false
         }))
-      );
+      ).select();
+
+      if (flashError || !insertedFlashcards) throw flashError || new Error("Falha ao salvar flashcards");
+
+      // 2. Insert into fsrs_cards for scheduling using the flashcard IDs
+      const { data: insertedCards, error: insertError } = await supabaseAdmin.from("fsrs_cards").insert(
+        insertedFlashcards.map((f: any) => {
+          // Find original AI card to get difficulty if present
+          const original = cards.find((c: any) => c.front === f.question);
+          return {
+            user_id: userId,
+            deck_id: deck.id,
+            front: f.question,
+            back: f.answer,
+            explanation: f.explanation,
+            topic: topic,
+            discipline: discipline || "Geral",
+            difficulty: original?.difficulty || 3,
+            due: new Date().toISOString(),
+            stability: 0,
+            elapsed_days: 0,
+            scheduled_days: 0,
+            reps: 0,
+            lapses: 0,
+            state: 0,
+            card_type: 'flashcard',
+            card_ref_id: f.id // Correctly linking to the flashcard ID
+          };
+        })
+      ).select();
+
+      if (insertError) {
+        logger.error("FSRS_INSERT_ERROR", insertError.message);
+        // We don't throw here to avoid failing the whole request since flashcards are already saved
+      }
 
       // Update Job
       await supabaseAdmin.from("flashcard_generation_jobs").update({

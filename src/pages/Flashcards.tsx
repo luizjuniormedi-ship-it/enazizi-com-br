@@ -195,8 +195,10 @@ const Flashcards = () => {
       const allQuestions = [...(bankQ || []), ...(realQ || [])];
       let newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
       
+      console.log(`[FLASHCARDS] Encontradas ${allQuestions.length} questões no banco.`);
+
       for (const q of allQuestions) {
-        if (newCards.length >= generateQuantity) break;
+        if (!q || newCards.length >= generateQuantity) break;
         const hash = q.statement?.slice(0, 80).toLowerCase();
         if (!hash || existingHashes.has(hash)) continue;
         existingHashes.add(hash);
