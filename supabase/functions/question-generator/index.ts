@@ -201,6 +201,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         topic: topics[0],
         difficulty: difficulty,
         source: source,
+        started_at: new Date().toISOString(), // Use started_at instead of created_at
         metadata: { 
           correlation_id: correlationId,
           request_id: requestId,

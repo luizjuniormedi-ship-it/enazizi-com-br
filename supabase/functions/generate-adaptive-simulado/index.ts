@@ -132,6 +132,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     topic: questions[0]?.topic,
     difficulty: 'adaptativo',
     source: questions.every(q => q._source === 'bank') ? 'bank' : (questions.every(q => q._source === 'generated') ? 'ai' : 'mixed'),
+    started_at: new Date().toISOString(), // Use started_at instead of created_at
     metadata: { 
       adaptive_meta: performance,
       correlation_id: correlationId,
