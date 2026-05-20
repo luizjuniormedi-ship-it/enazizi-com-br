@@ -19,6 +19,7 @@ export const DEFAULT_FAST_MODEL = "google/gemini-2.5-flash";
 export const DEFAULT_REASONING_MODEL = "google/gemini-2.5-pro";
 
 // AI Tiers and Pricing (Est. USD per 1M tokens)
+// These serve as static fallbacks if DB check fails
 export const MODEL_METRICS: Record<string, { prompt: number, completion: number, quality: number }> = {
   "google/gemini-2.5-flash": { prompt: 0.075, completion: 0.3, quality: 85 },
   "google/gemini-2.5-pro": { prompt: 3.5, completion: 10.5, quality: 98 },
@@ -28,20 +29,12 @@ export const MODEL_METRICS: Record<string, { prompt: number, completion: number,
   "openai/gpt-5.5": { prompt: 10.0, completion: 30.0, quality: 100 },
   "openai/gpt-5.5-pro": { prompt: 15.0, completion: 45.0, quality: 100 },
   "openai/gpt-5.4-mini": { prompt: 0.5, completion: 1.5, quality: 90 },
+  "openai/text-embedding-3-small": { prompt: 0.02, completion: 0, quality: 100 },
 };
 
 export type AiModelType = keyof typeof ALLOWED_MODELS;
 export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
 
 // List of strictly allowed production models for Lovable AI Gateway
-export const PRODUCTION_MODELS = [
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-pro",
-  "google/gemini-2.5-flash-lite",
-  "openai/gpt-4o",
-  "openai/gpt-4o-mini",
-  "openai/gpt-5.5",
-  "openai/gpt-5.5-pro",
-  "openai/gpt-5.4-mini",
-  "openai/text-embedding-3-small",
-];
+export const PRODUCTION_MODELS = Object.keys(MODEL_METRICS);
+

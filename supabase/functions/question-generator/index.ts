@@ -115,7 +115,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     let systemPrompt = QUESTION_MOTOR_PREMIUM;
     systemPrompt += buildBancaBlock(safeExamProfile);
 
-    const model = normalizeModel(body?.model ?? AI_MODELS.FAST);
+    const model = normalizeModel(body?.model);
+    const cognitiveState = body?.cognitiveState || (body?.userProfile?.cognitive_state as any);
 
     console.log("AI model resolved", {
       correlation_id: correlationId,
@@ -138,11 +139,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
 
     const aiResponse = await ai({
       model,
-      taskType: "parsing", // Using parsing task for question generation logic
+      taskType: "simulados", 
+      cognitiveState: cognitiveState,
+      complexity: body.difficulty === "difícil" ? "alta" : (body.difficulty === "médio" ? "média" : "baixa"),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
-      ]
+      ],
+      userId
     });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";

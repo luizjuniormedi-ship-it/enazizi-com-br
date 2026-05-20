@@ -34,7 +34,7 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
     }
 
     const aiResponse = await ai({
-      taskType: "generation",
+      taskType: "flashcards",
       messages: [
         { role: "system", content: FLASHCARD_MOTOR_PREMIUM },
         { role: "user", content: `Gere exatamente ${quantity} flashcards sobre o tema: ${topic || 'Medicina'}. ${contextText ? `Use este contexto: ${contextText.slice(0, 15000)}` : ''}

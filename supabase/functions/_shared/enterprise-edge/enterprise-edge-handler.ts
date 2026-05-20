@@ -9,6 +9,8 @@ import { StructuredLogger } from "./structured-logger.ts";
 import { createSafeWaitUntil, SafeWaitUntil } from "./safe-wait-until.ts";
 import { callAi, AiRequest } from "./ai-router.ts";
 import { validateAiQuality, QualityCheckResult } from "./ai-quality-lock.ts";
+import { AiRoutingEngine, CognitiveState, AiTaskType } from "./ai-routing-engine.ts";
+import { CognitiveAiOrchestrator } from "./cognitive-ai-orchestrator.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +27,7 @@ export interface EnterpriseContext {
   /**
    * High-level AI call with integrated governance, quality lock, and cost tracking.
    */
-  ai: (request: AiRequest, options?: { skipQualityLock?: boolean, retries?: number }) => Promise<any>;
+  ai: (request: AiRequest & { cognitiveState?: CognitiveState, complexity?: "baixa" | "média" | "alta" }, options?: { skipQualityLock?: boolean, retries?: number }) => Promise<any>;
 }
 
 export type EnterpriseHandler = (ctx: EnterpriseContext) => Promise<Response>;
@@ -48,13 +50,19 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
     logger.info("BOOT", "Function initialized");
 
-    const aiWrapper = async (request: AiRequest, options: { skipQualityLock?: boolean, retries?: number } = {}) => {
+    const aiWrapper = async (request: AiRequest & { cognitiveState?: CognitiveState, complexity?: "baixa" | "média" | "alta" }, options: { skipQualityLock?: boolean, retries?: number } = {}) => {
       const maxRetries = options.retries ?? 1;
       let lastError = null;
 
+      // Ensure userId is passed for routing decisions if not present
+      const userId = (request as any).userId;
+
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const response = await callAi(request, logger, supabaseAdmin);
+          const response = await callAi({
+            ...request,
+            userId: userId || correlation.userId
+          }, logger, supabaseAdmin);
           
           if (request.stream) return response;
 

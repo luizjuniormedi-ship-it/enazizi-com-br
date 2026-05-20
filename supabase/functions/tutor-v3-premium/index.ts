@@ -1,9 +1,6 @@
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { corsHeaders, getServiceClient, getUserIdFromRequest, jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
-import { auditPedagogicalQuality } from "../_shared/cognitive-governance-helpers.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { buildPedagogicalContext, saveTutorMemory } from "../_shared/tutor-memory-helpers.ts";
+import { parseAiJson } from "../_shared/ai-fetch.ts";
 
 const SYSTEM_PROMPT_V3 = `
 Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
@@ -36,45 +33,19 @@ DIRETRIZES:
 - MEMÓRIA LONGITUDINAL: Utilize o histórico de explicações e analogias já fornecidas para evitar redundância e garantir continuidade.
 `;
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
+  const { message, history = [], topic, fsrsContext, masteryState, sessionId } = await req.json();
+  const userId = correlation.userId;
 
-  const startTime = Date.now();
-  try {
-    const supabase = getServiceClient();
-    const userId = await getUserIdFromRequest(req);
-    const { message, history, context, topic, fsrsContext, masteryState, sessionId } = await req.json();
+  if (!userId) {
+    throw new Error("User ID is required for longitudinal memory.");
+  }
 
-    // 1. Build Longitudinal Memory Context (Phase 5)
-    const memoryContext = await buildPedagogicalContext(supabase, userId, topic || 'Geral');
-    let isMemoryHit = false;
-    let fastPathResponse = null;
-
-    // 2. Fast Path Check (Phase 4)
-    // If user asks for a review of a topic already in memory and mastery is high
-    if (message.toLowerCase().includes("revisão") || message.toLowerCase().includes("resumo")) {
-      const relevantBlock = memoryContext.cached_blocks.find(b => 
-        b.topic.toLowerCase() === (topic || '').toLowerCase()
-      );
-      if (relevantBlock && memoryContext.previous_mastery === 'mastered') {
-        isMemoryHit = true;
-        fastPathResponse = `[FAST PATH MEMORY]\nCom base no seu domínio prévio deste tema, aqui está sua revisão personalizada:\n\n${relevantBlock.generated_content}`;
-      }
-    }
-
-    if (isMemoryHit && fastPathResponse) {
-      return jsonResponse({
-        content: fastPathResponse,
-        metrics: {
-          latency_ms: Date.now() - startTime,
-          memory_hit: true,
-          tokens_saved: 1500 // Estimated
-        }
-      });
-    }
-
-    // 3. Prepare AI Call with Memory Integration
-    const cognitiveContext = `
+  // 1. Build Longitudinal Memory Context
+  const memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic || 'Geral');
+  
+  // 2. Prepare AI Call with Memory Integration
+  const cognitiveContext = `
 [COGNITIVE STATE]
 Mastery: ${masteryState || memoryContext.previous_mastery || 'initial'}
 FSRS Context: ${JSON.stringify(fsrsContext || {})}
@@ -87,80 +58,51 @@ Known Misconceptions: ${memoryContext.known_misconceptions.join(", ")}
 Cognitive Pattern: ${memoryContext.cognitive_pattern}
     `;
 
-    const messages = [
-      { role: "system", content: `${SYSTEM_PROMPT_V3}\n${cognitiveContext}` },
-      ...history.slice(-6).map((m: any) => ({
-        role: m.role,
-        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
-      })),
-      { role: "user", content: message }
-    ];
+  const messages = [
+    { role: "system", content: `${SYSTEM_PROMPT_V3}\n${cognitiveContext}` },
+    ...history.slice(-6).map((m: any) => ({
+      role: m.role,
+      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+    })),
+    { role: "user", content: message }
+  ];
 
-    // 4. Call AI
-    const aiResponse = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/ai-proxy`, {
-      method: 'POST',
-      headers: {
-        'Authorization': req.headers.get('Authorization')!,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        messages,
-        model: "gpt-4o",
-        temperature: 0.7,
-        stream: false
-      })
-    });
+  // 3. Call AI via Governance Router
+  const aiResponse = await ai({
+    taskType: "tutor",
+    cognitiveState: (masteryState?.toUpperCase() as any) || "NOVATO",
+    messages,
+    userId
+  });
 
-    const aiResult = await aiResponse.json();
-    const aiText = aiResult.choices?.[0]?.message?.content || "Erro ao gerar resposta.";
-    const generationTime = Date.now() - startTime;
+  const aiText = aiResponse.choices?.[0]?.message?.content || "Erro ao gerar resposta.";
 
-    // 5. Async Memory Storage & Telemetry (Non-blocking)
-    (async () => {
-      try {
-        // Save new memory block
-        await saveTutorMemory(supabase, userId, {
-          topic: topic || 'Geral',
-          content: aiText,
-          sessionId
-        });
-
-        const audit = await auditPedagogicalQuality(aiText, JSON.stringify(context || {}));
-
-        await supabase.from("pedagogical_quality_audits").insert({
-          content_type: 'tutor_v3_premium',
-          quality_score: audit.quality_score,
-          medical_coherence_passed: audit.medical_coherence_passed,
-          guideline_compliance_passed: audit.guideline_compliance_passed,
-          safety_check_passed: audit.safety_check_passed,
-          detected_hallucinations: audit.detected_hallucinations,
-          audit_log: { context, topic, userId, generationTime, memory_hit: isMemoryHit }
-        });
-
-        await supabase.from("tutor_runtime_metrics").insert({
-          user_id: userId,
-          tutor_generation_ms: generationTime,
-          prompt_tokens: aiResult.usage?.prompt_tokens || 0,
-          completion_tokens: aiResult.usage?.completion_tokens || 0,
-          memory_hit: isMemoryHit
-        });
-      } catch (e) {
-        console.error("[TutorV3Premium] Async Background Error:", e);
-      }
-    })();
-
-    return jsonResponse({
+  // 4. Async Memory Storage (Non-blocking)
+  // We can use Deno.onUnhandledRejection if we really want to separate but enterpriseEdgeHandler handles the main flow.
+  // For now just await or fire-and-forget
+  try {
+    await saveTutorMemory(supabaseAdmin, userId, {
+      topic: topic || 'Geral',
       content: aiText,
-      metrics: {
-        latency_ms: generationTime,
-        memory_hit: isMemoryHit,
-        tokens_used: aiResult.usage?.total_tokens || 0
-      }
+      sessionId
     });
-
-  } catch (error) {
-    console.error("[TutorV3Premium] Critical Error:", error);
-    return errorResponse(error.message, 500);
+    
+    // Log additional tutor metrics
+    await supabaseAdmin.from("tutor_runtime_metrics").insert({
+      user_id: userId,
+      tutor_generation_ms: 0, // Router handles this now in ai_governance_logs
+      prompt_tokens: aiResponse.usage?.prompt_tokens || 0,
+      completion_tokens: aiResponse.usage?.completion_tokens || 0,
+      memory_hit: false
+    });
+  } catch (e) {
+    logger.warn("TUTOR_MEMORY_SAVE_FAIL", e.message);
   }
-});
 
+  return new Response(JSON.stringify({
+    content: aiText,
+    correlation_id: correlation.correlationId
+  }), {
+    headers: { "Content-Type": "application/json" }
+  });
+}));

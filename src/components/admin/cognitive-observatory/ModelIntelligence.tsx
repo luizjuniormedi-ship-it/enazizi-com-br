@@ -10,37 +10,53 @@ export const ModelIntelligence: React.FC = () => {
   const { data: stats } = useQuery({
     queryKey: ['model-intelligence-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ai_runtime_logs')
-        .select('model, success, latency_ms, task_type')
-        .order('created_at', { ascending: false })
-        .limit(100);
+      // Fetch both model capabilities and recent governance logs
+      const [capabilitiesRes, governanceRes] = await Promise.all([
+        supabase.from('ai_model_capabilities').select('*'),
+        supabase.from('ai_governance_logs').select('*').order('created_at', { ascending: false }).limit(200)
+      ]);
       
-      if (error) throw error;
+      if (capabilitiesRes.error) throw capabilitiesRes.error;
+      if (governanceRes.error) throw governanceRes.error;
 
-      // Basic aggregation
+      const capabilities = capabilitiesRes.data;
+      const logs = governanceRes.data;
+
+      // Aggregate stats from logs
       const modelStats: Record<string, any> = {};
-      data?.forEach(log => {
-        if (!modelStats[log.model]) {
-          modelStats[log.model] = {
-            name: log.model,
+      logs?.forEach(log => {
+        const modelName = log.model_name || log.model_used;
+        if (!modelName) return;
+        
+        if (!modelStats[modelName]) {
+          modelStats[modelName] = {
+            name: modelName,
             calls: 0,
             success: 0,
-            avgLatency: 0,
             totalLatency: 0,
-            pedagogicalScore: 8.5 // Placeholder until we have real score integration
+            pedagogyScore: 0,
+            count: 0
           };
         }
-        modelStats[log.model].calls++;
-        if (log.success) modelStats[log.model].success++;
-        modelStats[log.model].totalLatency += log.latency_ms || 0;
+        modelStats[modelName].calls++;
+        if (log.status === 'success') modelStats[modelName].success++;
+        modelStats[modelName].totalLatency += Number(log.latency_ms) || 0;
+        modelStats[modelName].pedagogyScore += Number(log.pedagogy_score) || 0;
+        modelStats[modelName].count++;
       });
 
-      return Object.values(modelStats).map(s => ({
-        ...s,
-        sr: (s.success / s.calls * 100).toFixed(1),
-        lat: (s.totalLatency / s.calls).toFixed(0)
-      }));
+      return capabilities.map(cap => {
+        const stats = modelStats[cap.model_name] || { calls: 0, success: 0, totalLatency: 0, pedagogyScore: 0, count: 0 };
+        return {
+          name: cap.model_name,
+          provider: cap.provider,
+          category: cap.category,
+          sr: stats.calls > 0 ? (stats.success / stats.calls * 100).toFixed(1) : "100.0",
+          lat: stats.calls > 0 ? (stats.totalLatency / stats.calls).toFixed(0) : cap.latency_score,
+          pedagogicalScore: stats.count > 0 ? (stats.pedagogyScore / stats.count).toFixed(1) : (cap.pedagogy_score / 10).toFixed(1),
+          cost: cap.cost_per_1k_input + cap.cost_per_1k_output
+        };
+      });
     }
   });
 
@@ -92,7 +108,12 @@ export const ModelIntelligence: React.FC = () => {
           <TableBody>
             {stats?.map((model: any) => (
               <TableRow key={model.name} className="border-slate-800 hover:bg-slate-900/50">
-                <TableCell className="font-mono text-[11px] text-slate-300">{model.name}</TableCell>
+                <TableCell className="font-mono text-[11px] text-slate-300">
+                  <div className="flex flex-col">
+                    <span>{model.name}</span>
+                    <span className="text-[8px] text-slate-500 uppercase">{model.provider} • {model.category}</span>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden">

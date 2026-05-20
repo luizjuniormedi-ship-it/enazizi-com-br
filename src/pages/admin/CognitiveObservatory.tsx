@@ -12,6 +12,7 @@ import { CognitiveAlerts } from '@/components/admin/cognitive-observatory/Cognit
 import { CognitiveReplay } from '@/components/admin/cognitive-observatory/CognitiveReplay';
 import { ModelIntelligence } from '@/components/admin/cognitive-observatory/ModelIntelligence';
 import { TutorQualityMonitor } from '@/components/admin/cognitive-observatory/TutorQualityMonitor';
+import { AIRoutingObservatory } from '@/components/admin/cognitive-observatory/AIRoutingObservatory';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -149,6 +150,14 @@ const CognitiveObservatory: React.FC = () => {
               <ModelIntelligence />
             </motion.div>
           </div>
+
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.35 }}
+          >
+            <AIRoutingObservatory />
+          </motion.div>
 
           <motion.div
             initial={{ y: 20, opacity: 0 }}
