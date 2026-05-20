@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Brain, Mail, Lock, User, GraduationCap, Building, Phone } from "lucide-react";
+import { Brain, Mail, Lock, User, GraduationCap, Building, Phone, ArrowLeft } from "lucide-react";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
