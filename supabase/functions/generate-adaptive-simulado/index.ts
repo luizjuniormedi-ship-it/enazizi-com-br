@@ -384,8 +384,30 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       [questions[i], questions[j]] = [questions[j], questions[i]];
     }
 
+    // ── 5. Persist Session in DB ──
+    const { data: session, error: sessionErr } = await supabaseAdmin.from("simulado_sessions").insert({
+        user_id: user.id,
+        mode: body.mode || 'adaptativo',
+        total_questions: questions.length,
+        status: 'active',
+        metadata: { ...meta, is_adaptive: true }
+    }).select().single();
+
+    if (sessionErr) logger.error("SESSION_PERSIST_FAIL", sessionErr.message);
+
+    if (session && questions.length > 0) {
+        await supabaseAdmin.from("simulado_questions").insert(
+            questions.map((q, idx) => ({
+                session_id: session.id,
+                question_id: q.bankId || null,
+                order_index: idx
+            }))
+        );
+    }
+
     return new Response(JSON.stringify({
       success: true,
+      sessionId: session?.id,
       questions: questions.slice(0, targetCount),
       meta,
       total: Math.min(questions.length, targetCount),
