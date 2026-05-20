@@ -60,7 +60,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
   // 3. AI Generation for deficit
   const deficit = targetCount - questions.length;
   if (deficit > 0) {
-    const topicToGen = weakTopics[0] || "Clínica Médica";
+    const topicToGen = body.topic || body.discipline || weakTopics[0] || "Clínica Médica";
     
     const model = normalizeModelStrict(
       body.model || 
@@ -79,16 +79,26 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       taskType: "simulados",
       messages: [
         { role: "system", content: QUESTION_MOTOR_PREMIUM + "\n" + SIMULADO_MOTOR_PREMIUM },
-        { role: "user", content: `Gere exatamente ${deficit} questões médicas adaptativas sobre ${topicToGen}. Foque em padrões de erro comuns. Use exatamente 4 alternativas (A-D). Retorne APENAS JSON array.` }
+        { role: "user", content: `Gere exatamente ${deficit} questões médicas adaptativas sobre o tema: ${topicToGen}. Foque em padrões de diagnóstico, tratamento e conduta clínica. Use exatamente 4 alternativas (A-D). Retorne APENAS um JSON array válido, sem blocos de código markdown.` }
       ],
       complexity: "alta",
       userId
     });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
-    const generated = parseAiJson(rawContent);
+    let generated = [];
+    try {
+      generated = parseAiJson(rawContent);
+    } catch (e) {
+      logger.error("AI_PARSE_ERROR", `Failed to parse AI response: ${e.message}`, { rawContent });
+      // Fallback: try to find anything that looks like a JSON array
+      const match = rawContent.match(/\[\s*{[\s\S]*}\s*\]/);
+      if (match) {
+        generated = JSON.parse(match[0]);
+      }
+    }
     
-    if (Array.isArray(generated)) {
+    if (Array.isArray(generated) && generated.length > 0) {
       questions.push(...generated.slice(0, deficit).map(q => ({
         statement: cleanQuestionText(q.statement || q.content || ""),
         options: q.options || [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean).slice(0, 4),
@@ -98,6 +108,8 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
         difficulty: q.difficulty || "hard",
         _source: "generated"
       })));
+    } else {
+      logger.warn("NO_QUESTIONS_GENERATED", "AI returned empty or invalid question array");
     }
   }
 

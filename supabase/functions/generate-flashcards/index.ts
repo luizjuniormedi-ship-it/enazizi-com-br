@@ -58,14 +58,23 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       messages: [
         { role: "system", content: FLASHCARD_MOTOR_PREMIUM },
         { role: "user", content: `Gere exatamente ${quantity} flashcards sobre o tema: ${topic || 'Medicina'}. ${contextText ? `Use este contexto: ${contextText.slice(0, 15000)}` : ''}
-        Retorne APENAS JSON array: [{"front": "...", "back": "...", "explanation": "...", "difficulty": 1-5}]` }
+        Retorne APENAS um JSON array válido, sem blocos de código markdown: [{"front": "...", "back": "...", "explanation": "...", "difficulty": 1-5}]` }
       ],
       complexity: "alta",
       userId
     });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
-    const cards = parseAiJson(rawContent);
+    let cards = [];
+    try {
+      cards = parseAiJson(rawContent);
+    } catch (e) {
+      logger.error("AI_PARSE_ERROR", `Failed to parse AI response: ${e.message}`, { rawContent });
+      const match = rawContent.match(/\[\s*{[\s\S]*}\s*\]/);
+      if (match) {
+        cards = JSON.parse(match[0]);
+      }
+    }
 
     if (cards.length > 0) {
       const { data: deck } = await supabaseAdmin.from("flashcard_decks")
