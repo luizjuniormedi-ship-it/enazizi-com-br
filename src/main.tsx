@@ -64,9 +64,14 @@ const removeReleaseQueryParam = () => {
 };
 
 const mountApp = () => {
+  devLog("[App] Montando aplicação...");
   const rootElement = document.getElementById("root");
-  if (!rootElement) return;
+  if (!rootElement) {
+    devLog("[App] Erro: Elemento root não encontrado!");
+    return;
+  }
   createRoot(rootElement).render(<App />);
+  devLog("[App] Aplicação montada com sucesso.");
 };
 
 const registerProductionServiceWorker = () => {
