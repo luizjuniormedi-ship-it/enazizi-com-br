@@ -125,15 +125,45 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     }
     
     if (Array.isArray(generated) && generated.length > 0) {
-      questions.push(...generated.slice(0, deficit).map(q => ({
-        statement: cleanQuestionText(q.statement || q.content || ""),
-        options: q.options || [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean).slice(0, 4),
-        correct: typeof q.correct === 'number' ? q.correct : (typeof q.correct_index === 'number' ? q.correct_index : 0),
-        explanation: cleanQuestionText(q.explanation || q.rationale || ""),
-        topic: q.topic || topicToGen,
-        difficulty: q.difficulty || "hard",
-        _source: "generated"
-      })));
+      questions.push(...generated.slice(0, deficit).map(q => {
+        // Robust mapping for variations in AI keys
+        const statement = cleanQuestionText(q.statement || q.content || q.enunciado || q.enunciado_clinico || "");
+        
+        let options = [];
+        if (Array.isArray(q.options)) {
+          options = q.options;
+        } else if (q.alternativas && typeof q.alternativas === 'object') {
+          options = Object.values(q.alternativas);
+        } else {
+          options = [q.option_a, q.option_b, q.option_c, q.option_d, q.a, q.b, q.c, q.d].filter(Boolean);
+        }
+        
+        // Ensure exactly 4 options
+        options = options.slice(0, 4);
+
+        let correct = 0;
+        if (typeof q.correct === 'number') {
+          correct = q.correct;
+        } else if (typeof q.correct_index === 'number') {
+          correct = q.correct_index;
+        } else if (typeof q.correta === 'string') {
+          // Handle "A", "B", "C", "D"
+          const map: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
+          correct = map[q.correta.toUpperCase()] || 0;
+        }
+
+        const explanation = cleanQuestionText(q.explanation || q.rationale || q.comentario || q.comentario_tecnico || "");
+
+        return {
+          statement,
+          options,
+          correct,
+          explanation,
+          topic: q.topic || topicToGen,
+          difficulty: q.difficulty || "hard",
+          _source: "generated"
+        };
+      }));
     } else {
       logger.warn("NO_QUESTIONS_GENERATED", "AI returned empty or invalid question array");
     }
