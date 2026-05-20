@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle, Star, Quote, RefreshCw } from "lucide-react";
+import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle, Star, Quote, RefreshCw, ArrowLeft } from "lucide-react";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
