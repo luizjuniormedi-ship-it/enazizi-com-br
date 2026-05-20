@@ -32,7 +32,7 @@ const PendingReviewsCard = lazy(() => import("@/components/dashboard/PendingRevi
 const ErrorReviewCard = lazy(() => import("@/components/dashboard/ErrorReviewCard"));
 const DailyPlanWidget = lazy(() => import("@/components/dashboard/DailyPlanWidget"));
 const DashboardMetricsGrid = lazy(() => import("@/components/dashboard/DashboardMetricsGrid"));
-const { CognitiveValidation } = await import("@/components/admin/CognitiveValidation");
+const CognitiveValidation = lazy(() => import("@/components/admin/CognitiveValidation").then(m => ({ default: m.CognitiveValidation })));
 
 const Dashboard = () => {
   const mountTimeRef = useRef(Date.now());
