@@ -57,8 +57,12 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       taskType: "flashcards",
       messages: [
         { role: "system", content: FLASHCARD_MOTOR_PREMIUM },
-        { role: "user", content: `Gere exatamente ${quantity} flashcards sobre o tema: ${topic || 'Medicina'}. ${contextText ? `Use este contexto: ${contextText.slice(0, 15000)}` : ''}
-        Retorne APENAS um JSON array válido, sem blocos de código markdown: [{"front": "...", "back": "...", "explanation": "...", "difficulty": 1-5}]` }
+        { role: "user", content: `Gere exatamente ${quantity} flashcards médicos de alta retenção sobre o tema: ${topic || 'Medicina'}. ${contextText ? `Use este contexto: ${contextText.slice(0, 15000)}` : ''}
+        
+        RETORNE APENAS UM JSON ARRAY VÁLIDO COM ESTAS CHAVES:
+        [
+          {"front": "pergunta ou caso clínico curto...", "back": "resposta objetiva...", "explanation": "explicação breve...", "difficulty": 1-5}
+        ]` }
       ],
       complexity: "alta",
       userId
@@ -90,9 +94,9 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       const { data: insertedFlashcards, error: flashError } = await supabaseAdmin.from("flashcards").insert(
         cards.map((c: any) => ({
           user_id: userId,
-          question: c.front,
-          answer: c.back,
-          explanation: c.explanation,
+          question: c.front || c.frente || c.pergunta || "",
+          answer: c.back || c.verso || c.resposta || "",
+          explanation: c.explanation || c.explicacao || c.justificativa || "",
           topic: topic,
           is_global: false
         }))

@@ -11,9 +11,9 @@ import { AI_MODELS, normalizeModelStrict } from "../_shared/ai-models.ts";
  */
 Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
   const { requestId, correlationId } = correlation;
+  
   const authResult = await requireAuth(req);
   if (!authResult.ok) return authResult.response;
-  
   const userId = authResult.userId;
   const body = await req.json().catch(() => ({}));
 
@@ -84,7 +84,19 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
       taskType: "simulados",
       messages: [
         { role: "system", content: QUESTION_MOTOR_PREMIUM + "\n" + SIMULADO_MOTOR_PREMIUM },
-        { role: "user", content: `Gere exatamente ${deficit} questões médicas adaptativas sobre o tema: ${topicToGen}. Foque em padrões de diagnóstico, tratamento e conduta clínica. Use exatamente 4 alternativas (A-D). Retorne APENAS um JSON array válido, sem blocos de código markdown.` }
+        { role: "user", content: `Gere exatamente ${deficit} questões médicas adaptativas sobre o tema: ${topicToGen}. Foque em padrões de diagnóstico, tratamento e conduta clínica. Use exatamente 4 alternativas (A-D). 
+        
+        RETORNE APENAS UM JSON ARRAY VÁLIDO COM ESTAS CHAVES:
+        [
+          {
+            "statement": "enunciado clínico...",
+            "options": ["A", "B", "C", "D"],
+            "correct": 0,
+            "explanation": "comentário...",
+            "topic": "${topicToGen}",
+            "difficulty": "hard"
+          }
+        ]` }
       ],
       complexity: "alta",
       userId
@@ -104,15 +116,45 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async ({ req, log
     }
     
     if (Array.isArray(generated) && generated.length > 0) {
-      questions.push(...generated.slice(0, deficit).map(q => ({
-        statement: cleanQuestionText(q.statement || q.content || ""),
-        options: q.options || [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean).slice(0, 4),
-        correct: typeof q.correct === 'number' ? q.correct : (typeof q.correct_index === 'number' ? q.correct_index : 0),
-        explanation: cleanQuestionText(q.explanation || q.rationale || ""),
-        topic: q.topic || topicToGen,
-        difficulty: q.difficulty || "hard",
-        _source: "generated"
-      })));
+      questions.push(...generated.slice(0, deficit).map(q => {
+        // Robust mapping for variations in AI keys
+        const statement = cleanQuestionText(q.statement || q.content || q.enunciado || q.enunciado_clinico || "");
+        
+        let options = [];
+        if (Array.isArray(q.options)) {
+          options = q.options;
+        } else if (q.alternativas && typeof q.alternativas === 'object') {
+          options = Object.values(q.alternativas);
+        } else {
+          options = [q.option_a, q.option_b, q.option_c, q.option_d, q.a, q.b, q.c, q.d].filter(Boolean);
+        }
+        
+        // Ensure exactly 4 options
+        options = options.slice(0, 4);
+
+        let correct = 0;
+        if (typeof q.correct === 'number') {
+          correct = q.correct;
+        } else if (typeof q.correct_index === 'number') {
+          correct = q.correct_index;
+        } else if (typeof q.correta === 'string') {
+          // Handle "A", "B", "C", "D"
+          const map: Record<string, number> = { A: 0, B: 1, C: 2, D: 3 };
+          correct = map[q.correta.toUpperCase()] || 0;
+        }
+
+        const explanation = cleanQuestionText(q.explanation || q.rationale || q.comentario || q.comentario_tecnico || "");
+
+        return {
+          statement,
+          options,
+          correct,
+          explanation,
+          topic: q.topic || topicToGen,
+          difficulty: q.difficulty || "hard",
+          _source: "generated"
+        };
+      }));
     } else {
       logger.warn("NO_QUESTIONS_GENERATED", "AI returned empty or invalid question array");
     }
