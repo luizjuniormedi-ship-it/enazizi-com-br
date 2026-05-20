@@ -2,91 +2,109 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 
 /**
- * Pedagogical Event Consumer — Master Recalculator
- * Responsável por reagir a eventos e atualizar o estado cognitivo longitudinal do aluno.
+ * ENAZIZI ALOS — Fase 2.5: Cognitive Event Consumer (Hardened)
+ * Master Orchestrator que interpreta o stream de eventos e atualiza o Cognitive State.
  */
 Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, logger, supabaseAdmin }) => {
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
   const { event } = body;
 
-  if (!event || !event.event_type) {
+  if (!event || !event.id) {
     return new Response(JSON.stringify({ success: false, error: "Event payload missing" }), { status: 400 });
   }
 
-  logger.info("CONSUME_START", `Processing event: ${event.event_type}`, { eventId: event.id });
+  logger.info("COG_RUNTIME_PROCESS", `Event: ${event.event_type}`, { 
+    userId: user.id, 
+    module: event.module,
+    recursion: event.recursion_depth 
+  });
 
   try {
-    // 1. Identificar tipo de evento e disparar ações adaptativas
+    // 1. Resolve Cognitive State Baseline
+    let { data: cogState } = await supabaseAdmin
+      .from("cognitive_states")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!cogState) {
+      const { data: newState } = await supabaseAdmin
+        .from("cognitive_states")
+        .insert({ user_id: user.id, retention_score: 50, cognitive_load: 10 })
+        .select()
+        .single();
+      cogState = newState;
+    }
+
+    // 2. Event-Sourced Adaptations
+    const updates: any = {};
+    const metadata: any = { last_event_type: event.event_type };
+
     switch (event.event_type) {
       case 'simulado_error_detected':
       case 'tutor_question_answered':
         if (event.metadata?.is_correct === false) {
-          logger.info("ADAPT_ERROR", "Triggering error bank registration and planner priority boost");
+          updates.error_pressure = Math.min(100, (cogState.error_pressure || 0) + 15);
+          updates.cognitive_load = Math.min(100, (cogState.cognitive_load || 0) + 5);
+          updates.retention_score = Math.max(0, (cogState.retention_score || 0) - 2);
           
-          // Incrementar erro no banco de erros
-          await supabaseAdmin.rpc("increment_error_count", {
-            p_user_id: user.id,
-            p_topic: event.study_context?.topic || 'Geral',
-            p_subtopic: event.study_context?.subtopic || null
-          });
-
-          // Aumentar prioridade no Planner Longitudinal
-          await supabaseAdmin.from("study_plan_items")
-            .update({ priority_score: 95 })
-            .match({ user_id: user.id, topic: event.study_context?.topic })
-            .eq("status", "pending");
+          // Trigger Autonomous Recovery Intervention
+          if (updates.error_pressure > 70) {
+            metadata.anomaly_detected = 'high_error_pressure';
+            await supabaseAdmin.from("pedagogical_events").insert({
+              user_id: user.id,
+              event_type: 'cognitive_anomaly_detected',
+              module: 'governance',
+              source: 'system',
+              severity: 'warning',
+              recursion_depth: (event.recursion_depth || 0) + 1,
+              metadata: { type: 'error_pressure_peak', current_value: updates.error_pressure }
+            });
+          }
         }
         break;
 
       case 'planner_task_completed':
-        logger.info("ADAPT_PROGRESS", "Updating longitudinal progress and approval predictor");
-        
-        // Marcar item do planner como completo (se id estiver presente)
-        if (event.study_context?.study_plan_item_id) {
-          await supabaseAdmin.from("study_plan_items")
-            .update({ status: 'completed', completed_at: new Date().toISOString() })
-            .eq("id", event.study_context.study_plan_item_id);
-        }
-
-        // Trigger predictor recalculation
-        await supabaseAdmin.functions.invoke("performance-predictor", {
-          body: { userId: user.id, trigger: "event_bus_completion" }
-        });
+        updates.planner_consistency = Math.min(100, (cogState.planner_consistency || 0) + 10);
+        updates.cognitive_load = Math.max(0, (cogState.cognitive_load || 0) - 10);
+        updates.trajectory_health = Math.min(100, (cogState.trajectory_health || 0) + 5);
         break;
 
-      case 'quality_lock_failed':
-        logger.warn("GOVERNANCE_ALERT", "AI Quality lock failure detected. Creating incident.");
-        await supabaseAdmin.from("ai_incidents").insert({
-          severity: 'warning',
-          incident_type: 'quality_lock_failed',
-          message: `Quality lock failed for module: ${event.module}`,
-          metadata: event.metadata
-        });
+      case 'fsrs_overdue_detected':
+        updates.fatigue_risk = Math.min(100, (cogState.fatigue_risk || 0) + 20);
         break;
     }
 
-    // 2. Marcar como consumido (Idempotência)
+    // 3. Persist Cognitive State Evolution
+    if (Object.keys(updates).length > 0) {
+      await supabaseAdmin
+        .from("cognitive_states")
+        .update({ ...updates, metadata: { ...cogState.metadata, ...metadata }, last_event_id: event.id, updated_at: new Date().toISOString() })
+        .eq("id", cogState.id);
+    }
+
+    // 4. Finalize Consumption (Audit Trail)
     await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
       event_id: event.id,
-      consumer_name: "pedagogical-master-recalculator",
-      success: true
+      consumer_name: "cognitive-event-runtime-v2.5",
+      success: true,
+      result_metadata: { applied_updates: updates }
     });
 
-    return new Response(JSON.stringify({ success: true, processed: true }), {
+    return new Response(JSON.stringify({ success: true, cog_updated: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
   } catch (err) {
-    logger.error("CONSUME_ERROR", err.message, { eventId: event.id });
-    
+    logger.error("COG_RUNTIME_FAIL", err.message, { eventId: event.id });
     await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
       event_id: event.id,
-      consumer_name: "pedagogical-master-recalculator",
+      consumer_name: "cognitive-event-runtime-v2.5",
       success: false,
       result_metadata: { error: err.message }
     });
-
     return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
   }
 }));
+
