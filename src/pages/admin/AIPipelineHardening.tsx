@@ -128,7 +128,7 @@ export default function AIPipelineHardening() {
             <CardTitle className="text-sm font-medium">Modelo Padrão (Geração)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm font-mono truncate">{AI_MODELS.generation}</div>
+            <div className="text-sm font-mono truncate">{AI_MODELS.FAST}</div>
           </CardContent>
         </Card>
         <Card>
