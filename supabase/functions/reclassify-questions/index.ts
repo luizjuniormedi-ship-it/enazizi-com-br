@@ -68,7 +68,7 @@ ${questionsList}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: "Você é um especialista em educação médica e classificação de questões de residência." },
           { role: "user", content: prompt }
