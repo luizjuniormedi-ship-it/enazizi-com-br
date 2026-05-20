@@ -352,7 +352,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     selectedProfile.totalQuestions,
   );
 
-  const handleStart = () => {
+  const handleStart = (forceAi = false) => {
     if (mode === "adaptativo") {
       const count = customCount ? parseInt(customCount) : questionCount;
       onStart({ topics: [], count, difficulty: "adaptativo", timePerQuestion: 3, mode: "adaptativo" });
@@ -369,7 +369,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         count,
         difficulty: mode === "tri" ? "tri" : "prova_real",
         timePerQuestion: timePerQ,
-        mode,
+        mode: forceAi ? ("ai_generation" as any) : mode,
         examBoard: realExamBoard,
         realExamProfile: realExamBoard,
         dynamicDistribution: dynamicDistribution?.source === "curriculum_weights"
@@ -407,7 +407,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       count,
       difficulty,
       timePerQuestion,
-      mode,
+      mode: forceAi ? ("ai_generation" as any) : mode,
       specificTopic: specificTopic.trim() || undefined,
       examBoard: resolvedExamBoard,
       imagePercent,
