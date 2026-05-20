@@ -150,7 +150,10 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       return new Response(JSON.stringify({ 
         success: true, 
         count: cards.length,
+        generated_count: cards.length,
+        source: "ai",
         jobId: job.id,
+        job_id: job.id,
         cards: insertedCards,
         message: messageContent,
         content: messageContent,
