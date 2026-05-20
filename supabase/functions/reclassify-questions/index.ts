@@ -22,13 +22,13 @@ serve(async (req) => {
     }
 
     // 1. Busca questões da tabela real_exam_questions que ainda não foram classificadas corretamente
-    // (topic IS NULL ou topic = 'Medicina' ou subtopic IS NULL)
-    // Prioriza questões que têm source_file
+    // Prioriza questões que têm source_file e que ainda não têm classified_at
     const { data: questions, error: fetchError } = await supabase
       .from("real_exam_questions")
       .select("id, statement, options, source_file, topic, subtopic")
-      .or("topic.is.null,topic.eq.Medicina,subtopic.is.null")
-      .order("source_file", { ascending: false, nullsFirst: false })
+      .is("classified_at", null)
+      .not("source_file", "is", null)
+      .order("created_at", { ascending: false })
       .limit(10);
 
     if (fetchError) throw fetchError;
