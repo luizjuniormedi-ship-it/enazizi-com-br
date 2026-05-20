@@ -102,16 +102,16 @@ const MODELS = {
   pro: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
   gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
   gpt5: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
-  geminiFallback: { provider: "lovable-ai", model: "google/gemini-2-flash" } as ModelRef,
+  geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "google/gemini-2.5-flash-lite": "low",
-  "google/gemini-3-flash-preview": "low",
   "google/gemini-2.5-flash": "low",
   "google/gemini-2.5-pro": "medium",
-  "google/gemini-2.5-flash": "medium",
-  "google/gemini-2.5-pro": "high",
+  "openai/gpt-4o-mini": "low",
+  "openai/gpt-4o": "medium",
+  "openai/gpt-5.5": "high",
 };
 
 // Perfis de prompt (apenas marcadores nesta fase; o prompt real é montado
@@ -352,7 +352,7 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
-    const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model) || ref.model === "openai/gpt-5.5";
+    const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model) || ref.model === "openai/gpt-5.5" || ref.model === "openai/gpt-5.5-pro";
     const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
     const body: Record<string, unknown> = {
       model: ref.model,
