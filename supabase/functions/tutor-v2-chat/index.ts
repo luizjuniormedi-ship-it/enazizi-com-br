@@ -578,19 +578,29 @@ serve(async (req) => {
         forgetting_risk: fsrsStats.filter((c: any) => (c.stability || 0) < 5).length / (fsrsStats.length || 1)
       } : {};
 
+      // New: Fetch formal cognitive state
+      const { data: cognitiveState } = await supabase
+        .from("cognitive_states")
+        .select("state, error_pressure, cognitive_load, retention_score")
+        .eq("user_id", userId)
+        .maybeSingle();
+
       const [contextRes, orchestratorRes] = await Promise.all([
         supabase.functions.invoke("tutor-v2-context-builder", {
           headers: { Authorization: `Bearer ${auth.token}` }
         }),
         supabase.functions.invoke("tutor-orchestrator-v2", {
           headers: { Authorization: `Bearer ${auth.token}` },
-          body: { sessionId, userMessage: message, history: history?.slice(-6), context: { fsrs: fsrsContext } }
+          body: { sessionId, userMessage: message, history: history?.slice(-6), context: { fsrs: fsrsContext, cognitive_state: cognitiveState } }
         })
       ]);
 
       if (contextRes.error) console.warn("[TUTOR_V2] context-builder error:", contextRes.error);
       else context = contextRes.data?.context || {};
-      if (context) (context as any).fsrs = fsrsContext;
+      if (context) {
+        (context as any).fsrs = fsrsContext;
+        (context as any).cognitive_state = cognitiveState;
+      }
 
       if (orchestratorRes.error) console.warn("[TUTOR_V2] orchestrator error:", orchestratorRes.error);
       else orchestratorData = orchestratorRes.data;
