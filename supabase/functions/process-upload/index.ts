@@ -331,13 +331,23 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
     if (userError || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
-
-    const { uploadId } = await req.json();
+    const body = await req.json();
+    const { uploadId, module } = body;
     if (!uploadId) throw new Error("uploadId required");
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
     const { data: upload } = await supabaseAdmin.from("uploads").select("*").eq("id", uploadId).maybeSingle();
     if (!upload) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: corsHeaders });
+
+    // Se o módulo for flashcards, usamos a tabela flashcard_uploads para tracking específico
+    if (module === 'flashcards') {
+        await supabaseAdmin.from("flashcard_uploads").upsert({
+            id: uploadId,
+            user_id: user.id,
+            filename: upload.filename,
+            storage_path: upload.storage_path,
+            status: 'extracting'
+        });
+    }
 
     const { data: profile } = await supabaseAdmin.from("profiles").select("organization_id").eq("user_id", user.id).maybeSingle();
     const orgId = profile?.organization_id || "00000000-0000-0000-0000-000000000000";
@@ -353,7 +363,7 @@ Deno.serve(async (req) => {
     }).eq("id", uploadId);
 
     // @ts-ignore
-    EdgeRuntime.waitUntil(processInBackground(uploadId, upload, user.id, supabaseAdmin, supabase));
+    EdgeRuntime.waitUntil(processInBackground(uploadId, upload, user.id, supabaseAdmin, supabaseAdmin));
 
     return new Response(JSON.stringify({ success: true, message: "Pipeline iniciado", uploadId }), { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
