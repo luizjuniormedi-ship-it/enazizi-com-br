@@ -12,34 +12,62 @@ export const AI_MODELS = {
   FALLBACK: "openai/gpt-5.5"
 } as const;
 
+export const BLOCKED_MODELS = [
+  "google/gemini-2.0-flash",
+  "gemini-2.0-flash",
+  "google/gemini-2.0",
+];
+
+export const ALLOWED_AI_MODELS = [
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-pro",
+  "google/gemini-2.5-flash-lite",
+  "openai/gpt-5.5",
+  "openai/gpt-5.5-pro",
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini",
+  "openai/text-embedding-3-small"
+] as const;
+
 /**
  * Returns the correct token parameter name based on the model.
- * Only o1/o3 and specific new generation models use 'max_completion_tokens'.
  */
 export function getTokenParameterName(model: string): string {
   const isNewModel = /^o[13]/i.test(model) || 
                     model.includes("/o1") || 
                     model.includes("/o3") ||
-                    model.includes("gpt-5"); // Assuming gpt-5 uses new params
+                    model.includes("gpt-5");
   return isNewModel ? "max_completion_tokens" : "max_tokens";
 }
 
 /**
- * Normalizes and validates the model.
+ * Normalizes and validates the model with STRICT blocking of invalid/legacy models.
  */
-export function normalizeModel(model?: string) {
-  const allowed = PRODUCTION_MODELS;
+export function normalizeModelStrict(model?: string): string {
+  const DEFAULT = AI_MODELS.FAST;
+  
+  if (!model) return DEFAULT;
 
-  if (!model || !allowed.includes(model as any)) {
-    console.warn("Invalid AI model requested, falling back", {
-      requested: model,
-      fallback: AI_MODELS.FAST
-    });
+  // Explicitly block legacy/invalid models
+  if (BLOCKED_MODELS.includes(model) || model.includes("gemini-2.0")) {
+    console.warn("STRICT_MODEL_BLOCK", `Legacy model ${model} blocked and replaced with ${DEFAULT}`);
+    return DEFAULT;
+  }
 
-    return AI_MODELS.FAST;
+  // Check against allowed list
+  if (!ALLOWED_AI_MODELS.includes(model as any)) {
+    console.warn("STRICT_MODEL_VALIDATION_FAILED", `Model ${model} not in allowed list. Using ${DEFAULT}`);
+    return DEFAULT;
   }
 
   return model;
+}
+
+/**
+ * Legacy alias for normalizeModelStrict
+ */
+export function normalizeModel(model?: string) {
+  return normalizeModelStrict(model);
 }
 
 /**

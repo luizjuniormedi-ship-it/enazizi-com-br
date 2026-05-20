@@ -115,14 +115,21 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async ({ req, logger, sup
     let systemPrompt = QUESTION_MOTOR_PREMIUM;
     systemPrompt += buildBancaBlock(safeExamProfile);
 
-    const model = normalizeModel(body?.model);
+    const model = normalizeModel(
+      body?.model || 
+      Deno.env.get("AI_MODEL") || 
+      Deno.env.get("GEMINI_MODEL") || 
+      AI_MODELS.FAST
+    );
     const cognitiveState = body?.cognitiveState || (body?.userProfile?.cognitive_state as any);
 
-    console.log("AI model resolved", {
+    logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Resolved model: ${model}`, {
       correlation_id: correlationId,
       request_id: requestId,
-      step,
-      model
+      resolvedModel: model,
+      originalModel: body?.model,
+      envModel: Deno.env.get("AI_MODEL"),
+      geminiModel: Deno.env.get("GEMINI_MODEL")
     });
 
     const userPrompt = `Gere exatamente ${requestedCount} questões médicas de múltipla escolha.
