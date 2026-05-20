@@ -11354,6 +11354,7 @@ export type Database = {
           source: string | null
           source_map_id: string | null
           specialty_id: string | null
+          subtopic: string | null
           subtopic_id: string | null
           topic: string | null
           urgency_score: number | null
@@ -11380,6 +11381,7 @@ export type Database = {
           source?: string | null
           source_map_id?: string | null
           specialty_id?: string | null
+          subtopic?: string | null
           subtopic_id?: string | null
           topic?: string | null
           urgency_score?: number | null
@@ -11406,6 +11408,7 @@ export type Database = {
           source?: string | null
           source_map_id?: string | null
           specialty_id?: string | null
+          subtopic?: string | null
           subtopic_id?: string | null
           topic?: string | null
           urgency_score?: number | null
@@ -25687,6 +25690,22 @@ export type Database = {
           question_count: number | null
           subtopic: string | null
           topic: string | null
+        }
+        Relationships: []
+      }
+      questions_by_topic: {
+        Row: {
+          question_count: number | null
+          subtopic: string | null
+          topic: string | null
+        }
+        Relationships: []
+      }
+      questions_coverage: {
+        Row: {
+          subtopic_count: number | null
+          topic: string | null
+          total_questions: number | null
         }
         Relationships: []
       }
