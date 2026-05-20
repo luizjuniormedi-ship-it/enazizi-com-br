@@ -55,7 +55,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       topicWeights,
       mode = "study",
       saveToBank = true,
-      createSession = true
+      createSession = true,
+      avoidIds = [],
+      avoidStatements = []
     } = body;
 
     const requestedCount = Math.min(Number(count) || 5, 50);
@@ -126,11 +128,16 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const forceAi = body.forceAi === true;
 
     if (!forceAi) {
-      const { data: bankQs, error: bankError } = await supabaseAdmin
+      let query = supabaseAdmin
         .from("questions_bank")
         .select("*")
-        .in("topic", topics)
-        .limit(requestedCount);
+        .in("topic", topics);
+
+      if (Array.isArray(avoidIds) && avoidIds.length > 0) {
+        query = query.not("id", "in", `(${avoidIds.join(",")})`);
+      }
+
+      const { data: bankQs, error: bankError } = await query.limit(requestedCount);
       
       if (!bankError && bankQs && bankQs.length > 0) {
         questions = bankQs.map((q: any) => ({
