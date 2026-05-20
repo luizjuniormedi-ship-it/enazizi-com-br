@@ -1177,6 +1177,7 @@ export type Database = {
       ai_governance_logs: {
         Row: {
           audited_at: string | null
+          cognitive_alignment_score: number | null
           cost_usd: number | null
           created_at: string | null
           details: Json | null
@@ -1189,7 +1190,10 @@ export type Database = {
           metadata: Json | null
           model_name: string
           model_used: string | null
+          pedagogy_score: number | null
           quality_lock_status: string | null
+          reasoning_score: number | null
+          retention_support_score: number | null
           severity: string | null
           status: string | null
           token_usage: Json | null
@@ -1197,6 +1201,7 @@ export type Database = {
         }
         Insert: {
           audited_at?: string | null
+          cognitive_alignment_score?: number | null
           cost_usd?: number | null
           created_at?: string | null
           details?: Json | null
@@ -1209,7 +1214,10 @@ export type Database = {
           metadata?: Json | null
           model_name: string
           model_used?: string | null
+          pedagogy_score?: number | null
           quality_lock_status?: string | null
+          reasoning_score?: number | null
+          retention_support_score?: number | null
           severity?: string | null
           status?: string | null
           token_usage?: Json | null
@@ -1217,6 +1225,7 @@ export type Database = {
         }
         Update: {
           audited_at?: string | null
+          cognitive_alignment_score?: number | null
           cost_usd?: number | null
           created_at?: string | null
           details?: Json | null
@@ -1229,7 +1238,10 @@ export type Database = {
           metadata?: Json | null
           model_name?: string
           model_used?: string | null
+          pedagogy_score?: number | null
           quality_lock_status?: string | null
+          reasoning_score?: number | null
+          retention_support_score?: number | null
           severity?: string | null
           status?: string | null
           token_usage?: Json | null
@@ -1324,6 +1336,69 @@ export type Database = {
           test_suite?: string
           tokens_per_second?: number | null
           ttfb_ms?: number | null
+        }
+        Relationships: []
+      }
+      ai_model_capabilities: {
+        Row: {
+          category: string | null
+          cost_per_1k_input: number | null
+          cost_per_1k_output: number | null
+          created_at: string | null
+          creativity_score: number | null
+          enabled: boolean | null
+          fallback_priority: number | null
+          id: string
+          json_reliability: number | null
+          latency_score: number | null
+          max_context: number | null
+          model_name: string
+          multimodal_support: boolean | null
+          pedagogy_score: number | null
+          provider: string
+          reasoning_score: number | null
+          streaming_support: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          cost_per_1k_input?: number | null
+          cost_per_1k_output?: number | null
+          created_at?: string | null
+          creativity_score?: number | null
+          enabled?: boolean | null
+          fallback_priority?: number | null
+          id?: string
+          json_reliability?: number | null
+          latency_score?: number | null
+          max_context?: number | null
+          model_name: string
+          multimodal_support?: boolean | null
+          pedagogy_score?: number | null
+          provider: string
+          reasoning_score?: number | null
+          streaming_support?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          cost_per_1k_input?: number | null
+          cost_per_1k_output?: number | null
+          created_at?: string | null
+          creativity_score?: number | null
+          enabled?: boolean | null
+          fallback_priority?: number | null
+          id?: string
+          json_reliability?: number | null
+          latency_score?: number | null
+          max_context?: number | null
+          model_name?: string
+          multimodal_support?: boolean | null
+          pedagogy_score?: number | null
+          provider?: string
+          reasoning_score?: number | null
+          streaming_support?: boolean | null
+          updated_at?: string | null
         }
         Relationships: []
       }
