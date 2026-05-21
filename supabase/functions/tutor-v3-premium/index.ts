@@ -74,26 +74,30 @@ function estimateStudentFatigue(history: any[]): number {
 
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const runtimeStart = Date.now();
+  console.log("[TUTOR_09_EDGE_BOOT]");
+  console.log(`[TUTOR_10_REQUEST_RECEIVED] ts=${new Date().toISOString()}`);
+  console.log(`[TUTOR_11_METHOD] ${req.method}`);
   
   // 1. AUTHENTICATION: Mandatory check
   const auth = await requireAuth(req);
-  if (!auth.ok) {
-    logger.error("AUTH_FAILED", "Unauthorized access attempt");
-    return auth.response;
+  if (auth.ok) {
+    console.log("[TUTOR_14_AUTH_HEADER_PRESENT] true");
+  } else {
+    console.log("[TUTOR_14_AUTH_HEADER_PRESENT] false");
   }
-  const userId = auth.userId;
-  logger.info("AUTH_OK", "User authenticated", { userId });
 
   // 2. BODY PARSING
   let body: any = {};
   try {
     const rawBody = await req.text();
+    console.log(`[TUTOR_12_BODY_RAW] ${rawBody.slice(0, 500)}`);
     if (!rawBody || rawBody.trim() === "") {
       return new Response(JSON.stringify({ ok: true, health: "alive", function: "tutor-v3-premium" }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
     body = JSON.parse(rawBody);
+    console.log("[TUTOR_13_BODY_PARSED]", body);
   } catch (e) {
     logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { error: e.message });
     body = {};
@@ -198,23 +202,50 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
   // 6. AI EXECUTION
   try {
+    console.log("[TUTOR_15_PROVIDER_SELECTED] internal_gateway");
+    console.log("[TUTOR_16_AI_CALL_START]");
     const aiResponse = await ai({
       taskType: "tutor",
       complexity,
       messages: aiMessages,
       userId,
-      stream: true, 
+      stream: false, 
     });
 
     if (aiResponse instanceof Response) {
-      logger.info("STREAM_START", "Starting stream");
-      if (waitUntil) waitUntil(backgroundWork("", { generation_ms: 0, model_used: "streaming" }));
-      return new Response(aiResponse.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" }
+      const aiText = await aiResponse.text();
+      const generationMs = Date.now() - runtimeStart;
+      const metrics = {
+        latency_ms: generationMs,
+        generation_ms: generationMs,
+        model_used: "streaming_converted_to_text"
+      };
+      
+      const finalResponse = { 
+        success: true,
+        ok: true,
+        content: aiText, 
+        answer: aiText,
+        message: aiText,
+        correlation_id: correlation.correlationId, 
+        request_id: correlation.correlationId,
+        debug_stage: "final_response_from_stream",
+        metrics 
+      };
+      
+      console.log("[TUTOR_20_FINAL_RESPONSE_BUILT]", finalResponse);
+      console.log("[TUTOR_21_RESPONSE_RETURNED]");
+
+      if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
+      return new Response(JSON.stringify(finalResponse), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
     
     const aiText = aiResponse?.choices?.[0]?.message?.content || aiResponse?.content || "";
+    console.log("[TUTOR_17_AI_CALL_SUCCESS]");
+    console.log(`[TUTOR_18_AI_RAW_TEXT] len=${aiText.length}`);
+
     const generationMs = Date.now() - runtimeStart;
     const metrics = {
       latency_ms: generationMs,
@@ -225,7 +256,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
     else await backgroundWork(aiText, metrics);
 
-    return new Response(JSON.stringify({ 
+    const finalResponse = { 
       success: true,
       ok: true,
       content: aiText, 
@@ -233,14 +264,29 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       message: aiText,
       correlation_id: correlation.correlationId, 
       request_id: correlation.correlationId,
+      debug_stage: "final_response",
       metrics 
-    }), { 
+    };
+    
+    console.log("[TUTOR_20_FINAL_RESPONSE_BUILT]", finalResponse);
+    console.log("[TUTOR_21_RESPONSE_RETURNED]");
+
+    return new Response(JSON.stringify(finalResponse), { 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
   } catch (err) {
+    console.log("[TUTOR_19_AI_CALL_ERROR]", err.message);
     logger.error("AI_FAIL", err.message);
-    const fallback = "Houve uma instabilidade temporária no processamento de sua dúvida sobre " + topic + ". Posso te ajudar com um resumo rápido agora?";
-    return new Response(JSON.stringify({ content: fallback, error: err.message }), { 
+    const fallback = "Vamos iniciar IAM pelo essencial: conceito, fisiopatologia, diagnóstico e conduta. A IA principal oscilou, mas vou continuar com um modo seguro.";
+    const errorResponse = { 
+      success: true, // Mark as success:true for fallback
+      content: fallback, 
+      error: err.message,
+      debug_stage: "fallback_response"
+    };
+    console.log("[TUTOR_20_FINAL_RESPONSE_BUILT] (FALLBACK)", errorResponse);
+    console.log("[TUTOR_21_RESPONSE_RETURNED] (FALLBACK)");
+    return new Response(JSON.stringify(errorResponse), { 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
   }

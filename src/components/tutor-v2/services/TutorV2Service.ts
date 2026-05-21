@@ -24,13 +24,27 @@ async function readFunctionError(err: any) {
 
 export const TutorV2Service = {
   async sendMessage(sessionId: string, message: string, pedagogicalInteraction?: string, retryCount = 0) {
-    console.log("[TUTOR_V3_EDGE_CALL] functionName: tutor-v3-premium", { sessionId, message, pedagogicalInteraction, retryCount });
+    const requestId = crypto.randomUUID();
+    const payload = { sessionId, message, pedagogicalInteraction, requestId };
+    
+    // [TUTOR_04_PAYLOAD_BUILT]
+    console.log(`[TUTOR_04_PAYLOAD_BUILT] requestId=${requestId}`, payload);
+
+    // [TUTOR_05_INVOKE_START]
+    console.log(`[TUTOR_05_INVOKE_START] requestId=${requestId}`);
+
+    // [TUTOR_06_FUNCTION_NAME]
+    console.log(`[TUTOR_06_FUNCTION_NAME] function=tutor-v3-premium`);
+
+    console.log("[TUTOR_V3_EDGE_CALL] functionName: tutor-v3-premium", payload);
     try {
       const { data, error } = await supabase.functions.invoke("tutor-v3-premium", {
-        body: { sessionId, message, pedagogicalInteraction }
+        body: payload
       });
       
       if (error) {
+        // [TUTOR_08_INVOKE_ERROR_RAW]
+        console.log(`[TUTOR_08_INVOKE_ERROR_RAW]`, error);
         // Estratégia de retry automático para erros transientes (máximo 2 retentativas)
         if (retryCount < 2 && error.message?.includes("Failed to fetch")) {
           console.warn(`[TUTOR_V2_RETRY] Attempt ${retryCount + 1}...`);
@@ -45,6 +59,8 @@ export const TutorV2Service = {
         }
         throw new Error(structured?.message || error.message || FRIENDLY_PROVIDER_ERROR);
       }
+      // [TUTOR_07_INVOKE_RESPONSE_RAW]
+      console.log(`[TUTOR_07_INVOKE_RESPONSE_RAW]`, data);
       return data;
     } catch (err: any) {
       if (retryCount < 2 && (err.message?.includes("NetworkError") || err.message?.includes("AbortError"))) {

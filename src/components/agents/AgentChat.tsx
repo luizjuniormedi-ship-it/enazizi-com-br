@@ -114,6 +114,18 @@ const AgentChat = ({
     fsrsContext: topic ? { dueCards: dueByTopic(topic), totalDue } : undefined,
   });
 
+  // [TUTOR_28_RENDER_MESSAGES_COUNT]
+  console.log(`[TUTOR_28_RENDER_MESSAGES_COUNT] count=${chat.messages.length}`);
+  if (chat.messages.length > 0) {
+    const lastMsg = chat.messages[chat.messages.length - 1];
+    // [TUTOR_29_RENDER_LAST_MESSAGE]
+    console.log(`[TUTOR_29_RENDER_LAST_MESSAGE] role=${lastMsg.role} contentLen=${lastMsg.content?.length}`);
+    if (lastMsg.role === 'assistant' && lastMsg.content?.length > 0) {
+      // [TUTOR_30_ASSISTANT_MESSAGE_VISIBLE]
+      console.log(`[TUTOR_30_ASSISTANT_MESSAGE_VISIBLE] true`);
+    }
+  }
+
   const { isAdmin } = useAdminCheck();
   const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage, generateTextualLesson } = useTutorCME();
   const sync = useTutorAdaptiveSync();

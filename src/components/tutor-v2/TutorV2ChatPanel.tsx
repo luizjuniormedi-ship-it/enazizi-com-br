@@ -36,7 +36,21 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   }, [messages, isTyping]);
 
   const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
-    if (!text.trim() || isTyping || !user) return;
+    const requestId = crypto.randomUUID();
+    // [TUTOR_01_SEND_CLICKED]
+    console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId}`);
+
+    if (!text.trim() || isTyping || !user) {
+      console.warn(`[TUTOR] SEND_SKIPPED id=${requestId}`, { text: !!text.trim(), isTyping, user: !!user });
+      return;
+    }
+
+    // [TUTOR_02_MESSAGE_TEXT]
+    console.log(`[TUTOR_02_MESSAGE_TEXT] text="${text.slice(0, 50)}..."`);
+
+    // [TUTOR_03_AUTH_SESSION]
+    console.log(`[TUTOR_03_AUTH_SESSION] userId=${user?.id} hasSession=${!!session.id}`);
+
     setError(null);
     triggerInteraction({ 
       state: 'thinking', 
@@ -81,17 +95,31 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       await addMessage(user.id, "user", text);
 
       // Call AI
+      console.log(`[TUTOR_V3_START_CALL] id=${requestId}`);
       const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
 
       if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
+
+      // [TUTOR_22_FRONTEND_DATA_RECEIVED]
+      console.log("[TUTOR_22_FRONTEND_DATA_RECEIVED] requestId=" + requestId, response);
+
+      const content = response.content || response.message || response.answer || "";
+      // [TUTOR_23_CONTENT_EXTRACTED]
+      console.log(`[TUTOR_23_CONTENT_EXTRACTED] contentLen=${content?.length}`);
       if (response?.fallback) {
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
       if (response?.content) {
+        // [TUTOR_24_ASSISTANT_MESSAGE_CREATED]
+        console.log(`[TUTOR_24_ASSISTANT_MESSAGE_CREATED] id=${requestId}`);
+        
+        // [TUTOR_25_SET_MESSAGES_CALLED]
+        console.log(`[TUTOR_25_SET_MESSAGES_CALLED] id=${requestId}`);
+
         setMessages((prev) => {
           const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === response.content);
           if (alreadyVisible) return prev;
-          return [
+          const newMessages = [
             ...prev,
             {
               id: response.requestId || crypto.randomUUID(),
@@ -103,7 +131,14 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
               metadata: { fallback_used: !!response.fallback, provider: response.provider },
             },
           ];
+          // [TUTOR_26_MESSAGES_AFTER_APPEND]
+          console.log(`[TUTOR_26_MESSAGES_AFTER_APPEND] count=${newMessages.length}`);
+          return newMessages;
         });
+        
+        // Persist assistant message
+        console.log(`[TUTOR_V3_PERSIST_ASSISTANT] id=${requestId}`);
+        await addMessage(user.id, "assistant", response.content);
       }
       setLastFailedMessage(null);
 
@@ -148,6 +183,8 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       toast.error(friendlyMessage);
     } finally {
       setIsTyping(false);
+      // [TUTOR_27_LOADING_FALSE]
+      console.log(`[TUTOR_27_LOADING_FALSE] id=${requestId}`);
     }
   };
 
