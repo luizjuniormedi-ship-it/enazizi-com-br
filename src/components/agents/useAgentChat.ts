@@ -280,21 +280,18 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         requestId
       });
 
-      // Watchdog implementation
+      // Watchdog implementation (Reduced to 45s per requirement)
       const watchdogTimeout = setTimeout(() => {
         if (isLoading) {
-          console.error(`[TUTOR] WATCHDOG_TRIGGERED id=${requestId} - Stage: ${loadingStage} - elapsed=${Date.now() - startTime}ms`);
-          setIsLoading(false);
-          setLoadingStage("");
-          const fallbackMsg = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
+          console.error(`[TUTOR_TIMEOUT] id=${requestId} - Stage: ${loadingStage} - elapsed=${Date.now() - startTime}ms`);
+          finalizeLoading();
+          
+          const fallbackMsg = "O Tutor está demorando mais que o esperado para processar esta complexidade médica. Por favor, tente uma pergunta mais específica ou tente novamente em alguns instantes.";
           
           setMessages(prev => {
             const last = prev[prev.length - 1];
-            if (last && last.role === "assistant") {
-              if (!last.content || last.isError) {
-                return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMsg, isError: true } : m);
-              }
-              return prev;
+            if (last && last.role === "assistant" && (last.isError || !last.content)) {
+              return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMsg, isError: true } : m);
             }
             if (last && last.role === "user") {
               return [...prev, { role: "assistant", content: fallbackMsg, isError: true }];
@@ -303,12 +300,13 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           });
 
           toast({
-            title: "Instabilidade Detectada",
-            description: "A resposta está demorando mais que o esperado. O Tutor continuará com o conhecimento disponível.",
+            title: "Tempo Esgotado",
+            description: "A IA demorou muito para responder. Tente simplificar a pergunta.",
             variant: "destructive"
           });
         }
-      }, 120000); // 120s watchdog for high-quality medical generation
+      }, 45000); 
+
 
       const convId = await history.ensureConversation(text);
       if (convId) {
@@ -365,8 +363,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       }
 
       const applyDelta = (fullText: string, data?: any) => {
-        if (!fullText) return;
-        if (!assistantSoFar) setLoadingStage(""); // Clear stage immediately when first content arrives
+        if (!fullText && !assistantSoFar) return;
+        
+        console.log(`[TUTOR_UI_PARSED_TEXT] len=${fullText?.length}`, {
+          requestId,
+          isFirst: !assistantMsgCreated
+        });
+
+        if (!assistantSoFar) setLoadingStage(""); 
         assistantSoFar = fullText;
 
         const ragBibliography = data?.sources?.map((s: any) => ({
@@ -378,6 +382,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
         if (!assistantMsgCreated) {
           assistantMsgCreated = true;
+          console.log(`[TUTOR_UI_MESSAGE_APPENDED] id=${requestId}`);
           setMessages((prev) => [...prev, { role: "assistant", content: assistantSoFar, bibliography: ragBibliography }]);
         } else {
           setMessages((prev) =>
@@ -390,7 +395,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         clearTimeout(watchdogTimeout);
         setIsLoading(false);
         setLoadingStage("");
-        console.log(`[TUTOR] FINALIZED id=${requestId} elapsed=${Date.now() - startTime}ms`);
+        console.log(`[TUTOR_UI_LOADING_FALSE] id=${requestId} elapsed=${Date.now() - startTime}ms`);
       };
 
       const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
@@ -430,7 +435,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
           onComplete: (finalText) => {
-            console.log(`[TUTOR] STREAM_COMPLETE id=${requestId}`, { len: finalText?.length });
+            console.log(`[TUTOR_UI_MESSAGE_APPENDED] FINAL id=${requestId}`, { len: finalText?.length });
             finalizeLoading();
           },
           onError: ({ status, message }) => {
