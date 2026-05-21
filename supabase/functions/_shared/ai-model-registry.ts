@@ -6,13 +6,13 @@
 
 export const ALLOWED_MODELS = {
   // Primary model for content generation
-  generation: "openai/gpt-4o",
+  generation: "gpt-4o",
   
   // High-performance model for complex reasoning or specialized tasks
-  reasoning: "openai/gpt-4o",
+  reasoning: "gpt-4o",
   
   // Embedding model for vector search
-  embeddings: "openai/text-embedding-3-small",
+  embeddings: "text-embedding-3-small",
 } as const;
 
 export const DEFAULT_FAST_MODEL = "google/gemini-2.5-flash";

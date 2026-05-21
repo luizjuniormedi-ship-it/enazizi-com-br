@@ -528,30 +528,46 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   const totalStart = Date.now();
   const attempts: AIAttempt[] = [];
 
-
   const fullChain: ModelRef[] = [
     { provider: selection.provider, model: selection.model },
     ...selection.fallbackChain,
   ];
 
+  // If primary provider is lovable-ai and we have OpenAI key, consider switching or ensuring OpenAI is in fallback
+  const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
+  if (hasOpenAI && selection.provider === "lovable-ai") {
+    // Add OpenAI version of the model to the beginning of the chain to ensure it's tried first as per user request
+    const modelClean = selection.model.replace("openai/", "");
+    if (!fullChain.some(c => c.provider === "openai" && c.model === modelClean)) {
+      fullChain.unshift({ provider: "openai", model: modelClean });
+    }
+  }
+
   // Health-aware filtering: pula modelos com falha recente conhecida.
-  // Se nenhum sobrar, mantém a chain original (não bloqueia tudo).
   const chain = await filterByHealth(input.supabase, fullChain);
 
   for (let i = 0; i < chain.length; i++) {
     const ref = chain[i];
-    // Use higher token limit for deep tutor/clinical tasks
     const needsDeep = (input.taskType === "tutor_chat" && input.complexity === "high") ||
                       input.taskType === "clinical_reasoning" ||
                       input.taskType === "simulado_review";
     const maxTokens = needsDeep ? AI_MAX_TOKENS_DEEP : AI_MAX_TOKENS;
     const apiKey = getAIKey(ref.provider);
+    
     if (!apiKey) {
       attempts.push({ ...ref, success: false, code: "AI_AUTH_ERROR", message: `Missing key for provider ${ref.provider}`, latency_ms: 0 });
       continue;
     }
+
     const r = await callOnce(ref, apiKey, input.messages, maxTokens);
     attempts.push(r.attempt);
+
+    // Se o erro for 402 (quota exhausted no gateway Lovable), forçar fallback para OpenAI se disponível
+    if (!r.attempt.success && r.attempt.status === 402 && ref.provider === "lovable-ai" && hasOpenAI) {
+      console.warn("[AI_RUNTIME_ORCHESTRATOR] 402 detected on Lovable Gateway. Falling back to OpenAI.");
+      // We don't return here, the loop will continue to the next candidate (which might be OpenAI)
+    }
+
     if (r.attempt.success && r.content) {
       const result: AIRunResult = {
         content: r.content,
@@ -562,7 +578,9 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
         latencyMs: Date.now() - totalStart,
         selection,
       };
-      await logRun(input.supabase, input, selection, { ...result, success: true } as any);
+      // Log fallback if switched from Lovable to OpenAI due to 402 or other failure
+      const provider_fallback = i > 0 && ref.provider === "openai" ? "openai" : undefined;
+      await logRun(input.supabase, input, selection, { ...result, success: true, metadata: { ...selection, provider_fallback } } as any);
       return result;
     }
   }
