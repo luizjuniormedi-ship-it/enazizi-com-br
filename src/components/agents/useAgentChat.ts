@@ -366,7 +366,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       const applyDelta = (fullText: string, data?: any) => {
         if (!fullText) return;
-        if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
+        if (!assistantSoFar) setLoadingStage(""); // Clear stage immediately when first content arrives
         assistantSoFar = fullText;
 
         const ragBibliography = data?.sources?.map((s: any) => ({
