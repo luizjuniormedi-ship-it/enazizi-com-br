@@ -31,7 +31,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { message, sessionId, currentBlock: bodyBlock } = body;
+    const { message, sessionId, currentBlock: bodyBlock, newTopic } = body;
 
     // LAZY CONFIG
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -44,17 +44,34 @@ serve(async (req) => {
 
     // FETCH SESSION (LAZY)
     let session = null;
+    let sessionTopic = null;
     if (sessionId) {
       try {
-        const { data } = await supabase.from("tutor_sessions").select("current_block").eq("id", sessionId).maybeSingle();
+        const { data } = await supabase.from("tutor_sessions").select("current_block, topic").eq("id", sessionId).maybeSingle();
         session = data;
+        sessionTopic = data?.topic;
       } catch (err) {
         console.error("[TUTOR_V3] Error fetching session:", err);
       }
     }
 
     // PHASE 4: currentBlock standard
-    const currentBlock = session?.current_block ?? bodyBlock ?? "BLOCO_1_MISSAO_CLINICA";
+    let currentBlock = session?.current_block ?? bodyBlock ?? "BLOCO_1_MISSAO_CLINICA";
+    
+    // HANDLE TOPIC CHANGE
+    if (newTopic) {
+      console.log(`[TUTOR_V3] Changing topic to: ${newTopic}`);
+      sessionTopic = newTopic;
+      currentBlock = "BLOCO_1_MISSAO_CLINICA";
+      
+      if (sessionId) {
+        await supabase.from("tutor_sessions").update({
+          topic: newTopic,
+          current_block: currentBlock,
+          updated_at: new Date().toISOString()
+        }).eq("id", sessionId);
+      }
+    }
 
     // LAYER 5: IA Call
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -63,8 +80,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: `${SYSTEM_PROMPT}\n\nBLOCO ATUAL: ${currentBlock}` },
-          { role: "user", content: message }
+          { role: "system", content: `${SYSTEM_PROMPT}\n\nASSUNTO: ${sessionTopic || "Assunto Geral"}\nBLOCO ATUAL: ${currentBlock}` },
+          { role: "user", content: newTopic ? `Olá preceptor, quero mudar de assunto para: ${newTopic}. Vamos começar do Bloco 1 com um novo caso clínico.` : message }
         ],
         temperature: 0.7,
       }),
@@ -78,9 +95,10 @@ serve(async (req) => {
     const blocks = ["BLOCO_1_MISSAO_CLINICA", "BLOCO_2_ROADMAP", "BLOCO_3_FISIOPATOLOGIA", "BLOCO_4_CONDUTA", "BLOCO_5_INFLEXAO", "BLOCO_6_FECHAMENTO"];
     
     // Check for explicit continuation
-    const userWantsNext = message?.toLowerCase().includes("continuar") || 
-                         message?.toLowerCase().includes("próximo") || 
-                         message?.toLowerCase().includes("proximo");
+    const userWantsNext = !newTopic && (
+                          message?.toLowerCase().includes("continuar") || 
+                          message?.toLowerCase().includes("próximo") || 
+                          message?.toLowerCase().includes("proximo"));
 
     if (userWantsNext) {
       const currentIndex = blocks.indexOf(currentBlock);
@@ -105,6 +123,7 @@ serve(async (req) => {
       success: true,
       content,
       currentBlock: nextBlock,
+      topic: sessionTopic,
       shouldWaitForStudent: true,
       correlation_id: correlationId,
       request_id: requestId,
