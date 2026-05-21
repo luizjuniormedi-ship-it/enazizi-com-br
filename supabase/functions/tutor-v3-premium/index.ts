@@ -254,7 +254,13 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         completion_tokens: aiResponse?.usage?.completion_tokens || 0,
         model_used: aiResponse?.model || "unknown",
         topic: topic,
-        metadata: { complexity, is_loop: isLoop, fatigue, sessionId }
+        metadata: { 
+          complexity, 
+          is_loop: isLoop, 
+          fatigue, 
+          sessionId,
+          error: aiError ? (aiError as Error).message : null 
+        }
       }).catch(e => logger.warn("METRICS_FAIL", e.message));
 
     } catch (e) {
