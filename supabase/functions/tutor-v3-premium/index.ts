@@ -3,6 +3,8 @@ import { buildPedagogicalContext, saveTutorMemory } from "../_shared/tutor-memor
 import { auditPedagogicalQuality } from "../_shared/cognitive-governance-helpers.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 
+console.log("[TUTOR_01_BOOT]");
+
 const SYSTEM_PROMPT_V3 = `
 Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
 Sua missão é atuar como um preceptor de residência em um hospital de alta complexidade.
@@ -54,49 +56,50 @@ function estimateStudentFatigue(history: any[]): number {
 
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const runtimeStart = Date.now();
-  console.log("[TUTOR_09_EDGE_BOOT]");
-  console.log(`[TUTOR_10_REQUEST_RECEIVED] ts=${new Date().toISOString()}`);
-  console.log(`[TUTOR_11_METHOD] ${req.method}`);
+  console.log("[TUTOR_02_HANDLER_START]");
+  console.log(`[TUTOR_03_REQUEST_RECEIVED] ts=${new Date().toISOString()}`);
+  console.log(`[TUTOR_04_METHOD] ${req.method}`);
   
-  // 1. AUTHENTICATION: Mandatory check
+  // 1. AUTHENTICATION
+  console.log("[TUTOR_05_AUTH_START]");
   const auth = await requireAuth(req);
   if (auth.ok) {
-    console.log("[TUTOR_14_AUTH_HEADER_PRESENT] true");
+    console.log("[TUTOR_06_AUTH_SUCCESS]");
   } else {
-    console.log("[TUTOR_14_AUTH_HEADER_PRESENT] false");
+    console.warn("[TUTOR_06_AUTH_FAILED]");
   }
 
   // 2. BODY PARSING
+  console.log("[TUTOR_07_BODY_PARSE_START]");
   let body: any = {};
   try {
     const rawBody = await req.text();
-    console.log(`[TUTOR_12_BODY_RAW] ${rawBody.slice(0, 500)}`);
     if (!rawBody || rawBody.trim() === "") {
+      console.log("[TUTOR_08_BODY_EMPTY]");
       return new Response(JSON.stringify({ ok: true, health: "alive", function: "tutor-v3-premium" }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
     body = JSON.parse(rawBody);
-    console.log("[TUTOR_13_BODY_PARSED]", body);
+    console.log("[TUTOR_09_BODY_PARSE_SUCCESS]");
   } catch (e) {
+    console.error("[TUTOR_09_BODY_PARSE_ERROR]", e.message);
     logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { error: e.message });
     body = {};
   }
 
   // Quick Healthcheck route
   if (body.healthcheck) {
+    console.log("[TUTOR_10_HEALTHCHECK]");
     return new Response(JSON.stringify({
       ok: true,
       function: "tutor-v3-premium",
-      correlation_id: correlation.correlationId,
-      env: {
-        hasSupabaseUrl: !!Deno.env.get("SUPABASE_URL"),
-        hasAiKey: !!Deno.env.get("GEMINI_API_KEY") || !!Deno.env.get("OPENAI_API_KEY")
-      }
+      correlation_id: correlation.correlationId
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   
   // 3. INPUT PREPARATION
+  console.log("[TUTOR_11_INPUT_PREP_START]");
   let message = String(body.message || "").trim();
   let history = Array.isArray(body.history) ? body.history : (Array.isArray(body.messages) ? body.messages : []);
   
@@ -109,6 +112,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   }
 
   if (!message) {
+    console.log("[TUTOR_12_MESSAGE_MISSING]");
     return new Response(JSON.stringify({
       content: "Olá! Como posso ajudar você hoje?",
       metrics: { latency_ms: Date.now() - runtimeStart }
@@ -120,31 +124,49 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const sessionId = typeof body.sessionId === "string" ? body.sessionId : crypto.randomUUID();
 
   // 4. SESSION STATE & PEDAGOGY
+  console.log("[TUTOR_13_SESSION_FETCH_START]", { sessionId });
   let currentBlock = "BLOCO_1_MISSAO_CLINICA";
   let completedBlocks: string[] = [];
   
   if (sessionId) {
-    const { data: sessionData } = await supabaseAdmin
-      .from("tutor_sessions")
-      .select("current_block, completed_blocks")
-      .eq("id", sessionId)
-      .maybeSingle();
-    
-    if (sessionData) {
-      currentBlock = sessionData.current_block || "BLOCO_1_MISSAO_CLINICA";
-      completedBlocks = sessionData.completed_blocks || [];
+    try {
+      const { data: sessionData, error: sessionError } = await supabaseAdmin
+        .from("tutor_sessions")
+        .select("current_block, completed_blocks")
+        .eq("id", sessionId)
+        .maybeSingle();
+      
+      if (sessionError) {
+        console.error("[TUTOR_14_SESSION_FETCH_ERROR]", sessionError.message);
+      } else if (sessionData) {
+        console.log("[TUTOR_14_SESSION_FETCH_SUCCESS]", sessionData);
+        // USE CAMELCASE INTERNALLY TO AVOID ReferenceError if anyone uses it without sessionData prefix
+        currentBlock = sessionData.current_block || "BLOCO_1_MISSAO_CLINICA";
+        completedBlocks = sessionData.completed_blocks || [];
+      } else {
+        console.log("[TUTOR_14_SESSION_NOT_FOUND]");
+      }
+    } catch (err) {
+      console.error("[TUTOR_14_SESSION_FETCH_CRASH]", err.message);
     }
   }
 
   const userId = auth.userId || body.userId || (correlation as any).userId;
   const isLoop = detectCognitiveLoop(message, history);
   const fatigue = estimateStudentFatigue(history);
-  const memoryContext = userId ? await buildPedagogicalContext(supabaseAdmin, userId, topic).catch(() => ({ cached_blocks: [] })) : { cached_blocks: [] };
+  
+  console.log("[TUTOR_15_MEMORY_CONTEXT_START]");
+  const memoryContext = userId ? await buildPedagogicalContext(supabaseAdmin, userId, topic).catch((e) => {
+    console.warn("[TUTOR_16_MEMORY_CONTEXT_ERROR]", e.message);
+    return { cached_blocks: [] };
+  }) : { cached_blocks: [] };
+  console.log("[TUTOR_16_MEMORY_CONTEXT_SUCCESS]");
 
   let complexity: "baixa" | "media" | "alta" = "alta";
   if (message.length < 20) complexity = "baixa";
   else if (message.length < 100) complexity = "media";
 
+  console.log("[TUTOR_17_COGNITIVE_CONTEXT_BUILD]");
   const cognitiveContext = `
 [PEDAGOGICAL STATE]
 Current Block: ${currentBlock}
@@ -154,8 +176,8 @@ Mastery: ${masteryState}
 Fatigue: ${fatigue.toFixed(2)}
 
 INSTRUCTION: 
-If the user is answering a question from the previous block, evaluate it and then provide ONLY the next block: ${currentBlock}.
-If they just started, provide ONLY BLOCO 1.
+If the user is answering a question from the previous block, evaluate it and then provide ONLY the next block.
+The block you should provide now is: ${currentBlock}.
 Always end with a question to validate before moving to the NEXT block.
 `;
 
@@ -170,15 +192,15 @@ Always end with a question to validate before moving to the NEXT block.
 
   // 5. BACKGROUND WORK DEFINITION
   const backgroundWork = async (finalText: string, metrics: any) => {
+    console.log("[TUTOR_25_BACKGROUND_WORK_START]");
     try {
       if (!userId) return;
       
-      // Update session state based on detected block in response
       const blockRegex = /## 🎯 BLOCO (\d+)/g;
       const matches = [...finalText.matchAll(blockRegex)];
       if (matches.length > 0 && sessionId) {
+        console.log("[TUTOR_26_SESSION_UPDATE_START]");
         const lastBlockNum = parseInt(matches[matches.length - 1][1]);
-        const nextBlock = `BLOCO_${lastBlockNum + 1}_...`; // Simplified, actual name mapped below
         
         const blockMap: Record<number, string> = {
           1: "BLOCO_2_ROADMAP_COGNITIVO",
@@ -206,9 +228,11 @@ Always end with a question to validate before moving to the NEXT block.
           completed_blocks: newCompletedBlocks,
           cognitive_progress: Math.round((lastBlockNum / 15) * 100)
         }).eq("id", sessionId);
+        console.log("[TUTOR_27_SESSION_UPDATE_SUCCESS]", { newCurrentBlock });
       }
 
       if (sessionId && finalText && finalText.length > 50) {
+        console.log("[TUTOR_28_MEMORY_SAVE_START]");
         await saveTutorMemory(supabaseAdmin, userId, {
           topic,
           content: finalText,
@@ -218,6 +242,7 @@ Always end with a question to validate before moving to the NEXT block.
       }
 
       if (finalText && finalText.length > 100) {
+        console.log("[TUTOR_29_AUDIT_START]");
         const audit = await auditPedagogicalQuality(finalText, topic).catch(() => null);
         if (audit) {
           await supabaseAdmin.from("pedagogical_quality_audits").insert({
@@ -232,26 +257,18 @@ Always end with a question to validate before moving to the NEXT block.
           });
         }
       }
-
-      await supabaseAdmin.from("tutor_runtime_metrics").insert({
-        user_id: userId,
-        correlation_id: correlation.correlationId,
-        function_name: "tutor-v3-premium",
-        tutor_generation_ms: metrics.generation_ms || 0,
-        memory_hit: !!metrics.memory_hit,
-        model_used: metrics.model_used || "unknown",
-        topic: topic,
-        metadata: { complexity, sessionId, error: metrics.error ? String(metrics.error) : null }
-      });
     } catch (e) {
-      console.warn("[tutor-v3] Background work error:", e.message);
+      console.warn("[TUTOR_BG_ERROR]", e.message);
     }
+    console.log("[TUTOR_30_BACKGROUND_WORK_FINISH]");
   };
 
   // 6. AI EXECUTION
+  console.log("[TUTOR_18_AI_PREP_FINISH]");
   try {
-    console.log("[TUTOR_15_PROVIDER_SELECTED] internal_gateway");
-    console.log("[TUTOR_16_AI_CALL_START]");
+    console.log("[TUTOR_19_PROVIDER_SELECTED] internal_gateway");
+    console.log("[TUTOR_20_AI_CALL_START]");
+    
     const aiResponse = await ai({
       taskType: "tutor",
       complexity,
@@ -260,52 +277,23 @@ Always end with a question to validate before moving to the NEXT block.
       stream: false, 
     });
 
+    console.log("[TUTOR_21_AI_CALL_SUCCESS]");
+    
+    let aiText = "";
     if (aiResponse instanceof Response) {
-      const aiText = await aiResponse.text();
-      const generationMs = Date.now() - runtimeStart;
-      const metrics = {
-        latency_ms: generationMs,
-        generation_ms: generationMs,
-        model_used: "streaming_converted_to_text"
-      };
-      
-      const finalResponse = { 
-        success: true,
-        ok: true,
-        content: aiText, 
-        answer: aiText,
-        message: aiText,
-        currentBlock: currentBlock,
-        shouldWaitForStudent: true,
-        nextExpectedAction: "student_reply",
-        correlation_id: correlation.correlationId, 
-        request_id: correlation.correlationId,
-        debug_stage: "final_response_from_stream",
-        metrics 
-      };
-      
-      console.log("[TUTOR_20_FINAL_RESPONSE_BUILT]", finalResponse);
-      console.log("[TUTOR_21_RESPONSE_RETURNED]");
-
-      if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
-      return new Response(JSON.stringify(finalResponse), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      aiText = await aiResponse.text();
+    } else {
+      aiText = aiResponse?.choices?.[0]?.message?.content || aiResponse?.content || "";
     }
     
-    const aiText = aiResponse?.choices?.[0]?.message?.content || aiResponse?.content || "";
-    console.log("[TUTOR_17_AI_CALL_SUCCESS]");
-    console.log(`[TUTOR_18_AI_RAW_TEXT] len=${aiText.length}`);
+    console.log(`[TUTOR_22_AI_TEXT_EXTRACTED] len=${aiText.length}`);
 
     const generationMs = Date.now() - runtimeStart;
     const metrics = {
       latency_ms: generationMs,
       generation_ms: generationMs,
-      model_used: aiResponse?.model || "unknown"
+      model_used: (aiResponse as any)?.model || "unknown"
     };
-
-    if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
-    else await backgroundWork(aiText, metrics);
 
     const finalResponse = { 
       success: true,
@@ -322,24 +310,32 @@ Always end with a question to validate before moving to the NEXT block.
       metrics 
     };
     
-    console.log("[TUTOR_20_FINAL_RESPONSE_BUILT]", finalResponse);
-    console.log("[TUTOR_21_RESPONSE_RETURNED]");
+    console.log("[TUTOR_23_FINAL_RESPONSE_BUILT]");
+    
+    if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
+    else backgroundWork(aiText, metrics); // non-blocking but no waitUntil
 
-    return new Response(JSON.stringify(finalResponse), { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    console.log("[TUTOR_24_RESPONSE_RETURNED]");
+    return new Response(JSON.stringify(finalResponse), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
+
   } catch (err) {
-    console.log("[TUTOR_19_AI_CALL_ERROR]", err.message);
+    console.error("[TUTOR_AI_ERROR]", err.message);
     logger.error("AI_FAIL", err.message);
+    
     const fallback = "Vamos iniciar IAM pelo essencial: conceito, fisiopatologia, diagnóstico e conduta. A IA principal oscilou, mas vou continuar com um modo seguro.";
     const errorResponse = { 
       success: true, // Mark as success:true for fallback
       content: fallback, 
       error: err.message,
-      debug_stage: "fallback_response"
+      debug_stage: "fallback_response",
+      correlation_id: correlation.correlationId
     };
-    console.log("[TUTOR_20_FINAL_RESPONSE_BUILT] (FALLBACK)", errorResponse);
-    console.log("[TUTOR_21_RESPONSE_RETURNED] (FALLBACK)");
+    
+    console.log("[TUTOR_23_FINAL_RESPONSE_BUILT] (FALLBACK)");
+    console.log("[TUTOR_24_RESPONSE_RETURNED] (FALLBACK)");
+    
     return new Response(JSON.stringify(errorResponse), { 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
