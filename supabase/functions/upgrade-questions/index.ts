@@ -78,7 +78,7 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
             model_used: ALLOWED_MODELS.reasoning,
             latency_ms: latency,
             status: result.quality_tier,
-            metadata: { correlation_id: correlation, question_id: q.id }
+            metadata: { correlation_id: correlation.correlationId, question_id: q.id }
           });
         } catch (govErr) {
           logger.warn("GOVERNANCE_LOG_FAIL", `Failed to log governance: ${govErr.message}`);
