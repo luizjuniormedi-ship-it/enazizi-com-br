@@ -1,5 +1,6 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { buildPedagogicalContext, saveTutorMemory } from "../_shared/tutor-memory-helpers.ts";
+import { auditPedagogicalQuality } from "../_shared/cognitive-governance-helpers.ts";
 
 const SYSTEM_PROMPT_V3 = `
 Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
