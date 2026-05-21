@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Mic, Paperclip, AlertTriangle } from "lucide-react";
+import { Send, Mic, Paperclip, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 
 
 interface TutorV2InputProps {
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, interaction?: string, topic?: string) => void;
   disabled?: boolean;
 }
 
@@ -75,6 +75,20 @@ export default function TutorV2Input({ onSendMessage, disabled }: TutorV2InputPr
           />
 
           <div className="flex gap-1.5 pb-1 pr-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => {
+                const newTopic = prompt("Para qual assunto médico deseja mudar?");
+                if (newTopic && newTopic.trim()) {
+                  onSendMessage(`Quero mudar de assunto para ${newTopic}`, undefined, newTopic);
+                }
+              }}
+              title="Mudar de Assunto"
+              className="h-11 w-11 rounded-2xl text-indigo-400 hover:text-white hover:bg-indigo-500/10 transition-colors hidden sm:flex"
+            >
+              <RefreshCw className="h-5 w-5" />
+            </Button>
             <Button 
               variant="ghost" 
               size="icon" 
