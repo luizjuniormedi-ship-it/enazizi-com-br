@@ -6,7 +6,7 @@ import { TutorV2Service } from "./services/TutorV2Service";
 import TutorV2MessageList from "./TutorV2MessageList";
 import TutorV2Input from "./TutorV2Input";
 import TutorV2Actions from "./TutorV2Actions";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { MascotAvatar } from "../mascot/MascotAvatar";
 import { MascotBubble } from "../mascot/MascotBubble";
@@ -204,6 +204,13 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         <div className="max-w-6xl mx-auto w-full space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 group">
+              <button 
+                onClick={() => window.location.href = '/dashboard/sessao-estudo'}
+                className="lg:hidden h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white"
+                title="Sair do Tutor"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
               <div className="flex-shrink-0">
                 <MascotAvatar state="idle" size="sm" />
               </div>
