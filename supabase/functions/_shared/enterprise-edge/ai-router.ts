@@ -85,12 +85,13 @@ export async function callAi(
   for (const model of uniqueModels) {
     const startTime = Date.now();
     const provider = model.split('/')[0] || "unknown";
+    const modelName = model.split('/')[1] || model;
 
     try {
       const tokenParam = getTokenParameterName(model);
       const normalizedPayload: any = { ...payload, model };
       
-      // Sanitização Final: Eliminar qualquer campo extra de modelo
+      // Sanitização Final
       delete normalizedPayload.taskType;
       delete normalizedPayload.cognitiveState;
       delete normalizedPayload.complexity;
@@ -102,7 +103,6 @@ export async function callAi(
       logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Attempting model ${model}`, { 
         correlation_id: logger.correlationId,
         resolvedModel: model,
-        originalModel: payload.model,
         taskType: payload.taskType
       });
 
@@ -112,25 +112,72 @@ export async function callAi(
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // Increased to 120s for higher complexity models
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-      const res = await fetch(LOVABLE_GATEWAY, {
+      // --- LOGIC FOR DIRECT FALLBACK ---
+      let targetUrl = LOVABLE_GATEWAY;
+      let targetHeaders: Record<string, string> = {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+        "X-Correlation-Id": logger.correlationId
+      };
+
+      // Attempt initial call to Gateway
+      let res = await fetch(targetUrl, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-          "X-Correlation-Id": logger.correlationId
-        },
+        headers: targetHeaders,
         body: JSON.stringify(normalizedPayload),
         signal: controller.signal
-      }).finally(() => clearTimeout(timeoutId));
+      });
 
+      // --- 402 PAYMENT REQUIRED BYPASS ---
+      if (res.status === 402) {
+        logger.warn("GATEWAY_CREDIT_EXHAUSTED", "AI Gateway out of credits. Attempting direct provider bypass.", { model });
+        
+        if (provider === "google") {
+          const geminiKey = Deno.env.get("GEMINI_API_KEY");
+          if (geminiKey) {
+            // Google OpenAI-compatible endpoint
+            targetUrl = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
+            targetHeaders = {
+              "Authorization": `Bearer ${geminiKey}`,
+              "Content-Type": "application/json"
+            };
+            // Remove provider prefix for direct call
+            normalizedPayload.model = modelName;
+            
+            res = await fetch(targetUrl, {
+              method: "POST",
+              headers: targetHeaders,
+              body: JSON.stringify(normalizedPayload),
+              signal: controller.signal
+            });
+          }
+        } else if (provider === "openai") {
+          const openaiKey = Deno.env.get("OPENAI_API_KEY");
+          if (openaiKey) {
+            targetUrl = "https://api.openai.com/v1/chat/completions";
+            targetHeaders = {
+              "Authorization": `Bearer ${openaiKey}`,
+              "Content-Type": "application/json"
+            };
+            normalizedPayload.model = modelName;
+            res = await fetch(targetUrl, {
+              method: "POST",
+              headers: targetHeaders,
+              body: JSON.stringify(normalizedPayload),
+              signal: controller.signal
+            });
+          }
+        }
+      }
+
+      clearTimeout(timeoutId);
       const latency = Date.now() - startTime;
 
       if (!res.ok) {
         const errorText = await res.text();
         
-        // Report health
         const reportError = (async () => {
           await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
             provider,
