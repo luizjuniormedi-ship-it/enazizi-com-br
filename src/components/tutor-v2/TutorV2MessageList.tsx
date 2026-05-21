@@ -73,7 +73,21 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
         </motion.div>
       )}
 
-      {messages.map((msg, idx) => (
+      {messages.map((msg, idx) => {
+        // [TUTOR_28_RENDER_MESSAGES_COUNT]
+        if (idx === 0) console.log(`[TUTOR_28_RENDER_MESSAGES_COUNT] count=${messages.length}`);
+        
+        if (idx === messages.length - 1) {
+          // [TUTOR_29_RENDER_LAST_MESSAGE]
+          console.log(`[TUTOR_29_RENDER_LAST_MESSAGE] role=${msg.role} contentLen=${msg.content?.length}`);
+          
+          if (msg.role === 'assistant' && msg.content?.length > 0) {
+            // [TUTOR_30_ASSISTANT_MESSAGE_VISIBLE]
+            console.log(`[TUTOR_30_ASSISTANT_MESSAGE_VISIBLE] true`);
+          }
+        }
+        
+        return (
         <motion.div
           key={msg.id || idx}
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -192,7 +206,7 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
             </div>
           </div>
         </motion.div>
-      ))}
+      )})}
 
       {isTyping && (
         <motion.div

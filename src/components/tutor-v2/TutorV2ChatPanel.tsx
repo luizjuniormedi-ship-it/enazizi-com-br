@@ -109,10 +109,16 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
       if (response?.content) {
+        // [TUTOR_24_ASSISTANT_MESSAGE_CREATED]
+        console.log(`[TUTOR_24_ASSISTANT_MESSAGE_CREATED] id=${requestId}`);
+        
+        // [TUTOR_25_SET_MESSAGES_CALLED]
+        console.log(`[TUTOR_25_SET_MESSAGES_CALLED] id=${requestId}`);
+
         setMessages((prev) => {
           const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === response.content);
           if (alreadyVisible) return prev;
-          return [
+          const newMessages = [
             ...prev,
             {
               id: response.requestId || crypto.randomUUID(),
@@ -124,6 +130,9 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
               metadata: { fallback_used: !!response.fallback, provider: response.provider },
             },
           ];
+          // [TUTOR_26_MESSAGES_AFTER_APPEND]
+          console.log(`[TUTOR_26_MESSAGES_AFTER_APPEND] count=${newMessages.length}`);
+          return newMessages;
         });
       }
       setLastFailedMessage(null);
