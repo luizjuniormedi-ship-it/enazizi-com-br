@@ -346,13 +346,13 @@ export function parseAiJson(rawContent: string): any {
   if (codeBlockMatch) {
     return tryParse(codeBlockMatch[1].trim());
   }
+  const arrMatch = content.match(/\[\s*\{[\s\S]*\}\s*\]/);
+  if (arrMatch) {
+    return tryParse(arrMatch[0]);
+  }
   const objMatch = content.match(/\{[\s\S]*\}/);
   if (objMatch) {
     return tryParse(objMatch[0]);
-  }
-  const arrMatch = content.match(/\[[\s\S]*\]/);
-  if (arrMatch) {
-    return tryParse(arrMatch[0]);
   }
   throw new Error("No valid JSON found in AI response");
 }
