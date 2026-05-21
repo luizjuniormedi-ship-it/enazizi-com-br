@@ -121,7 +121,8 @@ const AgentMessageItem = memo(
     const showConsolidationCard = msg.role === "assistant" && 
                                  isPedagogicalSession && 
                                  isLastAssistantMessage && 
-                                 !isLoading;
+                                 !isLoading &&
+                                 isAllTextUnlocked;
 
     useEffect(() => {
       if (msg.role === "assistant" && !isLoading && (msg as any).id) {
