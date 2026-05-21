@@ -36,9 +36,12 @@ DIRETRIZES:
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
   const body = await req.json();
   const { message, history = [], topic, fsrsContext, masteryState, sessionId } = body;
-  const userId = correlation.userId || body.userId;
+  
+  // Hardening: check multiple sources for userId
+  const userId = correlation.userId || body.userId || body.user_id;
 
   if (!userId) {
+    logger.error("MISSING_USER_ID", "No User ID found in correlation or body", { bodyKeys: Object.keys(body) });
     throw new Error("User ID is required for longitudinal memory.");
   }
 
