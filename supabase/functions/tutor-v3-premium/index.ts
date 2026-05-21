@@ -242,6 +242,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
             topic,
             content: aiText,
             sessionId: sessionId,
+            masteryLevel: masteryState
           });
         } catch (e) {
           logger.warn("SAVE_MEMORY_FAIL", (e as Error).message);
