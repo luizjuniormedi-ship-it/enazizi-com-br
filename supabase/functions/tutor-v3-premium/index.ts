@@ -214,7 +214,6 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     try {
       const pStart = Date.now();
       
-      // Save memory if session exists
       // 1. Save memory if session exists
       if (sessionId) {
         await saveTutorMemory(supabaseAdmin, userId, {
