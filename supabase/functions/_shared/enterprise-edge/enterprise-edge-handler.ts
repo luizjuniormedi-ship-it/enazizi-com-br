@@ -98,7 +98,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
                 continue;
               }
               
-              waitUntil((async () => {
+              const reportIncident = (async () => {
                 await supabaseAdmin.from("ai_incidents").insert({
                   function_name: functionName,
                   model_name: response.model,
@@ -108,7 +108,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
                   correlation_id: correlation.correlationId,
                   metadata: { issues: quality.missingBlocks }
                 });
-              })());
+              })();
+              if (waitUntil) waitUntil(reportIncident);
             }
           }
 
