@@ -63,7 +63,7 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
             topic: q.topic,
             subtopic_id: q.subtopic_id,
             specialty_id: q.specialty_id,
-            user_id: user.id,
+            user_id: userId,
             is_global: true,
             generation_method: "upgrade_questions_pipeline"
           }));
