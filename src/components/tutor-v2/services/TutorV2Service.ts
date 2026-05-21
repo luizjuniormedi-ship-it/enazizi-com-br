@@ -30,8 +30,10 @@ export const TutorV2Service = {
       message, 
       pedagogicalInteraction, 
       requestId,
-      topic: "Medicina", // Fallback default
-      format: "markdown"
+      topic: null, // Deixe o backend decidir ou use null para não forçar
+      fsrsContext: {},
+      masteryState: "initial",
+      history: [] // Opcional, o backend pode ler do DB
     };
     
     // [TUTOR_04_PAYLOAD_BUILT]
