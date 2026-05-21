@@ -115,7 +115,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const topic = typeof body.topic === "string" ? body.topic : "Geral";
+  let topic = typeof body.topic === "string" ? body.topic : "Geral";
+  if (topic === "Geral" && message.length < 30) {
+    // Simple topic extraction for short messages
+    topic = message;
+  }
   const masteryState = typeof body.masteryState === "string" ? body.masteryState : "initial";
   const sessionId = typeof body.sessionId === "string" ? body.sessionId : crypto.randomUUID();
 
