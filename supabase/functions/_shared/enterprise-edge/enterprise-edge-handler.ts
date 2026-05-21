@@ -92,18 +92,22 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
               if (attempt < maxRetries) {
                 logger.info("SELF_HEALING", "Triggering retry with reasoning model due to quality failure");
                 request.model = "google/gemini-2.5-pro"; // Force higher quality model on retry
+                // Let's add a small delay before retry to avoid rapid-fire failures
+                await new Promise(r => setTimeout(r, 1000));
                 continue;
               }
               
-              await supabaseAdmin.from("ai_incidents").insert({
-                function_name: functionName,
-                model_name: response.model,
-                severity: "warning",
-                incident_type: "quality_failure",
-                message: `Quality lock failed after \${attempt + 1} attempts`,
-                correlation_id: correlation.correlationId,
-                metadata: { issues: quality.missingBlocks }
-              });
+              waitUntil((async () => {
+                await supabaseAdmin.from("ai_incidents").insert({
+                  function_name: functionName,
+                  model_name: response.model,
+                  severity: "warning",
+                  incident_type: "quality_failure",
+                  message: `Quality lock failed after ${attempt + 1} attempts`,
+                  correlation_id: correlation.correlationId,
+                  metadata: { issues: quality.missingBlocks }
+                });
+              })());
             }
           }
 

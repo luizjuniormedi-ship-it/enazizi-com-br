@@ -64,19 +64,21 @@ export async function callAi(
   let lastError = null;
 
   // Track the routing decision in DB
-  try {
-    await supabaseAdmin.from("ai_routing_decisions").insert({
-      correlation_id: logger.correlationId,
-      user_id: payload.userId,
-      task_type: payload.taskType,
-      cognitive_state: payload.cognitiveState,
-      requested_model: payload.model,
-      selected_model: baseModel,
-      routing_reason: routing.reason
-    });
-  } catch (err) {
-    logger.warn("ROUTING_LOG_FAIL", err.message);
-  }
+  waitUntil((async () => {
+    try {
+      await supabaseAdmin.from("ai_routing_decisions").insert({
+        correlation_id: logger.correlationId,
+        user_id: payload.userId,
+        task_type: payload.taskType,
+        cognitive_state: payload.cognitiveState,
+        requested_model: payload.model,
+        selected_model: baseModel,
+        routing_reason: routing.reason
+      });
+    } catch (err) {
+      logger.warn("ROUTING_LOG_FAIL", err.message);
+    }
+  })());
 
   for (const model of uniqueModels) {
     const startTime = Date.now();
@@ -127,13 +129,15 @@ export async function callAi(
         const errorText = await res.text();
         
         // Report health
-        await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
-          provider,
-          model,
-          status: "error",
-          latencyMs: latency,
-          error: errorText
-        });
+        waitUntil((async () => {
+          await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
+            provider,
+            model,
+            status: "error",
+            latencyMs: latency,
+            error: errorText
+          });
+        })());
 
         if (res.status === 400 && (errorText.includes("invalid model") || errorText.includes("Unsupported model"))) {
           logger.warn("AI_MODEL_INVALID", `Model ${model} rejected. Retrying chain.`);
@@ -151,21 +155,23 @@ export async function callAi(
       const cost = calculateCost(model, usage);
       
       // Governance & Health
-      await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
-        provider,
-        model,
-        status: "success",
-        latencyMs: latency
-      });
+      waitUntil((async () => {
+        await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
+          provider,
+          model,
+          status: "success",
+          latencyMs: latency
+        });
 
-      await AiGovernance.logResponse(supabaseAdmin, logger, {
-        model,
-        latency,
-        cost,
-        usage,
-        correlationId: logger.correlationId,
-        taskType: payload.taskType
-      });
+        await AiGovernance.logResponse(supabaseAdmin, logger, {
+          model,
+          latency,
+          cost,
+          usage,
+          correlationId: logger.correlationId,
+          taskType: payload.taskType
+        });
+      })());
 
       return data;
     } catch (error) {
