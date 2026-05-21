@@ -62,7 +62,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
           const response = await callAi({
             ...request,
             userId: userId || correlation.userId
-          }, logger, supabaseAdmin);
+          }, logger, supabaseAdmin, waitUntil);
           
           if (request.stream) return response;
 
@@ -72,7 +72,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
             const quality = validateTutorResponse(content);
             
             // Log quality results
-            waitUntil((async () => {
+            const logQuality = (async () => {
               await supabaseAdmin.from("ai_governance_logs")
                 .update({ 
                   hallucination_score: 100,
@@ -80,7 +80,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
                   quality_lock_status: quality.isValid ? "passed" : "failed"
                 })
                 .match({ metadata: { request_id: response.id } });
-            })());
+            })();
+            if (waitUntil) waitUntil(logQuality);
 
             if (!quality.isValid) {
               logger.warn("QUALITY_LOCK_FAILED", "AI response failed quality validation", { 
@@ -97,7 +98,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
                 continue;
               }
               
-              waitUntil((async () => {
+              const reportIncident = (async () => {
                 await supabaseAdmin.from("ai_incidents").insert({
                   function_name: functionName,
                   model_name: response.model,
@@ -107,7 +108,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
                   correlation_id: correlation.correlationId,
                   metadata: { issues: quality.missingBlocks }
                 });
-              })());
+              })();
+              if (waitUntil) waitUntil(reportIncident);
             }
           }
 
@@ -136,7 +138,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
       const latency = Date.now() - startTime;
       
-      waitUntil((async () => {
+      const logExecution = (async () => {
         try {
           await supabaseAdmin.from("edge_execution_logs").insert({
             function_name: functionName,
@@ -150,7 +152,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
         } catch (telemetryErr) {
           console.error("[enterprise-edge] Global telemetry failed:", telemetryErr);
         }
-      })());
+      })();
+      if (waitUntil) waitUntil(logExecution);
 
       return response;
 
@@ -161,7 +164,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
       logger.critical("FATAL_ERROR", err.message, { stack: err.stack });
 
-      waitUntil((async () => {
+      const reportIncident = (async () => {
         try {
           await supabaseAdmin.from("ai_incidents").insert({
             function_name: functionName,
@@ -184,7 +187,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
         } catch (incidentErr) {
           console.error("[enterprise-edge] Incident reporting failed:", incidentErr);
         }
-      })());
+      })();
+      if (waitUntil) waitUntil(reportIncident);
 
       return new Response(
         JSON.stringify({

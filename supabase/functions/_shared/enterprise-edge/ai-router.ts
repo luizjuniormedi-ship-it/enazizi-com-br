@@ -38,7 +38,8 @@ function calculateCost(model: string, usage: { prompt_tokens: number, completion
 export async function callAi(
   payload: AiRequest,
   logger: StructuredLogger,
-  supabaseAdmin: any
+  supabaseAdmin: any,
+  waitUntil?: (promise: Promise<any>) => void
 ) {
   const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -64,7 +65,7 @@ export async function callAi(
   let lastError = null;
 
   // Track the routing decision in DB
-  waitUntil((async () => {
+  const logRouting = (async () => {
     try {
       await supabaseAdmin.from("ai_routing_decisions").insert({
         correlation_id: logger.correlationId,
@@ -78,7 +79,8 @@ export async function callAi(
     } catch (err) {
       logger.warn("ROUTING_LOG_FAIL", err.message);
     }
-  })());
+  })();
+  if (waitUntil) waitUntil(logRouting);
 
   for (const model of uniqueModels) {
     const startTime = Date.now();
@@ -110,7 +112,7 @@ export async function callAi(
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // Increased to 120s for higher complexity models
 
       const res = await fetch(LOVABLE_GATEWAY, {
         method: "POST",
@@ -129,7 +131,7 @@ export async function callAi(
         const errorText = await res.text();
         
         // Report health
-        waitUntil((async () => {
+        const reportError = (async () => {
           await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
             provider,
             model,
@@ -137,7 +139,8 @@ export async function callAi(
             latencyMs: latency,
             error: errorText
           });
-        })());
+        })();
+        if (waitUntil) waitUntil(reportError);
 
         if (res.status === 400 && (errorText.includes("invalid model") || errorText.includes("Unsupported model"))) {
           logger.warn("AI_MODEL_INVALID", `Model ${model} rejected. Retrying chain.`);
@@ -155,7 +158,7 @@ export async function callAi(
       const cost = calculateCost(model, usage);
       
       // Governance & Health
-      waitUntil((async () => {
+      const reportSuccess = (async () => {
         await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
           provider,
           model,
@@ -171,7 +174,8 @@ export async function callAi(
           correlationId: logger.correlationId,
           taskType: payload.taskType
         });
-      })());
+      })();
+      if (waitUntil) waitUntil(reportSuccess);
 
       return data;
     } catch (error) {

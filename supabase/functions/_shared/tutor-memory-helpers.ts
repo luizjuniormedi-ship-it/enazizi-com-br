@@ -83,7 +83,7 @@ export async function saveTutorMemory(
   // Use tutor_lesson_memory which is confirmed to have 'title' and 'summary'
   const { data: memory, error } = await supabase
     .from("tutor_lesson_memory")
-    .insert({
+    .upsert({
       user_id: userId,
       source_session_id: params.sessionId,
       topic: params.topic,
@@ -91,7 +91,10 @@ export async function saveTutorMemory(
       title: title,
       summary: params.content.substring(0, 500) + "...",
       structured_content: { content: params.content },
-      status: 'published'
+      status: 'published',
+      updated_at: new Date().toISOString()
+    }, { 
+      onConflict: 'user_id,topic' 
     })
     .select()
     .single();

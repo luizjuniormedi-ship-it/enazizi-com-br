@@ -363,6 +363,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             fsrsContext,
             masteryState,
             requestId,
+            userId: user.id, // Explicitly pass userId for edge function longitudinal memory
             sessionId: history.activeConversationId || undefined,
             pedagogicalContext: pedSession.session ? {
               currentBlock: pedSession.session.currentBlock,
