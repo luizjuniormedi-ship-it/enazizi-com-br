@@ -219,7 +219,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
                 </p>
               </div>
             </div>
-            <TutorV2Actions session={session} />
+            <TutorV2Actions session={session} onSendMessage={handleSendMessage} />
           </div>
 
           {/* Cognitive Progress Bar */}
