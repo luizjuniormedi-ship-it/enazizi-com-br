@@ -62,18 +62,31 @@ function estimateStudentFatigue(history: any[]): number {
 
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const runtimeStart = Date.now();
+  
+  // 0. Handle OPTIONS for CORS explicitly just in case (though handler should handle it)
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   let body;
   try {
     body = await req.json();
   } catch (e) {
-    logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { error: e.message });
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { 
+    logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { 
+      error: e.message,
+      method: req.method,
+      contentType: req.headers.get("content-type")
+    });
+    return new Response(JSON.stringify({ 
+      error: "Invalid JSON body", 
+      details: e.message 
+    }), { 
       status: 400, 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
   }
   
-  const { message, history = [], topic, fsrsContext, masteryState, requestId } = body;
+  const { message, history = [], topic, fsrsContext, masteryState, requestId, sessionId } = body;
   const userId = correlation.userId || body.userId || body.user_id;
 
   logger.info("REQUEST_RECEIVED", "Processing tutor request", {
