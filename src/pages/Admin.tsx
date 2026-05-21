@@ -75,6 +75,7 @@ const KnowledgeBaseAdmin = lazy(() => import("@/components/admin/KnowledgeBaseAd
 const TutorQAPanel = lazy(() => import("@/components/admin/TutorQAPanel"));
 const ExamHarvesterPanel = lazy(() => import("@/components/admin/ExamHarvesterPanel").then(m => ({ default: m.ExamHarvesterPanel })));
 const TutorStabilizationDashboard = lazy(() => import("@/components/admin/cognitive-observatory/TutorStabilizationDashboard").then(m => ({ default: m.TutorStabilizationDashboard })));
+const CognitiveGovernanceDashboard = lazy(() => import("@/components/admin/cognitive-observatory/CognitiveGovernanceDashboard"));
 
 
 
