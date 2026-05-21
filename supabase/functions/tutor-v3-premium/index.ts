@@ -86,7 +86,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     });
   }
   
-  const { message, history = [], topic, fsrsContext, masteryState, requestId } = body;
+  const { message, history = [], topic, fsrsContext, masteryState, requestId, sessionId } = body;
   const userId = correlation.userId || body.userId || body.user_id;
 
   logger.info("REQUEST_RECEIVED", "Processing tutor request", {
