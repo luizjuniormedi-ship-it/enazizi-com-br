@@ -163,14 +163,20 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
       phrase: candidate.phrase || candidate.frase_mnemonica,
       explicacao_didatica: candidate.explicacao_didatica || candidate.explanation_didatica,
       explanation_didatica: candidate.explanation_didatica || candidate.explicacao_didatica,
+      explicacao_tecnica: candidate.explicacao_tecnica || candidate.explanation_tecnica,
+      explanation_tecnica: candidate.explanation_tecnica || candidate.explicacao_tecnica,
       cena_visual: candidate.cena_visual || candidate.scene_description,
       scene_description: candidate.scene_description || candidate.cena_visual,
       prompt_imagem: candidate.prompt_imagem || candidate.image_prompt,
+      // Associations
+      associacoes: candidate.items_map || [],
+      items_map: candidate.items_map || [],
       // Scores
       score_medico: candidate.score_medico || 70,
       score_pedagogico: candidate.score_pedagogico || 70,
       score_linguistico: candidate.score_linguistico || 70,
-      score_final: scoreFinal
+      score_final: scoreFinal,
+      quality_flag: scoreFinal >= 90 ? "high" : scoreFinal >= 75 ? "medium" : "low"
     };
 
     return new Response(JSON.stringify({ 
