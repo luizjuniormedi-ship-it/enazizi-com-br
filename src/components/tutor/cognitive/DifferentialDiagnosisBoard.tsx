@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertOctagon, Check, ChevronDown, Crosshair, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 
 import type {
   DifferentialDiagnosisBlock,
@@ -42,7 +43,12 @@ export function DifferentialDiagnosisBoard({ block }: Props) {
     return <CognitiveEmpty title="Diagnóstico diferencial" message="Sem hipóteses para ranquear." />;
   }
 
+  useEffect(() => {
+    console.log("[DifferentialDiagnosisBoard] Rendering with", sorted.length, "items");
+  }, [sorted.length]);
+
   return (
+
     <div className="rounded-2xl border border-border/60 bg-card/70 p-4 backdrop-blur-md">
       <div className="mb-3 flex items-start gap-2">
         <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/15 text-primary">
