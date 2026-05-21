@@ -163,14 +163,20 @@ export function useTutorStream() {
           "x-correlation-id": (body.correlation_id as string) || crypto.randomUUID(),
         };
         console.log(`[useTutorStream] Requesting ${url}`, { correlationId: headers["x-correlation-id"], method: "POST" });
-        return fetch(url, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-          signal: signal || controller.signal,
-          mode: 'cors',
-          credentials: 'omit'
-        });
+        
+        try {
+          return await fetch(url, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+            signal: signal || controller.signal,
+            mode: 'cors',
+            credentials: 'omit'
+          });
+        } catch (fetchErr: any) {
+          console.error("[useTutorStream] Fetch failed immediately:", fetchErr);
+          throw fetchErr;
+        }
       };
 
       const maxRetries = 2;
@@ -296,8 +302,12 @@ export function useTutorStream() {
         }
         console.error("[useTutorStream] error:", e);
         const errorMessage = e instanceof Error ? e.message : "Erro de conexão com o Tutor";
+        const isNetworkError = errorMessage.includes("Failed to fetch") || 
+                              errorMessage.includes("Load failed") || 
+                              errorMessage.includes("NetworkError");
+                              
         onError?.({
-          message: errorMessage.includes("Failed to fetch") ? "Falha de rede ao conectar com o Tutor IA. Verifique sua conexão." : errorMessage,
+          message: isNetworkError ? "Falha de rede ou CORS ao conectar com o Tutor IA. Verifique se o backend está ativo e sua conexão." : errorMessage,
         });
         return null;
       } finally {
