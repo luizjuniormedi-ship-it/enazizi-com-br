@@ -112,7 +112,7 @@ export async function callAi(
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // Increased to 120s for higher complexity models
 
       const res = await fetch(LOVABLE_GATEWAY, {
         method: "POST",
