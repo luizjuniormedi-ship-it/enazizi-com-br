@@ -205,21 +205,30 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       complexity,
       messages,
       userId,
+      stream: true, // Habilita streaming para evitar timeouts de 60s
     });
-    
-    // RESILIENT PARSER: Support multiple formats
-    aiText = aiResponse?.choices?.[0]?.message?.content || 
-             aiResponse?.content || 
-             aiResponse?.response || 
-             "";
-    
-    if (!aiText) {
-      throw new Error("AI returned empty content");
+
+    if (aiResponse instanceof Response) {
+      // Se for um stream, precisamos retornar o stream diretamente ou processá-lo
+      // Para manter compatibilidade com o frontend que espera SSE ou JSON,
+      // vamos retornar o stream do gateway diretamente (que já é SSE).
+      logger.info("TUTOR_V3_STREAM_START", "Starting streaming response");
+      
+      // Iniciamos o trabalho de background sem await
+      if (waitUntil) waitUntil(backgroundWork);
+      
+      return new Response(aiResponse.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" }
+      });
     }
     
-    logger.info("TUTOR_V3_AI_PROXY_STATUS", "AI Success", { 
-      model: aiResponse?.model, 
-      tokens: (aiResponse?.usage?.prompt_tokens || 0) + (aiResponse?.usage?.completion_tokens || 0)
+    // Fallback se não for stream (embora tenhamos pedido)
+    aiText = aiResponse?.choices?.[0]?.message?.content || 
+             aiResponse?.content || 
+             "";
+    
+    logger.info("TUTOR_V3_AI_PROXY_STATUS", "AI Success (Non-stream fallback)", { 
+      model: aiResponse?.model 
     });
   } catch (err) {
     aiError = err;
@@ -297,7 +306,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
   })();
 
-  if (waitUntil) waitUntil(backgroundWork); else await backgroundWork;
+  // backgroundWork já foi disparado se for stream. Se não for, disparamos aqui.
+  if (!(aiResponse instanceof Response)) {
+    if (waitUntil) waitUntil(backgroundWork); else await backgroundWork;
+  }
 
   // 8. FINAL CONTRACT COMPLIANCE
   const finalResponse = {

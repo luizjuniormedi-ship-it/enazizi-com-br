@@ -20,31 +20,33 @@ export async function buildPedagogicalContext(
   // Hardening: protect against missing inputs
   if (!userId) throw new Error("userId is required to build pedagogical context");
 
-  // 1. Fetch relevant learning memory blocks
-  const { data: blocks } = await supabase
-    .from("tutor_learning_memory")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("topic", topic)
-    .order("created_at", { ascending: false })
-    .limit(5);
+  // 1. Fetch relevant learning memory blocks, session summaries, and analogies in parallel
+  const [blocksRes, summariesRes, analogiesRes] = await Promise.all([
+    supabase
+      .from("tutor_learning_memory")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("topic", topic)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("tutor_session_summary")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(3),
+    supabase
+      .from("tutor_analogy_memory")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("topic", topic)
+      .gt("efficacy_score", 0.7)
+      .limit(3)
+  ]);
 
-  // 2. Fetch session summaries
-  const { data: summaries } = await supabase
-    .from("tutor_session_summary")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(3);
-
-  // 3. Fetch effective analogies
-  const { data: analogies } = await supabase
-    .from("tutor_analogy_memory")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("topic", topic)
-    .gt("efficacy_score", 0.7)
-    .limit(3);
+  const blocks = blocksRes.data;
+  const summaries = summariesRes.data;
+  const analogies = analogiesRes.data;
 
   // 4. Synthesize context
   const lastBlock = blocks && blocks.length > 0 ? blocks[0] : null;
