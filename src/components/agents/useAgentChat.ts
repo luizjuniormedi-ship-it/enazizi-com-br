@@ -92,6 +92,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [actionTimeline, setActionTimeline] = useState<TimelineEntry[]>([]);
   const [sendCooldown, setSendCooldown] = useState(false);
+  const consecutiveErrorsRef = useRef(0);
+  const lastErrorTimeRef = useRef<number>(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
