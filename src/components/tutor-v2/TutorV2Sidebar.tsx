@@ -27,7 +27,7 @@ interface TutorV2SidebarProps {
 
 export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) {
   return (
-    <aside className="w-80 border-r border-white/5 bg-slate-950 flex flex-col hidden xl:flex relative overflow-hidden">
+    <aside className="w-80 border-r border-white/5 bg-slate-950 flex flex-col hidden lg:flex relative overflow-hidden">
       {/* Sidebar background glow */}
       <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
       
