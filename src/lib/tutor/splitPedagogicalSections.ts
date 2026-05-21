@@ -12,7 +12,7 @@ export function splitPedagogicalSections(markdown: string): string[] {
   // 1. Matches "1. 🎯 Title" or "1. Title" or "🔄 Title"
   // 2. Looks for start of string or newline
   // 3. Optional number + dot OR specific emojis like 🔄
-  const headerRegex = /(?:^|\n)(?:\d+\.|\uD83D\uDD04|🔄|# BLOCO)\s+[\u2000-\u32FF\uD83C-\uD83E\uDC00-\uDFFF]*\s*[^:\n]{2,}/g;
+  const headerRegex = /(?:^|\n)(?:\d+\.|\uD83D\uDD04|🔄|# BLOCO|## 🎯 BLOCO)\s+[\u2000-\u32FF\uD83C-\uD83E\uDC00-\uDFFF]*\s*[^:\n]{2,}/g;
   
   const headerPositions: number[] = [];
   let match;
