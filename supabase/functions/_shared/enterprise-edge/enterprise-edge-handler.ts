@@ -72,7 +72,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
             const quality = validateTutorResponse(content);
             
             // Log quality results
-            waitUntil((async () => {
+            const logQuality = (async () => {
               await supabaseAdmin.from("ai_governance_logs")
                 .update({ 
                   hallucination_score: 100,
@@ -80,7 +80,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
                   quality_lock_status: quality.isValid ? "passed" : "failed"
                 })
                 .match({ metadata: { request_id: response.id } });
-            })());
+            })();
+            if (waitUntil) waitUntil(logQuality);
 
             if (!quality.isValid) {
               logger.warn("QUALITY_LOCK_FAILED", "AI response failed quality validation", { 
