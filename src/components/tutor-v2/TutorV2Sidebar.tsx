@@ -98,7 +98,6 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
 
           <button 
 
-          <button 
             onClick={() => {
               const newTopic = prompt("Para qual assunto médico deseja mudar?");
               if (newTopic && newTopic.trim()) {
