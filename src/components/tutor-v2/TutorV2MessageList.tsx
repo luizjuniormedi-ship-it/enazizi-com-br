@@ -116,7 +116,24 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
                 : "bg-gradient-to-br from-indigo-600/90 to-indigo-700/90 text-white border border-white/10 ml-auto max-w-[85%]"
             )}>
               {msg.role === "assistant" ? (
-                <ProgressiveBlocks content={msg.content} />
+                <div className="space-y-4">
+                  {msg.metadata?.blockTitle && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="h-6 w-1 bg-indigo-500 rounded-full" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                        {msg.metadata.blockTitle}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <ProgressiveBlocks content={msg.content} />
+                  
+                  {msg.metadata?.socraticQuestion && (
+                    <div className="mt-6 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 italic text-indigo-200/90 text-[13px] border-l-4 border-l-indigo-500">
+                      {msg.metadata.socraticQuestion}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="prose prose-invert prose-sm max-w-none prose-p:text-white prose-headings:text-white">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -126,9 +143,21 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
               {/* FSRS / Flashcard Inline Actions */}
               {msg.role === "assistant" && !msg.metadata?.question_review && (
                 <div className="mt-6 pt-6 border-t border-white/5 flex flex-wrap gap-2">
-                  <InlineAction icon={Plus} label="Salvar no FSRS" onClick={() => handleSaveFsrs(msg.content)} />
-                  <InlineAction icon={Brain} label="Gerar Flashcard" onClick={() => handleGenerateFlashcard(msg.content)} />
-                  <InlineAction icon={Activity} label="Error Bank" onClick={() => handleErrorBank(msg.content)} />
+                  <InlineAction 
+                    icon={Plus} 
+                    label="Salvar no FSRS" 
+                    onClick={() => handleSaveFsrs(msg.metadata?.actionsContext?.topic || msg.content)} 
+                  />
+                  <InlineAction 
+                    icon={Brain} 
+                    label="Gerar Flashcard" 
+                    onClick={() => handleGenerateFlashcard(msg.metadata?.actionsContext?.topic || msg.content)} 
+                  />
+                  <InlineAction 
+                    icon={Activity} 
+                    label="Error Bank" 
+                    onClick={() => handleErrorBank(msg.metadata?.actionsContext?.topic || msg.content)} 
+                  />
                 </div>
               )}
 
