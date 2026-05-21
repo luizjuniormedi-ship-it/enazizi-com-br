@@ -95,6 +95,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       await addMessage(user.id, "user", text);
 
       // Call AI
+      console.log(`[TUTOR_V3_START_CALL] id=${requestId}`);
       const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
 
       if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
@@ -134,6 +135,10 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
           console.log(`[TUTOR_26_MESSAGES_AFTER_APPEND] count=${newMessages.length}`);
           return newMessages;
         });
+        
+        // Persist assistant message
+        console.log(`[TUTOR_V3_PERSIST_ASSISTANT] id=${requestId}`);
+        await addMessage(user.id, "assistant", response.content);
       }
       setLastFailedMessage(null);
 

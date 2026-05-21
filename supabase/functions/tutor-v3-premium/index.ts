@@ -209,14 +209,36 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       complexity,
       messages: aiMessages,
       userId,
-      stream: true, 
+      stream: false, 
     });
 
     if (aiResponse instanceof Response) {
-      logger.info("STREAM_START", "Starting stream");
-      if (waitUntil) waitUntil(backgroundWork("", { generation_ms: 0, model_used: "streaming" }));
-      return new Response(aiResponse.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" }
+      const aiText = await aiResponse.text();
+      const generationMs = Date.now() - runtimeStart;
+      const metrics = {
+        latency_ms: generationMs,
+        generation_ms: generationMs,
+        model_used: "streaming_converted_to_text"
+      };
+      
+      const finalResponse = { 
+        success: true,
+        ok: true,
+        content: aiText, 
+        answer: aiText,
+        message: aiText,
+        correlation_id: correlation.correlationId, 
+        request_id: correlation.correlationId,
+        debug_stage: "final_response_from_stream",
+        metrics 
+      };
+      
+      console.log("[TUTOR_20_FINAL_RESPONSE_BUILT]", finalResponse);
+      console.log("[TUTOR_21_RESPONSE_RETURNED]");
+
+      if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
+      return new Response(JSON.stringify(finalResponse), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
     
