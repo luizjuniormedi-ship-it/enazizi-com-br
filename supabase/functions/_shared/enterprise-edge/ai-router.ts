@@ -99,6 +99,7 @@ export async function callAi(
       delete normalizedPayload.modelName;
       delete normalizedPayload.ai_model;
       delete normalizedPayload.selectedModel;
+      delete normalizedPayload.expectedBlock;
 
       logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Attempting model ${model}`, { 
         correlation_id: logger.correlationId,
