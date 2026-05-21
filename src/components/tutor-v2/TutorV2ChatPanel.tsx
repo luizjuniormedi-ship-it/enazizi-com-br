@@ -35,7 +35,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
     }
   }, [messages, isTyping]);
 
-  const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
+  const handleSendMessage = async (text: string, pedagogicalInteraction?: string, newTopic?: string) => {
     const requestId = crypto.randomUUID();
     // [TUTOR_01_SEND_CLICKED]
     console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId}`);
@@ -96,7 +96,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
 
       // Call AI
       console.log(`[TUTOR_V3_START_CALL] id=${requestId}`);
-      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
+      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction, newTopic);
 
       if (!response || (!response.content && !response.answer && !response.message && !response.response)) throw new Error(response?.error || "Erro na resposta da IA");
 
