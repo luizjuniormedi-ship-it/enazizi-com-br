@@ -371,7 +371,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
-        console.log(`[TUTOR] INVOKING_STREAM id=${requestId} url=${CHAT_URL}`);
+        console.log(`[TUTOR] INVOKING_STREAM id=${requestId} url=${CHAT_URL}`, {
+          method: "POST",
+          hasAuth: !!user
+        });
         
         // Log payload for forensics before sending
         const requestPayload = {

@@ -155,17 +155,20 @@ export function useTutorStream() {
 
       // Helper: fetch with current session token. Used twice so we can
       // transparently refresh + retry on 401 (post-Sprint-1 hardening).
-      const doFetch = async (token: string) =>
-        fetch(url, {
+      const doFetch = async (token: string) => {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        };
+        console.log(`[useTutorStream] Requesting ${url}`, { headers: Object.keys(headers) });
+        return fetch(url, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
+          headers,
           body: JSON.stringify(body),
           signal: signal || controller.signal,
         });
+      };
 
       const maxRetries = 2;
       let attempt = 0;
