@@ -42,6 +42,11 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // GET USER FROM AUTH
+    const authHeader = req.headers.get("Authorization")!;
+    const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    const userId = user?.id;
+
     // FETCH SESSION (LAZY)
     let session = null;
     let sessionTopic = null;
@@ -73,6 +78,41 @@ serve(async (req) => {
       }
     }
 
+    // LONGITUDINAL MEMORY FETCH
+    let memoryContext = "";
+    if (userId && sessionTopic) {
+      try {
+        const { data: memoryData } = await supabase
+          .from("tutor_learning_memory")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("topic", sessionTopic)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (memoryData) {
+          memoryContext = `
+[MEMÓRIA LONGITUDINAL DO ALUNO]
+- Tema já estudado antes: SIM
+- Nível de domínio anterior: ${memoryData.mastery_level || 'Não registrado'}
+- Principais erros prévios (Misconceptions): ${memoryData.misconceptions_detected?.join(", ") || 'Nenhum'}
+- Analogias que funcionaram: ${memoryData.effective_analogies?.join(", ") || 'Nenhuma'}
+- Ponto onde o aluno costuma travar: ${memoryData.explanation_summary || 'Não identificado'}
+- Último bloco atingido anteriormente: ${memoryData.block_title || 'Não registrado'}
+`;
+          console.log(`[TUTOR_V3] Memory hydrated for topic: ${sessionTopic}`);
+        } else {
+          memoryContext = `
+[MEMÓRIA LONGITUDINAL DO ALUNO]
+- Tema já estudado antes: NÃO
+`;
+        }
+      } catch (err) {
+        console.error("[TUTOR_V3] Memory fetch error:", err);
+      }
+    }
+
     // LAYER 5: IA Call
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -80,7 +120,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: `${SYSTEM_PROMPT}\n\nASSUNTO: ${sessionTopic || "Assunto Geral"}\nBLOCO ATUAL: ${currentBlock}` },
+          { role: "system", content: `${SYSTEM_PROMPT}\n\nASSUNTO: ${sessionTopic || "Assunto Geral"}\nBLOCO ATUAL: ${currentBlock}\n${memoryContext}` },
           { role: "user", content: newTopic ? `Olá preceptor, quero mudar de assunto para: ${newTopic}. Vamos começar do Bloco 1 com um novo caso clínico.` : message }
         ],
         temperature: 0.7,
@@ -107,6 +147,20 @@ serve(async (req) => {
       }
     }
 
+    // MEMORY UPDATE (PERSISTENCE) - LAZY
+    if (userId && sessionTopic) {
+      // In a real scenario, we would parse AI content to find new misconceptions or milestones.
+      // For now, let's update basic metadata to ensure the memory exists.
+      supabase.from("tutor_learning_memory").upsert({
+        user_id: userId,
+        topic: sessionTopic,
+        block_title: nextBlock,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,topic' }).then(({error}) => {
+        if (error) console.error("[TUTOR_V3] Memory update error:", error);
+      });
+    }
+
     // UPDATE SESSION (LAZY)
     if (sessionId && nextBlock !== currentBlock) {
       try {
@@ -127,7 +181,8 @@ serve(async (req) => {
       shouldWaitForStudent: true,
       correlation_id: correlationId,
       request_id: requestId,
-      debug_stage: "stable_v3_ready"
+      debug_stage: "stable_v3_ready",
+      memory_active: !!memoryContext
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
