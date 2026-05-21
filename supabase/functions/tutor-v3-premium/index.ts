@@ -72,11 +72,19 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
   }
-  const { message, history = [], topic, fsrsContext, masteryState } = body;
   
-  const rawSessionId = body.sessionId || body.session_id;
-  const sessionId = isValidUUID(rawSessionId) ? rawSessionId : null;
+  const { message, history = [], topic, fsrsContext, masteryState, requestId } = body;
   const userId = correlation.userId || body.userId || body.user_id;
+
+  logger.info("REQUEST_RECEIVED", "Processing tutor request", {
+    correlationId: correlation.correlationId,
+    requestId: requestId || correlation.requestId,
+    userId,
+    topic,
+    msgLength: (message || "").length,
+    historyLength: history.length,
+    authStatus: !!userId
+  });
 
   if (!userId) {
     logger.error("MISSING_USER_ID", "No User ID found", { bodyKeys: Object.keys(body) });
@@ -139,6 +147,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
   // 5. Execution
   const aiStart = Date.now();
+  logger.info("AI_GENERATION_START", "Calling AI engine", { complexity, userId, topic });
   let aiResponse;
   try {
     aiResponse = await ai({
@@ -147,8 +156,12 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       messages,
       userId,
     }) as any;
+    logger.info("AI_GENERATION_SUCCESS", "AI responded successfully", { 
+      duration: Date.now() - aiStart,
+      model: aiResponse.model 
+    });
   } catch (err) {
-    logger.error("AI_FAIL", (err as Error).message, { 
+    logger.error("AI_GENERATION_ERROR", (err as Error).message, { 
       userId, 
       correlationId: correlation.correlationId,
       stack: (err as Error).stack 
@@ -228,6 +241,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   })();
 
   if (waitUntil) waitUntil(persistAndLog); else await persistAndLog;
+
+  logger.info("FINAL_RESPONSE_SENT", "Request completed", { 
+    totalDuration: Date.now() - runtimeStart,
+    correlationId: correlation.correlationId 
+  });
 
   return new Response(JSON.stringify({
     content: aiText,
