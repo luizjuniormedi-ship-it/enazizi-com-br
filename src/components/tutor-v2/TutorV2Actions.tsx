@@ -124,6 +124,11 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
 
       <div className="flex gap-1">
         <ActionButton 
+          icon={RefreshCw} 
+          label="Mudar Aula" 
+          onClick={handleChangeTopic}
+        />
+        <ActionButton 
           icon={Zap} 
           label="Mnemônico" 
           onClick={() => {
@@ -147,7 +152,6 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
              }
           }}
         />
-        <ActionButton icon={Microscope} label="Caso Clínico" />
       </div>
 
       {showPlayer && (
