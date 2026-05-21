@@ -158,7 +158,7 @@ export async function callAi(
       const cost = calculateCost(model, usage);
       
       // Governance & Health
-      waitUntil((async () => {
+      const reportSuccess = (async () => {
         await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
           provider,
           model,
@@ -174,7 +174,8 @@ export async function callAi(
           correlationId: logger.correlationId,
           taskType: payload.taskType
         });
-      })());
+      })();
+      if (waitUntil) waitUntil(reportSuccess);
 
       return data;
     } catch (error) {
