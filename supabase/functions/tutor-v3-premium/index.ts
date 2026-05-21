@@ -1,5 +1,6 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { buildPedagogicalContext, saveTutorMemory } from "../_shared/tutor-memory-helpers.ts";
+import { auditPedagogicalQuality } from "../_shared/cognitive-governance-helpers.ts";
 
 const SYSTEM_PROMPT_V3 = `
 Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
@@ -63,232 +64,222 @@ function estimateStudentFatigue(history: any[]): number {
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const runtimeStart = Date.now();
   
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
-  let body;
+  // 1. HARDENING: Resilient Body Parsing
+  let body: any = {};
   try {
     const rawBody = await req.text();
-    if (!rawBody) {
+    if (!rawBody || rawBody.trim() === "") {
       return new Response(JSON.stringify({ 
         ok: true, 
         health: "alive", 
         function: "tutor-v3-premium",
+        correlation_id: correlation.correlationId,
         timestamp: new Date().toISOString()
       }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
     body = JSON.parse(rawBody);
-    
-    // Quick Healthcheck route
-    if (body.healthcheck) {
-      return new Response(JSON.stringify({
-        ok: true,
-        function: "tutor-v3-premium",
-        timestamp: new Date().toISOString(),
-        env: {
-          hasSupabaseUrl: !!Deno.env.get("SUPABASE_URL"),
-          hasServiceRole: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
-          hasGeminiKey: !!Deno.env.get("GEMINI_API_KEY") || !!Deno.env.get("OPENAI_API_KEY")
-        }
-      }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      });
-    }
   } catch (e) {
-    logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { 
-      error: e.message,
-      method: req.method,
-      contentType: req.headers.get("content-type")
-    });
-    return new Response(JSON.stringify({ 
-      error: "Invalid JSON body", 
-      details: e.message 
+    logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { error: e.message });
+    // Fallback body to avoid crash in subsequent destructuring
+    body = {};
+  }
+
+  // Quick Healthcheck route
+  if (body.healthcheck) {
+    return new Response(JSON.stringify({
+      ok: true,
+      function: "tutor-v3-premium",
+      correlation_id: correlation.correlationId,
+      timestamp: new Date().toISOString(),
+      env: {
+        hasSupabaseUrl: !!Deno.env.get("SUPABASE_URL"),
+        hasServiceRole: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+        hasAiKey: !!Deno.env.get("GEMINI_API_KEY") || !!Deno.env.get("OPENAI_API_KEY")
+      }
     }), { 
-      status: 400, 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
   }
   
-  const { message, history = [], topic, fsrsContext, masteryState, requestId, sessionId } = body;
+  // 2. HARDENING: Input Validation & Sanitization
+  const message = String(body.message || "").trim();
+  const history = Array.isArray(body.history) ? body.history : [];
+  const context = body.context && typeof body.context === "object" ? body.context : {};
+  const topic = typeof body.topic === "string" ? body.topic : "Geral";
+  const fsrsContext = body.fsrsContext && typeof body.fsrsContext === "object" ? body.fsrsContext : {};
+  const masteryState = typeof body.masteryState === "string" ? body.masteryState : "initial";
+  const sessionId = typeof body.sessionId === "string" ? body.sessionId : crypto.randomUUID();
   const userId = correlation.userId || body.userId || body.user_id;
+
+  if (!message && !body.healthcheck) {
+    logger.warn("EMPTY_MESSAGE", "Received empty message, returning early.");
+    return new Response(JSON.stringify({
+      content: "Olá! Sou seu Tutor ENAZIZI. Como posso ajudar você hoje? Digite um tema médico para começarmos.",
+      correlation_id: correlation.correlationId,
+      metrics: { latency_ms: Date.now() - runtimeStart, tokens_used: 0, memory_hit: false }
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
 
   logger.info("REQUEST_RECEIVED", "Processing tutor request", {
     correlationId: correlation.correlationId,
-    requestId: requestId || correlation.requestId,
     userId,
     topic,
-    msgLength: (message || "").length,
-    historyLength: history.length,
-    authStatus: !!userId
+    msgLength: message.length,
+    historyLength: history.length
   });
 
   if (!userId) {
-    logger.error("MISSING_USER_ID", "No User ID found", { bodyKeys: Object.keys(body) });
-    throw new Error("User ID is required.");
+    logger.error("MISSING_USER_ID", "No User ID found");
+    return new Response(JSON.stringify({
+      error: "Authentication required",
+      message: "User identity could not be verified.",
+      correlation_id: correlation.correlationId
+    }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  // 1. Governance Checks
+  // 3. GOVERNANCE: Cognitive Checks
   const isLoop = detectCognitiveLoop(message, history);
   const fatigue = estimateStudentFatigue(history);
   const isHighFatigue = fatigue > 0.8;
 
-  // 2. AI Routing
-  const msgLower = (message || "").trim().toLowerCase();
-  const isGreeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite|tudo bem|e ai|ei)/i.test(msgLower);
-  const isTransition = /^(ok|entendi|compreendido|continue|prossiga|sim|não|perfeito)/i.test(msgLower);
-  const isShortQuery = (message || "").length < 50;
-  
-  let complexity: "baixa" | "media" | "alta" = "alta";
-  if (isGreeting || (isTransition && isShortQuery) || isHighFatigue) {
-    complexity = "baixa";
-  } else if (isShortQuery) {
-    complexity = "media";
-  }
-
-  // 3. Memory Hydration
+  // 4. MEMORY HYDRATION: Try/Catch Protected
   const memoryLookupStart = Date.now();
   let memoryContext;
   try {
-    memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic || "Geral");
+    memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic);
   } catch (e) {
     logger.warn("MEMORY_LOOKUP_FAIL", (e as Error).message);
     memoryContext = {
-      previous_mastery: "initial",
-      known_misconceptions: [],
-      effective_analogies: [],
-      weak_topics: [],
-      retention_risk: 0.2,
-      prior_blocks_summary: "",
-      cognitive_pattern: "Visual/Logístico",
       cached_blocks: [],
+      previous_mastery: "initial",
+      prior_blocks_summary: "",
+      effective_analogies: [],
+      known_misconceptions: [],
+      cognitive_pattern: "unknown",
+      weak_topics: [],
+      retention_risk: 0.2
     };
   }
   const memoryLookupMs = Date.now() - memoryLookupStart;
 
-  // 4. Prompt Engineering
-  let systemPromptSuffix = "";
-  if (isLoop) systemPromptSuffix = "\n[RECOVERY: LOOP DETECTADO] Mude a abordagem.";
-  if (isHighFatigue) systemPromptSuffix = "\n[RECOVERY: FADIGA DETECTADA] Seja conciso e encorajador.";
+  // 5. AI EXECUTION: Hardened Proxy Call
+  let complexity: "baixa" | "media" | "alta" = "alta";
+  const msgLower = message.toLowerCase();
+  const isGreeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite|tudo bem|e ai|ei)/i.test(msgLower);
+  if (isGreeting || isHighFatigue || message.length < 20) complexity = "baixa";
+  else if (message.length < 100) complexity = "media";
 
-  const cognitiveContext = `\n[COGNITIVE STATE] Mastery: ${masteryState || "initial"}, Fatigue: ${fatigue.toFixed(2)}, Topic: ${topic || "Geral"}`;
-  
+  const cognitiveContext = `\n[COGNITIVE STATE] Mastery: ${masteryState}, Fatigue: ${fatigue.toFixed(2)}, Topic: ${topic}`;
   const messages = [
-    { role: "system", content: `${SYSTEM_PROMPT_V3}${systemPromptSuffix}${cognitiveContext}` },
-    ...(Array.isArray(history) ? history.slice(-10) : []).map((m: any) => ({
-      role: m.role,
+    { role: "system", content: `${SYSTEM_PROMPT_V3}${isLoop ? "\n[RECOVERY: LOOP DETECTADO]" : ""}${cognitiveContext}` },
+    ...history.slice(-6).map((m: any) => ({
+      role: m.role || "user",
       content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
     })),
     { role: "user", content: message },
   ];
 
-  // 5. Execution
   const aiStart = Date.now();
-  logger.info("AI_GENERATION_START", "Calling AI engine", { complexity, userId, topic });
   let aiResponse;
+  let aiText = "";
+  let aiError = null;
+
   try {
     aiResponse = await ai({
       taskType: "tutor",
       complexity,
       messages,
       userId,
-    }) as any;
-    logger.info("AI_GENERATION_SUCCESS", "AI responded successfully", { 
-      duration: Date.now() - aiStart,
-      model: aiResponse.model 
     });
+    
+    // RESILIENT PARSER: Support multiple formats
+    aiText = aiResponse?.choices?.[0]?.message?.content || 
+             aiResponse?.content || 
+             aiResponse?.response || 
+             "";
+    
+    if (!aiText) {
+      throw new Error("AI returned empty content");
+    }
   } catch (err) {
-    logger.error("AI_GENERATION_ERROR", (err as Error).message, { 
-      userId, 
-      correlationId: correlation.correlationId,
-      stack: (err as Error).stack 
-    });
-    return new Response(JSON.stringify({
-      content: "## 🎯 BLOCO 1 — MISSÃO DA SESSÃO\nTivemos uma oscilação técnica ao processar a resposta. Retomamos no tópico: " + (topic || "Geral") + ".",
-      metrics: { generation_ms: Date.now() - aiStart, error: true, error_detail: (err as Error).message }
-    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    aiError = err;
+    logger.error("AI_PROXY_FAIL", (err as Error).message);
+    aiText = "Sou seu Tutor ENAZIZI. Houve uma instabilidade temporária ao processar sua dúvida, mas já estou monitorando isso. Podemos tentar novamente agora ou você pode me perguntar sobre outro aspecto de " + topic + "? Estou aqui para ajudar.";
   }
 
-  const aiText = aiResponse.choices?.[0]?.message?.content || "";
-  const generationMs = Date.now() - runtimeStart;
-  const isTruncated = aiText.length < 200 && complexity === "alta" && !isGreeting;
+  const generationMs = Date.now() - aiStart;
+  const memoryHit = (memoryContext.cached_blocks?.length ?? 0) > 0;
 
-  // 6. Governance & Persistence (Non-blocking)
-  const persistAndLog = (async () => {
+  // 7. OPTIONAL TELEMETRY: Non-blocking
+  const backgroundWork = (async () => {
     try {
-      const persistenceStart = Date.now();
+      const pStart = Date.now();
+      
+      // 1. Save memory if session exists
       if (sessionId) {
-        // Try to find pedagogical session by conversation_id
-        const { data: pedSess } = await supabaseAdmin
-          .from("pedagogical_sessions")
-          .select("id")
-          .eq("conversation_id", sessionId)
-          .maybeSingle();
-
-        const targetSessionId = pedSess?.id;
-
-        if (isLoop || isHighFatigue || isTruncated) {
-          await supabaseAdmin.from("cognitive_runtime_events").insert({
-            user_id: userId,
-            session_id: targetSessionId || null,
-            correlation_id: correlation.correlationId,
-            event_type: isLoop ? 'LOOP_DETECTED' : isHighFatigue ? 'STUDENT_FATIGUE' : 'TRUNCATION_RISK',
-            severity: isTruncated ? 'critical' : 'warning',
-            topic: topic || "Geral",
-            message: isTruncated ? "Resposta curta em pergunta complexa" : isLoop ? "Repetição detectada" : "Padrão de fadiga",
-            metadata: { fatigue, complexity, msgLength: aiText.length }
-          });
-          
-          if (targetSessionId) {
-            await supabaseAdmin.from("pedagogical_sessions")
-              .update({
-                loop_count: isLoop ? 1 : 0, 
-                fatigue_index: fatigue,
-                cognitive_quality_score: isTruncated ? 5.0 : 9.0,
-                updated_at: new Date().toISOString()
-              })
-              .eq("id", targetSessionId);
-          }
-        }
-
         await saveTutorMemory(supabaseAdmin, userId, {
-          topic: topic || "Geral",
+          topic,
           content: aiText,
-          sessionId: sessionId, // tutor_memory_helpers will check this against tutor_sessions or chat_conversations depending on internal logic
-        });
+          sessionId: sessionId,
+        }).catch(e => logger.warn("SAVE_MEMORY_FAIL", e.message));
       }
 
+      // 2. Perform Pedagogical Audit
+      try {
+        const audit = await auditPedagogicalQuality(aiText, topic);
+        await supabaseAdmin.from("pedagogical_quality_audits").insert({
+          content_type: "tutor_v3_response",
+          quality_score: audit.quality_score,
+          medical_coherence_passed: audit.medical_coherence_passed,
+          guideline_compliance_passed: audit.guideline_compliance_passed,
+          safety_check_passed: audit.safety_check_passed,
+          detected_hallucinations: audit.detected_hallucinations,
+          audit_log: { topic, correlation_id: correlation.correlationId, userId }
+        }).catch(e => logger.warn("AUDIT_PERSIST_FAIL", e.message));
+      } catch (e) {
+        logger.warn("AUDIT_FAIL", (e as Error).message);
+      }
+
+      // 3. Record metrics
       await supabaseAdmin.from("tutor_runtime_metrics").insert({
         user_id: userId,
         correlation_id: correlation.correlationId,
         function_name: "tutor-v3-premium",
         tutor_generation_ms: generationMs,
         memory_lookup_ms: memoryLookupMs,
-        persistence_ms: Date.now() - persistenceStart,
-        memory_hit: (memoryContext.cached_blocks?.length ?? 0) > 0,
-        prompt_tokens: aiResponse.usage?.prompt_tokens || 0,
-        completion_tokens: aiResponse.usage?.completion_tokens || 0,
-        model_used: aiResponse.model || null,
-        topic: topic || "Geral",
-        metadata: { complexity, is_loop: isLoop, fatigue_index: fatigue, is_truncated: isTruncated },
-      });
+        memory_hit: !!memoryHit,
+        prompt_tokens: aiResponse?.usage?.prompt_tokens || 0,
+        completion_tokens: aiResponse?.usage?.completion_tokens || 0,
+        model_used: aiResponse?.model || "unknown",
+        topic: topic,
+        metadata: { 
+          complexity, 
+          is_loop: isLoop, 
+          fatigue, 
+          sessionId,
+          error: aiError ? (aiError as Error).message : null 
+        }
+      }).catch(e => logger.warn("METRICS_FAIL", e.message));
+
     } catch (e) {
-      logger.warn("TELEMETRY_FAIL", (e as Error).message);
+      logger.warn("BACKGROUND_WORK_FAIL", (e as Error).message);
     }
   })();
 
-  if (waitUntil) waitUntil(persistAndLog); else await persistAndLog;
+  if (waitUntil) waitUntil(backgroundWork); else await backgroundWork;
 
-  logger.info("FINAL_RESPONSE_SENT", "Request completed", { 
-    totalDuration: Date.now() - runtimeStart,
-    correlationId: correlation.correlationId 
-  });
-
+  // 8. FINAL CONTRACT COMPLIANCE
   return new Response(JSON.stringify({
     content: aiText,
     correlation_id: correlation.correlationId,
-    metrics: { generation_ms: generationMs, complexity, fatigue, is_loop: isLoop },
+    metrics: {
+      latency_ms: Date.now() - runtimeStart,
+      generation_ms: generationMs,
+      memory_hit: !!memoryHit,
+      complexity,
+      tokens_used: (aiResponse?.usage?.prompt_tokens || 0) + (aiResponse?.usage?.completion_tokens || 0)
+    }
   }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }));
