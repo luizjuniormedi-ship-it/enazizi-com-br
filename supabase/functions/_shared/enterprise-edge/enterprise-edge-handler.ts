@@ -62,7 +62,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
           const response = await callAi({
             ...request,
             userId: userId || correlation.userId
-          }, logger, supabaseAdmin);
+          }, logger, supabaseAdmin, waitUntil);
           
           if (request.stream) return response;
 
