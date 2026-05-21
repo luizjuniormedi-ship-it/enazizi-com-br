@@ -23695,31 +23695,52 @@ export type Database = {
       }
       tutor_learning_memory: {
         Row: {
+          block_title: string | null
+          created_at: string | null
           effective_analogies: string[] | null
+          explanation_summary: string | null
+          generated_content: Json | null
           id: string
           last_retention_score: number | null
+          mastery_level: string | null
           mastery_milestones: Json | null
           misconception_tags: string[] | null
+          misconceptions_detected: string[] | null
+          subtopic: string | null
           topic: string
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
+          block_title?: string | null
+          created_at?: string | null
           effective_analogies?: string[] | null
+          explanation_summary?: string | null
+          generated_content?: Json | null
           id?: string
           last_retention_score?: number | null
+          mastery_level?: string | null
           mastery_milestones?: Json | null
           misconception_tags?: string[] | null
+          misconceptions_detected?: string[] | null
+          subtopic?: string | null
           topic: string
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
+          block_title?: string | null
+          created_at?: string | null
           effective_analogies?: string[] | null
+          explanation_summary?: string | null
+          generated_content?: Json | null
           id?: string
           last_retention_score?: number | null
+          mastery_level?: string | null
           mastery_milestones?: Json | null
           misconception_tags?: string[] | null
+          misconceptions_detected?: string[] | null
+          subtopic?: string | null
           topic?: string
           updated_at?: string | null
           user_id?: string | null

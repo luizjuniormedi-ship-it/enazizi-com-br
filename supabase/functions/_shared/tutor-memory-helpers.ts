@@ -22,7 +22,7 @@ export async function buildPedagogicalContext(
 
   // 1. Fetch relevant learning memory blocks
   const { data: blocks } = await supabase
-    .from("tutor_lesson_memory")
+    .from("tutor_learning_memory")
     .select("*")
     .eq("user_id", userId)
     .eq("topic", topic)
@@ -47,18 +47,22 @@ export async function buildPedagogicalContext(
     .limit(3);
 
   // 4. Synthesize context
-  const known_misconceptions = Array.from(new Set(
-    (summaries || []).flatMap(s => s.misconceptions_identified || [])
-  ));
+  const lastBlock = blocks && blocks.length > 0 ? blocks[0] : null;
+  const previous_mastery = lastBlock?.mastery_level || "initial";
+  
+  const known_misconceptions = Array.from(new Set([
+    ...(lastBlock?.misconceptions_detected || []),
+    ...(summaries || []).flatMap(s => s.misconceptions_identified || [])
+  ]));
 
   const effective_analogies = (analogies || []).map(a => a.analogy);
   
   const prior_blocks_summary = (blocks || [])
-    .map(b => `- ${b.title}: ${b.summary || ''}`)
+    .map(b => `- ${b.block_title || b.topic}: ${b.explanation_summary || ''}`)
     .join("\n");
 
   return {
-    previous_mastery: "initial",
+    previous_mastery,
     known_misconceptions,
     effective_analogies,
     weak_topics: (summaries || []).flatMap(s => s.concepts_fragile || []),
@@ -77,6 +81,8 @@ export async function saveTutorMemory(
     subtopic?: string;
     content: string;
     sessionId?: string | null;
+    masteryLevel?: string;
+    misconceptions?: string[];
   }
 ) {
   if (!userId || !params.topic || !params.content) {
@@ -104,16 +110,16 @@ export async function saveTutorMemory(
 
   // Resilient persistence: upsert by (user_id, topic)
   const { data: memory, error } = await supabase
-    .from("tutor_lesson_memory")
+    .from("tutor_learning_memory")
     .upsert({
       user_id: userId,
-      source_session_id: sourceSessionId,
       topic: params.topic,
       subtopic: params.subtopic,
-      title: title,
-      summary: params.content.substring(0, 500) + "...",
-      structured_content: { content: params.content },
-      status: 'published',
+      block_title: title,
+      explanation_summary: params.content.substring(0, 500) + "...",
+      generated_content: { content: params.content },
+      mastery_level: params.masteryLevel || 'initial',
+      misconceptions_detected: params.misconceptions || [],
       updated_at: new Date().toISOString()
     }, {
       onConflict: 'user_id,topic',
