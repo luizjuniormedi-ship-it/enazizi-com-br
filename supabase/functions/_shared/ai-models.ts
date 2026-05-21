@@ -6,16 +6,15 @@ import { normalizeModel as normalizeFromShared } from "./model-normalizer.ts";
  * Mandatory for all modules.
  */
 export const AI_MODELS = {
-  FAST: "openai/gpt-4o",
-  REASONING: "openai/gpt-4o",
-  CHEAP: "openai/gpt-4o-mini",
+  FAST: "google/gemini-2.5-flash",
+  REASONING: "google/gemini-2.5-pro",
+  CHEAP: "google/gemini-2.5-flash-lite",
   FALLBACK: "google/gemini-2.5-flash"
 } as const;
 
 export const BLOCKED_MODELS = [
-  "google/gemini-2.0-flash",
-  "gemini-2.0-flash",
-  "google/gemini-2.0",
+  "google/gemini-1.5-pro",
+  "google/gemini-1.5-flash",
 ];
 
 export const ALLOWED_AI_MODELS = [
