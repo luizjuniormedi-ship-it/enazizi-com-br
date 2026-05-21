@@ -30,7 +30,7 @@ export const MANDATORY_BLOCKS = [
     { id: 15, name: "PLANO DE RECUPERAÇÃO" }
 ];
 
-export function validateTutorResponse(text: string): ValidationResult {
+export function validateTutorResponse(text: string, options: { expectedBlock?: number | string } = {}): ValidationResult {
     // Skip validation for short responses, greetings, or common transitional phrases
     const shortText = text.trim().toLowerCase();
     const isShortInteraction = 
@@ -42,12 +42,15 @@ export function validateTutorResponse(text: string): ValidationResult {
         return { isValid: true, missingBlocks: [], presentBlocks: [], score: 100 };
     }
 
-
     const presentBlocks: number[] = [];
     const missingBlocks: number[] = [];
 
+    // If a specific block is expected (Gating V3), we only check for that one or the full set
+    const expectedBlockNum = typeof options.expectedBlock === 'string' 
+        ? parseInt(options.expectedBlock.match(/\d+/)?.[0] || '0')
+        : options.expectedBlock;
+
     MANDATORY_BLOCKS.forEach(block => {
-        // Regex to find "## 🎯 BLOCO X" or variant
         const regex = new RegExp(`## 🎯 BLOCO ${block.id}`, "i");
         if (regex.test(text)) {
             presentBlocks.push(block.id);
@@ -56,10 +59,16 @@ export function validateTutorResponse(text: string): ValidationResult {
         }
     });
 
+    // V3 GATING LOGIC: If we are in gating mode and the specific expected block is present, it's valid
+    let isValid = missingBlocks.length === 0;
+    if (expectedBlockNum && presentBlocks.includes(expectedBlockNum)) {
+        isValid = true;
+    }
+
     const score = Math.round((presentBlocks.length / MANDATORY_BLOCKS.length) * 100);
 
     return {
-        isValid: missingBlocks.length === 0,
+        isValid,
         missingBlocks,
         presentBlocks,
         score
