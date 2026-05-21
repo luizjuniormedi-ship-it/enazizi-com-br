@@ -162,6 +162,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   // 5. BACKGROUND WORK DEFINITION
   const backgroundWork = async (finalText: string, metrics: any) => {
     try {
+      if (!userId) return;
       if (sessionId && finalText && finalText.length > 50) {
         await saveTutorMemory(supabaseAdmin, userId, {
           topic,
@@ -175,6 +176,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         const audit = await auditPedagogicalQuality(finalText, topic).catch(() => null);
         if (audit) {
           await supabaseAdmin.from("pedagogical_quality_audits").insert({
+            user_id: userId,
             content_type: "tutor_v3_response",
             quality_score: audit.quality_score,
             medical_coherence_passed: audit.medical_coherence_passed,
