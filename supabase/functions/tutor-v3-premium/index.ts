@@ -225,7 +225,16 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
     else await backgroundWork(aiText, metrics);
 
-    return new Response(JSON.stringify({ content: aiText, correlation_id: correlation.correlationId, metrics }), { 
+    return new Response(JSON.stringify({ 
+      success: true,
+      ok: true,
+      content: aiText, 
+      answer: aiText,
+      message: aiText,
+      correlation_id: correlation.correlationId, 
+      request_id: correlation.correlationId,
+      metrics 
+    }), { 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
   } catch (err) {

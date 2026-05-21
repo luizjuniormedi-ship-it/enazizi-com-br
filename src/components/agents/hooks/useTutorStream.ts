@@ -248,17 +248,19 @@ export function useTutorStream() {
 
         if (isJson) {
           const data = await resp.json();
-          console.log("[useTutorStream] Received JSON instead of stream:", data);
-          if (data.ok === false || (!data.content && !data.message)) {
+          console.log("[TUTOR_UI_RESPONSE_RAW] JSON:", data);
+          const content = data.content || data.message || data.answer || data.response || "";
+          
+          if (!content && data.ok === false) {
             onError?.({ status: resp.status, message: data.message || "Erro na resposta da IA" });
             return null;
           }
-          const content = data.content || data.message || "";
+
           onFirstChunk?.();
           onDelta(content);
           onComplete?.(content);
           setIsStreaming(false);
-          console.log("[useTutorStream] JSON completed successfully");
+          console.log("[TUTOR_V3_RESPONSE_SHAPE] JSON processed", { hasContent: !!content });
           return { content, metrics: data.metrics };
         }
 
