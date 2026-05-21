@@ -161,8 +161,14 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   // 1. Try direct OpenAI first if available
   if (OPENAI_API_KEY) {
     try {
-      const payload = buildPayload("gpt-4o", true);
-      console.log("[AI_PIPELINE_DIRECT_OPENAI]", { source, model: "gpt-4o" });
+      // Prioritize the requested model, but ensure it's mapped correctly for direct OpenAI
+      const requestedModel = options.model || "gpt-4o";
+      const modelForOpenAI = requestedModel.startsWith("openai/") 
+        ? requestedModel.replace("openai/", "") 
+        : requestedModel;
+      
+      const payload = buildPayload(modelForOpenAI, true);
+      console.log("[AI_PIPELINE_DIRECT_OPENAI]", { source, model: modelForOpenAI });
       
       const response = await fetchWithRetry(
         OPENAI_API,
@@ -340,13 +346,13 @@ export function parseAiJson(rawContent: string): any {
   if (codeBlockMatch) {
     return tryParse(codeBlockMatch[1].trim());
   }
+  const arrMatch = content.match(/\[\s*\{[\s\S]*\}\s*\]/);
+  if (arrMatch) {
+    return tryParse(arrMatch[0]);
+  }
   const objMatch = content.match(/\{[\s\S]*\}/);
   if (objMatch) {
     return tryParse(objMatch[0]);
-  }
-  const arrMatch = content.match(/\[[\s\S]*\]/);
-  if (arrMatch) {
-    return tryParse(arrMatch[0]);
   }
   throw new Error("No valid JSON found in AI response");
 }

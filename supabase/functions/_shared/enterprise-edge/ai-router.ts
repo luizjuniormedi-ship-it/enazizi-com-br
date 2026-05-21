@@ -114,61 +114,69 @@ export async function callAi(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-      // --- LOGIC FOR DIRECT FALLBACK ---
-      let targetUrl = LOVABLE_GATEWAY;
-      let targetHeaders: Record<string, string> = {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-        "X-Correlation-Id": logger.correlationId
-      };
+      // --- LOGIC FOR DIRECT PROVIDER PRIORITY ---
+      const openaiKey = Deno.env.get("OPENAI_API_KEY");
+      const geminiKey = Deno.env.get("GEMINI_API_KEY");
+      
+      let res: Response;
+      let usedDirect = false;
 
-      // Attempt initial call to Gateway
-      let res = await fetch(targetUrl, {
-        method: "POST",
-        headers: targetHeaders,
-        body: JSON.stringify(normalizedPayload),
-        signal: controller.signal
-      });
+      // 1. Try Direct OpenAI first if model is openai/* or key is available
+      if (openaiKey && (provider === "openai" || provider === "unknown")) {
+        try {
+          const targetUrl = "https://api.openai.com/v1/chat/completions";
+          const targetHeaders = {
+            "Authorization": `Bearer ${openaiKey}`,
+            "Content-Type": "application/json",
+            "X-Correlation-Id": logger.correlationId
+          };
+          const directPayload = { ...normalizedPayload, model: modelName };
+          
+          logger.info("AI_DIRECT_BYPASS_OPENAI", `Trying direct OpenAI for ${modelName}`);
+          res = await fetch(targetUrl, {
+            method: "POST",
+            headers: targetHeaders,
+            body: JSON.stringify(directPayload),
+            signal: controller.signal
+          });
+          
+          if (res.ok) {
+            usedDirect = true;
+          } else {
+            logger.warn("AI_DIRECT_OPENAI_FAILED", `Direct OpenAI failed with status ${res.status}`);
+          }
+        } catch (err) {
+          logger.error("AI_DIRECT_OPENAI_EXCEPTION", err.message);
+        }
+      }
 
-      // --- 402 PAYMENT REQUIRED BYPASS ---
-      if (res.status === 402) {
-        logger.warn("GATEWAY_CREDIT_EXHAUSTED", "AI Gateway out of credits. Attempting direct provider bypass.", { model });
-        
-        if (provider === "google") {
-          const geminiKey = Deno.env.get("GEMINI_API_KEY");
-          if (geminiKey) {
-            // Google OpenAI-compatible endpoint
-            targetUrl = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
-            targetHeaders = {
+      // 2. If direct OpenAI failed or wasn't available, try Lovable Gateway
+      if (!usedDirect) {
+        logger.info("AI_GATEWAY_ATTEMPT", `Trying Lovable Gateway for ${model}`);
+        res = await fetch(LOVABLE_GATEWAY, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+            "X-Correlation-Id": logger.correlationId
+          },
+          body: JSON.stringify(normalizedPayload),
+          signal: controller.signal
+        });
+
+        // 3. If Gateway returns 402, try direct Gemini fallback if available
+        if (res.status === 402 && geminiKey && provider === "google") {
+          logger.warn("GATEWAY_CREDIT_EXHAUSTED", "AI Gateway out of credits. Attempting direct Gemini bypass.");
+          const targetUrl = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
+          res = await fetch(targetUrl, {
+            method: "POST",
+            headers: {
               "Authorization": `Bearer ${geminiKey}`,
               "Content-Type": "application/json"
-            };
-            // Remove provider prefix for direct call
-            normalizedPayload.model = modelName;
-            
-            res = await fetch(targetUrl, {
-              method: "POST",
-              headers: targetHeaders,
-              body: JSON.stringify(normalizedPayload),
-              signal: controller.signal
-            });
-          }
-        } else if (provider === "openai") {
-          const openaiKey = Deno.env.get("OPENAI_API_KEY");
-          if (openaiKey) {
-            targetUrl = "https://api.openai.com/v1/chat/completions";
-            targetHeaders = {
-              "Authorization": `Bearer ${openaiKey}`,
-              "Content-Type": "application/json"
-            };
-            normalizedPayload.model = modelName;
-            res = await fetch(targetUrl, {
-              method: "POST",
-              headers: targetHeaders,
-              body: JSON.stringify(normalizedPayload),
-              signal: controller.signal
-            });
-          }
+            },
+            body: JSON.stringify({ ...normalizedPayload, model: modelName }),
+            signal: controller.signal
+          });
         }
       }
 

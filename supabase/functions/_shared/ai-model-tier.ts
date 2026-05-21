@@ -9,9 +9,9 @@
 export type ModelTier = "lite" | "standard" | "pro";
 
 const TIER_MODELS: Record<ModelTier, string> = {
-  lite: "openai/gpt-4o",
-  standard: "openai/gpt-4o",
-  pro: "openai/gpt-4o", // Focado em alta qualidade clínica
+  lite: "gpt-4o-mini",
+  standard: "gpt-4o",
+  pro: "gpt-4o", // Focado em alta qualidade clínica
 };
 
 /** Get the model for a given tier */

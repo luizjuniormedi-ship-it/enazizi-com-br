@@ -31,57 +31,54 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
   const buildBody = (model: string) => {
-    const isNewModel = model.includes("google/gemini-2.5-pro") || model.includes("/o1") || model.includes("/o3");
+    const modelClean = model.replace("openai/", "").replace("google/", "");
+    const isNewModel = model.includes("google/gemini-2.5-pro") || model.includes("/o1") || model.includes("/o3") || model.includes("gpt-5");
     const tokenParam = isNewModel ? "max_completion_tokens" : "max_tokens";
     return JSON.stringify({
-      model,
+      model: modelClean,
       messages,
       [tokenParam]: 16384,
       temperature: 0.85,
     });
   };
 
-  // Try OpenAI/Google first (gemini-2.5-flash) for higher quality
+  // 1. Try Direct OpenAI first (Primary)
   if (OPENAI_API_KEY) {
     try {
       const startMs = Date.now();
+      const model = "gpt-4o"; // High quality for ENAMED
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-        body: buildBody("google/gemini-2.5-flash"),
+        body: buildBody(model),
       });
       if (res.ok) {
         const data = await res.json();
-        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
+        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: model, success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
         return data.choices?.[0]?.message?.content || "";
       }
-      const errText = await res.text();
-      console.warn(`OpenAI ${res.status}: ${errText.slice(0, 200)}`);
-      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard", errorMessage: `status ${res.status}` }).catch(() => {});
-      if (res.status !== 429 && res.status !== 402) {
-        throw new Error(`OpenAI error ${res.status}`);
-      }
-      // 429/402 → fall through to Lovable
+      console.warn(`Direct OpenAI ${res.status}`);
     } catch (e) {
-      console.warn("OpenAI failed, trying Lovable Gateway:", e);
+      console.warn("Direct OpenAI failed:", e);
     }
   }
 
-  // Fallback: Lovable AI Gateway
+  // 2. Fallback: Lovable AI Gateway
   if (LOVABLE_API_KEY) {
     const startMs = Date.now();
+    const model = "openai/gpt-4o";
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: buildBody("google/gemini-2.5-flash"),
+      body: buildBody(model),
     });
     if (res.ok) {
       const data = await res.json();
-      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast" }).catch(() => {});
+      logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: model, success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
       return data.choices?.[0]?.message?.content || "";
     }
     const errText = await res.text();
-    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "fast", errorMessage: `status ${res.status}` }).catch(() => {});
+    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: model, success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro", errorMessage: `status ${res.status}` }).catch(() => {});
     throw new Error(`Lovable Gateway ${res.status}: ${errText.slice(0, 200)}`);
   }
 
