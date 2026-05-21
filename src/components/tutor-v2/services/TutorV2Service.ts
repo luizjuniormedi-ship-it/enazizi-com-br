@@ -23,12 +23,13 @@ async function readFunctionError(err: any) {
 }
 
 export const TutorV2Service = {
-  async sendMessage(sessionId: string, message: string, pedagogicalInteraction?: string, retryCount = 0) {
+  async sendMessage(sessionId: string, message: string, pedagogicalInteraction?: string, newTopic?: string, retryCount = 0) {
     const requestId = crypto.randomUUID();
     const payload = { 
       sessionId, 
       message, 
       pedagogicalInteraction, 
+      newTopic,
       requestId,
       topic: null, // Deixe o backend decidir ou use null para não forçar
       fsrsContext: {},
