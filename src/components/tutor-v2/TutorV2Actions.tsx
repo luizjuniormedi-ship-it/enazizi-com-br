@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 
 interface TutorV2ActionsProps {
   session: any;
+  onSendMessage: (text: string, pedagogicalInteraction?: string, newTopic?: string) => void;
 }
 
 export default function TutorV2Actions({ session }: TutorV2ActionsProps) {
