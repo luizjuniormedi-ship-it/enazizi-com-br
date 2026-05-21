@@ -74,18 +74,30 @@ export async function saveTutorMemory(
     topic: string;
     subtopic?: string;
     content: string;
-    sessionId?: string;
+    sessionId?: string | null;
   }
 ) {
   const titleMatch = params.content.match(/## 🎯 BLOCO \d+ — (.*)/) || params.content.match(/# (.*)/) || params.content.match(/1\. (.*)/);
   const title = titleMatch ? titleMatch[1].substring(0, 100) : "Bloco Pedagógico";
 
-  // Use tutor_lesson_memory which is confirmed to have 'title' and 'summary'
+  // Idempotente: upsert por (user_id, topic). Se source_session_id for inválido, descarta para evitar FK violation.
+  let sourceSessionId: string | null = null;
+  if (params.sessionId) {
+    try {
+      const { data: sess } = await supabase
+        .from("tutor_sessions")
+        .select("id")
+        .eq("id", params.sessionId)
+        .maybeSingle();
+      if (sess) sourceSessionId = params.sessionId;
+    } catch { /* ignora — segue sem sessão */ }
+  }
+
   const { data: memory, error } = await supabase
     .from("tutor_lesson_memory")
     .upsert({
       user_id: userId,
-      source_session_id: params.sessionId,
+      source_session_id: sourceSessionId,
       topic: params.topic,
       subtopic: params.subtopic,
       title: title,
@@ -93,11 +105,16 @@ export async function saveTutorMemory(
       structured_content: { content: params.content },
       status: 'published',
       updated_at: new Date().toISOString()
-    }, { 
-      onConflict: 'user_id,topic' 
+    }, {
+      onConflict: 'user_id,topic',
+      ignoreDuplicates: false,
     })
-    .select();
+    .select()
+    .maybeSingle();
 
-  if (error) console.error("Error saving tutor memory:", error);
+  if (error) {
+    console.error("Error saving tutor memory:", error);
+    // Não relança: persistência tem que falhar silenciosamente para não derrubar a resposta da IA.
+  }
   return memory;
 }

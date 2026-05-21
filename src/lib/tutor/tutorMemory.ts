@@ -495,16 +495,31 @@ export async function saveTutorMemory(
     model_used: modelUsed ?? null,
   };
 
+  // Persistência idempotente: upsert evita 'duplicate key' em revisões repetidas.
+  // O índice único cobre (scope, COALESCE(user_id, 'global'), question_normalized).
   const { data, error } = await supabase
     .from("tutor_knowledge_memory")
-    .insert([payload])
+    .upsert([payload], {
+      onConflict: "scope,user_id,question_normalized",
+      ignoreDuplicates: false,
+    })
     .select(SELECT_COLS)
-    .single();
+    .maybeSingle();
 
   if (error) {
+    // Fallback: tenta resgatar a linha existente para reuso/continuidade longitudinal.
     if (import.meta.env.DEV) {
-      console.warn("[tutorMemory] failed to save:", error.message);
+      console.warn("[tutorMemory] upsert failed, attempting recovery:", error.message);
     }
+    try {
+      const { data: existing } = await supabase
+        .from("tutor_knowledge_memory")
+        .select(SELECT_COLS)
+        .eq("scope", payload.scope)
+        .eq("question_normalized", payload.question_normalized)
+        .maybeSingle();
+      if (existing) return existing as unknown as TutorMemoryRow;
+    } catch { /* noop */ }
     return null;
   }
 
