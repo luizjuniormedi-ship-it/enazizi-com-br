@@ -92,6 +92,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [actionTimeline, setActionTimeline] = useState<TimelineEntry[]>([]);
   const [sendCooldown, setSendCooldown] = useState(false);
+  const consecutiveErrorsRef = useRef(0);
+  const lastErrorTimeRef = useRef<number>(0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -195,10 +197,30 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       }
 
       const text = overridePrompt || input.trim();
+      
+      // 🛡️ CIRCUIT BREAKER: Proteção contra overload de erros
+      if (consecutiveErrorsRef.current >= 3) {
+        const timeSinceLastErr = Date.now() - lastErrorTimeRef.current;
+        if (timeSinceLastErr < 30000) { // 30s cooling period
+          toast({
+            title: "Tutor em Recuperação",
+            description: "Detectamos instabilidades. Aguarde alguns segundos para o sistema estabilizar.",
+            variant: "destructive"
+          });
+          return;
+        } else {
+          consecutiveErrorsRef.current = 0; // Reset after cooling
+        }
+      }
+
       if (!text || isLoading || sendCooldown || !user) {
         console.warn(`[TUTOR] SEND_SKIPPED id=${requestId}`, { text: !!text, isLoading, sendCooldown, user: !!user });
         return;
       }
+
+      // ⚡ ADAPTIVE THROTTLING: Mensagens curtas em loop aumentam cooldown
+      const isShort = text.length < 15;
+      const cooldownMs = isShort ? 3000 : 1500;
 
       // Cancelar qualquer request anterior em curso
       abortControllerRef.current?.abort();
@@ -206,7 +228,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       abortControllerRef.current = controller;
 
       setSendCooldown(true);
-      setTimeout(() => setSendCooldown(false), 2000);
+      setTimeout(() => setSendCooldown(false), cooldownMs);
 
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -380,6 +402,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             console.error(`[TUTOR] SEND_FAILED id=${requestId}`, { status, message });
             clearTimeout(watchdogTimeout);
             
+            // Increment circuit breaker
+            consecutiveErrorsRef.current++;
+            lastErrorTimeRef.current = Date.now();
+
             telemetry.track("tutor_error_detected", {
               requestId,
               status,
@@ -408,6 +434,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
         const finalContent = result?.content || assistantSoFar;
         const metrics = result?.metrics;
+
+        // Reset circuit breaker on success
+        consecutiveErrorsRef.current = 0;
 
         if (metrics) {
           setMessages(prev => prev.map((m, i) => 

@@ -167,42 +167,62 @@ export function useTutorStream() {
           signal: signal || controller.signal,
         });
 
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        let accessToken = session?.access_token;
+      const maxRetries = 2;
+      let attempt = 0;
 
-        if (!accessToken) {
-          onError?.({ status: 401, message: "Sua sessão expirou. Faça login novamente." });
-          return null;
-        }
+      const runFetch = async () => {
+        attempt++;
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          let accessToken = session?.access_token;
 
-        let resp = await doFetch(accessToken);
-
-        // 401 → try one silent refresh, then retry once.
-        if (resp.status === 401) {
-          const { data: refreshed } = await supabase.auth.refreshSession();
-          const refreshedToken = refreshed?.session?.access_token;
-          if (refreshedToken) {
-            accessToken = refreshedToken;
-            resp = await doFetch(refreshedToken);
+          if (!accessToken) {
+            throw new Error("Sua sessão expirou. Faça login novamente.");
           }
-        }
 
-        if (!resp.ok) {
-          const errData = await resp.json().catch(() => ({}));
-          const friendly =
-            resp.status === 401
-              ? "Sua sessão expirou. Faça login novamente."
-              : (errData as { error?: string; message?: string }).message ||
-                (errData as { error?: string }).error ||
-                "stream_http_error";
-          onError?.({ status: resp.status, message: friendly });
-          return null;
-        }
+          let resp = await doFetch(accessToken);
 
-        if (!resp.body) throw new Error("No response body");
+          // 401 → try one silent refresh, then retry once.
+          if (resp.status === 401) {
+            const { data: refreshed } = await supabase.auth.refreshSession();
+            const refreshedToken = refreshed?.session?.access_token;
+            if (refreshedToken) {
+              accessToken = refreshedToken;
+              resp = await doFetch(refreshedToken);
+            }
+          }
+
+          if (!resp.ok) {
+            if (resp.status >= 500 && attempt <= maxRetries) {
+              console.warn(`[useTutorStream] Server error ${resp.status}, retrying attempt ${attempt}...`);
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              return runFetch();
+            }
+            const errData = await resp.json().catch(() => ({}));
+            const friendly =
+              resp.status === 401
+                ? "Sua sessão expirou. Faça login novamente."
+                : (errData as { error?: string; message?: string }).message ||
+                  (errData as { error?: string }).error ||
+                  "stream_http_error";
+            throw new Error(friendly);
+          }
+          return resp;
+        } catch (e) {
+          if (attempt <= maxRetries && !signal?.aborted) {
+            console.warn(`[useTutorStream] Network error, retrying attempt ${attempt}...`, e);
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            return runFetch();
+          }
+          throw e;
+        }
+      };
+
+      try {
+        const resp = await runFetch();
+        if (!resp || !resp.body) throw new Error("No response body");
 
         const contentType = resp.headers.get("Content-Type") || "";
         const isJson = contentType.includes("application/json");

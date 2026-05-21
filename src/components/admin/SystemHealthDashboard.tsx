@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, AlertTriangle, CheckCircle, Zap, Users } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle, Zap, Users, Brain } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,9 +69,14 @@ export const SystemHealthDashboard = () => {
           <h1 className="text-3xl font-bold tracking-tight">Saúde & Estabilidade</h1>
           <p className="text-muted-foreground">Monitoramento em tempo real de infraestrutura e performance IA.</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-sm font-medium border border-green-500/20">
-          <CheckCircle className="w-4 h-4" />
-          Sistemas Operacionais
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="bg-indigo-500/10 text-indigo-600 border-indigo-200 cursor-pointer" onClick={() => window.location.href='/admin?tab=cognitive-governance'}>
+            <Brain size={14} className="mr-1" /> Cognitive Governance
+          </Badge>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-sm font-medium border border-green-500/20">
+            <CheckCircle className="w-4 h-4" />
+            Sistemas Operacionais
+          </div>
         </div>
       </div>
 

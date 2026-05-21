@@ -249,6 +249,15 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["tutor", "stabilization", "metrics", "telemetry", "v3"],
       },
       {
+        to: "/admin?tab=cognitive-governance",
+        label: "Governança Cognitiva",
+        description: "Camada de operações cognitivas, observabilidade e proteção de escala.",
+        icon: BrainCircuit,
+        scopes: ["super_admin", "devops", "admin_pedagogico"],
+        badge: "Novo",
+        keywords: ["tutor", "governance", "cognitive", "scale", "protection"],
+      },
+      {
         to: "/admin?tab=tutor-video-audit",
         label: "Recomendações Tutor",
         description: "Auditoria de recomendações de videoaulas automáticas.",

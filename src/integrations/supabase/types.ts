@@ -8594,6 +8594,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cognitive_runtime_events: {
+        Row: {
+          correlation_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          session_id: string | null
+          severity: string | null
+          topic: string | null
+          user_id: string
+        }
+        Insert: {
+          correlation_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+          severity?: string | null
+          topic?: string | null
+          user_id: string
+        }
+        Update: {
+          correlation_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+          severity?: string | null
+          topic?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cognitive_snapshots: {
         Row: {
           cognitive_state: Json
@@ -16569,14 +16608,19 @@ export type Database = {
       }
       pedagogical_sessions: {
         Row: {
+          cognitive_quality_score: number | null
           cognitive_state: string | null
           completed_blocks: number[] | null
           comprehension_score: number | null
+          continuity_stable: boolean | null
           conversation_id: string | null
           created_at: string | null
           current_block: number | null
           difficulty_level: number | null
+          fatigue_index: number | null
           id: string
+          last_recovery_at: string | null
+          loop_count: number | null
           metadata: Json | null
           specialty: string | null
           topic: string
@@ -16586,14 +16630,19 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cognitive_quality_score?: number | null
           cognitive_state?: string | null
           completed_blocks?: number[] | null
           comprehension_score?: number | null
+          continuity_stable?: boolean | null
           conversation_id?: string | null
           created_at?: string | null
           current_block?: number | null
           difficulty_level?: number | null
+          fatigue_index?: number | null
           id?: string
+          last_recovery_at?: string | null
+          loop_count?: number | null
           metadata?: Json | null
           specialty?: string | null
           topic: string
@@ -16603,14 +16652,19 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cognitive_quality_score?: number | null
           cognitive_state?: string | null
           completed_blocks?: number[] | null
           comprehension_score?: number | null
+          continuity_stable?: boolean | null
           conversation_id?: string | null
           created_at?: string | null
           current_block?: number | null
           difficulty_level?: number | null
+          fatigue_index?: number | null
           id?: string
+          last_recovery_at?: string | null
+          loop_count?: number | null
           metadata?: Json | null
           specialty?: string | null
           topic?: string
@@ -26449,6 +26503,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_tutor_governance_summary: {
+        Row: {
+          avg_quality_score: number | null
+          duplicate_keys_prevented: number | null
+          fatigue_alerts: number | null
+          recoveries_triggered: number | null
+          total_loops_detected: number | null
+          total_sessions: number | null
+        }
+        Relationships: []
+      }
       view_cognitive_health: {
         Row: {
           avg_depth: number | null
@@ -26570,6 +26635,7 @@ export type Database = {
       check_function_exists: { Args: { func_name: string }; Returns: boolean }
       check_system_health: { Args: never; Returns: undefined }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
+      cleanup_dead_pedagogical_sessions: { Args: never; Returns: undefined }
       cleanup_stale_approval_scores: { Args: never; Returns: undefined }
       cleanup_tutor_cache: { Args: never; Returns: undefined }
       complete_study_action_atomic: {
