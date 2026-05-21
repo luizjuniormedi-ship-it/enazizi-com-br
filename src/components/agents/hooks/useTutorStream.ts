@@ -251,6 +251,7 @@ export function useTutorStream() {
           onDelta(content);
           onComplete?.(content);
           setIsStreaming(false);
+          console.log("[useTutorStream] JSON completed successfully");
           return { content, metrics: data.metrics };
         }
 
