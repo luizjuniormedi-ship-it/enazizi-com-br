@@ -140,9 +140,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const sessionId = typeof body.sessionId === "string" ? body.sessionId : crypto.randomUUID();
 
   // 4. CONTEXT & GOVERNANCE
+  const userId = auth.userId || body.userId || (correlation as any).userId;
   const isLoop = detectCognitiveLoop(message, history);
   const fatigue = estimateStudentFatigue(history);
-  const memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic).catch(() => ({ cached_blocks: [] }));
+  const memoryContext = userId ? await buildPedagogicalContext(supabaseAdmin, userId, topic).catch(() => ({ cached_blocks: [] })) : { cached_blocks: [] };
 
   let complexity: "baixa" | "media" | "alta" = "alta";
   if (message.length < 20) complexity = "baixa";
