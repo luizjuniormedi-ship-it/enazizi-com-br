@@ -10,6 +10,12 @@ const corsHeaders = {
 async function listFilesRecursive(folderId: string, accessToken: string, supabase: any, user: any, logger: any, path: string = "root", depth = 0) {
   if (depth > 15) return; // Increased depth
   
+  // IGNORE "MEDICO LEGISTA"
+  if (path.toUpperCase().includes("MEDICO LEGISTA")) {
+    logger.info("SCAN", `Skipping blacklisted folder: ${path}`);
+    return;
+  }
+
   let pageToken: string | undefined = undefined;
   let totalInFolder = 0;
 
@@ -34,6 +40,9 @@ async function listFilesRecursive(folderId: string, accessToken: string, supabas
     pageToken = data.nextPageToken;
 
     for (const item of items) {
+      // Skip files with the name
+      if (item.name.toUpperCase().includes("MEDICO LEGISTA")) continue;
+
       let targetId = item.id;
       let targetMimeType = item.mimeType;
 
