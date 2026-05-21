@@ -18,8 +18,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
   // Helper for standardized error responses
   const jsonError = (code: string, status: number, details: Record<string, any> = {}) => {
-    logger.error(`STEP_FAIL_${step}`, code, { ...details, correlation_id: correlationId, request_id: requestId });
-    console.error(`STEP_FAIL_${step}`, { code, correlation_id: correlationId });
+    logger.error(`STEP_FAIL_\${step}`, code, { ...details, correlation_id: correlationId, request_id: requestId });
+    console.error(`STEP_FAIL_\${step}`, { code, correlation_id: correlationId });
     return new Response(JSON.stringify({
       success: false,
       error: code,
@@ -60,7 +60,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       avoidStatements = []
     } = body;
 
-    const requestedCount = Math.min(Number(count) || 5, 50);
+    const requestedCount = Math.min(Number(count) || 5, 100);
     const specialty = body.specialty || generationContext?.specialty || "Clínica Médica";
     const topics = Array.isArray(body.topics) ? body.topics : (generationContext?.topic ? [generationContext.topic] : [specialty]);
     const examBoard = targetExam || body.examBoard;

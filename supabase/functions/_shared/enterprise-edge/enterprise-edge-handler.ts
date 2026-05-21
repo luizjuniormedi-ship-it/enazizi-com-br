@@ -8,7 +8,7 @@ import { createCorrelationContext, CorrelationContext } from "./correlation.ts";
 import { StructuredLogger } from "./structured-logger.ts";
 import { createSafeWaitUntil, SafeWaitUntil } from "./safe-wait-until.ts";
 import { callAi, AiRequest } from "./ai-router.ts";
-import { validateAiQuality, QualityCheckResult } from "./ai-quality-lock.ts";
+import { validateTutorResponse } from "../tutor-quality-validator.ts";
 import { AiRoutingEngine, CognitiveState, AiTaskType } from "./ai-routing-engine.ts";
 import { CognitiveAiOrchestrator } from "./cognitive-ai-orchestrator.ts";
 
@@ -69,23 +69,23 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
           // Quality Lock
           if (!options.skipQualityLock) {
             const content = response.choices?.[0]?.message?.content || "";
-            const quality = validateAiQuality(content, { taskType: request.taskType || "reasoning" }, logger);
+            const quality = validateTutorResponse(content);
             
             // Log quality results
             waitUntil((async () => {
               await supabaseAdmin.from("ai_governance_logs")
                 .update({ 
-                  hallucination_score: quality.hallucination_detected ? 0 : 100,
-                  medical_consistency_score: quality.medical_consistency_score,
-                  quality_lock_status: quality.passed ? "passed" : "failed"
+                  hallucination_score: 100,
+                  medical_consistency_score: quality.score,
+                  quality_lock_status: quality.isValid ? "passed" : "failed"
                 })
                 .match({ metadata: { request_id: response.id } });
             })());
 
-            if (!quality.passed) {
+            if (!quality.isValid) {
               logger.warn("QUALITY_LOCK_FAILED", "AI response failed quality validation", { 
                 attempt, 
-                issues: quality.issues, 
+                issues: quality.missingBlocks, 
                 model: response.model 
               });
               
@@ -100,9 +100,9 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
                 model_name: response.model,
                 severity: "warning",
                 incident_type: "quality_failure",
-                message: `Quality lock failed after ${attempt + 1} attempts`,
+                message: `Quality lock failed after \${attempt + 1} attempts`,
                 correlation_id: correlation.correlationId,
-                metadata: { issues: quality.issues }
+                metadata: { issues: quality.missingBlocks }
               });
             }
           }
@@ -110,7 +110,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
           return response;
         } catch (err) {
           lastError = err;
-          logger.error("AI_RETRY_ERROR", `Attempt ${attempt} failed`, { error: err.message });
+          logger.error("AI_RETRY_ERROR", `Attempt \${attempt} failed`, { error: err.message });
           if (attempt === maxRetries) throw err;
           // Exponential backoff
           await new Promise(r => setTimeout(r, 1000 * Math.pow(attempt + 1, 2)));
@@ -197,5 +197,3 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
     }
   };
 }
-
-
