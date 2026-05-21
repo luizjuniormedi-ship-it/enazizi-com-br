@@ -42,15 +42,23 @@ Seu objetivo é transformar um conceito médico em um sistema de memória blinda
 RETORNE APENAS UM JSON VÁLIDO COM ESTA ESTRUTURA:
 {
   "mnemonic": "SIGLA",
-  "phrase": "Frase mnemônica...",
+  "frase_mnemonica": "Frase mnemônica...",
+  "phrase": "Mesma frase mnemônica...",
   "items_map": [
     {"letter": "S", "word": "Sinal", "original_item": "...", "symbol": "..."}
   ],
-  "scene_description": "Cena visual...",
-  "image_prompt": "Prompt para geração de imagem...",
-  "explanation_tecnica": "Explicação técnica...",
-  "explanation_didatica": "Explicação didática...",
-  "active_recall": [{"q": "...", "a": "...", "pitfall": "..."}],
+  "cena_visual": "Cena visual impactante...",
+  "scene_description": "Cena visual impactante...",
+  "prompt_imagem": "Prompt detalhado para geração de imagem...",
+  "explanation_tecnica": "Explicação técnica para o médico...",
+  "explicacao_didatica": "Explicação didática simplificada...",
+  "explanation_didatica": "Explicação didática simplificada...",
+  "active_recall": [
+    {"q": "Pergunta de revisão?", "a": "Resposta curta", "pitfall": "Erro comum a evitar"}
+  ],
+  "score_medico": 0-100,
+  "score_pedagogico": 0-100,
+  "score_linguistico": 0-100,
   "memory_impact_score": {
     "composite_score": 0-100,
     "visual_strength": 0-100,
@@ -110,17 +118,25 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
     const candidate = parseAiJson(rawContent);
 
     // 3. Save Result
+    const scoreFinal = candidate.memory_impact_score?.composite_score || 
+                       candidate.score_final || 
+                       Math.round((candidate.score_medico + candidate.score_pedagogico + candidate.score_linguistico) / 3) || 
+                       50;
+
     const { data: resData, error: resErr } = await supabaseAdmin.from("mnemonic_results").insert({
       request_id: mnReq.id,
       user_id: userId,
       tema: payload.tema,
       sigla: candidate.mnemonic || "",
-      frase_mnemonica: candidate.phrase || "",
-      explicacao_tecnica: candidate.explanation_tecnica || "",
-      explicacao_didatica: candidate.explanation_didatica || "",
-      cena_visual: candidate.scene_description || "",
-      prompt_imagem: candidate.image_prompt || "",
-      score_final: candidate.memory_impact_score?.composite_score || 50,
+      frase_mnemonica: candidate.frase_mnemonica || candidate.phrase || "",
+      explicacao_tecnica: candidate.explanation_tecnica || candidate.explicacao_tecnica || "",
+      explicacao_didatica: candidate.explicacao_didatica || candidate.explanation_didatica || "",
+      cena_visual: candidate.cena_visual || candidate.scene_description || "",
+      prompt_imagem: candidate.prompt_imagem || candidate.image_prompt || "",
+      score_medico: candidate.score_medico || 70,
+      score_pedagogico: candidate.score_pedagogico || 70,
+      score_linguistico: candidate.score_linguistico || 70,
+      score_final: scoreFinal,
       aprovado: true,
       associacoes_json: candidate.items_map || [],
       correlation_id: correlationId,
@@ -136,9 +152,30 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
       updated_at: new Date().toISOString()
     }).eq("id", mnReq.id);
 
+    // 5. Finalize response shape with aliased names for frontend compatibility
+    const finalizedData = {
+      ...candidate,
+      id: resData.id,
+      result_id: resData.id,
+      correlation_id: correlationId,
+      // Ensure both English and Portuguese names are present
+      frase_mnemonica: candidate.frase_mnemonica || candidate.phrase,
+      phrase: candidate.phrase || candidate.frase_mnemonica,
+      explicacao_didatica: candidate.explicacao_didatica || candidate.explanation_didatica,
+      explanation_didatica: candidate.explanation_didatica || candidate.explicacao_didatica,
+      cena_visual: candidate.cena_visual || candidate.scene_description,
+      scene_description: candidate.scene_description || candidate.cena_visual,
+      prompt_imagem: candidate.prompt_imagem || candidate.image_prompt,
+      // Scores
+      score_medico: candidate.score_medico || 70,
+      score_pedagogico: candidate.score_pedagogico || 70,
+      score_linguistico: candidate.score_linguistico || 70,
+      score_final: scoreFinal
+    };
+
     return new Response(JSON.stringify({ 
       success: true, 
-      data: { ...candidate, id: resData.id, correlation_id: correlationId } 
+      data: finalizedData
     }), { 
       headers: { ...corsHeaders, "Content-Type": "application/json" } 
     });
