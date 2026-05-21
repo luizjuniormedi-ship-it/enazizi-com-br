@@ -182,7 +182,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     async (overridePrompt?: string, contextOverride?: string, pedagogicalInteraction?: string) => {
       const requestId = crypto.randomUUID();
       const startTime = Date.now();
-      console.log(`[TUTOR] SEND_STARTED id=${requestId} interaction=${pedagogicalInteraction}`);
+      console.log(`[TUTOR] SEND_STARTED id=${requestId} function=${functionName} interaction=${pedagogicalInteraction}`);
 
       // Lógica de Gating Incremental Real
       if (pedagogicalInteraction && pedSession.session) {
@@ -371,6 +371,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
+        console.log(`[TUTOR] INVOKING_STREAM id=${requestId} url=${CHAT_URL}`);
         const result = await streamResponse({
           url: CHAT_URL,
           body: {
@@ -417,7 +418,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
             toast({ 
               title: "Tutor IA Indisponível", 
-              description: message || "Erro ao conectar com o agente IA", 
+              description: `Falha na requisição: ${message || "Erro desconhecido"}. Verifique se a Edge Function '${functionName}' está publicada e acessível.`, 
               variant: "destructive" 
             });
             setMessages(prev => {
