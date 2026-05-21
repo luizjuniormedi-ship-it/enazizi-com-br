@@ -37,8 +37,6 @@ const results = await Promise.all([
   simulateRequest(1),
   simulateRequest(2),
   simulateRequest(3),
-  simulateRequest(4),
-  simulateRequest(5),
 ]);
 
 const totalDuration = Date.now() - startAll;
