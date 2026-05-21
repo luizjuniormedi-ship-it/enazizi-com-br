@@ -215,6 +215,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       const pStart = Date.now();
       
       // Save memory if session exists
+      // 1. Save memory if session exists
       if (sessionId) {
         await saveTutorMemory(supabaseAdmin, userId, {
           topic,
@@ -223,7 +224,23 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         }).catch(e => logger.warn("SAVE_MEMORY_FAIL", e.message));
       }
 
-      // Record metrics
+      // 2. Perform Pedagogical Audit
+      try {
+        const audit = await auditPedagogicalQuality(aiText, topic);
+        await supabaseAdmin.from("pedagogical_quality_audits").insert({
+          content_type: "tutor_v3_response",
+          quality_score: audit.quality_score,
+          medical_coherence_passed: audit.medical_coherence_passed,
+          guideline_compliance_passed: audit.guideline_compliance_passed,
+          safety_check_passed: audit.safety_check_passed,
+          detected_hallucinations: audit.detected_hallucinations,
+          audit_log: { topic, correlation_id: correlation.correlationId, userId }
+        }).catch(e => logger.warn("AUDIT_PERSIST_FAIL", e.message));
+      } catch (e) {
+        logger.warn("AUDIT_FAIL", (e as Error).message);
+      }
+
+      // 3. Record metrics
       await supabaseAdmin.from("tutor_runtime_metrics").insert({
         user_id: userId,
         correlation_id: correlation.correlationId,
