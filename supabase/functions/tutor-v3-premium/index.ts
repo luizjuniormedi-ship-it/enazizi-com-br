@@ -39,14 +39,22 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 const NULL_UUID = "00000000-0000-0000-0000-000000000000";
 
 function isValidUUID(v: unknown): v is string {
-  return typeof v === "string" && UUID_REGEX.test(v) && v !== NULL_UUID;
+  if (typeof v !== "string") return false;
+  if (!UUID_REGEX.test(v)) return false;
+  if (v === NULL_UUID) return false;
+  // Check for common placeholders/test IDs
+  if (v.startsWith("00000000") || v.includes("fake") || v.includes("test")) return false;
+  return true;
 }
 
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const runtimeStart = Date.now();
   const body = await req.json().catch(() => ({}));
   const { message, history = [], topic, fsrsContext, masteryState } = body;
-  const sessionId = isValidUUID(body.sessionId) ? body.sessionId : null;
+  
+  // Hardening Session ID
+  const rawSessionId = body.sessionId || body.session_id;
+  const sessionId = isValidUUID(rawSessionId) ? rawSessionId : null;
   const userId = correlation.userId || body.userId || body.user_id;
 
   if (!userId) {
@@ -56,6 +64,20 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
   if (!message || typeof message !== "string") {
     throw new Error("Message is required.");
+  }
+
+  // AI Routing Logic
+  const msgLower = message.trim().toLowerCase();
+  const isGreeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite|tudo bem|e ai|ei)/i.test(msgLower);
+  const isTransition = /^(ok|entendi|compreendido|continue|prossiga|sim|não|perfeito)/i.test(msgLower);
+  const isShortQuery = message.length < 50;
+  
+  // Decide complexity based on intent
+  let complexity: "baixa" | "media" | "alta" = "alta";
+  if (isGreeting || (isTransition && isShortQuery)) {
+    complexity = "baixa";
+  } else if (isShortQuery) {
+    complexity = "media";
   }
 
   // 1. Hidratação longitudinal — tolerante a falha
@@ -94,7 +116,7 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
 
   const messages = [
     { role: "system", content: `${SYSTEM_PROMPT_V3}\n${cognitiveContext}` },
-    ...(Array.isArray(history) ? history.slice(-6) : []).map((m: any) => ({
+    ...(Array.isArray(history) ? history.slice(-10) : []).map((m: any) => ({
       role: m.role,
       content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
     })),
@@ -104,7 +126,7 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
   // 3. AI Router + Governance + Quality Lock
   const aiResponse = await ai({
     taskType: "tutor",
-    complexity: "baixa",
+    complexity: complexity,
     cognitiveState: (masteryState?.toUpperCase?.() as any) || "NOVATO",
     messages,
     userId,
@@ -115,25 +137,42 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
 
   // 4. Persistência idempotente + telemetria (non-blocking)
   let duplicateKeyRecovered = false;
+  let sessionSkipped = false;
   const persistenceStart = Date.now();
 
   const persistAndLog = (async () => {
     try {
       if (sessionId) {
         try {
-          await saveTutorMemory(supabaseAdmin, userId, {
-            topic: topic || "Geral",
-            content: aiText,
-            sessionId,
-          });
+          // Check if session actually exists to avoid FK error
+          const { data: sessCheck } = await supabaseAdmin
+            .from("tutor_sessions")
+            .select("id")
+            .eq("id", sessionId)
+            .maybeSingle();
+
+          if (sessCheck) {
+            await saveTutorMemory(supabaseAdmin, userId, {
+              topic: topic || "Geral",
+              content: aiText,
+              sessionId,
+            });
+          } else {
+            sessionSkipped = true;
+            logger.info("SESSION_PERSISTENCE_SKIPPED", "Session ID not found in database", { sessionId });
+          }
         } catch (e) {
           const msg = (e as Error).message || "";
           if (msg.includes("duplicate") || msg.includes("23505")) {
             duplicateKeyRecovered = true;
-            logger.info("MEMORY_UPSERT_RECOVERED", "Duplicate key handled via upsert", { topic });
           } else {
             logger.warn("TUTOR_MEMORY_SAVE_FAIL", msg);
           }
+        }
+      } else {
+        sessionSkipped = true;
+        if (rawSessionId) {
+          logger.info("SESSION_INVALID_SKIPPED", "Invalid or temporary session ID provided", { rawSessionId });
         }
       }
 
@@ -150,7 +189,13 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
         completion_tokens: aiResponse.usage?.completion_tokens || 0,
         model_used: aiResponse.model || null,
         topic: topic || "Geral",
-        metadata: { has_session: !!sessionId },
+        metadata: { 
+          has_session: !!sessionId, 
+          session_skipped: sessionSkipped,
+          complexity_assigned: complexity,
+          is_greeting: isGreeting,
+          is_transition: isTransition
+        },
       });
     } catch (telemetryErr) {
       logger.warn("TUTOR_TELEMETRY_FAIL", (telemetryErr as Error).message);
@@ -162,10 +207,13 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
   return new Response(JSON.stringify({
     content: aiText,
     correlation_id: correlation.correlationId,
+    request_id: crypto.randomUUID(),
     metrics: {
       generation_ms: generationMs,
       memory_lookup_ms: memoryLookupMs,
       memory_hit: (memoryContext.cached_blocks?.length ?? 0) > 0,
+      complexity: complexity,
+      session_skipped: sessionSkipped
     },
   }), {
     headers: { "Content-Type": "application/json" },
