@@ -8,7 +8,8 @@ import {
   Zap,
   ChevronRight,
   TrendingUp,
-  Brain
+  Brain,
+  RefreshCw
 } from "lucide-react";
 import { MascotAvatar } from "../mascot/MascotAvatar";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,7 @@ interface TutorV2SidebarProps {
 
 export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) {
   return (
-    <aside className="w-80 border-r border-white/5 bg-slate-950 flex flex-col hidden xl:flex relative overflow-hidden">
+    <aside className="w-80 border-r border-white/5 bg-slate-950 flex flex-col hidden lg:flex relative overflow-hidden">
       {/* Sidebar background glow */}
       <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
       
@@ -85,7 +86,20 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
           </div>
         </div>
 
-        <div className="pt-6 mt-6 border-t border-white/5 space-y-4">
+        <div className="pt-6 mt-6 border-t border-white/5 space-y-3">
+          <button 
+            onClick={() => {
+              const newTopic = prompt("Para qual assunto médico deseja mudar?");
+              if (newTopic && newTopic.trim()) {
+                window.location.href = `/dashboard/sessao-estudo?topic=${encodeURIComponent(newTopic)}`;
+              }
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-all group"
+          >
+            <RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Mudar de Tema</span>
+          </button>
+
           <div className="p-4 rounded-2xl bg-slate-900/50 border border-white/5 group hover:border-indigo-500/30 transition-all cursor-pointer relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center justify-between mb-2 relative z-10">

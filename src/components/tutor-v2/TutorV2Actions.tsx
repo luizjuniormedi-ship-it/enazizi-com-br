@@ -127,6 +127,7 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
           icon={RefreshCw} 
           label="Mudar de Assunto" 
           onClick={handleChangeTopic}
+          className="border border-white/10 bg-white/5 text-indigo-400 hover:bg-white/10"
         />
         <ActionButton 
           icon={Zap} 
@@ -164,16 +165,19 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
   );
 }
 
-function ActionButton({ icon: Icon, label, onClick }: { icon: any, label: string, onClick?: () => void }) {
+function ActionButton({ icon: Icon, label, onClick, className }: { icon: any, label: string, onClick?: () => void, className?: string }) {
   return (
     <Button 
       size="sm" 
       variant="ghost" 
       onClick={onClick}
-      className="h-9 px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+      className={cn(
+        "h-9 px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all",
+        className
+      )}
     >
       <Icon className="h-3.5 w-3.5" />
-      <span className="hidden lg:inline">{label}</span>
+      <span className="hidden md:inline">{label}</span>
     </Button>
   );
 }
