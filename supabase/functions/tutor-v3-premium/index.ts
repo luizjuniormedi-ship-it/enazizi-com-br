@@ -131,8 +131,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       .maybeSingle();
     
     if (sessionData) {
-      current_block = sessionData.current_block || "BLOCO_1_MISSAO_CLINICA";
-      completed_blocks = sessionData.completed_blocks || [];
+      currentBlock = sessionData.current_block || "BLOCO_1_MISSAO_CLINICA";
+      completedBlocks = sessionData.completed_blocks || [];
     }
   }
 
