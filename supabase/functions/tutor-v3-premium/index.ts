@@ -42,9 +42,23 @@ function isValidUUID(v: unknown): v is string {
   if (typeof v !== "string") return false;
   if (!UUID_REGEX.test(v)) return false;
   if (v === NULL_UUID) return false;
-  // Check for common placeholders/test IDs
   if (v.startsWith("00000000") || v.includes("fake") || v.includes("test")) return false;
   return true;
+}
+
+// 🧠 COGNITIVE GOVERNANCE UTILS
+function detectCognitiveLoop(message: string, history: any[]): boolean {
+  if (history.length < 3) return false;
+  const lastUserMessages = history.filter(m => m.role === "user").slice(-3).map(m => (typeof m.content === "string" ? m.content : "").toLowerCase().trim());
+  const currentMsg = message.toLowerCase().trim();
+  return lastUserMessages.some(prev => prev === currentMsg || (prev.length > 10 && currentMsg.includes(prev)));
+}
+
+function estimateStudentFatigue(history: any[]): number {
+  if (history.length < 5) return 0;
+  const userMsgs = history.filter(m => m.role === "user").slice(-5);
+  const shortMsgCount = userMsgs.filter(m => (typeof m.content === "string" ? m.content.length : 0) < 15).length;
+  return Math.min(1.0, shortMsgCount / 5);
 }
 
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
@@ -52,7 +66,6 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const body = await req.json().catch(() => ({}));
   const { message, history = [], topic, fsrsContext, masteryState } = body;
   
-  // Hardening Session ID
   const rawSessionId = body.sessionId || body.session_id;
   const sessionId = isValidUUID(rawSessionId) ? rawSessionId : null;
   const userId = correlation.userId || body.userId || body.user_id;
@@ -66,21 +79,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     throw new Error("Message is required.");
   }
 
-  // AI Routing Logic
+  // 1. Cognitive Governance Check
+  const isLoop = detectCognitiveLoop(message, history);
+  const fatigue = estimateStudentFatigue(history);
+  const isHighFatigue = fatigue > 0.8;
+
+  // 2. AI Routing Logic
   const msgLower = message.trim().toLowerCase();
   const isGreeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite|tudo bem|e ai|ei)/i.test(msgLower);
   const isTransition = /^(ok|entendi|compreendido|continue|prossiga|sim|não|perfeito)/i.test(msgLower);
   const isShortQuery = message.length < 50;
   
-  // Decide complexity based on intent
   let complexity: "baixa" | "media" | "alta" = "alta";
-  if (isGreeting || (isTransition && isShortQuery)) {
+  if (isGreeting || (isTransition && isShortQuery) || isHighFatigue) {
     complexity = "baixa";
   } else if (isShortQuery) {
     complexity = "media";
   }
 
-  // 1. Hidratação longitudinal — tolerante a falha
+  // 3. Hidratação longitudinal — tolerante a falha
   const memoryLookupStart = Date.now();
   let memoryContext;
   try {
@@ -100,11 +117,18 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   }
   const memoryLookupMs = Date.now() - memoryLookupStart;
 
-  // 2. Prompt com contexto cognitivo + memória
+  // 4. Recovery Mode Trigger
+  let systemPromptSuffix = "";
+  if (isLoop) {
+    systemPromptSuffix = "\n[RECOVERY TRIGGERED: LOOP DETECTADO] O aluno está repetindo perguntas. Mude a abordagem, use uma analogia radicalmente diferente ou desafie o aluno com um cenário prático novo.";
+  } else if (isHighFatigue) {
+    systemPromptSuffix = "\n[RECOVERY TRIGGERED: FADIGA DETECTADA] O aluno parece cansado. Seja extremamente conciso, use incentivo positivo e sugira uma pausa ou um resumo rápido.";
+  }
+
   const cognitiveContext = `
 [COGNITIVE STATE]
 Mastery: ${masteryState || memoryContext.previous_mastery || "initial"}
-FSRS Context: ${JSON.stringify(fsrsContext || {})}
+Fatigue: ${fatigue.toFixed(2)}
 Topic: ${topic || "Geral"}
 
 [LONGITUDINAL MEMORY]
@@ -115,7 +139,7 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
 `;
 
   const messages = [
-    { role: "system", content: `${SYSTEM_PROMPT_V3}\n${cognitiveContext}` },
+    { role: "system", content: `${SYSTEM_PROMPT_V3}${systemPromptSuffix}\n${cognitiveContext}` },
     ...(Array.isArray(history) ? history.slice(-10) : []).map((m: any) => ({
       role: m.role,
       content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
@@ -123,80 +147,71 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
     { role: "user", content: message },
   ];
 
-  // 3. AI Router + Governance + Quality Lock
+  // 5. AI Execution
   const aiStart = Date.now();
   let aiResponse;
   try {
-    const aiPromise = ai({
+    aiResponse = await ai({
       taskType: "tutor",
       complexity: complexity,
       cognitiveState: (masteryState?.toUpperCase?.() as any) || "NOVATO",
       messages,
       userId,
-    });
-
-    // Race against a 45s timeout for enterprise stability
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error("AI_MODEL_TIMEOUT")), 45000)
-    );
-
-    aiResponse = await Promise.race([aiPromise, timeoutPromise]) as any;
+    }) as any;
   } catch (err) {
-    logger.error("AI_GENERATION_FAILED", (err as Error).message, { 
-      correlationId: correlation.correlationId,
-      complexity 
-    });
-    
-    // Recovery Fallback: Minimal pedagogical response if model fails
+    logger.error("AI_GENERATION_FAILED", (err as Error).message);
     return new Response(JSON.stringify({
-      content: "## 🎯 BLOCO 1 — MISSÃO DA SESSÃO\nPeço desculpas, tive uma oscilação momentânea na conexão. Poderia repetir sua última dúvida? Manteremos o foco no tópico: " + (topic || "Geral") + ".\n\n[RECOVERY_MODE_ACTIVE]",
-      correlation_id: correlation.correlationId,
-      error: (err as Error).message === "AI_MODEL_TIMEOUT" ? "timeout" : "model_failure",
+      content: "## 🎯 BLOCO 1 — MISSÃO DA SESSÃO\nTivemos um pequeno soluço técnico no raciocínio. Vamos retomar? Focamos no tópico: " + (topic || "Geral") + ".",
+      error: "model_failure",
       metrics: { generation_ms: Date.now() - aiStart, error: true }
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   }
 
-  const aiText = aiResponse.choices?.[0]?.message?.content || "Erro ao gerar resposta.";
+  const aiText = aiResponse.choices?.[0]?.message?.content || "";
   const generationMs = Date.now() - runtimeStart;
+  const isTruncated = aiText.length < 200 && complexity === "alta" && !isGreeting;
 
-  // 4. Persistência idempotente + telemetria (non-blocking)
-  let duplicateKeyRecovered = false;
-  let sessionSkipped = false;
-  const persistenceStart = Date.now();
-
+  // 6. Governance & Scale Protection (Non-blocking)
   const persistAndLog = (async () => {
     try {
+      const persistenceStart = Date.now();
       if (sessionId) {
-        try {
-          // Check if session actually exists to avoid FK error
-          const { data: sessCheck } = await supabaseAdmin
-            .from("tutor_sessions")
-            .select("id")
-            .eq("id", sessionId)
-            .maybeSingle();
-
-          if (sessCheck) {
-            await saveTutorMemory(supabaseAdmin, userId, {
+        // Governance: Log anomalies
+        if (isLoop || isHighFatigue || isTruncated) {
+          try {
+            await supabaseAdmin.from("cognitive_runtime_events").insert({
+              user_id: userId,
+              session_id: sessionId,
+              correlation_id: correlation.correlationId,
+              event_type: isLoop ? 'LOOP_DETECTED' : isHighFatigue ? 'STUDENT_FATIGUE' : 'TRUNCATION_RISK',
+              severity: isTruncated ? 'critical' : 'warning',
               topic: topic || "Geral",
-              content: aiText,
-              sessionId,
+              message: isTruncated ? "Resposta curta em pergunta complexa" : isLoop ? "Repetição de intenção detectada" : "Padrão de fadiga cognitiva",
+              metadata: { fatigue, complexity, msgLength: aiText.length }
             });
-          } else {
-            sessionSkipped = true;
-            logger.info("SESSION_PERSISTENCE_SKIPPED", "Session ID not found in database", { sessionId });
-          }
-        } catch (e) {
-          const msg = (e as Error).message || "";
-          if (msg.includes("duplicate") || msg.includes("23505")) {
-            duplicateKeyRecovered = true;
-          } else {
-            logger.warn("TUTOR_MEMORY_SAVE_FAIL", msg);
+            
+            await supabaseAdmin.from("pedagogical_sessions")
+              .update({
+                loop_count: isLoop ? 1 : 0, 
+                fatigue_index: fatigue,
+                cognitive_quality_score: isTruncated ? 5.0 : 9.0,
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", sessionId);
+          } catch (govErr) {
+            logger.warn("GOVERNANCE_LOG_FAIL", (govErr as Error).message);
           }
         }
-      } else {
-        sessionSkipped = true;
-        if (rawSessionId) {
-          logger.info("SESSION_INVALID_SKIPPED", "Invalid or temporary session ID provided", { rawSessionId });
+
+        // Standard Persistence
+        try {
+          await saveTutorMemory(supabaseAdmin, userId, {
+            topic: topic || "Geral",
+            content: aiText,
+            sessionId,
+          });
+        } catch (memErr) {
+          logger.warn("TUTOR_MEMORY_SAVE_FAIL", (memErr as Error).message);
         }
       }
 
@@ -208,21 +223,19 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
         memory_lookup_ms: memoryLookupMs,
         persistence_ms: Date.now() - persistenceStart,
         memory_hit: (memoryContext.cached_blocks?.length ?? 0) > 0,
-        duplicate_key_recovered: duplicateKeyRecovered,
         prompt_tokens: aiResponse.usage?.prompt_tokens || 0,
         completion_tokens: aiResponse.usage?.completion_tokens || 0,
         model_used: aiResponse.model || null,
         topic: topic || "Geral",
         metadata: { 
-          has_session: !!sessionId, 
-          session_skipped: sessionSkipped,
           complexity_assigned: complexity,
-          is_greeting: isGreeting,
-          is_transition: isTransition
+          is_loop: isLoop,
+          fatigue_index: fatigue,
+          is_truncated: isTruncated
         },
       });
     } catch (telemetryErr) {
-      logger.warn("TUTOR_TELEMETRY_FAIL", (telemetryErr as Error).message);
+      logger.warn("GOVERNANCE_TELEMETRY_FAIL", (telemetryErr as Error).message);
     }
   })();
 
@@ -231,13 +244,11 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
   return new Response(JSON.stringify({
     content: aiText,
     correlation_id: correlation.correlationId,
-    request_id: crypto.randomUUID(),
     metrics: {
       generation_ms: generationMs,
-      memory_lookup_ms: memoryLookupMs,
-      memory_hit: (memoryContext.cached_blocks?.length ?? 0) > 0,
       complexity: complexity,
-      session_skipped: sessionSkipped
+      fatigue: fatigue,
+      is_loop: isLoop
     },
   }), {
     headers: { "Content-Type": "application/json" },
