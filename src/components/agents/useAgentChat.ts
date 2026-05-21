@@ -390,6 +390,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       try {
         const requestPayload = {
+          message: text,
+          history: messages.map(m => ({ role: m.role, content: m.content })),
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           userContext: contextToSend || undefined,
           adaptiveContext: adaptiveContext,
