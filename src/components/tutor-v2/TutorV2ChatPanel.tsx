@@ -128,7 +128,14 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
               tutor_session_id: session.id,
               user_id: user.id,
               created_at: new Date().toISOString(),
-              metadata: { fallback_used: !!response.fallback, provider: response.provider },
+              metadata: { 
+                fallback_used: !!response.fallback, 
+                provider: response.provider,
+                currentBlock: response.currentBlock,
+                blockTitle: response.blockTitle,
+                socraticQuestion: response.socraticQuestion,
+                actionsContext: response.actionsContext
+              },
             },
           ];
           // [TUTOR_26_MESSAGES_AFTER_APPEND]
