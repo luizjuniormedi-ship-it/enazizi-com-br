@@ -95,23 +95,26 @@ export interface AIRunResult {
 // ---------------------------------------------------------------------------
 
 // Modelos validados em produção via Lovable AI Gateway.
+// Modelos validados em produção. Prioridade para OpenAI Direto (sem gateway).
 const MODELS = {
-  flash: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
-  flashStable: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
-  flashLite: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
-  pro: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
-  gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
-  gpt5: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+  flash: { provider: "openai", model: "gpt-4o" } as ModelRef,
+  flashStable: { provider: "openai", model: "gpt-4o" } as ModelRef,
+  flashLite: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
+  pro: { provider: "openai", model: "gpt-4o" } as ModelRef,
+  gpt5Mini: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
+  gpt5: { provider: "openai", model: "gpt-4o" } as ModelRef,
   geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
+  openaiFallback: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "google/gemini-2.5-flash-lite": "low",
   "google/gemini-2.5-flash": "low",
   "google/gemini-2.5-pro": "medium",
+  "gpt-4o-mini": "low",
+  "gpt-4o": "medium",
   "openai/gpt-4o-mini": "low",
   "openai/gpt-4o": "medium",
-  "openai/gpt-5.5": "high",
 };
 
 // Perfis de prompt (apenas marcadores nesta fase; o prompt real é montado
@@ -352,7 +355,7 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
-    const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model) || ref.model === "openai/gpt-5.5" || ref.model === "openai/gpt-5.5-pro";
+    const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model) || /^o[13]/.test(ref.model) || ref.model.includes("gpt-5");
     const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
     const body: Record<string, unknown> = {
       model: ref.model,
