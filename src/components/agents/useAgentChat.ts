@@ -435,7 +435,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
           onComplete: (finalText) => {
-            console.log(`[TUTOR] STREAM_COMPLETE id=${requestId}`, { len: finalText?.length });
+            console.log(`[TUTOR_UI_MESSAGE_APPENDED] FINAL id=${requestId}`, { len: finalText?.length });
             finalizeLoading();
           },
           onError: ({ status, message }) => {
