@@ -31,35 +31,30 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { message, sessionId, userId, currentBlock: bodyBlock } = body;
+    const { message, sessionId, currentBlock: bodyBlock } = body;
 
-    // LAZY INITIALIZATION
+    // LAZY CONFIG
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
 
     if (!openaiKey) throw new Error("Missing OPENAI_API_KEY");
 
-    // FETCH SESSION
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // FETCH SESSION (LAZY)
     let session = null;
     if (sessionId) {
-      const { data } = await supabase.from("tutor_sessions").select("*").eq("id", sessionId).single();
-      session = data;
+      try {
+        const { data } = await supabase.from("tutor_sessions").select("current_block").eq("id", sessionId).maybeSingle();
+        session = data;
+      } catch (err) {
+        console.error("[TUTOR_V3] Error fetching session:", err);
+      }
     }
 
-    // PHASE 4: Standardize currentBlock
+    // PHASE 4: currentBlock standard
     const currentBlock = session?.current_block ?? bodyBlock ?? "BLOCO_1_MISSAO_CLINICA";
-
-    // LAYER 7: Memory (Save user message)
-    if (sessionId) {
-      await supabase.from("tutor_messages").insert({
-        session_id: sessionId,
-        content: message,
-        role: "user",
-        block: currentBlock
-      });
-    }
 
     // LAYER 5: IA Call
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -76,42 +71,35 @@ serve(async (req) => {
     });
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content || "Erro ao gerar resposta da IA.";
+    const content = aiData.choices?.[0]?.message?.content || "Ocorreu um erro ao gerar a resposta da IA.";
 
-    // Logic to advance (simplified)
+    // Simple advancement logic (gating)
     let nextBlock = currentBlock;
     const blocks = ["BLOCO_1_MISSAO_CLINICA", "BLOCO_2_ROADMAP", "BLOCO_3_FISIOPATOLOGIA", "BLOCO_4_CONDUTA", "BLOCO_5_INFLEXAO", "BLOCO_6_FECHAMENTO"];
     
-    // Auto-advance logic (very basic for stability)
-    if (message?.toLowerCase().includes("continuar") || message?.toLowerCase().includes("entendi")) {
+    // Check for explicit continuation
+    const userWantsNext = message?.toLowerCase().includes("continuar") || 
+                         message?.toLowerCase().includes("próximo") || 
+                         message?.toLowerCase().includes("proximo");
+
+    if (userWantsNext) {
       const currentIndex = blocks.indexOf(currentBlock);
       if (currentIndex !== -1 && currentIndex < blocks.length - 1) {
         nextBlock = blocks[currentIndex + 1];
       }
     }
 
-    // UPDATE SESSION
-    if (sessionId) {
-      await supabase.from("tutor_sessions").update({
-        current_block: nextBlock,
-        updated_at: new Date().toISOString()
-      }).eq("id", sessionId);
-
-      // Save AI response
-      await supabase.from("tutor_messages").insert({
-        session_id: sessionId,
-        content: content,
-        role: "assistant",
-        block: nextBlock
-      });
+    // UPDATE SESSION (LAZY)
+    if (sessionId && nextBlock !== currentBlock) {
+      try {
+        await supabase.from("tutor_sessions").update({
+          current_block: nextBlock,
+          updated_at: new Date().toISOString()
+        }).eq("id", sessionId);
+      } catch (err) {
+        console.error("[TUTOR_V3] Error updating session:", err);
+      }
     }
-
-    // LAYER 8: Telemetry (Event Log)
-    await supabase.from("tutor_telemetry").insert({
-      session_id: sessionId,
-      event_type: "message_processed",
-      metadata: { currentBlock, nextBlock, requestId, correlationId }
-    }).catch(() => {}); // Don't fail if telemetry fails
 
     return new Response(JSON.stringify({
       success: true,
@@ -120,7 +108,7 @@ serve(async (req) => {
       shouldWaitForStudent: true,
       correlation_id: correlationId,
       request_id: requestId,
-      debug_stage: "layers_1_to_8_ok"
+      debug_stage: "stable_v3_ready"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
@@ -129,10 +117,10 @@ serve(async (req) => {
     console.error(`[TUTOR_V3_ERROR] ${requestId}:`, error);
     return new Response(JSON.stringify({
       success: true,
-      content: "Houve um problema técnico, mas o preceptor está aqui. Como podemos continuar?",
+      content: "Preceptor ENAZIZI: Tive um pequeno problema técnico, mas estou aqui. Poderia repetir sua última dúvida?",
       currentBlock: "ERROR_RECOVERED",
       shouldWaitForStudent: true,
-      error: error.message
+      debug_stage: "error_fallback"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
