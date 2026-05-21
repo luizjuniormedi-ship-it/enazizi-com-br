@@ -185,18 +185,22 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       
       const text = overridePrompt || input.trim();
 
-      console.log(`[TUTOR_V3_INVOKE] ${requestId}`, {
+      // [TUTOR_V3_INVOKE] Real-time Forensics
+      console.log(`%c[TUTOR_V3_INVOKE] ${requestId}`, "background: #10b981; color: white; padding: 2px 5px; border-radius: 2px;", {
         function: functionName,
-        text: text.slice(0, 50),
+        text: text.slice(0, 100),
         interaction: pedagogicalInteraction,
-        topic
+        topic,
+        userId: user?.id,
+        sessionId: history.activeConversationId,
+        url: CHAT_URL
       });
 
-      // 0. Healthcheck pre-flight (silent)
+      // 0. Healthcheck pre-flight (silent but logged)
       if (!overridePrompt && messages.length <= 1) {
         supabase.functions.invoke(functionName, { body: { healthcheck: true } })
           .then(({ data, error }) => {
-            console.log(`[TUTOR_V3_HEALTH] ${requestId}`, data, error);
+            console.log(`%c[TUTOR_V3_HEALTH] ${requestId}`, "color: #10b981", { data, error, ok: data?.ok });
           })
           .catch(e => console.error(`[TUTOR_V3_HEALTH_FATAL] ${requestId}`, e));
       }
@@ -385,12 +389,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
-        console.log(`[TUTOR] INVOKING_STREAM id=${requestId} url=${CHAT_URL}`, {
-          method: "POST",
-          hasAuth: !!user
-        });
-        
-        // Log payload for forensics before sending
         const requestPayload = {
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           userContext: contextToSend || undefined,
@@ -413,7 +411,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             lastInteraction: pedagogicalInteraction
           } : undefined
         };
-        console.log("[TUTOR] REQUEST_PAYLOAD", requestPayload);
+
+        console.log(`%c[TUTOR_V3_PAYLOAD] ${requestId}`, "color: #3b82f6", requestPayload);
 
         const result = await streamResponse({
           url: CHAT_URL,
@@ -422,7 +421,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
           onError: ({ status, message }) => {
-            console.error(`[TUTOR] SEND_FAILED id=${requestId}`, { status, message });
+            console.error(`%c[TUTOR_V3_ERROR] ${requestId}`, "background: #ef4444; color: white; padding: 2px 5px;", { 
+              status, 
+              message,
+              requestId,
+              elapsed: Date.now() - startTime
+            });
             clearTimeout(watchdogTimeout);
             
             // Increment circuit breaker
@@ -440,7 +444,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
             toast({ 
               title: "Tutor IA Indisponível", 
-              description: `Falha na requisição: ${message || "Erro desconhecido"}. Verifique se a Edge Function '${functionName}' está publicada e acessível.`, 
+              description: `Falha na requisição: ${message || "Erro desconhecido"}. (ReqID: ${requestId.slice(0,8)})`, 
               variant: "destructive" 
             });
             setMessages(prev => {
@@ -451,6 +455,11 @@ export function useAgentChat(opts: UseAgentChatOptions) {
               return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
             });
           },
+        });
+
+        console.log(`%c[TUTOR_V3_SUCCESS] ${requestId}`, "color: #10b981", { 
+          elapsed: Date.now() - startTime,
+          contentLength: result?.content?.length 
         });
 
         clearTimeout(watchdogTimeout);
