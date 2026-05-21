@@ -90,16 +90,21 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
   // We can use Deno.onUnhandledRejection if we really want to separate but enterpriseEdgeHandler handles the main flow.
   // For now just await or fire-and-forget
   try {
-    await saveTutorMemory(supabaseAdmin, userId, {
-      topic: topic || 'Geral',
-      content: aiText,
-      sessionId
-    });
+    // Only save to memory if sessionId is valid (not dummy)
+    const isValidSession = sessionId && sessionId !== '00000000-0000-0000-0000-000000000000';
+    
+    if (isValidSession) {
+      await saveTutorMemory(supabaseAdmin, userId, {
+        topic: topic || 'Geral',
+        content: aiText,
+        sessionId
+      });
+    }
     
     // Log additional tutor metrics
     await supabaseAdmin.from("tutor_runtime_metrics").insert({
       user_id: userId,
-      tutor_generation_ms: 0, // Router handles this now in ai_governance_logs
+      tutor_generation_ms: 0,
       prompt_tokens: aiResponse.usage?.prompt_tokens || 0,
       completion_tokens: aiResponse.usage?.completion_tokens || 0,
       memory_hit: false
