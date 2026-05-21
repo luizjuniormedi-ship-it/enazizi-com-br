@@ -47,9 +47,13 @@ export async function buildPedagogicalContext(
     .limit(3);
 
   // 4. Synthesize context
-  const known_misconceptions = Array.from(new Set(
-    (summaries || []).flatMap(s => s.misconceptions_identified || [])
-  ));
+  const lastBlock = blocks && blocks.length > 0 ? blocks[0] : null;
+  const previous_mastery = lastBlock?.mastery_level || "initial";
+  
+  const known_misconceptions = Array.from(new Set([
+    ...(lastBlock?.misconceptions_detected || []),
+    ...(summaries || []).flatMap(s => s.misconceptions_identified || [])
+  ]));
 
   const effective_analogies = (analogies || []).map(a => a.analogy);
   
@@ -58,7 +62,7 @@ export async function buildPedagogicalContext(
     .join("\n");
 
   return {
-    previous_mastery: "initial",
+    previous_mastery,
     known_misconceptions,
     effective_analogies,
     weak_topics: (summaries || []).flatMap(s => s.concepts_fragile || []),
