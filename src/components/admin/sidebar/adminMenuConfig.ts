@@ -240,6 +240,15 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["tutor", "memory", "rag", "embeddings"],
       },
       {
+        to: "/admin?tab=tutor-stabilization",
+        label: "Estabilidade Tutor",
+        description: "Dashboard de resiliência, latência e telemetria V3.",
+        icon: Activity,
+        scopes: ["super_admin", "devops", "admin_pedagogico"],
+        badge: "Novo",
+        keywords: ["tutor", "stabilization", "metrics", "telemetry", "v3"],
+      },
+      {
         to: "/admin?tab=tutor-video-audit",
         label: "Recomendações Tutor",
         description: "Auditoria de recomendações de videoaulas automáticas.",

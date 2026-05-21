@@ -74,6 +74,7 @@ const TutorVideoAuditPanel = lazy(() => import("@/components/admin/TutorVideoAud
 const KnowledgeBaseAdmin = lazy(() => import("@/components/admin/KnowledgeBaseAdmin").then(m => ({ default: m.KnowledgeBaseAdmin })));
 const TutorQAPanel = lazy(() => import("@/components/admin/TutorQAPanel"));
 const ExamHarvesterPanel = lazy(() => import("@/components/admin/ExamHarvesterPanel").then(m => ({ default: m.ExamHarvesterPanel })));
+const TutorStabilizationDashboard = lazy(() => import("@/components/admin/cognitive-observatory/TutorStabilizationDashboard").then(m => ({ default: m.TutorStabilizationDashboard })));
 
 
 
@@ -126,6 +127,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "lesson-ratings", label: "Avaliações Aulas", icon: Star },
         { key: "tutor-video-audit", label: "Auditoria Vídeo", icon: Video },
         { key: "tutor-structure-tests", label: "Testes Estrutura", icon: Microscope },
+        { key: "tutor-stabilization", label: "Estabilidade Tutor", icon: Activity },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
 
       ],
@@ -629,6 +631,7 @@ const Admin = ({ initialTab }: AdminProps) => {
                   {activeSection === "knowledge-base" && <KnowledgeBaseAdmin />}
                   {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}
                   {activeSection === "tutor-lessons" && <Suspense fallback={<PanelLoader />}><AdminLessonsMemory /></Suspense>}
+                  {activeSection === "tutor-stabilization" && <Suspense fallback={<PanelLoader />}><TutorStabilizationDashboard /></Suspense>}
                   {activeSection === "lesson-ratings" && <Suspense fallback={<PanelLoader />}><AdminLessonRatingsPanel /></Suspense>}
                   {activeSection === "tutor-video-audit" && <Suspense fallback={<PanelLoader />}><TutorVideoAuditPanel /></Suspense>}
                   {activeSection === "tutor-structure-tests" && <Suspense fallback={<PanelLoader />}><TutorLessonStructureDashboard /></Suspense>}

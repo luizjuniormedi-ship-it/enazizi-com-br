@@ -124,13 +124,37 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
   ];
 
   // 3. AI Router + Governance + Quality Lock
-  const aiResponse = await ai({
-    taskType: "tutor",
-    complexity: complexity,
-    cognitiveState: (masteryState?.toUpperCase?.() as any) || "NOVATO",
-    messages,
-    userId,
-  });
+  const aiStart = Date.now();
+  let aiResponse;
+  try {
+    const aiPromise = ai({
+      taskType: "tutor",
+      complexity: complexity,
+      cognitiveState: (masteryState?.toUpperCase?.() as any) || "NOVATO",
+      messages,
+      userId,
+    });
+
+    // Race against a 45s timeout for enterprise stability
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("AI_MODEL_TIMEOUT")), 45000)
+    );
+
+    aiResponse = await Promise.race([aiPromise, timeoutPromise]) as any;
+  } catch (err) {
+    logger.error("AI_GENERATION_FAILED", (err as Error).message, { 
+      correlationId: correlation.correlationId,
+      complexity 
+    });
+    
+    // Recovery Fallback: Minimal pedagogical response if model fails
+    return new Response(JSON.stringify({
+      content: "## 🎯 BLOCO 1 — MISSÃO DA SESSÃO\nPeço desculpas, tive uma oscilação momentânea na conexão. Poderia repetir sua última dúvida? Manteremos o foco no tópico: " + (topic || "Geral") + ".\n\n[RECOVERY_MODE_ACTIVE]",
+      correlation_id: correlation.correlationId,
+      error: (err as Error).message === "AI_MODEL_TIMEOUT" ? "timeout" : "model_failure",
+      metrics: { generation_ms: Date.now() - aiStart, error: true }
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+  }
 
   const aiText = aiResponse.choices?.[0]?.message?.content || "Erro ao gerar resposta.";
   const generationMs = Date.now() - runtimeStart;
