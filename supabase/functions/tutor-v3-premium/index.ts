@@ -223,7 +223,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           topic,
           content: aiText,
           sessionId: sessionId,
-        }).catch(e => logger.warn("SAVE_MEMORY_FAIL", e.message));
+        });
       }
 
       // 2. Perform Pedagogical Audit
