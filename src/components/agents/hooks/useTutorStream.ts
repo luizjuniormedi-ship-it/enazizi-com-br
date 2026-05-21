@@ -116,11 +116,18 @@ export function useTutorStream() {
         try {
           const parsed = JSON.parse(jsonStr);
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-          if (content) appendAssistantChunk(content);
+          if (content) {
+            appendAssistantChunk(content);
+            // DEBUG LOG para detectar blocos JSON chegando no stream
+            if (content.includes('"type":')) {
+              console.log("[useTutorStream] Detected potential JSON block in stream delta");
+            }
+          }
           return "ok";
         } catch {
           return "incomplete";
         }
+
       };
 
       // ── BLOCKS MODE (NDJSON, 1 TutorBlock por linha) ─────────────────────
