@@ -65,7 +65,7 @@ export async function callAi(
   let lastError = null;
 
   // Track the routing decision in DB
-  waitUntil((async () => {
+  const logRouting = (async () => {
     try {
       await supabaseAdmin.from("ai_routing_decisions").insert({
         correlation_id: logger.correlationId,
@@ -79,7 +79,8 @@ export async function callAi(
     } catch (err) {
       logger.warn("ROUTING_LOG_FAIL", err.message);
     }
-  })());
+  })();
+  if (waitUntil) waitUntil(logRouting);
 
   for (const model of uniqueModels) {
     const startTime = Date.now();
