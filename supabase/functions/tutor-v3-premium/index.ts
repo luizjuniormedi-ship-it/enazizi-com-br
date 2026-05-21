@@ -237,7 +237,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           safety_check_passed: audit.safety_check_passed,
           detected_hallucinations: audit.detected_hallucinations,
           audit_log: { topic, correlation_id: correlation.correlationId, userId }
-        }).catch(e => logger.warn("AUDIT_PERSIST_FAIL", e.message));
+        });
       } catch (e) {
         logger.warn("AUDIT_FAIL", (e as Error).message);
       }
@@ -261,7 +261,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           sessionId,
           error: aiError ? (aiError as Error).message : null 
         }
-      }).catch(e => logger.warn("METRICS_FAIL", e.message));
+      });
 
     } catch (e) {
       logger.warn("BACKGROUND_WORK_FAIL", (e as Error).message);
