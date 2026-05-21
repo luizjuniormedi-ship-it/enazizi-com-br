@@ -7,21 +7,21 @@ Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
 Sua missão é atuar como um preceptor de residência em um hospital de alta complexidade.
 
 ESTRUTURA OBRIGATÓRIA DA RESPOSTA (Siga rigorosamente):
-1. Missão Clínica: Defina o objetivo do estudo/caso.
-2. Roadmap Cognitivo: O caminho que percorreremos.
-3. Explicação Leiga: Analogia simples para o conceito.
-4. Fisiopatologia Profunda: Mecanismos celulares e moleculares.
-5. Raciocínio Clínico: Como um médico pensa diante desse quadro.
-6. Diagnóstico: Critérios, exames e armadilhas.
-7. Conduta: Passo a passo baseado em evidências.
-8. Pegadinhas de Prova: O que as bancas (ENARE, USP, etc) cobram.
-9. Active Recall: 3 perguntas de fixação.
-10. Questão Residência: Exemplo real ou simulado.
-11. Flashcards: Sugestões para o ANKI/FSRS.
-12. Resumo Ultraobjetivo: O que levar para a vida.
-13. Fluxograma Decisório: Representação textual do algoritmo.
-14. Integração Farmacológica: Drogas, doses e mechanisms.
-15. Modo Preceptor: Feedback socrático sobre o desempenho do aluno.
+## 🎯 BLOCO 1 — MISSÃO DA SESSÃO
+## 🎯 BLOCO 2 — ROADMAP COGNITIVO
+## 🎯 BLOCO 3 — EXPLICAÇÃO LEIGA
+## 🎯 BLOCO 4 — EXPLICAÇÃO TÉCNICA
+## 🎯 BLOCO 5 — FISIOPATOLOGIA VISUAL
+## 🎯 BLOCO 6 — RACIOCÍNIO CLÍNICO
+## 🎯 BLOCO 7 — DIAGNÓSTICO DIFERENCIAL
+## 🎯 BLOCO 8 — PEGADINHAS DE PROVA
+## 🎯 BLOCO 9 — DIRETRIZES E EVIDÊNCIAS
+## 🎯 BLOCO 10 — QUESTÃO GUIADA
+## 🎯 BLOCO 11 — CORREÇÃO COMENTADA
+## 🎯 BLOCO 12 — ACTIVE RECALL
+## 🎯 BLOCO 13 — FLASHCARDS AUTOMÁTICOS
+## 🎯 BLOCO 14 — RESUMO ESTRATÉGICO
+## 🎯 BLOCO 15 — PLANO DE RECUPERAÇÃO
 
 DIRETRIZES:
 - NUNCA responda como um chatbot comum.
@@ -47,19 +47,19 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   // 2. Prepare AI Call with Memory Integration
   const cognitiveContext = `
 [COGNITIVE STATE]
-Mastery: ${masteryState || memoryContext.previous_mastery || 'initial'}
-FSRS Context: ${JSON.stringify(fsrsContext || {})}
-Topic: ${topic || 'Geral'}
+Mastery: \${masteryState || memoryContext.previous_mastery || 'initial'}
+FSRS Context: \${JSON.stringify(fsrsContext || {})}
+Topic: \${topic || 'Geral'}
 
 [LONGITUDINAL MEMORY]
-Prior Explanations: ${memoryContext.prior_blocks_summary}
-Effective Analogies: ${memoryContext.effective_analogies.join(", ")}
-Known Misconceptions: ${memoryContext.known_misconceptions.join(", ")}
-Cognitive Pattern: ${memoryContext.cognitive_pattern}
+Prior Explanations: \${memoryContext.prior_blocks_summary}
+Effective Analogies: \${memoryContext.effective_analogies.join(", ")}
+Known Misconceptions: \${memoryContext.known_misconceptions.join(", ")}
+Cognitive Pattern: \${memoryContext.cognitive_pattern}
     `;
 
   const messages = [
-    { role: "system", content: `${SYSTEM_PROMPT_V3}\n${cognitiveContext}` },
+    { role: "system", content: \`\${SYSTEM_PROMPT_V3}\n\${cognitiveContext}\` },
     ...history.slice(-6).map((m: any) => ({
       role: m.role,
       content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
