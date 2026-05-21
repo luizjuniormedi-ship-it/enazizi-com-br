@@ -163,7 +163,7 @@ Always end with a question to validate before moving to the NEXT block.
     { role: "system", content: `${SYSTEM_PROMPT_V3}${isLoop ? "\n[RECOVERY: LOOP DETECTADO]" : ""}${cognitiveContext}` },
     ...history.slice(-10).map((m: any) => ({
       role: m.role || "user",
-      content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+      content: typeof m.content === "string" ? m.content : (m.content?.text || JSON.stringify(m.content)),
     })),
     { role: "user", content: message },
   ];

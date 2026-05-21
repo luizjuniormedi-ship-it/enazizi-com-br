@@ -25,7 +25,14 @@ async function readFunctionError(err: any) {
 export const TutorV2Service = {
   async sendMessage(sessionId: string, message: string, pedagogicalInteraction?: string, retryCount = 0) {
     const requestId = crypto.randomUUID();
-    const payload = { sessionId, message, pedagogicalInteraction, requestId };
+    const payload = { 
+      sessionId, 
+      message, 
+      pedagogicalInteraction, 
+      requestId,
+      topic: "Medicina", // Fallback default
+      format: "markdown"
+    };
     
     // [TUTOR_04_PAYLOAD_BUILT]
     console.log(`[TUTOR_04_PAYLOAD_BUILT] requestId=${requestId}`, payload);
