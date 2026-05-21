@@ -634,6 +634,7 @@ const Admin = ({ initialTab }: AdminProps) => {
                   {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}
                   {activeSection === "tutor-lessons" && <Suspense fallback={<PanelLoader />}><AdminLessonsMemory /></Suspense>}
                   {activeSection === "tutor-stabilization" && <Suspense fallback={<PanelLoader />}><TutorStabilizationDashboard /></Suspense>}
+                  {activeSection === "cognitive-governance" && <Suspense fallback={<PanelLoader />}><CognitiveGovernanceDashboard /></Suspense>}
                   {activeSection === "lesson-ratings" && <Suspense fallback={<PanelLoader />}><AdminLessonRatingsPanel /></Suspense>}
                   {activeSection === "tutor-video-audit" && <Suspense fallback={<PanelLoader />}><TutorVideoAuditPanel /></Suspense>}
                   {activeSection === "tutor-structure-tests" && <Suspense fallback={<PanelLoader />}><TutorLessonStructureDashboard /></Suspense>}
