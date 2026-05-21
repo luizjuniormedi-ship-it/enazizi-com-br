@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import TutorV2ChatPanel from "@/components/tutor-v2/TutorV2ChatPanel";
