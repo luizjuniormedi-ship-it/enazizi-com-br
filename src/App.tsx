@@ -186,7 +186,7 @@ const App = () => (
                   <Route path="sessao-estudo" element={<TutorV2Page />} />
                   <Route path="sessao-estudo/:sessionId" element={<TutorV2Page />} />
                   <Route path="tutor-legacy" element={<StudySession />} />
-                  <Route path="ia-mentor" element={<AIMentor />} />
+                  <Route path="ia-mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="simulados" element={<Simulados />} />
                   <Route path="flashcards" element={<Flashcards />} />
                   <Route path="banco-erros" element={<ErrorBank />} />

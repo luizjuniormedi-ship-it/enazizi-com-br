@@ -10,11 +10,11 @@ import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { cn } from "@/lib/utils";
 
 const suggestions = [
-  "Endocardite Bacteriana",
-  "Protocolo de Sepse 2024",
-  "GGO na Radiologia Tórax",
-  "Conduta em AVC Isquêmico",
-  "Antibióticos na UTI Adulto"
+  "Critérios de Duke",
+  "Protocolo de Sepse",
+  "Raciocínio Clínico",
+  "Conduta no AVC",
+  "Antibióticos na UTI"
 ];
 
 const AIMentor = () => {

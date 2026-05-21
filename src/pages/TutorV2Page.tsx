@@ -130,7 +130,7 @@ export default function TutorV2Page() {
         
         <div className="text-center space-y-3">
           <p className="text-[12px] font-black uppercase tracking-[0.4em] text-white/90 animate-pulse">
-            {bootStatus || "Sincronizando Tutor V3"}
+            {bootStatus || "Sincronizando Tutor V3 Premium"}
           </p>
           <div className="h-1 w-48 bg-white/5 rounded-full overflow-hidden mx-auto">
             <motion.div 
@@ -172,7 +172,7 @@ export default function TutorV2Page() {
 
               <div className="text-left">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Tutor IA V3</h1>
+                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Tutor V3</h1>
                   <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Premium</span>
                 </div>
                 <p className="text-sm text-indigo-400/80 font-bold uppercase tracking-[0.2em] mt-2">Sessão Ativa • Protocolo Feynman Premium</p>
@@ -223,11 +223,11 @@ export default function TutorV2Page() {
 
             {/* Smart Suggestions */}
             <div className="flex flex-wrap justify-center gap-3 mt-8">
-              <SuggestionChip onClick={() => handleStartSession("IAM e Critérios de Reperfusão")} label="IAM" />
-              <SuggestionChip onClick={() => handleStartSession("Sepse Protocolo 1h")} label="Sepse" />
-              <SuggestionChip onClick={() => handleStartSession("Pré-natal de Alto Risco")} label="Pré-natal" />
-              <SuggestionChip onClick={() => handleStartSession("Insuficiência Cardíaca")} label="IC" />
-              <SuggestionChip onClick={() => handleStartSession("Critérios de Duke")} label="Endocardite" />
+              <SuggestionChip onClick={() => handleStartSession("Critérios de Duke")} label="Duke" />
+              <SuggestionChip onClick={() => handleStartSession("Protocolo de Sepse")} label="Sepse" />
+              <SuggestionChip onClick={() => handleStartSession("Conduta no AVC")} label="AVC" />
+              <SuggestionChip onClick={() => handleStartSession("Raciocínio Clínico")} label="Raciocínio" />
+              <SuggestionChip onClick={() => handleStartSession("Antibióticos na UTI")} label="Antibióticos" />
             </div>
           </motion.div>
 
