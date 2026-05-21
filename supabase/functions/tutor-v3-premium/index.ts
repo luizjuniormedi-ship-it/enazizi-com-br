@@ -46,7 +46,6 @@ function isValidUUID(v: unknown): v is string {
   return true;
 }
 
-// 🧠 COGNITIVE GOVERNANCE UTILS
 function detectCognitiveLoop(message: string, history: any[]): boolean {
   if (history.length < 3) return false;
   const lastUserMessages = history.filter(m => m.role === "user").slice(-3).map(m => (typeof m.content === "string" ? m.content : "").toLowerCase().trim());
@@ -71,24 +70,20 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const userId = correlation.userId || body.userId || body.user_id;
 
   if (!userId) {
-    logger.error("MISSING_USER_ID", "No User ID found in correlation or body", { bodyKeys: Object.keys(body) });
-    throw new Error("User ID is required for longitudinal memory.");
+    logger.error("MISSING_USER_ID", "No User ID found", { bodyKeys: Object.keys(body) });
+    throw new Error("User ID is required.");
   }
 
-  if (!message || typeof message !== "string") {
-    throw new Error("Message is required.");
-  }
-
-  // 1. Cognitive Governance Check
+  // 1. Governance Checks
   const isLoop = detectCognitiveLoop(message, history);
   const fatigue = estimateStudentFatigue(history);
   const isHighFatigue = fatigue > 0.8;
 
-  // 2. AI Routing Logic
-  const msgLower = message.trim().toLowerCase();
+  // 2. AI Routing
+  const msgLower = (message || "").trim().toLowerCase();
   const isGreeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite|tudo bem|e ai|ei)/i.test(msgLower);
   const isTransition = /^(ok|entendi|compreendido|continue|prossiga|sim|não|perfeito)/i.test(msgLower);
-  const isShortQuery = message.length < 50;
+  const isShortQuery = (message || "").length < 50;
   
   let complexity: "baixa" | "media" | "alta" = "alta";
   if (isGreeting || (isTransition && isShortQuery) || isHighFatigue) {
@@ -97,7 +92,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     complexity = "media";
   }
 
-  // 3. Hidratação longitudinal — tolerante a falha
+  // 3. Memory Hydration
   const memoryLookupStart = Date.now();
   let memoryContext;
   try {
@@ -117,29 +112,15 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   }
   const memoryLookupMs = Date.now() - memoryLookupStart;
 
-  // 4. Recovery Mode Trigger
+  // 4. Prompt Engineering
   let systemPromptSuffix = "";
-  if (isLoop) {
-    systemPromptSuffix = "\n[RECOVERY TRIGGERED: LOOP DETECTADO] O aluno está repetindo perguntas. Mude a abordagem, use uma analogia radicalmente diferente ou desafie o aluno com um cenário prático novo.";
-  } else if (isHighFatigue) {
-    systemPromptSuffix = "\n[RECOVERY TRIGGERED: FADIGA DETECTADA] O aluno parece cansado. Seja extremamente conciso, use incentivo positivo e sugira uma pausa ou um resumo rápido.";
-  }
+  if (isLoop) systemPromptSuffix = "\n[RECOVERY: LOOP DETECTADO] Mude a abordagem.";
+  if (isHighFatigue) systemPromptSuffix = "\n[RECOVERY: FADIGA DETECTADA] Seja conciso e encorajador.";
 
-  const cognitiveContext = `
-[COGNITIVE STATE]
-Mastery: ${masteryState || memoryContext.previous_mastery || "initial"}
-Fatigue: ${fatigue.toFixed(2)}
-Topic: ${topic || "Geral"}
-
-[LONGITUDINAL MEMORY]
-Prior Explanations: ${memoryContext.prior_blocks_summary || "(primeira interação neste tema)"}
-Effective Analogies: ${(memoryContext.effective_analogies || []).join(", ") || "(nenhuma registrada)"}
-Known Misconceptions: ${(memoryContext.known_misconceptions || []).join(", ") || "(nenhuma)"}
-Cognitive Pattern: ${memoryContext.cognitive_pattern}
-`;
-
+  const cognitiveContext = `\n[COGNITIVE STATE] Mastery: ${masteryState || "initial"}, Fatigue: ${fatigue.toFixed(2)}, Topic: ${topic || "Geral"}`;
+  
   const messages = [
-    { role: "system", content: `${SYSTEM_PROMPT_V3}${systemPromptSuffix}\n${cognitiveContext}` },
+    { role: "system", content: `${SYSTEM_PROMPT_V3}${systemPromptSuffix}${cognitiveContext}` },
     ...(Array.isArray(history) ? history.slice(-10) : []).map((m: any) => ({
       role: m.role,
       content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
@@ -147,22 +128,20 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
     { role: "user", content: message },
   ];
 
-  // 5. AI Execution
+  // 5. Execution
   const aiStart = Date.now();
   let aiResponse;
   try {
     aiResponse = await ai({
       taskType: "tutor",
-      complexity: complexity,
-      cognitiveState: (masteryState?.toUpperCase?.() as any) || "NOVATO",
+      complexity,
       messages,
       userId,
     }) as any;
   } catch (err) {
-    logger.error("AI_GENERATION_FAILED", (err as Error).message);
+    logger.error("AI_FAIL", (err as Error).message);
     return new Response(JSON.stringify({
-      content: "## 🎯 BLOCO 1 — MISSÃO DA SESSÃO\nTivemos um pequeno soluço técnico no raciocínio. Vamos retomar? Focamos no tópico: " + (topic || "Geral") + ".",
-      error: "model_failure",
+      content: "## 🎯 BLOCO 1 — MISSÃO DA SESSÃO\nTivemos uma oscilação técnica. Retomamos no tópico: " + (topic || "Geral") + ".",
       metrics: { generation_ms: Date.now() - aiStart, error: true }
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   }
@@ -171,25 +150,33 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
   const generationMs = Date.now() - runtimeStart;
   const isTruncated = aiText.length < 200 && complexity === "alta" && !isGreeting;
 
-  // 6. Governance & Scale Protection (Non-blocking)
+  // 6. Governance & Persistence (Non-blocking)
   const persistAndLog = (async () => {
     try {
       const persistenceStart = Date.now();
       if (sessionId) {
-        // Governance: Log anomalies
+        // Try to find pedagogical session by conversation_id
+        const { data: pedSess } = await supabaseAdmin
+          .from("pedagogical_sessions")
+          .select("id")
+          .eq("conversation_id", sessionId)
+          .maybeSingle();
+
+        const targetSessionId = pedSess?.id;
+
         if (isLoop || isHighFatigue || isTruncated) {
-          try {
-            await supabaseAdmin.from("cognitive_runtime_events").insert({
-              user_id: userId,
-              session_id: sessionId,
-              correlation_id: correlation.correlationId,
-              event_type: isLoop ? 'LOOP_DETECTED' : isHighFatigue ? 'STUDENT_FATIGUE' : 'TRUNCATION_RISK',
-              severity: isTruncated ? 'critical' : 'warning',
-              topic: topic || "Geral",
-              message: isTruncated ? "Resposta curta em pergunta complexa" : isLoop ? "Repetição de intenção detectada" : "Padrão de fadiga cognitiva",
-              metadata: { fatigue, complexity, msgLength: aiText.length }
-            });
-            
+          await supabaseAdmin.from("cognitive_runtime_events").insert({
+            user_id: userId,
+            session_id: targetSessionId || null,
+            correlation_id: correlation.correlationId,
+            event_type: isLoop ? 'LOOP_DETECTED' : isHighFatigue ? 'STUDENT_FATIGUE' : 'TRUNCATION_RISK',
+            severity: isTruncated ? 'critical' : 'warning',
+            topic: topic || "Geral",
+            message: isTruncated ? "Resposta curta em pergunta complexa" : isLoop ? "Repetição detectada" : "Padrão de fadiga",
+            metadata: { fatigue, complexity, msgLength: aiText.length }
+          });
+          
+          if (targetSessionId) {
             await supabaseAdmin.from("pedagogical_sessions")
               .update({
                 loop_count: isLoop ? 1 : 0, 
@@ -197,22 +184,15 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
                 cognitive_quality_score: isTruncated ? 5.0 : 9.0,
                 updated_at: new Date().toISOString()
               })
-              .eq("id", sessionId);
-          } catch (govErr) {
-            logger.warn("GOVERNANCE_LOG_FAIL", (govErr as Error).message);
+              .eq("id", targetSessionId);
           }
         }
 
-        // Standard Persistence
-        try {
-          await saveTutorMemory(supabaseAdmin, userId, {
-            topic: topic || "Geral",
-            content: aiText,
-            sessionId,
-          });
-        } catch (memErr) {
-          logger.warn("TUTOR_MEMORY_SAVE_FAIL", (memErr as Error).message);
-        }
+        await saveTutorMemory(supabaseAdmin, userId, {
+          topic: topic || "Geral",
+          content: aiText,
+          sessionId: sessionId, // tutor_memory_helpers will check this against tutor_sessions or chat_conversations depending on internal logic
+        });
       }
 
       await supabaseAdmin.from("tutor_runtime_metrics").insert({
@@ -227,15 +207,10 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
         completion_tokens: aiResponse.usage?.completion_tokens || 0,
         model_used: aiResponse.model || null,
         topic: topic || "Geral",
-        metadata: { 
-          complexity_assigned: complexity,
-          is_loop: isLoop,
-          fatigue_index: fatigue,
-          is_truncated: isTruncated
-        },
+        metadata: { complexity, is_loop: isLoop, fatigue_index: fatigue, is_truncated: isTruncated },
       });
-    } catch (telemetryErr) {
-      logger.warn("GOVERNANCE_TELEMETRY_FAIL", (telemetryErr as Error).message);
+    } catch (e) {
+      logger.warn("TELEMETRY_FAIL", (e as Error).message);
     }
   })();
 
@@ -244,13 +219,6 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
   return new Response(JSON.stringify({
     content: aiText,
     correlation_id: correlation.correlationId,
-    metrics: {
-      generation_ms: generationMs,
-      complexity: complexity,
-      fatigue: fatigue,
-      is_loop: isLoop
-    },
-  }), {
-    headers: { "Content-Type": "application/json" },
-  });
+    metrics: { generation_ms: generationMs, complexity, fatigue, is_loop: isLoop },
+  }), { headers: { "Content-Type": "application/json" } });
 }));
