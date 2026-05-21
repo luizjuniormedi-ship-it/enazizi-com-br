@@ -161,7 +161,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
       logger.critical("FATAL_ERROR", err.message, { stack: err.stack });
 
-      waitUntil((async () => {
+      const reportIncident = (async () => {
         try {
           await supabaseAdmin.from("ai_incidents").insert({
             function_name: functionName,
@@ -184,7 +184,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
         } catch (incidentErr) {
           console.error("[enterprise-edge] Incident reporting failed:", incidentErr);
         }
-      })());
+      })();
+      if (waitUntil) waitUntil(reportIncident);
 
       return new Response(
         JSON.stringify({
