@@ -182,7 +182,24 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     async (overridePrompt?: string, contextOverride?: string, pedagogicalInteraction?: string) => {
       const requestId = crypto.randomUUID();
       const startTime = Date.now();
-      console.log(`[TUTOR] SEND_STARTED id=${requestId} function=${functionName} interaction=${pedagogicalInteraction}`);
+      
+      const text = overridePrompt || input.trim();
+
+      console.log(`[TUTOR_V3_INVOKE] ${requestId}`, {
+        function: functionName,
+        text: text.slice(0, 50),
+        interaction: pedagogicalInteraction,
+        topic
+      });
+
+      // 0. Healthcheck pre-flight (silent)
+      if (!overridePrompt && messages.length <= 1) {
+        supabase.functions.invoke(functionName, { body: { healthcheck: true } })
+          .then(({ data, error }) => {
+            console.log(`[TUTOR_V3_HEALTH] ${requestId}`, data, error);
+          })
+          .catch(e => console.error(`[TUTOR_V3_HEALTH_FATAL] ${requestId}`, e));
+      }
 
       // Lógica de Gating Incremental Real
       if (pedagogicalInteraction && pedSession.session) {
@@ -193,11 +210,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             completedBlocks: [...pedSession.session.completedBlocks, pedSession.session.currentBlock]
           });
         }
-        // Se for aprofundar/simplificar/etc, mantemos o bloco atual mas registramos no metadata
       }
 
-      const text = overridePrompt || input.trim();
-      
       // 🛡️ CIRCUIT BREAKER: Proteção contra overload de erros
       if (consecutiveErrorsRef.current >= 3) {
         const timeSinceLastErr = Date.now() - lastErrorTimeRef.current;

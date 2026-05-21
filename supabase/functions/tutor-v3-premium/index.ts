@@ -63,14 +63,40 @@ function estimateStudentFatigue(history: any[]): number {
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const runtimeStart = Date.now();
   
-  // 0. Handle OPTIONS for CORS explicitly just in case (though handler should handle it)
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   let body;
   try {
-    body = await req.json();
+    const rawBody = await req.text();
+    if (!rawBody) {
+      return new Response(JSON.stringify({ 
+        ok: true, 
+        health: "alive", 
+        function: "tutor-v3-premium",
+        timestamp: new Date().toISOString()
+      }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+    body = JSON.parse(rawBody);
+    
+    // Quick Healthcheck route
+    if (body.healthcheck) {
+      return new Response(JSON.stringify({
+        ok: true,
+        function: "tutor-v3-premium",
+        timestamp: new Date().toISOString(),
+        env: {
+          hasSupabaseUrl: !!Deno.env.get("SUPABASE_URL"),
+          hasServiceRole: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+          hasGeminiKey: !!Deno.env.get("GEMINI_API_KEY") || !!Deno.env.get("OPENAI_API_KEY")
+        }
+      }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
   } catch (e) {
     logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { 
       error: e.message,
