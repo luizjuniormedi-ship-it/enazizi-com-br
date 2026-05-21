@@ -24,9 +24,9 @@ async function readFunctionError(err: any) {
 
 export const TutorV2Service = {
   async sendMessage(sessionId: string, message: string, pedagogicalInteraction?: string, retryCount = 0) {
-    console.log("[TUTOR_V2_EDGE_CALL] functionName: tutor-v2-chat", { sessionId, message, pedagogicalInteraction, retryCount });
+    console.log("[TUTOR_V3_EDGE_CALL] functionName: tutor-v3-premium", { sessionId, message, pedagogicalInteraction, retryCount });
     try {
-      const { data, error } = await supabase.functions.invoke("tutor-v2-chat", {
+      const { data, error } = await supabase.functions.invoke("tutor-v3-premium", {
         body: { sessionId, message, pedagogicalInteraction }
       });
       

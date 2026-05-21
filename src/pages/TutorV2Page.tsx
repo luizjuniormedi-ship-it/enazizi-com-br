@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import TutorV2ChatPanel from "@/components/tutor-v2/TutorV2ChatPanel";
@@ -19,18 +19,21 @@ export default function TutorV2Page() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const studyCtx = useStudyContext();
+  const [searchParams] = useSearchParams();
+  const urlTopic = searchParams.get("topic") || searchParams.get("t") || "";
   const { session, isLoading, stats } = useTutorV2Session(sessionId);
-  const [newTopic, setNewTopic] = useState(studyCtx?.topic || "");
+  const [newTopic, setNewTopic] = useState(urlTopic || studyCtx?.topic || "");
   const [isCreating, setIsCreating] = useState(false);
   const [bootStatus, setBootStatus] = useState("");
 
-  // Auto-start session if coming from study context
+  // Auto-start session if coming from study context or URL topic
   useEffect(() => {
-    if (studyCtx?.topic && user && !sessionId && !isCreating) {
-      console.log("[TUTOR_AUTO_START] Detected context for topic:", studyCtx.topic);
-      handleStartSession(studyCtx.topic);
+    const topicToStart = urlTopic || studyCtx?.topic;
+    if (topicToStart && user && !sessionId && !isCreating) {
+      console.log("[TUTOR_AUTO_START] Detected context for topic:", topicToStart);
+      handleStartSession(topicToStart);
     }
-  }, [studyCtx?.topic, user, sessionId]);
+  }, [studyCtx?.topic, urlTopic, user, sessionId]);
 
 
   const handleStartSession = async (topic?: string) => {
@@ -172,7 +175,7 @@ export default function TutorV2Page() {
                   <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Tutor IA V3</h1>
                   <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Premium</span>
                 </div>
-                <p className="text-sm text-indigo-400/80 font-bold uppercase tracking-[0.2em] mt-2">Sessão Ativa • Protocolo Feynman</p>
+                <p className="text-sm text-indigo-400/80 font-bold uppercase tracking-[0.2em] mt-2">Sessão Ativa • Protocolo Feynman Premium</p>
               </div>
             </div>
 

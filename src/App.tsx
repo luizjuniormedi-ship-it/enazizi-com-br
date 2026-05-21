@@ -160,8 +160,8 @@ const App = () => (
               <Route path="/privacy" element={<Navigate to="/privacidade" replace />} />
               
               <Route path="/chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/mentor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/ai-mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/mentor-ai" element={<Navigate to="/dashboard/ia-mentor" replace />} />
+              <Route path="/ai-mentor" element={<Navigate to="/dashboard/ia-mentor" replace />} />
               <Route path="/study" element={<Navigate to="/dashboard/cronograma" replace />} />
               <Route path="/study-session" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/simulations" element={<Navigate to="/dashboard/simulados" replace />} />
@@ -186,6 +186,7 @@ const App = () => (
                   <Route path="sessao-estudo" element={<TutorV2Page />} />
                   <Route path="sessao-estudo/:sessionId" element={<TutorV2Page />} />
                   <Route path="tutor-legacy" element={<StudySession />} />
+                  <Route path="ia-mentor" element={<AIMentor />} />
                   <Route path="simulados" element={<Simulados />} />
                   <Route path="flashcards" element={<Flashcards />} />
                   <Route path="banco-erros" element={<ErrorBank />} />

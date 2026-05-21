@@ -173,7 +173,7 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
               {msg.role === "assistant" && (
                 <div className="flex items-center gap-4">
                   <Badge variant="outline" className="text-[9px] font-black text-indigo-500/50 uppercase tracking-widest p-0 h-auto hover:bg-transparent border-none">
-                    Enazizi V2
+                    Enazizi V3 Premium
                   </Badge>
                   <div className="h-3 w-[1px] bg-white/5" />
                   <div className="flex items-center gap-2">
