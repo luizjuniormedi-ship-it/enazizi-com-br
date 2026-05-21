@@ -18,8 +18,9 @@ export async function buildPedagogicalContext(
   topic: string
 ): Promise<MemoryContext> {
   // 1. Fetch relevant learning memory blocks
+  // Since tutor_learning_memory columns were missing in logs, let's use tutor_lesson_memory which seems more robust
   const { data: blocks } = await supabase
-    .from("tutor_learning_memory")
+    .from("tutor_lesson_memory")
     .select("*")
     .eq("user_id", userId)
     .eq("topic", topic)
@@ -45,24 +46,23 @@ export async function buildPedagogicalContext(
 
   // 4. Synthesize context
   const known_misconceptions = Array.from(new Set(
-    (blocks || []).flatMap(b => b.misconceptions_detected || [])
-    .concat((summaries || []).flatMap(s => s.misconceptions_identified || []))
+    (summaries || []).flatMap(s => s.misconceptions_identified || [])
   ));
 
   const effective_analogies = (analogies || []).map(a => a.analogy);
   
   const prior_blocks_summary = (blocks || [])
-    .map(b => `- ${b.block_title}: ${b.explanation_summary}`)
+    .map(b => `- ${b.title}: ${b.summary || ''}`)
     .join("\n");
 
   return {
-    previous_mastery: blocks?.[0]?.mastery_level || "initial",
+    previous_mastery: "initial",
     known_misconceptions,
     effective_analogies,
     weak_topics: (summaries || []).flatMap(s => s.concepts_fragile || []),
-    retention_risk: 0.2, // Placeholder
+    retention_risk: 0.2, 
     prior_blocks_summary,
-    cognitive_pattern: "Visual/Logístico", // Placeholder
+    cognitive_pattern: "Visual/Logístico", 
     cached_blocks: blocks || []
   };
 }
@@ -77,21 +77,21 @@ export async function saveTutorMemory(
     sessionId?: string;
   }
 ) {
-  // Simple parsing to extract fields for memory (in a real scenario, this would be more robust)
-  const titleMatch = params.content.match(/# (.*)/) || params.content.match(/1\. (.*)/);
+  const titleMatch = params.content.match(/## 🎯 BLOCO \d+ — (.*)/) || params.content.match(/# (.*)/) || params.content.match(/1\. (.*)/);
   const title = titleMatch ? titleMatch[1].substring(0, 100) : "Bloco Pedagógico";
 
+  // Use tutor_lesson_memory which is confirmed to have 'title' and 'summary'
   const { data: memory, error } = await supabase
-    .from("tutor_learning_memory")
+    .from("tutor_lesson_memory")
     .insert({
       user_id: userId,
-      session_id: params.sessionId,
+      source_session_id: params.sessionId,
       topic: params.topic,
       subtopic: params.subtopic,
-      block_title: title,
-      generated_content: params.content,
-      explanation_summary: params.content.substring(0, 500) + "...",
-      mastery_level: "learning"
+      title: title,
+      summary: params.content.substring(0, 500) + "...",
+      structured_content: { content: params.content },
+      status: 'published'
     })
     .select()
     .single();

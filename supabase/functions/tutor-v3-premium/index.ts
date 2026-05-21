@@ -34,8 +34,9 @@ DIRETRIZES:
 `;
 
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
-  const { message, history = [], topic, fsrsContext, masteryState, sessionId } = await req.json();
-  const userId = correlation.userId;
+  const body = await req.json();
+  const { message, history = [], topic, fsrsContext, masteryState, sessionId } = body;
+  const userId = correlation.userId || body.userId;
 
   if (!userId) {
     throw new Error("User ID is required for longitudinal memory.");
@@ -47,19 +48,19 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   // 2. Prepare AI Call with Memory Integration
   const cognitiveContext = `
 [COGNITIVE STATE]
-Mastery: \${masteryState || memoryContext.previous_mastery || 'initial'}
-FSRS Context: \${JSON.stringify(fsrsContext || {})}
-Topic: \${topic || 'Geral'}
+Mastery: ${masteryState || memoryContext.previous_mastery || 'initial'}
+FSRS Context: ${JSON.stringify(fsrsContext || {})}
+Topic: ${topic || 'Geral'}
 
 [LONGITUDINAL MEMORY]
-Prior Explanations: \${memoryContext.prior_blocks_summary}
-Effective Analogies: \${memoryContext.effective_analogies.join(", ")}
-Known Misconceptions: \${memoryContext.known_misconceptions.join(", ")}
-Cognitive Pattern: \${memoryContext.cognitive_pattern}
+Prior Explanations: ${memoryContext.prior_blocks_summary}
+Effective Analogies: ${memoryContext.effective_analogies.join(", ")}
+Known Misconceptions: ${memoryContext.known_misconceptions.join(", ")}
+Cognitive Pattern: ${memoryContext.cognitive_pattern}
     `;
 
   const messages = [
-    { role: "system", content: \`\${SYSTEM_PROMPT_V3}\n\${cognitiveContext}\` },
+    { role: "system", content: `${SYSTEM_PROMPT_V3}\n${cognitiveContext}` },
     ...history.slice(-6).map((m: any) => ({
       role: m.role,
       content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
