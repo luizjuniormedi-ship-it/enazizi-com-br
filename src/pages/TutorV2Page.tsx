@@ -26,13 +26,14 @@ export default function TutorV2Page() {
   const [isCreating, setIsCreating] = useState(false);
   const [bootStatus, setBootStatus] = useState("");
 
-  // Auto-start session if coming from study context
+  // Auto-start session if coming from study context or URL topic
   useEffect(() => {
-    if (studyCtx?.topic && user && !sessionId && !isCreating) {
-      console.log("[TUTOR_AUTO_START] Detected context for topic:", studyCtx.topic);
-      handleStartSession(studyCtx.topic);
+    const topicToStart = urlTopic || studyCtx?.topic;
+    if (topicToStart && user && !sessionId && !isCreating) {
+      console.log("[TUTOR_AUTO_START] Detected context for topic:", topicToStart);
+      handleStartSession(topicToStart);
     }
-  }, [studyCtx?.topic, user, sessionId]);
+  }, [studyCtx?.topic, urlTopic, user, sessionId]);
 
 
   const handleStartSession = async (topic?: string) => {
