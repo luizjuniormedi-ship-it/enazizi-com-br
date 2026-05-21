@@ -1,13 +1,14 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { buildPedagogicalContext, saveTutorMemory } from "../_shared/tutor-memory-helpers.ts";
 import { auditPedagogicalQuality } from "../_shared/cognitive-governance-helpers.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const SYSTEM_PROMPT_V3 = `
 Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
 Sua missão é atuar como um preceptor de residência em um hospital de alta complexidade.
 
-REQUISITO CRÍTICO DE FORMATAÇÃO (O NÃO CUMPRIMENTO RESULTARÁ EM REJEIÇÃO DO SISTEMA):
-Você DEVE incluir exatamente estes 15 cabeçalhos no início de cada seção correspondente, sem alterações no texto do cabeçalho:
+REQUISITO CRÍTICO DE FORMATAÇÃO:
+Você DEVE incluir exatamente estes 15 cabeçalhos no início de cada seção correspondente:
 
 ## 🎯 BLOCO 1 — MISSÃO DA SESSÃO
 ## 🎯 BLOCO 2 — ROADMAP COGNITIVO
@@ -27,25 +28,11 @@ Você DEVE incluir exatamente estes 15 cabeçalhos no início de cada seção co
 
 DIRETRIZES:
 - NUNCA responda como um chatbot comum.
-- Use o Método Socrático: faça perguntas que levem o aluno à conclusão.
-- Integre disciplinas (ex: correlacione Fisiologia com Farmacologia).
-- Seja rigoroso com guidelines (Harrison, Nelson, Sabiston).
-- Adapte a profundidade com base no FSRS e Mastery State fornecidos.
-- Se detectar cansaço ou erro recorrente, ative RECOVERY MODE.
-- MEMÓRIA LONGITUDINAL: Utilize o histórico de explicações e analogias já fornecidas para evitar redundância e garantir continuidade.
-- OBRIGATORIEDADE: Todos os 15 blocos devem estar presentes em TODAS as explicações completas de tópicos.
+- Use o Método Socrático.
+- Seja rigoroso com guidelines médicos.
+- MEMÓRIA LONGITUDINAL: Use o contexto anterior para evitar redundância.
+- OBRIGATORIEDADE: Todos os 15 blocos devem estar presentes em explicações completas.
 `;
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const NULL_UUID = "00000000-0000-0000-0000-000000000000";
-
-function isValidUUID(v: unknown): v is string {
-  if (typeof v !== "string") return false;
-  if (!UUID_REGEX.test(v)) return false;
-  if (v === NULL_UUID) return false;
-  if (v.startsWith("00000000") || v.includes("fake") || v.includes("test")) return false;
-  return true;
-}
 
 function detectCognitiveLoop(message: string, history: any[]): boolean {
   if (history.length < 3) return false;
@@ -64,18 +51,21 @@ function estimateStudentFatigue(history: any[]): number {
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const runtimeStart = Date.now();
   
-  // 1. HARDENING: Resilient Body Parsing
+  // 1. AUTHENTICATION: Mandatory check
+  const auth = await requireAuth(req);
+  if (!auth.ok) {
+    logger.error("AUTH_FAILED", "Unauthorized access attempt");
+    return auth.response;
+  }
+  const userId = auth.userId;
+  logger.info("AUTH_OK", "User authenticated", { userId });
+
+  // 2. BODY PARSING
   let body: any = {};
   try {
     const rawBody = await req.text();
     if (!rawBody || rawBody.trim() === "") {
-      return new Response(JSON.stringify({ 
-        ok: true, 
-        health: "alive", 
-        function: "tutor-v3-premium",
-        correlation_id: correlation.correlationId,
-        timestamp: new Date().toISOString()
-      }), { 
+      return new Response(JSON.stringify({ ok: true, health: "alive", function: "tutor-v3-premium" }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
@@ -91,18 +81,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       ok: true,
       function: "tutor-v3-premium",
       correlation_id: correlation.correlationId,
-      timestamp: new Date().toISOString(),
       env: {
         hasSupabaseUrl: !!Deno.env.get("SUPABASE_URL"),
-        hasServiceRole: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
         hasAiKey: !!Deno.env.get("GEMINI_API_KEY") || !!Deno.env.get("OPENAI_API_KEY")
       }
-    }), { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" } 
-    });
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   
-  // 2. HARDENING: Input Validation & Sanitization
+  // 3. INPUT PREPARATION
   let message = String(body.message || "").trim();
   let history = Array.isArray(body.history) ? body.history : (Array.isArray(body.messages) ? body.messages : []);
   
@@ -114,67 +100,28 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
   }
 
-  const context = body.context && typeof body.context === "object" ? body.context : {};
-  const topic = typeof body.topic === "string" ? body.topic : "Geral";
-  const fsrsContext = body.fsrsContext && typeof body.fsrsContext === "object" ? body.fsrsContext : {};
-  const masteryState = typeof body.masteryState === "string" ? body.masteryState : "initial";
-  const sessionId = typeof body.sessionId === "string" ? body.sessionId : crypto.randomUUID();
-  const userId = correlation.userId || body.userId || body.user_id;
-
-  if (!message && !body.healthcheck) {
-    logger.warn("EMPTY_MESSAGE", "Received empty message, returning early.");
+  if (!message) {
     return new Response(JSON.stringify({
-      content: "Olá! Sou seu Tutor ENAZIZI. Como posso ajudar você hoje? Digite um tema médico para começarmos.",
-      correlation_id: correlation.correlationId,
-      metrics: { latency_ms: Date.now() - runtimeStart, tokens_used: 0, memory_hit: false }
+      content: "Olá! Como posso ajudar você hoje?",
+      metrics: { latency_ms: Date.now() - runtimeStart }
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  logger.info("TUTOR_V3_REQUEST_BODY", "Processed payload", {
-    correlationId: correlation.correlationId,
-    userId,
-    topic,
-    msgLength: message.length,
-    historyLength: history.length,
-    hasSessionId: !!sessionId
-  });
+  const topic = typeof body.topic === "string" ? body.topic : "Geral";
+  const masteryState = typeof body.masteryState === "string" ? body.masteryState : "initial";
+  const sessionId = typeof body.sessionId === "string" ? body.sessionId : crypto.randomUUID();
 
-  if (!userId) {
-    logger.error("MISSING_USER_ID", "No User ID found");
-    return new Response(JSON.stringify({
-      error: "Authentication required",
-      message: "User identity could not be verified.",
-      correlation_id: correlation.correlationId
-    }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
-
-  logger.info("TUTOR_V3_AUTH_OK", "User authenticated", { userId });
-
-  // 3. GOVERNANCE: Cognitive Checks
+  // 4. CONTEXT & GOVERNANCE
   const isLoop = detectCognitiveLoop(message, history);
   const fatigue = estimateStudentFatigue(history);
-  const isHighFatigue = fatigue > 0.8;
+  const memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic).catch(() => ({ cached_blocks: [] }));
 
-  // 4. MEMORY HYDRATION
-  const memoryLookupStart = Date.now();
-  let memoryContext;
-  try {
-    memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic);
-  } catch (e) {
-    logger.warn("MEMORY_LOOKUP_FAIL", (e as Error).message);
-    memoryContext = { cached_blocks: [] };
-  }
-  const memoryLookupMs = Date.now() - memoryLookupStart;
-
-  // 5. AI EXECUTION
   let complexity: "baixa" | "media" | "alta" = "alta";
-  const msgLower = message.toLowerCase();
-  const isGreeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite|tudo bem|e ai|ei)/i.test(msgLower);
-  if (isGreeting || isHighFatigue || message.length < 20) complexity = "baixa";
+  if (message.length < 20) complexity = "baixa";
   else if (message.length < 100) complexity = "media";
 
   const cognitiveContext = `\n[COGNITIVE STATE] Mastery: ${masteryState}, Fatigue: ${fatigue.toFixed(2)}, Topic: ${topic}`;
-  const messages = [
+  const aiMessages = [
     { role: "system", content: `${SYSTEM_PROMPT_V3}${isLoop ? "\n[RECOVERY: LOOP DETECTADO]" : ""}${cognitiveContext}` },
     ...history.slice(-6).map((m: any) => ({
       role: m.role || "user",
@@ -183,15 +130,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     { role: "user", content: message },
   ];
 
-  const aiStart = Date.now();
-  let aiResponse;
-  let aiText = "";
-  let aiError = null;
-
-  // 6. BACKGROUND WORK: Definition
+  // 5. BACKGROUND WORK DEFINITION
   const backgroundWork = async (finalText: string, metrics: any) => {
     try {
-      if (sessionId && finalText) {
+      if (sessionId && finalText && finalText.length > 50) {
         await saveTutorMemory(supabaseAdmin, userId, {
           topic,
           content: finalText,
@@ -200,89 +142,73 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         });
       }
 
-      if (finalText) {
-        const audit = await auditPedagogicalQuality(finalText, topic);
-        await supabaseAdmin.from("pedagogical_quality_audits").insert({
-          content_type: "tutor_v3_response",
-          quality_score: audit.quality_score,
-          medical_coherence_passed: audit.medical_coherence_passed,
-          guideline_compliance_passed: audit.guideline_compliance_passed,
-          safety_check_passed: audit.safety_check_passed,
-          detected_hallucinations: audit.detected_hallucinations,
-          audit_log: { topic, correlation_id: correlation.correlationId, userId }
-        });
+      if (finalText && finalText.length > 100) {
+        const audit = await auditPedagogicalQuality(finalText, topic).catch(() => null);
+        if (audit) {
+          await supabaseAdmin.from("pedagogical_quality_audits").insert({
+            content_type: "tutor_v3_response",
+            quality_score: audit.quality_score,
+            medical_coherence_passed: audit.medical_coherence_passed,
+            guideline_compliance_passed: audit.guideline_compliance_passed,
+            safety_check_passed: audit.safety_check_passed,
+            detected_hallucinations: audit.detected_hallucinations,
+            audit_log: { topic, correlation_id: correlation.correlationId, userId }
+          });
+        }
       }
 
       await supabaseAdmin.from("tutor_runtime_metrics").insert({
         user_id: userId,
         correlation_id: correlation.correlationId,
         function_name: "tutor-v3-premium",
-        tutor_generation_ms: metrics.generation_ms,
-        memory_lookup_ms: memoryLookupMs,
+        tutor_generation_ms: metrics.generation_ms || 0,
         memory_hit: !!metrics.memory_hit,
-        prompt_tokens: metrics.prompt_tokens || 0,
-        completion_tokens: metrics.completion_tokens || 0,
         model_used: metrics.model_used || "unknown",
         topic: topic,
-        metadata: { 
-          complexity, 
-          is_loop: isLoop, 
-          fatigue, 
-          sessionId,
-          error: metrics.error ? String(metrics.error) : null 
-        }
+        metadata: { complexity, sessionId, error: metrics.error ? String(metrics.error) : null }
       });
     } catch (e) {
-      console.warn("[tutor-v3] Background work failed:", e.message);
+      console.warn("[tutor-v3] Background work error:", e.message);
     }
   };
 
+  // 6. AI EXECUTION
   try {
-    aiResponse = await ai({
+    const aiResponse = await ai({
       taskType: "tutor",
       complexity,
-      messages,
+      messages: aiMessages,
       userId,
       stream: true, 
     });
 
     if (aiResponse instanceof Response) {
-      logger.info("TUTOR_V3_STREAM_START", "Starting streaming response");
-      if (waitUntil) {
-        waitUntil(backgroundWork("", { generation_ms: 0, memory_hit: false, model_used: "streaming" }));
-      }
+      logger.info("STREAM_START", "Starting stream");
+      if (waitUntil) waitUntil(backgroundWork("", { generation_ms: 0, model_used: "streaming" }));
       return new Response(aiResponse.body, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" }
       });
     }
     
-    aiText = aiResponse?.choices?.[0]?.message?.content || aiResponse?.content || "";
-    logger.info("TUTOR_V3_AI_PROXY_STATUS", "AI Success", { model: aiResponse?.model });
+    const aiText = aiResponse?.choices?.[0]?.message?.content || aiResponse?.content || "";
+    const generationMs = Date.now() - runtimeStart;
+    const metrics = {
+      latency_ms: generationMs,
+      generation_ms: generationMs,
+      model_used: aiResponse?.model || "unknown"
+    };
+
+    if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
+    else await backgroundWork(aiText, metrics);
+
+    return new Response(JSON.stringify({ content: aiText, correlation_id: correlation.correlationId, metrics }), { 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
   } catch (err) {
-    aiError = err;
-    logger.error("TUTOR_V3_FAILURE_POINT", "AI_PROXY_FAIL", { error: err.message });
-    aiText = "Sou seu Tutor ENAZIZI. Tivemos uma instabilidade temporária ao processar sua dúvida sobre " + topic + ", mas posso continuar te ajudando com um resumo clínico estratégico do tema. O que especificamente você gostaria de revisar sobre esse tópico agora?";
+    logger.error("AI_FAIL", err.message);
+    const fallback = "Houve uma instabilidade temporária no processamento de sua dúvida sobre " + topic + ". Posso te ajudar com um resumo rápido agora?";
+    return new Response(JSON.stringify({ content: fallback, error: err.message }), { 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
   }
-
-  const generationMs = Date.now() - aiStart;
-  const memoryHit = (memoryContext.cached_blocks?.length ?? 0) > 0;
-
-  const metrics = {
-    latency_ms: Date.now() - runtimeStart,
-    generation_ms: generationMs,
-    memory_hit: !!memoryHit,
-    complexity,
-    tokens_used: (aiResponse?.usage?.prompt_tokens || 0) + (aiResponse?.usage?.completion_tokens || 0),
-    prompt_tokens: aiResponse?.usage?.prompt_tokens || 0,
-    completion_tokens: aiResponse?.usage?.completion_tokens || 0,
-    model_used: aiResponse?.model || "unknown",
-    error: aiError
-  };
-
-  if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
-  else await backgroundWork(aiText, metrics);
-
-  return new Response(JSON.stringify({ content: aiText, correlation_id: correlation.correlationId, metrics }), { 
-    headers: { ...corsHeaders, "Content-Type": "application/json" } 
-  });
 }));
