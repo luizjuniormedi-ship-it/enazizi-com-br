@@ -32,6 +32,30 @@ DIRETRIZES:
 - Seja rigoroso com guidelines médicos.
 - MEMÓRIA LONGITUDINAL: Use o contexto anterior para evitar redundância.
 - OBRIGATORIEDADE: Todos os 15 blocos devem estar presentes em explicações completas.
+
+DIRETRIZ DE IMAGENS (BLOCO 5):
+Para o BLOCO 5, você DEVE gerar uma visualização em JSON usando o tipo "clinical_flow" ou "differential_diagnosis".
+Exemplo de formato esperado no BLOCO 5:
+## 🎯 BLOCO 5 — FISIOPATOLOGIA VISUAL
+Aqui está o mapa mental da fisiopatologia:
+\{
+  "type": "clinical_flow",
+  "payload": \{
+    "title": "Fisiopatologia de [Tema]",
+    "nodes": [
+      \{ "id": "1", "label": "Gatilho Inicial", "kind": "action" \},
+      \{ "id": "2", "label": "Cascata Inflamatória", "kind": "decision" \},
+      \{ "id": "3", "label": "Dano Tecidual", "kind": "outcome" \}
+    ],
+    "edges": [
+      \{ "from": "1", "to": "2" \},
+      \{ "from": "2", "to": "3" \}
+    ]
+  \}
+\}
+NUNCA diga que "não pode gerar imagens". Você gera IMAGENS ESTRUTURADAS via JSON.
+
+
 `;
 
 function detectCognitiveLoop(message: string, history: any[]): boolean {

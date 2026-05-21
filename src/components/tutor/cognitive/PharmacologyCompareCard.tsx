@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pill, Sparkles, ChevronDown, AlertTriangle, Ban, Activity, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 
 import type {
   PharmacologyCompareBlock,
@@ -37,7 +38,12 @@ export function PharmacologyCompareCard({ block }: Props) {
     return <CognitiveEmpty title="Comparação farmacológica" message="Sem fármacos para comparar." />;
   }
 
+  useEffect(() => {
+    console.log("[PharmacologyCompareCard] Rendering with", drugs.length, "drugs");
+  }, [drugs.length]);
+
   return (
+
     <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-card/70 to-primary/5 p-4 backdrop-blur-md">
       <div className="mb-3 flex items-start gap-2">
         <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/15 text-primary">

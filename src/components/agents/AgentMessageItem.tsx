@@ -97,8 +97,12 @@ const AgentMessageItem = memo(
     const { cleanedMarkdown, inlineBlocks } = useMemo(() => {
       if (msg.role !== "assistant") return { cleanedMarkdown: msg.content, inlineBlocks: [] };
       const { cleanedMarkdown, blocks } = extractInlineTutorBlocks(msg.content);
+      if (blocks.length > 0) {
+        console.log(`[AgentMessageItem] Extracted ${blocks.length} inline blocks for msg index ${index}`);
+      }
       return { cleanedMarkdown, inlineBlocks: blocks };
-    }, [msg.role, msg.content]);
+    }, [msg.role, msg.content, index]);
+
 
     const cognitiveBlocks = memoryCognitiveBlocks.length > 0 ? memoryCognitiveBlocks : inlineBlocks;
     const hasCognitiveBlocks = cognitiveBlocks.length > 0;

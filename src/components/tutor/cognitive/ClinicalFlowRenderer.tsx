@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ArrowRight, Stethoscope, GitBranch, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 import type { ClinicalFlowBlock } from "@/types/tutor";
 import { CognitiveEmpty, dedupeBy, devWarn, safeArray } from "./_validation";
 
@@ -52,7 +53,12 @@ export function ClinicalFlowRenderer({ block }: Props) {
     return <CognitiveEmpty title="Fluxo clínico" message="Sem nós para renderizar." />;
   }
 
+  useEffect(() => {
+    console.log("[ClinicalFlowRenderer] Rendering with", nodes.length, "nodes and", edges.length, "edges");
+  }, [nodes.length, edges.length]);
+
   return (
+
     <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-card/60 via-card/40 to-primary/5 p-4 backdrop-blur-md">
       <div className="mb-3 flex items-center gap-2">
         <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/15 text-primary">

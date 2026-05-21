@@ -119,9 +119,15 @@ export function extractInlineTutorBlocks(markdown: string): {
 
         cleaned = cleaned.slice(0, removeStart) + cleaned.slice(removeEnd);
       }
-    } catch {
-      // JSON parcial (stream) → ignora silenciosamente
+    } catch (err) {
+      // JSON parcial (stream) → ignora silenciosamente, mas loga se for erro de sintaxe bizarro
+      if (raw.length > 20 && !raw.endsWith('}')) {
+        // Provavelmente stream incompleto, esperado.
+      } else {
+        console.warn("[extractInlineTutorBlocks] JSON parse failed for potential block:", err);
+      }
     }
+
   }
 
   return { cleanedMarkdown: cleaned.trim(), blocks };
