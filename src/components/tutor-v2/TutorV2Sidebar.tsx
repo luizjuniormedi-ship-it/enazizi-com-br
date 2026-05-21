@@ -9,7 +9,8 @@ import {
   ChevronRight,
   TrendingUp,
   Brain,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft
 } from "lucide-react";
 import { MascotAvatar } from "../mascot/MascotAvatar";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,14 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
         </div>
 
         <div className="pt-6 mt-6 border-t border-white/5 space-y-3">
+          <button 
+            onClick={() => window.location.href = '/dashboard/sessao-estudo'}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all group mb-1"
+          >
+            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-[10px] font-black uppercase tracking-widest">Sair do Tutor</span>
+          </button>
+
           <button 
             onClick={() => {
               const newTopic = prompt("Para qual assunto médico deseja mudar?");
