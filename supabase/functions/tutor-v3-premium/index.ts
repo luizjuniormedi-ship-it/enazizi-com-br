@@ -199,30 +199,100 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   let aiText = "";
   let aiError = null;
 
+  // 6. BACKGROUND WORK: Definition (must be before waitUntil usage)
+  const backgroundWork = async (finalText: string, metrics: any) => {
+    try {
+      const pStart = Date.now();
+      
+      // 1. Save memory if session exists & we have content
+      if (sessionId && finalText) {
+        try {
+          await saveTutorMemory(supabaseAdmin, userId, {
+            topic,
+            content: finalText,
+            sessionId: sessionId,
+            masteryLevel: masteryState
+          });
+        } catch (e) {
+          logger.warn("SAVE_MEMORY_FAIL", (e as Error).message);
+        }
+      }
+
+      // 2. Perform Pedagogical Audit
+      if (finalText) {
+        try {
+          const audit = await auditPedagogicalQuality(finalText, topic);
+          await supabaseAdmin.from("pedagogical_quality_audits").insert({
+            content_type: "tutor_v3_response",
+            quality_score: audit.quality_score,
+            medical_coherence_passed: audit.medical_coherence_passed,
+            guideline_compliance_passed: audit.guideline_compliance_passed,
+            safety_check_passed: audit.safety_check_passed,
+            detected_hallucinations: audit.detected_hallucinations,
+            audit_log: { topic, correlation_id: correlation.correlationId, userId }
+          });
+        } catch (e) {
+          logger.warn("AUDIT_FAIL", (e as Error).message);
+        }
+      }
+
+      // 3. Record metrics
+      try {
+        await supabaseAdmin.from("tutor_runtime_metrics").insert({
+          user_id: userId,
+          correlation_id: correlation.correlationId,
+          function_name: "tutor-v3-premium",
+          tutor_generation_ms: metrics.generation_ms,
+          memory_lookup_ms: memoryLookupMs,
+          memory_hit: !!metrics.memory_hit,
+          prompt_tokens: metrics.prompt_tokens || 0,
+          completion_tokens: metrics.completion_tokens || 0,
+          model_used: metrics.model_used || "unknown",
+          topic: topic,
+          metadata: { 
+            complexity, 
+            is_loop: isLoop, 
+            fatigue, 
+            sessionId,
+            error: metrics.error ? (metrics.error as Error).message : null 
+          }
+        });
+      } catch (e) {
+        logger.warn("METRICS_FAIL", (e as Error).message);
+      }
+
+    } catch (e) {
+      logger.warn("BACKGROUND_WORK_FAIL", (e as Error).message);
+    }
+  };
+
   try {
     aiResponse = await ai({
       taskType: "tutor",
       complexity,
       messages,
       userId,
-      stream: true, // Habilita streaming para evitar timeouts de 60s
+      stream: true, 
     });
 
     if (aiResponse instanceof Response) {
-      // Se for um stream, precisamos retornar o stream diretamente ou processá-lo
-      // Para manter compatibilidade com o frontend que espera SSE ou JSON,
-      // vamos retornar o stream do gateway diretamente (que já é SSE).
       logger.info("TUTOR_V3_STREAM_START", "Starting streaming response");
       
-      // Iniciamos o trabalho de background sem await
-      if (waitUntil) waitUntil(backgroundWork);
+      // In a stream, we can't easily wait for the full text to do background work
+      // so we log a basic entry now and potentially update it later (or just log minimal metrics)
+      if (waitUntil) {
+        waitUntil(backgroundWork("", { 
+          generation_ms: 0, 
+          memory_hit: false, 
+          model_used: "streaming" 
+        }));
+      }
       
       return new Response(aiResponse.body, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" }
       });
     }
     
-    // Fallback se não for stream (embora tenhamos pedido)
     aiText = aiResponse?.choices?.[0]?.message?.content || 
              aiResponse?.content || 
              "";
@@ -239,89 +309,28 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const generationMs = Date.now() - aiStart;
   const memoryHit = (memoryContext.cached_blocks?.length ?? 0) > 0;
 
-  // 7. OPTIONAL TELEMETRY: Non-blocking
-  const backgroundWork = (async () => {
-    try {
-      const pStart = Date.now();
-      
-      // 1. Save memory if session exists
-      if (sessionId) {
-        try {
-          await saveTutorMemory(supabaseAdmin, userId, {
-            topic,
-            content: aiText,
-            sessionId: sessionId,
-            masteryLevel: masteryState
-          });
-        } catch (e) {
-          logger.warn("SAVE_MEMORY_FAIL", (e as Error).message);
-        }
-      }
+  const metrics = {
+    latency_ms: Date.now() - runtimeStart,
+    generation_ms: generationMs,
+    memory_hit: !!memoryHit,
+    complexity,
+    tokens_used: (aiResponse?.usage?.prompt_tokens || 0) + (aiResponse?.usage?.completion_tokens || 0),
+    prompt_tokens: aiResponse?.usage?.prompt_tokens || 0,
+    completion_tokens: aiResponse?.usage?.completion_tokens || 0,
+    model_used: aiResponse?.model || "unknown",
+    error: aiError
+  };
 
-      // 2. Perform Pedagogical Audit
-      try {
-        const audit = await auditPedagogicalQuality(aiText, topic);
-        const { error: auditError } = await supabaseAdmin.from("pedagogical_quality_audits").insert({
-          content_type: "tutor_v3_response",
-          quality_score: audit.quality_score,
-          medical_coherence_passed: audit.medical_coherence_passed,
-          guideline_compliance_passed: audit.guideline_compliance_passed,
-          safety_check_passed: audit.safety_check_passed,
-          detected_hallucinations: audit.detected_hallucinations,
-          audit_log: { topic, correlation_id: correlation.correlationId, userId }
-        });
-        if (auditError) throw auditError;
-      } catch (e) {
-        logger.warn("AUDIT_FAIL", (e as Error).message);
-      }
-
-      // 3. Record metrics
-      try {
-        const { error: metricsError } = await supabaseAdmin.from("tutor_runtime_metrics").insert({
-          user_id: userId,
-          correlation_id: correlation.correlationId,
-          function_name: "tutor-v3-premium",
-          tutor_generation_ms: generationMs,
-          memory_lookup_ms: memoryLookupMs,
-          memory_hit: !!memoryHit,
-          prompt_tokens: aiResponse?.usage?.prompt_tokens || 0,
-          completion_tokens: aiResponse?.usage?.completion_tokens || 0,
-          model_used: aiResponse?.model || "unknown",
-          topic: topic,
-          metadata: { 
-            complexity, 
-            is_loop: isLoop, 
-            fatigue, 
-            sessionId,
-            error: aiError ? (aiError as Error).message : null 
-          }
-        });
-        if (metricsError) throw metricsError;
-      } catch (e) {
-        logger.warn("METRICS_FAIL", (e as Error).message);
-      }
-
-    } catch (e) {
-      logger.warn("BACKGROUND_WORK_FAIL", (e as Error).message);
-    }
-  })();
-
-  // backgroundWork já foi disparado se for stream. Se não for, disparamos aqui.
-  if (!(aiResponse instanceof Response)) {
-    if (waitUntil) waitUntil(backgroundWork); else await backgroundWork;
+  if (waitUntil) {
+    waitUntil(backgroundWork(aiText, metrics));
+  } else {
+    await backgroundWork(aiText, metrics);
   }
 
-  // 8. FINAL CONTRACT COMPLIANCE
   const finalResponse = {
     content: aiText,
     correlation_id: correlation.correlationId,
-    metrics: {
-      latency_ms: Date.now() - runtimeStart,
-      generation_ms: generationMs,
-      memory_hit: !!memoryHit,
-      complexity,
-      tokens_used: (aiResponse?.usage?.prompt_tokens || 0) + (aiResponse?.usage?.completion_tokens || 0)
-    }
+    metrics
   };
 
   logger.info("TUTOR_V3_FINAL_RESPONSE", "Sending response", { 
@@ -332,4 +341,5 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   return new Response(JSON.stringify(finalResponse), { 
     headers: { ...corsHeaders, "Content-Type": "application/json" } 
   });
+});
 }));
