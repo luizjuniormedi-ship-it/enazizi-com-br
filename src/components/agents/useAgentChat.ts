@@ -372,30 +372,35 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       try {
         console.log(`[TUTOR] INVOKING_STREAM id=${requestId} url=${CHAT_URL}`);
+        
+        // Log payload for forensics before sending
+        const requestPayload = {
+          messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+          userContext: contextToSend || undefined,
+          adaptiveContext: adaptiveContext,
+          adaptiveMeta: { status: adaptiveStatus },
+          conversationId: convId || undefined,
+          topic: topic || undefined,
+          subtopic: subtopic || undefined,
+          specialty: specialty || undefined,
+          fsrsContext,
+          masteryState,
+          requestId,
+          userId: user.id,
+          sessionId: history.activeConversationId || undefined,
+          pedagogicalContext: pedSession.session ? {
+            currentBlock: pedSession.session.currentBlock,
+            tutorMode: pedSession.session.tutorMode,
+            cognitiveState: pedSession.session.cognitiveState,
+            topic: pedSession.session.topic,
+            lastInteraction: pedagogicalInteraction
+          } : undefined
+        };
+        console.log("[TUTOR] REQUEST_PAYLOAD", requestPayload);
+
         const result = await streamResponse({
           url: CHAT_URL,
-          body: {
-            messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
-            userContext: contextToSend || undefined,
-            adaptiveContext: adaptiveContext,
-            adaptiveMeta: { status: adaptiveStatus },
-            conversationId: convId || undefined,
-            topic: topic || undefined,
-            subtopic: subtopic || undefined,
-            specialty: specialty || undefined,
-            fsrsContext,
-            masteryState,
-            requestId,
-            userId: user.id, // Explicitly pass userId for edge function longitudinal memory
-            sessionId: history.activeConversationId || undefined,
-            pedagogicalContext: pedSession.session ? {
-              currentBlock: pedSession.session.currentBlock,
-              tutorMode: pedSession.session.tutorMode,
-              cognitiveState: pedSession.session.cognitiveState,
-              topic: pedSession.session.topic,
-              lastInteraction: pedagogicalInteraction
-            } : undefined
-          },
+          body: requestPayload,
           signal: controller.signal,
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
