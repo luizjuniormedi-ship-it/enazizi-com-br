@@ -37,7 +37,12 @@ export function TutorStabilizationDashboard() {
     const avgGen = metrics.reduce((acc, m) => acc + (m.tutor_generation_ms || 0), 0) / metrics.length;
     const avgLookup = metrics.reduce((acc, m) => acc + (m.memory_lookup_ms || 0), 0) / metrics.length;
     const memoryHitRate = (metrics.filter(m => m.memory_hit).length / metrics.length) * 100;
-    const errorCount = metrics.filter(m => m.metadata?.error || (m.tutor_generation_ms > 15000)).length;
+    
+    // Type-safe error check for JSON metadata
+    const errorCount = metrics.filter(m => {
+      const meta = m.metadata as Record<string, any> | null;
+      return meta?.error || (m.tutor_generation_ms && m.tutor_generation_ms > 15000);
+    }).length;
     
     // Agrupar por hora para o gráfico
     const chartData = metrics.slice(0, 50).reverse().map(m => ({

@@ -91,8 +91,8 @@ export function usePedagogicalSession() {
     const dbUpdates: any = {};
     if (updates.currentBlock !== undefined) dbUpdates.current_block = updates.currentBlock;
     if (updates.completedBlocks !== undefined) dbUpdates.completed_blocks = updates.completedBlocks;
-    if (updates.tutor_mode !== undefined || (updates as any).tutorMode !== undefined) {
-      dbUpdates.tutor_mode = updates.tutorMode || (updates as any).tutor_mode;
+    if (updates.tutorMode !== undefined) {
+      dbUpdates.tutor_mode = updates.tutorMode;
     }
     if (updates.cognitiveState !== undefined) dbUpdates.cognitive_state = updates.cognitiveState;
     if (updates.comprehensionScore !== undefined) dbUpdates.comprehension_score = updates.comprehensionScore;
