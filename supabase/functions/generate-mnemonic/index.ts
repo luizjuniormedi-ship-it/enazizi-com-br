@@ -313,15 +313,10 @@ const PROMPT_EXTRACT_TERMS = MASTER_PROMPT_GERADOR; // Reutiliza contexto se nec
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 
 Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supabaseAdmin, ai }) => {
-  const startedAt = Date.now();
-  const requestIdForError = crypto.randomUUID();
-
-
-
-  const startedAt = Date.now();
   const requestIdForError = crypto.randomUUID();
 
   try {
+
     // Pipeline logic integrated with ALOS Unified Wrapper
     // ... use 'ai' wrapper for better resilience
 
