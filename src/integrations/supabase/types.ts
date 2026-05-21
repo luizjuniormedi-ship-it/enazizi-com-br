@@ -24460,16 +24460,20 @@ export type Database = {
       tutor_sessions: {
         Row: {
           cognitive_progress: number | null
+          completed_blocks: string[] | null
           conversation_id: string | null
           created_at: string
+          current_block: string | null
           current_phase: string | null
           current_stage:
             | Database["public"]["Enums"]["tutor_lesson_stage"]
             | null
+          expected_action: string | null
           id: string
           metadata: Json | null
           mission_id: string | null
           mode: string
+          should_wait_for_student: boolean | null
           source_context: string | null
           specialty: string | null
           status: string | null
@@ -24480,16 +24484,20 @@ export type Database = {
         }
         Insert: {
           cognitive_progress?: number | null
+          completed_blocks?: string[] | null
           conversation_id?: string | null
           created_at?: string
+          current_block?: string | null
           current_phase?: string | null
           current_stage?:
             | Database["public"]["Enums"]["tutor_lesson_stage"]
             | null
+          expected_action?: string | null
           id?: string
           metadata?: Json | null
           mission_id?: string | null
           mode?: string
+          should_wait_for_student?: boolean | null
           source_context?: string | null
           specialty?: string | null
           status?: string | null
@@ -24500,16 +24508,20 @@ export type Database = {
         }
         Update: {
           cognitive_progress?: number | null
+          completed_blocks?: string[] | null
           conversation_id?: string | null
           created_at?: string
+          current_block?: string | null
           current_phase?: string | null
           current_stage?:
             | Database["public"]["Enums"]["tutor_lesson_stage"]
             | null
+          expected_action?: string | null
           id?: string
           metadata?: Json | null
           mission_id?: string | null
           mode?: string
+          should_wait_for_student?: boolean | null
           source_context?: string | null
           specialty?: string | null
           status?: string | null

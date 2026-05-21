@@ -7,58 +7,35 @@ const SYSTEM_PROMPT_V3 = `
 Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
 Sua missão é atuar como um preceptor de residência em um hospital de alta complexidade.
 
-REQUISITO CRÍTICO DE FORMATAÇÃO:
-Você DEVE incluir exatamente estes 15 cabeçalhos no início de cada seção correspondente:
+REQUISITO ABSOLUTO DE ORQUESTRAÇÃO PEDAGÓGICA (GATING):
+Você NÃO deve entregar todo o conteúdo de uma vez. Você deve seguir uma sequência rigorosa de blocos.
+A cada resposta, você entrega APENAS O BLOCO ATUAL solicitado e termina com uma pergunta curta e provocativa (MÉTODO SOCRÁTICO) para validar o aprendizado antes de avançar.
 
-## 🎯 BLOCO 1 — MISSÃO DA SESSÃO
-## 🎯 BLOCO 2 — ROADMAP COGNITIVO
-## 🎯 BLOCO 3 — EXPLICAÇÃO LEIGA
-## 🎯 BLOCO 4 — EXPLICAÇÃO TÉCNICA
-## 🎯 BLOCO 5 — FISIOPATOLOGIA VISUAL
-## 🎯 BLOCO 6 — RACIOCÍNIO CLÍNICO
-## 🎯 BLOCO 7 — DIAGNÓSTICO DIFERENCIAL
-## 🎯 BLOCO 8 — PEGADINHAS DE PROVA
-## 🎯 BLOCO 9 — DIRETRIZES E EVIDÊNCIAS
-## 🎯 BLOCO 10 — QUESTÃO GUIADA
-## 🎯 BLOCO 11 — CORREÇÃO COMENTADA
-## 🎯 BLOCO 12 — ACTIVE RECALL
-## 🎯 BLOCO 13 — FLASHCARDS AUTOMÁTICOS
-## 🎯 BLOCO 14 — RESUMO ESTRATÉGICO
-## 🎯 BLOCO 15 — PLANO DE RECUPERAÇÃO
+SEQUÊNCIA OBRIGATÓRIA DE BLOCOS:
+1. ## 🎯 BLOCO 1 — MISSÃO DA SESSÃO: Objetivo do tema, importância na prova/prática e caso clínico curto.
+2. ## 🎯 BLOCO 2 — ROADMAP COGNITIVO: Caminho da aula, o que será aprendido, divisão em etapas.
+3. ## 🎯 BLOCO 3 — EXPLICAÇÃO LEIGA: Analogia simples, base intuitiva, linguagem para leigos.
+4. ## 🎯 BLOCO 4 — EXPLICAÇÃO TÉCNICA: Fisiopatologia profunda, mecanismos, termos técnicos médicos.
+5. ## 🎯 BLOCO 5 — FISIOPATOLOGIA VISUAL: Gerar mapa mental/fluxo via JSON (clinical_flow).
+6. ## 🎯 BLOCO 6 — RACIOCÍNIO CLÍNICO: Como reconhecer no leito, pistas clínicas, exames iniciais.
+7. ## 🎯 BLOCO 7 — DIAGNÓSTICO DIFERENCIAL: Pistas para não confundir com outras patologias.
+8. ## 🎯 BLOCO 8 — CONDUTA E PRIORIZAÇÃO: Abordagem inicial, tratamento, erros comuns.
+9. ## 🎯 BLOCO 9 — DIRETRIZES E EVIDÊNCIAS: Citar diretrizes (SBC, AHA, MS, FEBRASGO) 2024-2025.
+10. ## 🎯 BLOCO 10 — QUESTÃO ESTILO PROVA: Caso clínico ou questão objetiva.
+11. ## 🎯 BLOCO 11 — CORREÇÃO COMENTADA: Justificativa da questão anterior.
+12. ## 🎯 BLOCO 12 — ACTIVE RECALL: Perguntas de revisão ativa.
+13. ## 🎯 BLOCO 13 — FLASHCARDS AUTOMÁTICOS: Sugestão de flashcards para o aluno.
+14. ## 🎯 BLOCO 14 — RESUMO DE ALTA RETENÇÃO: Bullets finais, mnemônicos úteis.
+15. ## 🎯 BLOCO 15 — PLANO DE RECUPERAÇÃO: O que revisar se ainda houver dúvidas.
 
 DIRETRIZES DE ENSINO ENAZIZI:
-- NUNCA responda como um chatbot comum ou assistente genérico.
-- MÉTODO SOCRÁTICO: Não dê a resposta de imediato. Conduza o raciocínio através de perguntas provocativas.
-- RIGOR MÉDICO: Use terminologia técnica precisa e cite diretrizes (SBC, AHA, MS, FEBRASGO) 2024-2025.
-- LINGUAGEM DUAL: Alterne entre a "Explicação Leiga" (para fixação de conceitos base) e "Explicação Técnica" (nível prova de residência).
-- MEMÓRIA LONGITUDINAL: Use o contexto anterior para evitar redundância e aprofundar lacunas de conhecimento.
-- OBRIGATORIEDADE: Todos os 15 blocos devem estar presentes em explicações completas para garantir a jornada cognitiva completa.
-- ANTI-ALUCINAÇÃO: Se não houver consenso ou evidência clara, declare a incerteza.
-
+- MÉTODO SOCRÁTICO: Conduza o raciocínio. Nunca avance sem uma resposta do aluno.
+- RIGOR MÉDICO: Termos técnicos precisos + evidências atualizadas.
+- OBRIGATORIEDADE DE GATING: Entregue UM bloco por vez.
+- MEMÓRIA LONGITUDINAL: O sistema informará em qual bloco você está.
 
 DIRETRIZ DE IMAGENS (BLOCO 5):
-Para o BLOCO 5, você DEVE gerar uma visualização em JSON usando o tipo "clinical_flow" ou "differential_diagnosis".
-Exemplo de formato esperado no BLOCO 5:
-## 🎯 BLOCO 5 — FISIOPATOLOGIA VISUAL
-Aqui está o mapa mental da fisiopatologia:
-\{
-  "type": "clinical_flow",
-  "payload": \{
-    "title": "Fisiopatologia de [Tema]",
-    "nodes": [
-      \{ "id": "1", "label": "Gatilho Inicial", "kind": "action" \},
-      \{ "id": "2", "label": "Cascata Inflamatória", "kind": "decision" \},
-      \{ "id": "3", "label": "Dano Tecidual", "kind": "outcome" \}
-    ],
-    "edges": [
-      \{ "from": "1", "to": "2" \},
-      \{ "from": "2", "to": "3" \}
-    ]
-  \}
-\}
-NUNCA diga que "não pode gerar imagens". Você gera IMAGENS ESTRUTURADAS via JSON.
-
-
+Use o formato JSON clinical_flow conforme especificado anteriormente quando estiver no BLOCO 5.
 `;
 
 function detectCognitiveLoop(message: string, history: any[]): boolean {
@@ -142,7 +119,23 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const masteryState = typeof body.masteryState === "string" ? body.masteryState : "initial";
   const sessionId = typeof body.sessionId === "string" ? body.sessionId : crypto.randomUUID();
 
-  // 4. CONTEXT & GOVERNANCE
+  // 4. SESSION STATE & PEDAGOGY
+  let currentBlock = "BLOCO_1_MISSAO_CLINICA";
+  let completedBlocks: string[] = [];
+  
+  if (sessionId) {
+    const { data: sessionData } = await supabaseAdmin
+      .from("tutor_sessions")
+      .select("current_block, completed_blocks")
+      .eq("id", sessionId)
+      .maybeSingle();
+    
+    if (sessionData) {
+      current_block = sessionData.current_block || "BLOCO_1_MISSAO_CLINICA";
+      completed_blocks = sessionData.completed_blocks || [];
+    }
+  }
+
   const userId = auth.userId || body.userId || (correlation as any).userId;
   const isLoop = detectCognitiveLoop(message, history);
   const fatigue = estimateStudentFatigue(history);
@@ -152,12 +145,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   if (message.length < 20) complexity = "baixa";
   else if (message.length < 100) complexity = "media";
 
-  const cognitiveContext = `\n[COGNITIVE STATE] Mastery: ${masteryState}, Fatigue: ${fatigue.toFixed(2)}, Topic: ${topic}`;
+  const cognitiveContext = `
+[PEDAGOGICAL STATE]
+Current Block: ${currentBlock}
+Completed Blocks: ${completedBlocks.join(", ")}
+Topic: ${topic}
+Mastery: ${masteryState}
+Fatigue: ${fatigue.toFixed(2)}
+
+INSTRUCTION: 
+If the user is answering a question from the previous block, evaluate it and then provide ONLY the next block: ${currentBlock}.
+If they just started, provide ONLY BLOCO 1.
+Always end with a question to validate before moving to the NEXT block.
+`;
+
   const aiMessages = [
     { role: "system", content: `${SYSTEM_PROMPT_V3}${isLoop ? "\n[RECOVERY: LOOP DETECTADO]" : ""}${cognitiveContext}` },
-    ...history.slice(-6).map((m: any) => ({
+    ...history.slice(-10).map((m: any) => ({
       role: m.role || "user",
-      content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+      content: typeof m.content === "string" ? m.content : (m.content?.text || JSON.stringify(m.content)),
     })),
     { role: "user", content: message },
   ];
@@ -166,6 +172,42 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const backgroundWork = async (finalText: string, metrics: any) => {
     try {
       if (!userId) return;
+      
+      // Update session state based on detected block in response
+      const blockRegex = /## 🎯 BLOCO (\d+)/g;
+      const matches = [...finalText.matchAll(blockRegex)];
+      if (matches.length > 0 && sessionId) {
+        const lastBlockNum = parseInt(matches[matches.length - 1][1]);
+        const nextBlock = `BLOCO_${lastBlockNum + 1}_...`; // Simplified, actual name mapped below
+        
+        const blockMap: Record<number, string> = {
+          1: "BLOCO_2_ROADMAP_COGNITIVO",
+          2: "BLOCO_3_EXPLICAÇÃO_LEIGA",
+          3: "BLOCO_4_EXPLICAÇÃO_TÉCNICA",
+          4: "BLOCO_5_FISIOPATOLOGIA_VISUAL",
+          5: "BLOCO_6_RACIOCÍNIO_CLÍNICO",
+          6: "BLOCO_7_DIAGNÓSTICO_DIFERENCIAL",
+          7: "BLOCO_8_CONDUTA_E_PRIORIZAÇÃO",
+          8: "BLOCO_9_DIRETRIZES_E_EVIDÊNCIAS",
+          9: "BLOCO_10_QUESTÃO_ESTILO_PROVA",
+          10: "BLOCO_11_CORREÇÃO_COMENTADA",
+          11: "BLOCO_12_ACTIVE_RECALL",
+          12: "BLOCO_13_FLASHCARDS_AUTOMÁTICOS",
+          13: "BLOCO_14_RESUMO_DE_ALTA_RETENÇÃO",
+          14: "BLOCO_15_PLANO_DE_RECUPERAÇÃO",
+          15: "FINISH"
+        };
+
+        const newCurrentBlock = blockMap[lastBlockNum] || currentBlock;
+        const newCompletedBlocks = [...new Set([...completedBlocks, `BLOCO_${lastBlockNum}`])];
+
+        await supabaseAdmin.from("tutor_sessions").update({
+          current_block: newCurrentBlock,
+          completed_blocks: newCompletedBlocks,
+          cognitive_progress: Math.round((lastBlockNum / 15) * 100)
+        }).eq("id", sessionId);
+      }
+
       if (sessionId && finalText && finalText.length > 50) {
         await saveTutorMemory(supabaseAdmin, userId, {
           topic,
@@ -233,6 +275,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         content: aiText, 
         answer: aiText,
         message: aiText,
+        currentBlock: currentBlock,
+        shouldWaitForStudent: true,
+        nextExpectedAction: "student_reply",
         correlation_id: correlation.correlationId, 
         request_id: correlation.correlationId,
         debug_stage: "final_response_from_stream",
@@ -268,6 +313,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       content: aiText, 
       answer: aiText,
       message: aiText,
+      currentBlock: currentBlock,
+      shouldWaitForStudent: true,
+      nextExpectedAction: "student_reply",
       correlation_id: correlation.correlationId, 
       request_id: correlation.correlationId,
       debug_stage: "final_response",
