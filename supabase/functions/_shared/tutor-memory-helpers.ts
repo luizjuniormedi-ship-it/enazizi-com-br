@@ -17,8 +17,10 @@ export async function buildPedagogicalContext(
   userId: string,
   topic: string
 ): Promise<MemoryContext> {
+  // Hardening: protect against missing inputs
+  if (!userId) throw new Error("userId is required to build pedagogical context");
+
   // 1. Fetch relevant learning memory blocks
-  // Since tutor_learning_memory columns were missing in logs, let's use tutor_lesson_memory which seems more robust
   const { data: blocks } = await supabase
     .from("tutor_lesson_memory")
     .select("*")
@@ -77,10 +79,15 @@ export async function saveTutorMemory(
     sessionId?: string | null;
   }
 ) {
+  if (!userId || !params.topic || !params.content) {
+    console.warn("[saveTutorMemory] Missing required fields", { userId, topic: params.topic });
+    return null;
+  }
+
   const titleMatch = params.content.match(/## 🎯 BLOCO \d+ — (.*)/) || params.content.match(/# (.*)/) || params.content.match(/1\. (.*)/);
   const title = titleMatch ? titleMatch[1].substring(0, 100) : "Bloco Pedagógico";
 
-  // Idempotente: upsert por (user_id, topic). Se source_session_id for inválido, descarta para evitar FK violation.
+  // Validate session presence to avoid FK violation
   let sourceSessionId: string | null = null;
   if (params.sessionId) {
     try {
@@ -90,9 +97,12 @@ export async function saveTutorMemory(
         .eq("id", params.sessionId)
         .maybeSingle();
       if (sess) sourceSessionId = params.sessionId;
-    } catch { /* ignora — segue sem sessão */ }
+    } catch (e) {
+      console.error("[saveTutorMemory] Session check error", e);
+    }
   }
 
+  // Resilient persistence: upsert by (user_id, topic)
   const { data: memory, error } = await supabase
     .from("tutor_lesson_memory")
     .upsert({
@@ -113,8 +123,8 @@ export async function saveTutorMemory(
     .maybeSingle();
 
   if (error) {
-    console.error("Error saving tutor memory:", error);
-    // Não relança: persistência tem que falhar silenciosamente para não derrubar a resposta da IA.
+    // Critical: non-blocking log
+    console.error("[saveTutorMemory] Persistence error:", error.message, error.details);
   }
   return memory;
 }
