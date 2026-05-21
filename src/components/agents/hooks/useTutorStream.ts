@@ -160,8 +160,9 @@ export function useTutorStream() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "x-correlation-id": (body.correlation_id as string) || crypto.randomUUID(),
         };
-        console.log(`[useTutorStream] Requesting ${url}`, { headers: Object.keys(headers) });
+        console.log(`[useTutorStream] Requesting ${url}`, { correlationId: headers["x-correlation-id"] });
         return fetch(url, {
           method: "POST",
           headers,
