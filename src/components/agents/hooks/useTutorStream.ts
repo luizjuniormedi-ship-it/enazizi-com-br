@@ -295,8 +295,9 @@ export function useTutorStream() {
           return assistantSoFar ? { content: assistantSoFar } : null;
         }
         console.error("[useTutorStream] error:", e);
+        const errorMessage = e instanceof Error ? e.message : "Erro de conexão com o Tutor";
         onError?.({
-          message: e instanceof Error ? e.message : "stream_unknown_error",
+          message: errorMessage.includes("Failed to fetch") ? "Falha de rede ao conectar com o Tutor IA. Verifique sua conexão." : errorMessage,
         });
         return null;
       } finally {

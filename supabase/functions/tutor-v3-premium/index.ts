@@ -104,8 +104,18 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   }
   
   // 2. HARDENING: Input Validation & Sanitization
-  const message = String(body.message || "").trim();
-  const history = Array.isArray(body.history) ? body.history : [];
+  // Suporte híbrido: aceita 'message'/'history' ou o array 'messages' do frontend
+  let message = String(body.message || "").trim();
+  let history = Array.isArray(body.history) ? body.history : (Array.isArray(body.messages) ? body.messages : []);
+  
+  if (!message && history.length > 0) {
+    const lastMsg = history[history.length - 1];
+    if (lastMsg && lastMsg.role === "user") {
+      message = typeof lastMsg.content === "string" ? lastMsg.content : JSON.stringify(lastMsg.content);
+      history = history.slice(0, -1);
+    }
+  }
+
   const context = body.context && typeof body.context === "object" ? body.context : {};
   const topic = typeof body.topic === "string" ? body.topic : "Geral";
   const fsrsContext = body.fsrsContext && typeof body.fsrsContext === "object" ? body.fsrsContext : {};
@@ -122,12 +132,13 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  logger.info("REQUEST_RECEIVED", "Processing tutor request", {
+  logger.info("TUTOR_V3_REQUEST_BODY", "Processed payload", {
     correlationId: correlation.correlationId,
     userId,
     topic,
     msgLength: message.length,
-    historyLength: history.length
+    historyLength: history.length,
+    hasSessionId: !!sessionId
   });
 
   if (!userId) {
@@ -138,6 +149,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       correlation_id: correlation.correlationId
     }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
+
+  logger.info("TUTOR_V3_AUTH_OK", "User authenticated", { userId });
 
   // 3. GOVERNANCE: Cognitive Checks
   const isLoop = detectCognitiveLoop(message, history);
@@ -203,10 +216,15 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     if (!aiText) {
       throw new Error("AI returned empty content");
     }
+    
+    logger.info("TUTOR_V3_AI_PROXY_STATUS", "AI Success", { 
+      model: aiResponse?.model, 
+      tokens: (aiResponse?.usage?.prompt_tokens || 0) + (aiResponse?.usage?.completion_tokens || 0)
+    });
   } catch (err) {
     aiError = err;
-    logger.error("AI_PROXY_FAIL", (err as Error).message);
-    aiText = "Sou seu Tutor ENAZIZI. Houve uma instabilidade temporária ao processar sua dúvida, mas já estou monitorando isso. Podemos tentar novamente agora ou você pode me perguntar sobre outro aspecto de " + topic + "? Estou aqui para ajudar.";
+    logger.error("TUTOR_V3_FAILURE_POINT", "AI_PROXY_FAIL", { error: (err as Error).message });
+    aiText = "Sou seu Tutor ENAZIZI. Tivemos uma instabilidade temporária ao processar sua dúvida sobre " + topic + ", mas posso continuar te ajudando com um resumo clínico estratégico do tema. O que especificamente você gostaria de revisar sobre esse tópico agora?";
   }
 
   const generationMs = Date.now() - aiStart;
@@ -281,7 +299,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   if (waitUntil) waitUntil(backgroundWork); else await backgroundWork;
 
   // 8. FINAL CONTRACT COMPLIANCE
-  return new Response(JSON.stringify({
+  const finalResponse = {
     content: aiText,
     correlation_id: correlation.correlationId,
     metrics: {
@@ -291,5 +309,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       complexity,
       tokens_used: (aiResponse?.usage?.prompt_tokens || 0) + (aiResponse?.usage?.completion_tokens || 0)
     }
-  }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  };
+
+  logger.info("TUTOR_V3_FINAL_RESPONSE", "Sending response", { 
+    contentLength: aiText.length,
+    latency: finalResponse.metrics.latency_ms
+  });
+
+  return new Response(JSON.stringify(finalResponse), { 
+    headers: { ...corsHeaders, "Content-Type": "application/json" } 
+  });
 }));
