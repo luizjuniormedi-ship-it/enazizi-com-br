@@ -36,7 +36,21 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   }, [messages, isTyping]);
 
   const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
-    if (!text.trim() || isTyping || !user) return;
+    const requestId = crypto.randomUUID();
+    // [TUTOR_01_SEND_CLICKED]
+    console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId}`);
+
+    if (!text.trim() || isTyping || !user) {
+      console.warn(`[TUTOR] SEND_SKIPPED id=${requestId}`, { text: !!text.trim(), isTyping, user: !!user });
+      return;
+    }
+
+    // [TUTOR_02_MESSAGE_TEXT]
+    console.log(`[TUTOR_02_MESSAGE_TEXT] text="${text.slice(0, 50)}..."`);
+
+    // [TUTOR_03_AUTH_SESSION]
+    console.log(`[TUTOR_03_AUTH_SESSION] userId=${user?.id} hasSession=${!!session.id}`);
+
     setError(null);
     triggerInteraction({ 
       state: 'thinking', 
@@ -84,6 +98,13 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
 
       if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
+
+      // [TUTOR_22_FRONTEND_DATA_RECEIVED]
+      console.log("[TUTOR_22_FRONTEND_DATA_RECEIVED] requestId=" + requestId, response);
+
+      const content = response.content || response.message || response.answer || "";
+      // [TUTOR_23_CONTENT_EXTRACTED]
+      console.log(`[TUTOR_23_CONTENT_EXTRACTED] contentLen=${content?.length}`);
       if (response?.fallback) {
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
@@ -148,6 +169,8 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       toast.error(friendlyMessage);
     } finally {
       setIsTyping(false);
+      // [TUTOR_27_LOADING_FALSE]
+      console.log(`[TUTOR_27_LOADING_FALSE] id=${requestId}`);
     }
   };
 
