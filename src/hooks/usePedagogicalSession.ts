@@ -84,28 +84,43 @@ export function usePedagogicalSession() {
     }
   }, [user]);
 
-  const updateSession = useCallback(async (updates: Partial<PedagogicalSession>) => {
+  const updateSession = useCallback(async (updates: Partial<PedagogicalSession>, retryCount = 0) => {
     if (!session || !user) return;
 
     // Converter camelCase para snake_case para o Supabase
     const dbUpdates: any = {};
     if (updates.currentBlock !== undefined) dbUpdates.current_block = updates.currentBlock;
     if (updates.completedBlocks !== undefined) dbUpdates.completed_blocks = updates.completedBlocks;
-    if (updates.tutorMode !== undefined) dbUpdates.tutor_mode = updates.tutorMode;
+    if (updates.tutor_mode !== undefined || (updates as any).tutorMode !== undefined) {
+      dbUpdates.tutor_mode = updates.tutorMode || (updates as any).tutor_mode;
+    }
     if (updates.cognitiveState !== undefined) dbUpdates.cognitive_state = updates.cognitiveState;
     if (updates.comprehensionScore !== undefined) dbUpdates.comprehension_score = updates.comprehensionScore;
     if (updates.difficultyLevel !== undefined) dbUpdates.difficulty_level = updates.difficultyLevel;
     if (updates.metadata !== undefined) dbUpdates.metadata = updates.metadata;
 
-    const { error } = await supabase
-      .from('pedagogical_sessions')
-      .update(dbUpdates)
-      .eq('id', session.id);
+    // Optimistic Update
+    setSession(prev => prev ? { ...prev, ...updates } : null);
 
-    if (error) {
-      console.error("[usePedagogicalSession] Update error:", error);
-    } else {
-      setSession(prev => prev ? { ...prev, ...updates } : null);
+    try {
+      const { error } = await supabase
+        .from('pedagogical_sessions')
+        .update(dbUpdates)
+        .eq('id', session.id);
+
+      if (error) {
+        throw error;
+      }
+    } catch (err) {
+      console.warn(`[usePedagogicalSession] Update error (attempt ${retryCount + 1}):`, err);
+      
+      // Retry logic for transient errors (max 3 retries)
+      if (retryCount < 3) {
+        const backoff = Math.pow(2, retryCount) * 1000;
+        setTimeout(() => updateSession(updates, retryCount + 1), backoff);
+      } else {
+        console.error("[usePedagogicalSession] Final update failure after retries:", err);
+      }
     }
   }, [session, user]);
 
