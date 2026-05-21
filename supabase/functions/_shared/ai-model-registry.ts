@@ -15,7 +15,7 @@ export const ALLOWED_MODELS = {
   embeddings: "openai/text-embedding-3-small",
 } as const;
 
-export const DEFAULT_FAST_MODEL = "google/gemini-2.0-flash";
+export const DEFAULT_FAST_MODEL = "google/gemini-2.5-flash";
 export const DEFAULT_REASONING_MODEL = "google/gemini-2.5-pro";
 
 // AI Tiers and Pricing (Est. USD per 1M tokens)
