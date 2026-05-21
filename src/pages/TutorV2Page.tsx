@@ -130,7 +130,7 @@ export default function TutorV2Page() {
         
         <div className="text-center space-y-3">
           <p className="text-[12px] font-black uppercase tracking-[0.4em] text-white/90 animate-pulse">
-            {bootStatus || "Sincronizando Tutor V3"}
+            {bootStatus || "Sincronizando Tutor V3 Premium"}
           </p>
           <div className="h-1 w-48 bg-white/5 rounded-full overflow-hidden mx-auto">
             <motion.div 
