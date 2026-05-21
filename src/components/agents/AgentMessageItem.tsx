@@ -104,7 +104,7 @@ const AgentMessageItem = memo(
     const hasCognitiveBlocks = cognitiveBlocks.length > 0;
     const renderedMarkdown = cleanedMarkdown || msg.content;
 
-    const [unlockedSections, setUnlockedSections] = useState(999);
+    const [unlockedSections, setUnlockedSections] = useState(1);
     const pedagogicalSections = useMemo(() => {
       if (msg.role !== "assistant") return [renderedMarkdown];
       return splitPedagogicalSections(renderedMarkdown);
