@@ -11,7 +11,9 @@ import {
   Stethoscope,
   Microscope,
   HelpCircle,
-  Activity
+  Activity,
+  RefreshCw,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,13 +24,14 @@ import { cn } from "@/lib/utils";
 
 interface TutorV2ActionsProps {
   session: any;
+  onSendMessage: (text: string, pedagogicalInteraction?: string, newTopic?: string) => void;
 }
 
-export default function TutorV2Actions({ session }: TutorV2ActionsProps) {
+export default function TutorV2Actions({ session, onSendMessage }: TutorV2ActionsProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [lessonData, setLessonData] = useState<any>(null);
-  const [activeMode, setActiveMode] = useState<'normal' | 'round'>('normal');
+  const [activeMode, setActiveMode] = useState<'normal' | 'round' | 'change_topic'>('normal');
   const { toast } = useToast();
 
   const handleGenerateLesson = async (mode: 'normal' | 'round' = 'normal') => {
@@ -64,6 +67,13 @@ export default function TutorV2Actions({ session }: TutorV2ActionsProps) {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleChangeTopic = () => {
+    const newTopic = prompt("Para qual assunto médico deseja mudar?");
+    if (newTopic && newTopic.trim()) {
+      onSendMessage(`Quero mudar de assunto para ${newTopic}`, undefined, newTopic);
     }
   };
 
@@ -114,6 +124,11 @@ export default function TutorV2Actions({ session }: TutorV2ActionsProps) {
 
       <div className="flex gap-1">
         <ActionButton 
+          icon={RefreshCw} 
+          label="Mudar Aula" 
+          onClick={handleChangeTopic}
+        />
+        <ActionButton 
           icon={Zap} 
           label="Mnemônico" 
           onClick={() => {
@@ -137,7 +152,6 @@ export default function TutorV2Actions({ session }: TutorV2ActionsProps) {
              }
           }}
         />
-        <ActionButton icon={Microscope} label="Caso Clínico" />
       </div>
 
       {showPlayer && (
