@@ -136,7 +136,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
       const latency = Date.now() - startTime;
       
-      waitUntil((async () => {
+      const logExecution = (async () => {
         try {
           await supabaseAdmin.from("edge_execution_logs").insert({
             function_name: functionName,
@@ -150,7 +150,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
         } catch (telemetryErr) {
           console.error("[enterprise-edge] Global telemetry failed:", telemetryErr);
         }
-      })());
+      })();
+      if (waitUntil) waitUntil(logExecution);
 
       return response;
 
