@@ -98,18 +98,18 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       console.log(`[TUTOR_V3_START_CALL] id=${requestId}`);
       const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
 
-      if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
+      if (!response || (!response.content && !response.answer && !response.message && !response.response)) throw new Error(response?.error || "Erro na resposta da IA");
 
       // [TUTOR_22_FRONTEND_DATA_RECEIVED]
       console.log("[TUTOR_22_FRONTEND_DATA_RECEIVED] requestId=" + requestId, response);
 
-      const content = response.content || response.message || response.answer || "";
+      const content = response.content || response.answer || response.message || response.response || "";
       // [TUTOR_23_CONTENT_EXTRACTED]
-      console.log(`[TUTOR_23_CONTENT_EXTRACTED] contentLen=${content?.length}`);
+      console.log(`[TUTOR_23_CONTENT_EXTRACTED] contentLen=${content?.length}`, { content });
       if (response?.fallback) {
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
-      if (response?.content) {
+      if (content) {
         // [TUTOR_24_ASSISTANT_MESSAGE_CREATED]
         console.log(`[TUTOR_24_ASSISTANT_MESSAGE_CREATED] id=${requestId}`);
         
@@ -117,14 +117,14 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         console.log(`[TUTOR_25_SET_MESSAGES_CALLED] id=${requestId}`);
 
         setMessages((prev) => {
-          const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === response.content);
+          const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === content);
           if (alreadyVisible) return prev;
           const newMessages = [
             ...prev,
             {
               id: response.requestId || crypto.randomUUID(),
               role: "assistant",
-              content: response.content,
+              content: content,
               tutor_session_id: session.id,
               user_id: user.id,
               created_at: new Date().toISOString(),
@@ -138,7 +138,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         
         // Persist assistant message
         console.log(`[TUTOR_V3_PERSIST_ASSISTANT] id=${requestId}`);
-        await addMessage(user.id, "assistant", response.content);
+        await addMessage(user.id, "assistant", content);
       }
       setLastFailedMessage(null);
 
@@ -173,7 +173,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         });
       }
 
-      console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!response.content });
+      console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!content });
     } catch (err: any) {
       console.error("Error in Tutor V2 chat:", err);
       triggerInteraction({ state: 'warning', type: 'alert', speech: "Encontrei uma instabilidade, tente novamente." });
@@ -219,7 +219,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-0.5">
               <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
-                Estágio Cognitivo: <span className="text-white">{session.current_stage || 'Exploração'}</span>
+                Estágio Cognitivo: <span className="text-white">{session.currentBlock || 'Exploração'}</span>
               </span>
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                 {session.cognitive_progress || 0}% Concluído
