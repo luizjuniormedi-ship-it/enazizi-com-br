@@ -1,4 +1,4 @@
-import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { buildPedagogicalContext, saveTutorMemory } from "../_shared/tutor-memory-helpers.ts";
 
 const SYSTEM_PROMPT_V3 = `
@@ -62,7 +62,16 @@ function estimateStudentFatigue(history: any[]): number {
 
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const runtimeStart = Date.now();
-  const body = await req.json().catch(() => ({}));
+  let body;
+  try {
+    body = await req.json();
+  } catch (e) {
+    logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { error: e.message });
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { 
+      status: 400, 
+      headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
+  }
   const { message, history = [], topic, fsrsContext, masteryState } = body;
   
   const rawSessionId = body.sessionId || body.session_id;
@@ -139,11 +148,15 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       userId,
     }) as any;
   } catch (err) {
-    logger.error("AI_FAIL", (err as Error).message);
+    logger.error("AI_FAIL", (err as Error).message, { 
+      userId, 
+      correlationId: correlation.correlationId,
+      stack: (err as Error).stack 
+    });
     return new Response(JSON.stringify({
-      content: "## 🎯 BLOCO 1 — MISSÃO DA SESSÃO\nTivemos uma oscilação técnica. Retomamos no tópico: " + (topic || "Geral") + ".",
-      metrics: { generation_ms: Date.now() - aiStart, error: true }
-    }), { status: 200, headers: { "Content-Type": "application/json" } });
+      content: "## 🎯 BLOCO 1 — MISSÃO DA SESSÃO\nTivemos uma oscilação técnica ao processar a resposta. Retomamos no tópico: " + (topic || "Geral") + ".",
+      metrics: { generation_ms: Date.now() - aiStart, error: true, error_detail: (err as Error).message }
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   const aiText = aiResponse.choices?.[0]?.message?.content || "";
@@ -220,5 +233,5 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     content: aiText,
     correlation_id: correlation.correlationId,
     metrics: { generation_ms: generationMs, complexity, fatigue, is_loop: isLoop },
-  }), { headers: { "Content-Type": "application/json" } });
+  }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }));

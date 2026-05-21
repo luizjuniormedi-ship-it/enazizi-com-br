@@ -417,7 +417,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
             toast({ 
               title: "Tutor IA Indisponível", 
-              description: message || "Erro ao conectar com o agente IA", 
+              description: `Falha na requisição: ${message || "Erro desconhecido"}. Verifique se a Edge Function '${functionName}' está publicada e acessível.`, 
               variant: "destructive" 
             });
             setMessages(prev => {
