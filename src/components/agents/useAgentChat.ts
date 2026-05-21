@@ -308,7 +308,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             variant: "destructive"
           });
         }
-      }, 20000);
+      }, 120000); // 120s watchdog for high-quality medical generation
 
       const convId = await history.ensureConversation(text);
       if (convId) {
