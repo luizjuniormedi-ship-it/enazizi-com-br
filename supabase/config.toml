@@ -91,4 +91,7 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.drive-process-single-file]
     verify_jwt = false
+  [functions.tutor-v3-premium]
+    verify_jwt = false
+
 
