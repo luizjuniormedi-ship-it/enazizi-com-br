@@ -386,6 +386,13 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
       };
 
+      const finalizeLoading = () => {
+        clearTimeout(watchdogTimeout);
+        setIsLoading(false);
+        setLoadingStage("");
+        console.log(`[TUTOR] FINALIZED id=${requestId} elapsed=${Date.now() - startTime}ms`);
+      };
+
       const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
@@ -422,6 +429,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           signal: controller.signal,
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
+          onComplete: (finalText) => {
+            console.log(`[TUTOR] STREAM_COMPLETE id=${requestId}`, { len: finalText?.length });
+            finalizeLoading();
+          },
           onError: ({ status, message }) => {
             console.error(`%c[TUTOR_V3_ERROR] ${requestId}`, "background: #ef4444; color: white; padding: 2px 5px;", { 
               status, 
@@ -429,7 +440,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
               requestId,
               elapsed: Date.now() - startTime
             });
-            clearTimeout(watchdogTimeout);
             
             // Increment circuit breaker
             consecutiveErrorsRef.current++;
@@ -456,6 +466,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
               }
               return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
             });
+            finalizeLoading();
           },
         });
 
