@@ -435,6 +435,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         const finalContent = result?.content || assistantSoFar;
         const metrics = result?.metrics;
 
+        // Reset circuit breaker on success
+        consecutiveErrorsRef.current = 0;
+
         if (metrics) {
           setMessages(prev => prev.map((m, i) => 
             (i === prev.length - 1 && m.role === "assistant") ? { ...m, metrics } : m
