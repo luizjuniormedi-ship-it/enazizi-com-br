@@ -38,7 +38,7 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
           </div>
 
           <div>
-            <h2 className="text-base font-black text-white uppercase tracking-wider leading-none">Tutor V2</h2>
+            <h2 className="text-base font-black text-white uppercase tracking-wider leading-none">Tutor V3</h2>
             <div className="flex items-center gap-1.5 mt-1.5">
               <span className="h-1 w-1 rounded-full bg-indigo-500 animate-pulse" />
               <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Premium Active</p>
@@ -102,7 +102,7 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
           <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Cloud V2 Online</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Cloud V3 Online</p>
             </div>
             <Settings className="h-3.5 w-3.5 text-slate-600 hover:text-white transition-colors cursor-pointer" />
           </div>
