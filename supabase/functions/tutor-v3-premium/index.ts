@@ -78,7 +78,7 @@ Cognitive Pattern: ${memoryContext.cognitive_pattern}
   // 3. Call AI via Governance Router
   const aiResponse = await ai({
     taskType: "tutor",
-    complexity: "alta",
+    complexity: "baixa",
     cognitiveState: (masteryState?.toUpperCase() as any) || "NOVATO",
     messages,
     userId

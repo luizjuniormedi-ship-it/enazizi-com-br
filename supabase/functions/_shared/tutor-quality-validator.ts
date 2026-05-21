@@ -31,6 +31,8 @@ export const MANDATORY_BLOCKS = [
 ];
 
 export function validateTutorResponse(text: string): ValidationResult {
+    if (text.length < 100) return { isValid: true, missingBlocks: [], presentBlocks: [], score: 100 }; // Skip for short greetings
+
     const presentBlocks: number[] = [];
     const missingBlocks: number[] = [];
 
