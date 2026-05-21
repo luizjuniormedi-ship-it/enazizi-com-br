@@ -19,8 +19,10 @@ export default function TutorV2Page() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const studyCtx = useStudyContext();
+  const [searchParams] = useSearchParams();
+  const urlTopic = searchParams.get("topic") || searchParams.get("t") || "";
   const { session, isLoading, stats } = useTutorV2Session(sessionId);
-  const [newTopic, setNewTopic] = useState(studyCtx?.topic || "");
+  const [newTopic, setNewTopic] = useState(urlTopic || studyCtx?.topic || "");
   const [isCreating, setIsCreating] = useState(false);
   const [bootStatus, setBootStatus] = useState("");
 
