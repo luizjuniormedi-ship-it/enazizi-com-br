@@ -81,6 +81,8 @@ export async function saveTutorMemory(
     subtopic?: string;
     content: string;
     sessionId?: string | null;
+    masteryLevel?: string;
+    misconceptions?: string[];
   }
 ) {
   if (!userId || !params.topic || !params.content) {
@@ -116,6 +118,8 @@ export async function saveTutorMemory(
       block_title: title,
       explanation_summary: params.content.substring(0, 500) + "...",
       generated_content: { content: params.content },
+      mastery_level: params.masteryLevel || 'initial',
+      misconceptions_detected: params.misconceptions || [],
       updated_at: new Date().toISOString()
     }, {
       onConflict: 'user_id,topic',
