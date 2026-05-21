@@ -96,8 +96,7 @@ export async function saveTutorMemory(
     }, { 
       onConflict: 'user_id,topic' 
     })
-    .select()
-    .single();
+    .select();
 
   if (error) console.error("Error saving tutor memory:", error);
   return memory;
