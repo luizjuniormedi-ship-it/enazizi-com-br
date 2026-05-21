@@ -38,24 +38,23 @@ Para o BLOCO 5, você DEVE gerar uma visualização em JSON usando o tipo "clini
 Exemplo de formato esperado no BLOCO 5:
 ## 🎯 BLOCO 5 — FISIOPATOLOGIA VISUAL
 Aqui está o mapa mental da fisiopatologia:
-```json
-{
+\{
   "type": "clinical_flow",
-  "payload": {
+  "payload": \{
     "title": "Fisiopatologia de [Tema]",
     "nodes": [
-      { "id": "1", "label": "Gatilho Inicial", "kind": "action" },
-      { "id": "2", "label": "Cascata Inflamatória", "kind": "decision" },
-      { "id": "3", "label": "Dano Tecidual", "kind": "outcome" }
+      \{ "id": "1", "label": "Gatilho Inicial", "kind": "action" \},
+      \{ "id": "2", "label": "Cascata Inflamatória", "kind": "decision" \},
+      \{ "id": "3", "label": "Dano Tecidual", "kind": "outcome" \}
     ],
     "edges": [
-      { "from": "1", "to": "2" },
-      { "from": "2", "to": "3" }
+      \{ "from": "1", "to": "2" \},
+      \{ "from": "2", "to": "3" \}
     ]
-  }
-}
-```
+  \}
+\}
 NUNCA diga que "não pode gerar imagens". Você gera IMAGENS ESTRUTURADAS via JSON.
+
 
 `;
 
