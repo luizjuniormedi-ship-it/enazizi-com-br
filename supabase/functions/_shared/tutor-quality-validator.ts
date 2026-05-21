@@ -31,7 +31,17 @@ export const MANDATORY_BLOCKS = [
 ];
 
 export function validateTutorResponse(text: string): ValidationResult {
-    if (text.length < 100) return { isValid: true, missingBlocks: [], presentBlocks: [], score: 100 }; // Skip for short greetings
+    // Skip validation for short responses, greetings, or common transitional phrases
+    const shortText = text.trim().toLowerCase();
+    const isShortInteraction = 
+        text.length < 300 || 
+        /^(oi|olá|ola|bom dia|boa tarde|boa noite|tchau|obrigado|ok|entendido|sim|não|continue|prossiga|pode explicar|explica mais|o que é|quem é|como|por que|ajuda|não entendi|não compreendi)/i.test(shortText) ||
+        !text.includes("## 🎯 BLOCO");
+
+    if (isShortInteraction) {
+        return { isValid: true, missingBlocks: [], presentBlocks: [], score: 100 };
+    }
+
 
     const presentBlocks: number[] = [];
     const missingBlocks: number[] = [];
