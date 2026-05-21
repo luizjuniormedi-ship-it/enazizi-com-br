@@ -22,7 +22,7 @@ export async function buildPedagogicalContext(
 
   // 1. Fetch relevant learning memory blocks
   const { data: blocks } = await supabase
-    .from("tutor_lesson_memory")
+    .from("tutor_learning_memory")
     .select("*")
     .eq("user_id", userId)
     .eq("topic", topic)
@@ -54,7 +54,7 @@ export async function buildPedagogicalContext(
   const effective_analogies = (analogies || []).map(a => a.analogy);
   
   const prior_blocks_summary = (blocks || [])
-    .map(b => `- ${b.title}: ${b.summary || ''}`)
+    .map(b => `- ${b.block_title || b.topic}: ${b.explanation_summary || ''}`)
     .join("\n");
 
   return {
@@ -104,16 +104,14 @@ export async function saveTutorMemory(
 
   // Resilient persistence: upsert by (user_id, topic)
   const { data: memory, error } = await supabase
-    .from("tutor_lesson_memory")
+    .from("tutor_learning_memory")
     .upsert({
       user_id: userId,
-      source_session_id: sourceSessionId,
       topic: params.topic,
       subtopic: params.subtopic,
-      title: title,
-      summary: params.content.substring(0, 500) + "...",
-      structured_content: { content: params.content },
-      status: 'published',
+      block_title: title,
+      explanation_summary: params.content.substring(0, 500) + "...",
+      generated_content: { content: params.content },
       updated_at: new Date().toISOString()
     }, {
       onConflict: 'user_id,topic',
