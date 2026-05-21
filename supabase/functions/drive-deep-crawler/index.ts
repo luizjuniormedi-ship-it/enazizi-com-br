@@ -50,6 +50,12 @@ async function deepCrawl(
   path: string = "root",
   parentId: string | null = null
 ) {
+  // IGNORE "MEDICO LEGISTA"
+  if (path.toUpperCase().includes("MEDICO LEGISTA")) {
+    console.log(`[CRAWL] Skipping blacklisted folder: ${path}`);
+    return;
+  }
+
   const items = await listAllItemsInFolder(folderId, accessToken);
   
   const pdfs = items.filter(i => {
@@ -70,6 +76,9 @@ async function deepCrawl(
   // Register PDFs to main log
   if (pdfs.length > 0) {
     for (const pdf of pdfs) {
+      // Also skip files if the name contains the blacklisted term just in case
+      if (pdf.name.toUpperCase().includes("MEDICO LEGISTA")) continue;
+
       const targetId = pdf.mimeType === "application/vnd.google-apps.shortcut" ? pdf.shortcutDetails?.targetId : pdf.id;
       await supabase.from("drive_ingestion_log").upsert({
         file_id: targetId,
