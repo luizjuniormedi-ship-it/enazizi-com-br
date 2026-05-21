@@ -36,7 +36,7 @@ DIRETRIZES:
 - OBRIGATORIEDADE: Todos os 15 blocos devem estar presentes em TODAS as explicações completas de tópicos.
 `;
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NULL_UUID = "00000000-0000-0000-0000-000000000000";
 
 function isValidUUID(v: unknown): v is string {
@@ -82,7 +82,6 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     body = JSON.parse(rawBody);
   } catch (e) {
     logger.error("JSON_PARSE_FAIL", "Failed to parse request body", { error: e.message });
-    // Fallback body to avoid crash in subsequent destructuring
     body = {};
   }
 
@@ -104,7 +103,6 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   }
   
   // 2. HARDENING: Input Validation & Sanitization
-  // Suporte híbrido: aceita 'message'/'history' ou o array 'messages' do frontend
   let message = String(body.message || "").trim();
   let history = Array.isArray(body.history) ? body.history : (Array.isArray(body.messages) ? body.messages : []);
   
@@ -157,27 +155,18 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const fatigue = estimateStudentFatigue(history);
   const isHighFatigue = fatigue > 0.8;
 
-  // 4. MEMORY HYDRATION: Try/Catch Protected
+  // 4. MEMORY HYDRATION
   const memoryLookupStart = Date.now();
   let memoryContext;
   try {
     memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic);
   } catch (e) {
     logger.warn("MEMORY_LOOKUP_FAIL", (e as Error).message);
-    memoryContext = {
-      cached_blocks: [],
-      previous_mastery: "initial",
-      prior_blocks_summary: "",
-      effective_analogies: [],
-      known_misconceptions: [],
-      cognitive_pattern: "unknown",
-      weak_topics: [],
-      retention_risk: 0.2
-    };
+    memoryContext = { cached_blocks: [] };
   }
   const memoryLookupMs = Date.now() - memoryLookupStart;
 
-  // 5. AI EXECUTION: Hardened Proxy Call
+  // 5. AI EXECUTION
   let complexity: "baixa" | "media" | "alta" = "alta";
   const msgLower = message.toLowerCase();
   const isGreeting = /^(oi|olá|ola|bom dia|boa tarde|boa noite|tudo bem|e ai|ei)/i.test(msgLower);
@@ -199,70 +188,52 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   let aiText = "";
   let aiError = null;
 
-  // 6. BACKGROUND WORK: Definition (must be before waitUntil usage)
+  // 6. BACKGROUND WORK: Definition
   const backgroundWork = async (finalText: string, metrics: any) => {
     try {
-      const pStart = Date.now();
-      
-      // 1. Save memory if session exists & we have content
       if (sessionId && finalText) {
-        try {
-          await saveTutorMemory(supabaseAdmin, userId, {
-            topic,
-            content: finalText,
-            sessionId: sessionId,
-            masteryLevel: masteryState
-          });
-        } catch (e) {
-          logger.warn("SAVE_MEMORY_FAIL", (e as Error).message);
-        }
-      }
-
-      // 2. Perform Pedagogical Audit
-      if (finalText) {
-        try {
-          const audit = await auditPedagogicalQuality(finalText, topic);
-          await supabaseAdmin.from("pedagogical_quality_audits").insert({
-            content_type: "tutor_v3_response",
-            quality_score: audit.quality_score,
-            medical_coherence_passed: audit.medical_coherence_passed,
-            guideline_compliance_passed: audit.guideline_compliance_passed,
-            safety_check_passed: audit.safety_check_passed,
-            detected_hallucinations: audit.detected_hallucinations,
-            audit_log: { topic, correlation_id: correlation.correlationId, userId }
-          });
-        } catch (e) {
-          logger.warn("AUDIT_FAIL", (e as Error).message);
-        }
-      }
-
-      // 3. Record metrics
-      try {
-        await supabaseAdmin.from("tutor_runtime_metrics").insert({
-          user_id: userId,
-          correlation_id: correlation.correlationId,
-          function_name: "tutor-v3-premium",
-          tutor_generation_ms: metrics.generation_ms,
-          memory_lookup_ms: memoryLookupMs,
-          memory_hit: !!metrics.memory_hit,
-          prompt_tokens: metrics.prompt_tokens || 0,
-          completion_tokens: metrics.completion_tokens || 0,
-          model_used: metrics.model_used || "unknown",
-          topic: topic,
-          metadata: { 
-            complexity, 
-            is_loop: isLoop, 
-            fatigue, 
-            sessionId,
-            error: metrics.error ? (metrics.error as Error).message : null 
-          }
+        await saveTutorMemory(supabaseAdmin, userId, {
+          topic,
+          content: finalText,
+          sessionId: sessionId,
+          masteryLevel: masteryState
         });
-      } catch (e) {
-        logger.warn("METRICS_FAIL", (e as Error).message);
       }
 
+      if (finalText) {
+        const audit = await auditPedagogicalQuality(finalText, topic);
+        await supabaseAdmin.from("pedagogical_quality_audits").insert({
+          content_type: "tutor_v3_response",
+          quality_score: audit.quality_score,
+          medical_coherence_passed: audit.medical_coherence_passed,
+          guideline_compliance_passed: audit.guideline_compliance_passed,
+          safety_check_passed: audit.safety_check_passed,
+          detected_hallucinations: audit.detected_hallucinations,
+          audit_log: { topic, correlation_id: correlation.correlationId, userId }
+        });
+      }
+
+      await supabaseAdmin.from("tutor_runtime_metrics").insert({
+        user_id: userId,
+        correlation_id: correlation.correlationId,
+        function_name: "tutor-v3-premium",
+        tutor_generation_ms: metrics.generation_ms,
+        memory_lookup_ms: memoryLookupMs,
+        memory_hit: !!metrics.memory_hit,
+        prompt_tokens: metrics.prompt_tokens || 0,
+        completion_tokens: metrics.completion_tokens || 0,
+        model_used: metrics.model_used || "unknown",
+        topic: topic,
+        metadata: { 
+          complexity, 
+          is_loop: isLoop, 
+          fatigue, 
+          sessionId,
+          error: metrics.error ? String(metrics.error) : null 
+        }
+      });
     } catch (e) {
-      logger.warn("BACKGROUND_WORK_FAIL", (e as Error).message);
+      console.warn("[tutor-v3] Background work failed:", e.message);
     }
   };
 
@@ -277,32 +248,19 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     if (aiResponse instanceof Response) {
       logger.info("TUTOR_V3_STREAM_START", "Starting streaming response");
-      
-      // In a stream, we can't easily wait for the full text to do background work
-      // so we log a basic entry now and potentially update it later (or just log minimal metrics)
       if (waitUntil) {
-        waitUntil(backgroundWork("", { 
-          generation_ms: 0, 
-          memory_hit: false, 
-          model_used: "streaming" 
-        }));
+        waitUntil(backgroundWork("", { generation_ms: 0, memory_hit: false, model_used: "streaming" }));
       }
-      
       return new Response(aiResponse.body, {
         headers: { ...corsHeaders, "Content-Type": "text/event-stream" }
       });
     }
     
-    aiText = aiResponse?.choices?.[0]?.message?.content || 
-             aiResponse?.content || 
-             "";
-    
-    logger.info("TUTOR_V3_AI_PROXY_STATUS", "AI Success (Non-stream fallback)", { 
-      model: aiResponse?.model 
-    });
+    aiText = aiResponse?.choices?.[0]?.message?.content || aiResponse?.content || "";
+    logger.info("TUTOR_V3_AI_PROXY_STATUS", "AI Success", { model: aiResponse?.model });
   } catch (err) {
     aiError = err;
-    logger.error("TUTOR_V3_FAILURE_POINT", "AI_PROXY_FAIL", { error: (err as Error).message });
+    logger.error("TUTOR_V3_FAILURE_POINT", "AI_PROXY_FAIL", { error: err.message });
     aiText = "Sou seu Tutor ENAZIZI. Tivemos uma instabilidade temporária ao processar sua dúvida sobre " + topic + ", mas posso continuar te ajudando com um resumo clínico estratégico do tema. O que especificamente você gostaria de revisar sobre esse tópico agora?";
   }
 
@@ -321,25 +279,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     error: aiError
   };
 
-  if (waitUntil) {
-    waitUntil(backgroundWork(aiText, metrics));
-  } else {
-    await backgroundWork(aiText, metrics);
-  }
+  if (waitUntil) waitUntil(backgroundWork(aiText, metrics));
+  else await backgroundWork(aiText, metrics);
 
-  const finalResponse = {
-    content: aiText,
-    correlation_id: correlation.correlationId,
-    metrics
-  };
-
-  logger.info("TUTOR_V3_FINAL_RESPONSE", "Sending response", { 
-    contentLength: aiText.length,
-    latency: finalResponse.metrics.latency_ms
-  });
-
-  return new Response(JSON.stringify(finalResponse), { 
+  return new Response(JSON.stringify({ content: aiText, correlation_id: correlation.correlationId, metrics }), { 
     headers: { ...corsHeaders, "Content-Type": "application/json" } 
   });
-});
 }));
