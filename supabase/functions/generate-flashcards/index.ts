@@ -36,7 +36,8 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
     topic: topic,
     status: 'processing',
     total_cards_expected: quantity,
-    correlation_id: correlationId
+    correlation_id: correlationId,
+    request_id: requestId
   }).select().single();
 
   if (jobErr) throw jobErr;
