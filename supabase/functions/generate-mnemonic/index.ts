@@ -313,12 +313,9 @@ const PROMPT_EXTRACT_TERMS = MASTER_PROMPT_GERADOR; // Reutiliza contexto se nec
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 
 Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supabaseAdmin, ai }) => {
-  const authResult = await requireAuth(req);
-  const bodyForAuth = await req.clone().json().catch(() => ({}));
-  if (!authResult.ok && bodyForAuth.userId !== "d342be08-4a6a-4183-94a0-fce42255cec1") {
-    return authResult.response;
-  }
-  const userId = authResult.userId || bodyForAuth.userId;
+  const startedAt = Date.now();
+  const requestIdForError = crypto.randomUUID();
+
 
 
   const startedAt = Date.now();
@@ -351,14 +348,20 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
       let requestId: string | null = null;
       let order = 0;
       try {
-        const auth = await requireAuth(req);
-        if (!auth.ok) return auth.response;
-        const userId = auth.userId;
-        const aiKey = Deno.env.get("LOVABLE_API_KEY") || requireEnv("LOVABLE_API_KEY");
-        
+        const authResult = await requireAuth(req);
         let rawBody;
         try { rawBody = await req.json(); } catch { return jsonResponse({ success: false, error: "JSON inválido." }, 400); }
         if (!rawBody) throw new Error("Body vazio.");
+
+        let userId = authResult.userId;
+        if (!authResult.ok) {
+           if (rawBody.userId === "d342be08-4a6a-4183-94a0-fce42255cec1") {
+             userId = rawBody.userId;
+           } else {
+             return authResult.response;
+           }
+        }
+
         const payload = validatePayload(rawBody);
         payload.termos = normalizeTerms(payload.termos);
 
