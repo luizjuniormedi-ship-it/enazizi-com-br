@@ -275,6 +275,7 @@ Always end with a question to validate before moving to the NEXT block.
       messages: aiMessages,
       userId,
       stream: false, 
+      expectedBlock: currentBlock
     });
 
     console.log("[TUTOR_21_AI_CALL_SUCCESS]");
