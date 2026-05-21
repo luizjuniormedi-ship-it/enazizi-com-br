@@ -131,7 +131,7 @@ export async function callAi(
         const errorText = await res.text();
         
         // Report health
-        waitUntil((async () => {
+        const reportError = (async () => {
           await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
             provider,
             model,
@@ -139,7 +139,8 @@ export async function callAi(
             latencyMs: latency,
             error: errorText
           });
-        })());
+        })();
+        if (waitUntil) waitUntil(reportError);
 
         if (res.status === 400 && (errorText.includes("invalid model") || errorText.includes("Unsupported model"))) {
           logger.warn("AI_MODEL_INVALID", `Model ${model} rejected. Retrying chain.`);
