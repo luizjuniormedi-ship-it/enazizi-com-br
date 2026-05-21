@@ -29,7 +29,7 @@ export interface EnterpriseContext {
   /**
    * High-level AI call with integrated governance, quality lock, and cost tracking.
    */
-  ai: (request: AiRequest & { cognitiveState?: CognitiveState, complexity?: "baixa" | "média" | "alta" }, options?: { skipQualityLock?: boolean, retries?: number }) => Promise<any>;
+  ai: (request: AiRequest & { cognitiveState?: CognitiveState, complexity?: "baixa" | "média" | "alta", expectedBlock?: number | string }, options?: { skipQualityLock?: boolean, retries?: number }) => Promise<any>;
 }
 
 export type EnterpriseHandler = (ctx: EnterpriseContext) => Promise<Response>;
@@ -71,7 +71,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
           // Quality Lock
           if (!options.skipQualityLock) {
             const content = response.choices?.[0]?.message?.content || "";
-            const quality = validateTutorResponse(content);
+            const quality = validateTutorResponse(content, { expectedBlock: (request as any).expectedBlock });
             
             // Log quality results
             const logQuality = (async () => {
