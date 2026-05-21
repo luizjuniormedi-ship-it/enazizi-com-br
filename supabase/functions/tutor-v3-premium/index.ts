@@ -1,6 +1,5 @@
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { buildPedagogicalContext, saveTutorMemory } from "../_shared/tutor-memory-helpers.ts";
-import { parseAiJson } from "../_shared/ai-fetch.ts";
 
 const SYSTEM_PROMPT_V3 = `
 Você é o TUTOR IA V3 PREMIUM do ENAZIZI, um PRECEPTOR MÉDICO DE ELITE.
@@ -34,14 +33,20 @@ DIRETRIZES:
 - Se detectar cansaço ou erro recorrente, ative RECOVERY MODE.
 - MEMÓRIA LONGITUDINAL: Utilize o histórico de explicações e analogias já fornecidas para evitar redundância e garantir continuidade.
 - OBRIGATORIEDADE: Todos os 15 blocos devem estar presentes em TODAS as explicações completas de tópicos.
-
 `;
 
-Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
-  const body = await req.json();
-  const { message, history = [], topic, fsrsContext, masteryState, sessionId } = body;
-  
-  // Hardening: check multiple sources for userId
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const NULL_UUID = "00000000-0000-0000-0000-000000000000";
+
+function isValidUUID(v: unknown): v is string {
+  return typeof v === "string" && UUID_REGEX.test(v) && v !== NULL_UUID;
+}
+
+Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
+  const runtimeStart = Date.now();
+  const body = await req.json().catch(() => ({}));
+  const { message, history = [], topic, fsrsContext, masteryState } = body;
+  const sessionId = isValidUUID(body.sessionId) ? body.sessionId : null;
   const userId = correlation.userId || body.userId || body.user_id;
 
   if (!userId) {
@@ -49,74 +54,120 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     throw new Error("User ID is required for longitudinal memory.");
   }
 
-  // 1. Build Longitudinal Memory Context
-  const memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic || 'Geral');
-  
-  // 2. Prepare AI Call with Memory Integration
+  if (!message || typeof message !== "string") {
+    throw new Error("Message is required.");
+  }
+
+  // 1. Hidratação longitudinal — tolerante a falha
+  const memoryLookupStart = Date.now();
+  let memoryContext;
+  try {
+    memoryContext = await buildPedagogicalContext(supabaseAdmin, userId, topic || "Geral");
+  } catch (e) {
+    logger.warn("MEMORY_LOOKUP_FAIL", (e as Error).message);
+    memoryContext = {
+      previous_mastery: "initial",
+      known_misconceptions: [],
+      effective_analogies: [],
+      weak_topics: [],
+      retention_risk: 0.2,
+      prior_blocks_summary: "",
+      cognitive_pattern: "Visual/Logístico",
+      cached_blocks: [],
+    };
+  }
+  const memoryLookupMs = Date.now() - memoryLookupStart;
+
+  // 2. Prompt com contexto cognitivo + memória
   const cognitiveContext = `
 [COGNITIVE STATE]
-Mastery: ${masteryState || memoryContext.previous_mastery || 'initial'}
+Mastery: ${masteryState || memoryContext.previous_mastery || "initial"}
 FSRS Context: ${JSON.stringify(fsrsContext || {})}
-Topic: ${topic || 'Geral'}
+Topic: ${topic || "Geral"}
 
 [LONGITUDINAL MEMORY]
-Prior Explanations: ${memoryContext.prior_blocks_summary}
-Effective Analogies: ${memoryContext.effective_analogies.join(", ")}
-Known Misconceptions: ${memoryContext.known_misconceptions.join(", ")}
+Prior Explanations: ${memoryContext.prior_blocks_summary || "(primeira interação neste tema)"}
+Effective Analogies: ${(memoryContext.effective_analogies || []).join(", ") || "(nenhuma registrada)"}
+Known Misconceptions: ${(memoryContext.known_misconceptions || []).join(", ") || "(nenhuma)"}
 Cognitive Pattern: ${memoryContext.cognitive_pattern}
-    `;
+`;
 
   const messages = [
     { role: "system", content: `${SYSTEM_PROMPT_V3}\n${cognitiveContext}` },
-    ...history.slice(-6).map((m: any) => ({
+    ...(Array.isArray(history) ? history.slice(-6) : []).map((m: any) => ({
       role: m.role,
-      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+      content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
     })),
-    { role: "user", content: message }
+    { role: "user", content: message },
   ];
 
-  // 3. Call AI via Governance Router
+  // 3. AI Router + Governance + Quality Lock
   const aiResponse = await ai({
     taskType: "tutor",
     complexity: "baixa",
-    cognitiveState: (masteryState?.toUpperCase() as any) || "NOVATO",
+    cognitiveState: (masteryState?.toUpperCase?.() as any) || "NOVATO",
     messages,
-    userId
+    userId,
   });
 
   const aiText = aiResponse.choices?.[0]?.message?.content || "Erro ao gerar resposta.";
+  const generationMs = Date.now() - runtimeStart;
 
-  // 4. Async Memory Storage (Non-blocking)
-  // We can use Deno.onUnhandledRejection if we really want to separate but enterpriseEdgeHandler handles the main flow.
-  // For now just await or fire-and-forget
-  try {
-    // Only save to memory if sessionId is valid (not dummy)
-    const isValidSession = sessionId && sessionId !== '00000000-0000-0000-0000-000000000000';
-    
-    if (isValidSession) {
-      await saveTutorMemory(supabaseAdmin, userId, {
-        topic: topic || 'Geral',
-        content: aiText,
-        sessionId
+  // 4. Persistência idempotente + telemetria (non-blocking)
+  let duplicateKeyRecovered = false;
+  const persistenceStart = Date.now();
+
+  const persistAndLog = (async () => {
+    try {
+      if (sessionId) {
+        try {
+          await saveTutorMemory(supabaseAdmin, userId, {
+            topic: topic || "Geral",
+            content: aiText,
+            sessionId,
+          });
+        } catch (e) {
+          const msg = (e as Error).message || "";
+          if (msg.includes("duplicate") || msg.includes("23505")) {
+            duplicateKeyRecovered = true;
+            logger.info("MEMORY_UPSERT_RECOVERED", "Duplicate key handled via upsert", { topic });
+          } else {
+            logger.warn("TUTOR_MEMORY_SAVE_FAIL", msg);
+          }
+        }
+      }
+
+      await supabaseAdmin.from("tutor_runtime_metrics").insert({
+        user_id: userId,
+        correlation_id: correlation.correlationId,
+        function_name: "tutor-v3-premium",
+        tutor_generation_ms: generationMs,
+        memory_lookup_ms: memoryLookupMs,
+        persistence_ms: Date.now() - persistenceStart,
+        memory_hit: (memoryContext.cached_blocks?.length ?? 0) > 0,
+        duplicate_key_recovered: duplicateKeyRecovered,
+        prompt_tokens: aiResponse.usage?.prompt_tokens || 0,
+        completion_tokens: aiResponse.usage?.completion_tokens || 0,
+        model_used: aiResponse.model || null,
+        topic: topic || "Geral",
+        metadata: { has_session: !!sessionId },
       });
+    } catch (telemetryErr) {
+      logger.warn("TUTOR_TELEMETRY_FAIL", (telemetryErr as Error).message);
     }
-    
-    // Log additional tutor metrics
-    await supabaseAdmin.from("tutor_runtime_metrics").insert({
-      user_id: userId,
-      tutor_generation_ms: 0,
-      prompt_tokens: aiResponse.usage?.prompt_tokens || 0,
-      completion_tokens: aiResponse.usage?.completion_tokens || 0,
-      memory_hit: false
-    });
-  } catch (e) {
-    logger.warn("TUTOR_MEMORY_SAVE_FAIL", e.message);
-  }
+  })();
+
+  if (waitUntil) waitUntil(persistAndLog); else await persistAndLog;
 
   return new Response(JSON.stringify({
     content: aiText,
-    correlation_id: correlation.correlationId
+    correlation_id: correlation.correlationId,
+    metrics: {
+      generation_ms: generationMs,
+      memory_lookup_ms: memoryLookupMs,
+      memory_hit: (memoryContext.cached_blocks?.length ?? 0) > 0,
+    },
   }), {
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json" },
   });
 }));
