@@ -183,6 +183,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
   const aiStart = Date.now();
   let aiResponse;
+  let aiText = "";
+  let aiError = null;
+
   try {
     aiResponse = await ai({
       taskType: "tutor",
@@ -190,21 +193,21 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       messages,
       userId,
     });
+    
+    // RESILIENT PARSER: Support multiple formats
+    aiText = aiResponse?.choices?.[0]?.message?.content || 
+             aiResponse?.content || 
+             aiResponse?.response || 
+             "";
+    
+    if (!aiText) {
+      throw new Error("AI returned empty content");
+    }
   } catch (err) {
-    logger.error("AI_PROXY_CRITICAL_FAIL", (err as Error).message);
-    // FALLBACK PREMIUM RESPONSE
-    return new Response(JSON.stringify({
-      content: "Sou seu Tutor ENAZIZI. Houve uma instabilidade temporária ao processar sua dúvida, mas já estou monitorando isso. Podemos tentar novamente agora ou você pode me perguntar sobre outro aspecto de " + topic + "? Estou aqui para ajudar.",
-      correlation_id: correlation.correlationId,
-      metrics: { latency_ms: Date.now() - runtimeStart, error: true, memory_hit: false }
-    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    aiError = err;
+    logger.error("AI_PROXY_FAIL", (err as Error).message);
+    aiText = "Sou seu Tutor ENAZIZI. Houve uma instabilidade temporária ao processar sua dúvida, mas já estou monitorando isso. Podemos tentar novamente agora ou você pode me perguntar sobre outro aspecto de " + topic + "? Estou aqui para ajudar.";
   }
-
-  // 6. RESILIENT PARSER: Support multiple formats
-  const aiText = aiResponse?.choices?.[0]?.message?.content || 
-                 aiResponse?.content || 
-                 aiResponse?.response || 
-                 "Não consegui gerar a resposta agora. Vamos tentar novamente em instantes.";
 
   const generationMs = Date.now() - aiStart;
   const memoryHit = (memoryContext.cached_blocks?.length ?? 0) > 0;
