@@ -24261,12 +24261,21 @@ export type Database = {
           audit_ms: number | null
           block_transition_ms: number | null
           completion_tokens: number | null
+          correlation_id: string | null
           created_at: string | null
+          duplicate_key_recovered: boolean | null
+          function_name: string | null
           id: string
           memory_hit: boolean | null
+          memory_lookup_ms: number | null
+          metadata: Json | null
+          model_used: string | null
+          persistence_ms: number | null
           prompt_tokens: number | null
           session_id: string | null
+          streaming_truncated: boolean | null
           tokens_saved: number | null
+          topic: string | null
           tutor_generation_ms: number | null
           user_id: string | null
         }
@@ -24274,12 +24283,21 @@ export type Database = {
           audit_ms?: number | null
           block_transition_ms?: number | null
           completion_tokens?: number | null
+          correlation_id?: string | null
           created_at?: string | null
+          duplicate_key_recovered?: boolean | null
+          function_name?: string | null
           id?: string
           memory_hit?: boolean | null
+          memory_lookup_ms?: number | null
+          metadata?: Json | null
+          model_used?: string | null
+          persistence_ms?: number | null
           prompt_tokens?: number | null
           session_id?: string | null
+          streaming_truncated?: boolean | null
           tokens_saved?: number | null
+          topic?: string | null
           tutor_generation_ms?: number | null
           user_id?: string | null
         }
@@ -24287,12 +24305,21 @@ export type Database = {
           audit_ms?: number | null
           block_transition_ms?: number | null
           completion_tokens?: number | null
+          correlation_id?: string | null
           created_at?: string | null
+          duplicate_key_recovered?: boolean | null
+          function_name?: string | null
           id?: string
           memory_hit?: boolean | null
+          memory_lookup_ms?: number | null
+          metadata?: Json | null
+          model_used?: string | null
+          persistence_ms?: number | null
           prompt_tokens?: number | null
           session_id?: string | null
+          streaming_truncated?: boolean | null
           tokens_saved?: number | null
+          topic?: string | null
           tutor_generation_ms?: number | null
           user_id?: string | null
         }
