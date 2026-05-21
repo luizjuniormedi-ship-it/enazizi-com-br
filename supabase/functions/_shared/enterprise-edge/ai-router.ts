@@ -38,7 +38,8 @@ function calculateCost(model: string, usage: { prompt_tokens: number, completion
 export async function callAi(
   payload: AiRequest,
   logger: StructuredLogger,
-  supabaseAdmin: any
+  supabaseAdmin: any,
+  waitUntil?: (promise: Promise<any>) => void
 ) {
   const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
