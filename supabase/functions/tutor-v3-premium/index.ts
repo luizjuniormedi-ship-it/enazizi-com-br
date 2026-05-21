@@ -219,17 +219,21 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       
       // 1. Save memory if session exists
       if (sessionId) {
-        await saveTutorMemory(supabaseAdmin, userId, {
-          topic,
-          content: aiText,
-          sessionId: sessionId,
-        });
+        try {
+          await saveTutorMemory(supabaseAdmin, userId, {
+            topic,
+            content: aiText,
+            sessionId: sessionId,
+          });
+        } catch (e) {
+          logger.warn("SAVE_MEMORY_FAIL", (e as Error).message);
+        }
       }
 
       // 2. Perform Pedagogical Audit
       try {
         const audit = await auditPedagogicalQuality(aiText, topic);
-        await supabaseAdmin.from("pedagogical_quality_audits").insert({
+        const { error: auditError } = await supabaseAdmin.from("pedagogical_quality_audits").insert({
           content_type: "tutor_v3_response",
           quality_score: audit.quality_score,
           medical_coherence_passed: audit.medical_coherence_passed,
@@ -238,30 +242,36 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           detected_hallucinations: audit.detected_hallucinations,
           audit_log: { topic, correlation_id: correlation.correlationId, userId }
         });
+        if (auditError) throw auditError;
       } catch (e) {
         logger.warn("AUDIT_FAIL", (e as Error).message);
       }
 
       // 3. Record metrics
-      await supabaseAdmin.from("tutor_runtime_metrics").insert({
-        user_id: userId,
-        correlation_id: correlation.correlationId,
-        function_name: "tutor-v3-premium",
-        tutor_generation_ms: generationMs,
-        memory_lookup_ms: memoryLookupMs,
-        memory_hit: !!memoryHit,
-        prompt_tokens: aiResponse?.usage?.prompt_tokens || 0,
-        completion_tokens: aiResponse?.usage?.completion_tokens || 0,
-        model_used: aiResponse?.model || "unknown",
-        topic: topic,
-        metadata: { 
-          complexity, 
-          is_loop: isLoop, 
-          fatigue, 
-          sessionId,
-          error: aiError ? (aiError as Error).message : null 
-        }
-      });
+      try {
+        const { error: metricsError } = await supabaseAdmin.from("tutor_runtime_metrics").insert({
+          user_id: userId,
+          correlation_id: correlation.correlationId,
+          function_name: "tutor-v3-premium",
+          tutor_generation_ms: generationMs,
+          memory_lookup_ms: memoryLookupMs,
+          memory_hit: !!memoryHit,
+          prompt_tokens: aiResponse?.usage?.prompt_tokens || 0,
+          completion_tokens: aiResponse?.usage?.completion_tokens || 0,
+          model_used: aiResponse?.model || "unknown",
+          topic: topic,
+          metadata: { 
+            complexity, 
+            is_loop: isLoop, 
+            fatigue, 
+            sessionId,
+            error: aiError ? (aiError as Error).message : null 
+          }
+        });
+        if (metricsError) throw metricsError;
+      } catch (e) {
+        logger.warn("METRICS_FAIL", (e as Error).message);
+      }
 
     } catch (e) {
       logger.warn("BACKGROUND_WORK_FAIL", (e as Error).message);
