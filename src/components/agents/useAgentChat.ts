@@ -188,8 +188,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       // [TUTOR_01_SEND_CLICKED]
       console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId}`);
       
-      const text = overridePrompt || input.trim();
-      
       // [TUTOR_02_MESSAGE_TEXT]
       console.log(`[TUTOR_02_MESSAGE_TEXT] text="${text.slice(0, 50)}..."`);
 
@@ -400,7 +398,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           console.log(`[TUTOR_25_SET_MESSAGES_CALLED] id=${requestId}`);
           
           setMessages((prev) => {
-            const newMessages = [...prev, { role: "assistant", content: assistantSoFar, bibliography: ragBibliography }];
+            const newMessages: Msg[] = [...prev, { role: "assistant", content: assistantSoFar, bibliography: ragBibliography }];
             // [TUTOR_26_MESSAGES_AFTER_APPEND]
             console.log(`[TUTOR_26_MESSAGES_AFTER_APPEND] count=${newMessages.length}`);
             return newMessages;
