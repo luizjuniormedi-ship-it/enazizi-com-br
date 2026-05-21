@@ -402,6 +402,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             console.error(`[TUTOR] SEND_FAILED id=${requestId}`, { status, message });
             clearTimeout(watchdogTimeout);
             
+            // Increment circuit breaker
+            consecutiveErrorsRef.current++;
+            lastErrorTimeRef.current = Date.now();
+
             telemetry.track("tutor_error_detected", {
               requestId,
               status,
