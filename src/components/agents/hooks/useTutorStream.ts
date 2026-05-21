@@ -163,11 +163,17 @@ export function useTutorStream() {
       // Helper: fetch with current session token. Used twice so we can
       // transparently refresh + retry on 401 (post-Sprint-1 hardening).
       const doFetch = async (token: string) => {
+        const correlationId = (body.correlation_id as string) || (body.requestId as string) || crypto.randomUUID();
+        // [TUTOR_05_INVOKE_START]
+        console.log(`[TUTOR_05_INVOKE_START] correlationId=${correlationId}`);
+        // [TUTOR_06_FUNCTION_NAME]
+        console.log(`[TUTOR_06_FUNCTION_NAME] function=${url}`);
+
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          "x-correlation-id": (body.correlation_id as string) || crypto.randomUUID(),
+          "x-correlation-id": correlationId,
         };
         console.log(`[useTutorStream] Requesting ${url}`, { correlationId: headers["x-correlation-id"], method: "POST" });
         
@@ -249,8 +255,16 @@ export function useTutorStream() {
         if (isJson) {
           const data = await resp.json();
           console.log("[TUTOR_UI_RESPONSE_RAW] JSON:", data);
-          const content = data.content || data.message || data.answer || data.response || "";
+          // [TUTOR_07_INVOKE_RESPONSE_RAW]
+          console.log(`[TUTOR_07_INVOKE_RESPONSE_RAW]`, data);
           
+          // [TUTOR_22_FRONTEND_DATA_RECEIVED]
+          console.log("[TUTOR_22_FRONTEND_DATA_RECEIVED] requestId=" + body.requestId, data);
+          
+          const content = data.content || data.message || data.answer || data.response || "";
+          // [TUTOR_23_CONTENT_EXTRACTED]
+          console.log(`[TUTOR_23_CONTENT_EXTRACTED] contentLen=${content?.length}`);
+
           if (!content && data.ok === false) {
             onError?.({ status: resp.status, message: data.message || "Erro na resposta da IA" });
             return null;
@@ -311,6 +325,9 @@ export function useTutorStream() {
           return assistantSoFar ? { content: assistantSoFar } : null;
         }
         console.error("[useTutorStream] error:", e);
+        // [TUTOR_08_INVOKE_ERROR_RAW]
+        console.log(`[TUTOR_08_INVOKE_ERROR_RAW]`, e);
+        
         const errorMessage = e instanceof Error ? e.message : "Erro de conexão com o Tutor";
         const isNetworkError = errorMessage.includes("Failed to fetch") || 
                               errorMessage.includes("Load failed") || 

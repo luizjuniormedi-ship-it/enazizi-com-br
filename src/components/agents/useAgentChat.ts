@@ -185,6 +185,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       
       const text = overridePrompt || input.trim();
 
+      // [TUTOR_01_SEND_CLICKED]
+      console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId}`);
+      
+      const text = overridePrompt || input.trim();
+      
+      // [TUTOR_02_MESSAGE_TEXT]
+      console.log(`[TUTOR_02_MESSAGE_TEXT] text="${text.slice(0, 50)}..."`);
+
+      // [TUTOR_03_AUTH_SESSION]
+      console.log(`[TUTOR_03_AUTH_SESSION] userId=${user?.id} hasSession=${!!history.activeConversationId}`);
+
       // [TUTOR_V3_INVOKE] Real-time Forensics
       console.log(`%c[TUTOR_V3_INVOKE] ${requestId}`, "background: #10b981; color: white; padding: 2px 5px; border-radius: 2px;", {
         function: functionName,
@@ -382,8 +393,18 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
         if (!assistantMsgCreated) {
           assistantMsgCreated = true;
-          console.log(`[TUTOR_UI_MESSAGE_APPENDED] id=${requestId}`);
-          setMessages((prev) => [...prev, { role: "assistant", content: assistantSoFar, bibliography: ragBibliography }]);
+          // [TUTOR_24_ASSISTANT_MESSAGE_CREATED]
+          console.log(`[TUTOR_24_ASSISTANT_MESSAGE_CREATED] id=${requestId}`);
+          
+          // [TUTOR_25_SET_MESSAGES_CALLED]
+          console.log(`[TUTOR_25_SET_MESSAGES_CALLED] id=${requestId}`);
+          
+          setMessages((prev) => {
+            const newMessages = [...prev, { role: "assistant", content: assistantSoFar, bibliography: ragBibliography }];
+            // [TUTOR_26_MESSAGES_AFTER_APPEND]
+            console.log(`[TUTOR_26_MESSAGES_AFTER_APPEND] count=${newMessages.length}`);
+            return newMessages;
+          });
         } else {
           setMessages((prev) =>
             prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar, bibliography: ragBibliography } : m))
@@ -394,6 +415,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       const finalizeLoading = () => {
         clearTimeout(watchdogTimeout);
         setIsLoading(false);
+        // [TUTOR_27_LOADING_FALSE]
+        console.log(`[TUTOR_27_LOADING_FALSE] id=${requestId}`);
         setLoadingStage("");
         console.log(`[TUTOR_UI_LOADING_FALSE] id=${requestId} elapsed=${Date.now() - startTime}ms`);
       };
@@ -426,6 +449,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           } : undefined
         };
 
+        // [TUTOR_04_PAYLOAD_BUILT]
+        console.log(`[TUTOR_04_PAYLOAD_BUILT] requestId=${requestId}`, requestPayload);
+        
         console.log(`%c[TUTOR_V3_PAYLOAD] ${requestId}`, "color: #3b82f6", requestPayload);
 
         const result = await streamResponse({
