@@ -125,7 +125,7 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
       <div className="flex gap-1">
         <ActionButton 
           icon={RefreshCw} 
-          label="Mudar Aula" 
+          label="Mudar de Assunto" 
           onClick={handleChangeTopic}
         />
         <ActionButton 
