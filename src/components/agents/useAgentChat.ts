@@ -103,7 +103,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const isAutoStartingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
+  const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, '')}/functions/v1/${functionName}`;
 
   const {
     pendingSession,
