@@ -11460,10 +11460,12 @@ export type Database = {
       }
       flashcard_generation_jobs: {
         Row: {
+          correlation_id: string | null
           created_at: string
           error_message: string | null
           id: string
           metadata: Json | null
+          request_id: string | null
           status: string
           topic: string | null
           total_cards_expected: number | null
@@ -11473,10 +11475,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          correlation_id?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
           metadata?: Json | null
+          request_id?: string | null
           status?: string
           topic?: string | null
           total_cards_expected?: number | null
@@ -11486,10 +11490,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          correlation_id?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
           metadata?: Json | null
+          request_id?: string | null
           status?: string
           topic?: string | null
           total_cards_expected?: number | null
@@ -14971,11 +14977,13 @@ export type Database = {
       }
       mnemonic_requests: {
         Row: {
+          correlation_id: string | null
           created_at: string
           estilo: string | null
           id: string
           idioma: string | null
           publico: string | null
+          request_id: string | null
           source: string | null
           status: string
           tema: string
@@ -14984,11 +14992,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          correlation_id?: string | null
           created_at?: string
           estilo?: string | null
           id?: string
           idioma?: string | null
           publico?: string | null
+          request_id?: string | null
           source?: string | null
           status?: string
           tema: string
@@ -14997,11 +15007,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          correlation_id?: string | null
           created_at?: string
           estilo?: string | null
           id?: string
           idioma?: string | null
           publico?: string | null
+          request_id?: string | null
           source?: string | null
           status?: string
           tema?: string
@@ -15023,6 +15035,7 @@ export type Database = {
           auditor_pedagogical_feedback: string | null
           cena_visual: string | null
           clinical_relevance: number | null
+          correlation_id: string | null
           created_at: string
           emotional_strength: number | null
           explicacao_didatica: string | null
@@ -15060,6 +15073,7 @@ export type Database = {
           auditor_pedagogical_feedback?: string | null
           cena_visual?: string | null
           clinical_relevance?: number | null
+          correlation_id?: string | null
           created_at?: string
           emotional_strength?: number | null
           explicacao_didatica?: string | null
@@ -15097,6 +15111,7 @@ export type Database = {
           auditor_pedagogical_feedback?: string | null
           cena_visual?: string | null
           clinical_relevance?: number | null
+          correlation_id?: string | null
           created_at?: string
           emotional_strength?: number | null
           explicacao_didatica?: string | null
