@@ -392,7 +392,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       };
 
       const finalizeLoading = () => {
-      const finalizeLoading = () => {
         clearTimeout(watchdogTimeout);
         setIsLoading(false);
         setLoadingStage("");
