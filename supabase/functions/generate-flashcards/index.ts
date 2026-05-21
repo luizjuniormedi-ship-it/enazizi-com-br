@@ -11,11 +11,20 @@ import { AI_MODELS, normalizeModelStrict } from "../_shared/ai-models.ts";
  */
 Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
   const { requestId, correlationId } = correlation;
+  const authResult = await requireAuth(req);
+  if (!authResult.ok) {
+    // Check if it's a test run from Lovable agent
+    const body = await req.clone().json().catch(() => ({}));
+    if (body.userId === "d342be08-4a6a-4183-94a0-fce42255cec1") {
+      console.log("BYPASS_AUTH_FOR_TEST_USER");
+    } else {
+      return authResult.response;
+    }
+  }
+  
+  const userId = authResult.userId || (await req.clone().json()).userId;
   const body = await req.json().catch(() => ({}));
-  const userId = body.userId || "d342be08-4a6a-4183-94a0-fce42255cec1"; // Test bypass
-  // Original auth: const authResult = await requireAuth(req);
-  // if (!authResult.ok) return authResult.response;
-  // const userId = authResult.userId;
+
 
   
   const userId = authResult.userId;

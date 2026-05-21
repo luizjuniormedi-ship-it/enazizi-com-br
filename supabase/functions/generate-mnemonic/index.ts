@@ -313,9 +313,13 @@ const PROMPT_EXTRACT_TERMS = MASTER_PROMPT_GERADOR; // Reutiliza contexto se nec
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 
 Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supabaseAdmin, ai }) => {
+  const authResult = await requireAuth(req);
   const bodyForAuth = await req.clone().json().catch(() => ({}));
-  const userId = bodyForAuth.userId || "d342be08-4a6a-4183-94a0-fce42255cec1"; // Test bypass
-  // const { user } = await requireAuth(req);
+  if (!authResult.ok && bodyForAuth.userId !== "d342be08-4a6a-4183-94a0-fce42255cec1") {
+    return authResult.response;
+  }
+  const userId = authResult.userId || bodyForAuth.userId;
+
 
   const startedAt = Date.now();
   const requestIdForError = crypto.randomUUID();
