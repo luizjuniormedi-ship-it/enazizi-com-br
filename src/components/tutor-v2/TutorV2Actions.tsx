@@ -70,6 +70,13 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
     }
   };
 
+  const handleChangeTopic = () => {
+    const newTopic = prompt("Para qual assunto médico deseja mudar?");
+    if (newTopic && newTopic.trim()) {
+      onSendMessage(`Quero mudar de assunto para ${newTopic}`, undefined, newTopic);
+    }
+  };
+
   return (
     <div className="flex gap-2">
       <AnimatePresence>
