@@ -129,6 +129,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "tutor-video-audit", label: "Auditoria Vídeo", icon: Video },
         { key: "tutor-structure-tests", label: "Testes Estrutura", icon: Microscope },
         { key: "tutor-stabilization", label: "Estabilidade Tutor", icon: Activity },
+        { key: "cognitive-governance", label: "Governança Cognitiva", icon: BrainCircuit },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
 
       ],
