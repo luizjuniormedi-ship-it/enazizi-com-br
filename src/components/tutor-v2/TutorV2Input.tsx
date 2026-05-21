@@ -85,7 +85,7 @@ export default function TutorV2Input({ onSendMessage, disabled }: TutorV2InputPr
                 }
               }}
               title="Mudar de Assunto"
-              className="h-11 w-11 rounded-2xl text-indigo-400 hover:text-white hover:bg-indigo-500/10 transition-colors hidden sm:flex"
+              className="h-11 w-11 rounded-2xl text-indigo-400 hover:text-white hover:bg-indigo-500/10 transition-colors flex"
             >
               <RefreshCw className="h-5 w-5" />
             </Button>
