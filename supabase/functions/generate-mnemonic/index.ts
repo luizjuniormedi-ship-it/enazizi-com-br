@@ -101,10 +101,12 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
         { role: "user", content: `Tema: ${payload.tema}, Termos: ${payload.termos.join(", ")}` }
       ],
       complexity: "média",
-      userId
+      userId,
+      response_format: { type: "json_object" }
     });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "{}";
+    console.log("MNEMONIC_AI_RAW_CONTENT", { rawContent, correlationId });
     const candidate = parseAiJson(rawContent);
 
     // 3. Save Result
