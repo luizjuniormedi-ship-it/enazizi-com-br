@@ -45,7 +45,8 @@ SEQUÊNCIA OBRIGATÓRIA DE BLOCOS (GATING):
 15. BLOCO_15_PLANO_DE_RECUPERAÇÃO: Próximos passos.
 
 REGRAS PEDAGÓGICAS:
-- Comece SEMPRE pelo BLOCO_1_MISSAO_CLINICA quando um novo tema for introduzido ou na primeira mensagem.
+- Comece SEMPRE pelo BLOCO_1_MISSAO_CLINICA quando um novo tema for introduzido ou na primeira mensagem da sessão.
+- Se o aluno falar apenas o nome de uma doença (ex: "IAM", "Sepse"), considere como o início de uma nova explicação no BLOCO_1.
 - Nunca pule blocos. Avance apenas um por vez após a resposta do aluno.
 - Use o Método Socrático: Não dê a resposta completa de cara, faça o aluno pensar.
 - JAMAIS mostre o JSON bruto para o aluno no campo "content", exceto se for o "clinical_flow" estruturado que o frontend já sabe renderizar.
@@ -116,32 +117,54 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   }
 
   let topic = typeof body.topic === "string" ? body.topic : "Geral";
-  if (topic === "Geral" && message.length < 30) {
-    // Simple topic extraction for short messages
-    topic = message;
-  }
-  const masteryState = typeof body.masteryState === "string" ? body.masteryState : "initial";
   const sessionId = typeof body.sessionId === "string" ? body.sessionId : crypto.randomUUID();
 
   // 4. SESSION STATE & PEDAGOGY
   let currentBlock = "BLOCO_1_MISSAO_CLINICA";
   let completedBlocks: string[] = [];
+  let sessionTopic = "";
   
   if (sessionId) {
     try {
       const { data: sessionData } = await supabaseAdmin
         .from("tutor_sessions")
-        .select("current_block, completed_blocks")
+        .select("current_block, completed_blocks, topic")
         .eq("id", sessionId)
         .maybeSingle();
       
       if (sessionData) {
         currentBlock = sessionData.current_block || "BLOCO_1_MISSAO_CLINICA";
         completedBlocks = sessionData.completed_blocks || [];
+        sessionTopic = sessionData.topic || "";
       }
     } catch (err) {
       console.error("[TUTOR_14_SESSION_FETCH_CRASH]", err.message);
     }
+  }
+
+  // Topic detection and reset logic
+  if (topic === "Geral") {
+    if (sessionTopic && message.length >= 50) {
+      topic = sessionTopic;
+    } else if (message.length < 50) {
+      topic = message;
+    }
+  }
+
+  // If the user explicitly mentions a new topic or we detected a new one
+  if (topic !== "Geral" && sessionTopic && topic.toLowerCase() !== sessionTopic.toLowerCase() && message.length < 50) {
+    console.log("[TUTOR_TOPIC_CHANGE] Resetting to Block 1");
+    currentBlock = "BLOCO_1_MISSAO_CLINICA";
+    completedBlocks = [];
+    // Reset session in DB
+    await supabaseAdmin.from("tutor_sessions").update({ 
+      topic: topic, 
+      current_block: "BLOCO_1_MISSAO_CLINICA", 
+      completed_blocks: [],
+      cognitive_progress: 0
+    }).eq("id", sessionId);
+  } else if (!sessionTopic && topic !== "Geral") {
+     await supabaseAdmin.from("tutor_sessions").update({ topic: topic }).eq("id", sessionId);
   }
 
   const userId = auth.userId || body.userId || (correlation as any).userId;
@@ -159,6 +182,7 @@ Fatigue: ${fatigue.toFixed(2)}
 INSTRUCTION: 
 If the user is answering a question from the previous block, evaluate it and then provide ONLY the next block.
 The block you should provide now is: ${currentBlock}.
+If this is the start of a session (no history), start with BLOCO_1_MISSAO_CLINICA.
 Always end with a question to validate before moving to the NEXT block.
 RESPOND ONLY WITH VALID JSON AS SPECIFIED IN THE SYSTEM PROMPT.
 `;
@@ -206,7 +230,8 @@ RESPOND ONLY WITH VALID JSON AS SPECIFIED IN THE SYSTEM PROMPT.
         await supabaseAdmin.from("tutor_sessions").update({
           current_block: newCurrentBlock,
           completed_blocks: newCompletedBlocks,
-          cognitive_progress: progress
+          cognitive_progress: progress,
+          topic: topic
         }).eq("id", sessionId);
       }
 
