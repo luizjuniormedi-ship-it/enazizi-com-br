@@ -171,24 +171,28 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
     }).eq("id", mnReq.id);
 
     // 5. Finalize response shape with aliased names for frontend compatibility
+    // 5. Finalize response shape with aliased names for frontend compatibility
     const finalizedData = {
       ...candidate,
       id: resData.id,
       result_id: resData.id,
       correlation_id: correlationId,
+      // Ensure SIGLA is mapped from mnemonic
+      sigla: candidate.mnemonic || candidate.sigla || "",
+      mnemonic: candidate.mnemonic || candidate.sigla || "",
       // Ensure both English and Portuguese names are present
-      frase_mnemonica: candidate.frase_mnemonica || candidate.phrase,
-      phrase: candidate.phrase || candidate.frase_mnemonica,
-      explicacao_didatica: candidate.explicacao_didatica || candidate.explanation_didatica,
-      explanation_didatica: candidate.explanation_didatica || candidate.explicacao_didatica,
-      explicacao_tecnica: candidate.explicacao_tecnica || candidate.explanation_tecnica,
-      explanation_tecnica: candidate.explanation_tecnica || candidate.explicacao_tecnica,
-      cena_visual: candidate.cena_visual || candidate.scene_description,
-      scene_description: candidate.scene_description || candidate.cena_visual,
-      prompt_imagem: candidate.prompt_imagem || candidate.image_prompt,
+      frase_mnemonica: candidate.frase_mnemonica || candidate.phrase || "",
+      phrase: candidate.phrase || candidate.frase_mnemonica || "",
+      explicacao_didatica: candidate.explicacao_didatica || candidate.explanation_didatica || "",
+      explanation_didatica: candidate.explanation_didatica || candidate.explicacao_didatica || "",
+      explicacao_tecnica: candidate.explicacao_tecnica || candidate.explanation_tecnica || "",
+      explanation_tecnica: candidate.explanation_tecnica || candidate.explicacao_tecnica || "",
+      cena_visual: candidate.cena_visual || candidate.scene_description || "",
+      scene_description: candidate.scene_description || candidate.cena_visual || "",
+      prompt_imagem: candidate.prompt_imagem || candidate.image_prompt || "",
       // Associations
-      associacoes: candidate.items_map || [],
-      items_map: candidate.items_map || [],
+      associacoes: candidate.items_map || candidate.associacoes || [],
+      items_map: candidate.items_map || candidate.associacoes || [],
       // Scores
       score_medico: candidate.score_medico || 70,
       score_pedagogico: candidate.score_pedagogico || 70,
