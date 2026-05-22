@@ -190,7 +190,9 @@ export async function processSingleDriveFile(
       response_format: { type: "json_object" }
     }, logger, supabaseAdmin);
 
-    const questions = aiResponse.questions || [];
+    const aiContent = aiResponse.choices?.[0]?.message?.content || "{}";
+    const parsed = JSON.parse(aiContent);
+    const questions = parsed.questions || [];
     
     logger.info("AI_RESULT", `Found ${questions.length} questions in ${file.name}`);
 
