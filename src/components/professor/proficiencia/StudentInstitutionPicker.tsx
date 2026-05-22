@@ -30,12 +30,14 @@ const StudentInstitutionPicker = ({ selected, onChange }: Props) => {
   const [search, setSearch] = useState("");
   const [faculdade, setFaculdade] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState<number | null>(null);
+  const [classId, setClassId] = useState<string | null>(null);
 
   const { data: facets } = useInstitutionStudentFacets();
   const { data: students, isLoading } = useInstitutionStudents({
     search,
     faculdade,
     periodo,
+    classId,
   });
 
   const selectedSet = useMemo(
@@ -119,6 +121,25 @@ const StudentInstitutionPicker = ({ selected, onChange }: Props) => {
               {(facets?.periodos || []).map((p) => (
                 <SelectItem key={p} value={String(p)}>
                   {p}º
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Turma</Label>
+          <Select
+            value={classId ?? ANY}
+            onValueChange={(v) => setClassId(v === ANY ? null : v)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Todas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>Todas as Turmas</SelectItem>
+              {(facets?.classes || []).map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
                 </SelectItem>
               ))}
             </SelectContent>

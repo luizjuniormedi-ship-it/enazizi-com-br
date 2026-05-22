@@ -22619,6 +22619,7 @@ export type Database = {
           status: string
           title: string
           topics_to_cover: string
+          turma_id: string | null
         }
         Insert: {
           created_at?: string
@@ -22632,6 +22633,7 @@ export type Database = {
           status?: string
           title: string
           topics_to_cover: string
+          turma_id?: string | null
         }
         Update: {
           created_at?: string
@@ -22645,8 +22647,17 @@ export type Database = {
           status?: string
           title?: string
           topics_to_cover?: string
+          turma_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teacher_study_assignments_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       telemetry_aggregates: {
         Row: {
@@ -26896,12 +26907,14 @@ export type Database = {
       list_student_facets_for_professor: {
         Args: never
         Returns: {
+          classes: Json[]
           faculdades: string[]
           periodos: number[]
         }[]
       }
       list_students_for_professor: {
         Args: {
+          _class_id?: string
           _faculdade?: string
           _limit?: number
           _periodo?: number

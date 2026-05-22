@@ -22,7 +22,7 @@ import {
   useCreateProfessorPlan,
   type PlanIntensity,
 } from "@/hooks/useProfessorPlans";
-import StudentInstitutionPicker from "./StudentInstitutionPicker";
+import StudentDistributionSelector from "../StudentDistributionSelector";
 import SubtopicTreePicker from "./SubtopicTreePicker";
 import SubtopicFreeTextResolver from "./SubtopicFreeTextResolver";
 
@@ -39,6 +39,7 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
   const [selectedStudents, setSelectedStudents] = useState<
     { id: string; name: string }[]
   >([]);
+  const [distributionFilters, setDistributionFilters] = useState<{ classId: string | null; faculdade: string | null; periodo: number | null }>({ classId: null, faculdade: null, periodo: null });
   const [selectedSubtopics, setSelectedSubtopics] = useState<Set<string>>(
     new Set()
   );
@@ -66,7 +67,7 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
       intensity,
       notes: notes.trim() || undefined,
       target_user_ids: selectedStudents.map((s) => s.id),
-      target_class_ids: [],
+      target_class_ids: distributionFilters.classId ? [distributionFilters.classId] : [],
       subtopic_ids: Array.from(selectedSubtopics),
     });
     reset();
@@ -171,12 +172,12 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
             </div>
           </div>
 
-          {/* Alunos */}
           <div className="space-y-2">
-            <Label>Alunos *</Label>
-            <StudentInstitutionPicker
+            <Label className="font-semibold">Destinatários do Plano *</Label>
+            <StudentDistributionSelector
               selected={selectedStudents}
               onChange={setSelectedStudents}
+              onFilterChange={setDistributionFilters}
             />
           </div>
 

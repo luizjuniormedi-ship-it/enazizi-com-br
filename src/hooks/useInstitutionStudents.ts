@@ -25,12 +25,13 @@ export interface InstitutionStudentsFilters {
   faculdade?: string | null;
   periodo?: number | null;
   search?: string;
+  classId?: string | null;
 }
 
 export function useInstitutionStudents(filters: InstitutionStudentsFilters = {}) {
-  const { faculdade = null, periodo = null, search = "" } = filters;
+  const { faculdade = null, periodo = null, search = "", classId = null } = filters;
   return useQuery({
-    queryKey: ["institution_students", faculdade, periodo, search],
+    queryKey: ["institution_students", faculdade, periodo, search, classId],
     queryFn: async (): Promise<InstitutionStudent[]> => {
       const { data, error } = await (supabase as any).rpc(
         "list_students_for_professor",
@@ -39,6 +40,7 @@ export function useInstitutionStudents(filters: InstitutionStudentsFilters = {})
           _periodo: periodo,
           _search: search?.trim() ? search.trim() : null,
           _limit: 200,
+          _class_id: classId,
         }
       );
       if (error) throw error;
@@ -51,6 +53,7 @@ export function useInstitutionStudents(filters: InstitutionStudentsFilters = {})
 export interface InstitutionStudentFacets {
   faculdades: string[];
   periodos: number[];
+  classes: { id: string; name: string }[];
 }
 
 export function useInstitutionStudentFacets() {
@@ -65,6 +68,7 @@ export function useInstitutionStudentFacets() {
       return {
         faculdades: (row?.faculdades || []) as string[],
         periodos: (row?.periodos || []) as number[],
+        classes: (row?.classes || []) as { id: string; name: string }[],
       };
     },
     staleTime: 5 * 60 * 1000,

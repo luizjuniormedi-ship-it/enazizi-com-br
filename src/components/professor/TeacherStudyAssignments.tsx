@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FACULDADES } from "@/constants/faculdades";
 import { CheckSquare, Square } from "lucide-react";
+import StudentDistributionSelector from "./StudentDistributionSelector";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
@@ -34,14 +35,11 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
   const [specialty, setSpecialty] = useState("");
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [topicsToCover, setTopicsToCover] = useState("");
-  const [faculdadeFilter, setFaculdadeFilter] = useState("");
-  const [periodoFilter, setPeriodoFilter] = useState("");
   const [materialFile, setMaterialFile] = useState<File | null>(null);
+  const [distributionFilters, setDistributionFilters] = useState<{ classId: string | null; faculdade: string | null; periodo: number | null }>({ classId: null, faculdade: null, periodo: null });
 
-  // Students preview
-  const [previewStudents, setPreviewStudents] = useState<any[]>([]);
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  // Students selection
+  const [selectedStudents, setSelectedStudents] = useState<{ id: string; name: string }[]>([]);
 
   // Results dialog
   const [resultsDialog, setResultsDialog] = useState<{ open: boolean; assignment: any; results: any[] }>({ open: false, assignment: null, results: [] });
@@ -78,38 +76,8 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
 
   useEffect(() => { loadAssignments(); }, [loadAssignments]);
 
-  const previewMatchingStudents = async () => {
-    setPreviewLoading(true);
-    try {
-      const res = await callAPI({
-        action: "get_students",
-        faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
-        periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
-      });
-      const students = res.students || [];
-      setPreviewStudents(students);
-      setSelectedStudentIds(students.map((s: any) => s.user_id));
-    } catch {
-      setPreviewStudents([]);
-      setSelectedStudentIds([]);
-    } finally {
-      setPreviewLoading(false);
-    }
-  };
+  // Selection logic is now handled by StudentInstitutionPicker
 
-  const toggleStudentSelection = (userId: string) => {
-    setSelectedStudentIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
-  };
-
-  const toggleAllStudents = () => {
-    if (selectedStudentIds.length === previewStudents.length) {
-      setSelectedStudentIds([]);
-    } else {
-      setSelectedStudentIds(previewStudents.map((s: any) => s.user_id));
-    }
-  };
 
   const createAssignment = async () => {
     if (!title.trim() || !specialty || !topicsToCover.trim()) {
@@ -141,9 +109,10 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
         topics_to_cover: topicsToCover.trim(),
         material_url: materialUrl,
         material_filename: materialFilename,
-        faculdade_filter: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : null,
-        periodo_filter: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : null,
-        student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : undefined,
+        faculdade_filter: distributionFilters.faculdade,
+        periodo_filter: distributionFilters.periodo,
+        turma_id: distributionFilters.classId,
+        student_ids: selectedStudents.map(s => s.id),
       });
 
       toast({ title: "Tema atribuído!", description: `Enviado para ${res.students_assigned} aluno(s).` });
@@ -170,11 +139,8 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
     setTitle("");
     setSpecialty("");
     setTopicsToCover("");
-    setFaculdadeFilter("");
-    setPeriodoFilter("");
     setMaterialFile(null);
-    setPreviewStudents([]);
-    setSelectedStudentIds([]);
+    setSelectedStudents([]);
   };
 
   return (
@@ -334,64 +300,16 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
               {materialFile && <p className="text-xs text-muted-foreground">📎 {materialFile.name}</p>}
             </div>
 
-            {/* Filters */}
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold">Filtrar Alunos</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Faculdade</Label>
-                  <Select value={faculdadeFilter} onValueChange={setFaculdadeFilter}>
-                    <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      {FACULDADES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs">Período</Label>
-                  <Select value={periodoFilter} onValueChange={setPeriodoFilter}>
-                    <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
-                        <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={previewMatchingStudents} disabled={previewLoading} className="gap-1.5">
-                <Users className="h-3.5 w-3.5" /> {previewLoading ? "Buscando..." : "Ver alunos que receberão"}
-              </Button>
-              {previewStudents.length > 0 && (
-                <div className="bg-secondary/50 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium">{selectedStudentIds.length}/{previewStudents.length} aluno(s)</p>
-                    <button onClick={toggleAllStudents} className="text-[11px] text-primary hover:underline font-medium">
-                      {selectedStudentIds.length === previewStudents.length ? "Desmarcar todos" : "Selecionar todos"}
-                    </button>
-                  </div>
-                  <div className="max-h-40 overflow-y-auto space-y-1">
-                    {previewStudents.map((s: any) => {
-                      const isSelected = selectedStudentIds.includes(s.user_id);
-                      return (
-                        <button
-                          key={s.user_id}
-                          onClick={() => toggleStudentSelection(s.user_id)}
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs transition-colors ${
-                            isSelected ? "bg-primary/10 border border-primary/30" : "bg-background/50 border border-border hover:border-primary/20"
-                          }`}
-                        >
-                          {isSelected ? <CheckSquare className="h-3.5 w-3.5 text-primary shrink-0" /> : <Square className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
-                          <span className="truncate font-medium">{s.display_name || s.email}</span>
-                          {s.periodo && <span className="text-muted-foreground ml-auto shrink-0">{s.periodo}º</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            {/* Distribution */}
+            <div className="space-y-2 pt-4 border-t border-border">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                <Users className="h-4 w-4" /> Distribuição *
+              </Label>
+              <StudentDistributionSelector
+                selected={selectedStudents}
+                onChange={setSelectedStudents}
+                onFilterChange={setDistributionFilters}
+              />
             </div>
         </TeacherDialogContent>
       </Dialog>

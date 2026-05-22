@@ -2126,7 +2126,7 @@ REGRAS:
       // ========== STUDY ASSIGNMENTS ==========
 
       case "create_study_assignment": {
-        const { title, specialty, topics_to_cover, material_url, material_filename, faculdade_filter, periodo_filter, student_ids } = params;
+        const { title, specialty, topics_to_cover, material_url, material_filename, faculdade_filter, periodo_filter, student_ids, turma_id } = params;
 
         if (!title || !specialty || !topics_to_cover) throw new Error("Título, especialidade e tópicos são obrigatórios");
 
@@ -2139,6 +2139,7 @@ REGRAS:
           material_filename: material_filename || null,
           faculdade_filter: faculdade_filter || null,
           periodo_filter: periodo_filter || null,
+          turma_id: turma_id || null,
           status: "active",
         }).select("id").single();
 
@@ -2150,8 +2151,16 @@ REGRAS:
           let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
           if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
           if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
-          const { data: students } = await studentQuery;
-          studentIds = (students || []).map((s: any) => s.user_id);
+          if (turma_id) {
+            const { data: classMembers } = await sb.from("class_members").select("user_id").eq("class_id", turma_id).eq("is_active", true);
+            const classUids = (classMembers || []).map((m: any) => m.user_id);
+            if (classUids.length > 0) studentQuery = studentQuery.in("user_id", classUids);
+            else studentIds = []; // empty class
+          }
+          if (studentIds.length !== 0 || !turma_id) {
+            const { data: students } = await studentQuery;
+            studentIds = (students || []).map((s: any) => s.user_id);
+          }
         }
 
         if (studentIds.length > 0) {
