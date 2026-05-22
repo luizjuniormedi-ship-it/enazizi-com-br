@@ -47,7 +47,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   if (OPENAI_API_KEY) {
     try {
       const startMs = Date.now();
-      const model = ALLOWED_MODELS.reasoning; // Use stable reasoning model
+      const model = "gpt-4o-mini"; // Use mini for faster, cheaper equalization via Direct OpenAI
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
