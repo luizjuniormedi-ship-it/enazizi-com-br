@@ -132,18 +132,32 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         if (initialData.time_limit_minutes) setTimeLimit(String(initialData.time_limit_minutes));
         if (initialData.topics) setSelectedTopics(initialData.topics);
         if (initialData.exam_board) setExamBoard(initialData.exam_board);
-        if (initialData.scheduled_at) setScheduledAt(initialData.scheduled_at.split('.')[0]); // remove ms/Z if needed
-        if (initialData.end_at) setEndAt(initialData.end_at.split('.')[0]);
+        
+        const formatForInput = (iso?: string) => {
+          if (!iso) return "";
+          try {
+            const date = new Date(iso);
+            // Ajustar para o fuso local para o input datetime-local que não entende Z
+            const tzOffset = date.getTimezoneOffset() * 60000;
+            const localISOTime = new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+            return localISOTime;
+          } catch (e) {
+            console.error("Erro ao formatar data:", iso, e);
+            return "";
+          }
+        };
+
+        if (initialData.scheduled_at) setScheduledAt(formatForInput(initialData.scheduled_at));
+        if (initialData.end_at) setEndAt(formatForInput(initialData.end_at));
         if (initialData.max_attempts) setMaxAttempts(String(initialData.max_attempts));
         if (initialData.feedback_policy) setFeedbackPolicy(initialData.feedback_policy);
         if (initialData.allow_retake !== undefined) setAllowRetake(initialData.allow_retake);
         
         if (Array.isArray(initialData.questions_json) && initialData.questions_json.length > 0) {
           setGeneratedQuestions(initialData.questions_json);
-          setQuestionMode("ai"); // Default to AI if questions exist for now
+          setQuestionMode("ai");
         }
         
-        // Load assignments if available
         if (initialData.faculdade_filters) setFaculdadeFilters(initialData.faculdade_filters);
         if (initialData.periodo_filters) setPeriodoFilters(initialData.periodo_filters.map((p: any) => String(p)));
       } else {
