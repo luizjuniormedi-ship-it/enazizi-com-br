@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/ai-cache.ts";
+import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +47,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   if (OPENAI_API_KEY) {
     try {
       const startMs = Date.now();
-      const model = "gpt-4o"; // High quality for ENAMED
+      const model = ALLOWED_MODELS.reasoning; // Use stable reasoning model
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -66,7 +67,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   // 2. Fallback: Lovable AI Gateway
   if (LOVABLE_API_KEY) {
     const startMs = Date.now();
-    const model = "openai/gpt-4o";
+    const model = ALLOWED_MODELS.reasoning;
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
