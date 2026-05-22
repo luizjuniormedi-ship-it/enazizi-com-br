@@ -13,29 +13,47 @@ const QUANTITY_OPTIONS = [5, 10, 15, 20];
 
 function parseFlashcardsFromText(content: string): Array<{ question: string; answer: string; topic: string }> {
   const flashcards: Array<{ question: string; answer: string; topic: string }> = [];
+  
+  // Try to find if the content is already a JSON array (some edge functions return this)
+  try {
+    const jsonMatch = content.match(/\[\s*{[\s\S]*}\s*\]/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(parsed)) {
+        return parsed.map(item => ({
+          question: item.front || item.question || item.pergunta || "",
+          answer: item.back || item.answer || item.resposta || "",
+          topic: item.topic || item.tema || "Medicina"
+        })).filter(item => item.question && item.answer);
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to parse flashcards as JSON, falling back to regex", e);
+  }
+
+  // Fallback to block parsing
   const blocks = content.split(/\*\*FLASHCARD\s+\d+/i).filter(b => b.trim());
 
   for (const block of blocks) {
-    const caseMatch = block.match(/(?:CASO\s+CL[ÍI]NICO[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?❓|\*?\*?\s*PERGUNTA)/i);
-    const questionMatch = block.match(/(?:PERGUNTA[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?✅|\*?\*?\s*RESPOSTA)/i);
-    const answerMatch = block.match(/(?:RESPOSTA[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?🧠|\*?\*?\s*EXPLICA[ÇC][ÃA]O)/i);
-    const explanationMatch = block.match(/(?:EXPLICA[ÇC][ÃA]O\s+CL[ÍI]NICA[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?📌|\*?\*?\s*PONTO|---|$)/i);
-    const provaMatch = block.match(/(?:PONTO\s+DE\s+PROVA[:\s]*\*?\*?)\s*([\s\S]*?)(?=---|$)/i);
-
+    // Robust extraction using multiple possible labels
+    const caseMatch = block.match(/(?:CASO\s+CL[ÍI]NICO|CENÁRIO)[:\s]*\*?\*?\s*([\s\S]*?)(?=\*?\*?\s*(?:❓|PERGUNTA|RESPOSTA|✅|EXPLICA[ÇC][ÃA]O|---|$))/i);
+    const questionMatch = block.match(/(?:PERGUNTA|QUESTÃO|PERGUNTA[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?\s*(?:✅|RESPOSTA|EXPLICA[ÇC][ÃA]O|🧠|---|$))/i);
+    const answerMatch = block.match(/(?:RESPOSTA|GABARITO|RESPOSTA[:\s]*\*?\*?)\s*([\s\S]*?)(?=\*?\*?\s*(?:🧠|EXPLICA[ÇC][ÃA]O|📌|PONTO|---|$))/i);
+    const explanationMatch = block.match(/(?:EXPLICA[ÇC][ÃA]O|JUSTIFICATIVA)[:\s]*\*?\*?\s*([\s\S]*?)(?=\*?\*?\s*(?:📌|PONTO|---|$))/i);
+    
     const caseText = caseMatch?.[1]?.trim() || "";
     const questionText = questionMatch?.[1]?.trim() || "";
     const answerText = answerMatch?.[1]?.trim() || "";
     const explanation = explanationMatch?.[1]?.trim() || "";
-    const prova = provaMatch?.[1]?.trim() || "";
 
-    if (!questionText || !answerText) continue;
+    if (!questionText && !caseText) continue;
+    if (!answerText) continue;
 
-    const fullQuestion = caseText ? `${caseText}\n\n${questionText}` : questionText;
+    const fullQuestion = caseText && questionText ? `${caseText}\n\n${questionText}` : (questionText || caseText);
     let fullAnswer = answerText;
     if (explanation) fullAnswer += `\n\n🧠 ${explanation}`;
-    if (prova) fullAnswer += `\n\n📌 ${prova}`;
 
-    const topicMatch = block.match(/(?:—|[-–])\s*(\w[\w\s/]*)/);
+    const topicMatch = block.match(/(?:TEMA|TOPICO|—|[-–])\s*([^\n]+)/i);
     const topic = topicMatch?.[1]?.trim() || "Medicina";
 
     flashcards.push({ question: fullQuestion, answer: fullAnswer, topic });
