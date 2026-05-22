@@ -26896,12 +26896,14 @@ export type Database = {
       list_student_facets_for_professor: {
         Args: never
         Returns: {
+          classes: Json[]
           faculdades: string[]
           periodos: number[]
         }[]
       }
       list_students_for_professor: {
         Args: {
+          _class_id?: string
           _faculdade?: string
           _limit?: number
           _periodo?: number
