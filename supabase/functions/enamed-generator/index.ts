@@ -32,11 +32,11 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
   const buildBody = (model: string) => {
-    const modelClean = model.replace("openai/", "").replace("google/", "");
-    const isNewModel = model.includes("google/gemini-2.5-pro") || model.includes("/o1") || model.includes("/o3") || model.includes("gpt-5");
+    const modelToUse = model.includes("openai/") ? model.split("/")[1] : model;
+    const isNewModel = modelToUse.startsWith("o1") || modelToUse.startsWith("o3") || modelToUse.startsWith("gpt-5");
     const tokenParam = isNewModel ? "max_completion_tokens" : "max_tokens";
     return JSON.stringify({
-      model: "openai/gpt-5-mini", // Use mini for high volume/throughput during equalization
+      model: modelToUse,
       messages,
       [tokenParam]: 16384,
       temperature: 0.85,
