@@ -306,30 +306,6 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
                 onChange={setSelectedStudents}
               />
             </div>
-                      {selectedStudentIds.length === previewStudents.length ? "Desmarcar todos" : "Selecionar todos"}
-                    </button>
-                  </div>
-                  <div className="max-h-40 overflow-y-auto space-y-1">
-                    {previewStudents.map((s: any) => {
-                      const isSelected = selectedStudentIds.includes(s.user_id);
-                      return (
-                        <button
-                          key={s.user_id}
-                          onClick={() => toggleStudentSelection(s.user_id)}
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs transition-colors ${
-                            isSelected ? "bg-primary/10 border border-primary/30" : "bg-background/50 border border-border hover:border-primary/20"
-                          }`}
-                        >
-                          {isSelected ? <CheckSquare className="h-3.5 w-3.5 text-primary shrink-0" /> : <Square className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
-                          <span className="truncate font-medium">{s.display_name || s.email}</span>
-                          {s.periodo && <span className="text-muted-foreground ml-auto shrink-0">{s.periodo}º</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
         </TeacherDialogContent>
       </Dialog>
 
