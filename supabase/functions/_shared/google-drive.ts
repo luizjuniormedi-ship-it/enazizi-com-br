@@ -1,5 +1,6 @@
 import { ALLOWED_MODELS } from "./ai-model-registry.ts";
 import { sanitizeForPostgres, generateStatementHash } from "./db-utils.ts";
+import { callAi } from "./enterprise-edge/ai-router.ts";
 
 // Shared Hardcoded Credentials (Temporary for validation)
 export const GOOGLE_SA_EMAIL = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
@@ -151,58 +152,45 @@ export async function processSingleDriveFile(
 
     // 4. Call AI for extraction
     logger.info("AI_EXTRACTION", `Sending ${file.name} to AI...`);
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: ALLOWED_MODELS.generation,
-        max_tokens: 16000,
-        messages: [
-          {
-            role: "system",
-            content: `Você é um especialista em medicina e extração de dados. 
-            Extraia questões médicas de provas em PDF.
-            SEMPRE enriqueça cada questão com:
-            - board: nome da banca (ex: REVALIDA, ENARE, USP, UNICAMP, SUS-SP)
-            - year: ano da prova
-            - institution: instituição
-            - topic: especialidade médica (ex: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Preventiva)
-            - subtopic: subtema específico (ex: ICC, DPOC, Apendicite)
-            - difficulty: 1 a 5 baseado na complexidade
-            - explanation: explicação detalhada com referência bibliográfica se possível
-            - clinical_case: true/false se a questão apresenta um caso clínico
-            - tags: palavras-chave relevantes
-            `
-          },
-          {
-            role: "user",
-            content: "Extraia questões deste PDF de prova médica. Formato JSON: {\"questions\": [{\"statement\": \"...\", \"options\": [\"A\", \"B\", \"C\", \"D\"], \"correct_index\": 0, \"explanation\": \"...\", \"topic\": \"...\", \"subtopic\": \"...\", \"board\": \"...\", \"year\": 2024, \"institution\": \"...\", \"difficulty\": 3, \"clinical_case\": true, \"tags\": [\"tag1\"]}]}"
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: { url: `data:application/pdf;base64,${base64Pdf}` }
-              }
-            ]
-          }
-        ],
-        response_format: { type: "json_object" }
-      })
-    });
+    const aiResponse = await callAi({
+      taskType: "generation",
+      complexity: "alta",
+      userId: user.id,
+      messages: [
+        {
+          role: "system",
+          content: `Você é um especialista em medicina e extração de dados. 
+          Extraia questões médicas de provas em PDF.
+          SEMPRE enriqueça cada questão com:
+          - board: nome da banca (ex: REVALIDA, ENARE, USP, UNICAMP, SUS-SP)
+          - year: ano da prova
+          - institution: instituição
+          - topic: especialidade médica (ex: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Preventiva)
+          - subtopic: subtema específico (ex: ICC, DPOC, Apendicite)
+          - difficulty: 1 a 5 baseado na complexidade
+          - explanation: explicação detalhada com referência bibliográfica se possível
+          - clinical_case: true/false se a questão apresenta um caso clínico
+          - tags: palavras-chave relevantes
+          `
+        },
+        {
+          role: "user",
+          content: "Extraia questões deste PDF de prova médica. Formato JSON: {\"questions\": [{\"statement\": \"...\", \"options\": [\"A\", \"B\", \"C\", \"D\"], \"correct_index\": 0, \"explanation\": \"...\", \"topic\": \"...\", \"subtopic\": \"...\", \"board\": \"...\", \"year\": 2024, \"institution\": \"...\", \"difficulty\": 3, \"clinical_case\": true, \"tags\": [\"tag1\"]}]}"
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: { url: `data:application/pdf;base64,${base64Pdf}` }
+            }
+          ]
+        }
+      ],
+      response_format: { type: "json_object" }
+    }, logger, supabaseAdmin);
 
-    if (!aiResponse.ok) {
-      throw new Error(`AI Gateway error: ${aiResponse.status} ${await aiResponse.text()}`);
-    }
-
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content || "{}";
-    const parsed = JSON.parse(aiContent);
-    const questions = parsed.questions || [];
+    const questions = aiResponse.questions || [];
     
     logger.info("AI_RESULT", `Found ${questions.length} questions in ${file.name}`);
 
