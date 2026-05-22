@@ -71,8 +71,9 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         
         RETORNE APENAS UM JSON ARRAY VÁLIDO COM ESTAS CHAVES:
         [
-          {"front": "pergunta ou caso clínico curto...", "back": "resposta objetiva...", "explanation": "explicação breve...", "difficulty": 1-5}
-        ]` }
+          {"front": "caso clínico ou contexto...", "question_detail": "pergunta específica sobre o caso...", "back": "resposta curta...", "explanation": "justificativa...", "difficulty": 1-5}
+        ]
+        IMPORTANTE: NUNCA coloque a resposta dentro do campo 'front' ou 'question_detail'.` }
       ],
       complexity: "alta",
       userId
