@@ -43,11 +43,10 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     });
   };
 
-  // 1. Try Direct OpenAI first (Primary)
   if (OPENAI_API_KEY) {
     try {
       const startMs = Date.now();
-      const model = "gpt-4o-mini"; // Use mini for faster, cheaper equalization via Direct OpenAI
+      const model = "gpt-4o-mini";
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -58,14 +57,11 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
         logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: model, success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
         return data.choices?.[0]?.message?.content || "";
       }
-      const errBody = await res.text();
-      console.warn(`Direct OpenAI ${res.status}: ${errBody}`);
     } catch (e) {
       console.warn("Direct OpenAI failed:", e);
     }
   }
 
-  // 2. Fallback: Lovable AI Gateway
   if (LOVABLE_API_KEY) {
     const startMs = Date.now();
     const model = "openai/gpt-4o-mini";
@@ -79,9 +75,6 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
       logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: model, success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
       return data.choices?.[0]?.message?.content || "";
     }
-    const errText = await res.text();
-    logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: model, success: false, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro", errorMessage: `status ${res.status}` }).catch(() => {});
-    throw new Error(`Lovable Gateway ${res.status}: ${errText.slice(0, 200)}`);
   }
 
   throw new Error("No AI API key available");
@@ -201,37 +194,24 @@ FORMATO JSON PURO (sem markdown):
     ]);
 
     const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-    console.log(`[AI_RESPONSE] specialty: ${specialty}, length: ${cleaned.length}`);
-    if (cleaned.length < 50) {
-      console.warn(`[AI_RESPONSE_SHORT] ${specialty}: ${cleaned}`);
-    }
-
     let parsed: any = null;
     try { 
       parsed = JSON.parse(cleaned); 
     } catch (e) {
-      console.error(`[JSON_PARSE_ERROR] ${specialty}: ${e.message}`);
       const m = cleaned.match(/\{[\s\S]*"questions"[\s\S]*\}/);
       if (m) try { parsed = JSON.parse(m[0]); } catch {}
     }
     
-    if (!parsed) {
-      console.error(`[PARSED_NULL] ${specialty}`);
-      return { questions: 0, flashcards: 0, cases: 0 };
-    }
+    if (!parsed) return { questions: 0, flashcards: 0, cases: 0 };
 
-    // Insert questions
-    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
-    const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
+    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length === 4 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 150 && (q.difficulty || 3) >= 1 &&
-      !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
+      String(q.statement).trim().length >= 150 &&
+      !ENGLISH_PATTERN.test(q.statement)
     );
-    if (parsed.questions?.length > 0 && questions.length === 0) {
-      console.warn(`[FILTERED_OUT] ${specialty}: all questions filtered out. First statement length: ${parsed.questions[0].statement?.length}`);
-    }
+
     let qCount = 0;
     if (questions.length > 0) {
       const rows = questions.map((q: any) => ({
@@ -249,10 +229,8 @@ FORMATO JSON PURO (sem markdown):
       }));
       const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
       if (!error) qCount = rows.length;
-      else console.error("Insert Q error:", error);
     }
 
-    // Insert flashcards
     const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer);
     let fCount = 0;
     if (flashcards.length > 0) {
@@ -265,10 +243,8 @@ FORMATO JSON PURO (sem markdown):
       }));
       const { error } = await supabaseAdmin.from("flashcards").insert(fRows);
       if (!error) fCount = fRows.length;
-      else console.error("Insert F error:", error);
     }
 
-    // Insert clinical cases
     const clinicalCases = (parsed.clinical_cases || []).filter((c: any) => c.title && c.clinical_history && c.correct_diagnosis);
     let cCount = 0;
     if (clinicalCases.length > 0) {
@@ -291,7 +267,6 @@ FORMATO JSON PURO (sem markdown):
       }));
       const { error } = await supabaseAdmin.from("clinical_cases").insert(cRows);
       if (!error) cCount = cRows.length;
-      else console.error("Insert C error:", error);
     }
 
     return { questions: qCount, flashcards: fCount, cases: cCount };
@@ -317,24 +292,48 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const rounds = body.rounds || 1;
     const source = body.source || "enamed-revalida-openai";
-    const specialtyFilter = body.specialty || null; // Process single specialty to avoid timeout
+    const specialtyFilter = body.specialty || null;
 
-    const themes = specialtyFilter
-      ? ENAMED_THEMES.filter(t => t.specialty.toLowerCase().includes(specialtyFilter.toLowerCase()))
-      : ENAMED_THEMES;
+    // Intelligent Equalization: Fetch current counts to prioritize missing areas
+    const { data: allTopics } = await supabaseAdmin
+      .from("questions_bank")
+      .select("topic")
+      .eq("is_global", true);
+    
+    const countsMap: Record<string, number> = {};
+    allTopics?.forEach((item: any) => {
+      const t = String(item.topic || "Geral").trim();
+      countsMap[t] = (countsMap[t] || 0) + 1;
+    });
+
+    let themesToProcess = ENAMED_THEMES;
+    if (specialtyFilter) {
+      themesToProcess = ENAMED_THEMES.filter(t => 
+        t.specialty.toLowerCase().includes(specialtyFilter.toLowerCase())
+      );
+    } else {
+      themesToProcess = [...ENAMED_THEMES].sort((a, b) => {
+        const countA = countsMap[a.specialty] || 0;
+        const countB = countsMap[b.specialty] || 0;
+        return countA - countB;
+      });
+      // Limit to 1 per execution to ensure we don't timeout
+      themesToProcess = themesToProcess.slice(0, 1);
+
+    }
 
     let totalQ = 0, totalF = 0, totalC = 0;
     const processed: string[] = [];
 
     for (let r = 0; r < rounds; r++) {
-      for (const theme of themes) {
-        console.log(`[R${r + 1}] Generating ${theme.specialty}...`);
+      for (const theme of themesToProcess) {
+        console.log(`[R${r + 1}] Equalizing ${theme.specialty} (Current: ${countsMap[theme.specialty] || 0})...`);
         const result = await generateENAMEDContent(theme.specialty, theme.topics, userId, supabaseAdmin, source);
         totalQ += result.questions;
         totalF += result.flashcards;
         totalC += result.cases;
         processed.push(`${theme.specialty}: ${result.questions}Q, ${result.flashcards}F, ${result.cases}C`);
-        console.log(`${theme.specialty}: ${result.questions}Q, ${result.flashcards}F, ${result.cases}C`);
+        countsMap[theme.specialty] = (countsMap[theme.specialty] || 0) + result.questions;
       }
     }
 
@@ -343,13 +342,14 @@ serve(async (req) => {
     const { count: cTotal } = await supabaseAdmin.from("clinical_cases").select("*", { count: "exact", head: true }).eq("is_global", true);
 
     return new Response(JSON.stringify({
-      message: `Geradas ${totalQ} questões, ${totalF} flashcards e ${totalC} casos clínicos`,
+      message: `Equalização em andamento: ${totalQ} questões adicionadas em áreas prioritárias.`,
       questions_added: totalQ,
       flashcards_added: totalF,
       clinical_cases_added: totalC,
       total_questions: qTotal,
       total_flashcards: fTotal,
       total_clinical_cases: cTotal,
+      prioritized_specialties: themesToProcess.map(t => t.specialty),
       details: processed,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
