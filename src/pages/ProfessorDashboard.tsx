@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { GraduationCap, Plus, Loader2, Video, Target, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,16 +40,18 @@ const SimuladoQuestionsDialog = lazy(() => import("@/components/professor/Simula
 
 interface ProfessorDashboardProps {
   initialTab?: string;
+  initialSub?: string;
 }
 
-const ProfessorDashboard = ({ initialTab }: ProfessorDashboardProps) => {
+const ProfessorDashboard = ({ initialTab, initialSub }: ProfessorDashboardProps) => {
   const { session } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [simulados, setSimulados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(initialTab || "operacional");
-  const [activeSub, setActiveSub] = useState<string>("risco");
+  const [activeSub, setActiveSub] = useState(initialSub || "risco");
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
     simulado: null,
@@ -118,20 +120,27 @@ const ProfessorDashboard = ({ initialTab }: ProfessorDashboardProps) => {
 
   useEffect(() => {
     loadSimulados();
-    
-    // Auto-select first sub-tab if initialTab was provided
+  }, [loadSimulados]);
+
+  useEffect(() => {
     if (initialTab) {
-      const subMapping: Record<string, string> = {
-        operacional: "risco",
-        turmas: "minhas",
-        simulados: "lista",
-        mentoria: "temas",
-        auditoria: "trace",
-      };
-      const sub = subMapping[initialTab];
-      if (sub) setActiveSub(sub);
+      setActiveTab(initialTab);
+      
+      if (initialSub) {
+        setActiveSub(initialSub);
+      } else {
+        const subMapping: Record<string, string> = {
+          operacional: "risco",
+          turmas: "minhas",
+          simulados: "lista",
+          mentoria: "temas",
+          auditoria: "trace",
+        };
+        const sub = subMapping[initialTab];
+        if (sub) setActiveSub(sub);
+      }
     }
-  }, [loadSimulados, initialTab]);
+  }, [initialTab, initialSub]);
 
   const handleViewResults = useCallback(
     async (simulado: any) => {
@@ -208,7 +217,13 @@ const ProfessorDashboard = ({ initialTab }: ProfessorDashboardProps) => {
       
       <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            if (location.pathname === "/professor" || location.pathname === "/professor/") {
+              navigate("/dashboard");
+            } else {
+              navigate("/professor");
+            }
+          }}
           className="flex items-center gap-2 text-white/40 hover:text-white transition-all group px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 w-fit"
         >
           <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />

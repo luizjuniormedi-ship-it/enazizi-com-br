@@ -296,16 +296,16 @@ const App = () => (
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
-                <Route path="simulados" element={<ProfessorDashboard initialTab="simulados" />} />
-                <Route path="plantao" element={<ProfessorDashboard initialTab="operacional" />} />
-                <Route path="video" element={<ProfessorDashboard initialTab="turmas" />} />
-                <Route path="sala" element={<ProfessorDashboard initialTab="turmas" />} />
-                <Route path="alunos" element={<ProfessorDashboard initialTab="operacional" />} />
-                <Route path="turmas" element={<ProfessorDashboard initialTab="turmas" />} />
-                <Route path="analytics" element={<ProfessorDashboard initialTab="turmas" />} />
-                <Route path="relatorios" element={<ProfessorDashboard initialTab="turmas" />} />
-                <Route path="questoes" element={<ProfessorDashboard initialTab="simulados" />} />
-                <Route path="materiais" element={<ProfessorDashboard initialTab="mentoria" />} />
+                <Route path="turmas" element={<ProfessorDashboard initialTab="turmas" initialSub="minhas" />} />
+                <Route path="alunos" element={<ProfessorDashboard initialTab="operacional" initialSub="aluno" />} />
+                <Route path="simulados" element={<ProfessorDashboard initialTab="simulados" initialSub="lista" />} />
+                <Route path="questoes" element={<ProfessorDashboard initialTab="simulados" initialSub="lista" />} />
+                <Route path="materiais" element={<ProfessorDashboard initialTab="mentoria" initialSub="temas" />} />
+                <Route path="plantao" element={<ProfessorDashboard initialTab="operacional" initialSub="plantao" />} />
+                <Route path="analytics" element={<ProfessorDashboard initialTab="turmas" initialSub="bi" />} />
+                <Route path="relatorios" element={<ProfessorDashboard initialTab="auditoria" initialSub="trace" />} />
+                <Route path="video" element={<ProfessorDashboard initialTab="turmas" initialSub="video" />} />
+                <Route path="sala" element={<ProfessorDashboard initialTab="turmas" initialSub="video" />} />
                 <Route path="simulados/novo" element={<NewProfessorSimuladoPage />} />
                 <Route path="simulados/editar/:id" element={<NewProfessorSimuladoPage />} />
               </Route>
