@@ -18,11 +18,8 @@ export const BLOCKED_MODELS = [
 ];
 
 export const ALLOWED_AI_MODELS = [
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-pro",
-  "google/gemini-2.5-flash-lite",
-  "openai/gpt-5.5",
-  "openai/gpt-5.5-pro",
+  "openai/gpt-5-mini",
+  "openai/gpt-5",
   "openai/gpt-4o",
   "openai/gpt-4o-mini",
   "openai/text-embedding-3-small"
