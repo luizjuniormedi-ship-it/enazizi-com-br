@@ -32,11 +32,11 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
   const buildBody = (model: string) => {
-    const modelClean = model.replace("openai/", "").replace("google/", "");
-    const isNewModel = model.includes("google/gemini-2.5-pro") || model.includes("/o1") || model.includes("/o3") || model.includes("gpt-5");
+    const modelToUse = model.includes("openai/") ? model.split("/")[1] : model;
+    const isNewModel = modelToUse.startsWith("o1") || modelToUse.startsWith("o3") || modelToUse.startsWith("gpt-5");
     const tokenParam = isNewModel ? "max_completion_tokens" : "max_tokens";
     return JSON.stringify({
-      model: modelClean,
+      model: modelToUse,
       messages,
       [tokenParam]: 16384,
       temperature: 0.85,
@@ -47,7 +47,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   if (OPENAI_API_KEY) {
     try {
       const startMs = Date.now();
-      const model = ALLOWED_MODELS.reasoning; // Use stable reasoning model
+      const model = "gpt-4o-mini"; // Use mini for faster, cheaper equalization via Direct OpenAI
       const res = await fetch(OPENAI_API, {
         method: "POST",
         headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -58,7 +58,8 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
         logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: model, success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
         return data.choices?.[0]?.message?.content || "";
       }
-      console.warn(`Direct OpenAI ${res.status}`);
+      const errBody = await res.text();
+      console.warn(`Direct OpenAI ${res.status}: ${errBody}`);
     } catch (e) {
       console.warn("Direct OpenAI failed:", e);
     }
@@ -67,7 +68,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   // 2. Fallback: Lovable AI Gateway
   if (LOVABLE_API_KEY) {
     const startMs = Date.now();
-    const model = ALLOWED_MODELS.reasoning;
+    const model = "openai/gpt-4o-mini";
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -200,13 +201,24 @@ FORMATO JSON PURO (sem markdown):
     ]);
 
     const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    console.log(`[AI_RESPONSE] specialty: ${specialty}, length: ${cleaned.length}`);
+    if (cleaned.length < 50) {
+      console.warn(`[AI_RESPONSE_SHORT] ${specialty}: ${cleaned}`);
+    }
 
     let parsed: any = null;
-    try { parsed = JSON.parse(cleaned); } catch {
+    try { 
+      parsed = JSON.parse(cleaned); 
+    } catch (e) {
+      console.error(`[JSON_PARSE_ERROR] ${specialty}: ${e.message}`);
       const m = cleaned.match(/\{[\s\S]*"questions"[\s\S]*\}/);
       if (m) try { parsed = JSON.parse(m[0]); } catch {}
     }
-    if (!parsed) return { questions: 0, flashcards: 0, cases: 0 };
+    
+    if (!parsed) {
+      console.error(`[PARSED_NULL] ${specialty}`);
+      return { questions: 0, flashcards: 0, cases: 0 };
+    }
 
     // Insert questions
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
@@ -214,9 +226,12 @@ FORMATO JSON PURO (sem markdown):
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length === 4 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 450 && (q.difficulty || 3) >= 3 &&
+      String(q.statement).trim().length >= 150 && (q.difficulty || 3) >= 1 &&
       !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
     );
+    if (parsed.questions?.length > 0 && questions.length === 0) {
+      console.warn(`[FILTERED_OUT] ${specialty}: all questions filtered out. First statement length: ${parsed.questions[0].statement?.length}`);
+    }
     let qCount = 0;
     if (questions.length > 0) {
       const rows = questions.map((q: any) => ({
