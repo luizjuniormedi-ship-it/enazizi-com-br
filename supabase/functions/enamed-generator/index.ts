@@ -200,13 +200,24 @@ FORMATO JSON PURO (sem markdown):
     ]);
 
     const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    console.log(`[AI_RESPONSE] specialty: ${specialty}, length: ${cleaned.length}`);
+    if (cleaned.length < 50) {
+      console.warn(`[AI_RESPONSE_SHORT] ${specialty}: ${cleaned}`);
+    }
 
     let parsed: any = null;
-    try { parsed = JSON.parse(cleaned); } catch {
+    try { 
+      parsed = JSON.parse(cleaned); 
+    } catch (e) {
+      console.error(`[JSON_PARSE_ERROR] ${specialty}: ${e.message}`);
       const m = cleaned.match(/\{[\s\S]*"questions"[\s\S]*\}/);
       if (m) try { parsed = JSON.parse(m[0]); } catch {}
     }
-    if (!parsed) return { questions: 0, flashcards: 0, cases: 0 };
+    
+    if (!parsed) {
+      console.error(`[PARSED_NULL] ${specialty}`);
+      return { questions: 0, flashcards: 0, cases: 0 };
+    }
 
     // Insert questions
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
