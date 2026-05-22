@@ -783,12 +783,13 @@ REGRAS INVIOLÁVEIS:
           }
 
           // Record assignment source for audit
-          if (assignment_mode === "manual" || assignment_mode === "classes") {
-            const targets = (assignment_mode === "manual" ? student_ids : class_ids) || [];
+          if (assignment_mode === "manual" || assignment_mode === "classes" || assignment_mode === "professor_turmas") {
+            const targets = (assignment_mode === "manual" ? student_ids : 
+                            (assignment_mode === "classes" ? class_ids : params.professor_turma_ids)) || [];
             if (targets.length > 0) {
               const assignmentLogs = targets.map((id: string) => ({
                 simulado_id: simulado.id,
-                target_type: assignment_mode === "manual" ? 'student' : 'class',
+                target_type: assignment_mode === "manual" ? 'student' : (assignment_mode === 'classes' ? 'class' : 'professor_turma'),
                 target_id: id,
                 trace_id: tid
               }));
