@@ -82,6 +82,7 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
         faculdades: faculdade && faculdade !== "all" ? [faculdade] : undefined,
         periodos: periodo && periodo !== "all" ? [parseInt(periodo)] : undefined,
         query: debouncedSearchTerm.trim() || undefined,
+        limit: 100 // Increased limit for better searching
       });
 
       setStudents(res.students || []);
