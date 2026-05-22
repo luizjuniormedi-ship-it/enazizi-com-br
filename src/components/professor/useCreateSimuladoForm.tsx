@@ -676,7 +676,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       }
 
       const payload = {
-        action: "create_simulado",
+        action: initialData?.id ? "update_simulado" : "create_simulado",
+        id: initialData?.id,
         title: title.trim(),
         description: description || null,
         topics: selectedTopics || [],
