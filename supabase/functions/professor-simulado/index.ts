@@ -1185,13 +1185,16 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "get_students": {
-        const { faculdade, periodo, faculdades, periodos, query: nameQuery, limit = 25, offset = 0 } = params;
-        let query = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, status", { count: "exact" }).eq("status", "active");
+        const { faculdade, periodo, faculdades, periodos, query: nameQuery, limit = 50, offset = 0 } = params;
+        let query = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, status", { count: "exact" });
         
-        if (faculdades && Array.isArray(faculdades) && faculdades.length > 0) {
-          query = query.in("faculdade", faculdades);
-        } else if (faculdade && faculdade !== "all") {
-          query = query.eq("faculdade", faculdade);
+        // Se não for admin, restringir à faculdade do professor por padrão se nada for especificado
+        const effectiveFaculdades = (faculdades && Array.isArray(faculdades) && faculdades.length > 0) 
+          ? faculdades 
+          : (faculdade && faculdade !== "all" ? [faculdade] : (isAdmin ? [] : (professorFaculdade ? [professorFaculdade] : [])));
+
+        if (effectiveFaculdades.length > 0) {
+          query = query.in("faculdade", effectiveFaculdades);
         }
 
         if (periodos && Array.isArray(periodos) && periodos.length > 0) {
@@ -1202,7 +1205,7 @@ REGRAS INVIOLÁVEIS:
         }
 
         if (nameQuery) {
-          query = query.ilike("display_name", `%${nameQuery}%`);
+          query = query.or(`display_name.ilike.%${nameQuery}%,email.ilike.%${nameQuery}%`);
         }
 
         const { data: students, count, error } = await query

@@ -17,8 +17,8 @@ interface Student {
   user_id: string;
   display_name: string;
   email: string;
-  faculdade?: string;
-  periodo?: number;
+  faculdade?: string | null;
+  periodo?: number | null;
 }
 
 interface Turma {
@@ -142,7 +142,7 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
   const openEditDialog = (turma: Turma) => {
     setEditingTurma(turma);
     setFormData({ name: turma.name, description: turma.description });
-    setSelectedStudents(turma.student_details || []);
+    setSelectedStudents(turma.student_details?.map(s => ({ ...s, id: s.user_id || s.id })) || []);
     setIsDialogOpen(true);
   };
 
@@ -377,11 +377,15 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
                           const isAlreadySelected = selectedStudents.some(sel => sel.id === s.id);
                           return (
                             <button
-                              key={s.id}
+                              key={s.user_id || s.id}
                               onClick={() => !isAlreadySelected && addStudent(s)}
                               disabled={isAlreadySelected}
                               className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 text-left group"
                             >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold">{s.display_name}</span>
+                                <span className="text-[10px] text-white/40">{s.email} • {s.faculdade || "Sem faculdade"} {s.periodo ? `• ${s.periodo}º` : ""}</span>
+                              </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{s.display_name}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
