@@ -114,14 +114,20 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
     });
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "{}";
-    console.log("MNEMONIC_AI_RAW_CONTENT", { rawContent, correlationId });
-    const candidate = parseAiJson(rawContent);
+    console.log(`[MNEMONIC_GEN] AI_RAW_CONTENT (Correlation: ${correlationId})`, rawContent);
+    
+    let candidate;
+    try {
+      candidate = parseAiJson(rawContent);
+    } catch (parseErr) {
+      console.error(`[MNEMONIC_GEN] JSON Parse Error (Correlation: ${correlationId}):`, parseErr, "Raw Content:", rawContent);
+      throw new Error(`Falha ao processar o mnemônico gerado pela IA. Detalhes: ${parseErr.message}`);
+    }
 
     // 3. Save Result
     const scoreFinal = candidate.memory_impact_score?.composite_score || 
                        candidate.score_final || 
-                       Math.round((candidate.score_medico + candidate.score_pedagogico + candidate.score_linguistico) / 3) || 
-                       50;
+                       (candidate.score_medico ? Math.round((candidate.score_medico + candidate.score_pedagogico + candidate.score_linguistico) / 3) : 70);
 
     const { data: resData, error: resErr } = await supabaseAdmin.from("mnemonic_results").insert({
       request_id: mnReq.id,
