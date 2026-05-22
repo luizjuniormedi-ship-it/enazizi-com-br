@@ -225,9 +225,12 @@ FORMATO JSON PURO (sem markdown):
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length === 4 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 450 && (q.difficulty || 3) >= 3 &&
+      String(q.statement).trim().length >= 150 && (q.difficulty || 3) >= 1 &&
       !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
     );
+    if (parsed.questions?.length > 0 && questions.length === 0) {
+      console.warn(`[FILTERED_OUT] ${specialty}: all questions filtered out. First statement length: ${parsed.questions[0].statement?.length}`);
+    }
     let qCount = 0;
     if (questions.length > 0) {
       const rows = questions.map((q: any) => ({
