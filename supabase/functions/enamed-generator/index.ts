@@ -319,22 +319,55 @@ serve(async (req) => {
     const source = body.source || "enamed-revalida-openai";
     const specialtyFilter = body.specialty || null; // Process single specialty to avoid timeout
 
-    const themes = specialtyFilter
-      ? ENAMED_THEMES.filter(t => t.specialty.toLowerCase().includes(specialtyFilter.toLowerCase()))
-      : ENAMED_THEMES;
+    // Intelligent Equalization: Fetch current counts to prioritize missing areas
+    const { data: countsData } = await supabaseAdmin
+      .from("questions_bank")
+      .select("topic, count")
+      .eq("is_global", true);
+    
+    // Map counts by specialty
+    const countsMap: Record<string, number> = {};
+    countsData?.forEach((item: any) => {
+      countsMap[item.topic] = (countsMap[item.topic] || 0) + 1;
+    });
+
+    // Determine target specialties (those with fewer questions than the average or a set threshold)
+    // If specialtyFilter is provided, use it. Otherwise, prioritize low-count areas.
+    let themesToProcess = ENAMED_THEMES;
+    
+    if (specialtyFilter) {
+      themesToProcess = ENAMED_THEMES.filter(t => 
+        t.specialty.toLowerCase().includes(specialtyFilter.toLowerCase())
+      );
+    } else {
+      // Sort themes by current question count (ascending)
+      // This ensures we always work on the most neglected areas first
+      themesToProcess = [...ENAMED_THEMES].sort((a, b) => {
+        const countA = countsMap[a.specialty] || 0;
+        const countB = countsMap[b.specialty] || 0;
+        return countA - countB;
+      });
+      
+      // If we are not filtering, limit to the top 5 most needed specialties per execution 
+      // to avoid timeout and ensure progress in critical areas
+      themesToProcess = themesToProcess.slice(0, 5);
+    }
 
     let totalQ = 0, totalF = 0, totalC = 0;
     const processed: string[] = [];
 
     for (let r = 0; r < rounds; r++) {
-      for (const theme of themes) {
-        console.log(`[R${r + 1}] Generating ${theme.specialty}...`);
+      for (const theme of themesToProcess) {
+        console.log(`[R${r + 1}] Equalizing ${theme.specialty} (Current: ${countsMap[theme.specialty] || 0})...`);
         const result = await generateENAMEDContent(theme.specialty, theme.topics, userId, supabaseAdmin, source);
         totalQ += result.questions;
         totalF += result.flashcards;
         totalC += result.cases;
         processed.push(`${theme.specialty}: ${result.questions}Q, ${result.flashcards}F, ${result.cases}C`);
         console.log(`${theme.specialty}: ${result.questions}Q, ${result.flashcards}F, ${result.cases}C`);
+        
+        // Update local map to track progress if running multiple rounds
+        countsMap[theme.specialty] = (countsMap[theme.specialty] || 0) + result.questions;
       }
     }
 
