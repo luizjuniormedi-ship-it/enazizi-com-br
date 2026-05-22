@@ -101,7 +101,10 @@ export async function processSingleDriveFile(
     const serviceAccount = { client_email, token_uri };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!LOVABLE_API_KEY) {
+      logger.error("CONFIG_ERROR", "LOVABLE_API_KEY not configured");
+      throw new Error("LOVABLE_API_KEY not configured");
+    }
 
     // Update status to processing
     await supabaseAdmin.from("drive_ingestion_log").update({ status: 'processing' }).eq('file_id', fileId);

@@ -162,7 +162,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   if (OPENAI_API_KEY) {
     try {
       // Prioritize the requested model, but ensure it's mapped correctly for direct OpenAI
-      const requestedModel = options.model || "gpt-4o";
+      const requestedModel = options.model || "google/gemini-2.5-flash";
       const modelForOpenAI = requestedModel.startsWith("openai/") 
         ? requestedModel.replace("openai/", "") 
         : requestedModel;
