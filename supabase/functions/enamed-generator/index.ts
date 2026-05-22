@@ -36,7 +36,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     const isNewModel = model.includes("google/gemini-2.5-pro") || model.includes("/o1") || model.includes("/o3") || model.includes("gpt-5");
     const tokenParam = isNewModel ? "max_completion_tokens" : "max_tokens";
     return JSON.stringify({
-      model: model,
+      model: "openai/gpt-5-mini", // Use mini for high volume/throughput during equalization
       messages,
       [tokenParam]: 16384,
       temperature: 0.85,
