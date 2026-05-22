@@ -316,7 +316,7 @@ serve(async (req) => {
         const { data: students, count, error } = await sb
           .from("profiles")
           .select("*", { count: "exact" })
-          .eq("user_type", "student")
+          .in("user_type", ["student", "estudante", "medico"])
           .or(`display_name.ilike.%${query}%,email.ilike.%${query}%`)
           .range(offset, offset + limit - 1)
           .order("display_name");
