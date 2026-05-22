@@ -910,6 +910,81 @@ REGRAS INVIOLÁVEIS:
         });
       }
 
+      case "update_simulado": {
+        const startTime = Date.now();
+        const { 
+          id, title, description, topics, faculdade_filters, periodo_filters,
+          total_questions, time_limit_minutes, questions_json, 
+          student_ids, class_ids, professor_turma_ids, assignment_mode, scheduled_at, end_at, 
+          max_attempts, feedback_policy, allow_retake, exam_board, auto_assign,
+          trace_id, status
+        } = params;
+
+        if (!id) throw new Error("ID do simulado é obrigatório para atualização.");
+
+        const tid = trace_id || crypto.randomUUID();
+        await logTraceStep(tid, "update_init", "success", { id, title });
+
+        const facFilters = Array.isArray(faculdade_filters) ? faculdade_filters : [];
+        const perFilters = Array.isArray(periodo_filters) ? periodo_filters : [];
+
+        const { error } = await sb.from("teacher_simulados").update({
+          title: title?.trim(),
+          description: description || null,
+          topics: topics || [],
+          faculdade_filters: facFilters,
+          periodo_filters: perFilters,
+          total_questions: total_questions || questions_json?.length,
+          time_limit_minutes: time_limit_minutes || 60,
+          questions_json: questions_json || [],
+          status: status || 'draft',
+          scheduled_at: scheduled_at || null,
+          end_at: end_at || null,
+          max_attempts: max_attempts || 1,
+          feedback_policy: feedback_policy || 'immediate',
+          allow_retake: !!allow_retake,
+          exam_board: exam_board || null,
+          auto_assign: auto_assign !== false,
+          updated_at: new Date().toISOString()
+        }).eq("id", id).eq("professor_id", user.id);
+
+        if (error) {
+          await logTraceStep(tid, "update_error", "error", null, error.message);
+          throw error;
+        }
+
+        // Re-process assignments if mode changed or targets changed
+        // For simplicity in update, we'll clear and re-add results if it's still a draft or just became published
+        // But better yet, we just update the metadata in teacher_simulado_assignments
+        
+        await sb.from("teacher_simulado_assignments").delete().eq("simulado_id", id);
+        
+        if (assignment_mode === "manual" || assignment_mode === "classes" || assignment_mode === "professor_turmas") {
+          const targets = (assignment_mode === "manual" ? student_ids : 
+                          (assignment_mode === "classes" ? class_ids : professor_turma_ids)) || [];
+          if (targets.length > 0) {
+            const assignmentLogs = targets.map((target_id: string) => ({
+              simulado_id: id,
+              target_type: assignment_mode === "manual" ? 'student' : (assignment_mode === 'classes' ? 'class' : 'professor_turma'),
+              target_id,
+              trace_id: tid
+            }));
+            await sb.from("teacher_simulado_assignments").insert(assignmentLogs);
+          }
+        } else {
+          await sb.from("teacher_simulado_assignments").insert({
+            simulado_id: id,
+            target_type: assignment_mode === 'all' ? 'all' : 'filter',
+            metadata: assignment_mode === 'filter' ? { faculdade_filters: facFilters, periodo_filters: perFilters } : null,
+            trace_id: tid
+          });
+        }
+
+        await logTraceStep(tid, "update_success", "success", { id }, null, Date.now() - startTime);
+
+        return ok({ success: true, simulado_id: id, status: status || 'draft' });
+      }
+
       case "list_simulados": {
         try {
           const isAdmin = roleData.some((r: any) => r.role === "admin");
