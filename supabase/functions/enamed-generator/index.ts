@@ -58,7 +58,8 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
         logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: model, success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
         return data.choices?.[0]?.message?.content || "";
       }
-      console.warn(`Direct OpenAI ${res.status}`);
+      const errBody = await res.text();
+      console.warn(`Direct OpenAI ${res.status}: ${errBody}`);
     } catch (e) {
       console.warn("Direct OpenAI failed:", e);
     }
