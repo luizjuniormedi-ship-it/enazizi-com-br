@@ -298,7 +298,7 @@ serve(async (req) => {
 
       case "get_students": {
         const { faculdades, periodos, query, limit = 25, offset = 0 } = params;
-        let q = sb.from("profiles").select("*", { count: "exact" }).eq("user_type", "student");
+        let q = sb.from("profiles").select("*", { count: "exact" }).in("user_type", ["student", "estudante", "medico"]);
         
         if (faculdades?.length > 0) q = q.in("faculdade", faculdades);
         if (periodos?.length > 0) q = q.in("periodo", periodos);
