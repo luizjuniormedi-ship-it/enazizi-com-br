@@ -154,7 +154,7 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       }).eq("id", job.id);
 
       const messageContent = cards.map((c: any, i: number) => 
-        `**FLASHCARD ${i+1}**\nCASO CLÍNICO: ${c.front}\nRESPOSTA: ${c.back}\nEXPLICAÇÃO CLÍNICA: ${c.explanation || ''}\n---`
+        `**FLASHCARD ${i+1}**\nCASO CLÍNICO: ${c.front || c.question || ''}\nPERGUNTA: ${c.question_detail || 'Qual a conduta?'}\nRESPOSTA: ${c.back || c.answer || ''}\nEXPLICAÇÃO CLÍNICA: ${c.explanation || ''}\n---`
       ).join('\n\n');
 
       return new Response(JSON.stringify({ 
