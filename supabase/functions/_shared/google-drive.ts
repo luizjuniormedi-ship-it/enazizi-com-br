@@ -191,6 +191,8 @@ export async function processSingleDriveFile(
     }, logger, supabaseAdmin);
 
     const aiContent = aiResponse.choices?.[0]?.message?.content || "{}";
+    logger.info("AI_RESPONSE_RAW", `Raw response: ${aiContent.substring(0, 500)}`);
+    
     const parsed = JSON.parse(aiContent);
     const questions = parsed.questions || [];
     
