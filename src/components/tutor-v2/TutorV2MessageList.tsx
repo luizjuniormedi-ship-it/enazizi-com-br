@@ -177,7 +177,12 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
                       </div>
                       <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Flashcard Sugerido</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 rounded-xl">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleSaveFlashcardSuggestion(msg.metadata.flashcard_suggestion, msg.metadata?.actionsContext?.topic)}
+                      className="h-7 px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 rounded-xl"
+                    >
                       <Plus className="h-3 w-3" /> Salvar Card
                     </Button>
                   </div>
