@@ -212,10 +212,14 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      content,
+      content: content + (socraticQuestion ? `\n\n${socraticQuestion}` : ""),
       currentBlock: nextBlock,
       topic: sessionTopic,
+      teachingMode: parsedContent.teachingMode || "PRECEPTOR",
+      interactionMode: parsedContent.interactionMode || "BALANCED_SOCRATIC",
+      socraticQuestion: socraticQuestion,
       shouldWaitForStudent: true,
+      minimumTeachingDelivered: parsedContent.minimumTeachingDelivered ?? true,
       correlation_id: correlationId,
       request_id: requestId,
       debug_stage: "stable_v3_ready",
