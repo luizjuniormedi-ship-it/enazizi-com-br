@@ -103,14 +103,20 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
 
       // 1. Insert into flashcards first to get IDs
       const { data: insertedFlashcards, error: flashError } = await supabaseAdmin.from("flashcards").insert(
-        cards.map((c: any) => ({
-          user_id: userId,
-          question: c.front || c.frente || c.pergunta || "",
-          answer: c.back || c.verso || c.resposta || "",
-          explanation: c.explanation || c.explicacao || c.justificativa || "",
-          topic: topic,
-          is_global: false
-        }))
+        cards.map((c: any) => {
+          const front = c.front || c.frente || c.pergunta || "";
+          const detail = c.question_detail || "";
+          const question = detail ? `${front}\n\n${detail}` : front;
+          
+          return {
+            user_id: userId,
+            question,
+            answer: c.back || c.verso || c.resposta || "",
+            explanation: c.explanation || c.explicacao || c.justificativa || "",
+            topic: topic,
+            is_global: false
+          };
+        })
       ).select();
 
       if (flashError || !insertedFlashcards) throw flashError || new Error("Falha ao salvar flashcards");
