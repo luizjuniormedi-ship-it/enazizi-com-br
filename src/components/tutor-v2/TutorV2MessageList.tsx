@@ -51,6 +51,27 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
     navigate(`/dashboard/gerar-flashcards?topic=${encodeURIComponent(topic)}`);
   };
 
+  const handleSaveFlashcardSuggestion = async (suggestion: { front: string; back: string; explanation?: string }, suggestedTopic?: string) => {
+    if (!user?.id) return;
+    try {
+      const topic = suggestedTopic || "Medicina";
+      const { error } = await supabase.from("flashcards").insert({
+        user_id: user.id,
+        question: suggestion.front,
+        answer: suggestion.back,
+        explanation: suggestion.explanation || "",
+        topic: topic,
+        is_global: false
+      });
+
+      if (error) throw error;
+      toast.success("Flashcard salvo com sucesso!");
+    } catch (err) {
+      console.error("Erro ao salvar flashcard:", err);
+      toast.error("Erro ao salvar flashcard");
+    }
+  };
+
   const handleErrorBank = (content: string) => {
     navigate("/dashboard/banco-erros");
   };
