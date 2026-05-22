@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FACULDADES } from "@/constants/faculdades";
+import StudentInstitutionPicker from "./proficiencia/StudentInstitutionPicker";
 
 interface MentorPlan {
   id: string;
@@ -50,22 +51,12 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
   const [currentTopic, setCurrentTopic] = useState("");
   const [currentSubtopic, setCurrentSubtopic] = useState("");
 
-  // Target
-  const [targetType, setTargetType] = useState<"student" | "class" | "institution">("class");
-  const [classes, setClasses] = useState<any[]>([]);
-  const [selectedClassId, setSelectedClassId] = useState("");
-
-  // Multiple students
+  // Distribution
   const [selectedStudents, setSelectedStudents] = useState<SelectedStudent[]>([]);
-  const [studentSearch, setStudentSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [faculdadeFilter, setFaculdadeFilter] = useState("");
-  const [periodoFilter, setPeriodoFilter] = useState("");
+  const [targetType, setTargetType] = useState<"distribution" | "class" | "institution">("distribution");
 
-  // Recipients preview
+  // recipients loading is now handled via distribution selector
   const [showRecipients, setShowRecipients] = useState(false);
-  const [recipientsList, setRecipientsList] = useState<SelectedStudent[]>([]);
-  const [recipientsLoading, setRecipientsLoading] = useState(false);
 
   // Detail view
   const [reportPlan, setReportPlan] = useState<MentorPlan | null>(null);
@@ -118,93 +109,11 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
     setSelectedTopics(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const searchStudents = async () => {
-    if (studentSearch.length < 2 && !faculdadeFilter && !periodoFilter) return;
-    let query = supabase
-      .from("profiles")
-      .select("user_id, display_name, email, faculdade, periodo")
-      .in("user_type", ["estudante", "medico"])
-      .limit(20);
+  // Distribution handled by StudentInstitutionPicker
 
-    if (studentSearch.length >= 2) {
-      query = query.ilike("display_name", `%${studentSearch}%`);
-    }
-    if (faculdadeFilter) {
-      query = query.eq("faculdade", faculdadeFilter);
-    }
-    if (periodoFilter) {
-      query = query.eq("periodo", parseInt(periodoFilter));
-    }
-
-    const { data } = await query;
-    setSearchResults(data || []);
-  };
-
-  const toggleStudent = (s: any) => {
-    setSelectedStudents(prev => {
-      const exists = prev.find(x => x.user_id === s.user_id);
-      if (exists) return prev.filter(x => x.user_id !== s.user_id);
-      return [...prev, { user_id: s.user_id, display_name: s.display_name, faculdade: s.faculdade, periodo: s.periodo }];
-    });
-  };
-
-  const removeStudent = (uid: string) => {
-    setSelectedStudents(prev => prev.filter(x => x.user_id !== uid));
-  };
 
   const loadRecipients = async () => {
-    setRecipientsLoading(true);
-    let list: SelectedStudent[] = [...selectedStudents];
-
-    if (targetType === "class" && selectedClassId) {
-      const { data: members } = await supabase
-        .from("class_members")
-        .select("user_id")
-        .eq("class_id", selectedClassId)
-        .eq("is_active", true);
-      if (members && members.length > 0) {
-        const uids = members.map(m => m.user_id).filter(uid => !list.find(s => s.user_id === uid));
-        if (uids.length > 0) {
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("user_id, display_name, faculdade, periodo")
-            .in("user_id", uids);
-          if (profiles) list = [...list, ...profiles.map(p => ({ user_id: p.user_id, display_name: p.display_name, faculdade: p.faculdade, periodo: p.periodo }))];
-        }
-      }
-    } else if (targetType === "institution") {
-      const { data: inst } = await supabase
-        .from("institution_members")
-        .select("institution_id")
-        .eq("user_id", user!.id)
-        .eq("is_active", true)
-        .limit(1)
-        .single();
-      if (inst) {
-        const { data: members } = await supabase
-          .from("institution_members")
-          .select("user_id")
-          .eq("institution_id", inst.institution_id)
-          .eq("is_active", true)
-          .limit(200);
-        if (members) {
-          const uids = members.map(m => m.user_id).filter(uid => !list.find(s => s.user_id === uid));
-          if (uids.length > 0) {
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("user_id, display_name, faculdade, periodo")
-              .in("user_id", uids);
-            if (profiles) list = [...list, ...profiles.map(p => ({ user_id: p.user_id, display_name: p.display_name, faculdade: p.faculdade, periodo: p.periodo }))];
-          }
-        }
-      }
-    }
-
-    // Deduplicate
-    const seen = new Set<string>();
-    const unique = list.filter(s => { if (seen.has(s.user_id)) return false; seen.add(s.user_id); return true; });
-    setRecipientsList(unique);
-    setRecipientsLoading(false);
+    // Recipients are now explicitly selected in the picker
     setShowRecipients(true);
   };
 
@@ -240,20 +149,7 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
       // Insert targets
       const targetInserts: any[] = [];
 
-      if (targetType === "class" && selectedClassId) {
-        targetInserts.push({ plan_id: plan.id, target_type: "class", target_id: selectedClassId });
-      } else if (targetType === "institution") {
-        const { data: inst } = await supabase
-          .from("institution_members")
-          .select("institution_id")
-          .eq("user_id", user.id)
-          .eq("is_active", true)
-          .limit(1)
-          .single();
-        if (inst) targetInserts.push({ plan_id: plan.id, target_type: "institution", target_id: inst.institution_id });
-      }
-
-      // Add individual students as targets
+      // For simplicity in the new distribution, we always target individual students
       for (const s of selectedStudents) {
         targetInserts.push({ plan_id: plan.id, target_type: "student", target_id: s.user_id });
       }
@@ -263,25 +159,7 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
       }
 
       // Collect all student IDs for progress
-      let studentIds: string[] = [...selectedStudents.map(s => s.user_id)];
-
-      if (targetType === "class" && selectedClassId) {
-        const { data: members } = await supabase
-          .from("class_members")
-          .select("user_id")
-          .eq("class_id", selectedClassId)
-          .eq("is_active", true);
-        if (members) studentIds.push(...members.map(m => m.user_id));
-      } else if (targetType === "institution" && targetInserts.find(t => t.target_type === "institution")) {
-        const instId = targetInserts.find(t => t.target_type === "institution")!.target_id;
-        const { data: members } = await supabase
-          .from("institution_members")
-          .select("user_id")
-          .eq("institution_id", instId)
-          .eq("is_active", true)
-          .limit(200);
-        if (members) studentIds.push(...members.map(m => m.user_id));
-      }
+      const studentIds = [...selectedStudents.map(s => s.user_id)];
 
       // Deduplicate
       studentIds = [...new Set(studentIds)];
@@ -325,15 +203,8 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
     setSelectedTopics([]);
     setCurrentTopic("");
     setCurrentSubtopic("");
-    setTargetType("class");
-    setSelectedClassId("");
     setSelectedStudents([]);
-    setStudentSearch("");
-    setSearchResults([]);
-    setFaculdadeFilter("");
-    setPeriodoFilter("");
     setShowRecipients(false);
-    setRecipientsList([]);
   };
 
   const deletePlan = async (planId: string) => {
