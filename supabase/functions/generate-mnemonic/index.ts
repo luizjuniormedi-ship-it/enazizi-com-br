@@ -150,7 +150,10 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
       versao: 1
     }).select("id").single();
 
-    if (resErr) throw resErr;
+    if (resErr) {
+      console.error(`[MNEMONIC_GEN] DB Insert Error (Correlation: ${correlationId}):`, resErr);
+      throw new Error(`Falha ao salvar o mnemônico no banco de dados: ${resErr.message}`);
+    }
 
     // 4. Update Status
     await supabaseAdmin.from("mnemonic_requests").update({ 
