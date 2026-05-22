@@ -11,6 +11,7 @@ interface Props {
   onEdit: (sim: any) => void;
   onQuestions: (sim: any) => void;
   onDelete: (id: string, title: string) => void;
+  onStatusUpdate?: (id: string, status: string) => void;
 }
 
 /**
@@ -18,7 +19,7 @@ interface Props {
  * Memoizado por referência de `sim` + handlers estáveis no pai.
  * Evita rerender da lista inteira ao expandir/fechar dialogs.
  */
-const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, onQuestions, onDelete }: Props) {
+const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, onQuestions, onDelete, onStatusUpdate }: Props) {
   const scheduledLabel = (() => {
     if (!sim.scheduled_at || sim.status !== "scheduled") return null;
     const target = new Date(sim.scheduled_at);
@@ -170,6 +171,7 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, o
                   variant="default" 
                   size="sm" 
                   className="h-8 flex-1 text-[9px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => onStatusUpdate?.(sim.id, "published")}
                 >
                   PUBLICAR
                 </Button>

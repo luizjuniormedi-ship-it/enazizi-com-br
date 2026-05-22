@@ -179,6 +179,17 @@ const ProfessorDashboard = ({ initialTab, initialSub }: ProfessorDashboardProps)
     [callAPI, toast, loadSimulados, safeAction]
   );
 
+  const handleStatusUpdate = useCallback(
+    async (simuladoId: string, status: string) => {
+      await safeAction("update_status", async () => {
+        await callAPI({ action: "update_simulado_status", simulado_id: simuladoId, status });
+        toast({ title: status === "published" ? "Simulado publicado!" : "Status atualizado!" });
+        loadSimulados();
+      });
+    },
+    [callAPI, toast, loadSimulados, safeAction]
+  );
+
   const handleCloseResults = useCallback(() => {
     setResultsDialog({ open: false, simulado: null, results: [], loading: false, questions_json: [] });
   }, []);
@@ -360,6 +371,7 @@ const ProfessorDashboard = ({ initialTab, initialSub }: ProfessorDashboardProps)
                         onEdit={handleOpenCreate}
                         onQuestions={handleOpenQuestions}
                         onDelete={handleDeleteSimulado}
+                        onStatusUpdate={handleStatusUpdate}
                       />
                     ))}
                   </div>

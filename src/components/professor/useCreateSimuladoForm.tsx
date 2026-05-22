@@ -130,7 +130,36 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         setDescription(initialData.description || "");
         if (initialData.total_questions) setQuestionCount(String(initialData.total_questions));
         if (initialData.time_limit_minutes) setTimeLimit(String(initialData.time_limit_minutes));
-        // We could load more here if needed
+        if (initialData.topics) setSelectedTopics(initialData.topics);
+        if (initialData.exam_board) setExamBoard(initialData.exam_board);
+        
+        const formatForInput = (iso?: string) => {
+          if (!iso) return "";
+          try {
+            const date = new Date(iso);
+            // Ajustar para o fuso local para o input datetime-local que não entende Z
+            const tzOffset = date.getTimezoneOffset() * 60000;
+            const localISOTime = new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+            return localISOTime;
+          } catch (e) {
+            console.error("Erro ao formatar data:", iso, e);
+            return "";
+          }
+        };
+
+        if (initialData.scheduled_at) setScheduledAt(formatForInput(initialData.scheduled_at));
+        if (initialData.end_at) setEndAt(formatForInput(initialData.end_at));
+        if (initialData.max_attempts) setMaxAttempts(String(initialData.max_attempts));
+        if (initialData.feedback_policy) setFeedbackPolicy(initialData.feedback_policy);
+        if (initialData.allow_retake !== undefined) setAllowRetake(initialData.allow_retake);
+        
+        if (Array.isArray(initialData.questions_json) && initialData.questions_json.length > 0) {
+          setGeneratedQuestions(initialData.questions_json);
+          setQuestionMode("ai");
+        }
+        
+        if (initialData.faculdade_filters) setFaculdadeFilters(initialData.faculdade_filters);
+        if (initialData.periodo_filters) setPeriodoFilters(initialData.periodo_filters.map((p: any) => String(p)));
       } else {
         setTitle("Simulado");
         setDescription("");
@@ -661,7 +690,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       }
 
       const payload = {
-        action: "create_simulado",
+        action: initialData?.id ? "update_simulado" : "create_simulado",
+        id: initialData?.id,
         title: title.trim(),
         description: description || null,
         topics: selectedTopics || [],
@@ -672,6 +702,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         questions_json: questions,
         student_ids: assignmentMode === "manual" ? (selectedStudentIds || []) : null,
         class_ids: assignmentMode === "classes" ? (selectedClassIds || []) : null,
+        professor_turma_ids: assignmentMode === "professor_turmas" ? (selectedProfessorTurmaIds || []) : null,
         assignment_mode: assignmentMode || "all",
         scheduled_at: scheduledAt || null,
         end_at: endAt || null,
