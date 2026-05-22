@@ -209,7 +209,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   // Fallback to Gemini (via Lovable Gateway)
   if (LOVABLE_API_KEY) {
     try {
-      const fallbackModel = "google/gemini-2.5-flash";
+      const fallbackModel = "openai/gpt-5-mini";
       const fallbackPayload = buildPayload(fallbackModel);
       console.log("[AI_PIPELINE_GEMINI_FALLBACK]", { source, model: fallbackModel });
 
