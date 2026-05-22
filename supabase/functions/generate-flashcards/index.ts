@@ -71,8 +71,9 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         
         RETORNE APENAS UM JSON ARRAY VÁLIDO COM ESTAS CHAVES:
         [
-          {"front": "pergunta ou caso clínico curto...", "back": "resposta objetiva...", "explanation": "explicação breve...", "difficulty": 1-5}
-        ]` }
+          {"front": "caso clínico ou contexto...", "question_detail": "pergunta específica sobre o caso...", "back": "resposta curta...", "explanation": "justificativa...", "difficulty": 1-5}
+        ]
+        IMPORTANTE: NUNCA coloque a resposta dentro do campo 'front' ou 'question_detail'.` }
       ],
       complexity: "alta",
       userId
@@ -102,14 +103,20 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
 
       // 1. Insert into flashcards first to get IDs
       const { data: insertedFlashcards, error: flashError } = await supabaseAdmin.from("flashcards").insert(
-        cards.map((c: any) => ({
-          user_id: userId,
-          question: c.front || c.frente || c.pergunta || "",
-          answer: c.back || c.verso || c.resposta || "",
-          explanation: c.explanation || c.explicacao || c.justificativa || "",
-          topic: topic,
-          is_global: false
-        }))
+        cards.map((c: any) => {
+          const front = c.front || c.frente || c.pergunta || "";
+          const detail = c.question_detail || "";
+          const question = detail ? `${front}\n\n${detail}` : front;
+          
+          return {
+            user_id: userId,
+            question,
+            answer: c.back || c.verso || c.resposta || "",
+            explanation: c.explanation || c.explicacao || c.justificativa || "",
+            topic: topic,
+            is_global: false
+          };
+        })
       ).select();
 
       if (flashError || !insertedFlashcards) throw flashError || new Error("Falha ao salvar flashcards");
@@ -154,7 +161,7 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       }).eq("id", job.id);
 
       const messageContent = cards.map((c: any, i: number) => 
-        `**FLASHCARD ${i+1}**\nCASO CLÍNICO: ${c.front}\nRESPOSTA: ${c.back}\nEXPLICAÇÃO CLÍNICA: ${c.explanation || ''}\n---`
+        `**FLASHCARD ${i+1}**\nCASO CLÍNICO: ${c.front || c.question || ''}\nPERGUNTA: ${c.question_detail || 'Qual a conduta?'}\nRESPOSTA: ${c.back || c.answer || ''}\nEXPLICAÇÃO CLÍNICA: ${c.explanation || ''}\n---`
       ).join('\n\n');
 
       return new Response(JSON.stringify({ 

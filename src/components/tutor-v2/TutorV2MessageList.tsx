@@ -51,6 +51,27 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
     navigate(`/dashboard/gerar-flashcards?topic=${encodeURIComponent(topic)}`);
   };
 
+  const handleSaveFlashcardSuggestion = async (suggestion: { front: string; back: string; explanation?: string }, suggestedTopic?: string) => {
+    if (!user?.id) return;
+    try {
+      const topic = suggestedTopic || "Medicina";
+      const { error } = await supabase.from("flashcards").insert({
+        user_id: user.id,
+        question: suggestion.front,
+        answer: suggestion.back,
+        explanation: suggestion.explanation || "",
+        topic: topic,
+        is_global: false
+      });
+
+      if (error) throw error;
+      toast.success("Flashcard salvo com sucesso!");
+    } catch (err) {
+      console.error("Erro ao salvar flashcard:", err);
+      toast.error("Erro ao salvar flashcard");
+    }
+  };
+
   const handleErrorBank = (content: string) => {
     navigate("/dashboard/banco-erros");
   };
@@ -177,7 +198,12 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
                       </div>
                       <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Flashcard Sugerido</p>
                     </div>
-                    <Button variant="ghost" size="sm" className="h-7 px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 rounded-xl">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleSaveFlashcardSuggestion(msg.metadata.flashcard_suggestion, msg.metadata?.actionsContext?.topic)}
+                      className="h-7 px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 rounded-xl"
+                    >
                       <Plus className="h-3 w-3" /> Salvar Card
                     </Button>
                   </div>

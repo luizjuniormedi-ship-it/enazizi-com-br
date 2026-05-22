@@ -90,7 +90,9 @@ async function processTextToContent(
             {
               "questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct_index": 0, "explanation": "...", "topic": "Tópico Específico"}],
               "flashcards": [{"question": "🏥 CASO... ❓ PERGUNTA...", "answer": "...", "explanation": "...", "topic": "Tópico Específico"}]
-            }`
+            }
+            
+            AVISO: O campo 'question' deve conter APENAS a pergunta ou o caso clínico. JAMAIS inclua a resposta no campo 'question'.`
           },
           { role: "user", content: `Tema: ${topic}\n\nTexto:\n${chunk}` }
         ],

@@ -534,15 +534,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           }).catch(() => {});
         }
 
-        if (onSaveMessage && finalContent) {
-          try {
-            const count = await onSaveMessage(finalContent);
-            if (count > 0) {
-              setSavedMsgIdxs((prev) => new Set(prev).add(messages.length));
-              toast({ title: "✅ Salvo automaticamente!", description: `${count} item(ns) salvo(s).` });
-              context.reloadPreviousContent();
-            }
-          } catch { /* noop */ }
+        // REMOVED: Automatic saving is now handled by the edge functions themselves
+        // to avoid duplication and parsing issues.
+        if (finalContent && onSaveMessage === undefined) {
+           // We keep this block for any other automatic logic that might be needed
         }
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") return;
