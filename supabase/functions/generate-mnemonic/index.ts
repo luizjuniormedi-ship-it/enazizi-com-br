@@ -70,14 +70,23 @@ RETORNE APENAS UM JSON VÁLIDO COM ESTA ESTRUTURA:
 
 Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
   const { requestId, correlationId } = correlation;
+  const timeoutMs = req.headers.get("x-timeout-ms") || "60000";
   const body = await req.json().catch(() => ({}));
   
+  logger.info("REQUEST_RECEIVED", `Generating mnemonic for topic: ${body.tema || body.topic}`, { 
+    timeoutMs, 
+    requestId, 
+    correlationId,
+    termCount: Array.isArray(body.termos || body.items) ? (body.termos || body.items).length : 0
+  });
+
   const authResult = await requireAuth(req);
   let userId = authResult.userId;
   if (!authResult.ok) {
      if (body.userId === "d342be08-4a6a-4183-94a0-fce42255cec1") {
        userId = body.userId;
      } else {
+       logger.warn("AUTH_FAILED", "Unauthorized request blocked", { requestId });
        return authResult.response;
      }
   }
