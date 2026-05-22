@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FACULDADES } from "@/constants/faculdades";
 import { CheckSquare, Square } from "lucide-react";
-import StudentInstitutionPicker from "./proficiencia/StudentInstitutionPicker";
+import StudentDistributionSelector from "./StudentDistributionSelector";
 
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
@@ -36,6 +36,7 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [topicsToCover, setTopicsToCover] = useState("");
   const [materialFile, setMaterialFile] = useState<File | null>(null);
+  const [distributionFilters, setDistributionFilters] = useState<{ classId: string | null; faculdade: string | null; periodo: number | null }>({ classId: null, faculdade: null, periodo: null });
 
   // Students selection
   const [selectedStudents, setSelectedStudents] = useState<{ id: string; name: string }[]>([]);
@@ -108,6 +109,9 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
         topics_to_cover: topicsToCover.trim(),
         material_url: materialUrl,
         material_filename: materialFilename,
+        faculdade_filter: distributionFilters.faculdade,
+        periodo_filter: distributionFilters.periodo,
+        turma_id: distributionFilters.classId,
         student_ids: selectedStudents.map(s => s.id),
       });
 
@@ -301,9 +305,10 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
               <Label className="text-sm font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4" /> Distribuição *
               </Label>
-              <StudentInstitutionPicker
+              <StudentDistributionSelector
                 selected={selectedStudents}
                 onChange={setSelectedStudents}
+                onFilterChange={setDistributionFilters}
               />
             </div>
         </TeacherDialogContent>

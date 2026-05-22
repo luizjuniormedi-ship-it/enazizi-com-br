@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import StudentInstitutionPicker from "./proficiencia/StudentInstitutionPicker";
+import StudentDistributionSelector from "./StudentDistributionSelector";
 
 interface MentorPlan {
   id: string;
@@ -346,8 +346,8 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
               <Label className="font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" /> Distribuição *
               </Label>
-              <StudentInstitutionPicker
-                selected={selectedStudents}
+              <StudentDistributionSelector
+                selected={selectedStudents.map(s => ({ id: s.id, name: s.name }))}
                 onChange={setSelectedStudents}
               />
             </div>
