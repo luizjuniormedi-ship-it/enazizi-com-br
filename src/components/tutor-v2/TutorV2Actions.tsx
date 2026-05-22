@@ -142,15 +142,33 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
           }}
         />
         <ActionButton 
-          icon={MapIcon} 
-          label="Mapa Mental" 
+          icon={Brain} 
+          label="Gerar Flashcards" 
+          onClick={async () => {
+            const topic = session?.topic || session?.title || "";
+            if (!topic) {
+              toast({ title: "Erro", description: "Assunto não identificado.", variant: "destructive" });
+              return;
+            }
+            try {
+              toast({ title: "Iniciando", description: "Gerando 10 flashcards baseados no seu estudo atual..." });
+              const { data, error } = await supabase.functions.invoke("generate-flashcards", {
+                body: { topic, quantity: 10 }
+              });
+              if (error) throw error;
+              toast({ title: "Sucesso!", description: `${data.count} flashcards gerados e salvos no FSRS.` });
+              window.open(`/dashboard/flashcards`, "_blank");
+            } catch (err: any) {
+              toast({ title: "Erro", description: err.message, variant: "destructive" });
+            }
+          }}
+        />
+        <ActionButton 
+          icon={AlertTriangle} 
+          label="Erro Bank" 
+          className="text-rose-400 border-rose-500/20 hover:bg-rose-500/10"
           onClick={() => {
-             const topic = session?.topic || session?.title || "";
-             if (topic) {
-               window.open(`/dashboard/mapas-mentais?tema=${encodeURIComponent(topic)}`, "_blank");
-             } else {
-               window.open("/dashboard/mapas-mentais", "_blank");
-             }
+            window.location.href = "/dashboard/questoes/revisao-erros";
           }}
         />
       </div>

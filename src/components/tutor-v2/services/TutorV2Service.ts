@@ -91,17 +91,17 @@ export const TutorV2Service = {
     return data;
   },
 
-  async createFsrsCards(sessionId: string, topic: string) {
-    const { data, error } = await supabase.functions.invoke("tutor-v2-create-fsrs", {
-      body: { sessionId, topic }
+  async createFlashcards(sessionId: string, topic: string, quantity = 10) {
+    const { data, error } = await supabase.functions.invoke("generate-flashcards", {
+      body: { sessionId, topic, quantity }
     });
     if (error) throw error;
     return data;
   },
 
   async createMnemonic(sessionId: string, topic: string) {
-    const { data, error } = await supabase.functions.invoke("tutor-v2-create-mnemonic", {
-      body: { sessionId, topic }
+    const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
+      body: { sessionId, tema: topic }
     });
     if (error) throw error;
     return data;
