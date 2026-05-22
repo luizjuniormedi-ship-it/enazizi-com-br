@@ -150,11 +150,22 @@ serve(async (req) => {
           { role: "user", content: newTopic ? `Olá preceptor, quero mudar de assunto para: ${newTopic}. Vamos começar do Bloco 1 com um novo caso clínico.` : message }
         ],
         temperature: 0.7,
+        response_format: { type: "json_object" },
       }),
     });
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content || "Ocorreu um erro ao gerar a resposta da IA.";
+    const rawContent = aiData.choices?.[0]?.message?.content || "{}";
+    let parsedContent;
+    try {
+      parsedContent = JSON.parse(rawContent);
+    } catch (e) {
+      console.error("[TUTOR_V3] Error parsing AI response:", rawContent);
+      parsedContent = { content: rawContent };
+    }
+
+    const content = parsedContent.content || "Ocorreu um erro ao gerar a resposta da IA.";
+    const socraticQuestion = parsedContent.socraticQuestion || "";
 
     // Simple advancement logic (gating)
     let nextBlock = currentBlock;
