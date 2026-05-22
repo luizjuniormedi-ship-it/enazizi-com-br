@@ -317,8 +317,9 @@ serve(async (req) => {
         const countB = countsMap[b.specialty] || 0;
         return countA - countB;
       });
-      // Limit to 2 per execution to avoid timeouts while still making progress
-      themesToProcess = themesToProcess.slice(0, 2);
+      // Limit to 1 per execution to ensure we don't timeout
+      themesToProcess = themesToProcess.slice(0, 1);
+
     }
 
     let totalQ = 0, totalF = 0, totalC = 0;
