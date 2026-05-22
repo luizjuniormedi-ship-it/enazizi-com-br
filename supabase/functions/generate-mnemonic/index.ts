@@ -111,7 +111,7 @@ Deno.serve(enterpriseEdgeHandler("generate-mnemonic", async ({ req, logger, supa
       complexity: "média",
       userId,
       response_format: { type: "json_object" }
-    });
+    }, { skipQualityLock: true }); // Important: Mnemonics are JSON results, not tutor blocks
 
     const rawContent = aiResponse?.choices?.[0]?.message?.content || "{}";
     console.log(`[MNEMONIC_GEN] AI_RAW_CONTENT (Correlation: ${correlationId})`, rawContent);
