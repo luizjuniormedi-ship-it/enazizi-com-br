@@ -169,7 +169,7 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
           label="Erro Bank" 
           className="text-rose-400 border-rose-500/20 hover:bg-rose-500/10"
           onClick={() => {
-            window.location.href = "/dashboard/questoes/revisao-erros";
+            window.location.href = "/dashboard/banco-erros";
           }}
         />
       </div>
