@@ -1743,8 +1743,18 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "student_detail": {
-        const { student_id, class_avg_score } = params;
+        const { student_id, class_avg_score, plan_id } = params;
         if (!student_id) throw new Error("student_id obrigatório");
+        
+        // Se plan_id for passado, verificar se o aluno está no plano e retornar progresso
+        let planProgress = null;
+        if (plan_id) {
+          const { data } = await sb.from("professor_plan_progress")
+            .select("*, curriculum_subtopics(nome)")
+            .eq("plan_id", plan_id)
+            .eq("user_id", student_id);
+          planProgress = data || [];
+        }
 
         // Profile
         const { data: profile } = await sb.from("profiles")
@@ -1878,6 +1888,7 @@ REGRAS INVIOLÁVEIS:
           avg_domain_score: avgDomainScore,
           class_avg_score: class_avg_score || null,
           quotas: quotas || null,
+          plan_progress: planProgress,
         });
       }
 
