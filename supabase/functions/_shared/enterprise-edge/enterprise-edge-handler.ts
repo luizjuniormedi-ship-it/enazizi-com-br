@@ -94,7 +94,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
               
               if (attempt < maxRetries) {
                 logger.info("SELF_HEALING", "Triggering retry with reasoning model due to quality failure");
-                request.model = "google/gemini-2.5-pro"; // Force higher quality model on retry
+                request.model = "openai/gpt-5"; // Force higher quality model on retry
                 // Let's add a small delay before retry to avoid rapid-fire failures
                 await new Promise(r => setTimeout(r, 1000));
                 continue;
