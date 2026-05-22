@@ -123,8 +123,12 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
       let materialFilename: string | null = null;
       if (materialFile && session) {
         const ext = materialFile.name.split(".").pop();
-        const path = `professor-materials/${session.user.id}/${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("user-uploads").upload(path, materialFile);
+        const fileName = `${Date.now()}-${materialFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const path = `professor-materials/${session.user.id}/${fileName}`;
+        const { error: upErr } = await supabase.storage.from("user-uploads").upload(path, materialFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
         if (upErr) throw new Error("Erro ao enviar material: " + upErr.message);
         materialUrl = path;
         materialFilename = materialFile.name;

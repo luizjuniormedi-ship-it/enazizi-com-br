@@ -122,7 +122,11 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
     setGenerating(true);
     try {
       const res = await callAPI({ action: "generate_clinical_case", specialty, difficulty });
-      setGeneratedCase(res.case_data);
+      setGeneratedCase(res.case_data || res.case_prompt);
+      if (res.case_data?.patient_presentation) {
+         setManualPresentation(res.case_data.patient_presentation);
+         setManualDiagnosis(res.case_data.hidden_diagnosis || "");
+      }
       toast({ title: "Caso gerado!", description: `${specialty} - ${difficulty}` });
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao gerar", variant: "destructive" });
