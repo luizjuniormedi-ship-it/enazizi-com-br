@@ -249,7 +249,7 @@ const Login = () => {
                   <label className="text-xs font-black uppercase tracking-widest text-white/40">Email Corporativo</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                    <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
                   </div>
                 </div>
                 <Button type="submit" className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs" disabled={forgotLoading}>
@@ -265,7 +265,7 @@ const Login = () => {
                   <label className="text-xs font-black uppercase tracking-widest text-white/40">Email</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                    <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -277,7 +277,7 @@ const Login = () => {
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                    <Input type="password" placeholder="••••••••" className="pl-12 h-12" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                    <Input type="password" placeholder="••••••••" className="pl-12 h-12" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
                   </div>
                 </div>
                 <Button type="submit" className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs shadow-glow-sm" disabled={loading}>

@@ -22,12 +22,12 @@ const Settings = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("notifications_enabled, study_reminders")
+        .select("whatsapp_opt_out, whatsapp_daily_bi")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data) {
-        setNotifications((data as any).notifications_enabled ?? true);
-        setStudyReminders((data as any).study_reminders ?? true);
+        setNotifications(!(data as any).whatsapp_opt_out);
+        setStudyReminders((data as any).whatsapp_daily_bi ?? true);
       }
     };
     load();
@@ -38,8 +38,8 @@ const Settings = () => {
     setSaving(true);
     try {
       const { error } = await supabase.from("profiles").update({
-        notifications_enabled: notifications,
-        study_reminders: studyReminders,
+        whatsapp_opt_out: !notifications,
+        whatsapp_daily_bi: studyReminders,
       } as any).eq("user_id", user.id);
       if (error) throw error;
       toast({ title: "Preferências salvas" });

@@ -8,6 +8,7 @@
  * falha é apenas logada como warning.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { generateEventHash } from "./idempotency";
 import { getCalibrationSnapshot } from "./studyEngineCalibration";
 
 export interface RecommendationLike {
@@ -91,25 +92,29 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
       }
     );
 
-    await supabase.from("assistant_decisions").insert([{
+    const inputSnapshot = {
+      exam_date: input.examDate ? String(input.examDate) : null,
+      days_to_exam: input.daysToExam ?? null,
+      coverage_pct: input.coveragePct ?? null,
+      monthly_questions_30d: input.monthlyQuestions30d ?? null,
+      monthly_backlog: input.monthlyBacklog ?? null,
+      daily_question_target: input.dailyQuestionTarget ?? null,
+      pace_status: input.paceStatus ?? null,
+      exam_multiplier: input.examMultiplier ?? null,
+      approval_score: input.approval?.score ?? null,
+      approval_trend: input.approval?.trend ?? null,
+      approval_risk: input.approval?.risk ?? null,
+    };
+
+    const eventHash = generateEventHash(input.userId, SOURCE_MODULE, DECISION_TYPE, inputSnapshot);
+
+    await supabase.from("assistant_decisions").upsert([{
       user_id: input.userId,
       source_module: SOURCE_MODULE,
       decision_type: DECISION_TYPE,
       justification: "Study Engine V3 snapshot",
       confidence_score: null,
-      input_snapshot: {
-        exam_date: input.examDate ? String(input.examDate) : null,
-        days_to_exam: input.daysToExam ?? null,
-        coverage_pct: input.coveragePct ?? null,
-        monthly_questions_30d: input.monthlyQuestions30d ?? null,
-        monthly_backlog: input.monthlyBacklog ?? null,
-        daily_question_target: input.dailyQuestionTarget ?? null,
-        pace_status: input.paceStatus ?? null,
-        exam_multiplier: input.examMultiplier ?? null,
-        approval_score: input.approval?.score ?? null,
-        approval_trend: input.approval?.trend ?? null,
-        approval_risk: input.approval?.risk ?? null,
-      } as any,
+      input_snapshot: inputSnapshot as any,
       decision_output: {
         engine_version: "v3.2",
         ...getCalibrationSnapshot(),
@@ -117,7 +122,8 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
         boost_totals: totals,
         boosted_by_approval_risk: totals.approvalRiskBoosts > 0,
       } as any,
-    }]);
+      event_hash: eventHash,
+    }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[studyEngineTelemetry] log skipped:", e);
   }

@@ -219,6 +219,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
               },
               body,
               keepalive: true,
+              credentials: "omit", // Bug 1 fix: avoid CORS credential mismatch
             }).catch(() => {});
           } catch {
             // silent

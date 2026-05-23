@@ -19,6 +19,7 @@
  *    naturais (assistir, abrir, completar). Nada muda na UX.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { generateEventHash } from "./idempotency";
 
 const SHADOW_SOURCE = "shadow-adaptive-v1";
 const DECISION_SOURCE_DECISION = "shadow-decision";
@@ -242,24 +243,29 @@ export async function logShadowDecision(payload: ShadowDecisionPayload): Promise
     const dedupKey = `dec:${userId}:${payload.kind}:${payload.module ?? ""}:${payload.topic ?? ""}`;
     if (!shouldEmit(dedupKey)) return;
 
-    await supabase.from("assistant_decisions").insert([{
+    const inputSnapshot = {
+      kind: payload.kind,
+      module: payload.module ?? null,
+      topic: payload.topic ?? null,
+      signals: payload.signals ?? {},
+    };
+
+    const eventHash = generateEventHash(userId, SHADOW_SOURCE, DECISION_SOURCE_DECISION, inputSnapshot);
+
+    await supabase.from("assistant_decisions").upsert([{
       user_id: userId,
       source_module: SHADOW_SOURCE,
       decision_type: DECISION_SOURCE_DECISION,
       justification: payload.reason ?? `shadow:${payload.kind}`,
       confidence_score: typeof payload.score === "number" ? payload.score : null,
-      input_snapshot: {
-        kind: payload.kind,
-        module: payload.module ?? null,
-        topic: payload.topic ?? null,
-        signals: payload.signals ?? {},
-      } as any,
+      input_snapshot: inputSnapshot as any,
       decision_output: {
         applied: false,
         shadow: true,
         kind: payload.kind,
       } as any,
-    }]);
+      event_hash: eventHash,
+    }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowDecision skipped:", e);
   }
@@ -280,24 +286,29 @@ export async function logShadowOutcome(payload: ShadowOutcomePayload): Promise<v
     const dedupKey = `out:${userId}:${payload.module}:${payload.action}:${payload.topic ?? ""}`;
     if (!shouldEmit(dedupKey)) return;
 
-    await supabase.from("assistant_decisions").insert([{
+    const inputSnapshot = {
+      module: payload.module,
+      topic: payload.topic ?? null,
+      duration_ms: payload.durationMs ?? null,
+      extra: payload.extra ?? {},
+    };
+
+    const eventHash = generateEventHash(userId, SHADOW_SOURCE, DECISION_SOURCE_OUTCOME, inputSnapshot);
+
+    await supabase.from("assistant_decisions").upsert([{
       user_id: userId,
       source_module: SHADOW_SOURCE,
       decision_type: DECISION_SOURCE_OUTCOME,
       justification: `outcome:${payload.action}`,
       confidence_score: null,
-      input_snapshot: {
-        module: payload.module,
-        topic: payload.topic ?? null,
-        duration_ms: payload.durationMs ?? null,
-        extra: payload.extra ?? {},
-      } as any,
+      input_snapshot: inputSnapshot as any,
       decision_output: {
         applied: false,
         shadow: true,
         action: payload.action,
       } as any,
-    }]);
+      event_hash: eventHash,
+    }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowOutcome skipped:", e);
   }
@@ -326,16 +337,20 @@ export async function logShadowScores(scores: {
     const dedupKey = `sco:${userId}:${scores.module ?? ""}:${scores.topic ?? ""}`;
     if (!shouldEmit(dedupKey)) return;
 
-    await supabase.from("assistant_decisions").insert([{
+    const inputSnapshot = {
+      module: scores.module ?? null,
+      topic: scores.topic ?? null,
+    };
+
+    const eventHash = generateEventHash(userId, SHADOW_SOURCE, "shadow-score", inputSnapshot);
+
+    await supabase.from("assistant_decisions").upsert([{
       user_id: userId,
       source_module: SHADOW_SOURCE,
       decision_type: "shadow-score",
       justification: "passive cognitive scores",
       confidence_score: null,
-      input_snapshot: {
-        module: scores.module ?? null,
-        topic: scores.topic ?? null,
-      } as any,
+      input_snapshot: inputSnapshot as any,
       decision_output: {
         applied: false,
         shadow: true,
@@ -347,7 +362,8 @@ export async function logShadowScores(scores: {
           confidence: scores.confidence ?? null,
         },
       } as any,
-    }]);
+      event_hash: eventHash,
+    }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowScores skipped:", e);
   }
