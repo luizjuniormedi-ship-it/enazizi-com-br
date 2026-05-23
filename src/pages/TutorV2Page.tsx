@@ -38,7 +38,7 @@ export default function TutorV2Page() {
 
   const handleStartSession = async (topic?: string) => {
     const finalTopic = topic || newTopic;
-    if (!finalTopic.trim() || !user || isCreating) return;
+    if (!finalTopic.trim() || !user || isCreating || sessionId) return;
     
     setIsCreating(true);
     setBootStatus("Inicializando preceptor...");
