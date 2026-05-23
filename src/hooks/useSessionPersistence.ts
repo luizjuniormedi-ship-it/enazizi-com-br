@@ -199,7 +199,8 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
       const state = getStateRef.current();
       if (!state || Object.keys(state).length === 0) return;
 
-      // Use fetch with keepalive and credentials: omit to avoid CORS issues on close
+      // Use standard Supabase REST with explicit origin and credentials if necessary
+      // BUT for module_sessions, standard REST allows wildcard origin when credentials are 'omit'.
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       if (supabaseUrl && supabaseKey && sessionIdRef.current) {
@@ -210,14 +211,14 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         });
         
         try {
-          // Use fetch with keepalive: true and credentials: omit
-          // This avoids the "Access-Control-Allow-Origin must not be '*' when credentials mode is 'include'" error
+          // [CORS_HARDENING] Explicitly using standard CORS headers and omitting credentials
+          // This prevents the conflict with Access-Control-Allow-Origin: *
           fetch(url, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
               "apikey": supabaseKey,
-              "Authorization": `Bearer ${supabaseKey}`, // Fallback for public access if needed, though typically apikey is enough
+              "Authorization": `Bearer ${supabaseKey}`,
               "Prefer": "return=minimal",
             },
             body,
