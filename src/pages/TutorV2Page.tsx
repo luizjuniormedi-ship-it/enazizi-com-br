@@ -27,6 +27,8 @@ export default function TutorV2Page() {
   const creatingSessionRef = useRef(false);
   const [bootStatus, setBootStatus] = useState("");
 
+  console.log("[TUTOR_BOOT] sessionId=" + sessionId + " urlTopic=" + urlTopic + " ctxTopic=" + studyCtx?.topic);
+
   // Auto-start session if coming from study context or URL topic
   useEffect(() => {
     // Only auto-start if we are NOT on a specific session and NOT already creating one
