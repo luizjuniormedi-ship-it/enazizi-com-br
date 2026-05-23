@@ -97,26 +97,28 @@ export const pedagogicalEventBus = {
         .single();
 
       if (error) {
-        console.error("[COG_EVENT_RUNTIME] Persistence failure:", error);
-        return null;
+        console.warn("[COG_EVENT_RUNTIME] Persistence warning (non-blocking):", error);
+        // Continue flow even if persistence fails
       }
 
       // Async trigger for the consumer Edge Function
       // This ensures the "Event Bus" logic runs immediately
-      (async () => {
-        try {
-          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pedagogical-event-consumer`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-            },
-            body: JSON.stringify({ event: data })
-          }).catch(e => console.error("[COG_EVENT_RUNTIME] Consumer trigger failed:", e));
-        } catch (e) {
-          console.error("[COG_EVENT_RUNTIME] Consumer auth failure:", e);
-        }
-      })();
+      if (data) {
+        (async () => {
+          try {
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pedagogical-event-consumer`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+              },
+              body: JSON.stringify({ event: data })
+            }).catch(e => console.error("[COG_EVENT_RUNTIME] Consumer trigger failed:", e));
+          } catch (e) {
+            console.error("[COG_EVENT_RUNTIME] Consumer auth failure:", e);
+          }
+        })();
+      }
 
       // Sync cognitive state stream locally for UI reactivity
       this.updateLocalCognitiveStream(payload);
@@ -127,14 +129,14 @@ export const pedagogicalEventBus = {
       }
       
       // Phase 3: Automatic Snapshot after critical events
-      if (['question_answered', 'mission_completed', 'diagnostic_completed'].includes(payload.event_type)) {
+      if (['question_answered', 'mission_completed', 'diagnostic_completed'].includes(payload.event_type) && data) {
         void cognitiveSnapshotEngine.capture(userId, data.id);
       }
 
       return data;
 
     } catch (err) {
-      console.error("[COG_EVENT_RUNTIME] Dispatch fatal error:", err);
+      console.error("[COG_EVENT_RUNTIME] Dispatch handled error (non-blocking):", err);
       return null;
     }
   },
