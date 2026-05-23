@@ -87,7 +87,8 @@ export async function generateOrReuseMnemonicForUser(
       userId, 
       source, 
       sourceContext 
-    }, { tier: 'REASONING' });
+    }, { tier: 'REASONING', ttlDays: 30 }); // Mnemonics: 30 days cache
+
 
     if (!response.success) {
       return { success: false, error: response.error || "Erro ao gerar mnemônico." };
