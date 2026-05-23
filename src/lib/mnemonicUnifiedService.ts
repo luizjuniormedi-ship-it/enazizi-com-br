@@ -47,7 +47,9 @@ export interface GenerateMnemonicParams {
     questionId?: string;
     attemptId?: string;
   };
+  onStatus?: (status: string) => void;
 }
+
 
 export interface MnemonicResponse {
   success: boolean;
