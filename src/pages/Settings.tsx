@@ -39,6 +39,8 @@ const Settings = () => {
     setSaving(true);
     try {
       const { error } = await supabase.from("profiles").update({
+        notifications_enabled: notifications,
+        study_reminders: studyReminders,
         whatsapp_opt_out: !notifications,
         whatsapp_daily_bi: studyReminders,
       } as any).eq("user_id", user.id);
