@@ -1174,6 +1174,36 @@ export type Database = {
           },
         ]
       }
+      ai_global_cache: {
+        Row: {
+          content: Json
+          created_at: string | null
+          expires_at: string
+          hash_key: string
+          model: string
+          prompt_hash: string
+          provider: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string | null
+          expires_at: string
+          hash_key: string
+          model: string
+          prompt_hash: string
+          provider: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string | null
+          expires_at?: string
+          hash_key?: string
+          model?: string
+          prompt_hash?: string
+          provider?: string
+        }
+        Relationships: []
+      }
       ai_governance_logs: {
         Row: {
           audited_at: string | null
@@ -1539,6 +1569,66 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_provider_cooldowns: {
+        Row: {
+          cooldown_until: string
+          created_at: string | null
+          id: string
+          model: string
+          provider: string
+          reason: string | null
+        }
+        Insert: {
+          cooldown_until: string
+          created_at?: string | null
+          id?: string
+          model: string
+          provider: string
+          reason?: string | null
+        }
+        Update: {
+          cooldown_until?: string
+          created_at?: string | null
+          id?: string
+          model?: string
+          provider?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      ai_provider_failures: {
+        Row: {
+          created_at: string | null
+          error_code: string | null
+          error_message: string | null
+          fallback_model: string | null
+          id: string
+          model: string
+          provider: string
+          retry_attempt: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          fallback_model?: string | null
+          id?: string
+          model: string
+          provider: string
+          retry_attempt?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          fallback_model?: string | null
+          id?: string
+          model?: string
+          provider?: string
+          retry_attempt?: number | null
+        }
+        Relationships: []
+      }
       ai_provider_health: {
         Row: {
           checked_at: string
@@ -1578,6 +1668,48 @@ export type Database = {
           provider?: string
           status?: string
           success_count?: number
+        }
+        Relationships: []
+      }
+      ai_provider_metrics: {
+        Row: {
+          completion_tokens: number | null
+          cost_usd: number | null
+          created_at: string | null
+          id: string
+          latency_ms: number | null
+          model: string
+          operation: string | null
+          prompt_tokens: number | null
+          provider: string
+          status_code: number | null
+          success: boolean | null
+        }
+        Insert: {
+          completion_tokens?: number | null
+          cost_usd?: number | null
+          created_at?: string | null
+          id?: string
+          latency_ms?: number | null
+          model: string
+          operation?: string | null
+          prompt_tokens?: number | null
+          provider: string
+          status_code?: number | null
+          success?: boolean | null
+        }
+        Update: {
+          completion_tokens?: number | null
+          cost_usd?: number | null
+          created_at?: string | null
+          id?: string
+          latency_ms?: number | null
+          model?: string
+          operation?: string | null
+          prompt_tokens?: number | null
+          provider?: string
+          status_code?: number | null
+          success?: boolean | null
         }
         Relationships: []
       }
