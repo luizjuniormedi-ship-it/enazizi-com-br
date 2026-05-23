@@ -15301,6 +15301,7 @@ export type Database = {
           is_latest: boolean
           layering_json: Json | null
           memory_impact_score: number | null
+          metadata: Json | null
           prompt_imagem: string | null
           recall_speed: number | null
           request_id: string
@@ -15339,6 +15340,7 @@ export type Database = {
           is_latest?: boolean
           layering_json?: Json | null
           memory_impact_score?: number | null
+          metadata?: Json | null
           prompt_imagem?: string | null
           recall_speed?: number | null
           request_id: string
@@ -15377,6 +15379,7 @@ export type Database = {
           is_latest?: boolean
           layering_json?: Json | null
           memory_impact_score?: number | null
+          metadata?: Json | null
           prompt_imagem?: string | null
           recall_speed?: number | null
           request_id?: string
