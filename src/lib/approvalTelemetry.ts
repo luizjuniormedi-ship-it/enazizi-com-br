@@ -71,7 +71,8 @@ export async function logApprovalPrediction(
       confidence_score: prediction.hasEnoughData ? 0.85 : 0.5,
       justification: prediction.message,
       event_hash: eventHash,
-    }, { onConflict: "user_id,event_hash" });
+      idempotency_key: eventHash,
+    }, { onConflict: "idempotency_key" });
     writeLast({ ts: now, score: prediction.score, userId });
   } catch {
     // Telemetria nunca quebra UX

@@ -91,6 +91,7 @@ const ResetPassword = () => {
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)} 
                   required 
+                  autoComplete="new-password"
                 />
               </div>
             </div>
@@ -106,6 +107,7 @@ const ResetPassword = () => {
                   value={confirmPassword} 
                   onChange={(e) => setConfirmPassword(e.target.value)} 
                   required 
+                  autoComplete="new-password"
                 />
               </div>
             </div>

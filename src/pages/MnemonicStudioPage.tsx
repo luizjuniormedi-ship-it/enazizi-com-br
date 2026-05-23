@@ -82,13 +82,8 @@ export default function MnemonicGeneratorPage() {
 
   // ── Deep-link from study-next / cockpit ──
   // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
-  const autoTriggeredRef = useRef(false);
-  const searchParamsRef = useRef(searchParams);
-  
-  // Sync ref with search params to avoid stale closures in handleGenerate
-  useEffect(() => {
-    searchParamsRef.current = searchParams;
-  }, [searchParams]);
+  // autoTriggeredRef moved to auto-trigger effect section
+
 
   useEffect(() => {
     const state = location.state as { prefillTopic?: string; fromErrorBank?: boolean } | null;
@@ -234,29 +229,26 @@ export default function MnemonicGeneratorPage() {
     }
   }, [tema, termos, estilo, publico]);
 
+  const autoTriggeredRef = useRef(false);
+
   useEffect(() => {
-    const params = searchParamsRef.current;
-    const auto = params.get("auto");
+    const auto = searchParams.get("auto");
     const isAuto = auto === "1" || auto === "true";
-    const state = location.state as { fromErrorBank?: boolean } | null;
-    const shouldAuto = isAuto || state?.fromErrorBank;
+    const temaFromUrl = searchParams.get("tema") || searchParams.get("topic");
     
-    if (!shouldAuto || autoTriggeredRef.current) return;
-    
-    const temaParam = params.get("tema") || params.get("topic") || (location.state as any)?.prefillTopic;
-    if (!temaParam || temaParam.trim().length < 3) return;
-    
-    if (isLoading || result) return;
-    
-    console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", temaParam);
+    if (!isAuto || !temaFromUrl || autoTriggeredRef.current) return;
+
     autoTriggeredRef.current = true;
+    setTema(temaFromUrl);
+
+    console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", temaFromUrl);
     
     const t = setTimeout(() => { 
-      handleGenerate(temaParam); 
+      handleGenerate(temaFromUrl); 
     }, 800);
     
     return () => clearTimeout(t);
-  }, [isLoading, result, handleGenerate, location.state]);
+  }, [searchParams, handleGenerate]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;
