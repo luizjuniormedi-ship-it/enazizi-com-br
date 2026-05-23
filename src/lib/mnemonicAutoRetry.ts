@@ -37,7 +37,10 @@ export function isValidMnemonicResult(
   data: any,
   options: ValidationOptions
 ): boolean {
-  if (!data || typeof data !== "object") return false;
+  if (!data || typeof data !== "object") {
+    console.warn("[MNEMONIC_VALIDATION] Data is not an object:", data);
+    return false;
+  }
 
   const frase = String(data.frase_mnemonica ?? "").trim();
   const explicacao = String(
@@ -46,10 +49,22 @@ export function isValidMnemonicResult(
   const cena = String(data.cena_visual ?? "").trim();
   const score = Number(data.score_final ?? 0);
 
-  if (frase.length < 6) return false;
-  if (explicacao.length < 20) return false;
-  if (score <= 0) return false;
-  if (options.requireScene && cena.length < 12) return false;
+  if (frase.length < 6) {
+    console.warn("[MNEMONIC_VALIDATION] Phrase too short:", frase.length);
+    return false;
+  }
+  if (explicacao.length < 20) {
+    console.warn("[MNEMONIC_VALIDATION] Explanation too short:", explicacao.length);
+    return false;
+  }
+  if (score <= 0) {
+    console.warn("[MNEMONIC_VALIDATION] Score is zero or missing:", score);
+    return false;
+  }
+  if (options.requireScene && cena.length < 12) {
+    console.warn("[MNEMONIC_VALIDATION] Scene too short:", cena.length);
+    return false;
+  }
 
   // Eco literal: frase é igual à junção dos termos
   // Quando rodamos em modo automático (termos vazios no input do usuário),
