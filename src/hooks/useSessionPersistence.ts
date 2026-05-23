@@ -213,12 +213,13 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         try {
           // [CORS_HARDENING] Explicitly using standard CORS headers and omitting credentials
           // This prevents the conflict with Access-Control-Allow-Origin: *
+          // We use standard fetch here with keepalive to ensure data is sent on tab close.
           fetch(url, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
               "apikey": supabaseKey,
-              "Authorization": `Bearer ${supabaseKey}`,
+              "Authorization": `Bearer ${supabaseKey}`, // For module_sessions we usually need user token, but during beforeunload it's safer to use anon if RLS allows or skip if it requires auth cookies (which we don't use)
               "Prefer": "return=minimal",
             },
             body,
