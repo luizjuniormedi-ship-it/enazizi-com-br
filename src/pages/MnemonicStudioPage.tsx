@@ -236,18 +236,21 @@ export default function MnemonicGeneratorPage() {
     
     if (!isAuto || autoTriggeredRef.current) return;
     
-    // Check if we have a valid theme to generate
-    if (!tema || tema.trim().length < 3) return;
+    // We need at least a topic to auto-trigger
+    if (!tema || tema.trim().length < 3) {
+      return;
+    }
     
-    // Avoid double triggering if already loading or have result
+    // Safety: only trigger if not already doing something and no result exists
     if (isLoading || result) return;
     
-    console.log("[MnemonicStudio] Auto-triggering generation for:", tema);
+    console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", tema);
     autoTriggeredRef.current = true;
     
+    // Longer timeout to ensure state like 'termosText' is ready if provided
     const t = setTimeout(() => { 
       handleGenerate(); 
-    }, 500); // Small delay to ensure state is settled
+    }, 800);
     
     return () => clearTimeout(t);
   }, [searchParams, tema, isLoading, result, handleGenerate]);
