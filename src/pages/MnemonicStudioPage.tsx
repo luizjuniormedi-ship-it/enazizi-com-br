@@ -172,9 +172,11 @@ export default function MnemonicGeneratorPage() {
   const isLoading = isGenerating || regenerateMutation.isPending;
 
   const handleGenerate = useCallback(async (overrideTopic?: string | React.MouseEvent) => {
+    // If it's a click event, overrideTopic will be an object. We want a string.
     const finalTema = (typeof overrideTopic === 'string' ? overrideTopic : tema || "").trim();
     console.log("[MNEMONIC_01_AUTO_TRIGGER] Starting generation for:", finalTema);
     
+    // We use the current state values for style and public
     const validation = validateMnemonicForm({ tema: finalTema, termos, estilo, publico });
     if (!validation.valid) { 
       console.warn("[MNEMONIC_VALIDATION_FAILED]", validation.errors);
@@ -283,9 +285,11 @@ export default function MnemonicGeneratorPage() {
 
     console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", temaFromUrl);
     
+    // We use a small delay to allow the state to settle and ensure handleGenerate is called
     const t = setTimeout(() => { 
+      // Direct call to avoid stale closure issues if possible
       handleGenerate(temaFromUrl); 
-    }, 800);
+    }, 1000);
     
     return () => clearTimeout(t);
   }, [searchParams, handleGenerate]);
