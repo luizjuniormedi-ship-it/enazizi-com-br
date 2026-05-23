@@ -407,7 +407,22 @@ export const MnemonicToolbarButton = () => {
             </div>
 
             <Button className="w-full gap-2" onClick={handleGenerate} disabled={!canGenerate}>
-              {loading ? (<><Sparkles className="h-4 w-4 animate-spin" />Gerando (auditoria dupla)...</>) : (<><Brain className="h-4 w-4" />Gerar Mnemônico</>)}
+              {loading ? (
+                <>
+                  <Sparkles className="h-4 w-4 animate-spin" />
+                  {loadingStatus === "loading" && "Gerando mnemônico..."}
+                  {loadingStatus === "fallback" && "Trocando provedor de IA..."}
+                  {loadingStatus === "retry" && "Tentando novamente..."}
+                  {loadingStatus === "cache" && "Resultado recuperado do cache"}
+                </>
+              ) : (
+                <>
+                  <Brain className="h-4 w-4" />
+                  Gerar Mnemônico
+                </>
+              )}
+            </Button>
+
             </Button>
           </div>
         ) : (
