@@ -89,11 +89,10 @@ export const pedagogicalEventBus = {
           cognitive_context: payload.cognitive_context || {},
           metadata: { ...payload.metadata, alos_runtime: '2.5' },
           idempotency_key: finalIdempotencyKey,
-          event_hash: payload.metadata?.event_hash || finalIdempotencyKey,
           recursion_depth: payload.recursion_depth || 0,
           replay_id: payload.replay_id,
           status: 'pending'
-        }, { onConflict: 'user_id,event_hash' })
+        }, { onConflict: 'idempotency_key' })
         .select()
         .single();
 
