@@ -1,3 +1,5 @@
+/* [STALL_01_BOOT_START] */
+console.log("[STALL_01_BOOT_START] href=" + window.location.href);
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
