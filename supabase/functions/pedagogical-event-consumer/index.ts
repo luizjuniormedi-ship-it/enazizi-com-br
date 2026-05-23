@@ -14,7 +14,7 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
   const body = await req.json().catch(() => ({}));
   const { event } = body;
 
-  if (!event || !event.id) {
+  if (!event || (!event.id && !event.idempotency_key)) {
     return new Response(JSON.stringify({ success: false, error: "Event payload missing" }), { 
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
