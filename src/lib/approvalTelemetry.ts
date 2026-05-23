@@ -6,6 +6,7 @@
  * com debounce por sessão para evitar spam.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { generateEventHash } from "./idempotency";
 import type { ApprovalPrediction } from "@/hooks/useApprovalPrediction";
 
 const SESSION_KEY = "approval_telemetry_last";
@@ -47,24 +48,30 @@ export async function logApprovalPrediction(
   }
 
   try {
-    await supabase.from("assistant_decisions").insert({
+    const payload = {
+      days_to_exam: prediction.daysToExam,
+      breakdown: prediction.breakdown,
+    };
+    const output = {
+      approval_score: prediction.score,
+      trend: prediction.trend,
+      risk: prediction.riskLevel,
+      delta: prediction.delta,
+      message: prediction.message,
+    };
+    
+    const eventHash = generateEventHash(userId, "approval-engine", "approval_prediction", { payload, output });
+
+    await supabase.from("assistant_decisions").upsert({
       user_id: userId,
       source_module: "approval-engine",
       decision_type: "approval_prediction",
-      input_snapshot: {
-        days_to_exam: prediction.daysToExam,
-        breakdown: prediction.breakdown,
-      },
-      decision_output: {
-        approval_score: prediction.score,
-        trend: prediction.trend,
-        risk: prediction.riskLevel,
-        delta: prediction.delta,
-        message: prediction.message,
-      },
+      input_snapshot: payload,
+      decision_output: output,
       confidence_score: prediction.hasEnoughData ? 0.85 : 0.5,
       justification: prediction.message,
-    });
+      event_hash: eventHash,
+    }, { onConflict: "user_id,event_hash" });
     writeLast({ ts: now, score: prediction.score, userId });
   } catch {
     // Telemetria nunca quebra UX

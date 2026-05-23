@@ -100,6 +100,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               onClick={() => navigate(-1)}
               className="h-9 w-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/5 transition-all group"
               aria-label="Voltar"
+              data-testid="nav-back-button"
             >
               <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
             </button>
@@ -110,6 +111,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
                   type="button"
                   className="lg:hidden h-9 w-9 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/5 transition-all"
                   aria-label="Abrir menu"
+                  data-testid="nav-menu-mobile-trigger"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
@@ -133,6 +135,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
                 }
               }}
               aria-label={isAdmin ? "Ir para Painel Admin" : "Sair do modo ENAFLIX"}
+              data-testid="nav-special-panel-button"
               className={cn(
                 "inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest",
                 "text-white/70 hover:text-white transition-all duration-300",
@@ -148,6 +151,8 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             <button
               type="button"
               onClick={() => navigate("/dashboard/perfil")}
+              aria-label="Meu Perfil"
+              data-testid="nav-profile-button"
               className={cn(
                 "inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest",
                 "text-white/70 hover:text-white transition-all duration-300",
@@ -197,6 +202,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               <button 
                 key={item.path}
                 onClick={() => navigate(item.path)}
+                data-testid={`nav-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 className={cn(
                   "text-[9px] font-black uppercase tracking-[0.2em] transition-all hover:text-white hover:scale-105 whitespace-nowrap",
                   location.pathname === item.path || (item.path === "/dashboard" && (location.pathname === "/study-hub" || location.pathname === "/dashboard"))
@@ -215,6 +221,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             type="button"
             onClick={onSearchClick}
             aria-label={searchActive ? "Fechar busca" : "Buscar"}
+            data-testid="nav-search-button"
             className={cn(
               "h-9 w-9 rounded-full flex items-center justify-center",
               "transition-all duration-300 ease-out hover:scale-[1.06] active:scale-95",
@@ -228,6 +235,8 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
           <button
             type="button"
             onClick={() => navigate("/dashboard/perfil")}
+            aria-label="Notificações"
+            data-testid="nav-notifications-button"
             className={cn(
               "h-9 w-9 rounded-full flex items-center justify-center",
               "text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/5",

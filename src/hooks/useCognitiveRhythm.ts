@@ -46,13 +46,13 @@ export function useLongitudinalProfile() {
         .from("adaptive_student_profiles")
         .select("longitudinal_patterns, drift_score, circadian_intelligence_active")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return {
-        patterns: (data.longitudinal_patterns as unknown as LongitudinalPatterns) || {},
-        driftScore: data.drift_score || 0,
-        circadianActive: data.circadian_intelligence_active
+        patterns: (data?.longitudinal_patterns as unknown as LongitudinalPatterns) || {},
+        driftScore: data?.drift_score || 0,
+        circadianActive: data?.circadian_intelligence_active ?? false
       };
     },
   });

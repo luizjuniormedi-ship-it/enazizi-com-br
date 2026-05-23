@@ -195,7 +195,7 @@ const Register = () => {
                 <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Nome Completo</label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                  <Input placeholder="Seu nome" className="pl-12 h-12" value={name} onChange={(e) => setName(e.target.value)} required />
+                  <Input placeholder="Seu nome" className="pl-12 h-12" value={name} onChange={(e) => setName(e.target.value)} required autoComplete="name" />
                 </div>
               </div>
 
@@ -203,7 +203,7 @@ const Register = () => {
                 <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Email Corporativo</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                  <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
                 </div>
               </div>
 
@@ -211,7 +211,7 @@ const Register = () => {
                 <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Senha de Acesso</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                  <Input type="password" placeholder="Mínimo 6 caracteres" className="pl-12 h-12" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                  <Input type="password" placeholder="Mínimo 6 caracteres" className="pl-12 h-12" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
                 </div>
               </div>
 
@@ -224,6 +224,7 @@ const Register = () => {
                     value={phone}
                     onChange={(e) => setPhone(formatPhone(e.target.value))}
                     required
+                    autoComplete="tel"
                   />
                 </div>
 

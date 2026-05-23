@@ -224,6 +224,9 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
       {!isMobile && (
         <button 
           onClick={toggleCollapse}
+          aria-label={isCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+          title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+          data-testid="sidebar-toggle"
           className="absolute -right-3 top-10 h-6 w-6 rounded-full bg-white/10 border border-white/10 backdrop-blur-md flex items-center justify-center text-white/40 hover:text-white transition-all z-[60]"
         >
           <motion.div
@@ -352,11 +355,19 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
         )}
         
         <div className={cn("flex items-center justify-around px-2 py-1", isCollapsed && !isMobile ? "flex-col gap-4" : "flex-row")}>
-          <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
+          <button 
+            aria-label="Pesquisar" 
+            title="Pesquisar"
+            data-testid="sidebar-search-button"
+            className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn"
+          >
             <Search className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
           </button>
           <button 
             onClick={() => setShowNotifications(!showNotifications)}
+            aria-label="Notificações"
+            title="Ver notificações"
+            data-testid="sidebar-notifications-button"
             className={cn(
               "p-2.5 rounded-xl transition-all relative group/btn",
               showNotifications ? "bg-primary/20 text-primary ring-1 ring-primary/30" : "text-white/40 hover:text-white hover:bg-white/10"
@@ -369,7 +380,13 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
           {showNotifications && (
             <NotificationsPanel onClose={() => setShowNotifications(false)} />
           )}
-          <Link to="/dashboard/perfil" className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
+          <Link 
+            to="/dashboard/perfil" 
+            aria-label="Configurações"
+            title="Ir para configurações"
+            data-testid="sidebar-settings-link"
+            className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn"
+          >
             <Settings className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
           </Link>
         </div>
