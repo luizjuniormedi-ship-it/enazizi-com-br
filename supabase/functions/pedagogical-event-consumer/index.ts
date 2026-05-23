@@ -194,15 +194,20 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
     });
 
   } catch (err) {
-    logger.error("COG_RUNTIME_FAIL", err.message, { eventId: event.id, stack: err.stack });
+    logger.error("COG_RUNTIME_FAIL", err.message, { eventId: event?.id, stack: err.stack });
     
-    await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
-      event_id: event.id,
-      consumer_name: "alos-cognitive-runtime-v3",
-      success: false,
-      result_metadata: { error: err.message, stack: err.stack }
-    });
+    if (event?.id) {
+      await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
+        event_id: event.id,
+        consumer_name: "alos-cognitive-runtime-v3",
+        success: false,
+        result_metadata: { error: err.message, stack: err.stack }
+      });
+    }
 
-    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ success: false, error: err.message }), { 
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
 }));
