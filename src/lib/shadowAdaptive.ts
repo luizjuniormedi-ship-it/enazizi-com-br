@@ -265,6 +265,7 @@ export async function logShadowDecision(payload: ShadowDecisionPayload): Promise
         kind: payload.kind,
       } as any,
       event_hash: eventHash,
+      idempotency_key: eventHash,
     }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowDecision skipped (non-blocking):", e);
@@ -308,6 +309,7 @@ export async function logShadowOutcome(payload: ShadowOutcomePayload): Promise<v
         action: payload.action,
       } as any,
       event_hash: eventHash,
+      idempotency_key: eventHash,
     }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowOutcome skipped (non-blocking):", e);
@@ -363,6 +365,7 @@ export async function logShadowScores(scores: {
         },
       } as any,
       event_hash: eventHash,
+      idempotency_key: eventHash,
     }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowScores skipped (non-blocking):", e);
