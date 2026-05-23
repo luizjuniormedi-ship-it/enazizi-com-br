@@ -83,17 +83,21 @@ export default function MnemonicGeneratorPage() {
   // ── Deep-link from study-next / cockpit ──
   // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
   const autoTriggeredRef = useRef(false);
+  const searchParamsRef = useRef(searchParams);
+  
+  // Sync ref with search params to avoid stale closures in handleGenerate
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+
   useEffect(() => {
     const state = location.state as { prefillTopic?: string; fromErrorBank?: boolean } | null;
     const temaParam = searchParams.get("tema") || searchParams.get("topic") || state?.prefillTopic;
-    const autoParam = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
     const termosParam = searchParams.get("termos");
     const estiloParam = searchParams.get("estilo");
     const publicoParam = searchParams.get("publico");
 
-    if (temaParam) {
-      setTema(temaParam);
-    }
+    if (temaParam) setTema(temaParam);
     
     if (termosParam) {
       const list = termosParam
