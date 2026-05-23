@@ -207,7 +207,7 @@ export default function MnemonicGeneratorPage() {
               entity_type: 'mnemonic',
               entity_id: res.data.result_id,
               study_context: {
-                topic: tema.trim()
+                topic: finalTema
               },
               metadata: {
                 score: res.data.score_final,
