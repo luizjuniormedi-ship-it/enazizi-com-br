@@ -24,12 +24,13 @@ export default function TutorV2Page() {
   const { session, isLoading, stats } = useTutorV2Session(sessionId);
   const [newTopic, setNewTopic] = useState(urlTopic || studyCtx?.topic || "");
   const [isCreating, setIsCreating] = useState(false);
+  const creatingSessionRef = useRef(false);
   const [bootStatus, setBootStatus] = useState("");
 
   // Auto-start session if coming from study context or URL topic
   useEffect(() => {
     // Only auto-start if we are NOT on a specific session and NOT already creating one
-    if (sessionId || isCreating) return;
+    if (sessionId || isCreating || creatingSessionRef.current) return;
     
     const topicToStart = urlTopic || studyCtx?.topic;
     if (topicToStart && user) {
@@ -41,9 +42,10 @@ export default function TutorV2Page() {
 
   const handleStartSession = async (topic?: string) => {
     const finalTopic = topic || newTopic;
-    if (!finalTopic.trim() || !user || isCreating || sessionId) return;
+    if (!finalTopic.trim() || !user || isCreating || creatingSessionRef.current || sessionId) return;
     
     setIsCreating(true);
+    creatingSessionRef.current = true;
     setBootStatus("Inicializando preceptor...");
 
     // Context hydration for ALOS
