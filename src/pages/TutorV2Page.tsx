@@ -28,12 +28,15 @@ export default function TutorV2Page() {
 
   // Auto-start session if coming from study context or URL topic
   useEffect(() => {
+    // Only auto-start if we are NOT on a specific session and NOT already creating one
+    if (sessionId || isCreating) return;
+    
     const topicToStart = urlTopic || studyCtx?.topic;
-    if (topicToStart && user && !sessionId && !isCreating) {
+    if (topicToStart && user) {
       console.log("[TUTOR_AUTO_START] Detected context for topic:", topicToStart);
       handleStartSession(topicToStart);
     }
-  }, [studyCtx?.topic, urlTopic, user, sessionId]);
+  }, [studyCtx?.topic, urlTopic, user, sessionId, isCreating]);
 
 
   const handleStartSession = async (topic?: string) => {
