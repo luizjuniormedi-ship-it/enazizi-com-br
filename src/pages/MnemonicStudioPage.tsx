@@ -191,7 +191,7 @@ export default function MnemonicGeneratorPage() {
       : "Gerando mnemônico...");
     try {
       const res = await generateWithAutoRetry(
-        { tema: tema.trim(), termos, estilo, publico },
+        { tema: finalTema, termos, estilo, publico },
         (msg) => setGeneratingStatus(msg)
       );
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
