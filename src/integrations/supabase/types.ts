@@ -1082,6 +1082,81 @@ export type Database = {
           },
         ]
       }
+      ai_gateway_cache: {
+        Row: {
+          content: Json
+          created_at: string | null
+          expires_at: string
+          hash: string
+          id: string
+          prompt_type: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string | null
+          expires_at: string
+          hash: string
+          id?: string
+          prompt_type: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string | null
+          expires_at?: string
+          hash?: string
+          id?: string
+          prompt_type?: string
+        }
+        Relationships: []
+      }
+      ai_gateway_metrics: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          function_name: string | null
+          id: string
+          is_cache_hit: boolean | null
+          is_fallback: boolean | null
+          latency_ms: number | null
+          model: string
+          payload_hash: string | null
+          provider: string
+          retry_count: number | null
+          status_code: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          function_name?: string | null
+          id?: string
+          is_cache_hit?: boolean | null
+          is_fallback?: boolean | null
+          latency_ms?: number | null
+          model: string
+          payload_hash?: string | null
+          provider: string
+          retry_count?: number | null
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          function_name?: string | null
+          id?: string
+          is_cache_hit?: boolean | null
+          is_fallback?: boolean | null
+          latency_ms?: number | null
+          model?: string
+          payload_hash?: string | null
+          provider?: string
+          retry_count?: number | null
+          status_code?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_generated_assets: {
         Row: {
           asset_type: string
