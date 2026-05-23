@@ -161,8 +161,9 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
           speech: response?.questionReview?.is_correct ? "Excelente raciocínio!" : "Percebi um ponto de confusão aqui."
         });
 
-        // Emit ALOS Event for Tutor Interaction
-        await pedagogicalEventBus.emit({
+        // Emit ALOS Event for Tutor Interaction (Non-blocking)
+        console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending tutor interaction telemetry...");
+        void pedagogicalEventBus.emit({
           event_type: 'tutor_question_answered',
           module: 'tutor',
           source: 'frontend',
@@ -176,7 +177,9 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
             question_type: response?.questionReview?.question_type,
             student_answer: response?.questionReview?.student_answer
           }
-        }, user.id);
+        }, user.id).catch(err => {
+          console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Tutor interaction telemetry failed:", err);
+        });
       } else {
         triggerInteraction({
           state: 'teaching',
