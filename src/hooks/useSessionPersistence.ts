@@ -199,7 +199,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
       const state = getStateRef.current();
       if (!state || Object.keys(state).length === 0) return;
 
-      // Use sendBeacon with Supabase REST API for reliable save on page close
+      // Use fetch with keepalive and credentials: omit to avoid CORS issues on close
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       if (supabaseUrl && supabaseKey && sessionIdRef.current) {
@@ -208,16 +208,16 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
           session_data: state,
           updated_at: new Date().toISOString(),
         });
-        const blob = new Blob([body], { type: "application/json" });
+        
         try {
-          // Switching to fetch with keepalive: true and credentials: omit
-          // This avoids CORS issues with Access-Control-Allow-Origin: *
-          // while ensuring the request completes even if the page is closed.
-          fetch(url + `&apikey=${supabaseKey}`, {
+          // Use fetch with keepalive: true and credentials: omit
+          // This avoids the "Access-Control-Allow-Origin must not be '*' when credentials mode is 'include'" error
+          fetch(url, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
               "apikey": supabaseKey,
+              "Authorization": `Bearer ${supabaseKey}`, // Fallback for public access if needed, though typically apikey is enough
               "Prefer": "return=minimal",
             },
             body,
