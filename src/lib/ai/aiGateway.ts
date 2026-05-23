@@ -45,7 +45,11 @@ export class AIGateway {
   public async invoke(
     functionName: string, 
     body: any, 
-    options: { tier?: 'FAST' | 'REASONING', ttlDays?: number } = {}
+    options: { 
+      tier?: 'FAST' | 'REASONING', 
+      ttlDays?: number,
+      onStatus?: (status: AIStatus) => void
+    } = {}
   ): Promise<AIResponse> {
     const tier = options.tier || 'FAST';
     const payloadHash = await this.generateHash({ functionName, body });
@@ -53,6 +57,7 @@ export class AIGateway {
     // 1. DEDUPE (In-flight request registry)
     if (this.inflightRequests.has(payloadHash)) {
       console.log(`[AI_GATEWAY] Deduplicating request: ${payloadHash}`);
+      options.onStatus?.('loading');
       return this.inflightRequests.get(payloadHash)!;
     }
 
@@ -71,12 +76,15 @@ export class AIGateway {
     body: any, 
     tier: 'FAST' | 'REASONING',
     payloadHash: string,
-    options: { ttlDays?: number }
+    options: { ttlDays?: number, onStatus?: (status: AIStatus) => void }
   ): Promise<AIResponse> {
+    options.onStatus?.('loading');
+    
     // 2. GLOBAL CACHE (Supabase)
     const cachedResult = await this.checkCache(payloadHash);
     if (cachedResult) {
       console.log(`[CACHE_HIT] Result recovered for ${payloadHash}`);
+      options.onStatus?.('cache');
       return {
         success: true,
         data: cachedResult,
@@ -87,16 +95,20 @@ export class AIGateway {
 
     const models = rateLimitManager.getRecommendation(tier);
     let lastError = null;
-    let fallbackChain: string[] = [];
 
     // 3. PROVIDER FALLBACK & RETRY
-    for (const model of models) {
+    for (const [index, model] of models.entries()) {
       const provider = model.split('/')[0];
-      fallbackChain.push(model);
+      
+      if (index > 0) {
+        console.log(`[AIGW_FALLBACK_${index.toString().padStart(2, '0')}] Trying ${model}`);
+        options.onStatus?.('fallback');
+      }
       
       for (let retry = 0; retry < 3; retry++) {
         try {
           if (retry > 0) {
+            options.onStatus?.('retry');
             const delay = rateLimitManager.getRetryDelay(retry);
             console.log(`[AI_GATEWAY] Retry ${retry} for ${model} after ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
@@ -128,13 +140,19 @@ export class AIGateway {
             lastError = error;
             
             // If it's a 429, break retry loop to try fallback provider
-            const is429 = error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('RESOURCE_EXHAUSTED');
+            const is429 = error?.status === 429 || 
+                         error?.message?.includes('429') || 
+                         error?.message?.includes('RESOURCE_EXHAUSTED') ||
+                         error?.message?.includes('rate_limit') ||
+                         error?.message?.includes('quota exceeded');
+            
             if (is429) {
               console.log(`[AIGW_PROVIDER_SWITCH] Switching provider due to quota limit on ${model}`);
               break; 
             }
             continue;
           }
+
 
           // SUCCESS
           rateLimitManager.reportSuccess(provider, latency);
