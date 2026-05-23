@@ -220,7 +220,7 @@ const ErrorBank = () => {
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl h-11 w-11">
+                  <Button variant="outline" size="icon" aria-label="Mais opções" data-testid="error-bank-more-options" className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl h-11 w-11">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -233,6 +233,8 @@ const ErrorBank = () => {
               <Button
                 variant="outline"
                 className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl gap-2 h-11"
+                aria-label="Gerar Flashcards dos erros"
+                data-testid="error-bank-generate-flashcards"
                 onClick={generateFlashcardsFromErrors}
                 disabled={generatingFlashcards}
               >
@@ -243,6 +245,8 @@ const ErrorBank = () => {
                 variant="outline"
                 size="icon"
                 className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl h-11 w-11"
+                aria-label="Atualizar banco de erros"
+                data-testid="error-bank-refresh"
                 onClick={loadErrors}
               >
                 <RefreshCw className="h-4 w-4" />

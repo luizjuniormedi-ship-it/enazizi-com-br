@@ -210,6 +210,8 @@ const Dashboard = () => {
           </div>
           <div className="flex gap-3">
             <button 
+              aria-label="Atualizar métricas"
+              data-testid="dashboard-retry-sync"
               onClick={() => {
                 refreshStudyNext();
                 refreshSnapshot();
@@ -220,6 +222,8 @@ const Dashboard = () => {
               Tentar atualizar
             </button>
             <button 
+              aria-label="Iniciar sessão agora"
+              data-testid="dashboard-start-session-anyway"
               onClick={() => navigate("/dashboard/sessao-estudo")}
               className="text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors"
             >
