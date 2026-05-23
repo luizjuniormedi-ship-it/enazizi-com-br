@@ -90,18 +90,22 @@ export default function MnemonicGeneratorPage() {
     const termosParam = searchParams.get("termos");
     const estiloParam = searchParams.get("estilo");
     const publicoParam = searchParams.get("publico");
-    if (temaParam) setTema(temaParam);
+
+    if (temaParam) {
+      setTema(temaParam);
+    }
+    
     if (termosParam) {
-      // aceita separadores , ; | ou newline
       const list = termosParam
         .split(/[,;|\n]+/)
         .map((t) => t.trim())
         .filter(Boolean);
       if (list.length > 0) setTermosText(list.join("\n"));
     }
+    
     if (estiloParam) setEstilo(estiloParam);
     if (publicoParam) setPublico(publicoParam);
-  }, [searchParams]);
+  }, [searchParams, location.state]);
 
   const { data: errorSuggestions } = useErrorSuggestions();
 
