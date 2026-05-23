@@ -6,12 +6,19 @@ import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
  * Master Orchestrator for pedagogical events and cognitive transitions.
  */
 Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, logger, supabaseAdmin }) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
   const { event } = body;
 
   if (!event || !event.id) {
-    return new Response(JSON.stringify({ success: false, error: "Event payload missing" }), { status: 400 });
+    return new Response(JSON.stringify({ success: false, error: "Event payload missing" }), { 
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
 
   const correlationId = event.correlation_id || event.metadata?.correlation_id;
