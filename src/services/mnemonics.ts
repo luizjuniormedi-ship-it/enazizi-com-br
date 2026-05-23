@@ -141,15 +141,19 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
 // GENERATE (calls edge function)
 // ══════════════════════════════════════════════════
 
-export async function generateMnemonic(input: MnemonicRequest): Promise<MnemonicApiResponse> {
+export async function generateMnemonic(input: MnemonicRequest & { onStatus?: (status: any) => void }): Promise<MnemonicApiResponse> {
   try {
     console.log("[MNEMONIC_03_INVOKE_START]", { tema: input.tema, termsCount: input.termos?.length });
-    const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
-      body: input,
-      headers: { "x-timeout-ms": "115000" }, // Signal to backend
+    
+    const response = await aiGateway.invoke("generate-mnemonic", input, {
+      tier: 'REASONING',
+      ttlDays: 30,
+      onStatus: input.onStatus
     });
 
-    if (error) {
+    if (!response.success) {
+      console.error("[MNEMONIC_04_RESPONSE_ERROR] AI Gateway error:", response.error);
+
       console.error("[MNEMONIC_04_RESPONSE_ERROR] Edge function error:", error);
       const ctx = (error as any)?.context;
       if (ctx && typeof ctx.json === "function") {
