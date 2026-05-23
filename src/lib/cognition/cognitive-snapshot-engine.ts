@@ -50,9 +50,10 @@ export class CognitiveSnapshotEngine {
       fatigue_state: { fatigue: fsrsRes.data?.fatigue_index || 0 }
     };
 
+    // Phase 4: Use upsert for snapshots to prevent race condition conflicts
     const { data, error } = await supabase
       .from('cognitive_snapshots')
-      .insert(snapshotData)
+      .upsert(snapshotData, { onConflict: 'user_id, source_event_id' })
       .select()
       .single();
 
