@@ -1,14 +1,15 @@
+
 /**
- * ENAZIZI — AI Router (v2026.2)
- * Refactored to support AI Routing Governance Layer and Semantic Failover.
+ * ENAZIZI — AI Router (v2026.3 - Enterprise Resilient)
+ * Implements fallback, circuit breaker, quota management and cache.
  */
 
 import { StructuredLogger } from "./structured-logger.ts";
-import { MODEL_METRICS } from "../ai-model-registry.ts";
-import { getTokenParameterName, AI_MODELS, normalizeModel } from "../ai-models.ts";
+import { MODEL_METRICS, ALLOWED_MODELS } from "../ai-model-registry.ts";
+import { getTokenParameterName, normalizeModel } from "../ai-models.ts";
 import { AiRoutingEngine, AiTaskType, CognitiveState } from "./ai-routing-engine.ts";
-import { AiGovernance } from "./ai-governance.ts";
 import { AiProviderHealth } from "./ai-provider-health.ts";
+import { aiGatewayManager } from "../ai-gateway-manager.ts";
 
 export interface AiRequest {
   model?: string;
@@ -23,17 +24,18 @@ export interface AiRequest {
   userId?: string;
 }
 
-/**
- * Calculates estimated cost in USD.
- */
-function calculateCost(model: string, usage: { prompt_tokens: number, completion_tokens: number }) {
-  const metrics = MODEL_METRICS[model];
-  if (!metrics) return 0;
-  
-  const promptCost = (usage.prompt_tokens / 1_000_000) * metrics.prompt;
-  const completionCost = (usage.completion_tokens / 1_000_000) * metrics.completion;
-  return promptCost + completionCost;
-}
+const FALLBACK_CHAINS = {
+  FAST: [
+    "google/gemini-2.5-flash-lite",
+    "google/gemini-2.5-flash",
+    "openai/gpt-4o-mini"
+  ],
+  REASONING: [
+    "google/gemini-2.5-pro",
+    "openai/o3-mini",
+    "openai/gpt-4o"
+  ]
+};
 
 export async function callAi(
   payload: AiRequest,
@@ -43,8 +45,10 @@ export async function callAi(
 ) {
   const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-  // 1. Determine Model via Routing Engine
+  // 1. Determine Tier and Initial Model
+  const tier = (payload.complexity === "alta" || payload.taskType === "reasoning") ? 'REASONING' : 'FAST';
   const routing = AiRoutingEngine.route({
     taskType: payload.taskType,
     cognitiveState: payload.cognitiveState,
@@ -53,193 +57,148 @@ export async function callAi(
 
   const baseModel = payload.model || routing.model;
   
-  // 2. Prepare Models to Try (Failover Chain)
-  const modelsToTry = [
-    normalizeModel(baseModel),
-    AI_MODELS.FAST,
-    AI_MODELS.REASONING,
-    AI_MODELS.FALLBACK
-  ];
+  // 2. Failover Chain Preparation
+  const chain = [normalizeModel(baseModel), ...FALLBACK_CHAINS[tier]];
+  const uniqueModels = [...new Set(chain)];
 
-  const uniqueModels = [...new Set(modelsToTry)];
-  let lastError = null;
-
-  // Track the routing decision in DB
-  const logRouting = (async () => {
-    try {
-      await supabaseAdmin.from("ai_routing_decisions").insert({
-        correlation_id: logger.correlationId,
-        user_id: payload.userId,
-        task_type: payload.taskType,
-        cognitive_state: payload.cognitiveState,
-        requested_model: payload.model,
-        selected_model: baseModel,
-        routing_reason: routing.reason
-      });
-    } catch (err) {
-      logger.warn("ROUTING_LOG_FAIL", err.message);
-    }
-  })();
-  if (waitUntil) waitUntil(logRouting);
-
-  for (const model of uniqueModels) {
-    const startTime = Date.now();
-    const provider = model.split('/')[0] || "unknown";
-    const modelName = model.split('/')[1] || model;
-
-    try {
-      const tokenParam = getTokenParameterName(model);
-      const normalizedPayload: any = { ...payload, model };
-      
-      // Sanitização Final
-      delete normalizedPayload.taskType;
-      delete normalizedPayload.cognitiveState;
-      delete normalizedPayload.complexity;
-      delete normalizedPayload.userId;
-      delete normalizedPayload.modelName;
-      delete normalizedPayload.ai_model;
-      delete normalizedPayload.selectedModel;
-      delete normalizedPayload.expectedBlock;
-
-      logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Attempting model ${model}`, { 
-        correlation_id: logger.correlationId,
-        resolvedModel: model,
-        taskType: payload.taskType
-      });
-
-      if (payload.max_tokens && tokenParam === "max_completion_tokens") {
-        normalizedPayload.max_completion_tokens = payload.max_tokens;
-        delete normalizedPayload.max_tokens;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
-
-      // --- LOGIC FOR DIRECT PROVIDER PRIORITY ---
-      const openaiKey = Deno.env.get("OPENAI_API_KEY");
-      const geminiKey = Deno.env.get("GEMINI_API_KEY");
-      
-      let res: Response;
-      let usedDirect = false;
-
-      // 1. Try Direct OpenAI first if model is openai/* or key is available
-      if (openaiKey && (provider === "openai" || provider === "unknown")) {
-        try {
-          const targetUrl = "https://api.openai.com/v1/chat/completions";
-          const targetHeaders = {
-            "Authorization": `Bearer ${openaiKey}`,
-            "Content-Type": "application/json",
-            "X-Correlation-Id": logger.correlationId
-          };
-          const directPayload = { ...normalizedPayload, model: modelName };
-          
-          logger.info("AI_DIRECT_BYPASS_OPENAI", `Trying direct OpenAI for ${modelName}`);
-          res = await fetch(targetUrl, {
-            method: "POST",
-            headers: targetHeaders,
-            body: JSON.stringify(directPayload),
-            signal: controller.signal
-          });
-          
-          if (res.ok) {
-            usedDirect = true;
-          } else {
-            logger.warn("AI_DIRECT_OPENAI_FAILED", `Direct OpenAI failed with status ${res.status}`);
-          }
-        } catch (err) {
-          logger.error("AI_DIRECT_OPENAI_EXCEPTION", err.message);
-        }
-      }
-
-      // 2. If direct OpenAI failed or wasn't available, try Lovable Gateway
-      if (!usedDirect) {
-        logger.info("AI_GATEWAY_ATTEMPT", `Trying Lovable Gateway for ${model}`);
-        res = await fetch(LOVABLE_GATEWAY, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-            "X-Correlation-Id": logger.correlationId
-          },
-          body: JSON.stringify(normalizedPayload),
-          signal: controller.signal
-        });
-
-        // 3. If Gateway returns 402, try direct Gemini fallback if available
-        if (res.status === 402 && geminiKey && provider === "google") {
-          logger.warn("GATEWAY_CREDIT_EXHAUSTED", "AI Gateway out of credits. Attempting direct Gemini bypass.");
-          const targetUrl = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
-          res = await fetch(targetUrl, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${geminiKey}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ ...normalizedPayload, model: modelName }),
-            signal: controller.signal
-          });
-        }
-      }
-
-      clearTimeout(timeoutId);
-      const latency = Date.now() - startTime;
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        
-        const reportError = (async () => {
-          await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
-            provider,
-            model,
-            status: "error",
-            latencyMs: latency,
-            error: errorText
-          });
-        })();
-        if (waitUntil) waitUntil(reportError);
-
-        if (res.status === 400 && (errorText.includes("invalid model") || errorText.includes("Unsupported model"))) {
-          logger.warn("AI_MODEL_INVALID", `Model ${model} rejected. Retrying chain.`);
-          continue; 
-        }
-
-        lastError = new Error(`AI Gateway error ${res.status}: ${errorText}`);
-        continue;
-      }
-
-      if (payload.stream) return res;
-
-      const data = await res.json();
-      const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0 };
-      const cost = calculateCost(model, usage);
-      
-      // Governance & Health
-      const reportSuccess = (async () => {
-        await AiProviderHealth.reportStatus(supabaseAdmin, logger, {
-          provider,
-          model,
-          status: "success",
-          latencyMs: latency
-        });
-
-        await AiGovernance.logResponse(supabaseAdmin, logger, {
-          model,
-          latency,
-          cost,
-          usage,
-          correlationId: logger.correlationId,
-          taskType: payload.taskType
-        });
-      })();
-      if (waitUntil) waitUntil(reportSuccess);
-
-      return data;
-    } catch (error) {
-      logger.error("AI_EXCEPTION", `Exception calling ${model}`, { error: error.message });
-      lastError = error;
-      continue;
+  // 3. Global Cache Check
+  if (!payload.stream) {
+    const promptText = payload.messages.map(m => m.content).join("\n");
+    const cached = await aiGatewayManager.getFromCache(promptText, uniqueModels[0]);
+    if (cached) {
+      logger.info("CACHE_HIT", `Serving cached content for ${uniqueModels[0]}`);
+      return cached;
     }
   }
 
-  throw lastError || new Error("ALL_AI_MODELS_FAILED");
+  let lastError = null;
+
+  // 4. Fallback Loop
+  for (const model of uniqueModels) {
+    const provider = model.split('/')[0] || "unknown";
+    const modelName = model.split('/')[1] || model;
+
+    // Quota/Cooldown Check
+    const isAvailable = await aiGatewayManager.isAvailable(provider, model);
+    if (!isAvailable) {
+      logger.warn("PROVIDER_COOLDOWN_SKIP", `Skipping ${model} due to active cooldown`);
+      continue;
+    }
+
+    const maxRetries = 2;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const startTime = Date.now();
+      try {
+        const tokenParam = getTokenParameterName(model);
+        const normalizedPayload: any = { ...payload, model: modelName };
+        
+        // Clean payload
+        delete normalizedPayload.taskType;
+        delete normalizedPayload.cognitiveState;
+        delete normalizedPayload.complexity;
+        delete normalizedPayload.userId;
+
+        if (payload.max_tokens && tokenParam === "max_completion_tokens") {
+          normalizedPayload.max_completion_tokens = payload.max_tokens;
+          delete normalizedPayload.max_tokens;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+        let res: Response;
+        let isDirect = false;
+
+        // Try direct OpenAI if applicable
+        if (OPENAI_API_KEY && (provider === "openai")) {
+          res = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${OPENAI_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(normalizedPayload),
+            signal: controller.signal
+          });
+          isDirect = true;
+        } else {
+          // Use Lovable Gateway for everything else (Gemini, Anthropic, etc)
+          res = await fetch(LOVABLE_GATEWAY, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+              "X-Correlation-Id": logger.correlationId
+            },
+            body: JSON.stringify({ ...normalizedPayload, model }),
+            signal: controller.signal
+          });
+        }
+
+        clearTimeout(timeoutId);
+        const latency = Date.now() - startTime;
+
+        if (res.ok) {
+          if (payload.stream) return res;
+
+          const data = await res.json();
+          
+          // Log metrics asynchronously
+          if (waitUntil) {
+            waitUntil(aiGatewayManager.logMetric({
+              provider,
+              model,
+              operation: "callAi",
+              latency_ms: latency,
+              prompt_tokens: data.usage?.prompt_tokens,
+              completion_tokens: data.usage?.completion_tokens,
+              success: true,
+              status_code: res.status
+            }));
+
+            // Set Cache
+            const promptText = payload.messages.map(m => m.content).join("\n");
+            waitUntil(aiGatewayManager.setCache(promptText, model, provider, data));
+          }
+
+          return data;
+        }
+
+        // Handle failure
+        const errorText = await res.text();
+        logger.warn("AI_CALL_FAILED", `Model ${model} failed with status ${res.status}`, { error: errorText });
+
+        if (waitUntil) {
+          waitUntil(aiGatewayManager.logFailure({
+            provider,
+            model,
+            error_code: String(res.status),
+            error_message: errorText,
+            fallback_model: uniqueModels[uniqueModels.indexOf(model) + 1]
+          }));
+        }
+
+        if (res.status === 429) {
+          // Immediate fallback on rate limit
+          break; 
+        }
+
+        // For other retryable errors, wait before retrying same model
+        if ([500, 502, 503, 504].includes(res.status)) {
+           await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+           continue;
+        }
+        
+        // Non-retryable error, move to next model
+        break;
+
+      } catch (err) {
+        logger.error("AI_EXCEPTION", `Exception calling ${model}`, { error: err.message });
+        lastError = err;
+        break; // Move to next model on exception
+      }
+    }
+  }
+
+  throw lastError || new Error("ALL_AI_PROVIDERS_EXHAUSTED_OR_COOLDOWN");
 }
