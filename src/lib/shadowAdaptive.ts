@@ -363,8 +363,7 @@ export async function logShadowScores(scores: {
         },
       } as any,
       event_hash: eventHash,
-      idempotency_key: eventHash,
-    }], { onConflict: "idempotency_key" });
+    }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowScores skipped:", e);
   }
