@@ -269,8 +269,9 @@ const QuestionsBank = () => {
     // Award XP
     await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
 
-    // ENAZIZI ALOS Event Bus integration
-    await pedagogicalEventBus.emit({
+    // ENAZIZI ALOS Event Bus integration (Non-blocking)
+    console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending question answer telemetry...");
+    void pedagogicalEventBus.emit({
       event_type: isCorrect ? 'planner_task_completed' : 'simulado_error_detected',
       module: 'simulado',
       source: 'frontend',
@@ -287,7 +288,9 @@ const QuestionsBank = () => {
         selected_option: selected,
         correct_option: practiceQuestion.correct_index
       }
-    }, user.id);
+    }, user.id).catch(err => {
+      console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Question telemetry failed:", err);
+    });
 
     // Medical domain map and Error Bank are now handled asynchronously by the ALOS Event Bus
     // to ensure architectural consistency and prevent UI blocking.
