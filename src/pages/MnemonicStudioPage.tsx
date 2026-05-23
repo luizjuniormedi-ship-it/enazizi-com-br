@@ -229,14 +229,15 @@ export default function MnemonicGeneratorPage() {
         
         // NON-BLOCKING TELEMETRY
         // We do NOT await this. We let it run in background.
-        (async () => {
+        void (async () => {
           try {
+            console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Preparing background telemetry...");
             const { data: { user } } = await supabase.auth.getUser();
             if (user && res.data) {
               console.log("[MNEMONIC_07_DB_SAVE] Emitting event (non-blocking)...");
               const stableIdempotencyKey = `mnem_${user.id}_${res.data.result_id}`;
               
-              pedagogicalEventBus.emit({
+              void pedagogicalEventBus.emit({
                 event_type: 'mnemonic_generated',
                 module: 'content',
                 source: 'frontend',
@@ -252,11 +253,11 @@ export default function MnemonicGeneratorPage() {
                   event_hash: stableIdempotencyKey
                 }
               }, user.id).catch(err => {
-                console.error("[MNEMONIC_TELEMETRY_FAILED_NON_BLOCKING]", err);
+                console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT]", err);
               });
             }
           } catch (err) {
-            console.error("[MNEMONIC_TELEMETRY_SESSION_FAILED]", err);
+            console.error("[SAFE_TELEMETRY_FALLBACK] [MNEMONIC_TELEMETRY_SESSION_FAILED]", err);
           }
         })();
 
