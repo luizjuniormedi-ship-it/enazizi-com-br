@@ -173,28 +173,50 @@ export default function MnemonicGeneratorPage() {
 
   const handleGenerate = useCallback(async (overrideTopic?: string | React.MouseEvent) => {
     const finalTema = (typeof overrideTopic === 'string' ? overrideTopic : tema || "").trim();
+    console.log("[MNEMONIC_01_AUTO_TRIGGER] Starting generation for:", finalTema);
+    
     const validation = validateMnemonicForm({ tema: finalTema, termos, estilo, publico });
-    if (!validation.valid) { setFormErrors(validation.errors); return; }
+    if (!validation.valid) { 
+      console.warn("[MNEMONIC_VALIDATION_FAILED]", validation.errors);
+      setFormErrors(validation.errors); 
+      return; 
+    }
+    
     setFormErrors({});
     setResult(null);
     setResultError(null);
     setQuickFeedback(null);
     setIsGenerating(true);
+    
     const isAutoMode = termos.length === 0;
+    const payload = { tema: finalTema, termos, estilo, publico };
+    console.log("[MNEMONIC_02_PAYLOAD]", payload);
+    
     setGeneratingStatus(isAutoMode
       ? "🧠 Extraindo termos do tema com IA..."
       : "Gerando mnemônico...");
+      
     try {
+      console.log("[MNEMONIC_03_INVOKE_START]");
       const res = await generateWithAutoRetry(
-        { tema: finalTema, termos, estilo, publico },
-        (msg) => setGeneratingStatus(msg)
+        payload,
+        (msg) => {
+          console.log("[MNEMONIC_STATUS_UPDATE]", msg);
+          setGeneratingStatus(msg);
+        }
       );
+      
+      console.log("[MNEMONIC_04_RESPONSE]", res);
+      
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
+        console.log("[MNEMONIC_05_PARSED] Success:", res.data.result_id);
         setResult(res.data);
         setResultError(null);
+        
         // Emit ALOS Event
         supabase.auth.getUser().then(({ data: { user } }) => {
           if (user && res.data) {
+            console.log("[MNEMONIC_07_DB_SAVE] Emitting event...");
             pedagogicalEventBus.emit({
               event_type: 'mnemonic_generated',
               module: 'content',
@@ -214,13 +236,15 @@ export default function MnemonicGeneratorPage() {
         toast.success(isAutoMode ? "Mnemônico gerado automaticamente!" : "Mnemônico gerado!");
       } else {
         const msg = res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.";
+        console.error("[MNEMONIC_FAILED_VALIDATION]", msg);
         setResult(null);
         setResultError(msg);
-        telemetry.track('mnemonic_rejected', { tema, reason: res.error || 'validation_failed' });
+        telemetry.track('mnemonic_rejected', { tema: finalTema, reason: res.error || 'validation_failed' });
         toast.error(msg);
       }
     } catch (err: any) {
       const msg = err?.message || "Erro ao gerar mnemônico.";
+      console.error("[MNEMONIC_ERROR_CAUGHT]", err);
       setResult(null);
       setResultError(msg);
       toast.error(msg);
