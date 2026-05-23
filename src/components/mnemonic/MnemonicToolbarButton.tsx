@@ -185,7 +185,9 @@ export const MnemonicToolbarButton = () => {
 
       const response = await generateOrReuseMnemonicForUser({
         userId: user.id, topic: effectiveTopic, contentType, items: optimized.optimizedItems, source: "manual",
+        onStatus: (status) => setLoadingStatus(status)
       });
+
       const elapsed = Date.now() - startTime;
       supabase.from("ai_usage_logs" as any).insert({
         user_id: user.id, function_name: "generate-mnemonic", actor_type: "user",
