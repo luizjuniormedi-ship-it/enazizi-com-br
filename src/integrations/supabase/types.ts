@@ -1396,6 +1396,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_inflight_requests: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          lock_key: string
+          result_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          lock_key: string
+          result_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          lock_key?: string
+          result_id?: string | null
+        }
+        Relationships: []
+      }
       ai_model_benchmarks: {
         Row: {
           cost_estimate_usd: number | null
@@ -1641,6 +1662,30 @@ export type Database = {
           updated_at?: string | null
           user_prompt_template?: string | null
           version?: number | null
+        }
+        Relationships: []
+      }
+      ai_provider_circuits: {
+        Row: {
+          failure_count: number | null
+          last_failure_at: string | null
+          provider: string
+          state: string
+          updated_at: string | null
+        }
+        Insert: {
+          failure_count?: number | null
+          last_failure_at?: string | null
+          provider: string
+          state?: string
+          updated_at?: string | null
+        }
+        Update: {
+          failure_count?: number | null
+          last_failure_at?: string | null
+          provider?: string
+          state?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
