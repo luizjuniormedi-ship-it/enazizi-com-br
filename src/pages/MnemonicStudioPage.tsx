@@ -234,31 +234,29 @@ export default function MnemonicGeneratorPage() {
     }
   }, [tema, termos, estilo, publico]);
 
-  // ── Auto-trigger generation when arriving via deep-link with ?auto=1 ──
   useEffect(() => {
-    const auto = searchParams.get("auto");
+    const params = searchParamsRef.current;
+    const auto = params.get("auto");
     const isAuto = auto === "1" || auto === "true";
+    const state = location.state as { fromErrorBank?: boolean } | null;
+    const shouldAuto = isAuto || state?.fromErrorBank;
     
-    if (!isAuto || autoTriggeredRef.current) return;
+    if (!shouldAuto || autoTriggeredRef.current) return;
     
-    // We need at least a topic to auto-trigger
-    if (!tema || tema.trim().length < 3) {
-      return;
-    }
+    const temaParam = params.get("tema") || params.get("topic") || (location.state as any)?.prefillTopic;
+    if (!temaParam || temaParam.trim().length < 3) return;
     
-    // Safety: only trigger if not already doing something and no result exists
     if (isLoading || result) return;
     
-    console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", tema);
+    console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", temaParam);
     autoTriggeredRef.current = true;
     
-    // Longer timeout to ensure state like 'termosText' is ready if provided
     const t = setTimeout(() => { 
-      handleGenerate(); 
+      handleGenerate(temaParam); 
     }, 800);
     
     return () => clearTimeout(t);
-  }, [searchParams, tema, isLoading, result, handleGenerate]);
+  }, [isLoading, result, handleGenerate, location.state]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;
