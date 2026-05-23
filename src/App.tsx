@@ -118,7 +118,9 @@ const PageLoader = () => (
 
 const NavigateWithSearchParams = ({ to, replace = false }: { to: string; replace?: boolean }) => {
   const location = useLocation();
-  return <Navigate to={{ pathname: to, search: location.search }} replace={replace} />;
+  // Preserve all search params during navigation/redirect
+  const search = location.search;
+  return <Navigate to={{ pathname: to, search }} replace={replace} />;
 };
 
 
