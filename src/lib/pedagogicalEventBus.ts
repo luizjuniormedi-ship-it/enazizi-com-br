@@ -100,33 +100,39 @@ export const pedagogicalEventBus = {
         // Continue flow even if persistence fails
       }
 
+      // Reconstruct event for consumer - avoid using database return if possible
+      const eventForConsumer = {
+        ...payload,
+        user_id: userId,
+        idempotency_key: finalIdempotencyKey,
+        created_at: timestamp
+      };
+
       // Async trigger for the consumer Edge Function
       // This ensures the "Event Bus" logic runs immediately
-      if (data) {
-        void safeTelemetry(async () => {
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (!sessionData.session) {
-            console.warn("[COG_EVENT_RUNTIME] No active session for background telemetry");
-            return;
-          }
+      void safeTelemetry(async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          console.warn("[COG_EVENT_RUNTIME] No active session for background telemetry");
+          return;
+        }
 
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pedagogical-event-consumer`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${sessionData.session.access_token}`
-            },
-            body: JSON.stringify({ event: data })
-          });
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pedagogical-event-consumer`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.session.access_token}`
+          },
+          body: JSON.stringify({ event: eventForConsumer })
+        });
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Consumer failed: ${response.status} - ${errorText}`);
-          }
-          
-          console.log("[TELEMETRY_BACKGROUND_OK] Pedagogical event consumed successfully.");
-        }, 'pedagogical-event-trigger');
-      }
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Consumer failed: ${response.status} - ${errorText}`);
+        }
+        
+        console.log("[TELEMETRY_BACKGROUND_OK] Pedagogical event consumed successfully.");
+      }, 'pedagogical-event-trigger');
 
       // Sync cognitive state stream locally for UI reactivity
       this.updateLocalCognitiveStream(payload);
@@ -137,12 +143,13 @@ export const pedagogicalEventBus = {
       }
       
       // Phase 3: Automatic Snapshot after critical events
-      if (['question_answered', 'mission_completed', 'diagnostic_completed'].includes(payload.event_type) && data) {
+      if (['question_answered', 'mission_completed', 'diagnostic_completed'].includes(payload.event_type)) {
         console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Triggering cognitive snapshot...");
-        void cognitiveSnapshotEngine.capture(userId, data.id);
+        // Pass idempotency_key if we don't have UUID id, the engine handles it optionally
+        void cognitiveSnapshotEngine.capture(userId);
       }
 
-      return data;
+      return eventForConsumer;
 
     } catch (err) {
       console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Dispatch handled error (non-blocking):", err);
