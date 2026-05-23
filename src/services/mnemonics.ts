@@ -164,8 +164,11 @@ export async function generateMnemonic(input: MnemonicRequest): Promise<Mnemonic
     }
 
     if (!data || typeof data !== "object") {
+      console.error("[MNEMONIC_04_RESPONSE_INVALID] data=", data);
       return { success: false, error: "Resposta inválida do servidor." };
     }
+
+    console.log("[MNEMONIC_04_RESPONSE_SUCCESS]", data);
 
     const raw = data as Record<string, unknown>;
 
