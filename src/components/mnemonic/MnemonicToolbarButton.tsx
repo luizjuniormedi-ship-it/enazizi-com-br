@@ -47,6 +47,8 @@ export const MnemonicToolbarButton = () => {
   const [contentType, setContentType] = useState("criterios");
   const [itemsText, setItemsText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>("loading");
+
   const [suggesting, setSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<{ explanation: string } | null>(null);
   const [result, setResult] = useState<MnemonicResult | null>(null);
@@ -183,7 +185,9 @@ export const MnemonicToolbarButton = () => {
 
       const response = await generateOrReuseMnemonicForUser({
         userId: user.id, topic: effectiveTopic, contentType, items: optimized.optimizedItems, source: "manual",
+        onStatus: (status) => setLoadingStatus(status)
       });
+
       const elapsed = Date.now() - startTime;
       supabase.from("ai_usage_logs" as any).insert({
         user_id: user.id, function_name: "generate-mnemonic", actor_type: "user",
@@ -403,9 +407,23 @@ export const MnemonicToolbarButton = () => {
             </div>
 
             <Button className="w-full gap-2" onClick={handleGenerate} disabled={!canGenerate}>
-              {loading ? (<><Sparkles className="h-4 w-4 animate-spin" />Gerando (auditoria dupla)...</>) : (<><Brain className="h-4 w-4" />Gerar Mnemônico</>)}
+              {loading ? (
+                <>
+                  <Sparkles className="h-4 w-4 animate-spin" />
+                  {loadingStatus === "loading" && "Gerando mnemônico..."}
+                  {loadingStatus === "fallback" && "Trocando provedor de IA..."}
+                  {loadingStatus === "retry" && "Tentando novamente..."}
+                  {loadingStatus === "cache" && "Resultado recuperado do cache"}
+                </>
+              ) : (
+                <>
+                  <Brain className="h-4 w-4" />
+                  Gerar Mnemônico
+                </>
+              )}
             </Button>
           </div>
+
         ) : (
           <div className="space-y-4">
             <div className="text-center py-3">

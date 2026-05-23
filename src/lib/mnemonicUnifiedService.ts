@@ -47,7 +47,9 @@ export interface GenerateMnemonicParams {
     questionId?: string;
     attemptId?: string;
   };
+  onStatus?: (status: string) => void;
 }
+
 
 export interface MnemonicResponse {
   success: boolean;
@@ -87,7 +89,13 @@ export async function generateOrReuseMnemonicForUser(
       userId, 
       source, 
       sourceContext 
-    }, { tier: 'REASONING' });
+    }, { 
+      tier: 'REASONING', 
+      ttlDays: 30,
+      onStatus: params.onStatus as any
+    }); 
+
+
 
     if (!response.success) {
       return { success: false, error: response.error || "Erro ao gerar mnemônico." };
