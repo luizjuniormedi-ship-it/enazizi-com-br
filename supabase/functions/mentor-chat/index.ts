@@ -16,10 +16,10 @@ Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil,
   const lastUserMessage = [...(messages || [])].reverse().find((m: any) => m.role === "user")?.content || "";
   if (detectInjection(lastUserMessage)) {
     logger.warn("[MENTOR_CHAT_INJECTION_BLOCKED]", { userId: user.id, preview: lastUserMessage.slice(0, 80) });
-    return new Response(JSON.stringify({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   if (isOffTopic(lastUserMessage)) {
-    return new Response(JSON.stringify({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   // ── END INJECTION GUARD ──────────────────────────────────────────
 
@@ -95,8 +95,8 @@ Ao terminar, encerre com a pergunta obrigatória: "Antes de avançar, escolha um
         ).catch(e => logger.error("[MENTOR_CACHE_SAVE_ERROR]", e));
       }
     }
-    return new Response(JSON.stringify({ ok: true, content }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, content }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  return new Response(aiResponse.body, { headers: { "Content-Type": "text/event-stream" } });
+  return new Response(aiResponse.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
 }));

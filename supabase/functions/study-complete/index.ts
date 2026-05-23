@@ -1,5 +1,5 @@
 // study-complete - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
-import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
 
@@ -40,5 +40,5 @@ Deno.serve(enterpriseEdgeHandler("study-complete", async ({ req, logger, supabas
     }
   }
 
-  return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }));
