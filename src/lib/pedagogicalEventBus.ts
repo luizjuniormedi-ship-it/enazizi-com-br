@@ -140,13 +140,15 @@ export const pedagogicalEventBus = {
       
       // Phase 3: Automatic Snapshot after critical events
       if (['question_answered', 'mission_completed', 'diagnostic_completed'].includes(payload.event_type) && data) {
+        console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Triggering cognitive snapshot...");
         void cognitiveSnapshotEngine.capture(userId, data.id);
       }
 
       return data;
 
     } catch (err) {
-      console.error("[COG_EVENT_RUNTIME] Dispatch handled error (non-blocking):", err);
+      console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Dispatch handled error (non-blocking):", err);
+      console.log("[SAFE_TELEMETRY_FALLBACK] Continuing study flow despite telemetry error.");
       return null;
     }
   },
