@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { MedicalTermProvider } from "@/contexts/MedicalTermContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -115,6 +115,11 @@ const PageLoader = () => (
     </div>
   </div>
 );
+
+const NavigateWithSearchParams = ({ to, replace = false }: { to: string; replace?: boolean }) => {
+  const location = useLocation();
+  return <Navigate to={{ pathname: to, search: location.search }} replace={replace} />;
+};
 
 
 const queryClient = new QueryClient({
@@ -240,8 +245,8 @@ const App = () => (
                   <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
                   <Route path="missao" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="missao-do-dia" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="mnemonic-studio" element={<Navigate to="/dashboard/mnemonico" replace />} />
-                  <Route path="mnemonic-studio-v2" element={<Navigate to="/dashboard/mnemonico" replace />} />
+                  <Route path="mnemonic-studio" element={<NavigateWithSearchParams to="/dashboard/mnemonico" replace />} />
+                  <Route path="mnemonic-studio-v2" element={<NavigateWithSearchParams to="/dashboard/mnemonico" replace />} />
                   <Route path="mapas-mentais" element={<Navigate to="/dashboard/mapas-mentais" replace />} />
                   <Route path="minha-jornada" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
                   <Route path="radar-trajetoria" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
