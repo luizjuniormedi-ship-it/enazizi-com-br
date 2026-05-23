@@ -69,11 +69,13 @@ export async function logApprovalPrediction(
       input_snapshot: payload,
       decision_output: output,
       confidence_score: prediction.hasEnoughData ? 0.85 : 0.5,
+      idempotency_key: eventHash,
       justification: prediction.message,
       event_hash: eventHash,
-    }, { onConflict: "user_id,event_hash" });
+    }, { onConflict: "idempotency_key" });
     writeLast({ ts: now, score: prediction.score, userId });
-  } catch {
+  } catch (err) {
     // Telemetria nunca quebra UX
+    console.warn("[approvalTelemetry] log skipped (non-blocking):", err);
   }
 }
