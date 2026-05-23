@@ -83,17 +83,21 @@ export default function MnemonicGeneratorPage() {
   // ── Deep-link from study-next / cockpit ──
   // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
   const autoTriggeredRef = useRef(false);
+  const searchParamsRef = useRef(searchParams);
+  
+  // Sync ref with search params to avoid stale closures in handleGenerate
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+
   useEffect(() => {
     const state = location.state as { prefillTopic?: string; fromErrorBank?: boolean } | null;
     const temaParam = searchParams.get("tema") || searchParams.get("topic") || state?.prefillTopic;
-    const autoParam = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
     const termosParam = searchParams.get("termos");
     const estiloParam = searchParams.get("estilo");
     const publicoParam = searchParams.get("publico");
 
-    if (temaParam) {
-      setTema(temaParam);
-    }
+    if (temaParam) setTema(temaParam);
     
     if (termosParam) {
       const list = termosParam
@@ -172,8 +176,9 @@ export default function MnemonicGeneratorPage() {
   const [generatingStatus, setGeneratingStatus] = useState<string>("Gerando mnemônico...");
   const isLoading = isGenerating || regenerateMutation.isPending;
 
-  const handleGenerate = useCallback(async () => {
-    const validation = validateMnemonicForm({ tema, termos, estilo, publico });
+  const handleGenerate = useCallback(async (overrideTopic?: string | React.MouseEvent) => {
+    const finalTema = (typeof overrideTopic === 'string' ? overrideTopic : tema || "").trim();
+    const validation = validateMnemonicForm({ tema: finalTema, termos, estilo, publico });
     if (!validation.valid) { setFormErrors(validation.errors); return; }
     setFormErrors({});
     setResult(null);
@@ -186,7 +191,7 @@ export default function MnemonicGeneratorPage() {
       : "Gerando mnemônico...");
     try {
       const res = await generateWithAutoRetry(
-        { tema: tema.trim(), termos, estilo, publico },
+        { tema: finalTema, termos, estilo, publico },
         (msg) => setGeneratingStatus(msg)
       );
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
@@ -202,7 +207,7 @@ export default function MnemonicGeneratorPage() {
               entity_type: 'mnemonic',
               entity_id: res.data.result_id,
               study_context: {
-                topic: tema.trim()
+                topic: finalTema
               },
               metadata: {
                 score: res.data.score_final,
@@ -229,31 +234,29 @@ export default function MnemonicGeneratorPage() {
     }
   }, [tema, termos, estilo, publico]);
 
-  // ── Auto-trigger generation when arriving via deep-link with ?auto=1 ──
   useEffect(() => {
-    const auto = searchParams.get("auto");
+    const params = searchParamsRef.current;
+    const auto = params.get("auto");
     const isAuto = auto === "1" || auto === "true";
+    const state = location.state as { fromErrorBank?: boolean } | null;
+    const shouldAuto = isAuto || state?.fromErrorBank;
     
-    if (!isAuto || autoTriggeredRef.current) return;
+    if (!shouldAuto || autoTriggeredRef.current) return;
     
-    // We need at least a topic to auto-trigger
-    if (!tema || tema.trim().length < 3) {
-      return;
-    }
+    const temaParam = params.get("tema") || params.get("topic") || (location.state as any)?.prefillTopic;
+    if (!temaParam || temaParam.trim().length < 3) return;
     
-    // Safety: only trigger if not already doing something and no result exists
     if (isLoading || result) return;
     
-    console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", tema);
+    console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", temaParam);
     autoTriggeredRef.current = true;
     
-    // Longer timeout to ensure state like 'termosText' is ready if provided
     const t = setTimeout(() => { 
-      handleGenerate(); 
+      handleGenerate(temaParam); 
     }, 800);
     
     return () => clearTimeout(t);
-  }, [searchParams, tema, isLoading, result, handleGenerate]);
+  }, [isLoading, result, handleGenerate, location.state]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;

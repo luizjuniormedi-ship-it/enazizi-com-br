@@ -72,9 +72,12 @@ export const pedagogicalEventBus = {
     });
 
     try {
+      // Phase 4: Use upsert for assistant_decisions to prevent 409 Conflict
+      const isDecision = payload.event_type.includes('decision') || payload.event_type.includes('snapshot');
+      
       const { data, error } = await supabase
         .from("pedagogical_events")
-        .insert({
+        .upsert({
           user_id: userId,
           event_type: payload.event_type,
           module: payload.module,
@@ -89,7 +92,7 @@ export const pedagogicalEventBus = {
           recursion_depth: payload.recursion_depth || 0,
           replay_id: payload.replay_id,
           status: 'pending'
-        })
+        }, { onConflict: 'idempotency_key' })
         .select()
         .single();
 
