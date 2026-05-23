@@ -153,22 +153,10 @@ export async function generateMnemonic(input: MnemonicRequest & { onStatus?: (st
 
     if (!response.success) {
       console.error("[MNEMONIC_04_RESPONSE_ERROR] AI Gateway error:", response.error);
-
-      console.error("[MNEMONIC_04_RESPONSE_ERROR] Edge function error:", error);
-      const ctx = (error as any)?.context;
-      if (ctx && typeof ctx.json === "function") {
-        try {
-          const payload = await ctx.json();
-          const requestId = payload?.requestId ? ` [ID: ${payload.requestId}]` : "";
-          return { 
-            success: false, 
-            error: (payload?.message || payload?.error || "Erro ao gerar mnemônico.") + requestId 
-          };
-        } catch { /* fall through */ }
-      }
-      return { success: false, error: "Falha na conexão com o servidor de mnemônicos." };
+      return { success: false, error: response.error || "Falha ao gerar mnemônico." };
     }
 
+    const data = response.data;
     if (!data || typeof data !== "object") {
       console.error("[MNEMONIC_04_RESPONSE_INVALID] data=", data);
       return { success: false, error: "Resposta inválida do servidor." };
@@ -177,6 +165,7 @@ export async function generateMnemonic(input: MnemonicRequest & { onStatus?: (st
     console.log("[MNEMONIC_04_RESPONSE_SUCCESS]", data);
 
     const raw = data as Record<string, unknown>;
+
 
     // Check for explicit error response from edge function
     if (raw.success === false) {
