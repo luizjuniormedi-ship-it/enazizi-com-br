@@ -1,0 +1,108 @@
+/**
+ * Mnemonic Auto-Complete — fills missing critical items before generation.
+ * Integrated with Enterprise AI Gateway for resilience.
+ */
+
+import { aiGateway } from "./ai/aiGateway";
+
+const SYNONYM_MAP: Record<string, string[]> = {
+  "iam": ["infarto", "scasst", "scasst"],
+  "sepse": ["choque séptico", "infecção"],
+  "avc": ["isquêmico", "hemorrágico"],
+};
+
+function normalize(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
+function resolveConceptIds(items: string[]): string[] {
+  return items.map(item => {
+    const norm = normalize(item);
+    for (const [key, synonyms] of Object.entries(SYNONYM_MAP)) {
+      if (synonyms.includes(norm)) return key;
+    }
+    return norm;
+  });
+}
+
+function detectMode(items: string[]): "clinical" | "pharmacology" | "general" {
+  if (items.some(i => /mg|ml|g|dose|via/i.test(i))) return "pharmacology";
+  if (items.some(i => /sinal|sintoma|dor|febre|pa|fc/i.test(i))) return "clinical";
+  return "general";
+}
+
+const CLINICAL_MAPPINGS: Record<string, string[]> = {
+  "iam": ["dor torácica", "ecg", "troponina", "conduta"],
+  "sepse": ["foco infeccioso", "lactato", "antibiótico", "cristaloide"],
+};
+
+const DANGEROUS_PATTERNS = [/morfina/i, /fentanil/i, /adrenalina/i, /dose/i, /mg/i];
+
+function isDangerous(item: string): boolean {
+  return DANGEROUS_PATTERNS.some(p => p.test(item));
+}
+
+async function aiFallbackComplete(
+  topic: string,
+  subtopic: string | undefined,
+  items: string[]
+): Promise<string[]> {
+  try {
+    const prompt = `Você é um auditor médico. Analise esta lista incompleta para o tema '${topic}'${subtopic ? ` e subtema '${subtopic}'` : ""}.
+Sua tarefa é sugerir no máximo 2 itens curtos para completar a lista logicamente.
+Regras: Não repita conceitos já presentes: ${JSON.stringify(items)}. Não sugira doses ou condutas perigosas.
+Responda EXCLUSIVAMENTE em formato JSON usando esta estrutura: { "suggestedItems": ["item1", "item2"] }`;
+
+    const response = await aiGateway.invoke("ai-proxy", {
+      prompt,
+      model: "openai/gpt-4o-mini",
+      responseFormat: "json",
+      systemPrompt: "Responda apenas JSON válido.",
+    }, { tier: 'FAST' });
+
+    if (!response.success || !response.data) return [];
+
+    const text = typeof response.data === "string" ? response.data : (response.data as any).content || (response.data as any).text || JSON.stringify(response.data);
+    const jsonMatch = text.match(/\{[\s\S]*"suggestedItems"[\s\S]*\}/);
+    if (!jsonMatch) return [];
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed.suggestedItems)) return [];
+
+    return parsed.suggestedItems
+      .filter((i: unknown): i is string => typeof i === "string" && i.trim().length > 0)
+      .filter((i: string) => !isDangerous(i))
+      .slice(0, 2);
+  } catch {
+    return [];
+  }
+}
+
+export async function autoCompleteMnemonicItems(
+  topic: string,
+  subtopic: string | undefined,
+  items: string[]
+): Promise<string[]> {
+  if (items.length >= 5) return items;
+
+  const normalized = resolveConceptIds(items);
+  const mode = detectMode(items);
+  
+  // Heuristic completion
+  const suggestions: string[] = [];
+  if (mode === "clinical" && CLINICAL_MAPPINGS[normalized[0]]) {
+    const mapping = CLINICAL_MAPPINGS[normalized[0]];
+    for (const m of mapping) {
+      if (!normalized.includes(normalize(m))) {
+        suggestions.push(m);
+        if (suggestions.length >= 2) break;
+      }
+    }
+  }
+
+  if (suggestions.length > 0) return [...items, ...suggestions];
+
+  // AI Fallback
+  const aiSuggestions = await aiFallbackComplete(topic, subtopic, items);
+  return [...items, ...aiSuggestions];
+}
