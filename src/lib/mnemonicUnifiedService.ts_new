@@ -54,12 +54,12 @@ export interface MnemonicResponse {
   result?: MnemonicResult;
   error?: string;
   rejected?: boolean;
-  isFallback?: boolean;
   audit?: {
     medical_score: number;
     pedagogical_score: number;
     combined_score?: number;
   };
+  isFallback?: boolean;
 }
 
 // ══════════════════════════════════════════════════
@@ -80,6 +80,7 @@ export async function generateOrReuseMnemonicForUser(
   }
 
   try {
+    // Use the resilient AI Gateway instead of direct supabase.functions.invoke
     const response = await aiGateway.invoke("generate-mnemonic", {
       topic: topic.trim(), 
       items, 
@@ -87,7 +88,7 @@ export async function generateOrReuseMnemonicForUser(
       userId, 
       source, 
       sourceContext 
-    }, { tier: 'REASONING' });
+    }, { tier: 'REASONING' }); // Mnemonics require reasoning
 
     if (!response.success) {
       return { success: false, error: response.error || "Erro ao gerar mnemônico." };
@@ -101,6 +102,8 @@ export async function generateOrReuseMnemonicForUser(
       : payload;
 
     const result = mapToMnemonicResult(inner, topic, items);
+    
+    // Add gateway meta info
     result.cached = response.isCached || false;
 
     if (result.assetId && userId) {
@@ -114,20 +117,26 @@ export async function generateOrReuseMnemonicForUser(
     };
 
   } catch (error: any) {
-    console.warn("[MnemonicUnified] Gateway error:", error.message);
+    console.warn("[MnemonicUnified] Gateway threw:", error.message);
     return { success: false, error: error.message };
   }
 }
+
+// ══════════════════════════════════════════════════
+// RESPONSE MAPPING
+// ══════════════════════════════════════════════════
 
 function mapToMnemonicResult(
   payload: Record<string, unknown>,
   fallbackTopic: string,
   fallbackItems: string[],
 ): MnemonicResult {
+  // If already in the expected shape (has items_map), return directly
   if (Array.isArray(payload.items_map)) {
-    return { ...payload, cached: !!payload.cached } as unknown as MnemonicResult;
+    return payload as unknown as MnemonicResult;
   }
 
+  // Map from Edge Function shape (sigla, frase_mnemonica, agentes, etc.)
   const sigla = String(payload.sigla ?? payload.mnemonic ?? "");
   const frase = String(payload.frase_mnemonica ?? payload.phrase ?? "");
   const agentes = payload.agentes as Record<string, unknown> | undefined;
@@ -136,6 +145,7 @@ function mapToMnemonicResult(
   const auditorMedico = agentes?.auditor_medico as Record<string, unknown> | undefined;
   const auditorPedagogico = agentes?.auditor_pedagogico as Record<string, unknown> | undefined;
 
+  // Build items_map from generator associations or fallback
   let itemsMap: MnemonicResult["items_map"] = [];
   const associacoes = (gerador?.associacoes ?? payload.associacoes_json) as Array<Record<string, string>> | undefined;
   if (Array.isArray(associacoes) && associacoes.length > 0) {
@@ -147,6 +157,7 @@ function mapToMnemonicResult(
       symbol_reason: null,
     }));
   } else {
+    // Fallback: build from sigla letters + items
     const letters = sigla.split("");
     itemsMap = fallbackItems.map((item, i) => ({
       letter: letters[i] ?? "",
@@ -163,6 +174,9 @@ function mapToMnemonicResult(
   const resolvedImageUrl = typeof payload.image_url === "string" && payload.image_url.trim() && payload.image_url !== "null"
     ? payload.image_url
     : null;
+  const baseWarning = typeof payload.warning === "string" && payload.warning.trim()
+    ? payload.warning
+    : null;
 
   return {
     topic: String(payload.tema ?? fallbackTopic),
@@ -172,13 +186,17 @@ function mapToMnemonicResult(
     scene_description: String(payload.cena_visual ?? visual?.cena_visual ?? ""),
     image_url: resolvedImageUrl,
     quality_score: scoreFinal,
-    warning: typeof payload.warning === "string" ? payload.warning : null,
+    warning: baseWarning ?? (!resolvedImageUrl ? "Imagem não disponível nesta geração. Use a descrição visual como apoio." : null),
     review_question: `Quais são os ${fallbackItems.length} itens do mnemônico "${sigla}"?`,
     audit: auditorMedico || auditorPedagogico ? {
       medical_score: scoreMedico,
       pedagogical_score: scorePedagogico,
-      medical_summary: "Avaliado",
-      pedagogical_summary: "Avaliado",
+      medical_summary: Array.isArray((auditorMedico as any)?.erros_encontrados)
+        ? (auditorMedico as any).erros_encontrados.join("; ") || "Sem erros"
+        : "Avaliado",
+      pedagogical_summary: Array.isArray((auditorPedagogico as any)?.pontos_fortes)
+        ? (auditorPedagogico as any).pontos_fortes.join("; ") || "Avaliado"
+        : "Avaliado",
       verdict: scoreMedico >= 90 && scorePedagogico >= 85 ? "approve" : "reject",
     } : undefined,
     assetId: payload.result_id ? String(payload.result_id) : null,
@@ -186,8 +204,17 @@ function mapToMnemonicResult(
   };
 }
 
-async function linkMnemonicToUser(userId: string, assetId: string, topic: string, source: string) {
-  await supabase
+// ══════════════════════════════════════════════════
+// LINK MANAGEMENT
+// ══════════════════════════════════════════════════
+
+async function linkMnemonicToUser(
+  userId: string,
+  assetId: string,
+  topic: string,
+  source: string
+) {
+  const { error } = await supabase
     .from("user_mnemonic_links")
     .upsert({
       user_id: userId,
@@ -196,4 +223,8 @@ async function linkMnemonicToUser(userId: string, assetId: string, topic: string
       trigger_source: source === "adaptive" ? "error_bank" : "manual",
       next_review_at: new Date(Date.now() + 86400000).toISOString(),
     }, { onConflict: "user_id,mnemonic_asset_id" });
+
+  if (error) {
+    console.error("[MnemonicUnified] Link failed:", error.message);
+  }
 }
