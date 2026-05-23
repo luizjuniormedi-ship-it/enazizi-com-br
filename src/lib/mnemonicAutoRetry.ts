@@ -37,7 +37,10 @@ export function isValidMnemonicResult(
   data: any,
   options: ValidationOptions
 ): boolean {
-  if (!data || typeof data !== "object") return false;
+  if (!data || typeof data !== "object") {
+    console.warn("[MNEMONIC_VALIDATION] Data is not an object:", data);
+    return false;
+  }
 
   const frase = String(data.frase_mnemonica ?? "").trim();
   const explicacao = String(
@@ -46,10 +49,22 @@ export function isValidMnemonicResult(
   const cena = String(data.cena_visual ?? "").trim();
   const score = Number(data.score_final ?? 0);
 
-  if (frase.length < 6) return false;
-  if (explicacao.length < 20) return false;
-  if (score <= 0) return false;
-  if (options.requireScene && cena.length < 12) return false;
+  if (frase.length < 6) {
+    console.warn("[MNEMONIC_VALIDATION] Phrase too short:", frase.length);
+    return false;
+  }
+  if (explicacao.length < 20) {
+    console.warn("[MNEMONIC_VALIDATION] Explanation too short:", explicacao.length);
+    return false;
+  }
+  if (score <= 0) {
+    console.warn("[MNEMONIC_VALIDATION] Score is zero or missing:", score);
+    return false;
+  }
+  if (options.requireScene && cena.length < 12) {
+    console.warn("[MNEMONIC_VALIDATION] Scene too short:", cena.length);
+    return false;
+  }
 
   // Eco literal: frase é igual à junção dos termos
   // Quando rodamos em modo automático (termos vazios no input do usuário),
@@ -64,7 +79,10 @@ export function isValidMnemonicResult(
   const normalizedPhrase = normalize(frase).replace(/^lembre[:\s-]*/i, "").trim();
   const normalizedTerms = options.inputTerms.map(normalize);
 
-  if (normalizedTerms.includes(normalizedPhrase)) return false;
+  if (normalizedTerms.includes(normalizedPhrase)) {
+    console.warn("[MNEMONIC_VALIDATION] Phrase is identical to one of the terms.");
+    return false;
+  }
 
   // Eco token: todos os tokens da frase já são termos
   const phraseTokens = normalizedPhrase.split(/\s+/).filter(Boolean);
@@ -72,7 +90,10 @@ export function isValidMnemonicResult(
     normalizedTerms.flatMap((t) => t.split(/\s+/).filter(Boolean))
   );
   const nonEchoTokens = phraseTokens.filter((tok) => !termTokens.has(tok));
-  if (phraseTokens.length > 0 && nonEchoTokens.length === 0) return false;
+  if (phraseTokens.length > 0 && nonEchoTokens.length === 0) {
+    console.warn("[MNEMONIC_VALIDATION] Phrase only contains tokens from input terms.");
+    return false;
+  }
 
   return true;
 }

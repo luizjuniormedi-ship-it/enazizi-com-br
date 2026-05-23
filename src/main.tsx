@@ -119,6 +119,25 @@ const registerProductionServiceWorker = () => {
 };
 
 const boot = async () => {
+  // [STALL_03_LOOP_GUARD]
+  const bootCountKey = "enazizi_boot_count";
+  const lastBootRaw = sessionStorage.getItem("enazizi_last_boot_ts");
+  const now = Date.now();
+  const lastBootTs = lastBootRaw ? parseInt(lastBootRaw, 10) : 0;
+  
+  if (now - lastBootTs < 5000) {
+    const count = parseInt(sessionStorage.getItem(bootCountKey) || "0", 10) + 1;
+    sessionStorage.setItem(bootCountKey, String(count));
+    if (count > 5) {
+      console.error("[STALL_03_BOOT_LOOP] Loop detected! count=" + count);
+      mountApp(); // Try to mount anyway to break the loop but stop reloads
+      return;
+    }
+  } else {
+    sessionStorage.setItem(bootCountKey, "0");
+  }
+  sessionStorage.setItem("enazizi_last_boot_ts", String(now));
+
   if (shouldRedirectToCanonical) {
     window.location.replace(`https://${canonical}${window.location.pathname}${window.location.search}`);
     return;
