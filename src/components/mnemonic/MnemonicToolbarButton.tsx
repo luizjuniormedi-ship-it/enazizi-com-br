@@ -219,7 +219,13 @@ export const MnemonicToolbarButton = () => {
       }
       if (response.result) {
         setResult(response.result);
-        toast.success(response.result.cached ? "Mnemônico recuperado do cache! 🧠" : "Mnemônico gerado com sucesso! 🧠");
+        if (response.result.cached) {
+          toast.success("Mnemônico recuperado do cache inteligente! 🧠", { icon: "💎" });
+        } else if (response.isFallback) {
+          toast.success("Mnemônico gerado via rota de redundância! ⚡", { icon: "🛡️" });
+        } else {
+          toast.success("Mnemônico gerado com sucesso! 🧠");
+        }
       }
     } catch (e: any) {
       toast.error(e?.message || "Erro ao gerar mnemônico.");
