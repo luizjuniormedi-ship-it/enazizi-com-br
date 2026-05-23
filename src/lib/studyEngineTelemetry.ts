@@ -124,7 +124,7 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
       } as any,
       event_hash: eventHash,
       idempotency_key: eventHash,
-    }], { onConflict: "user_id,event_hash" });
+    }], { onConflict: "idempotency_key" });
   } catch (e) {
     console.warn("[studyEngineTelemetry] log skipped (non-blocking):", e);
   }

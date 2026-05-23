@@ -210,36 +210,45 @@ export default function MnemonicGeneratorPage() {
       
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
         console.log("[MNEMONIC_05_PARSED] Success:", res.data.result_id);
-        console.log("[MNEMONIC_FINAL_RENDER] Preparing to set state...");
+        
+        // SET RESULT FIRST - CRITICAL: Rendering must not depend on telemetry success
         setResult(res.data);
         console.log("[MNEMONIC_SET_STATE] State updated with result.");
         setResultError(null);
         
-        // Emit ALOS Event
-        supabase.auth.getUser().then(({ data: { user } }) => {
-          if (user && res.data) {
-            console.log("[MNEMONIC_07_DB_SAVE] Emitting event (non-blocking)...");
-            // NON-BLOCKING TELEMETRY: We do NOT await this.
-            pedagogicalEventBus.emit({
-              event_type: 'mnemonic_generated',
-              module: 'content',
-              source: 'frontend',
-              entity_type: 'mnemonic',
-              entity_id: res.data.result_id,
-              study_context: {
-                topic: finalTema
-              },
-              metadata: {
-                score: res.data.score_final,
-                is_auto: isAutoMode,
-                // Add event_hash for backend idempotency
-                event_hash: `mnemonic_${res.data.result_id}`
-              }
-            }, user.id).catch(err => {
-              console.error("[MNEMONIC_TELEMETRY_FAILED_NON_BLOCKING]", err);
-            });
+        // NON-BLOCKING TELEMETRY
+        // We do NOT await this. We let it run in background.
+        (async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && res.data) {
+              console.log("[MNEMONIC_07_DB_SAVE] Emitting event (non-blocking)...");
+              const stableIdempotencyKey = `mnem_${user.id}_${res.data.result_id}`;
+              
+              pedagogicalEventBus.emit({
+                event_type: 'mnemonic_generated',
+                module: 'content',
+                source: 'frontend',
+                entity_type: 'mnemonic',
+                entity_id: res.data.result_id,
+                idempotency_key: stableIdempotencyKey,
+                study_context: {
+                  topic: finalTema
+                },
+                metadata: {
+                  score: res.data.score_final,
+                  is_auto: isAutoMode,
+                  event_hash: stableIdempotencyKey
+                }
+              }, user.id).catch(err => {
+                console.error("[MNEMONIC_TELEMETRY_FAILED_NON_BLOCKING]", err);
+              });
+            }
+          } catch (err) {
+            console.error("[MNEMONIC_TELEMETRY_SESSION_FAILED]", err);
           }
-        });
+        })();
+
         toast.success(isAutoMode ? "Mnemônico gerado automaticamente!" : "Mnemônico gerado!");
       } else {
         const msg = res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.";
@@ -601,11 +610,15 @@ export default function MnemonicGeneratorPage() {
           {/* ─── BLOCO 1: MNEMÔNICO PRINCIPAL ─── */}
           <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
             <CardContent className="pt-6 pb-4 text-center space-y-3">
-              {result.sigla && (
-                <p className="text-4xl font-black tracking-[0.2em] text-primary" data-testid="mnemonic-sigla">{result.sigla}</p>
+              {(result.sigla || (result as any).acronym || (result as any).title) && (
+                <p className="text-4xl font-black tracking-[0.2em] text-primary" data-testid="mnemonic-sigla">
+                  {result.sigla || (result as any).acronym || (result as any).title}
+                </p>
               )}
-              <p className="text-2xl font-bold leading-relaxed" data-testid="mnemonic-phrase">{result.frase_mnemonica}</p>
-              <Button variant="ghost" size="sm" onClick={handleCopy} className="mx-auto" data-testid="mnemonic-association">
+              <p className="text-2xl font-bold leading-relaxed" data-testid="mnemonic-phrase">
+                {result.frase_mnemonica || (result as any).phrase || (result as any).mnemonic || (result as any).frase || "Mnemônico gerado"}
+              </p>
+              <Button variant="ghost" size="sm" onClick={handleCopy} className="mx-auto" data-testid="mnemonic-copy-btn">
                 <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
               </Button>
             </CardContent>
