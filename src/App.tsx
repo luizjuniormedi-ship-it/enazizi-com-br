@@ -116,6 +116,11 @@ const PageLoader = () => (
   </div>
 );
 
+const NavigateWithSearchParams = ({ to, replace = false }: { to: string; replace?: boolean }) => {
+  const location = useLocation();
+  return <Navigate to={{ pathname: to, search: location.search }} replace={replace} />;
+};
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
