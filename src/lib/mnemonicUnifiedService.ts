@@ -89,7 +89,12 @@ export async function generateOrReuseMnemonicForUser(
       userId, 
       source, 
       sourceContext 
-    }, { tier: 'REASONING', ttlDays: 30 }); // Mnemonics: 30 days cache
+    }, { 
+      tier: 'REASONING', 
+      ttlDays: 30,
+      onStatus: params.onStatus as any
+    }); 
+
 
 
     if (!response.success) {
