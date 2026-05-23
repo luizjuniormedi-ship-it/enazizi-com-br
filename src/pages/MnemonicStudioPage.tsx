@@ -585,7 +585,7 @@ export default function MnemonicGeneratorPage() {
       {/* ═══ RESULT ═══ */}
       {result && (
         <div className="space-y-4" id="mnemonic-result-container">
-          {console.log("[MNEMONIC_06_RENDER] Rendering result:", result.result_id)}
+          {(() => { console.log("[MNEMONIC_06_RENDER] Rendering result:", result.result_id); return null; })()}
           {/* Back button */}
           <Button variant="ghost" size="sm" onClick={() => { setResult(null); setQuickFeedback(null); }}>
             ← Novo mnemônico
