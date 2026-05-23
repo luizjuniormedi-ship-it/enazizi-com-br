@@ -1,0 +1,1 @@
+ALTER TABLE public.mnemonic_results ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;

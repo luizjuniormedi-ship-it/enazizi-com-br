@@ -26,6 +26,8 @@ export const MODEL_METRICS: Record<string, { prompt: number, completion: number,
   "openai/gpt-4o": { prompt: 5.0, completion: 15.0, quality: 96 },
   "openai/gpt-4o-mini": { prompt: 0.15, completion: 0.6, quality: 82 },
   "openai/text-embedding-3-small": { prompt: 0.02, completion: 0, quality: 100 },
+  "google/gemini-2.5-flash-lite": { prompt: 0.075, completion: 0.3, quality: 80 },
+  "google/gemini-2.5-flash": { prompt: 0.1, completion: 0.4, quality: 84 },
 };
 
 export type AiModelType = keyof typeof ALLOWED_MODELS;

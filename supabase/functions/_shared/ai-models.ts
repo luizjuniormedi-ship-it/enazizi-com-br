@@ -22,7 +22,9 @@ export const ALLOWED_AI_MODELS = [
   "openai/gpt-5",
   "openai/gpt-4o",
   "openai/gpt-4o-mini",
-  "openai/text-embedding-3-small"
+  "openai/text-embedding-3-small",
+  "google/gemini-2.5-flash-lite",
+  "google/gemini-2.5-flash"
 ] as const;
 
 /**
