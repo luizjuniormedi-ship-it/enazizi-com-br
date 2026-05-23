@@ -176,8 +176,9 @@ export default function MnemonicGeneratorPage() {
   const [generatingStatus, setGeneratingStatus] = useState<string>("Gerando mnemônico...");
   const isLoading = isGenerating || regenerateMutation.isPending;
 
-  const handleGenerate = useCallback(async () => {
-    const validation = validateMnemonicForm({ tema, termos, estilo, publico });
+  const handleGenerate = useCallback(async (overrideTopic?: string) => {
+    const finalTema = (overrideTopic || tema || "").trim();
+    const validation = validateMnemonicForm({ tema: finalTema, termos, estilo, publico });
     if (!validation.valid) { setFormErrors(validation.errors); return; }
     setFormErrors({});
     setResult(null);
