@@ -265,8 +265,7 @@ export async function logShadowDecision(payload: ShadowDecisionPayload): Promise
         kind: payload.kind,
       } as any,
       event_hash: eventHash,
-      idempotency_key: eventHash,
-    }], { onConflict: "idempotency_key" });
+    }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowDecision skipped:", e);
   }
