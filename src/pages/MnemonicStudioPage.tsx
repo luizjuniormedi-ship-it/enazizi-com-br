@@ -210,13 +210,16 @@ export default function MnemonicGeneratorPage() {
       
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
         console.log("[MNEMONIC_05_PARSED] Success:", res.data.result_id);
+        console.log("[MNEMONIC_FINAL_RENDER] Preparing to set state...");
         setResult(res.data);
+        console.log("[MNEMONIC_SET_STATE] State updated with result.");
         setResultError(null);
         
         // Emit ALOS Event
         supabase.auth.getUser().then(({ data: { user } }) => {
           if (user && res.data) {
-            console.log("[MNEMONIC_07_DB_SAVE] Emitting event...");
+            console.log("[MNEMONIC_07_DB_SAVE] Emitting event (non-blocking)...");
+            // NON-BLOCKING TELEMETRY: We do NOT await this.
             pedagogicalEventBus.emit({
               event_type: 'mnemonic_generated',
               module: 'content',
@@ -228,9 +231,13 @@ export default function MnemonicGeneratorPage() {
               },
               metadata: {
                 score: res.data.score_final,
-                is_auto: isAutoMode
+                is_auto: isAutoMode,
+                // Add event_hash for backend idempotency
+                event_hash: `mnemonic_${res.data.result_id}`
               }
-            }, user.id);
+            }, user.id).catch(err => {
+              console.error("[MNEMONIC_TELEMETRY_FAILED_NON_BLOCKING]", err);
+            });
           }
         });
         toast.success(isAutoMode ? "Mnemônico gerado automaticamente!" : "Mnemônico gerado!");
@@ -598,7 +605,7 @@ export default function MnemonicGeneratorPage() {
                 <p className="text-4xl font-black tracking-[0.2em] text-primary" data-testid="mnemonic-sigla">{result.sigla}</p>
               )}
               <p className="text-2xl font-bold leading-relaxed" data-testid="mnemonic-phrase">{result.frase_mnemonica}</p>
-              <Button variant="ghost" size="sm" onClick={handleCopy} className="mx-auto">
+              <Button variant="ghost" size="sm" onClick={handleCopy} className="mx-auto" data-testid="mnemonic-association">
                 <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
               </Button>
             </CardContent>
