@@ -101,25 +101,33 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
 
     try {
       if (sessionIdRef.current) {
-        await supabase
+        const { error } = await supabase
           .from("module_sessions")
           .update({ session_data: sessionData as any, updated_at: new Date().toISOString() })
           .eq("id", sessionIdRef.current);
+        
+        if (error) throw error;
       } else {
-        const { data } = await supabase
+        // Use upsert with onConflict for active sessions to avoid 409
+        const { data, error } = await supabase
           .from("module_sessions")
-          .insert({
+          .upsert({
             user_id: user.id,
             module_key: moduleKey,
             session_data: sessionData as any,
             status: "active",
+            updated_at: new Date().toISOString()
+          }, { 
+            onConflict: "user_id,module_key",
+            ignoreDuplicates: false 
           })
           .select("id")
           .single();
+          
+        if (error) throw error;
         if (data) sessionIdRef.current = data.id;
       }
       
-      // Clear backup on successful server sync
       localStorage.removeItem(backupKey);
     } catch (e) {
       console.warn("[SessionPersistence] saveSession error:", e);
@@ -214,12 +222,12 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
               headers: {
                 "Content-Type": "application/json",
                 "apikey": supabaseKey,
-                "Authorization": `Bearer ${supabaseKey}`,
                 "Prefer": "return=minimal",
               },
               body,
               keepalive: true,
-              credentials: "omit", // Bug 1 fix: avoid CORS credential mismatch
+              mode: 'cors',
+              credentials: "omit",
             }).catch(() => {});
           } catch {
             // silent
