@@ -47,6 +47,8 @@ export const MnemonicToolbarButton = () => {
   const [contentType, setContentType] = useState("criterios");
   const [itemsText, setItemsText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>("loading");
+
   const [suggesting, setSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<{ explanation: string } | null>(null);
   const [result, setResult] = useState<MnemonicResult | null>(null);
