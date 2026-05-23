@@ -2614,6 +2614,7 @@ export type Database = {
           decision_type: string
           event_hash: string | null
           id: string
+          idempotency_key: string | null
           input_snapshot: Json
           justification: string
           source_module: string
@@ -2627,6 +2628,7 @@ export type Database = {
           decision_type: string
           event_hash?: string | null
           id?: string
+          idempotency_key?: string | null
           input_snapshot?: Json
           justification?: string
           source_module: string
@@ -2640,6 +2642,7 @@ export type Database = {
           decision_type?: string
           event_hash?: string | null
           id?: string
+          idempotency_key?: string | null
           input_snapshot?: Json
           justification?: string
           source_module?: string
