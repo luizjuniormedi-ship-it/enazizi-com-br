@@ -1,14 +1,8 @@
 /**
  * Mnemonic Auto-Complete — fills missing critical items before generation.
- * Runs AFTER pre-validation, BEFORE edge function call.
- * Fail-closed: if unsure, does NOT add items and returns valid:false.
+ * Integrated with Enterprise AI Gateway for resilience.
  */
-
-import { supabase } from "@/integrations/supabase/client";
-
-// ══════════════════════════════════════════════════
-// TYPES
-// ══════════════════════════════════════════════════
+import { aiGateway } from "./ai/aiGateway";
 
 export type ContentType = "criterios" | "diagnostico" | "classificacao" | string;
 
@@ -27,10 +21,6 @@ export interface AutoCompleteResult {
   reason?: string;
   suggestion?: string;
 }
-
-// ══════════════════════════════════════════════════
-// SYNONYM EQUIVALENCE MAP
-// ══════════════════════════════════════════════════
 
 const SYNONYM_MAP: Array<[string[], string]> = [
   [["deficit neurologico focal", "sintomas focais agudos", "deficit focal", "hemiparesia", "hemiplegia", "paresia"], "deficit_neurologico"],
@@ -76,10 +66,6 @@ function resolveConceptIds(normalizedItems: string[]): Set<string> {
   return ids;
 }
 
-// ══════════════════════════════════════════════════
-// INTERPRETATION MODE
-// ══════════════════════════════════════════════════
-
 type InterpretationMode = "CHECKLIST" | "COMPARATIVO" | "CATEGORICO" | "GENERIC";
 
 function detectMode(topic: string, subtopic: string | undefined, contentType: string): InterpretationMode {
@@ -90,19 +76,14 @@ function detectMode(topic: string, subtopic: string | undefined, contentType: st
   return "GENERIC";
 }
 
-// ══════════════════════════════════════════════════
-// CLINICAL MAPPINGS (scalable dictionary)
-// ══════════════════════════════════════════════════
-
 interface ClinicalRule {
   topicPatterns: RegExp[];
   mode?: InterpretationMode;
-  requiredConcepts: string[];          // concept IDs from SYNONYM_MAP
-  completionItems: Record<string, string>; // conceptId → canonical item text to add
+  requiredConcepts: string[];
+  completionItems: Record<string, string>;
 }
 
 const CLINICAL_MAPPINGS: ClinicalRule[] = [
-  // AVC general
   {
     topicPatterns: [/\bavc\b/, /\bacidente vascular\b/],
     requiredConcepts: ["deficit_neurologico", "tempo_inicio", "imagem"],
@@ -112,7 +93,6 @@ const CLINICAL_MAPPINGS: ClinicalRule[] = [
       imagem: "Imagem inicial (TC de crânio)",
     },
   },
-  // AVC comparative (isquêmico vs hemorrágico)
   {
     topicPatterns: [/\bavc\b.*\b(diferenc|compara|isquem|hemorr)\b/, /\b(isquem|hemorr)\b.*\bavc\b/],
     mode: "COMPARATIVO",
@@ -123,7 +103,6 @@ const CLINICAL_MAPPINGS: ClinicalRule[] = [
       nivel_consciencia: "Nível de consciência",
     },
   },
-  // SEPSE
   {
     topicPatterns: [/\bsepse\b/, /\bsepsis\b/],
     requiredConcepts: ["lactato", "hipotensao", "disfuncao_organica"],
@@ -133,7 +112,6 @@ const CLINICAL_MAPPINGS: ClinicalRule[] = [
       disfuncao_organica: "Disfunção orgânica",
     },
   },
-  // IAM / ECG
   {
     topicPatterns: [/\biam\b/, /\becg\b.*\biam\b/, /\biam\b.*\becg\b/, /\binfarto\b/],
     requiredConcepts: ["supra_st", "inversao_t", "onda_q"],
@@ -144,10 +122,6 @@ const CLINICAL_MAPPINGS: ClinicalRule[] = [
     },
   },
 ];
-
-// ══════════════════════════════════════════════════
-// DANGEROUS TERMS — never auto-add
-// ══════════════════════════════════════════════════
 
 const DANGEROUS_PATTERNS = [
   /\bdose\b/, /\bmg\b/, /\bml\b/, /\bposologia\b/,
@@ -160,10 +134,6 @@ function isDangerous(item: string): boolean {
   return DANGEROUS_PATTERNS.some((p) => p.test(n));
 }
 
-// ══════════════════════════════════════════════════
-// AI FALLBACK
-// ══════════════════════════════════════════════════
-
 async function aiFallbackComplete(
   topic: string,
   subtopic: string | undefined,
@@ -175,18 +145,16 @@ Sua tarefa é sugerir no máximo 2 itens curtos para completar a lista logicamen
 Regras: Não repita conceitos já presentes: ${JSON.stringify(items)}. Não sugira doses ou condutas perigosas.
 Responda EXCLUSIVAMENTE em formato JSON usando esta estrutura: { "suggestedItems": ["item1", "item2"] }`;
 
-    const { data, error } = await supabase.functions.invoke("ai-proxy", {
-      body: {
-        prompt,
-        model: "openai/gpt-5-mini",
-        responseFormat: "json",
-        systemPrompt: "Responda apenas JSON válido. Use apenas OpenAI gpt-5-mini.",
-      },
-    });
+    const response = await aiGateway.invoke("ai-proxy", {
+      prompt,
+      model: "openai/gpt-4o-mini",
+      responseFormat: "json",
+      systemPrompt: "Responda apenas JSON válido.",
+    }, { tier: 'FAST' });
 
-    if (error || !data) return [];
+    if (!response.success || !response.data) return [];
 
-    const text = typeof data === "string" ? data : (data as any).content || (data as any).text || JSON.stringify(data);
+    const text = typeof response.data === "string" ? response.data : (response.data as any).content || (response.data as any).text || JSON.stringify(response.data);
     const jsonMatch = text.match(/\{[\s\S]*"suggestedItems"[\s\S]*\}/);
     if (!jsonMatch) return [];
 
@@ -202,16 +170,11 @@ Responda EXCLUSIVAMENTE em formato JSON usando esta estrutura: { "suggestedItems
   }
 }
 
-// ══════════════════════════════════════════════════
-// MAIN FUNCTION
-// ══════════════════════════════════════════════════
-
 export async function autoCompleteMnemonicItems(
   params: AutoCompleteParams
 ): Promise<AutoCompleteResult> {
   const { topic, subtopic, items, contentType } = params;
 
-  // Guard: empty / too small to even attempt
   if (!items || items.length === 0) {
     return {
       valid: false, finalItems: [], addedItems: [], autoCompleted: false,
@@ -219,7 +182,6 @@ export async function autoCompleteMnemonicItems(
     };
   }
 
-  // Already at max — skip auto-complete
   if (items.length >= 7) {
     return { valid: true, finalItems: items, addedItems: [], autoCompleted: false };
   }
@@ -229,7 +191,6 @@ export async function autoCompleteMnemonicItems(
   const mode = detectMode(topic, subtopic, contentType);
   const presentConcepts = resolveConceptIds(normalizedItems);
 
-  // Find matching clinical rules (prefer mode-specific, then general)
   let matchedRule: ClinicalRule | null = null;
   for (const rule of CLINICAL_MAPPINGS) {
     const topicMatch = rule.topicPatterns.some((p) => p.test(normalizedTopic));
@@ -239,16 +200,11 @@ export async function autoCompleteMnemonicItems(
   }
 
   const addedItems: string[] = [];
-
   if (matchedRule) {
-    // Determine missing concepts
     for (const conceptId of matchedRule.requiredConcepts) {
       if (presentConcepts.has(conceptId)) continue;
       const candidate = matchedRule.completionItems[conceptId];
-      if (!candidate) continue;
-      if (isDangerous(candidate)) continue;
-
-      // Check total won't exceed 7
+      if (!candidate || isDangerous(candidate)) continue;
       if (items.length + addedItems.length >= 7) {
         return {
           valid: false, finalItems: items, addedItems: [], autoCompleted: false,
@@ -260,27 +216,21 @@ export async function autoCompleteMnemonicItems(
     }
   }
 
-  // If no local rule matched and list might be incomplete (< 5 items), try AI fallback
   if (!matchedRule && items.length < 5 && ["criterios", "diagnostico", "classificacao"].includes(contentType)) {
     const aiSuggestions = await aiFallbackComplete(topic, subtopic, items);
     for (const suggestion of aiSuggestions) {
       const sugNorm = normalize(suggestion);
-      // Check not already present (exact or synonym)
       const sugConcepts = resolveConceptIds([sugNorm]);
       const alreadyPresent = [...sugConcepts].some((c) => presentConcepts.has(c)) ||
         normalizedItems.includes(sugNorm);
       if (alreadyPresent) continue;
       if (items.length + addedItems.length >= 7) break;
       addedItems.push(suggestion);
-      // Update tracking
       for (const c of sugConcepts) presentConcepts.add(c);
     }
   }
 
-  // Final items
   const finalItems = [...items, ...addedItems];
-
-  // Still too few after completion?
   if (finalItems.length < 3) {
     return {
       valid: false, finalItems: items, addedItems: [], autoCompleted: false,
