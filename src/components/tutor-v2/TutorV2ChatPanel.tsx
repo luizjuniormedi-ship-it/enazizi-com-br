@@ -6,7 +6,7 @@ import { TutorV2Service } from "./services/TutorV2Service";
 import TutorV2MessageList from "./TutorV2MessageList";
 import TutorV2Input from "./TutorV2Input";
 import TutorV2Actions from "./TutorV2Actions";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { MascotAvatar } from "../mascot/MascotAvatar";
 import { MascotBubble } from "../mascot/MascotBubble";
@@ -35,22 +35,8 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
     }
   }, [messages, isTyping]);
 
-  const handleSendMessage = async (text: string, pedagogicalInteraction?: string, newTopic?: string) => {
-    const requestId = crypto.randomUUID();
-    // [TUTOR_01_SEND_CLICKED]
-    console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId}`);
-
-    if (!text.trim() || isTyping || !user) {
-      console.warn(`[TUTOR] SEND_SKIPPED id=${requestId}`, { text: !!text.trim(), isTyping, user: !!user });
-      return;
-    }
-
-    // [TUTOR_02_MESSAGE_TEXT]
-    console.log(`[TUTOR_02_MESSAGE_TEXT] text="${text.slice(0, 50)}..."`);
-
-    // [TUTOR_03_AUTH_SESSION]
-    console.log(`[TUTOR_03_AUTH_SESSION] userId=${user?.id} hasSession=${!!session.id}`);
-
+  const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
+    if (!text.trim() || isTyping || !user) return;
     setError(null);
     triggerInteraction({ 
       state: 'thinking', 
@@ -95,61 +81,29 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       await addMessage(user.id, "user", text);
 
       // Call AI
-      console.log(`[TUTOR_V3_START_CALL] id=${requestId}`);
-      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction, newTopic);
+      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
 
-      if (!response || (!response.content && !response.answer && !response.message && !response.response)) {
-        console.error(`[TUTOR_V3_INVALID_RESPONSE] id=${requestId}`, response);
-        throw new Error(response?.error || "Erro na resposta da IA");
-      }
-
-      // [TUTOR_22_FRONTEND_DATA_RECEIVED]
-      console.log(`[TUTOR_22_FRONTEND_DATA_RECEIVED] id=${requestId}`, response);
-
-      const content = response.content || response.answer || response.message || response.response || "";
-      // [TUTOR_23_CONTENT_EXTRACTED]
-      console.log(`[TUTOR_23_CONTENT_EXTRACTED] id=${requestId} contentLen=${content?.length}`, { content });
+      if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
       if (response?.fallback) {
-        console.warn(`[TUTOR_V3_FALLBACK_USED] id=${requestId}`);
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
-      if (content) {
-        // [TUTOR_24_ASSISTANT_MESSAGE_CREATED]
-        console.log(`[TUTOR_24_ASSISTANT_MESSAGE_CREATED] id=${requestId}`);
-        
-        // [TUTOR_25_SET_MESSAGES_CALLED]
-        console.log(`[TUTOR_25_SET_MESSAGES_CALLED] id=${requestId}`);
-
+      if (response?.content) {
         setMessages((prev) => {
-          const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === content);
+          const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === response.content);
           if (alreadyVisible) return prev;
-          const newMessages = [
+          return [
             ...prev,
             {
               id: response.requestId || crypto.randomUUID(),
               role: "assistant",
-              content: content,
+              content: response.content,
               tutor_session_id: session.id,
               user_id: user.id,
               created_at: new Date().toISOString(),
-              metadata: { 
-                fallback_used: !!response.fallback, 
-                provider: response.provider,
-                currentBlock: response.currentBlock,
-                blockTitle: response.blockTitle,
-                socraticQuestion: response.socraticQuestion,
-                actionsContext: response.actionsContext
-              },
+              metadata: { fallback_used: !!response.fallback, provider: response.provider },
             },
           ];
-          // [TUTOR_26_MESSAGES_AFTER_APPEND]
-          console.log(`[TUTOR_26_MESSAGES_AFTER_APPEND] count=${newMessages.length}`);
-          return newMessages;
         });
-        
-        // Persist assistant message
-        console.log(`[TUTOR_V3_PERSIST_ASSISTANT] id=${requestId}`);
-        await addMessage(user.id, "assistant", content);
       }
       setLastFailedMessage(null);
 
@@ -161,8 +115,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
           speech: response?.questionReview?.is_correct ? "Excelente raciocínio!" : "Percebi um ponto de confusão aqui."
         });
 
-        // Emit ALOS Event for Tutor Interaction (Non-blocking)
-        console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending tutor interaction telemetry...");
+        // Emit ALOS Event for Tutor Interaction (non-blocking)
         void pedagogicalEventBus.emit({
           event_type: 'tutor_question_answered',
           module: 'tutor',
@@ -177,9 +130,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
             question_type: response?.questionReview?.question_type,
             student_answer: response?.questionReview?.student_answer
           }
-        }, user.id).catch(err => {
-          console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Tutor interaction telemetry failed:", err);
-        });
+        }, user.id);
       } else {
         triggerInteraction({
           state: 'teaching',
@@ -187,7 +138,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         });
       }
 
-      console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!content });
+      console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!response.content });
     } catch (err: any) {
       console.error("Error in Tutor V2 chat:", err);
       triggerInteraction({ state: 'warning', type: 'alert', speech: "Encontrei uma instabilidade, tente novamente." });
@@ -197,8 +148,6 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       toast.error(friendlyMessage);
     } finally {
       setIsTyping(false);
-      // [TUTOR_27_LOADING_FALSE]
-      console.log(`[TUTOR_27_LOADING_FALSE] id=${requestId}`);
     }
   };
 
@@ -211,13 +160,6 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         <div className="max-w-6xl mx-auto w-full space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 group">
-              <button 
-                onClick={() => window.location.href = '/dashboard/sessao-estudo'}
-                className="lg:hidden h-8 w-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white"
-                title="Sair do Tutor"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
               <div className="flex-shrink-0">
                 <MascotAvatar state="idle" size="sm" />
               </div>
@@ -229,18 +171,18 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
                 <p className="text-[10px] text-indigo-400 font-black uppercase tracking-tighter mt-0.5">
-                  {session.specialty || "Sessão Premium Ativa"} • Tutor V3 Premium
+                  {session.specialty || "Sessão Premium Ativa"} • Protocolo Feynman V2
                 </p>
               </div>
             </div>
-            <TutorV2Actions session={session} onSendMessage={handleSendMessage} />
+            <TutorV2Actions session={session} />
           </div>
 
           {/* Cognitive Progress Bar */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-0.5">
               <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
-                Estágio Cognitivo: <span className="text-white">{session.currentBlock || 'Exploração'}</span>
+                Estágio Cognitivo: <span className="text-white">{session.current_stage || 'Exploração'}</span>
               </span>
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                 {session.cognitive_progress || 0}% Concluído

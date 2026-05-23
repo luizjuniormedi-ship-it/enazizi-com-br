@@ -49,10 +49,17 @@ export function useLongitudinalProfile() {
         .maybeSingle();
 
       if (error) throw error;
+      if (!data) {
+        return {
+          patterns: {} as LongitudinalPatterns,
+          driftScore: 0,
+          circadianActive: false,
+        };
+      }
       return {
-        patterns: (data?.longitudinal_patterns as unknown as LongitudinalPatterns) || {},
-        driftScore: data?.drift_score || 0,
-        circadianActive: data?.circadian_intelligence_active ?? false
+        patterns: (data.longitudinal_patterns as unknown as LongitudinalPatterns) || {},
+        driftScore: data.drift_score || 0,
+        circadianActive: data.circadian_intelligence_active ?? false
       };
     },
   });

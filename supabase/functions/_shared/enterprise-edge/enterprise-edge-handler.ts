@@ -8,16 +8,12 @@ import { createCorrelationContext, CorrelationContext } from "./correlation.ts";
 import { StructuredLogger } from "./structured-logger.ts";
 import { createSafeWaitUntil, SafeWaitUntil } from "./safe-wait-until.ts";
 import { callAi, AiRequest } from "./ai-router.ts";
-import { validateTutorResponse } from "../tutor-quality-validator.ts";
-import { AiRoutingEngine, CognitiveState, AiTaskType } from "./ai-routing-engine.ts";
-import { CognitiveAiOrchestrator } from "./cognitive-ai-orchestrator.ts";
+import { validateAiQuality, QualityCheckResult } from "./ai-quality-lock.ts";
 
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods':
-    'GET, POST, OPTIONS',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-correlation-id, x-pipeline-id, x-regression-test",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 export interface EnterpriseContext {
@@ -30,7 +26,7 @@ export interface EnterpriseContext {
   /**
    * High-level AI call with integrated governance, quality lock, and cost tracking.
    */
-  ai: (request: AiRequest & { cognitiveState?: CognitiveState, complexity?: "baixa" | "média" | "alta", expectedBlock?: number | string }, options?: { skipQualityLock?: boolean, retries?: number }) => Promise<any>;
+  ai: (request: AiRequest, options?: { skipQualityLock?: boolean, retries?: number }) => Promise<any>;
 }
 
 export type EnterpriseHandler = (ctx: EnterpriseContext) => Promise<Response>;
@@ -53,73 +49,61 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
     logger.info("BOOT", "Function initialized");
 
-    const aiWrapper = async (request: AiRequest & { cognitiveState?: CognitiveState, complexity?: "baixa" | "média" | "alta" }, options: { skipQualityLock?: boolean, retries?: number } = {}) => {
+    const aiWrapper = async (request: AiRequest, options: { skipQualityLock?: boolean, retries?: number } = {}) => {
       const maxRetries = options.retries ?? 1;
       let lastError = null;
 
-      // Ensure userId is passed for routing decisions if not present
-      const userId = (request as any).userId;
-
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          const response = await callAi({
-            ...request,
-            userId: userId || correlation.userId
-          }, logger, supabaseAdmin, waitUntil);
+          const response = await callAi(request, logger, supabaseAdmin);
           
           if (request.stream) return response;
 
           // Quality Lock
           if (!options.skipQualityLock) {
             const content = response.choices?.[0]?.message?.content || "";
-            const quality = validateTutorResponse(content, { expectedBlock: (request as any).expectedBlock });
+            const quality = validateAiQuality(content, { taskType: request.taskType || "reasoning" }, logger);
             
             // Log quality results
-            const logQuality = (async () => {
+            waitUntil((async () => {
               await supabaseAdmin.from("ai_governance_logs")
                 .update({ 
-                  hallucination_score: 100,
-                  medical_consistency_score: quality.score,
-                  quality_lock_status: quality.isValid ? "passed" : "failed"
+                  hallucination_score: quality.hallucination_detected ? 0 : 100,
+                  medical_consistency_score: quality.medical_consistency_score,
+                  quality_lock_status: quality.passed ? "passed" : "failed"
                 })
                 .match({ metadata: { request_id: response.id } });
-            })();
-            if (waitUntil) waitUntil(logQuality);
+            })());
 
-            if (!quality.isValid) {
+            if (!quality.passed) {
               logger.warn("QUALITY_LOCK_FAILED", "AI response failed quality validation", { 
                 attempt, 
-                issues: quality.missingBlocks, 
+                issues: quality.issues, 
                 model: response.model 
               });
               
               if (attempt < maxRetries) {
                 logger.info("SELF_HEALING", "Triggering retry with reasoning model due to quality failure");
-                request.model = "openai/gpt-5"; // Force higher quality model on retry
-                // Let's add a small delay before retry to avoid rapid-fire failures
-                await new Promise(r => setTimeout(r, 1000));
+                request.model = "google/gemini-2.5-pro"; // Force higher quality model on retry
                 continue;
               }
               
-              const reportIncident = (async () => {
-                await supabaseAdmin.from("ai_incidents").insert({
-                  function_name: functionName,
-                  model_name: response.model,
-                  severity: "warning",
-                  incident_type: "quality_failure",
-                  message: `Quality lock failed after ${attempt + 1} attempts`,
-                  correlation_id: correlation.correlationId,
-                  metadata: { issues: quality.missingBlocks }
-                });
-              })();
-              if (waitUntil) waitUntil(reportIncident);
+              await supabaseAdmin.from("ai_incidents").insert({
+                function_name: functionName,
+                model_name: response.model,
+                severity: "warning",
+                incident_type: "quality_failure",
+                message: `Quality lock failed after ${attempt + 1} attempts`,
+                correlation_id: correlation.correlationId,
+                metadata: { issues: quality.issues }
+              });
             }
           }
 
           return response;
         } catch (err) {
           lastError = err;
-          logger.error("AI_RETRY_ERROR", `Attempt \${attempt} failed`, { error: err.message });
+          logger.error("AI_RETRY_ERROR", `Attempt ${attempt} failed`, { error: err.message });
           if (attempt === maxRetries) throw err;
           // Exponential backoff
           await new Promise(r => setTimeout(r, 1000 * Math.pow(attempt + 1, 2)));
@@ -141,7 +125,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
       const latency = Date.now() - startTime;
       
-      const logExecution = (async () => {
+      waitUntil((async () => {
         try {
           await supabaseAdmin.from("edge_execution_logs").insert({
             function_name: functionName,
@@ -155,8 +139,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
         } catch (telemetryErr) {
           console.error("[enterprise-edge] Global telemetry failed:", telemetryErr);
         }
-      })();
-      if (waitUntil) waitUntil(logExecution);
+      })());
 
       return response;
 
@@ -167,7 +150,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
       logger.critical("FATAL_ERROR", err.message, { stack: err.stack });
 
-      const reportIncident = (async () => {
+      waitUntil((async () => {
         try {
           await supabaseAdmin.from("ai_incidents").insert({
             function_name: functionName,
@@ -190,8 +173,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
         } catch (incidentErr) {
           console.error("[enterprise-edge] Incident reporting failed:", incidentErr);
         }
-      })();
-      if (waitUntil) waitUntil(reportIncident);
+      })());
 
       return new Response(
         JSON.stringify({
@@ -208,3 +190,5 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
     }
   };
 }
+
+

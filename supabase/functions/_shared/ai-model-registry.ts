@@ -6,33 +6,36 @@
 
 export const ALLOWED_MODELS = {
   // Primary model for content generation
-  generation: "openai/gpt-5-mini",
+  generation: "google/gemini-2.5-flash",
   
   // High-performance model for complex reasoning or specialized tasks
-  reasoning: "openai/gpt-5",
+  reasoning: "google/gemini-2.5-pro",
   
   // Embedding model for vector search
   embeddings: "openai/text-embedding-3-small",
 } as const;
 
-export const DEFAULT_FAST_MODEL = "openai/gpt-5-mini";
-export const DEFAULT_REASONING_MODEL = "openai/gpt-5";
+export const DEFAULT_FAST_MODEL = "google/gemini-2.5-flash";
+export const DEFAULT_REASONING_MODEL = "google/gemini-2.5-pro";
 
 // AI Tiers and Pricing (Est. USD per 1M tokens)
-// These serve as static fallbacks if DB check fails
 export const MODEL_METRICS: Record<string, { prompt: number, completion: number, quality: number }> = {
-  "openai/gpt-5-mini": { prompt: 0.15, completion: 0.6, quality: 85 },
-  "openai/gpt-5": { prompt: 5.0, completion: 15.0, quality: 100 },
+  "google/gemini-2.5-flash-lite": { prompt: 0.0375, completion: 0.15, quality: 78 },
+  "google/gemini-2.5-flash": { prompt: 0.075, completion: 0.3, quality: 85 },
+  "google/gemini-2.5-pro": { prompt: 3.5, completion: 10.5, quality: 98 },
   "openai/gpt-4o": { prompt: 5.0, completion: 15.0, quality: 96 },
   "openai/gpt-4o-mini": { prompt: 0.15, completion: 0.6, quality: 82 },
-  "openai/text-embedding-3-small": { prompt: 0.02, completion: 0, quality: 100 },
-  "google/gemini-2.5-flash-lite": { prompt: 0.075, completion: 0.3, quality: 80 },
-  "google/gemini-2.5-flash": { prompt: 0.1, completion: 0.4, quality: 84 },
 };
 
 export type AiModelType = keyof typeof ALLOWED_MODELS;
 export type AiModelName = typeof ALLOWED_MODELS[AiModelType];
 
 // List of strictly allowed production models for Lovable AI Gateway
-export const PRODUCTION_MODELS = Object.keys(MODEL_METRICS);
-
+export const PRODUCTION_MODELS = [
+  "google/gemini-2.5-flash-lite",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-pro",
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini",
+  "openai/text-embedding-3-small",
+];

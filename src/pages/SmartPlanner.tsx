@@ -417,17 +417,14 @@ const SmartPlanner = () => {
 
       toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta. Redirecionando..." });
       
-      // Emit ALOS Event (Non-blocking)
-      console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending mission generated telemetry...");
+      // Emit ALOS Event (non-blocking)
       void pedagogicalEventBus.emit({
         event_type: 'daily_mission_generated',
         module: 'planner',
         source: 'frontend',
         entity_type: 'daily_plan',
         entity_id: result.planId
-      }, user.id).catch(err => {
-        console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Mission telemetry failed:", err);
-      });
+      }, user.id);
 
       setTimeout(() => navigate("/dashboard/missao-do-dia"), 1500);
       loadData();

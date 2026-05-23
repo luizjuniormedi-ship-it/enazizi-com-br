@@ -6,6 +6,7 @@
  * com debounce por sessão para evitar spam.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { safeTelemetry } from "@/lib/safeTelemetry";
 import { generateEventHash } from "./idempotency";
 import type { ApprovalPrediction } from "@/hooks/useApprovalPrediction";
 
@@ -47,35 +48,38 @@ export async function logApprovalPrediction(
     return;
   }
 
-  try {
-    const payload = {
-      days_to_exam: prediction.daysToExam,
-      breakdown: prediction.breakdown,
-    };
-    const output = {
-      approval_score: prediction.score,
-      trend: prediction.trend,
-      risk: prediction.riskLevel,
-      delta: prediction.delta,
-      message: prediction.message,
-    };
-    
-    const eventHash = generateEventHash(userId, "approval-engine", "approval_prediction", { payload, output });
+  const inputSnapshot = {
+    days_to_exam: prediction.daysToExam,
+    breakdown: prediction.breakdown,
+  };
+  const output = {
+    approval_score: prediction.score,
+    trend: prediction.trend,
+    risk: prediction.riskLevel,
+    delta: prediction.delta,
+    message: prediction.message,
+  };
+  const eventHash = generateEventHash(userId, "approval-engine", "approval_prediction", { inputSnapshot, output });
 
-    await supabase.from("assistant_decisions").upsert({
+  const persisted = await safeTelemetry(async () => {
+    const { error } = await supabase.from("assistant_decisions").upsert({
       user_id: userId,
       source_module: "approval-engine",
       decision_type: "approval_prediction",
-      input_snapshot: payload,
+      event_hash: eventHash,
+      idempotency_key: eventHash,
+      input_snapshot: inputSnapshot,
       decision_output: output,
       confidence_score: prediction.hasEnoughData ? 0.85 : 0.5,
-      idempotency_key: eventHash,
       justification: prediction.message,
-      event_hash: eventHash,
-    }, { onConflict: "idempotency_key" });
-    writeLast({ ts: now, score: prediction.score, userId });
-  } catch (err) {
-    // Telemetria nunca quebra UX
-    console.warn("[approvalTelemetry] log skipped (non-blocking):", err);
-  }
+    } as any, { onConflict: "idempotency_key", ignoreDuplicates: false });
+    if (error) {
+      console.error("[TELEMETRY_SAFE_FAIL] approval_prediction", error);
+      return false;
+    }
+    console.info("[UPSERT_OK] assistant_decisions approval_prediction");
+    return true;
+  }, "logApprovalPrediction");
+
+  if (persisted) writeLast({ ts: now, score: prediction.score, userId });
 }

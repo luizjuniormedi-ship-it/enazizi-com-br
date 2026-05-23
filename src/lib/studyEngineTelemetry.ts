@@ -8,6 +8,7 @@
  * falha é apenas logada como warning.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { safeTelemetry } from "@/lib/safeTelemetry";
 import { generateEventHash } from "./idempotency";
 import { getCalibrationSnapshot } from "./studyEngineCalibration";
 
@@ -63,7 +64,7 @@ function detectBoosts(reason: string | undefined) {
 }
 
 export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): Promise<void> {
-  try {
+  await safeTelemetry(async () => {
     const top = (input.recommendations || []).slice(0, 5).map((rec) => ({
       topic: rec.topic ?? null,
       type: rec.type ?? null,
@@ -108,12 +109,14 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
 
     const eventHash = generateEventHash(input.userId, SOURCE_MODULE, DECISION_TYPE, inputSnapshot);
 
-    await supabase.from("assistant_decisions").upsert([{
+    const { error } = await supabase.from("assistant_decisions").upsert([{
       user_id: input.userId,
       source_module: SOURCE_MODULE,
       decision_type: DECISION_TYPE,
       justification: "Study Engine V3 snapshot",
       confidence_score: null,
+      event_hash: eventHash,
+      idempotency_key: eventHash,
       input_snapshot: inputSnapshot as any,
       decision_output: {
         engine_version: "v3.2",
@@ -122,10 +125,11 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
         boost_totals: totals,
         boosted_by_approval_risk: totals.approvalRiskBoosts > 0,
       } as any,
-      event_hash: eventHash,
-      idempotency_key: eventHash,
-    }], { onConflict: "idempotency_key" });
-  } catch (e) {
-    console.warn("[studyEngineTelemetry] log skipped (non-blocking):", e);
-  }
+    }], { onConflict: "idempotency_key", ignoreDuplicates: true });
+    if (error && error.code !== "23505") {
+      console.error("[TELEMETRY_SAFE_FAIL] study_engine_decision", error);
+      return;
+    }
+    console.info("[UPSERT_OK] assistant_decisions study_engine_decision");
+  }, "logStudyEngineDecision");
 }

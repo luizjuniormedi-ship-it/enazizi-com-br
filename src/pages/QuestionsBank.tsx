@@ -269,8 +269,7 @@ const QuestionsBank = () => {
     // Award XP
     await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
 
-    // ENAZIZI ALOS Event Bus integration (Non-blocking)
-    console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending question answer telemetry...");
+    // ENAZIZI ALOS Event Bus integration (non-blocking)
     void pedagogicalEventBus.emit({
       event_type: isCorrect ? 'planner_task_completed' : 'simulado_error_detected',
       module: 'simulado',
@@ -288,14 +287,23 @@ const QuestionsBank = () => {
         selected_option: selected,
         correct_option: practiceQuestion.correct_index
       }
-    }, user.id).catch(err => {
-      console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Question telemetry failed:", err);
-    });
+    }, user.id);
 
-    // Medical domain map and Error Bank are now handled asynchronously by the ALOS Event Bus
-    // to ensure architectural consistency and prevent UI blocking.
+    // Update medical domain map
     if (practiceQuestion.topic) {
       await updateDomainMap(user.id, [{ topic: practiceQuestion.topic, correct: isCorrect }]);
+    }
+
+    // Log wrong answer to error_bank
+    if (!isCorrect) {
+      await logErrorToBank({
+        userId: user.id,
+        tema: practiceQuestion.topic || "Geral",
+        tipoQuestao: "objetiva",
+        conteudo: practiceQuestion.statement,
+        motivoErro: `Marcou "${practiceQuestion.options[selected]}" — Correta: "${practiceQuestion.options[practiceQuestion.correct_index]}"`,
+        categoriaErro: "conceito",
+      });
     }
   };
 

@@ -82,9 +82,14 @@ export default function MnemonicGeneratorPage() {
 
   // ── Deep-link from study-next / cockpit ──
   // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
-  // autoTriggeredRef moved to auto-trigger effect section
+  const autoTriggeredRef = useRef(false);
+  const generationLockRef = useRef(false);
+  const hydrationReadyRef = useRef(false);
+  const lastSearchRef = useRef("");
 
-
+  useEffect(() => {
+    hydrationReadyRef.current = true;
+  }, []);
   useEffect(() => {
     const state = location.state as { prefillTopic?: string; fromErrorBank?: boolean } | null;
     const temaParam = searchParams.get("tema") || searchParams.get("topic") || state?.prefillTopic;
@@ -92,19 +97,27 @@ export default function MnemonicGeneratorPage() {
     const estiloParam = searchParams.get("estilo");
     const publicoParam = searchParams.get("publico");
 
-    if (temaParam) setTema(temaParam);
-    
+    if (lastSearchRef.current !== location.search) {
+      lastSearchRef.current = location.search;
+      autoTriggeredRef.current = false;
+      setResult(null);
+      setResultError(null);
+    }
+
+    if (temaParam) setTema(temaParam.trim());
     if (termosParam) {
+      // aceita separadores , ; | ou newline
       const list = termosParam
         .split(/[,;|\n]+/)
         .map((t) => t.trim())
         .filter(Boolean);
-      if (list.length > 0) setTermosText(list.join("\n"));
+      setTermosText(list.join("\n"));
+    } else if (temaParam) {
+      setTermosText("");
     }
-    
     if (estiloParam) setEstilo(estiloParam);
     if (publicoParam) setPublico(publicoParam);
-  }, [searchParams, location.state]);
+  }, [location.search, location.state, searchParams]);
 
   const { data: errorSuggestions } = useErrorSuggestions();
 
@@ -171,135 +184,112 @@ export default function MnemonicGeneratorPage() {
   const [generatingStatus, setGeneratingStatus] = useState<string>("Gerando mnemônico...");
   const isLoading = isGenerating || regenerateMutation.isPending;
 
-  const handleGenerate = useCallback(async (overrideTopic?: string | React.MouseEvent) => {
-    // If it's a click event, overrideTopic will be an object. We want a string.
-    const finalTema = (typeof overrideTopic === 'string' ? overrideTopic : tema || "").trim();
-    console.log("[MNEMONIC_01_AUTO_TRIGGER] Starting generation for:", finalTema);
-    
-    // We use the current state values for style and public
-    const validation = validateMnemonicForm({ tema: finalTema, termos, estilo, publico });
-    if (!validation.valid) { 
-      console.warn("[MNEMONIC_VALIDATION_FAILED]", validation.errors);
-      setFormErrors(validation.errors); 
-      return; 
+  const friendlyMnemonicError = useCallback((message?: string) => {
+    const raw = message || "Não foi possível gerar um mnemônico válido. Tente novamente.";
+    if (/Nenhum termo disponível|termos?-chave|termos? dispon/i.test(raw)) {
+      return "Não consegui extrair termos-chave para esse tema. Tente um tema mais específico ou informe 3 a 7 termos manualmente.";
     }
-    
+    return raw;
+  }, []);
+
+  const handleGenerate = useCallback(async () => {
+    if (generationLockRef.current) return;
+    generationLockRef.current = true;
+    console.info("[MNEMONIC_START]", { tema: tema.trim(), auto: termos.length === 0 });
+    const validation = validateMnemonicForm({ tema, termos, estilo, publico });
+    if (!validation.valid) {
+      setFormErrors(validation.errors);
+      generationLockRef.current = false;
+      return;
+    }
     setFormErrors({});
     setResult(null);
     setResultError(null);
     setQuickFeedback(null);
     setIsGenerating(true);
-    
     const isAutoMode = termos.length === 0;
-    const payload = { tema: finalTema, termos, estilo, publico };
-    console.log("[MNEMONIC_02_PAYLOAD]", payload);
-    
     setGeneratingStatus(isAutoMode
       ? "🧠 Extraindo termos do tema com IA..."
       : "Gerando mnemônico...");
-      
     try {
-      console.log("[MNEMONIC_03_INVOKE_START]");
       const res = await generateWithAutoRetry(
-        payload,
-        (msg) => {
-          console.log("[MNEMONIC_STATUS_UPDATE]", msg);
-          
-          // Map AI Gateway statuses to Portuguese messages if needed
-          let displayMsg = msg;
-          if (msg === 'loading') displayMsg = isAutoMode ? "🧠 Extraindo termos do tema com IA..." : "Gerando mnemônico...";
-          if (msg === 'fallback') displayMsg = "Trocando provedor de IA...";
-          if (msg === 'retry') displayMsg = "Tentando novamente...";
-          if (msg === 'cache') displayMsg = "Resultado recuperado do cache";
-          
-          setGeneratingStatus(displayMsg);
-        }
+        { tema: tema.trim(), termos, estilo, publico },
+        (msg) => setGeneratingStatus(msg)
       );
-
-      
-      console.log("[MNEMONIC_04_RESPONSE]", res);
-      
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
-        console.log("[MNEMONIC_05_PARSED] Success:", res.data.result_id);
-        
-        // SET RESULT FIRST - CRITICAL: Rendering must not depend on telemetry success
         setResult(res.data);
-        console.log("[MNEMONIC_SET_STATE] State updated with result.");
+        console.info("[MNEMONIC_SET_STATE]", { result_id: res.data.result_id, sigla: res.data.sigla, fallback: (res.data as any).fallback === true });
+        console.info("[MNEMONIC_FINAL_RENDER]", { phrase: !!res.data.frase_mnemonica, sigla: !!res.data.sigla });
         setResultError(null);
-        
-        // NON-BLOCKING TELEMETRY
-        // We do NOT await this. We let it run in background.
-        void (async () => {
-          try {
-            console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Preparing background telemetry...");
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user && res.data) {
-              console.log("[MNEMONIC_07_DB_SAVE] Emitting event (non-blocking)...");
-              const stableIdempotencyKey = `mnem_${user.id}_${res.data.result_id}`;
-              
-              void pedagogicalEventBus.emit({
-                event_type: 'mnemonic_generated',
-                module: 'content',
-                source: 'frontend',
-                entity_type: 'mnemonic',
-                entity_id: res.data.result_id,
-                idempotency_key: stableIdempotencyKey,
-                study_context: {
-                  topic: finalTema
-                },
-                metadata: {
-                  score: res.data.score_final,
-                  is_auto: isAutoMode,
-                  event_hash: stableIdempotencyKey
-                }
-              }, user.id).catch(err => {
-                console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT]", err);
-              });
-            }
-          } catch (err) {
-            console.error("[SAFE_TELEMETRY_FALLBACK] [MNEMONIC_TELEMETRY_SESSION_FAILED]", err);
+        // Emit ALOS Event
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user && res.data) {
+            void pedagogicalEventBus.emit({
+              event_type: 'mnemonic_generated',
+              module: 'content',
+              source: 'frontend',
+              entity_type: 'mnemonic',
+              entity_id: res.data.result_id,
+              study_context: {
+                topic: tema.trim()
+              },
+              metadata: {
+                score: res.data.score_final,
+                is_auto: isAutoMode
+              }
+            }, user.id);
           }
-        })();
-
+        });
         toast.success(isAutoMode ? "Mnemônico gerado automaticamente!" : "Mnemônico gerado!");
       } else {
-        const msg = res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.";
-        console.error("[MNEMONIC_FAILED_VALIDATION]", msg);
+        const msg = friendlyMnemonicError(res.error);
         setResult(null);
         setResultError(msg);
-        telemetry.track('mnemonic_rejected', { tema: finalTema, reason: res.error || 'validation_failed' });
+        telemetry.track('mnemonic_rejected', { tema, reason: res.error || 'validation_failed' });
         toast.error(msg);
       }
     } catch (err: any) {
-      const msg = err?.message || "Erro ao gerar mnemônico.";
-      console.error("[MNEMONIC_ERROR_CAUGHT]", err);
+      const msg = friendlyMnemonicError(err?.message || "Erro ao gerar mnemônico.");
       setResult(null);
       setResultError(msg);
       toast.error(msg);
     } finally {
       setIsGenerating(false);
+      generationLockRef.current = false;
     }
-  }, [tema, termos, estilo, publico]);
+  }, [tema, termos, estilo, publico, friendlyMnemonicError]);
 
-  const autoTriggered = useRef(false);
-  
+  // ── Auto-trigger generation when arriving via deep-link with ?auto=1 ──
   useEffect(() => {
-    const auto = searchParams.get("auto");
-    const isAuto = auto === "1" || auto === "true";
-    const temaFromUrl = searchParams.get("tema") || searchParams.get("topic");
-    
-    if (isAuto && temaFromUrl && !autoTriggered.current) {
-      autoTriggered.current = true;
-      setTema(temaFromUrl);
-      console.log("[MNEMONIC_AUTO_TRIGGER] Confirmed for topic:", temaFromUrl);
-      
-      const t = setTimeout(() => {
-        handleGenerate(temaFromUrl);
-      }, 500);
-      
-      return () => clearTimeout(t);
+    const state = location.state as { fromErrorBank?: boolean } | null;
+    const auto = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
+    const autoEnabled = auto === "1" || auto === "true";
+    if (!autoEnabled) return;
+    if (!hydrationReadyRef.current) return;
+    if (autoTriggeredRef.current) return;
+    if (isLoading || result) return;
+
+    const topic = (tema || searchParams.get("tema") || searchParams.get("topic") || "").trim();
+    if (topic.length < 3) {
+      autoTriggeredRef.current = true;
+      const msg = "Não encontrei um tema válido vindo do Tutor. Informe o tema para gerar o mnemônico.";
+      setResultError(msg);
+      toast.info(msg);
+      return;
     }
-  }, [searchParams, handleGenerate]);
+
+    if (topic !== tema.trim()) {
+      setTema(topic);
+      return;
+    }
+
+    autoTriggeredRef.current = true;
+    setGeneratingStatus("🧠 Iniciando geração automática do mnemônico...");
+    telemetry.track('mnemonic_auto_trigger_started', { tema: topic, origin: searchParams.get("origin") || null });
+    console.info("[MnemonicStudio] auto-trigger started", { tema: topic, search: location.search });
+    const t = setTimeout(() => { handleGenerate(); }, 500);
+    return () => clearTimeout(t);
+  }, [location.search, location.state, searchParams, tema, isLoading, result, handleGenerate]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;
@@ -582,7 +572,7 @@ export default function MnemonicGeneratorPage() {
 
       {/* Loading */}
       {isLoading && !result && (
-        <Card className="border-primary/20">
+        <Card className="border-primary/20" data-testid="mnemonic-loading">
           <CardContent className="py-12 text-center space-y-3">
             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
             <p className="text-sm text-muted-foreground">{generatingStatus}</p>
@@ -595,7 +585,7 @@ export default function MnemonicGeneratorPage() {
 
       {/* Erro — quando todas as tentativas falharam */}
       {!isLoading && !result && resultError && (
-        <Card className="border-destructive/30 bg-destructive/5">
+        <Card className="border-destructive/30 bg-destructive/5" data-testid="mnemonic-error">
           <CardContent className="py-8 text-center space-y-3">
             <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
             <p className="text-sm font-medium text-destructive">{resultError}</p>
@@ -611,8 +601,7 @@ export default function MnemonicGeneratorPage() {
 
       {/* ═══ RESULT ═══ */}
       {result && (
-        <div className="space-y-4" id="mnemonic-result-container">
-          {(() => { console.log("[MNEMONIC_06_RENDER] Rendering result:", result.result_id); return null; })()}
+        <div className="space-y-4" data-testid="mnemonic-result">
           {/* Back button */}
           <Button variant="ghost" size="sm" onClick={() => { setResult(null); setQuickFeedback(null); }}>
             ← Novo mnemônico
@@ -621,15 +610,11 @@ export default function MnemonicGeneratorPage() {
           {/* ─── BLOCO 1: MNEMÔNICO PRINCIPAL ─── */}
           <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
             <CardContent className="pt-6 pb-4 text-center space-y-3">
-              {(result.sigla || (result as any).acronym || (result as any).title) && (
-                <p className="text-4xl font-black tracking-[0.2em] text-primary" data-testid="mnemonic-sigla">
-                  {result.sigla || (result as any).acronym || (result as any).title}
-                </p>
+              {result.sigla && (
+                <p className="text-4xl font-black tracking-[0.2em] text-primary" data-testid="mnemonic-sigla">{result.sigla}</p>
               )}
-              <p className="text-2xl font-bold leading-relaxed" data-testid="mnemonic-phrase">
-                {result.frase_mnemonica || (result as any).phrase || (result as any).mnemonic || (result as any).frase || "Mnemônico gerado"}
-              </p>
-              <Button variant="ghost" size="sm" onClick={handleCopy} className="mx-auto" data-testid="mnemonic-copy-btn">
+              <p className="text-2xl font-bold leading-relaxed" data-testid="mnemonic-phrase">{result.frase_mnemonica}</p>
+              <Button variant="ghost" size="sm" onClick={handleCopy} className="mx-auto">
                 <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
               </Button>
             </CardContent>
@@ -644,7 +629,7 @@ export default function MnemonicGeneratorPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm leading-relaxed text-muted-foreground">{explicacaoAssociacao}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground" data-testid="mnemonic-association">{explicacaoAssociacao}</p>
               </CardContent>
             </Card>
           )}

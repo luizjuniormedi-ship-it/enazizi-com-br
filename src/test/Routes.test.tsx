@@ -21,6 +21,7 @@ const VALID_DASHBOARD_ROUTES = [
   "/dashboard/resumos",
   "/dashboard/apostilas",
   "/dashboard/mapas-mentais",
+  "/dashboard/mnemonico",
   "/dashboard/mnemonic-studio-v2",
   "/dashboard/mnemonic-history",
   "/dashboard/plantao",

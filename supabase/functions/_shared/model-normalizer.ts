@@ -15,6 +15,7 @@ export function normalizeModel(model: string | null | undefined): string {
 
   // Map legacy or shorthand names to enterprise standards
   // Ensure standard names for primary models
+  if (normalized.includes("gemini-2.5-flash-lite")) return "google/gemini-2.5-flash-lite";
   if (normalized.includes("gemini-2.5-pro")) return "google/gemini-2.5-pro";
   if (normalized.includes("gemini-2.5-flash")) return "google/gemini-2.5-flash";
 

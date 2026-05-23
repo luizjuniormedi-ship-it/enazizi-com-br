@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle, Star, Quote, RefreshCw, ArrowLeft } from "lucide-react";
+import { Brain, Mail, Lock, BookOpen, Trophy, Sparkles, GraduationCap, AlertTriangle, Calendar, Users, FlaskConical, Smartphone, Monitor, Globe, MessageCircle, Star, Quote, RefreshCw } from "lucide-react";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -149,14 +149,6 @@ const Login = () => {
     <div className="min-h-[100dvh] overflow-y-auto flex flex-col lg:flex-row bg-[#050508] relative">
       <EnaflixBackgroundFX intensity="subtle" />
       
-      <button
-        onClick={() => navigate(-1)}
-        className="fixed top-6 left-6 z-[100] flex items-center gap-2 text-white/50 hover:text-white transition-all group px-4 py-2 rounded-full bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10"
-      >
-        <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-        <span className="text-[10px] font-black uppercase tracking-widest">Voltar</span>
-      </button>
-
       {/* Left panel - Hero */}
       <div className="lg:w-1/2 p-6 sm:p-10 lg:p-14 flex flex-col justify-center relative z-10">
         <motion.div
@@ -249,7 +241,7 @@ const Login = () => {
                   <label className="text-xs font-black uppercase tracking-widest text-white/40">Email Corporativo</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                    <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+                    <Input type="email" autoComplete="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 </div>
                 <Button type="submit" className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs" disabled={forgotLoading}>
@@ -265,7 +257,7 @@ const Login = () => {
                   <label className="text-xs font-black uppercase tracking-widest text-white/40">Email</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                    <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+                    <Input type="email" autoComplete="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -277,7 +269,7 @@ const Login = () => {
                   </div>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-                    <Input type="password" placeholder="••••••••" className="pl-12 h-12" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+                    <Input type="password" autoComplete="current-password" placeholder="••••••••" className="pl-12 h-12" value={password} onChange={(e) => setPassword(e.target.value)} required />
                   </div>
                 </div>
                 <Button type="submit" className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs shadow-glow-sm" disabled={loading}>

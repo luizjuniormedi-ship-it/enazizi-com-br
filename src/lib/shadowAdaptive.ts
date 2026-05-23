@@ -19,6 +19,7 @@
  *    naturais (assistir, abrir, completar). Nada muda na UX.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { safeTelemetry } from "@/lib/safeTelemetry";
 import { generateEventHash } from "./idempotency";
 
 const SHADOW_SOURCE = "shadow-adaptive-v1";
@@ -243,32 +244,33 @@ export async function logShadowDecision(payload: ShadowDecisionPayload): Promise
     const dedupKey = `dec:${userId}:${payload.kind}:${payload.module ?? ""}:${payload.topic ?? ""}`;
     if (!shouldEmit(dedupKey)) return;
 
-    const inputSnapshot = {
-      kind: payload.kind,
-      module: payload.module ?? null,
-      topic: payload.topic ?? null,
-      signals: payload.signals ?? {},
-    };
-
-    const eventHash = generateEventHash(userId, SHADOW_SOURCE, DECISION_SOURCE_DECISION, inputSnapshot);
-
-    await supabase.from("assistant_decisions").upsert([{
-      user_id: userId,
-      source_module: SHADOW_SOURCE,
-      decision_type: DECISION_SOURCE_DECISION,
-      justification: payload.reason ?? `shadow:${payload.kind}`,
-      confidence_score: typeof payload.score === "number" ? payload.score : null,
-      input_snapshot: inputSnapshot as any,
-      decision_output: {
-        applied: false,
-        shadow: true,
+    await safeTelemetry(async () => {
+      const inputSnapshot = {
         kind: payload.kind,
-      } as any,
-      event_hash: eventHash,
-      idempotency_key: eventHash,
-    }], { onConflict: "idempotency_key" });
+        module: payload.module ?? null,
+        topic: payload.topic ?? null,
+        signals: payload.signals ?? {},
+      };
+      const eventHash = generateEventHash(userId, SHADOW_SOURCE, DECISION_SOURCE_DECISION, inputSnapshot);
+      const { error } = await supabase.from("assistant_decisions").upsert([{
+        user_id: userId,
+        source_module: SHADOW_SOURCE,
+        decision_type: DECISION_SOURCE_DECISION,
+        event_hash: eventHash,
+        idempotency_key: eventHash,
+        justification: payload.reason ?? `shadow:${payload.kind}`,
+        confidence_score: typeof payload.score === "number" ? payload.score : null,
+        input_snapshot: inputSnapshot as any,
+        decision_output: {
+          applied: false,
+          shadow: true,
+          kind: payload.kind,
+        } as any,
+      }], { onConflict: "idempotency_key", ignoreDuplicates: true });
+      if (error && error.code !== "23505") console.error("[TELEMETRY_SAFE_FAIL] shadow_decision", error);
+    }, "logShadowDecision");
   } catch (e) {
-    console.warn("[shadowAdaptive] logShadowDecision skipped (non-blocking):", e);
+    console.warn("[shadowAdaptive] logShadowDecision skipped:", e);
   }
 }
 
@@ -287,32 +289,33 @@ export async function logShadowOutcome(payload: ShadowOutcomePayload): Promise<v
     const dedupKey = `out:${userId}:${payload.module}:${payload.action}:${payload.topic ?? ""}`;
     if (!shouldEmit(dedupKey)) return;
 
-    const inputSnapshot = {
-      module: payload.module,
-      topic: payload.topic ?? null,
-      duration_ms: payload.durationMs ?? null,
-      extra: payload.extra ?? {},
-    };
-
-    const eventHash = generateEventHash(userId, SHADOW_SOURCE, DECISION_SOURCE_OUTCOME, inputSnapshot);
-
-    await supabase.from("assistant_decisions").upsert([{
-      user_id: userId,
-      source_module: SHADOW_SOURCE,
-      decision_type: DECISION_SOURCE_OUTCOME,
-      justification: `outcome:${payload.action}`,
-      confidence_score: null,
-      input_snapshot: inputSnapshot as any,
-      decision_output: {
-        applied: false,
-        shadow: true,
-        action: payload.action,
-      } as any,
-      event_hash: eventHash,
-      idempotency_key: eventHash,
-    }], { onConflict: "idempotency_key" });
+    await safeTelemetry(async () => {
+      const inputSnapshot = {
+        module: payload.module,
+        topic: payload.topic ?? null,
+        duration_ms: payload.durationMs ?? null,
+        extra: payload.extra ?? {},
+      };
+      const eventHash = generateEventHash(userId, SHADOW_SOURCE, DECISION_SOURCE_OUTCOME, inputSnapshot);
+      const { error } = await supabase.from("assistant_decisions").upsert([{
+        user_id: userId,
+        source_module: SHADOW_SOURCE,
+        decision_type: DECISION_SOURCE_OUTCOME,
+        event_hash: eventHash,
+        idempotency_key: eventHash,
+        justification: `outcome:${payload.action}`,
+        confidence_score: null,
+        input_snapshot: inputSnapshot as any,
+        decision_output: {
+          applied: false,
+          shadow: true,
+          action: payload.action,
+        } as any,
+      }], { onConflict: "idempotency_key", ignoreDuplicates: true });
+      if (error && error.code !== "23505") console.error("[TELEMETRY_SAFE_FAIL] shadow_outcome", error);
+    }, "logShadowOutcome");
   } catch (e) {
-    console.warn("[shadowAdaptive] logShadowOutcome skipped (non-blocking):", e);
+    console.warn("[shadowAdaptive] logShadowOutcome skipped:", e);
   }
 }
 
@@ -339,36 +342,37 @@ export async function logShadowScores(scores: {
     const dedupKey = `sco:${userId}:${scores.module ?? ""}:${scores.topic ?? ""}`;
     if (!shouldEmit(dedupKey)) return;
 
-    const inputSnapshot = {
-      module: scores.module ?? null,
-      topic: scores.topic ?? null,
-    };
-
-    const eventHash = generateEventHash(userId, SHADOW_SOURCE, "shadow-score", inputSnapshot);
-
-    await supabase.from("assistant_decisions").upsert([{
-      user_id: userId,
-      source_module: SHADOW_SOURCE,
-      decision_type: "shadow-score",
-      justification: "passive cognitive scores",
-      confidence_score: null,
-      input_snapshot: inputSnapshot as any,
-      decision_output: {
-        applied: false,
-        shadow: true,
-        scores: {
-          fatigue: scores.fatigue ?? null,
-          retention: scores.retention ?? null,
-          abandonment_risk: scores.abandonmentRisk ?? null,
-          engagement: scores.engagement ?? null,
-          confidence: scores.confidence ?? null,
-        },
-      } as any,
-      event_hash: eventHash,
-      idempotency_key: eventHash,
-    }], { onConflict: "idempotency_key" });
+    await safeTelemetry(async () => {
+      const inputSnapshot = {
+        module: scores.module ?? null,
+        topic: scores.topic ?? null,
+      };
+      const eventHash = generateEventHash(userId, SHADOW_SOURCE, "shadow-score", inputSnapshot);
+      const { error } = await supabase.from("assistant_decisions").upsert([{
+        user_id: userId,
+        source_module: SHADOW_SOURCE,
+        decision_type: "shadow-score",
+        event_hash: eventHash,
+        idempotency_key: eventHash,
+        justification: "passive cognitive scores",
+        confidence_score: null,
+        input_snapshot: inputSnapshot as any,
+        decision_output: {
+          applied: false,
+          shadow: true,
+          scores: {
+            fatigue: scores.fatigue ?? null,
+            retention: scores.retention ?? null,
+            abandonment_risk: scores.abandonmentRisk ?? null,
+            engagement: scores.engagement ?? null,
+            confidence: scores.confidence ?? null,
+          },
+        } as any,
+      }], { onConflict: "idempotency_key", ignoreDuplicates: true });
+      if (error && error.code !== "23505") console.error("[TELEMETRY_SAFE_FAIL] shadow_score", error);
+    }, "logShadowScores");
   } catch (e) {
-    console.warn("[shadowAdaptive] logShadowScores skipped (non-blocking):", e);
+    console.warn("[shadowAdaptive] logShadowScores skipped:", e);
   }
 }
 

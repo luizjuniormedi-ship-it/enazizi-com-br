@@ -1,13 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
-import { eventOrderingEngine } from "./cognition/event-ordering-engine";
-import { cognitiveSnapshotEngine } from "./cognition/cognitive-snapshot-engine";
-import { safeTelemetry } from "./safeTelemetry";
+import { safeTelemetry } from "@/lib/safeTelemetry";
 
 /**
- * ENAZIZI ALOS — Fase 4: Temporal Cognitive Consistency Engine
- * Hardened event-driven system with deterministic ordering and snapshots.
+ * ENAZIZI ALOS — Fase 2.5: Cognitive Event Runtime
+ * Hardened event-driven system with longitudinal source tracking.
  */
-
 
 export type PedagogicalModule = 
   | 'planner' 
@@ -54,14 +51,6 @@ export const pedagogicalEventBus = {
    * Emite um evento pedagógico padronizado com hardening de governança.
    */
   async emit(payload: PedagogicalEventPayload, userId: string) {
-    // NEW: Phase 4 Consistency Check
-    const isOrdered = await eventOrderingEngine.validateDependencies(payload.event_type, payload.metadata?.correlation_id);
-    if (!isOrdered) {
-      console.warn(`[COG_EVENT_RUNTIME] Dependency delay for: ${payload.event_type}. Queueing...`);
-      // In a real implementation, we would queue this. 
-      // For now, we allow the engine to version it and proceed but log the drift.
-    }
-
     const timestamp = new Date().toISOString();
     // Idempotency: generate key if missing to avoid duplicate clicks
     const finalIdempotencyKey = payload.idempotency_key || `bus_${userId}_${payload.event_type}_${Date.now()}`;
@@ -72,11 +61,8 @@ export const pedagogicalEventBus = {
       idempotency: finalIdempotencyKey
     });
 
-    try {
-      // Phase 4: Use upsert for assistant_decisions to prevent 409 Conflict
-      const isDecision = payload.event_type.includes('decision') || payload.event_type.includes('snapshot');
-      
-      const { data, error } = await supabase
+    return safeTelemetry(async () => {
+      const { error } = await supabase
         .from("pedagogical_events")
         .upsert({
           user_id: userId,
@@ -93,69 +79,24 @@ export const pedagogicalEventBus = {
           recursion_depth: payload.recursion_depth || 0,
           replay_id: payload.replay_id,
           status: 'pending'
-        }, { onConflict: 'idempotency_key', ignoreDuplicates: false });
-
-      if (error) {
-        console.warn("[COG_EVENT_RUNTIME] Persistence warning (non-blocking):", error);
-        // Continue flow even if persistence fails
-      }
-
-      // Reconstruct event for consumer - avoid using database return if possible
-      const eventForConsumer = {
-        ...payload,
-        user_id: userId,
-        idempotency_key: finalIdempotencyKey,
-        created_at: timestamp
-      };
-
-      // Async trigger for the consumer Edge Function
-      // This ensures the "Event Bus" logic runs immediately
-      void safeTelemetry(async () => {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          console.warn("[COG_EVENT_RUNTIME] No active session for background telemetry");
-          return;
-        }
-
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pedagogical-event-consumer`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.session.access_token}`
-          },
-          body: JSON.stringify({ event: eventForConsumer })
+        }, {
+          onConflict: "idempotency_key",
+          ignoreDuplicates: false,
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Consumer failed: ${response.status} - ${errorText}`);
-        }
-        
-        console.log("[TELEMETRY_BACKGROUND_OK] Pedagogical event consumed successfully.");
-      }, 'pedagogical-event-trigger');
+      if (error) {
+        console.error("[COG_EVENT_RUNTIME] Persistence failure:", error);
+        console.info("[TELEMETRY_SAFE_FAIL] pedagogical_events_upsert");
+        return null;
+      }
+
+      console.info("[UPSERT_OK] pedagogical_events", { idempotency_key: finalIdempotencyKey });
 
       // Sync cognitive state stream locally for UI reactivity
       this.updateLocalCognitiveStream(payload);
-      
-      // Phase 10: Auto-Adaptive Trigger
-      if (payload.event_type === 'question_answered' || payload.event_type === 'simulado_error_detected') {
-        window.dispatchEvent(new CustomEvent('ena:cognitive_recalibration', { detail: payload }));
-      }
-      
-      // Phase 3: Automatic Snapshot after critical events
-      if (['question_answered', 'mission_completed', 'diagnostic_completed'].includes(payload.event_type)) {
-        console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Triggering cognitive snapshot...");
-        // Pass idempotency_key if we don't have UUID id, the engine handles it optionally
-        void cognitiveSnapshotEngine.capture(userId);
-      }
 
-      return eventForConsumer;
-
-    } catch (err) {
-      console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Dispatch handled error (non-blocking):", err);
-      console.log("[SAFE_TELEMETRY_FALLBACK] Continuing study flow despite telemetry error.");
       return null;
-    }
+    }, "pedagogicalEventBus.emit");
   },
 
   /**
@@ -163,29 +104,27 @@ export const pedagogicalEventBus = {
    */
   async triggerLongitudinalReplay(userId: string, reason: string = 'trajectory_sync') {
     console.log(`[COG_EVENT_RUNTIME] Triggering Replay for user: ${userId} | Reason: ${reason}`);
-    const { data, error } = await supabase.rpc('replay_pedagogical_events', {
-      p_user_id: userId,
-      p_replay_reason: reason
-    });
-    
-    if (error) {
-      console.error("[COG_EVENT_RUNTIME] Replay trigger failed:", error);
-      throw error;
-    }
-    return data; // Replay ID
+    return safeTelemetry(async () => {
+      const { data, error } = await supabase.rpc('replay_pedagogical_events', {
+        p_user_id: userId,
+        p_replay_reason: reason
+      });
+
+      if (error) {
+        console.error("[COG_EVENT_RUNTIME] Replay trigger failed:", error);
+        return null;
+      }
+      return data; // Replay ID
+    }, "pedagogicalEventBus.triggerLongitudinalReplay");
   },
 
   /**
    * Atualiza cache local do estado cognitivo (Optimistic UI)
    */
   updateLocalCognitiveStream(payload: PedagogicalEventPayload) {
-    console.log("[COG_EVENT_RUNTIME] Cognitive stream synchronization update.", payload.event_type);
-    
-    // Auto-Snapshot on critical events
-    if (['question_answered', 'mission_completed'].includes(payload.event_type)) {
-      // Snapshot is already triggered in emit()
-    }
+    // Invalidação de queries do Tanstack Query para refletir mudanças adaptativas
+    // No ALOS, o estado cognitivo é a verdade absoluta da UI
+    console.log("[COG_EVENT_RUNTIME] Cognitive stream synchronization update.");
   }
-
 };
 

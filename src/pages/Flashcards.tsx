@@ -160,90 +160,80 @@ const Flashcards = () => {
     return result;
   }, [mode, dueCards, allCards, topicSearch, sprintConfig.cardCount]);
 
-  const handleSearchExisting = async () => {
+  const handleGenerateFromBank = async (autoStart = true) => {
     if (!user) return;
     const search = topicSearch.trim();
     if (!search) {
-      toast({ title: "Digite um tema", description: "Informe o tema para buscar cards existentes.", variant: "destructive" });
+      toast({ title: "Digite um tema", description: "Informe o tema para buscar questões no banco.", variant: "destructive" });
       return;
     }
-
-    setLoading(true);
-    try {
-      const searchPattern = `%${search}%`;
-      const { data, error } = await supabase
-        .from("flashcards")
-        .select("id, question, answer, topic, is_global, user_id")
-        .or(`topic.ilike.${searchPattern},question.ilike.${searchPattern}`)
-        .limit(100);
-
-      if (error) throw error;
-      
-      if (!data || data.length === 0) {
-        toast({ 
-          title: "Nenhum card encontrado", 
-          description: "Não encontramos cards existentes com este tema. Deseja gerar novos com IA?",
-          action: (
-            <Button size="sm" onClick={() => handleGenerateWithAI(true)}>
-              Gerar com IA
-            </Button>
-          )
-        });
-      } else {
-        setAllCards(data);
-        setMode("all");
-        setPhase("active");
-        toast({ title: `${data.length} cards encontrados`, description: `Iniciando revisão de "${search}".` });
-      }
-    } catch (e: any) {
-      toast({ title: "Erro na busca", description: e.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGenerateWithAI = async (autoStart = true) => {
-    if (!user) return;
-    const search = topicSearch.trim();
-    if (!search) {
-      toast({ title: "Digite um tema", description: "Informe o tema para a IA gerar novos flashcards.", variant: "destructive" });
-      return;
-    }
-    
     setGeneratingFromBank(true);
     try {
-      toast({ title: "Gerando com IA...", description: "O motor pedagógico está criando novos cards personalizados." });
-      
-      const { data, error: genError } = await supabase.functions.invoke("generate-flashcards", {
-        body: { 
-          topic: search, 
-          quantity: generateQuantity,
-          discipline: "Clínica Médica",
-          mode: "ai_generation"
-        }
-      });
+      const { data: existing } = await supabase
+        .from("flashcards")
+        .select("question")
+        .eq("user_id", user.id);
+      const existingHashes = new Set((existing || []).map(f => f.question?.slice(0, 80).toLowerCase()));
 
-      if (genError) throw genError;
-      
-      if (data?.success) {
-        toast({ 
-          title: "Geração Concluída!", 
-          description: `${data.generated_count || data.count || generateQuantity} novos flashcards foram criados e salvos.` 
+      const limit = Math.min(generateQuantity + 15, 60);
+      const [{ data: bankQ }, { data: realQ }] = await Promise.all([
+        supabase
+          .from("questions_bank")
+          .select("statement, explanation, options, correct_index, topic")
+          .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+          .eq("is_global", true)
+          .limit(limit),
+        supabase
+          .from("real_exam_questions")
+          .select("statement, explanation, options, correct_index, topic")
+          .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+          .eq("is_active", true)
+          .limit(limit),
+      ]);
+
+      const allQuestions = [...(bankQ || []), ...(realQ || [])];
+      const newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
+      for (const q of allQuestions) {
+        if (newCards.length >= generateQuantity) break;
+        const hash = q.statement?.slice(0, 80).toLowerCase();
+        if (!hash || existingHashes.has(hash)) continue;
+        existingHashes.add(hash);
+
+        const opts = Array.isArray(q.options) ? q.options as string[] : [];
+        const correctOpt = q.correct_index != null && opts[q.correct_index]
+          ? `✅ ${opts[q.correct_index]}`
+          : "";
+        const answer = [correctOpt, q.explanation ? `\n\n🧠 ${q.explanation}` : ""].join("").trim();
+        if (!answer) continue;
+
+        newCards.push({
+          user_id: user.id,
+          question: q.statement,
+          answer,
+          topic: q.topic || search,
         });
-        
-        await fetchData();
-        
-        if (autoStart) {
-          setMode("all");
-          setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
-          setPhase("active");
-        }
-      } else {
-        throw new Error(data?.error || "Falha na geração via IA");
+      }
+
+      if (newCards.length === 0) {
+        toast({ title: "Nenhuma questão encontrada", description: `Não encontramos questões novas para "${search}".` });
+        setGeneratingFromBank(false);
+        return;
+      }
+
+      const { error, data: inserted } = await supabase.from("flashcards").insert(newCards).select("id, question, answer, topic, is_global, user_id");
+      if (error) throw error;
+
+      toast({ title: `${newCards.length} flashcards gerados!`, description: `Prontos para revisão de "${search}".` });
+      await fetchData();
+
+      if (autoStart && inserted && inserted.length > 0) {
+        // Auto-start session with the newly generated cards
+        setMode("all");
+        setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
+        setPhase("active");
       }
     } catch (e: any) {
-      console.error("[FLASHCARD_GEN_ERROR]", e);
-      toast({ title: "Erro na geração", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao gerar", description: e.message, variant: "destructive" });
     } finally {
       setGeneratingFromBank(false);
     }
@@ -306,8 +296,7 @@ const Flashcards = () => {
       };
       toast({ title: labels[rating] || "Revisado" });
 
-      // Emit ALOS Event
-      console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending flashcard review telemetry...");
+      // Emit ALOS Event (non-blocking)
       void pedagogicalEventBus.emit({
         event_type: 'fsrs_review_completed',
         module: 'fsrs',
@@ -322,9 +311,7 @@ const Flashcards = () => {
           scheduled_days: scheduledDays,
           is_correct: isCorrect
         }
-      }, user.id).catch(err => {
-        console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Flashcard review telemetry failed:", err);
-      });
+      }, user.id);
     } catch (err) {
       console.error("Review error:", err);
       toast({
@@ -397,7 +384,7 @@ const Flashcards = () => {
             description="Use a IA para criar novos cards a partir de temas médicos."
             icon={Sparkles}
             variant="primary"
-            onClick={() => handleGenerateWithAI(true)}
+            onClick={() => handleGenerateFromBank(true)}
           />
           <EnaflixActionCard
             title="Importar Conteúdo"
@@ -643,32 +630,19 @@ const Flashcards = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full h-14 gap-3 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white font-bold"
-                onClick={handleSearchExisting}
-                disabled={generatingFromBank || !topicSearch.trim()}
-              >
-                <Search className="h-5 w-5" />
-                Buscar existentes
-              </Button>
-
-              <Button
-                size="lg"
-                className="w-full h-14 gap-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow-sm"
-                onClick={() => handleGenerateWithAI(true)}
-                disabled={generatingFromBank || !topicSearch.trim()}
-              >
-                {generatingFromBank ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-5 w-5" />
-                )}
-                Gerar com IA
-              </Button>
-            </div>
+            <Button
+              size="lg"
+              className="w-full h-14 gap-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow-sm"
+              onClick={() => handleGenerateFromBank(true)}
+              disabled={generatingFromBank || !topicSearch.trim()}
+            >
+              {generatingFromBank ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <DatabaseZap className="h-5 w-5" />
+              )}
+              Gerar {generateQuantity} Flashcards e Iniciar
+            </Button>
           </div>
         </div>
       </EnaflixSection>

@@ -31,14 +31,27 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
   const auditorMedico = agentes?.auditor_medico as Record<string, unknown> | undefined;
   const auditorPedagogico = agentes?.auditor_pedagogico as Record<string, unknown> | undefined;
 
-  // Build items_map from generator associations
+  // Build items_map from canonical backend field or generator associations
   const sigla = String(d.sigla ?? "");
-  const associacoes = (gerador?.associacoes ?? d.associacoes) as Array<Record<string, string>> | undefined;
+  const backendItemsMap = Array.isArray(d.items_map) ? d.items_map as Array<Record<string, string>> : [];
+  const rawAssociacoes = (gerador?.associacoes ?? d.associacoes) as Array<Record<string, string>> | undefined;
   let itemsMap: MnemonicResultData["items_map"] = [];
 
-  // items_map só a partir de associações REAIS — NUNCA inventado dos termos (sem fallback termo→termo)
-  if (Array.isArray(associacoes) && associacoes.length > 0) {
-    itemsMap = associacoes
+  if (backendItemsMap.length > 0) {
+    itemsMap = backendItemsMap
+      .filter((a) =>
+        a && String(a.original_item ?? a.termo_original ?? "").trim() &&
+        String(a.word ?? a.representacao_no_mnemonico ?? "").trim()
+      )
+      .map((a) => ({
+        letter: String(a.letter ?? a.letra ?? "").trim(),
+        word: String(a.word ?? a.representacao_no_mnemonico ?? "").trim(),
+        original_item: String(a.original_item ?? a.termo_original ?? "").trim(),
+        symbol: String(a.symbol ?? "").trim() || null,
+        symbol_reason: String(a.symbol_reason ?? "").trim() || null,
+      }));
+  } else if (Array.isArray(rawAssociacoes) && rawAssociacoes.length > 0) {
+    itemsMap = rawAssociacoes
       .filter((a) =>
         a && String(a.termo_original ?? a.original_item ?? "").trim() &&
         String(a.representacao_no_mnemonico ?? a.word ?? "").trim()
@@ -51,6 +64,18 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
         symbol_reason: String(a.symbol_reason ?? "").trim() || null,
       }));
   }
+
+  const associacoes = Array.isArray(rawAssociacoes) && rawAssociacoes.length > 0
+    ? rawAssociacoes
+    : itemsMap.map((item) => ({
+      letra: item.letter,
+      termo_original: item.original_item,
+      representacao_no_mnemonico: item.word,
+    }));
+
+  const memoryImpact = d.memory_impact_score && typeof d.memory_impact_score === "object"
+    ? d.memory_impact_score as Record<string, unknown>
+    : {};
 
   // Build agent_logs from agentes object
   const agentLogs: AgentLog[] = [];
@@ -84,13 +109,15 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
 
   const associacoesVisuais = (visual?.associacoes_visuais ?? d.associacoes_visuais ?? []) as Array<{ termo: string; elemento_visual: string; associacao_fonetica?: string; acao_na_cena?: string }>;
 
+  const scoreMedico = Number(d.score_medico ?? memoryImpact.clinical_relevance ?? 0);
+  const scorePedagogico = Number(d.score_pedagogico ?? memoryImpact.visual_strength ?? 0);
+  const scoreLinguistico = Number(d.score_linguistico ?? memoryImpact.simplicity ?? 0);
+  const scoreFinal = Number(d.score_final ?? memoryImpact.composite_score ?? 0);
+
   const qualityFlag = (() => {
-    const sl = Number(d.score_linguistico ?? 0);
-    const sm = Number(d.score_medico ?? 0);
-    const sf = Number(d.score_final ?? 0);
-    if (sl < 80 || sm < 85) return "low" as const;
-    if (sf >= 90) return "high" as const;
-    return "medium" as const;
+    if (scoreFinal >= 90) return "high" as const;
+    if (scoreFinal >= 70 || scoreMedico >= 80 || scorePedagogico >= 80) return "medium" as const;
+    return "low" as const;
   })();
 
   const imageUrl = typeof d.image_url === "string" && d.image_url.trim() && d.image_url !== "null"
@@ -112,15 +139,15 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
     result_id: String(d.result_id ?? ""),
     tema: String(d.tema ?? ""),
     sigla,
-    frase_mnemonica: String(d.frase_mnemonica ?? ""),
-    explicacao_tecnica: String(d.explicacao_tecnica ?? ""),
-    explicacao_didatica: String(d.explicacao_didatica ?? ""),
-    cena_visual: String(d.cena_visual ?? ""),
-    prompt_imagem: String(d.prompt_imagem ?? ""),
-    score_medico: Number(d.score_medico ?? 0),
-    score_pedagogico: Number(d.score_pedagogico ?? 0),
-    score_linguistico: Number(d.score_linguistico ?? 0),
-    score_final: Number(d.score_final ?? 0),
+    frase_mnemonica: String(d.frase_mnemonica ?? d.phrase ?? ""),
+    explicacao_tecnica: String(d.explicacao_tecnica ?? d.explanation_tecnica ?? ""),
+    explicacao_didatica: String(d.explicacao_didatica ?? d.explanation_didatica ?? ""),
+    cena_visual: String(d.cena_visual ?? d.scene_description ?? ""),
+    prompt_imagem: String(d.prompt_imagem ?? d.image_prompt ?? ""),
+    score_medico: scoreMedico,
+    score_pedagogico: scorePedagogico,
+    score_linguistico: scoreLinguistico,
+    score_final: scoreFinal,
     quality_flag: typeof d.quality_flag === "string" ? d.quality_flag as MnemonicResultData["quality_flag"] : qualityFlag,
     alertas: Array.isArray(d.alertas) ? d.alertas.map(String) : [],
     associacoes: Array.isArray(associacoes) ? associacoes.map((a: any) => ({

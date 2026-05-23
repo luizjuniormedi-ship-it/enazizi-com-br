@@ -13,6 +13,12 @@ import { ModuleGuard } from "@/components/guards/ModuleGuard";
 import { Suspense } from "react";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+
+function RedirectWithSearch({ to }: { to: string }) {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}`} replace />;
+}
+
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
@@ -116,13 +122,6 @@ const PageLoader = () => (
   </div>
 );
 
-const NavigateWithSearchParams = ({ to, replace = false }: { to: string; replace?: boolean }) => {
-  const location = useLocation();
-  // Preserve all search params during navigation/redirect
-  const search = location.search;
-  return <Navigate to={{ pathname: to, search }} replace={replace} />;
-};
-
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -167,8 +166,8 @@ const App = () => (
               <Route path="/privacy" element={<Navigate to="/privacidade" replace />} />
               
               <Route path="/chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/mentor-ai" element={<Navigate to="/dashboard/ia-mentor" replace />} />
-              <Route path="/ai-mentor" element={<Navigate to="/dashboard/ia-mentor" replace />} />
+              <Route path="/mentor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/ai-mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/study" element={<Navigate to="/dashboard/cronograma" replace />} />
               <Route path="/study-session" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/simulations" element={<Navigate to="/dashboard/simulados" replace />} />
@@ -192,8 +191,7 @@ const App = () => (
                   <Route path="planner" element={<SmartPlanner />} />
                   <Route path="sessao-estudo" element={<TutorV2Page />} />
                   <Route path="sessao-estudo/:sessionId" element={<TutorV2Page />} />
-                  <Route path="tutor-legacy" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="ia-mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="tutor-legacy" element={<StudySession />} />
                   <Route path="simulados" element={<Simulados />} />
                   <Route path="flashcards" element={<Flashcards />} />
                   <Route path="banco-erros" element={<ErrorBank />} />
@@ -247,8 +245,8 @@ const App = () => (
                   <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
                   <Route path="missao" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="missao-do-dia" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="mnemonic-studio" element={<NavigateWithSearchParams to="/dashboard/mnemonico" replace />} />
-                  <Route path="mnemonic-studio-v2" element={<NavigateWithSearchParams to="/dashboard/mnemonico" replace />} />
+                  <Route path="mnemonic-studio" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
+                  <Route path="mnemonic-studio-v2" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
                   <Route path="mapas-mentais" element={<Navigate to="/dashboard/mapas-mentais" replace />} />
                   <Route path="minha-jornada" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
                   <Route path="radar-trajetoria" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
@@ -303,16 +301,16 @@ const App = () => (
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
-                <Route path="turmas" element={<ProfessorDashboard initialTab="turmas" initialSub="minhas" />} />
-                <Route path="alunos" element={<ProfessorDashboard initialTab="operacional" initialSub="aluno" />} />
-                <Route path="simulados" element={<ProfessorDashboard initialTab="simulados" initialSub="lista" />} />
-                <Route path="questoes" element={<ProfessorDashboard initialTab="simulados" initialSub="lista" />} />
-                <Route path="materiais" element={<ProfessorDashboard initialTab="mentoria" initialSub="temas" />} />
-                <Route path="plantao" element={<ProfessorDashboard initialTab="operacional" initialSub="plantao" />} />
-                <Route path="analytics" element={<ProfessorDashboard initialTab="turmas" initialSub="bi" />} />
-                <Route path="relatorios" element={<ProfessorDashboard initialTab="auditoria" initialSub="trace" />} />
-                <Route path="video" element={<ProfessorDashboard initialTab="turmas" initialSub="video" />} />
-                <Route path="sala" element={<ProfessorDashboard initialTab="turmas" initialSub="video" />} />
+                <Route path="simulados" element={<ProfessorDashboard initialTab="simulados" />} />
+                <Route path="plantao" element={<ProfessorDashboard initialTab="operacional" />} />
+                <Route path="video" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="sala" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="alunos" element={<ProfessorDashboard initialTab="operacional" />} />
+                <Route path="turmas" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="analytics" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="relatorios" element={<ProfessorDashboard initialTab="turmas" />} />
+                <Route path="questoes" element={<ProfessorDashboard initialTab="simulados" />} />
+                <Route path="materiais" element={<ProfessorDashboard initialTab="mentoria" />} />
                 <Route path="simulados/novo" element={<NewProfessorSimuladoPage />} />
                 <Route path="simulados/editar/:id" element={<NewProfessorSimuladoPage />} />
               </Route>

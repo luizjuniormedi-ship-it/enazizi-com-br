@@ -101,33 +101,25 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
 
     try {
       if (sessionIdRef.current) {
-        const { error } = await supabase
+        await supabase
           .from("module_sessions")
           .update({ session_data: sessionData as any, updated_at: new Date().toISOString() })
           .eq("id", sessionIdRef.current);
-        
-        if (error) throw error;
       } else {
-        // Use upsert with onConflict for active sessions to avoid 409
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("module_sessions")
-          .upsert({
+          .insert({
             user_id: user.id,
             module_key: moduleKey,
             session_data: sessionData as any,
             status: "active",
-            updated_at: new Date().toISOString()
-          }, { 
-            onConflict: "user_id,module_key",
-            ignoreDuplicates: false 
           })
           .select("id")
           .single();
-          
-        if (error) throw error;
         if (data) sessionIdRef.current = data.id;
       }
       
+      // Clear backup on successful server sync
       localStorage.removeItem(backupKey);
     } catch (e) {
       console.warn("[SessionPersistence] saveSession error:", e);
@@ -181,7 +173,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     getStateRef.current = getState;
   }, []);
 
-  // Auto-save interval + beforeunload with sendBeacon
+  // Auto-save interval + beforeunload with authenticated keepalive fetch
   useEffect(() => {
     if (!enabled || !user) return;
 
@@ -199,21 +191,17 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
       const state = getStateRef.current();
       if (!state || Object.keys(state).length === 0) return;
 
+      const backupKey = `enazizi_session_backup_${moduleKey}_${user.id}`;
+      localStorage.setItem(backupKey, JSON.stringify({
+        data: state,
+        ts: Date.now()
+      }));
+
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      
-      // Get session from localStorage directly to avoid async await in beforeunload
-      const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
-      const sessionData = localStorage.getItem(storageKey);
-      let token = supabaseKey;
-      if (sessionData) {
-        try {
-          const parsed = JSON.parse(sessionData);
-          token = parsed.access_token || supabaseKey;
-        } catch (e) {
-          console.warn("[SessionPersistence] Failed to parse auth token for beforeunload");
-        }
-      }
+      const accessToken = supabase.auth.getSession()
+        .then(({ data }) => data.session?.access_token)
+        .catch(() => null);
 
       if (supabaseUrl && supabaseKey && sessionIdRef.current) {
         const url = `${supabaseUrl}/rest/v1/module_sessions?id=eq.${sessionIdRef.current}`;
@@ -221,27 +209,26 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
           session_data: state,
           updated_at: new Date().toISOString(),
         });
-        
-        try {
-          // [CORS_HARDENING] Standard fetch with keepalive and NO credentials.
-          // Using the real user token in Authorization header allows RLS to pass
-          // while credentials: 'omit' allows Access-Control-Allow-Origin: *
-          fetch(url, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              "apikey": supabaseKey,
-              "Authorization": `Bearer ${token}`,
-              "Prefer": "return=minimal",
-            },
-            body,
-            keepalive: true,
-            mode: 'cors',
-            credentials: "omit",
-          }).catch(() => {});
-        } catch {
-          // silent fallback
-        }
+
+        accessToken.then((token) => {
+          if (!token) return;
+          try {
+            fetch(url, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${token}`,
+                "Prefer": "return=minimal",
+              },
+              body,
+              keepalive: true,
+              credentials: "omit",
+            }).catch(() => {});
+          } catch {
+            // silent
+          }
+        });
       }
     };
 
@@ -250,7 +237,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
       clearInterval(intervalRef.current);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [enabled, user, intervalMs, saveSession]);
+  }, [enabled, user, moduleKey, intervalMs, saveSession]);
 
   // Check on mount
   useEffect(() => {

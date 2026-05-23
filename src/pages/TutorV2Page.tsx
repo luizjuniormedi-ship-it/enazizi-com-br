@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import TutorV2ChatPanel from "@/components/tutor-v2/TutorV2ChatPanel";
@@ -19,36 +19,27 @@ export default function TutorV2Page() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const studyCtx = useStudyContext();
-  const [searchParams] = useSearchParams();
-  const urlTopic = searchParams.get("topic") || searchParams.get("t") || "";
   const { session, isLoading, stats } = useTutorV2Session(sessionId);
-  const [newTopic, setNewTopic] = useState(urlTopic || studyCtx?.topic || "");
+  const [newTopic, setNewTopic] = useState(studyCtx?.topic || "");
   const [isCreating, setIsCreating] = useState(false);
-  const creatingSessionRef = useRef(false);
   const [bootStatus, setBootStatus] = useState("");
 
-  console.log("[TUTOR_BOOT] sessionId=" + sessionId + " urlTopic=" + urlTopic + " ctxTopic=" + studyCtx?.topic);
-
-  // Auto-start session if coming from study context or URL topic
+  // Auto-start session if coming from study context
   useEffect(() => {
-    // Only auto-start if we are NOT on a specific session and NOT already creating one
-    if (sessionId || isCreating || creatingSessionRef.current) return;
-    
-    const topicToStart = urlTopic || studyCtx?.topic;
-    if (topicToStart && user) {
-      console.log("[TUTOR_AUTO_START] Detected context for topic:", topicToStart);
-      handleStartSession(topicToStart);
+    if (studyCtx?.topic && user && !sessionId && !isCreating) {
+      console.log("[TUTOR_AUTO_START] Detected context for topic:", studyCtx.topic);
+      handleStartSession(studyCtx.topic);
     }
-  }, [studyCtx?.topic, urlTopic, user, sessionId, isCreating]);
+  }, [studyCtx?.topic, user, sessionId]);
 
 
   const handleStartSession = async (topic?: string) => {
     const finalTopic = topic || newTopic;
-    if (!finalTopic.trim() || !user || isCreating || creatingSessionRef.current || sessionId) return;
+    if (!finalTopic.trim() || !user || isCreating) return;
     
     setIsCreating(true);
-    creatingSessionRef.current = true;
     setBootStatus("Inicializando preceptor...");
+    console.log("[TUTOR_SESSION_BOOT] Topic:", finalTopic);
 
     // Context hydration for ALOS
     const hydrationMetadata = {
@@ -61,8 +52,6 @@ export default function TutorV2Page() {
     };
 
     try {
-      // Fire-and-forget telemetry to avoid blocking boot
-      console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending session created telemetry...");
       void pedagogicalEventBus.emit({
         event_type: 'tutor_session_created',
         module: 'tutor',
@@ -74,55 +63,50 @@ export default function TutorV2Page() {
           subtopic: studyCtx?.subtopic || null
         },
         metadata: hydrationMetadata
-      }, user.id).catch(err => console.warn("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Tutor telemetry failed:", err));
+      }, user.id);
       
-      // Parallel creation of pedagogical track and tutor session
-      setBootStatus("Sincronizando Ecossistema...");
-      
-      const [pedResult, tutorResult] = await Promise.all([
-        supabase
-          .from("pedagogical_sessions")
-          .insert({
-            user_id: user.id,
-            topic: finalTopic,
-            specialty: studyCtx?.specialty || null,
-            tutor_mode: 'normal',
-            cognitive_state: 'stable',
-            metadata: hydrationMetadata
-          })
-          .select()
-          .single(),
-        supabase
-          .from("tutor_sessions")
-          .insert({
-            user_id: user.id,
-            topic: finalTopic,
-            subtopic: studyCtx?.subtopic || null,
-            specialty: studyCtx?.specialty || null,
-            mode: 'livre',
-            status: 'active',
-            metadata: hydrationMetadata
-          })
-          .select()
-          .single()
-      ]);
+      // Create session in pedagogical_sessions for longitudinal tracking
+      const { data: pedSession, error: pedErr } = await supabase
+        .from("pedagogical_sessions")
+        .insert({
+          user_id: user.id,
+          topic: finalTopic,
+          specialty: studyCtx?.specialty || null,
+          tutor_mode: 'normal',
+          cognitive_state: 'stable',
+          metadata: hydrationMetadata
+        })
+        .select()
+        .single();
 
-      if (tutorResult.error) throw tutorResult.error;
-      
-      // Update tutor session with ped reference if available
-      if (pedResult.data) {
-        await supabase
-          .from("tutor_sessions")
-          .update({ 
-            metadata: { 
-              ...hydrationMetadata, 
-              pedagogical_session_id: pedResult.data.id 
-            } 
-          })
-          .eq("id", tutorResult.data.id);
-      }
+      if (pedErr) console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr);
 
-      navigate(`/dashboard/sessao-estudo/${tutorResult.data.id}`);
+      setBootStatus("Consultando literatura médica...");
+      
+      const { data, error } = await (supabase
+        .from("tutor_sessions") as any)
+        .insert({
+          user_id: user.id,
+          topic: finalTopic,
+          subtopic: studyCtx?.subtopic || null,
+          specialty: studyCtx?.specialty || null,
+          mode: 'livre',
+          status: 'active',
+          metadata: {
+            ...hydrationMetadata,
+            pedagogical_session_id: pedSession?.id
+          }
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      console.log("[TUTOR_UI_READY] Session created:", data.id);
+      
+      // Artificial delay for cinematic effect if it's too fast
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      navigate(`/dashboard/sessao-estudo/${data.id}`);
     } catch (err) {
       console.error("Error creating session:", err);
       setIsCreating(false);
@@ -143,7 +127,7 @@ export default function TutorV2Page() {
         
         <div className="text-center space-y-3">
           <p className="text-[12px] font-black uppercase tracking-[0.4em] text-white/90 animate-pulse">
-            {bootStatus || "Sincronizando Tutor V3 Premium"}
+            {bootStatus || "Sincronizando Tutor V3"}
           </p>
           <div className="h-1 w-48 bg-white/5 rounded-full overflow-hidden mx-auto">
             <motion.div 
@@ -185,10 +169,10 @@ export default function TutorV2Page() {
 
               <div className="text-left">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Tutor V3</h1>
+                  <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Tutor IA V3</h1>
                   <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-[9px] font-black text-indigo-400 uppercase tracking-widest">Premium</span>
                 </div>
-                <p className="text-sm text-indigo-400/80 font-bold uppercase tracking-[0.2em] mt-2">Sessão Ativa • Protocolo Feynman Premium</p>
+                <p className="text-sm text-indigo-400/80 font-bold uppercase tracking-[0.2em] mt-2">Sessão Ativa • Protocolo Feynman</p>
               </div>
             </div>
 
@@ -236,11 +220,11 @@ export default function TutorV2Page() {
 
             {/* Smart Suggestions */}
             <div className="flex flex-wrap justify-center gap-3 mt-8">
-              <SuggestionChip onClick={() => handleStartSession("Critérios de Duke")} label="Duke" />
-              <SuggestionChip onClick={() => handleStartSession("Protocolo de Sepse")} label="Sepse" />
-              <SuggestionChip onClick={() => handleStartSession("Conduta no AVC")} label="AVC" />
-              <SuggestionChip onClick={() => handleStartSession("Raciocínio Clínico")} label="Raciocínio" />
-              <SuggestionChip onClick={() => handleStartSession("Antibióticos na UTI")} label="Antibióticos" />
+              <SuggestionChip onClick={() => handleStartSession("IAM e Critérios de Reperfusão")} label="IAM" />
+              <SuggestionChip onClick={() => handleStartSession("Sepse Protocolo 1h")} label="Sepse" />
+              <SuggestionChip onClick={() => handleStartSession("Pré-natal de Alto Risco")} label="Pré-natal" />
+              <SuggestionChip onClick={() => handleStartSession("Insuficiência Cardíaca")} label="IC" />
+              <SuggestionChip onClick={() => handleStartSession("Critérios de Duke")} label="Endocardite" />
             </div>
           </motion.div>
 
