@@ -204,9 +204,18 @@ export default function MnemonicGeneratorPage() {
         payload,
         (msg) => {
           console.log("[MNEMONIC_STATUS_UPDATE]", msg);
-          setGeneratingStatus(msg);
+          
+          // Map AI Gateway statuses to Portuguese messages if needed
+          let displayMsg = msg;
+          if (msg === 'loading') displayMsg = isAutoMode ? "🧠 Extraindo termos do tema com IA..." : "Gerando mnemônico...";
+          if (msg === 'fallback') displayMsg = "Trocando provedor de IA...";
+          if (msg === 'retry') displayMsg = "Tentando novamente...";
+          if (msg === 'cache') displayMsg = "Resultado recuperado do cache";
+          
+          setGeneratingStatus(displayMsg);
         }
       );
+
       
       console.log("[MNEMONIC_04_RESPONSE]", res);
       
