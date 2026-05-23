@@ -62,7 +62,8 @@ export default function TutorV2Page() {
 
     try {
       // Fire-and-forget telemetry to avoid blocking boot
-      pedagogicalEventBus.emit({
+      console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending session created telemetry...");
+      void pedagogicalEventBus.emit({
         event_type: 'tutor_session_created',
         module: 'tutor',
         source: 'frontend',
@@ -73,7 +74,7 @@ export default function TutorV2Page() {
           subtopic: studyCtx?.subtopic || null
         },
         metadata: hydrationMetadata
-      }, user.id).catch(err => console.warn("[TUTOR_TELEMETRY] Failed:", err));
+      }, user.id).catch(err => console.warn("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Tutor telemetry failed:", err));
       
       // Parallel creation of pedagogical track and tutor session
       setBootStatus("Sincronizando Ecossistema...");

@@ -307,7 +307,8 @@ const Flashcards = () => {
       toast({ title: labels[rating] || "Revisado" });
 
       // Emit ALOS Event
-      await pedagogicalEventBus.emit({
+      console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending flashcard review telemetry...");
+      void pedagogicalEventBus.emit({
         event_type: 'fsrs_review_completed',
         module: 'fsrs',
         source: 'frontend',
@@ -321,7 +322,9 @@ const Flashcards = () => {
           scheduled_days: scheduledDays,
           is_correct: isCorrect
         }
-      }, user.id);
+      }, user.id).catch(err => {
+        console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Flashcard review telemetry failed:", err);
+      });
     } catch (err) {
       console.error("Review error:", err);
       toast({

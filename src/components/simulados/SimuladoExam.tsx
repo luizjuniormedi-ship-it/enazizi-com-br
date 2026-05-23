@@ -132,9 +132,10 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
       setRevealedQuestions(prev => new Set(prev).add(questionIdx));
     }
 
-    // Emit event
+    // Emit event (Non-blocking)
     if (user) {
-      await pedagogicalEventBus.emit({
+      console.log("[COG_EVENT_RUNTIME] [TELEMETRY_BACKGROUND_OK] Sending simulado answer telemetry...");
+      void pedagogicalEventBus.emit({
         event_type: isCorrect ? 'simulado_question_answered' : 'simulado_error_detected',
         module: 'simulado',
         source: 'frontend',
@@ -151,7 +152,9 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
           correct_option: question.correct,
           mode: mode
         }
-      }, user.id);
+      }, user.id).catch(err => {
+        console.error("[PEDAGOGICAL_EVENT_ERROR] [CORS_PEDAGOGICAL_EVENT] Simulado telemetry failed:", err);
+      });
     }
   };
 

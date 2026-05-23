@@ -6,12 +6,19 @@ import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
  * Master Orchestrator for pedagogical events and cognitive transitions.
  */
 Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, logger, supabaseAdmin }) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
   const { event } = body;
 
   if (!event || !event.id) {
-    return new Response(JSON.stringify({ success: false, error: "Event payload missing" }), { status: 400 });
+    return new Response(JSON.stringify({ success: false, error: "Event payload missing" }), { 
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
 
   const correlationId = event.correlation_id || event.metadata?.correlation_id;
@@ -187,15 +194,20 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
     });
 
   } catch (err) {
-    logger.error("COG_RUNTIME_FAIL", err.message, { eventId: event.id, stack: err.stack });
+    logger.error("COG_RUNTIME_FAIL", err.message, { eventId: event?.id, stack: err.stack });
     
-    await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
-      event_id: event.id,
-      consumer_name: "alos-cognitive-runtime-v3",
-      success: false,
-      result_metadata: { error: err.message, stack: err.stack }
-    });
+    if (event?.id) {
+      await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
+        event_id: event.id,
+        consumer_name: "alos-cognitive-runtime-v3",
+        success: false,
+        result_metadata: { error: err.message, stack: err.stack }
+      });
+    }
 
-    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ success: false, error: err.message }), { 
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
 }));
