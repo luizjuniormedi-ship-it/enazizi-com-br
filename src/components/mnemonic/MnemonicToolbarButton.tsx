@@ -422,9 +422,8 @@ export const MnemonicToolbarButton = () => {
                 </>
               )}
             </Button>
-
-            </Button>
           </div>
+
         ) : (
           <div className="space-y-4">
             <div className="text-center py-3">
