@@ -72,7 +72,7 @@ export async function logApprovalPrediction(
       idempotency_key: eventHash,
       justification: prediction.message,
       event_hash: eventHash,
-    }, { onConflict: "user_id,event_hash" });
+    }, { onConflict: "idempotency_key" });
     writeLast({ ts: now, score: prediction.score, userId });
   } catch (err) {
     // Telemetria nunca quebra UX
