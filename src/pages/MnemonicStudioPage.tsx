@@ -272,6 +272,11 @@ export default function MnemonicGeneratorPage() {
   }, [tema, termos, estilo, publico]);
 
   const autoTriggeredRef = useRef(false);
+  const handleGenerateRef = useRef(handleGenerate);
+  
+  useEffect(() => {
+    handleGenerateRef.current = handleGenerate;
+  }, [handleGenerate]);
 
   useEffect(() => {
     const auto = searchParams.get("auto");
@@ -285,14 +290,13 @@ export default function MnemonicGeneratorPage() {
 
     console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", temaFromUrl);
     
-    // We use a small delay to allow the state to settle and ensure handleGenerate is called
     const t = setTimeout(() => { 
-      // Direct call to avoid stale closure issues if possible
-      handleGenerate(temaFromUrl); 
-    }, 1000);
+      console.log("[MnemonicStudio] Executing auto-trigger for:", temaFromUrl);
+      handleGenerateRef.current(temaFromUrl); 
+    }, 1200);
     
     return () => clearTimeout(t);
-  }, [searchParams, handleGenerate]);
+  }, [searchParams]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;
