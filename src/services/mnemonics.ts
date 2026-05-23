@@ -141,13 +141,14 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
 
 export async function generateMnemonic(input: MnemonicRequest): Promise<MnemonicApiResponse> {
   try {
+    console.log("[MNEMONIC_03_INVOKE_START]", { tema: input.tema, termsCount: input.termos?.length });
     const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
       body: input,
       headers: { "x-timeout-ms": "115000" }, // Signal to backend
     });
 
     if (error) {
-      console.error("[mnemonics] Edge function error:", error);
+      console.error("[MNEMONIC_04_RESPONSE_ERROR] Edge function error:", error);
       const ctx = (error as any)?.context;
       if (ctx && typeof ctx.json === "function") {
         try {
