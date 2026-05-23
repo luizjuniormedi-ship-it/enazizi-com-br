@@ -584,7 +584,8 @@ export default function MnemonicGeneratorPage() {
 
       {/* ═══ RESULT ═══ */}
       {result && (
-        <div className="space-y-4">
+        <div className="space-y-4" id="mnemonic-result-container">
+          {console.log("[MNEMONIC_06_RENDER] Rendering result:", result.result_id)}
           {/* Back button */}
           <Button variant="ghost" size="sm" onClick={() => { setResult(null); setQuickFeedback(null); }}>
             ← Novo mnemônico
@@ -594,9 +595,9 @@ export default function MnemonicGeneratorPage() {
           <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10">
             <CardContent className="pt-6 pb-4 text-center space-y-3">
               {result.sigla && (
-                <p className="text-4xl font-black tracking-[0.2em] text-primary">{result.sigla}</p>
+                <p className="text-4xl font-black tracking-[0.2em] text-primary" data-testid="mnemonic-sigla">{result.sigla}</p>
               )}
-              <p className="text-2xl font-bold leading-relaxed">{result.frase_mnemonica}</p>
+              <p className="text-2xl font-bold leading-relaxed" data-testid="mnemonic-phrase">{result.frase_mnemonica}</p>
               <Button variant="ghost" size="sm" onClick={handleCopy} className="mx-auto">
                 <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
               </Button>
