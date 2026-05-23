@@ -27118,8 +27118,6 @@ export type Database = {
         }
         Returns: string
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
       student_has_clinical_case_result: {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean
@@ -27142,7 +27140,6 @@ export type Database = {
         Args: { _memory_id: string }
         Returns: undefined
       }
-      unaccent: { Args: { "": string }; Returns: string }
       update_pipeline_health: {
         Args: {
           p_error: number
