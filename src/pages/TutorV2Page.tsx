@@ -42,7 +42,6 @@ export default function TutorV2Page() {
     
     setIsCreating(true);
     setBootStatus("Inicializando preceptor...");
-    console.log("[TUTOR_SESSION_BOOT] Topic:", finalTopic);
 
     // Context hydration for ALOS
     const hydrationMetadata = {
@@ -55,7 +54,8 @@ export default function TutorV2Page() {
     };
 
     try {
-      await pedagogicalEventBus.emit({
+      // Fire-and-forget telemetry to avoid blocking boot
+      pedagogicalEventBus.emit({
         event_type: 'tutor_session_created',
         module: 'tutor',
         source: 'frontend',
@@ -66,50 +66,55 @@ export default function TutorV2Page() {
           subtopic: studyCtx?.subtopic || null
         },
         metadata: hydrationMetadata
-      }, user.id);
+      }, user.id).catch(err => console.warn("[TUTOR_TELEMETRY] Failed:", err));
       
-      // Create session in pedagogical_sessions for longitudinal tracking
-      const { data: pedSession, error: pedErr } = await supabase
-        .from("pedagogical_sessions")
-        .insert({
-          user_id: user.id,
-          topic: finalTopic,
-          specialty: studyCtx?.specialty || null,
-          tutor_mode: 'normal',
-          cognitive_state: 'stable',
-          metadata: hydrationMetadata
-        })
-        .select()
-        .single();
+      // Parallel creation of pedagogical track and tutor session
+      setBootStatus("Sincronizando Ecossistema...");
+      
+      const [pedResult, tutorResult] = await Promise.all([
+        supabase
+          .from("pedagogical_sessions")
+          .insert({
+            user_id: user.id,
+            topic: finalTopic,
+            specialty: studyCtx?.specialty || null,
+            tutor_mode: 'normal',
+            cognitive_state: 'stable',
+            metadata: hydrationMetadata
+          })
+          .select()
+          .single(),
+        supabase
+          .from("tutor_sessions")
+          .insert({
+            user_id: user.id,
+            topic: finalTopic,
+            subtopic: studyCtx?.subtopic || null,
+            specialty: studyCtx?.specialty || null,
+            mode: 'livre',
+            status: 'active',
+            metadata: hydrationMetadata
+          })
+          .select()
+          .single()
+      ]);
 
-      if (pedErr) console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr);
+      if (tutorResult.error) throw tutorResult.error;
+      
+      // Update tutor session with ped reference if available
+      if (pedResult.data) {
+        await supabase
+          .from("tutor_sessions")
+          .update({ 
+            metadata: { 
+              ...hydrationMetadata, 
+              pedagogical_session_id: pedResult.data.id 
+            } 
+          })
+          .eq("id", tutorResult.data.id);
+      }
 
-      setBootStatus("Consultando literatura médica...");
-      
-      const { data, error } = await (supabase
-        .from("tutor_sessions") as any)
-        .insert({
-          user_id: user.id,
-          topic: finalTopic,
-          subtopic: studyCtx?.subtopic || null,
-          specialty: studyCtx?.specialty || null,
-          mode: 'livre',
-          status: 'active',
-          metadata: {
-            ...hydrationMetadata,
-            pedagogical_session_id: pedSession?.id
-          }
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      console.log("[TUTOR_UI_READY] Session created:", data.id);
-      
-      // Artificial delay for cinematic effect if it's too fast
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      navigate(`/dashboard/sessao-estudo/${data.id}`);
+      navigate(`/dashboard/sessao-estudo/${tutorResult.data.id}`);
     } catch (err) {
       console.error("Error creating session:", err);
       setIsCreating(false);

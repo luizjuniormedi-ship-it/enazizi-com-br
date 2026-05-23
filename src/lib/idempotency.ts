@@ -32,6 +32,7 @@ export function generateEventHash(
   // We include a coarse timestamp (10 min window) if we want periodic updates, 
   // or omit it if we want strict once-per-session-content idempotency.
   // For most telemetry, content-based hashing + 5 min window is good.
-  const timeBucket = Math.floor(Date.now() / (5 * 60 * 1000));
+  // Lowered bucket to 1 minute to avoid collisions on rapid but distinct actions
+  const timeBucket = Math.floor(Date.now() / (1 * 60 * 1000));
   return generateHash(`${userId}:${module}:${type}:${payloadStr}:${timeBucket}`);
 }

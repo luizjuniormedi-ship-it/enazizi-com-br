@@ -183,8 +183,28 @@ async function fetchGamificationData(userId: string): Promise<GamificationQueryD
   let gamification: GamificationData;
 
   if (!gamRes.data) {
-    const { data } = await supabase.from("user_gamification").insert({ user_id: userId }).select().single();
-    gamification = { xp: 0, level: 1, currentStreak: 0, longestStreak: 0, weeklyXp: 0, lastActivityDate: null };
+    const { data, error } = await supabase
+      .from("user_gamification")
+      .upsert({ user_id: userId }, { onConflict: 'user_id' })
+      .select()
+      .single();
+      
+    if (error) {
+      // If still fails, try to fetch again (might have been created by another call)
+      const { data: retryData } = await supabase.from("user_gamification").select("*").eq("user_id", userId).maybeSingle();
+      if (retryData) {
+        const g = retryData as any;
+        gamification = {
+          xp: g.xp, level: g.level, currentStreak: g.current_streak,
+          longestStreak: g.longest_streak, weeklyXp: g.weekly_xp,
+          lastActivityDate: g.last_activity_date,
+        };
+      } else {
+        gamification = { xp: 0, level: 1, currentStreak: 0, longestStreak: 0, weeklyXp: 0, lastActivityDate: null };
+      }
+    } else {
+      gamification = { xp: 0, level: 1, currentStreak: 0, longestStreak: 0, weeklyXp: 0, lastActivityDate: null };
+    }
   } else {
     const g = gamRes.data as any;
     gamification = {
