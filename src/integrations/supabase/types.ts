@@ -17961,6 +17961,7 @@ export type Database = {
           is_blocked: boolean
           last_onboarding_step: number | null
           last_study_plan_reset_at: string | null
+          notifications_enabled: boolean
           onboarding_version: number
           organization_id: string | null
           periodo: number | null
@@ -17968,6 +17969,7 @@ export type Database = {
           role: string | null
           status: string
           study_mode: string | null
+          study_reminders: boolean
           target_exam: string | null
           target_exams: string[] | null
           target_specialty: string | null
@@ -17995,6 +17997,7 @@ export type Database = {
           is_blocked?: boolean
           last_onboarding_step?: number | null
           last_study_plan_reset_at?: string | null
+          notifications_enabled?: boolean
           onboarding_version?: number
           organization_id?: string | null
           periodo?: number | null
@@ -18002,6 +18005,7 @@ export type Database = {
           role?: string | null
           status?: string
           study_mode?: string | null
+          study_reminders?: boolean
           target_exam?: string | null
           target_exams?: string[] | null
           target_specialty?: string | null
@@ -18029,6 +18033,7 @@ export type Database = {
           is_blocked?: boolean
           last_onboarding_step?: number | null
           last_study_plan_reset_at?: string | null
+          notifications_enabled?: boolean
           onboarding_version?: number
           organization_id?: string | null
           periodo?: number | null
@@ -18036,6 +18041,7 @@ export type Database = {
           role?: string | null
           status?: string
           study_mode?: string | null
+          study_reminders?: boolean
           target_exam?: string | null
           target_exams?: string[] | null
           target_specialty?: string | null

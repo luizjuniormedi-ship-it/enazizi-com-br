@@ -227,14 +227,24 @@ export default function MnemonicGeneratorPage() {
 
   // ── Auto-trigger generation when arriving via deep-link with ?auto=1 ──
   useEffect(() => {
-    const state = location.state as { fromErrorBank?: boolean } | null;
-    const auto = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
-    if (auto !== "1" && auto !== "true") return;
-    if (autoTriggeredRef.current) return;
+    const auto = searchParams.get("auto");
+    const isAuto = auto === "1" || auto === "true";
+    
+    if (!isAuto || autoTriggeredRef.current) return;
+    
+    // Check if we have a valid theme to generate
     if (!tema || tema.trim().length < 3) return;
+    
+    // Avoid double triggering if already loading or have result
     if (isLoading || result) return;
+    
+    console.log("[MnemonicStudio] Auto-triggering generation for:", tema);
     autoTriggeredRef.current = true;
-    const t = setTimeout(() => { handleGenerate(); }, 250);
+    
+    const t = setTimeout(() => { 
+      handleGenerate(); 
+    }, 500); // Small delay to ensure state is settled
+    
     return () => clearTimeout(t);
   }, [searchParams, tema, isLoading, result, handleGenerate]);
 

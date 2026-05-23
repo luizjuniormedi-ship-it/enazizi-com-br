@@ -210,28 +210,23 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         });
         const blob = new Blob([body], { type: "application/json" });
         try {
-          navigator.sendBeacon(
-            url + `&apikey=${supabaseKey}`,
-            blob
-          );
+          // Switching to fetch with keepalive: true and credentials: omit
+          // This avoids CORS issues with Access-Control-Allow-Origin: *
+          // while ensuring the request completes even if the page is closed.
+          fetch(url + `&apikey=${supabaseKey}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": supabaseKey,
+              "Prefer": "return=minimal",
+            },
+            body,
+            keepalive: true,
+            mode: 'cors',
+            credentials: "omit",
+          }).catch(() => {});
         } catch {
-          // sendBeacon not available, try fetch keepalive
-          try {
-            fetch(url, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                "apikey": supabaseKey,
-                "Prefer": "return=minimal",
-              },
-              body,
-              keepalive: true,
-              mode: 'cors',
-              credentials: "omit",
-            }).catch(() => {});
-          } catch {
-            // silent
-          }
+          // silent fallback
         }
       }
     };
