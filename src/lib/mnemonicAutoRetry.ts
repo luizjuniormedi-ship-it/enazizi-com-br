@@ -79,7 +79,10 @@ export function isValidMnemonicResult(
   const normalizedPhrase = normalize(frase).replace(/^lembre[:\s-]*/i, "").trim();
   const normalizedTerms = options.inputTerms.map(normalize);
 
-  if (normalizedTerms.includes(normalizedPhrase)) return false;
+  if (normalizedTerms.includes(normalizedPhrase)) {
+    console.warn("[MNEMONIC_VALIDATION] Phrase is identical to one of the terms.");
+    return false;
+  }
 
   // Eco token: todos os tokens da frase já são termos
   const phraseTokens = normalizedPhrase.split(/\s+/).filter(Boolean);
@@ -87,7 +90,10 @@ export function isValidMnemonicResult(
     normalizedTerms.flatMap((t) => t.split(/\s+/).filter(Boolean))
   );
   const nonEchoTokens = phraseTokens.filter((tok) => !termTokens.has(tok));
-  if (phraseTokens.length > 0 && nonEchoTokens.length === 0) return false;
+  if (phraseTokens.length > 0 && nonEchoTokens.length === 0) {
+    console.warn("[MNEMONIC_VALIDATION] Phrase only contains tokens from input terms.");
+    return false;
+  }
 
   return true;
 }
