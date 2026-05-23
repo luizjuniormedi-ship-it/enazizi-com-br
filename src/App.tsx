@@ -240,8 +240,8 @@ const App = () => (
                   <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
                   <Route path="missao" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="missao-do-dia" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="mnemonic-studio" element={<Navigate to="/dashboard/mnemonico" replace />} />
-                  <Route path="mnemonic-studio-v2" element={<Navigate to="/dashboard/mnemonico" replace />} />
+                  <Route path="mnemonic-studio" element={<NavigateWithSearchParams to="/dashboard/mnemonico" replace />} />
+                  <Route path="mnemonic-studio-v2" element={<NavigateWithSearchParams to="/dashboard/mnemonico" replace />} />
                   <Route path="mapas-mentais" element={<Navigate to="/dashboard/mapas-mentais" replace />} />
                   <Route path="minha-jornada" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
                   <Route path="radar-trajetoria" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
