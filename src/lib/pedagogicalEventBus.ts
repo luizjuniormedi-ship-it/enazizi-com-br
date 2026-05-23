@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { eventOrderingEngine } from "./cognition/event-ordering-engine";
 import { cognitiveSnapshotEngine } from "./cognition/cognitive-snapshot-engine";
+import { safeTelemetry } from "./safeTelemetry";
 
 /**
  * ENAZIZI ALOS — Fase 4: Temporal Cognitive Consistency Engine
