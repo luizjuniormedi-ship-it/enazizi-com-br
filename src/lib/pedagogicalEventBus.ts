@@ -93,9 +93,7 @@ export const pedagogicalEventBus = {
           recursion_depth: payload.recursion_depth || 0,
           replay_id: payload.replay_id,
           status: 'pending'
-        }, { onConflict: 'idempotency_key' })
-        .select()
-        .single();
+        }, { onConflict: 'idempotency_key', ignoreDuplicates: false });
 
       if (error) {
         console.warn("[COG_EVENT_RUNTIME] Persistence warning (non-blocking):", error);

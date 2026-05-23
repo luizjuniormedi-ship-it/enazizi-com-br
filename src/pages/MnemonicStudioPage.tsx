@@ -281,32 +281,25 @@ export default function MnemonicGeneratorPage() {
     }
   }, [tema, termos, estilo, publico]);
 
-  const autoTriggeredRef = useRef(false);
-  const handleGenerateRef = useRef(handleGenerate);
+  const autoTriggered = useRef(false);
   
-  useEffect(() => {
-    handleGenerateRef.current = handleGenerate;
-  }, [handleGenerate]);
-
   useEffect(() => {
     const auto = searchParams.get("auto");
     const isAuto = auto === "1" || auto === "true";
     const temaFromUrl = searchParams.get("tema") || searchParams.get("topic");
     
-    if (!isAuto || !temaFromUrl || autoTriggeredRef.current) return;
-
-    autoTriggeredRef.current = true;
-    setTema(temaFromUrl);
-
-    console.log("[MnemonicStudio] Auto-trigger confirmed for topic:", temaFromUrl);
-    
-    const t = setTimeout(() => { 
-      console.log("[MnemonicStudio] Executing auto-trigger for:", temaFromUrl);
-      handleGenerateRef.current(temaFromUrl); 
-    }, 1200);
-    
-    return () => clearTimeout(t);
-  }, [searchParams]);
+    if (isAuto && temaFromUrl && !autoTriggered.current) {
+      autoTriggered.current = true;
+      setTema(temaFromUrl);
+      console.log("[MNEMONIC_AUTO_TRIGGER] Confirmed for topic:", temaFromUrl);
+      
+      const t = setTimeout(() => {
+        handleGenerate(temaFromUrl);
+      }, 500);
+      
+      return () => clearTimeout(t);
+    }
+  }, [searchParams, handleGenerate]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;
