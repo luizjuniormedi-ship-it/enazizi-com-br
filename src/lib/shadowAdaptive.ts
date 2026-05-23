@@ -309,7 +309,8 @@ export async function logShadowOutcome(payload: ShadowOutcomePayload): Promise<v
         action: payload.action,
       } as any,
       event_hash: eventHash,
-    }], { onConflict: "user_id,event_hash" });
+      idempotency_key: eventHash,
+    }], { onConflict: "idempotency_key" });
   } catch (e) {
     console.warn("[shadowAdaptive] logShadowOutcome skipped:", e);
   }
