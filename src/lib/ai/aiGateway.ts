@@ -2,6 +2,8 @@
 import { rateLimitManager } from './rateLimitManager';
 import { supabase } from '@/integrations/supabase/client';
 
+export type AIStatus = 'loading' | 'fallback' | 'retry' | 'cache' | 'fatal' | 'success';
+
 export interface AIResponse {
   success: boolean;
   data?: any;
@@ -12,6 +14,7 @@ export interface AIResponse {
   model?: string;
   retryCount?: number;
 }
+
 
 export class AIGateway {
   private static instance: AIGateway;
