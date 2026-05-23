@@ -125,6 +125,6 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
       event_hash: eventHash,
     }], { onConflict: "user_id,event_hash" });
   } catch (e) {
-    console.warn("[studyEngineTelemetry] log skipped:", e);
+    console.warn("[studyEngineTelemetry] log skipped (non-blocking):", e);
   }
 }
