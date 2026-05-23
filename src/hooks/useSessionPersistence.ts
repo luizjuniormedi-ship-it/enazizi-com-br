@@ -199,10 +199,22 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
       const state = getStateRef.current();
       if (!state || Object.keys(state).length === 0) return;
 
-      // Use standard Supabase REST with explicit origin and credentials if necessary
-      // BUT for module_sessions, standard REST allows wildcard origin when credentials are 'omit'.
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      // Get session from localStorage directly to avoid async await in beforeunload
+      const storageKey = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
+      const sessionData = localStorage.getItem(storageKey);
+      let token = supabaseKey;
+      if (sessionData) {
+        try {
+          const parsed = JSON.parse(sessionData);
+          token = parsed.access_token || supabaseKey;
+        } catch (e) {
+          console.warn("[SessionPersistence] Failed to parse auth token for beforeunload");
+        }
+      }
+
       if (supabaseUrl && supabaseKey && sessionIdRef.current) {
         const url = `${supabaseUrl}/rest/v1/module_sessions?id=eq.${sessionIdRef.current}`;
         const body = JSON.stringify({
@@ -211,15 +223,15 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         });
         
         try {
-          // [CORS_HARDENING] Explicitly using standard CORS headers and omitting credentials
-          // This prevents the conflict with Access-Control-Allow-Origin: *
-          // We use standard fetch here with keepalive to ensure data is sent on tab close.
+          // [CORS_HARDENING] Standard fetch with keepalive and NO credentials.
+          // Using the real user token in Authorization header allows RLS to pass
+          // while credentials: 'omit' allows Access-Control-Allow-Origin: *
           fetch(url, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
               "apikey": supabaseKey,
-              "Authorization": `Bearer ${supabaseKey}`, // For module_sessions we usually need user token, but during beforeunload it's safer to use anon if RLS allows or skip if it requires auth cookies (which we don't use)
+              "Authorization": `Bearer ${token}`,
               "Prefer": "return=minimal",
             },
             body,
