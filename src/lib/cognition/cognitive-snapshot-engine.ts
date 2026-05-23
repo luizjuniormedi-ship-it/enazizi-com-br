@@ -84,9 +84,9 @@ export class CognitiveSnapshotEngine {
     const fsrs = snapshot.fsrs_state as any;
 
     await Promise.all([
-      supabase.from('cognitive_states').upsert(cog),
-      supabase.from('study_plans').upsert(plan),
-      supabase.from('adaptive_student_profiles').upsert(fsrs)
+      supabase.from('cognitive_states').upsert(cog, { onConflict: 'user_id' }),
+      supabase.from('study_plans').upsert(plan, { onConflict: 'user_id' }),
+      supabase.from('adaptive_student_profiles').upsert(fsrs, { onConflict: 'user_id' })
     ]);
 
     return true;
