@@ -22,12 +22,13 @@ const Settings = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("whatsapp_opt_out, whatsapp_daily_bi")
+        .select("notifications_enabled, study_reminders, whatsapp_opt_out, whatsapp_daily_bi")
         .eq("user_id", user.id)
         .maybeSingle();
       if (data) {
-        setNotifications(!(data as any).whatsapp_opt_out);
-        setStudyReminders((data as any).whatsapp_daily_bi ?? true);
+        // Fallback to old columns if new ones are null (though they have defaults)
+        setNotifications((data as any).notifications_enabled ?? !(data as any).whatsapp_opt_out);
+        setStudyReminders((data as any).study_reminders ?? (data as any).whatsapp_daily_bi ?? true);
       }
     };
     load();
