@@ -123,6 +123,7 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
         boosted_by_approval_risk: totals.approvalRiskBoosts > 0,
       } as any,
       event_hash: eventHash,
+      idempotency_key: eventHash,
     }], { onConflict: "user_id,event_hash" });
   } catch (e) {
     console.warn("[studyEngineTelemetry] log skipped (non-blocking):", e);
