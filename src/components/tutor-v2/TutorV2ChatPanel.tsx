@@ -98,15 +98,19 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       console.log(`[TUTOR_V3_START_CALL] id=${requestId}`);
       const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction, newTopic);
 
-      if (!response || (!response.content && !response.answer && !response.message && !response.response)) throw new Error(response?.error || "Erro na resposta da IA");
+      if (!response || (!response.content && !response.answer && !response.message && !response.response)) {
+        console.error(`[TUTOR_V3_INVALID_RESPONSE] id=${requestId}`, response);
+        throw new Error(response?.error || "Erro na resposta da IA");
+      }
 
       // [TUTOR_22_FRONTEND_DATA_RECEIVED]
-      console.log("[TUTOR_22_FRONTEND_DATA_RECEIVED] requestId=" + requestId, response);
+      console.log(`[TUTOR_22_FRONTEND_DATA_RECEIVED] id=${requestId}`, response);
 
       const content = response.content || response.answer || response.message || response.response || "";
       // [TUTOR_23_CONTENT_EXTRACTED]
-      console.log(`[TUTOR_23_CONTENT_EXTRACTED] contentLen=${content?.length}`, { content });
+      console.log(`[TUTOR_23_CONTENT_EXTRACTED] id=${requestId} contentLen=${content?.length}`, { content });
       if (response?.fallback) {
+        console.warn(`[TUTOR_V3_FALLBACK_USED] id=${requestId}`);
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
       if (content) {
