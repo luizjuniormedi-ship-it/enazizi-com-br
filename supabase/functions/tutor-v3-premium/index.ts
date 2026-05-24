@@ -138,7 +138,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }).eq("id", sessionId);
     }
 
-    return new Response(JSON.stringify({
+    return corsResponse({
       success: true,
       content: content + (socraticQuestion ? `\n\n${socraticQuestion}` : ""),
       currentBlock: nextBlock,
@@ -152,9 +152,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       request_id: requestId,
       debug_stage: "stable_v3_ready",
       memory_active: !!memoryContext
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    }, 200);
 
   } catch (error) {
     logger.error("FATAL_HANDLER_ERROR", error.message, { stack: error.stack });
