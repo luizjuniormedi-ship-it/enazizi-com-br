@@ -173,6 +173,7 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
                   <InlineAction 
                     icon={Brain} 
                     label="Gerar Flashcard" 
+                    data-testid="flashcard-created"
                     onClick={() => handleGenerateFlashcard(msg.metadata?.actionsContext?.topic || msg.content)} 
                   />
                   <InlineAction 
