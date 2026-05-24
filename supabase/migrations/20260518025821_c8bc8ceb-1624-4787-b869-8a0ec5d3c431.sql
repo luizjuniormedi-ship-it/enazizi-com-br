@@ -10,7 +10,7 @@ BEGIN
         'drive-ingestion-pipeline',
         '*/5 * * * *',
         $cron$ SELECT net.http_post(
-            url := 'https://qszsyskumcmuknumwxtk.supabase.co/functions/v1/drive-exam-ingestion',
+            url := 'https://kojqbvrhodpchtnainla.supabase.co/functions/v1/drive-exam-ingestion',
             headers := '{"Content-Type": "application/json", "Authorization": "Bearer 0af48797-38f2-4b77-bd16-0486fa291eba"}'::jsonb,
             body := '{}'::jsonb
         ) $cron$

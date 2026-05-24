@@ -19,7 +19,7 @@ E2E_PROFESSOR_EMAIL=professor@test.com
 E2E_PROFESSOR_PASSWORD=senha123
 E2E_ADMIN_EMAIL=admin@test.com
 E2E_ADMIN_PASSWORD=senha123
-VITE_SUPABASE_URL=https://qszsyskumcmuknumwxtk.supabase.co
+VITE_SUPABASE_URL=https://kojqbvrhodpchtnainla.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
 ```
 
