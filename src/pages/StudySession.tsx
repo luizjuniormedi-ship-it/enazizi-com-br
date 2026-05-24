@@ -6,7 +6,7 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { 
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
