@@ -82,7 +82,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
               
               if (attempt < maxRetries) {
                 logger.info("SELF_HEALING", "Triggering retry with reasoning model due to quality failure");
-                request.model = "google/gemini-2.5-pro"; // Force higher quality model on retry
+                request.taskType = "reasoning"; // Promote to reasoning task to trigger different prompt/depth
                 continue;
               }
               
