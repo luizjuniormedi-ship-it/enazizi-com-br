@@ -478,10 +478,13 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         
         console.log(`%c[TUTOR_V3_PAYLOAD] ${requestId}`, "color: #3b82f6", requestPayload);
 
-        console.log(`[TUTOR_V3_06_INVOKE_START] Message stream started for ${requestId}`);
+        // v13 DIAGNOSTIC: Test non-streaming first if it's the first message
+        const isDiagnosticTest = messages.length <= 1 && !overridePrompt;
+        
+        console.log(`[TUTOR_V3_06_INVOKE_START] Message stream started for ${requestId} (Diagnostic: ${isDiagnosticTest})`);
         const result = await streamResponse({
           url: CHAT_URL,
-          body: requestPayload,
+          body: isDiagnosticTest ? { ...requestPayload, stream: false, force_json: true } : requestPayload,
           signal: controller.signal,
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
