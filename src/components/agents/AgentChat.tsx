@@ -52,6 +52,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { toast } from "sonner";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
