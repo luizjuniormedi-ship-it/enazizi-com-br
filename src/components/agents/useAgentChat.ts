@@ -486,7 +486,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         const safePayload = JSON.parse(JSON.stringify(isDiagnosticTest ? { ...requestPayload, stream: false, force_json: true } : requestPayload));
         
         const result = await streamResponse({
-          url: CHAT_URL,
           body: safePayload,
           signal: controller.signal,
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),

@@ -39,8 +39,8 @@ export const TutorV2Service = {
 
   async generateLesson(sessionId: string) {
     try {
-      const response = await callTutorV3({ sessionId }, { 
-        functionName: "generate-tutor-v2-lesson",
+      const response = await callTutorV3({ sessionId, mode: "generate_lesson" }, { 
+        functionName: "tutor-v3-premium",
         stream: false 
       });
       return await response.json();

@@ -15,7 +15,7 @@ export interface StreamErrorInfo {
 }
 
 export interface StreamResponseOptions {
-  url: string;
+  url?: string;
   body: Record<string, unknown>;
   /** Formato esperado da resposta. Default: "markdown" (compatibilidade V1). */
   format?: TutorStreamFormat;
@@ -143,8 +143,8 @@ export function useTutorStream() {
       const lineProcessor = format === "blocks" ? processBlockLine : processSseLine;
 
       try {
-        // v14 CENTRALIZATION: Extract function name from URL if possible
-        const functionName = url.split('/').pop() || "tutor-v3-premium";
+        // v15 CENTRALIZATION: Hardcoded function name
+        const functionName = "tutor-v3-premium";
         
         // Use the official Resilient Client
         const resp = await callTutorV3(body, {
