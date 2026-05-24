@@ -427,11 +427,6 @@ export async function findSemanticMemory(params: {
     });
 
     const data = await response.json();
-      if (import.meta.env.DEV) {
-        console.warn("[tutorMemory] semantic search error:", error.message);
-      }
-      return [];
-    }
     const hits = (data?.hits ?? []) as SemanticHit[];
     return hits;
   } catch (err) {
