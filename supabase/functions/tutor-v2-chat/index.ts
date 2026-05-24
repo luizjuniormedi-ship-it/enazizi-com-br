@@ -5,14 +5,8 @@ import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { runAI, type AIComplexity, type AICognitiveLoad } from "../_shared/ai-runtime-orchestrator.ts";
 import { getKnowledgeCache, saveKnowledgeCache, extractTopic } from "../_shared/knowledge-cache.ts";
 import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "../_shared/injection-guard.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods':
-    'GET, POST, OPTIONS',
-};
 
 type TutorContext = {
   mission?: { title?: string } | null;
