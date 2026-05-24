@@ -2,8 +2,12 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 
+// v13 HARDENING: Move heavy initializers out of the request flow if possible,
+// but ensure they don't break boot.
+console.log("[TUTOR_V3_BOOT] Function module loaded");
+
 /**
- * TUTOR V3 PREMIUM — ENTERPRISE HARDENING v4
+ * TUTOR V3 PREMIUM — ENTERPRISE HARDENING v5
  * High-stability longitudinal pedagogical engine with resilience against duplicate keys and session loss.
  */
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
@@ -125,9 +129,22 @@ REGRAS CRÍTICAS:
       ]
     };
 
-    if (!stream) {
+    // v13 HARDENING: Temporarily force non-streaming for diagnostics if requested
+    if (body.force_json) {
+      aiConfig.stream = false;
       aiConfig.response_format = { type: "json_object" };
     }
+
+    if (!aiConfig.stream) {
+      aiConfig.response_format = { type: "json_object" };
+    }
+
+    logger.info("AI_INVOKE_PREFLIGHT", "Payload context ready", { 
+      topic, 
+      historyLen: history.length, 
+      stream: aiConfig.stream,
+      requestId 
+    });
 
     const startTime = Date.now();
     const aiResponse = await ai(aiConfig, { retries: 2 });

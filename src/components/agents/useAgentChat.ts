@@ -214,21 +214,30 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       // 0. Healthcheck pre-flight (silent but logged)
       if (!overridePrompt && messages.length <= 1) {
         console.log(`[TUTOR_V3_06_INVOKE_START] Healthcheck triggered for ${requestId}`);
-        supabase.functions.invoke(functionName, { 
-          body: { healthcheck: true },
-          headers: { "x-correlation-id": correlationId }
+        
+        // v13 HARDENING: Use standard fetch for healthcheck to match stream logic
+        const { data: { session } } = await supabase.auth.getSession();
+        fetch(CHAT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'x-correlation-id': correlationId
+          },
+          body: JSON.stringify({ healthcheck: true })
         })
-          .then(({ data, error }) => {
-            if (error) {
-              console.error(`[TUTOR_V3_08_INVOKE_ERROR] Healthcheck failed for ${requestId}`, error);
+          .then(async (resp) => {
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+              console.error(`[TUTOR_V3_08_INVOKE_ERROR] Healthcheck failed for ${requestId}`, data);
             } else {
               console.log(`[TUTOR_V3_07_INVOKE_DATA] Healthcheck data for ${requestId}`, data);
             }
-            console.log(`%c[TUTOR_V3_HEALTH] ${requestId}`, "color: #10b981", { data, error, ok: data?.ok });
+            console.log(`%c[TUTOR_V3_HEALTH] ${requestId}`, "color: #10b981", { ok: resp.ok, status: resp.status, data });
           })
           .catch(e => {
             console.error(`[TUTOR_V3_08_INVOKE_ERROR] Healthcheck exception for ${requestId}`, e);
-            console.error(`[TUTOR_V3_HEALTH_FATAL] ${requestId}`, e);
           });
       }
 
@@ -478,10 +487,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         
         console.log(`%c[TUTOR_V3_PAYLOAD] ${requestId}`, "color: #3b82f6", requestPayload);
 
-        console.log(`[TUTOR_V3_06_INVOKE_START] Message stream started for ${requestId}`);
+        // v13 HARDENING: Final validation - only diagnostic JSON on first boot, then standard flow.
+        const isDiagnosticTest = messages.length <= 1 && !overridePrompt;
+        
+        console.log(`[TUTOR_V3_06_INVOKE_START] Message stream started for ${requestId} (Diagnostic: ${isDiagnosticTest})`);
+        
+        // Ensure no circular references in payload before sending
+        const safePayload = JSON.parse(JSON.stringify(isDiagnosticTest ? { ...requestPayload, stream: false, force_json: true } : requestPayload));
+        
         const result = await streamResponse({
           url: CHAT_URL,
-          body: requestPayload,
+          body: safePayload,
           signal: controller.signal,
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
