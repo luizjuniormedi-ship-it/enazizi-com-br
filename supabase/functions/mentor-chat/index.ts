@@ -1,13 +1,16 @@
 // mentor-chat - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
-import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { getKnowledgeCache, saveKnowledgeCache, extractTopic } from "../_shared/knowledge-cache.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "../_shared/injection-guard.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
 Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil, supabaseAdmin }) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
   const { messages, conversationId, jsonResponse, pedagogicalContext } = body;
