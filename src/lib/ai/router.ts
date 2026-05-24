@@ -75,7 +75,7 @@ export class AIRouter {
           if (cached) {
             console.log(`[CACHE_HIT] ${cacheKey.substring(0, 8)}`);
             onStatus?.('cache');
-            return { success: true, data: cached.content, isCached: true };
+            return { success: true, data: cached.content as any, isCached: true };
           }
         }
 
