@@ -128,14 +128,11 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
 
     // 4. Check if user has a macro plan
     if (!studyPlanRes.data && (revisoesRes.data || []).length === 0) {
-      return new Response(JSON.stringify({ 
+      return corsResponse({ 
         success: false, 
         error: "Crie um cronograma antes de gerar a Missão do Dia.",
         type: "NO_STUDY_PLAN"
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      }, 400);
     }
 
     // Calculate real days until exam
