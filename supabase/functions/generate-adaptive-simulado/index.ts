@@ -5,6 +5,8 @@ import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
+import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
+
 
 /**
  * ENAZIZI — ADAPTIVE SIMULADO v13 (HARD FIX)
