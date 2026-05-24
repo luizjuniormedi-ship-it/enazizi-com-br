@@ -15,11 +15,8 @@ import { aiFetch, getModelForTier } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 /** Standard JSON response helper */
 const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
