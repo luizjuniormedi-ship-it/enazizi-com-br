@@ -138,6 +138,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     return corsResponse({
       success: true,
+      ok: true,
       content: parsed.content || "Tutor V3 respondeu em modo JSON simples.",
       currentBlock: currentStage,
       topic,
@@ -149,6 +150,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     logger.critical("HARDENED_RUNTIME_CRASH", err.message);
     return corsResponse({
       success: true,
+      ok: true,
       content: "Tutor V3 em modo seguro. Vamos começar pelo essencial do tema.",
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
       shouldWaitForStudent: true,

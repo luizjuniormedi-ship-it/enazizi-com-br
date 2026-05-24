@@ -32,13 +32,15 @@ export async function callTutorV3(payload: any, options: {
     }));
 
     // 4. Endpoint Construction
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, "");
+    const baseUrl = (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
+    if (!baseUrl) throw new Error("VITE_SUPABASE_URL is not configured.");
+    
     const url = `${baseUrl}/functions/v1/${functionName}`;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${session.access_token}`,
-      "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
       "x-correlation-id": correlationId,
     };
 
@@ -52,6 +54,10 @@ export async function callTutorV3(payload: any, options: {
       signal: options.signal,
       mode: 'cors',
       credentials: 'omit'
+    }).catch(err => {
+      console.error(`[TUTOR_V3_FETCH_FATAL]`, err);
+      // Ensure we provide a clear error message that differentiates from Supabase SDK
+      throw new Error(`CONNECTION_ERROR: Failed to reach Tutor Edge Function (${err.message})`);
     });
 
     console.log(`[TUTOR_V3_INVOKE_STATUS] status=${response.status}`);

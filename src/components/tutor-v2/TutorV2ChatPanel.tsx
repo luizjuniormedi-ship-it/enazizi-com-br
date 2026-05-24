@@ -83,7 +83,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       // Call AI
       const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
 
-      if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
+      if (!response?.ok && response?.success !== true) throw new Error(response?.error || "Erro na resposta da IA");
       if (response?.fallback) {
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
