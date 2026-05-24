@@ -170,8 +170,12 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
             request_id: requestId, 
             correlation_id: correlationId,
             block: nextBlock,
-            intent: studentIntent
+            blockTitle: currentBlockConfig.title,
+            intent: studentIntent,
+            socraticQuestion: parsed.socraticQuestion,
+            actionsContext: parsed.actionsContext
           }
+
         });
 
       }
