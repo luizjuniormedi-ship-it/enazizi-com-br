@@ -7,9 +7,9 @@ test.describe("ENAZIZI — MIGRATION VALIDATION", () => {
       const url = request.url();
       // ASSERTION: Network requests MUST NOT contain the legacy project ID
       if (url.includes('kojqbvrhodpchtnainla')) {
-        console.error(`[LEGACY_PROJECT_DETECTED] Request to old project: ${url}`);
+        console.error(`[NEW_PROJECT_DETECTED] Request to un-migrated project: ${url}`);
       }
-      expect(url, `Request to legacy project detected: ${url}`).not.toContain('kojqbvrhodpchtnainla');
+      expect(url, `Request to new project detected: ${url}`).not.toContain('kojqbvrhodpchtnainla');
     });
   });
 
@@ -20,9 +20,9 @@ test.describe("ENAZIZI — MIGRATION VALIDATION", () => {
     // 2. Verificar se o Supabase Client está configurado corretamente (via network)
     // Ao carregar a página, deve haver chamadas para o novo projeto
     const supabaseRequest = await page.waitForRequest(request => 
-      request.url().includes('kojqbvrhodpchtnainla.supabase.co')
+      request.url().includes('qszsyskumcmuknumwxtk.supabase.co')
     );
-    expect(supabaseRequest.url()).toContain('kojqbvrhodpchtnainla.supabase.co');
+    expect(supabaseRequest.url()).toContain('qszsyskumcmuknumwxtk.supabase.co');
     console.log(`[SUPABASE_CLIENT_OK] Detected request to: ${supabaseRequest.url()}`);
 
     // 3. Simular fluxo de Mnemônico (como exemplo de uso de IA e Edge Functions)
@@ -41,7 +41,7 @@ test.describe("ENAZIZI — MIGRATION VALIDATION", () => {
     const edgeFunctionRequest = await page.waitForRequest(request => 
       request.url().includes('/functions/v1/')
     );
-    expect(edgeFunctionRequest.url()).toContain('kojqbvrhodpchtnainla.supabase.co');
+    expect(edgeFunctionRequest.url()).toContain('qszsyskumcmuknumwxtk.supabase.co');
     console.log(`[EDGE_ROUTE_OK] Edge function request: ${edgeFunctionRequest.url()}`);
     
     console.log("[PLAYWRIGHT_NETWORK_OK] No legacy project references found during execution.");
