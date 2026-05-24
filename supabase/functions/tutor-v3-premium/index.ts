@@ -3,8 +3,8 @@ import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 
 /**
- * TUTOR V3 PREMIUM — ENTERPRISE HARDENING v2
- * High-stability longitudinal pedagogical engine.
+ * TUTOR V3 PREMIUM — ENTERPRISE HARDENING v3
+ * High-stability longitudinal pedagogical engine with real streaming.
  */
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
   const { requestId, correlationId, userId } = correlation;
@@ -13,7 +13,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     if (!userId) throw new Error("UNAUTHORIZED: Session required");
 
     const body = await req.json().catch(() => ({}));
-    const { message, sessionId, currentBlock: bodyBlock, newTopic, pedagogicalContext } = body;
+    const { message, sessionId, currentBlock: bodyBlock, newTopic, pedagogicalContext, stream = true } = body;
 
     // ── 1. SESSION RECOVERY & HYDRATION ──────────────────────────────────────────
     let session = null;
@@ -68,10 +68,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     // ── 3. AI PRECEPTORSHIP (High Reasoning Tier) ─────────────────────────────────
     const currentStage = session?.current_block || bodyBlock || "BLOCO_1_MISSAO_CLINICA";
     
-    const aiResponse = await ai({
-      taskType: "reasoning",
+    const aiConfig: any = {
+      taskType: "tutor_deep", // Trigger pedagogical blocks check
       complexity: "alta",
       userId,
+      stream,
       messages: [
         { 
           role: "system", 
@@ -84,53 +85,46 @@ CONTEXTO OPERACIONAL:
 ${memoryContext}
 
 REGRAS CRÍTICAS:
-- Responda OBRIGATORIAMENTE em JSON.
+- Responda seguindo RIGOROSAMENTE a estrutura de 15 blocos pedagógicos se for o início de um tema.
 - Mantenha a identidade de Preceptor ENAZIZI.
-- Seja profundo tecnicamente, mas didático.` 
+- Seja profundo tecnicamente, mas didático.
+- Se não estiver em modo streaming, responda OBRIGATORIAMENTE em JSON.` 
         },
         { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${newTopic}.` : (message || "Continuar aula") }
-      ],
-      response_format: { type: "json_object" }
-    }, { retries: 2 });
+      ]
+    };
 
-    // ── 4. STABILITY LAYER (Output Normalization) ───────────────────────────────
+    if (!stream) {
+      aiConfig.response_format = { type: "json_object" };
+    }
+
+    const aiResponse = await ai(aiConfig, { retries: 2 });
+
+    // Handle Streaming response
+    if (stream) {
+      return aiResponse;
+    }
+
+    // ── 4. STABILITY LAYER (Output Normalization for Non-Streaming) ───────────────────────────────
+    const rawAi = aiResponse.choices?.[0]?.message?.content || "{}";
     let parsed: any = {};
-    const rawAi = aiResponse.choices?.[0]?.message?.content;
-    
-    if (rawAi) {
-      try {
-        parsed = JSON.parse(rawAi);
-      } catch (e) {
-        logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed", { rawAi });
-        parsed = { content: rawAi, socraticQuestion: "Ficou clara essa explicação?" };
-      }
-    } else if (aiResponse.content || aiResponse.message || aiResponse.frase_mnemonica) {
-      // Handle normalized or fallback responses directly
-      parsed = {
-        content: aiResponse.content || aiResponse.message || aiResponse.explicacao_didatica || aiResponse.frase_mnemonica || "Resposta recuperada do sistema de segurança.",
-        socraticQuestion: aiResponse.socraticQuestion || "Ficou clara essa explicação?",
-        mastery_level: aiResponse.mastery_level || masteryLevel
-      };
-    } else {
-      logger.error("INVALID_AI_RESPONSE_STRUCTURE", "No content found in AI response", { aiResponse });
-      parsed = { content: "O sistema Tutor está operando em modo de segurança. Como posso ajudar?", socraticQuestion: "Podemos continuar?" };
+    try {
+      parsed = JSON.parse(rawAi);
+    } catch (e) {
+      logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed", { rawAi });
+      parsed = { content: rawAi, socraticQuestion: "Ficou clara essa explicação?" };
     }
 
     // ── 5. IDEMPOTENT PERSISTENCE (The Hardening Core) ──────────────────────────
-    // All background updates use waitUntil for non-blocking UI
     if (userId && topic) {
-      // Background memory update
       supabaseAdmin.from("tutor_learning_memory").upsert({
         user_id: userId,
         topic: topic,
         block_title: currentStage,
         mastery_level: parsed.mastery_level || masteryLevel,
         updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,topic' }).then(({ error }) => {
-        if (error) logger.error("BACKGROUND_PERSISTENCE_FAIL", error.message);
-      });
+      }, { onConflict: 'user_id,topic' }).then();
       
-      // Update/Create session
       if (sessionId) {
         supabaseAdmin.from("tutor_sessions").update({
           current_block: currentStage,
@@ -154,7 +148,6 @@ REGRAS CRÍTICAS:
   } catch (err) {
     logger.critical("HARDENED_RUNTIME_CRASH", err.message, { requestId });
     
-    // Log incident for dashboarding
     supabaseAdmin.from("runtime_incidents").insert({
       function_name: "tutor-v3-premium",
       incident_type: "runtime_crash",
@@ -171,4 +164,4 @@ REGRAS CRÍTICAS:
       request_id: requestId
     }, 500);
   }
-}));
+});
