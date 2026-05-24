@@ -643,7 +643,7 @@ E) Ver exemplo clínico"
 
     console.log("[TUTOR_V2_RESPONSE_SENT]", { latency, provider: providerResult.provider, model: providerResult.model, fallbackUsed: providerResult.fallbackUsed, requestId });
 
-    return new Response(JSON.stringify({ 
+    return corsResponse({ 
       ok: true,
       success: true,
       fallback: providerResult.fallbackUsed,
@@ -658,9 +658,7 @@ E) Ver exemplo clínico"
       audit: { pedagogicalScore, feynmanScore },
       provider: { name: providerResult.provider, model: providerResult.model, attempts: providerResult.attempts.map(a => ({ model: a.model, success: a.success, status: a.status, code: a.code, latency_ms: a.latency_ms })) },
       requestId,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    }, 200);
 
   } catch (error) {
     console.error("[TUTOR-V2-CHAT] Error:", error instanceof Error ? { message: error.message, stack: error.stack, requestId } : { error: String(error), requestId });
