@@ -91,16 +91,22 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       response_format: { type: "json_object" },
     }, { skipQualityLock: false });
 
-    const rawContent = aiResponse.choices?.[0]?.message?.content || "{}";
-    let parsedContent;
-    try {
-      parsedContent = JSON.parse(rawContent);
-    } catch (e) {
-      logger.error("AI_PARSE_ERROR", "Error parsing AI response JSON", { rawContent });
+    const rawContent = aiResponse.choices?.[0]?.message?.content || "";
+    logger.info("AI_RAW_RESPONSE", "Received content from AI", { length: rawContent.length, preview: rawContent.slice(0, 100) });
+
+    let parsedContent: any = {};
+    if (rawContent.trim().startsWith("{")) {
+      try {
+        parsedContent = JSON.parse(rawContent);
+      } catch (e) {
+        logger.warn("AI_PARSE_ERROR", "Failed to parse JSON, using as string", { rawContent });
+        parsedContent = { content: rawContent };
+      }
+    } else {
       parsedContent = { content: rawContent };
     }
 
-    const content = parsedContent.content || "Ocorreu um erro ao gerar a resposta da IA.";
+    const content = parsedContent.content || parsedContent.explanation || parsedContent.text || rawContent || "Ocorreu um erro ao gerar a resposta da IA.";
     const socraticQuestion = parsedContent.socraticQuestion || "";
 
     // Simple advancement logic (gating)
