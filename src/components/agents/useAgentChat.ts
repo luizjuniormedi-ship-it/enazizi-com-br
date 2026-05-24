@@ -473,11 +473,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           } : undefined
         };
 
-        // [TUTOR_04_PAYLOAD_BUILT]
-        console.log(`[TUTOR_04_PAYLOAD_BUILT] requestId=${requestId}`, requestPayload);
+        // [TUTOR_V3_05_PAYLOAD]
+        console.log(`[TUTOR_V3_05_PAYLOAD] requestId=${requestId}`, requestPayload);
         
         console.log(`%c[TUTOR_V3_PAYLOAD] ${requestId}`, "color: #3b82f6", requestPayload);
 
+        console.log(`[TUTOR_V3_06_INVOKE_START] Message stream started for ${requestId}`);
         const result = await streamResponse({
           url: CHAT_URL,
           body: requestPayload,
