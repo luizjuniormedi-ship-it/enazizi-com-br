@@ -16,6 +16,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "./tutorClient";
 import type { TutorBlock, TutorBlockType } from "@/types/tutor";
 import {
   hasPersonalContext,
