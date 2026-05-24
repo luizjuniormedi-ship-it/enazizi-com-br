@@ -82,6 +82,7 @@ export const pedagogicalEventBus = {
         }, {
           onConflict: "idempotency_key",
           ignoreDuplicates: false,
+          count: 'none',
         });
 
       if (error) {

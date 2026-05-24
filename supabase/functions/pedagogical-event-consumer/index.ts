@@ -10,11 +10,11 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
   const body = await req.json().catch(() => ({}));
   const { event } = body;
 
-  if (!event || (!event.id && !event.idempotency_key)) {
+  if (!event) {
     return new Response(JSON.stringify({ success: false, error: "Event payload missing" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const eventId = event.id ?? event.idempotency_key;
+  const eventId = event.id ?? event.idempotency_key ?? crypto.randomUUID();
 
   logger.info("COG_RUNTIME_PROCESS", `Event: ${event.event_type}`, {
     userId: user.id,
