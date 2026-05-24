@@ -1,5 +1,7 @@
 // generate-daily-plan - ENAZIZI COORDENADOR ADAPTATIVO (PLANNER INTELIGENTE)
-import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
+
 import { requireAuth } from "../_shared/require-auth.ts";
 import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { calculatePremiumPriority, calculateExamProximityScore, calculateFsrsRiskScore } from "../_shared/study-prioritization.ts";
