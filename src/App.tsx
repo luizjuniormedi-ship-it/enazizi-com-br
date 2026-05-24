@@ -300,6 +300,8 @@ const App = () => (
                 <Route path="cme-executive" element={<Admin initialTab="intelligence-overview" />} />
                 <Route path="intervention-policies" element={<Admin initialTab="features" />} />
                 <Route path="video-lessons" element={<Admin initialTab="uploads" />} />
+                <Route path="question-quality" element={<QuestionQuality />} />
+
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
