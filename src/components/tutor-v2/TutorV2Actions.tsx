@@ -17,7 +17,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { useToast } from "@/components/ui/use-toast";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { motion, AnimatePresence } from "framer-motion";
