@@ -17,6 +17,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
+import { supabase } from "@/integrations/supabase/client";
 import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
