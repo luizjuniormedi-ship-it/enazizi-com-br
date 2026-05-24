@@ -20563,6 +20563,7 @@ export type Database = {
           created_at: string | null
           function_name: string
           id: string
+          incident_type: string | null
           is_resolved: boolean | null
           message: string
           metadata: Json | null
@@ -20570,12 +20571,14 @@ export type Database = {
           severity: string | null
           stack_trace: string | null
           stage: string | null
+          user_id: string | null
         }
         Insert: {
           correlation_id?: string | null
           created_at?: string | null
           function_name: string
           id?: string
+          incident_type?: string | null
           is_resolved?: boolean | null
           message: string
           metadata?: Json | null
@@ -20583,12 +20586,14 @@ export type Database = {
           severity?: string | null
           stack_trace?: string | null
           stage?: string | null
+          user_id?: string | null
         }
         Update: {
           correlation_id?: string | null
           created_at?: string | null
           function_name?: string
           id?: string
+          incident_type?: string | null
           is_resolved?: boolean | null
           message?: string
           metadata?: Json | null
@@ -20596,6 +20601,7 @@ export type Database = {
           severity?: string | null
           stack_trace?: string | null
           stage?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -26951,6 +26957,13 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      check_duplicate_tutor_sessions: {
+        Args: never
+        Returns: {
+          cluster_count: number
+          conversation_id: string
+        }[]
+      }
       check_feature_access: {
         Args: { f_name: string; u_id: string }
         Returns: boolean
@@ -27019,6 +27032,7 @@ export type Database = {
           weight: number
         }[]
       }
+      get_avg_tutor_latency: { Args: { hours: number }; Returns: number }
       get_banca_coverage_report: {
         Args: never
         Returns: {
