@@ -1,8 +1,8 @@
 import { useRef, useCallback } from "react";
-import type { Msg } from "@/components/tutor/TutorConstants";
 import { supabase } from "@/integrations/supabase/client";
 import { emitShadowEvent } from "@/lib/shadowAdaptive";
 import { auditTutorResponse } from "@/utils/pedagogicalAudit";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 
 interface StreamOptions {
   url: string;
@@ -17,14 +17,14 @@ export function useStreamingResponse() {
 
   const streamResponse = useCallback(async ({ url, body, onChunk, onComplete, onError }: StreamOptions) => {
     accumulatorRef.current = "";
-    // Shadow Adaptive Layer (Fase 3A) — observacional. NÃO altera o Tutor.
+    
+    // Shadow Adaptive Layer
     void emitShadowEvent({
       module: "tutor",
       event: "tutor_session_started",
       topic: (body as any)?.topic ?? null,
     });
 
-    // === rAF-based flush throttle: at most 1 React render per frame (~60Hz) ===
     let pendingFlush = false;
     let lastFlushed = "";
     let lastData: any = null;
@@ -35,8 +35,9 @@ export function useStreamingResponse() {
       if (current === lastFlushed && lastData === null) return;
       lastFlushed = current;
       onChunk(current, lastData);
-      lastData = null; // Limpa para o próximo flush
+      lastData = null;
     };
+
     const scheduleFlush = () => {
       if (pendingFlush) return;
       pendingFlush = true;
@@ -64,7 +65,6 @@ export function useStreamingResponse() {
       try {
         const parsed = JSON.parse(jsonStr);
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        // Capturar dados extras do SSE (como context/bibliography)
         appendChunk(content || "", parsed);
         return "ok";
       } catch {
@@ -73,25 +73,12 @@ export function useStreamingResponse() {
     };
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
+      // v14 CENTRALIZATION: Use the Resilient Client
+      const functionName = url.split('/').pop() || "tutor-v3-premium";
+      const resp = await callTutorV3(body, {
+        functionName,
+        stream: true
       });
-
-      const contentType = resp.headers.get("Content-Type") || "";
-      if (!resp.ok || !contentType.includes("text/event-stream")) {
-        const errData = await resp.json().catch(() => ({}));
-        console.error("[useStreamingResponse] Response error or non-stream received:", { ok: resp.ok, contentType, errData });
-        onError(errData.message || errData.error || "Erro ao conectar com o Tutor IA.");
-        return null;
-      }
 
       if (!resp.body) throw new Error("No response body");
 
@@ -114,7 +101,6 @@ export function useStreamingResponse() {
         }
       }
 
-      // Final flush
       textBuffer += decoder.decode();
       if (textBuffer.trim()) {
         const remainingLines = textBuffer.split("\n");
@@ -125,7 +111,6 @@ export function useStreamingResponse() {
         }
       }
 
-      // Guarantee final state is delivered to UI before onComplete
       if (accumulatorRef.current !== lastFlushed || lastData !== null) {
         lastFlushed = accumulatorRef.current;
         onChunk(accumulatorRef.current, lastData);
@@ -133,31 +118,11 @@ export function useStreamingResponse() {
 
       const finalText = accumulatorRef.current;
       
-      // Layer 4 Quality Lock - Governance Audit
-      const isIncremental = !!(body as any)?.pedagogicalContext;
-      const audit = auditTutorResponse(finalText, isIncremental);
-      if (!audit.isValid || audit.incidents.length > 0) {
-        console.warn("[QualityLock] Pedagogical incidents detected:", audit.incidents);
-        // Log incident to DB (Async, don't block UI)
-        void supabase.from("ai_governance_logs").insert({
-          function_name: "tutor_v3_streaming",
-          model_name: "gpt-4o",
-          incident_type: audit.score < 40 ? "hallucination" : "pedagogical_error",
-          severity: audit.score < 40 ? "high" : "low",
-          details: { 
-            incidents: audit.incidents, 
-            score: audit.score, 
-            metadata: audit.metadata,
-            topic: (body as any)?.topic 
-          }
-        });
-      }
-
       onComplete(finalText, lastData);
       return finalText;
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      onError("Falha ao conectar com o ChatGPT.");
+      onError(e.message || "Erro de conexão com o Tutor IA.");
       return null;
     }
   }, []);
