@@ -84,8 +84,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       complexity: "alta",
       userId,
       messages: [
-        { role: "system", content: `${PROMPT_COMPLETO}\n\nASSUNTO: ${sessionTopic || "Assunto Geral"}\nBLOCO ATUAL: ${currentBlock}\n${memoryContext}` },
-        { role: "user", content: newTopic ? `Olá preceptor, quero mudar de assunto para: ${newTopic}. Vamos começar do Bloco 1 com um novo caso clínico.` : message }
+        { role: "system", content: `${PROMPT_COMPLETO}\n\nASSUNTO: ${sessionTopic || "Assunto Geral"}\nBLOCO ATUAL: ${currentBlock}\n${memoryContext}\n\nResponda OBRIGATORIAMENTE em formato JSON válido.` },
+        { role: "user", content: (newTopic ? `Olá preceptor, quero mudar de assunto para: ${newTopic}. Vamos começar do Bloco 1 com um novo caso clínico.` : message) + " (Responda em JSON)" }
       ],
       temperature: 0.7,
       response_format: { type: "json_object" },
