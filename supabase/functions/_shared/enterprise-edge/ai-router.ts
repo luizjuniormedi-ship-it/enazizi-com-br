@@ -107,12 +107,15 @@ export async function callAi(
 
         let res: Response;
         
+        // REPAIR: Clean payload of custom internal arguments that OpenAI doesn't recognize
+        const { taskType, complexity, userId, skipCache, ...standardPayload } = payload;
+        
         // Direct OpenAI if key exists and provider is openai
         if (OPENAI_API_KEY && provider === "openai") {
           res = await fetch(OPENAI_API, {
             method: "POST",
             headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ ...payload, model: modelName }),
+            body: JSON.stringify({ ...standardPayload, model: modelName }),
             signal: controller.signal
           });
         } else {
