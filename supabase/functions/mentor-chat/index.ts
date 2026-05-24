@@ -98,8 +98,14 @@ Ao terminar, encerre com a pergunta obrigatória: "Antes de avançar, escolha um
         ).catch(e => logger.error("[MENTOR_CACHE_SAVE_ERROR]", e));
       }
     }
-    return new Response(JSON.stringify({ ok: true, content }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return corsResponse({ ok: true, content }, 200);
   }
 
-  return new Response(aiResponse.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+  return new Response(aiResponse.body, { 
+    headers: { 
+      ...corsHeaders, 
+      "Content-Type": "text/event-stream",
+      "X-Content-Type-Options": "nosniff"
+    } 
+  });
 }));
