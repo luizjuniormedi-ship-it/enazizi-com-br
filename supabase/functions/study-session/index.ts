@@ -19,10 +19,7 @@ import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
 
 /** Standard JSON response helper */
-const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
-  status,
-  headers: { ...corsHeaders, "Content-Type": "application/json" },
-});
+const json = (data: any, status = 200) => corsResponse(data, status);
 
 // Helper functions (same as before)
 function getLevelPrompt(performanceData: unknown): string {
