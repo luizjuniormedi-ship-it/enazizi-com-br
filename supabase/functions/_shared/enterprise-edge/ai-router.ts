@@ -108,7 +108,7 @@ export async function callAi(
         let res: Response;
         
         // REPAIR: Clean payload of custom internal arguments that OpenAI doesn't recognize
-        const { taskType, complexity, userId, skipCache, ...standardPayload } = payload;
+        const { taskType: _t, complexity: _c, userId: _u, skipCache: _s, ...standardPayload } = payload;
         
         // Direct OpenAI if key exists and provider is openai
         if (OPENAI_API_KEY && provider === "openai") {
