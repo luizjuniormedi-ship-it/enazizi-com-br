@@ -212,9 +212,15 @@ const AdminIngestionPanel = () => {
         body: JSON.stringify({ mode: "hub_page", url: navUrl, user_id: session.user?.id }),
       });
       const data = await resp.json();
+      if (resp.status === 402) throw new Error("Saldo de IA insuficiente para busca ativa.");
       if (data?.error) throw new Error(data.error);
-      setNavResults(data.pdf_links || []);
-      toast({ title: `${data.sources_found || 0} fontes descobertas, ${(data.pdf_links || []).length} PDFs` });
+      
+      const links = data.pdf_links || [];
+      setNavResults(links);
+      toast({ 
+        title: links.length > 0 ? `${links.length} PDFs encontrados` : "Nenhum PDF direto encontrado",
+        description: links.length > 0 ? "Você pode iniciar a extração de cada um abaixo." : "A página pode não conter links diretos para arquivos PDF."
+      });
       loadLogs(); loadSources();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
