@@ -25,36 +25,47 @@ async function readFunctionError(err: any) {
 export const TutorV2Service = {
   async sendMessage(sessionId: string, message: string, pedagogicalInteraction?: string, newTopic?: string, retryCount = 0) {
     const requestId = crypto.randomUUID();
+    const correlationId = crypto.randomUUID();
     const payload = { 
       sessionId, 
       message, 
       pedagogicalInteraction, 
       newTopic,
       requestId,
-      topic: null, // Deixe o backend decidir ou use null para não forçar
+      topic: null,
       fsrsContext: {},
       masteryState: "initial",
-      history: [] // Opcional, o backend pode ler do DB
+      history: []
     };
     
-    // [TUTOR_04_PAYLOAD_BUILT]
-    console.log(`[TUTOR_04_PAYLOAD_BUILT] requestId=${requestId}`, payload);
+    // [TUTOR_V3_01_SEND]
+    console.log(`[TUTOR_V3_01_SEND] requestId=${requestId} text="${message.slice(0, 50)}..."`);
+    
+    // [TUTOR_V3_02_FUNCTION_NAME]
+    console.log(`[TUTOR_V3_02_FUNCTION_NAME] calling: tutor-v3-premium`);
 
-    // [TUTOR_05_INVOKE_START]
-    console.log(`[TUTOR_05_INVOKE_START] requestId=${requestId}`);
+    // [TUTOR_V3_03_SUPABASE_URL]
+    console.log(`[TUTOR_V3_03_SUPABASE_URL] endpoint: ${import.meta.env.VITE_SUPABASE_URL}`);
 
-    // [TUTOR_06_FUNCTION_NAME]
-    console.log(`[TUTOR_06_FUNCTION_NAME] function=tutor-v3-premium`);
+    // [TUTOR_V3_04_HAS_AUTH_SESSION]
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    console.log(`[TUTOR_V3_04_HAS_AUTH_SESSION] tokenPresent: ${!!authSession?.access_token} userId: ${authSession?.user?.id}`);
 
-    console.log("[TUTOR_V3_EDGE_CALL] functionName: tutor-v3-premium", payload);
+    // [TUTOR_V3_05_PAYLOAD]
+    console.log(`[TUTOR_V3_05_PAYLOAD] requestId=${requestId}`, payload);
+
+    // [TUTOR_V3_06_INVOKE_START]
+    console.log(`[TUTOR_V3_06_INVOKE_START] requestId=${requestId}`);
+
     try {
       const { data, error } = await supabase.functions.invoke("tutor-v3-premium", {
-        body: payload
+        body: payload,
+        headers: { "x-correlation-id": correlationId }
       });
       
       if (error) {
-        // [TUTOR_08_INVOKE_ERROR_RAW]
-        console.log(`[TUTOR_08_INVOKE_ERROR_RAW]`, error);
+        // [TUTOR_V3_08_INVOKE_ERROR]
+        console.log(`[TUTOR_V3_08_INVOKE_ERROR]`, error);
         // Estratégia de retry automático para erros transientes (máximo 2 retentativas)
         if (retryCount < 2 && error.message?.includes("Failed to fetch")) {
           console.warn(`[TUTOR_V2_RETRY] Attempt ${retryCount + 1}...`);
@@ -69,8 +80,8 @@ export const TutorV2Service = {
         }
         throw new Error(structured?.message || error.message || FRIENDLY_PROVIDER_ERROR);
       }
-      // [TUTOR_07_INVOKE_RESPONSE_RAW]
-      console.log(`[TUTOR_07_INVOKE_RESPONSE_RAW]`, data);
+      // [TUTOR_V3_07_INVOKE_DATA]
+      console.log(`[TUTOR_V3_07_INVOKE_DATA]`, data);
       return data;
     } catch (err: any) {
       if (retryCount < 2 && (err.message?.includes("NetworkError") || err.message?.includes("AbortError"))) {
