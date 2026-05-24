@@ -23,10 +23,10 @@ const loginDuration = new Trend("login_duration", true);
 const endpointErrors = new Counter("endpoint_errors");
 
 /* ─── Config ─── */
-const BASE = __ENV.SUPABASE_URL || "https://qszsyskumcmuknumwxtk.supabase.co";
+const BASE = __ENV.SUPABASE_URL || "https://kojqbvrhodpchtnainla.supabase.co";
 const ANON_KEY =
   __ENV.SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzenN5c2t1bWNtdWtudW13eHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NDUwNjUsImV4cCI6MjA4NjIyMTA2NX0.B2Si8zb8YJcDhIsyj6edriyXsG3p2rP-NLrGfBFAoZw";
+  "sb_publishable_a3Ss3eqjxPUIaPs4vlqj9g_BcyzhvW_";
 const TEST_EMAIL = __ENV.TEST_USER_EMAIL || "test-user@enazizi.com";
 const TEST_PASSWORD = __ENV.TEST_USER_PASSWORD || "TestPass123!";
 

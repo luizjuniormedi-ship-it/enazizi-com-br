@@ -59,18 +59,24 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
           // Quality Lock
           if (!options.skipQualityLock) {
-            const content = response.choices?.[0]?.message?.content || "";
+            // Flexible content extraction for quality check
+            const content = response.choices?.[0]?.message?.content || 
+                          response.content || 
+                          response.message || 
+                          "";
+            
             const quality = validateAiQuality(content, { taskType: request.taskType || "reasoning" }, logger);
             
             // Log quality results
             waitUntil((async () => {
+              const requestId = response.id || correlation.requestId;
               await supabaseAdmin.from("ai_governance_logs")
-                .update({ 
+                .upsert({ 
+                  metadata: { request_id: requestId },
                   hallucination_score: quality.hallucination_detected ? 0 : 100,
                   medical_consistency_score: quality.medical_consistency_score,
                   quality_lock_status: quality.passed ? "passed" : "failed"
-                })
-                .match({ metadata: { request_id: response.id } });
+                }, { onConflict: 'metadata' });
             })());
 
             if (!quality.passed) {
@@ -82,7 +88,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
               
               if (attempt < maxRetries) {
                 logger.info("SELF_HEALING", "Triggering retry with reasoning model due to quality failure");
-                request.model = "google/gemini-2.5-pro"; // Force higher quality model on retry
+                request.taskType = "reasoning"; // Promote to reasoning task to trigger different prompt/depth
                 continue;
               }
               
@@ -132,8 +138,14 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
             method: req.method,
             status_code: response.status,
             latency_ms: latency,
-            metadata: { url: req.url, pipeline_id: correlation.pipelineId }
+            user_id: correlation.userId,
+            metadata: { 
+              url: req.url, 
+              pipeline_id: correlation.pipelineId,
+              stage: "COMPLETED"
+            }
           });
+          logger.info("FINISH", `Request completed in ${latency}ms`, { status: response.status });
         } catch (telemetryErr) {
           console.error("[enterprise-edge] Global telemetry failed:", telemetryErr);
         }
