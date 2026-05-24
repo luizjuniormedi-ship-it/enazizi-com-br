@@ -381,7 +381,11 @@ const SmartPlanner = () => {
 
   const strategicTasks = buildStrategicTasks();
 
-  const handleGenerateDaily = async () => {
+  return (
+    <div className="pb-32 relative" data-testid="planner-generated">
+      {/* ... keep rest of content ... */}
+    </div>
+  ); // Placeholder for identification, I need to find the actual return statement.
     if (!user) return;
     setReprocessing(true);
     const startTime = Date.now();
