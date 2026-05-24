@@ -487,13 +487,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         
         console.log(`%c[TUTOR_V3_PAYLOAD] ${requestId}`, "color: #3b82f6", requestPayload);
 
-        // v13 DIAGNOSTIC: Test non-streaming first if it's the first message
+        // v13 HARDENING: Final validation - only diagnostic JSON on first boot, then standard flow.
         const isDiagnosticTest = messages.length <= 1 && !overridePrompt;
         
         console.log(`[TUTOR_V3_06_INVOKE_START] Message stream started for ${requestId} (Diagnostic: ${isDiagnosticTest})`);
+        
+        // Ensure no circular references in payload before sending
+        const safePayload = JSON.parse(JSON.stringify(isDiagnosticTest ? { ...requestPayload, stream: false, force_json: true } : requestPayload));
+        
         const result = await streamResponse({
           url: CHAT_URL,
-          body: isDiagnosticTest ? { ...requestPayload, stream: false, force_json: true } : requestPayload,
+          body: safePayload,
           signal: controller.signal,
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
