@@ -263,7 +263,7 @@ const AdminIngestionPanel = () => {
           if (!startToken) throw new Error("Sessão expirada. Faça login novamente.");
           
           const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`;
-          const payload = { equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 };
+          const payload = { equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50, background: false };
           
           console.log("[equalize] invoking", { functionUrl, payload });
           

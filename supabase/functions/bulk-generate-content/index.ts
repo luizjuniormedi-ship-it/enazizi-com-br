@@ -123,7 +123,7 @@ REGRAS:
         }
       });
 
-      return { total_imported: 0, total_generated: savedCount };
+      return { total_imported: 0, total_generated: savedCount, total_questions: savedCount };
 
     } catch (err: any) {
       logger.error("GENERATION_PROCESS_FAILED", err.message, { stack: err.stack });
