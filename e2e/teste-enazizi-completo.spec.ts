@@ -6,10 +6,10 @@ test.describe("ENAZIZI — MIGRATION VALIDATION", () => {
     page.on('request', request => {
       const url = request.url();
       // ASSERTION: Network requests MUST NOT contain the legacy project ID
-      if (url.includes('qszsyskumcmuknumwxtk')) {
+      if (url.includes('kojqbvrhodpchtnainla')) {
         console.error(`[LEGACY_PROJECT_DETECTED] Request to old project: ${url}`);
       }
-      expect(url, `Request to legacy project detected: ${url}`).not.toContain('qszsyskumcmuknumwxtk');
+      expect(url, `Request to legacy project detected: ${url}`).not.toContain('kojqbvrhodpchtnainla');
     });
   });
 
