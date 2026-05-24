@@ -30,8 +30,8 @@ const FALLBACK_CHAINS = {
     "openai/gpt-4o-mini" // Last resort OpenAI
   ],
   REASONING: [
-    "openai/gpt-4o",  // Alias for 4.1 if it fails
-    "openai/gpt-4o",  // Alias for 4.1 if it fails
+    "openai/gpt-4o",
+    "openai/gpt-4o-mini",
     "google/gemini-2.5-pro",
     "openai/gpt-4o"
   ]
