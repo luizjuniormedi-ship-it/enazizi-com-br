@@ -80,8 +80,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     // AI Call using Unified Wrapper
     const aiResponse = await ai({
-      taskType: "tutor",
-      complexity: "média",
+      taskType: "reasoning",
+      complexity: "alta",
       userId,
       messages: [
         { role: "system", content: `${PROMPT_COMPLETO}\n\nASSUNTO: ${sessionTopic || "Assunto Geral"}\nBLOCO ATUAL: ${currentBlock}\n${memoryContext}` },
