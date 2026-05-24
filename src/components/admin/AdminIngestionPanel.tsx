@@ -159,10 +159,25 @@ const AdminIngestionPanel = () => {
       console.error("Failed to parse ingestion response:", raw, err);
       throw new Error(`Resposta inválida (${resp.status}): ${raw.slice(0, 150)}`); 
     }
-    const normalized = { ...data, questions_found: data?.questions_found ?? 0, questions_inserted: data?.questions_inserted ?? 0, questions_updated: data?.questions_updated ?? 0, duplicates_skipped: data?.duplicates_skipped ?? 0, errors: data?.errors ?? 0 };
-    if (!resp.ok) throw new Error(normalized?.error || `Falha na ingestão (${resp.status}): ${raw.slice(0, 100)}`);
+    
+    if (!resp.ok) {
+      if (resp.status === 402) {
+        throw new Error("Saldo de IA insuficiente (Gateway 402). Por favor, verifique os créditos do Lovable.");
+      }
+      throw new Error(data?.error || `Falha na ingestão (${resp.status}): ${raw.slice(0, 100)}`);
+    }
+
+    const normalized = { 
+      ...data, 
+      questions_found: data?.questions_found ?? 0, 
+      questions_inserted: data?.questions_inserted ?? 0, 
+      questions_updated: data?.questions_updated ?? 0, 
+      duplicates_skipped: data?.duplicates_skipped ?? 0, 
+      errors: data?.errors ?? 0 
+    };
+
     if (normalized.questions_inserted === 0 && normalized.questions_updated === 0 && normalized.duplicates_skipped === 0) {
-      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída deste PDF. O arquivo pode estar protegido por SSL ou ser apenas imagem.");
+      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída. Verifique se o conteúdo é legível.");
     }
     return normalized;
   };
@@ -197,9 +212,15 @@ const AdminIngestionPanel = () => {
         body: JSON.stringify({ mode: "hub_page", url: navUrl, user_id: session.user?.id }),
       });
       const data = await resp.json();
+      if (resp.status === 402) throw new Error("Saldo de IA insuficiente para busca ativa.");
       if (data?.error) throw new Error(data.error);
-      setNavResults(data.pdf_links || []);
-      toast({ title: `${data.sources_found || 0} fontes descobertas, ${(data.pdf_links || []).length} PDFs` });
+      
+      const links = data.pdf_links || [];
+      setNavResults(links);
+      toast({ 
+        title: links.length > 0 ? `${links.length} PDFs encontrados` : "Nenhum PDF direto encontrado",
+        description: links.length > 0 ? "Você pode iniciar a extração de cada um abaixo." : "A página pode não conter links diretos para arquivos PDF."
+      });
       loadLogs(); loadSources();
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
