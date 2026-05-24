@@ -203,7 +203,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       // 0. Healthcheck pre-flight (silent but logged)
       if (!overridePrompt && messages.length <= 1) {
-        supabase.functions.invoke(functionName, { body: { healthcheck: true } })
+        supabase.functions.invoke(functionName, { 
+          body: { healthcheck: true },
+          headers: { "x-correlation-id": correlationId }
+        })
           .then(({ data, error }) => {
             console.log(`%c[TUTOR_V3_HEALTH] ${requestId}`, "color: #10b981", { data, error, ok: data?.ok });
           })
