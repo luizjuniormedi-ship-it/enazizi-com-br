@@ -40,11 +40,10 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
     setActiveMode(mode);
     try {
       console.log("[GERAR_AULA] FUNCTION_START", { sessionId: session.id, mode });
-      const { data, error } = await supabase.functions.invoke("generate-tutor-v2-lesson", {
-        body: { sessionId: session.id, mode }
+      const response = await callTutorV3({ sessionId: session.id, mode }, { 
+        functionName: "generate-tutor-v2-lesson" 
       });
-
-      if (error) throw error;
+      const data = await response.json();
 
       const lesson = data?.lesson?.content || data?.lesson || data?.content || data;
       
