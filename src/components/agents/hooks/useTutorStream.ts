@@ -4,15 +4,7 @@ import { callTutorV3 } from "@/lib/tutor/tutorClient";
 
 /**
  * useTutorStream — Sprint 4 (dual mode)
- *
- * Mantém todo o comportamento da Sprint 3 para `format: "markdown"` (default),
- * e adiciona suporte opt-in para `format: "blocks"` (NDJSON, 1 TutorBlock por linha).
- *
- * Regras de compatibilidade:
- *  - Sem `format` → markdown (idêntico ao V1).
- *  - format="blocks" + payload inválido → tolerado, ignorado silenciosamente.
- *  - format="blocks" mas backend retorna texto cru → fallback automático para
- *    onDelta() acumulando como markdown (consumer pode embrulhar em deep_dive).
+ * Centralizado para usar o Cliente Oficial V3.
  */
 
 export type TutorStreamFormat = "markdown" | "blocks";
@@ -118,19 +110,14 @@ export function useTutorStream() {
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) {
             appendAssistantChunk(content);
-            // DEBUG LOG para detectar blocos JSON chegando no stream
-            if (content.includes('"type":')) {
-              console.log("[useTutorStream] Detected potential JSON block in stream delta");
-            }
           }
           return "ok";
         } catch {
           return "incomplete";
         }
-
       };
 
-      // ── BLOCKS MODE (NDJSON, 1 TutorBlock por linha) ─────────────────────
+      // ── BLOCKS MODE (NDJSON) ──────────────────────────────────────
       const processBlockLine = (rawLine: string): "ok" | "done" | "incomplete" => {
         const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
         const trimmed = line.trim();
@@ -144,14 +131,9 @@ export function useTutorStream() {
               onFirstChunk?.();
             }
             onBlock?.(parsed);
-            // Mantém um espelho textual para compat com onDelta consumers.
-            const mirror =
-              parsed.type === "deep_dive"
-                ? parsed.payload.markdown
-                : `[${parsed.type}]`;
+            const mirror = parsed.type === "deep_dive" ? parsed.payload.markdown : `[${parsed.type}]`;
             appendAssistantChunk((assistantSoFar ? "\n\n" : "") + mirror);
           }
-          // Bloco inválido → tolerado, segue stream.
           return "ok";
         } catch {
           return "incomplete";
@@ -160,98 +142,17 @@ export function useTutorStream() {
 
       const lineProcessor = format === "blocks" ? processBlockLine : processSseLine;
 
-      // Helper: fetch with current session token. Used twice so we can
-      // transparently refresh + retry on 401 (post-Sprint-1 hardening).
-      const doFetch = async (token: string) => {
-        const correlationId = (body.correlation_id as string) || (body.requestId as string) || crypto.randomUUID();
-        
-        // [TUTOR_V3_02_FUNCTION_NAME]
-        console.log(`[TUTOR_V3_02_FUNCTION_NAME] function=${url}`);
-
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          "x-correlation-id": correlationId,
-        };
-        
-        // [TUTOR_V3_03_SUPABASE_URL]
-        console.log(`[TUTOR_V3_03_SUPABASE_URL] Requesting ${url}`, { correlationId, method: "POST" });
-        
-        try {
-          // v13 HARDENING: Using standard fetch for streaming resilience
-          const fetchResponse = await fetch(url, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(body),
-            signal: signal || controller.signal,
-            mode: 'cors',
-            credentials: 'omit'
-          });
-          
-          console.log(`[TUTOR_V3_07_INVOKE_DATA] Response status: ${fetchResponse.status}`);
-          return fetchResponse;
-        } catch (fetchErr: any) {
-          console.error(`[TUTOR_V3_08_INVOKE_ERROR] Fetch failed immediately:`, fetchErr);
-          throw fetchErr;
-        }
-      };
-
-      const maxRetries = 2;
-      let attempt = 0;
-
-      const runFetch = async () => {
-        attempt++;
-        try {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          let accessToken = session?.access_token;
-
-          if (!accessToken) {
-            throw new Error("Sua sessão expirou. Faça login novamente.");
-          }
-
-          let resp = await doFetch(accessToken);
-
-          // 401 → try one silent refresh, then retry once.
-          if (resp.status === 401) {
-            const { data: refreshed } = await supabase.auth.refreshSession();
-            const refreshedToken = refreshed?.session?.access_token;
-            if (refreshedToken) {
-              accessToken = refreshedToken;
-              resp = await doFetch(refreshedToken);
-            }
-          }
-
-          if (!resp.ok) {
-            if (resp.status >= 500 && attempt <= maxRetries) {
-              console.warn(`[useTutorStream] Server error ${resp.status}, retrying attempt ${attempt}...`);
-              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-              return runFetch();
-            }
-            const errData = await resp.json().catch(() => ({}));
-            const friendly =
-              resp.status === 401
-                ? "Sua sessão expirou. Faça login novamente."
-                : (errData as { error?: string; message?: string }).message ||
-                  (errData as { error?: string }).error ||
-                  "stream_http_error";
-            throw new Error(friendly);
-          }
-          return resp;
-        } catch (e) {
-          if (attempt <= maxRetries && !signal?.aborted) {
-            console.warn(`[useTutorStream] Network error, retrying attempt ${attempt}...`, e);
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            return runFetch();
-          }
-          throw e;
-        }
-      };
-
       try {
-        const resp = await runFetch();
+        // v14 CENTRALIZATION: Extract function name from URL if possible
+        const functionName = url.split('/').pop() || "tutor-v3-premium";
+        
+        // Use the official Resilient Client
+        const resp = await callTutorV3(body, {
+          functionName,
+          stream: true,
+          signal: signal || controller.signal
+        });
+
         if (!resp || !resp.body) throw new Error("No response body");
 
         const contentType = resp.headers.get("Content-Type") || "";
@@ -259,16 +160,7 @@ export function useTutorStream() {
 
         if (isJson) {
           const data = await resp.json();
-          console.log("[TUTOR_UI_RESPONSE_RAW] JSON:", data);
-          // [TUTOR_07_INVOKE_RESPONSE_RAW]
-          console.log(`[TUTOR_07_INVOKE_RESPONSE_RAW]`, data);
-          
-          // [TUTOR_22_FRONTEND_DATA_RECEIVED]
-          console.log("[TUTOR_22_FRONTEND_DATA_RECEIVED] requestId=" + body.requestId, data);
-          
           const content = data.content || data.message || data.answer || data.response || "";
-          // [TUTOR_23_CONTENT_EXTRACTED]
-          console.log(`[TUTOR_23_CONTENT_EXTRACTED] contentLen=${content?.length}`);
 
           if (!content && data.ok === false) {
             onError?.({ status: resp.status, message: data.message || "Erro na resposta da IA" });
@@ -279,7 +171,6 @@ export function useTutorStream() {
           onDelta(content);
           onComplete?.(content);
           setIsStreaming(false);
-          console.log("[TUTOR_V3_RESPONSE_SHAPE] JSON processed", { hasContent: !!content });
           return { content, metrics: data.metrics };
         }
 
@@ -325,21 +216,14 @@ export function useTutorStream() {
 
         onComplete?.(assistantSoFar);
         return { content: assistantSoFar };
-      } catch (e) {
-        if ((e as { name?: string })?.name === "AbortError") {
+      } catch (e: any) {
+        if (e.name === "AbortError") {
           return assistantSoFar ? { content: assistantSoFar } : null;
         }
         console.error("[useTutorStream] error:", e);
-        // [TUTOR_08_INVOKE_ERROR_RAW]
-        console.log(`[TUTOR_08_INVOKE_ERROR_RAW]`, e);
         
-        const errorMessage = e instanceof Error ? e.message : "Erro de conexão com o Tutor";
-        const isNetworkError = errorMessage.includes("Failed to fetch") || 
-                              errorMessage.includes("Load failed") || 
-                              errorMessage.includes("NetworkError");
-                              
         onError?.({
-          message: isNetworkError ? "Falha de rede ou CORS ao conectar com o Tutor IA. Verifique se o backend está ativo e sua conexão." : errorMessage,
+          message: e.message || "Erro de conexão com o Tutor",
         });
         return null;
       } finally {
