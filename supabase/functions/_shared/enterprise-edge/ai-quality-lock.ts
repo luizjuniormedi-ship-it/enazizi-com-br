@@ -77,7 +77,7 @@ export function validateAiQuality(
   }
 
   return {
-    passed: (score >= 70 || context.taskType === "tutor") && !hallucinationDetected,
+    passed: score >= 70 && !hallucinationDetected,
     score: Math.max(0, score),
     hallucination_detected: hallucinationDetected,
     issues,

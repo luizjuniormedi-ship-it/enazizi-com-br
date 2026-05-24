@@ -82,7 +82,7 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
               
               if (attempt < maxRetries) {
                 logger.info("SELF_HEALING", "Triggering retry with reasoning model due to quality failure");
-                request.taskType = "reasoning"; // Promote to reasoning task to trigger different prompt/depth
+                request.model = "google/gemini-2.5-pro"; // Force higher quality model on retry
                 continue;
               }
               
@@ -132,14 +132,8 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
             method: req.method,
             status_code: response.status,
             latency_ms: latency,
-            user_id: correlation.userId,
-            metadata: { 
-              url: req.url, 
-              pipeline_id: correlation.pipelineId,
-              stage: "COMPLETED"
-            }
+            metadata: { url: req.url, pipeline_id: correlation.pipelineId }
           });
-          logger.info("FINISH", `Request completed in ${latency}ms`, { status: response.status });
         } catch (telemetryErr) {
           console.error("[enterprise-edge] Global telemetry failed:", telemetryErr);
         }

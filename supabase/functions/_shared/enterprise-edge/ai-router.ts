@@ -30,8 +30,8 @@ const FALLBACK_CHAINS = {
     "openai/gpt-4o-mini" // Last resort OpenAI
   ],
   REASONING: [
-    "openai/gpt-4o",
-    "openai/gpt-4o-mini",
+    "openai/gpt-4.1", // Requested name
+    "openai/gpt-4o",  // Alias for 4.1 if it fails
     "google/gemini-2.5-pro",
     "openai/gpt-4o"
   ]
@@ -107,20 +107,16 @@ export async function callAi(
 
         let res: Response;
         
-        // REPAIR: Clean payload of custom internal arguments that OpenAI doesn't recognize
         // Direct OpenAI if key exists and provider is openai
         if (OPENAI_API_KEY && provider === "openai") {
-          // REPAIR: OpenAI doesn't recognize internal ENAZIZI metadata
-          const { taskType, complexity, userId, skipCache, ...standardPayload } = payload;
-          
           res = await fetch(OPENAI_API, {
             method: "POST",
             headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ ...standardPayload, model: modelName }),
+            body: JSON.stringify({ ...payload, model: modelName }),
             signal: controller.signal
           });
         } else {
-          // Use Lovable Gateway - it handles the payload as is
+          // Use Lovable Gateway
           res = await fetch(LOVABLE_GATEWAY, {
             method: "POST",
             headers: { 

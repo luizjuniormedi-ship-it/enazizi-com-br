@@ -89,25 +89,6 @@ export function safeJsonParse<T>(content: string, fallback: T): T {
 export function normalizeAIResponse(data: any): any {
   if (!data) return null;
   
-  // ENAZIZI v3 Tutor Parsing (Handle response from Tutor index.ts)
-  if (data.choices?.[0]?.message?.content) {
-    try {
-      const content = data.choices[0].message.content;
-      if (typeof content === "string") {
-        const parsed = JSON.parse(content);
-        return {
-          content: parsed.content || content,
-          socraticQuestion: parsed.socraticQuestion || "",
-          teachingMode: parsed.teachingMode || "PRECEPTOR",
-          interactionMode: parsed.interactionMode || "BALANCED_SOCRATIC",
-          minimumTeachingDelivered: parsed.minimumTeachingDelivered ?? true
-        };
-      }
-    } catch (_e) {
-      // Not JSON or parse error, return as is
-    }
-  }
-
   // If it's a mnemônico-like object, ensure keys are consistent
   if (data.mnemonic || data.phrase || data.items_map) {
     return {

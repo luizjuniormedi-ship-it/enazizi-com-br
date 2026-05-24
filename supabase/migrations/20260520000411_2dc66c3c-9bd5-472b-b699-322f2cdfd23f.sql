@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.alos_system_config (
 );
 
 INSERT INTO public.alos_system_config (config_key, config_value)
-VALUES ('edge_function_base_url', 'https://kojqbvrhodpchtnainla.supabase.co/functions/v1')
+VALUES ('edge_function_base_url', 'https://qszsyskumcmuknumwxtk.supabase.co/functions/v1')
 ON CONFLICT (config_key) DO UPDATE SET config_value = EXCLUDED.config_value;
 
 -- Atualizar o trigger para usar a nova tabela
