@@ -206,10 +206,7 @@ serve(async (req) => {
 
     const { sessionId, message, pedagogicalInteraction } = await req.json();
     if (!sessionId || !message || typeof message !== "string") {
-      return new Response(JSON.stringify({ ok: false, error: "INVALID_REQUEST", message: "Sessão e mensagem são obrigatórias.", requestId }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ ok: false, error: "INVALID_REQUEST", message: "Sessão e mensagem são obrigatórias.", requestId }, 400);
     }
 
     // ── INJECTION GUARD ──────────────────────────────────────────────
