@@ -1,4 +1,4 @@
-const FUNCTION_URL = "https://qszsyskumcmuknumwxtk.supabase.co/functions/v1/tutor-v3-premium";
+const FUNCTION_URL = "https://kojqbvrhodpchtnainla.supabase.co/functions/v1/tutor-v3-premium";
 const USER_ID = "00000000-0000-0000-0000-000000000001"; // Test user
 const CONVERSATION_ID = crypto.randomUUID();
 
