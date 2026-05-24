@@ -159,10 +159,25 @@ const AdminIngestionPanel = () => {
       console.error("Failed to parse ingestion response:", raw, err);
       throw new Error(`Resposta inválida (${resp.status}): ${raw.slice(0, 150)}`); 
     }
-    const normalized = { ...data, questions_found: data?.questions_found ?? 0, questions_inserted: data?.questions_inserted ?? 0, questions_updated: data?.questions_updated ?? 0, duplicates_skipped: data?.duplicates_skipped ?? 0, errors: data?.errors ?? 0 };
-    if (!resp.ok) throw new Error(normalized?.error || `Falha na ingestão (${resp.status}): ${raw.slice(0, 100)}`);
+    
+    if (!resp.ok) {
+      if (resp.status === 402) {
+        throw new Error("Saldo de IA insuficiente (Gateway 402). Por favor, verifique os créditos do Lovable.");
+      }
+      throw new Error(data?.error || `Falha na ingestão (${resp.status}): ${raw.slice(0, 100)}`);
+    }
+
+    const normalized = { 
+      ...data, 
+      questions_found: data?.questions_found ?? 0, 
+      questions_inserted: data?.questions_inserted ?? 0, 
+      questions_updated: data?.questions_updated ?? 0, 
+      duplicates_skipped: data?.duplicates_skipped ?? 0, 
+      errors: data?.errors ?? 0 
+    };
+
     if (normalized.questions_inserted === 0 && normalized.questions_updated === 0 && normalized.duplicates_skipped === 0) {
-      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída deste PDF. O arquivo pode estar protegido por SSL ou ser apenas imagem.");
+      throw new Error(normalized?.error || "Nenhuma questão válida foi extraída. Verifique se o conteúdo é legível.");
     }
     return normalized;
   };
