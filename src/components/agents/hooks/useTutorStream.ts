@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { isTutorBlock, type TutorBlock } from "@/types/tutor";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 
 /**
  * useTutorStream — Sprint 4 (dual mode)
