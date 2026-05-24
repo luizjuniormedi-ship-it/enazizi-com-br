@@ -11953,6 +11953,66 @@ export type Database = {
           },
         ]
       }
+      forensic_quality_logs: {
+        Row: {
+          ai_pattern_score: number | null
+          board: string
+          cognitive_score: number | null
+          correlation_id: string | null
+          created_at: string | null
+          decision: string
+          fidelity_score: number
+          flags: string[] | null
+          id: string
+          lexical_score: number | null
+          pedagogical_score: number | null
+          professor_feedback: string | null
+          professor_id: string | null
+          professor_rating: number | null
+          question_id: string | null
+          raw_response_preview: string | null
+          structural_score: number | null
+        }
+        Insert: {
+          ai_pattern_score?: number | null
+          board: string
+          cognitive_score?: number | null
+          correlation_id?: string | null
+          created_at?: string | null
+          decision: string
+          fidelity_score: number
+          flags?: string[] | null
+          id?: string
+          lexical_score?: number | null
+          pedagogical_score?: number | null
+          professor_feedback?: string | null
+          professor_id?: string | null
+          professor_rating?: number | null
+          question_id?: string | null
+          raw_response_preview?: string | null
+          structural_score?: number | null
+        }
+        Update: {
+          ai_pattern_score?: number | null
+          board?: string
+          cognitive_score?: number | null
+          correlation_id?: string | null
+          created_at?: string | null
+          decision?: string
+          fidelity_score?: number
+          flags?: string[] | null
+          id?: string
+          lexical_score?: number | null
+          pedagogical_score?: number | null
+          professor_feedback?: string | null
+          professor_id?: string | null
+          professor_rating?: number | null
+          question_id?: string | null
+          raw_response_preview?: string | null
+          structural_score?: number | null
+        }
+        Relationships: []
+      }
       fsrs_cards: {
         Row: {
           back: string | null
@@ -12284,6 +12344,75 @@ export type Database = {
           status?: string
           total_batches?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      golden_exam_dataset: {
+        Row: {
+          banca: string
+          bloom_level: string | null
+          clinical_density_score: number | null
+          cognitive_complexity_score: number | null
+          correct_index: number
+          created_at: string | null
+          dificuldade: number | null
+          embedding: string | null
+          especialidade: string | null
+          explanation: string | null
+          id: string
+          option_avg_length: number | null
+          options: Json
+          semantic_features: Json | null
+          statement: string
+          stmt_length: number | null
+          tech_density_score: number | null
+          topic: string | null
+          updated_at: string | null
+          year: number | null
+        }
+        Insert: {
+          banca: string
+          bloom_level?: string | null
+          clinical_density_score?: number | null
+          cognitive_complexity_score?: number | null
+          correct_index: number
+          created_at?: string | null
+          dificuldade?: number | null
+          embedding?: string | null
+          especialidade?: string | null
+          explanation?: string | null
+          id?: string
+          option_avg_length?: number | null
+          options: Json
+          semantic_features?: Json | null
+          statement: string
+          stmt_length?: number | null
+          tech_density_score?: number | null
+          topic?: string | null
+          updated_at?: string | null
+          year?: number | null
+        }
+        Update: {
+          banca?: string
+          bloom_level?: string | null
+          clinical_density_score?: number | null
+          cognitive_complexity_score?: number | null
+          correct_index?: number
+          created_at?: string | null
+          dificuldade?: number | null
+          embedding?: string | null
+          especialidade?: string | null
+          explanation?: string | null
+          id?: string
+          option_avg_length?: number | null
+          options?: Json
+          semantic_features?: Json | null
+          statement?: string
+          stmt_length?: number | null
+          tech_density_score?: number | null
+          topic?: string | null
+          updated_at?: string | null
+          year?: number | null
         }
         Relationships: []
       }

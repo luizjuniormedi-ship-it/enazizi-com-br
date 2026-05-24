@@ -5,6 +5,8 @@ import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
+import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
+
 
 /**
  * ENAZIZI — ADAPTIVE SIMULADO v13 (HARD FIX)
@@ -107,15 +109,33 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
             board: profile.label
           };
 
+          const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
           const validation = validateQuestionAgainstBoard(cleanQ, profile);
+          
           const hash = btoa(cleanQ.statement.substring(0, 50).toLowerCase().trim());
 
-          if (validation.isValid && !seenHashes.has(hash)) {
-            finalQuestions.push({ ...cleanQ, _source: "generated" });
+          // Log Forensic Analysis
+          await supabaseAdmin.from("forensic_quality_logs").insert({
+            board: profile.label,
+            fidelity_score: forensic.fidelity_score,
+            structural_score: forensic.structural_score,
+            lexical_score: forensic.lexical_score,
+            cognitive_score: forensic.cognitive_score,
+            pedagogical_score: forensic.pedagogical_score,
+            ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
+            flags: forensic.reasons,
+            decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
+            correlation_id: correlationId,
+            raw_response_preview: cleanQ.statement.substring(0, 200)
+          });
+
+          if (forensic.isValid && validation.isValid && !seenHashes.has(hash)) {
+            finalQuestions.push({ ...cleanQ, _source: "generated", forensic_score: forensic.fidelity_score });
             seenHashes.add(hash);
             // [QUESTION_GEN_VALIDATED]
-            console.log(`[QUESTION_GEN_VALIDATED] Quality=${validation.score}`);
+            console.log(`[QUESTION_GEN_VALIDATED] Quality=${forensic.fidelity_score}`);
           }
+
         }
       }
     }

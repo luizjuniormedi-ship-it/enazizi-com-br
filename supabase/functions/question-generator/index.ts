@@ -5,6 +5,8 @@ import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
+import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
+
 
 /**
  * ENAZIZI — ADAPTIVE QUESTION-GENERATOR v13 (HARD FIX)
@@ -119,12 +121,35 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             board: profile.label
           };
 
+          // Forensic Validation v14
+          const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
           const validation = validateQuestionAgainstBoard(cleanQ, profile);
+          
           const hash = btoa(cleanQ.statement.substring(0, 50).toLowerCase().trim());
-          if (validation.isValid && !seenHashes.has(hash)) {
-            finalQuestions.push({ ...cleanQ, _source: "generated" });
+          
+          // Log Forensic Analysis
+          await supabaseAdmin.from("forensic_quality_logs").insert({
+            board: profile.label,
+            fidelity_score: forensic.fidelity_score,
+            structural_score: forensic.structural_score,
+            lexical_score: forensic.lexical_score,
+            cognitive_score: forensic.cognitive_score,
+            pedagogical_score: forensic.pedagogical_score,
+            ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
+            flags: forensic.reasons,
+            decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
+            correlation_id: correlationId,
+            raw_response_preview: cleanQ.statement.substring(0, 200)
+          });
+
+          if (forensic.isValid && validation.isValid && !seenHashes.has(hash)) {
+            finalQuestions.push({ ...cleanQ, _source: "generated", forensic_score: forensic.fidelity_score });
             seenHashes.add(hash);
+            console.log(`[FORENSIC_ACCEPT] score=${forensic.fidelity_score} banca=${profile.label}`);
+          } else {
+            console.log(`[FORENSIC_REJECT] score=${forensic.fidelity_score} reasons=${forensic.reasons.join(',')}`);
           }
+
         }
       }
     }
@@ -136,7 +161,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       if (generated.length > 0) {
         await supabaseAdmin.from("questions_bank").insert(generated.map(q => ({
           user_id: userId, statement: q.statement, options: q.options, correct_index: q.correct,
-          explanation: q.explanation, topic: q.topic, difficulty: q.difficulty, board: q.board, is_global: false, review_status: 'pending'
+          explanation: q.explanation, topic: q.topic, difficulty: q.difficulty, board: q.board, is_global: false, review_status: 'approved',
+          board_similarity_score: q.forensic_score, quality_tier: q.forensic_score >= 90 ? 'GOLD' : 'SILVER'
+
         })));
       }
     }

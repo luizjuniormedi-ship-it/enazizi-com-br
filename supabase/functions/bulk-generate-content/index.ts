@@ -7,6 +7,9 @@ import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { parseAiJson, sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { corsHeaders, corsResponse } from "../_shared/cors.ts";
+import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
+import { resolveBanca } from "../_shared/banca-profiles.ts";
+
 
 
 const SPECIALTIES = [
@@ -82,8 +85,32 @@ REGRAS:
       logger.info("AI_RESPONSE_PARSED", `Received ${questions.length} questions from AI`);
 
       let savedCount = 0;
+      const profile = resolveBanca("ENARE").profile;
+
       for (const q of questions) {
         try {
+          const forensic = await analyzeQuestionForensic(q, profile, supabaseAdmin);
+          
+          await supabaseAdmin.from("forensic_quality_logs").insert({
+            board: profile.label,
+            fidelity_score: forensic.fidelity_score,
+            structural_score: forensic.structural_score,
+            lexical_score: forensic.lexical_score,
+            cognitive_score: forensic.cognitive_score,
+            pedagogical_score: forensic.pedagogical_score,
+            ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
+            flags: forensic.reasons,
+            decision: forensic.isValid ? 'ACCEPT' : 'REJECT',
+            correlation_id: correlation.correlationId,
+            raw_response_preview: q.statement.substring(0, 200)
+          });
+
+          if (!forensic.isValid) {
+             logger.warn("FORENSIC_REJECT", `Question rejected with score ${forensic.fidelity_score}`);
+             continue;
+          }
+
+
           const { error: insertError } = await supabaseAdmin.from("questions_bank").insert({
             statement: sanitizeAiContent(q.statement),
             options: q.options,
@@ -96,6 +123,9 @@ REGRAS:
             source: "bulk-ai-generator",
             review_status: "approved",
             board: "ENARE",
+            board_similarity_score: forensic.fidelity_score,
+            quality_tier: forensic.fidelity_score >= 90 ? 'GOLD' : 'SILVER',
+
             year: 2025,
             user_id: user.id
           });
