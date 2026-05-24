@@ -36,7 +36,7 @@ interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; pub
 
 // ═══ HELPERS ═══
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  return corsResponse(body, status);
 }
 function requireEnv(name: string): string { const v = Deno.env.get(name); if (!v) throw new Error(`Env ${name} missing`); return v; }
 
