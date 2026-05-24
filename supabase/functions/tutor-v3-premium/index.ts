@@ -156,15 +156,13 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
   } catch (error) {
     logger.error("FATAL_HANDLER_ERROR", error.message, { stack: error.stack });
-    return new Response(JSON.stringify({
+    return corsResponse({
       success: true,
       content: "Preceptor ENAZIZI: Tive um pequeno problema técnico, mas estou aqui. Poderia repetir sua última dúvida?",
       currentBlock: "ERROR_RECOVERED",
       shouldWaitForStudent: true,
       debug_stage: "error_fallback",
       error: error.message
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    }, 200);
   }
 }));
