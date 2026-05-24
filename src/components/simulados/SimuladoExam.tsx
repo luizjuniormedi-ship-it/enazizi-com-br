@@ -175,13 +175,14 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
   const userAnswer = selectedAnswers[current];
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-4xl mx-auto pb-12">
+    <div className="space-y-4 animate-fade-in max-w-4xl mx-auto pb-12" data-testid="simulado-exam-container">
       {/* Header — Cockpit Look */}
       <div className="flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-xl py-3 px-1 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs" data-testid="question-number">
             {current + 1}
           </div>
+
           <span className="text-[13px] font-black uppercase tracking-tight text-muted-foreground/80">Questão {current + 1} de {questions.length}</span>
         </div>
         
