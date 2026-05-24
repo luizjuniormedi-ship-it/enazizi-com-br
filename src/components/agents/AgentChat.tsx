@@ -52,6 +52,8 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { toast } from "sonner";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useAgentChat } from "./useAgentChat";
@@ -242,16 +244,16 @@ const AgentChat = ({
       
       FORENSICS_STORE.network.push({ type: 'request', ts: Date.now(), payload });
 
-      const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
-        body: payload,
-        signal: controller.signal
+      const response = await callTutorV3({
+        topic: topic || "Clínica Médica",
+        conversationId: chat.activeConversationId,
+        messages: chat.messages.map(m => ({ role: m.role, content: m.content })),
+        lessonType: 'aula_completa'
+      }, { 
+        functionName: 'generate-tutor-lesson' 
       });
 
-      FORENSICS_STORE.network.push({ type: 'response', ts: Date.now(), data, error });
-
-      console.log("[GERAR_AULA] FUNCTION_RESPONSE", { data, error });
-
-      if (error) throw error;
+      const data = await response.json();
 
       // Normalização da resposta conforme MODO HARD
       const lesson = data?.lesson || data?.data?.lesson || data?.result?.lesson || data?.content || data?.message;
@@ -326,7 +328,7 @@ const AgentChat = ({
       chat.setUploadProgress(30);
       chat.setUploadStep("Processando...");
 
-      await supabase.functions.invoke("process-upload", { body: { uploadId: uploadRow.id } });
+      await callTutorV3({ uploadId: uploadRow.id }, { functionName: "process-upload" });
 
       const pollInterval = setInterval(async () => {
         const { data: status } = await supabase

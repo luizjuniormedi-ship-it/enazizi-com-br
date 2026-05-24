@@ -16,6 +16,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "./tutorClient";
 import type { TutorBlock, TutorBlockType } from "@/types/tutor";
 import {
   hasPersonalContext,
@@ -414,24 +415,18 @@ export async function findSemanticMemory(params: {
   subtopic?: string | null;
 }): Promise<SemanticHit[]> {
   try {
-    const { data, error } = await supabase.functions.invoke(
-      "tutor-memory-search",
-      {
-        body: {
-          text: params.question,
-          threshold: params.threshold,
-          matchCount: params.matchCount ?? 8,
-          topic: params.topic ?? null,
-          subtopic: params.subtopic ?? null,
-        },
-      },
-    );
-    if (error) {
-      if (import.meta.env.DEV) {
-        console.warn("[tutorMemory] semantic search error:", error.message);
-      }
-      return [];
-    }
+    const response = await callTutorV3({
+      text: params.question,
+      threshold: params.threshold,
+      matchCount: params.matchCount ?? 8,
+      topic: params.topic ?? null,
+      subtopic: params.subtopic ?? null,
+    }, {
+      functionName: "tutor-memory-search",
+      stream: false
+    });
+
+    const data = await response.json();
     const hits = (data?.hits ?? []) as SemanticHit[];
     return hits;
   } catch (err) {

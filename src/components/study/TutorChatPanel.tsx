@@ -18,6 +18,7 @@ import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
 import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/hooks/useTelemetry";
@@ -241,16 +242,15 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
       // Find the last assistant message to use as context if available
       const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
 
-      const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
-        body: {
-          topic: context.topic,
-          lessonType: 'aula_completa',
-          cmeEnabled: true,
-          customContent: lastAssistantMsg?.content
-        }
+      const response = await callTutorV3({
+        topic: context.topic,
+        lessonType: 'aula_completa',
+        cmeEnabled: true,
+        customContent: lastAssistantMsg?.content
+      }, { 
+        functionName: 'generate-tutor-lesson' 
       });
-
-      if (error) throw error;
+      const data = await response.json();
 
       toast.success("Aula gerada com sucesso!");
       setLessonStatus('ready');

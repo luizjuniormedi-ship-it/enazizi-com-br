@@ -17,7 +17,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { useToast } from "@/components/ui/use-toast";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,11 +40,10 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
     setActiveMode(mode);
     try {
       console.log("[GERAR_AULA] FUNCTION_START", { sessionId: session.id, mode });
-      const { data, error } = await supabase.functions.invoke("generate-tutor-v2-lesson", {
-        body: { sessionId: session.id, mode }
+      const response = await callTutorV3({ sessionId: session.id, mode }, { 
+        functionName: "generate-tutor-v2-lesson" 
       });
-
-      if (error) throw error;
+      const data = await response.json();
 
       const lesson = data?.lesson?.content || data?.lesson || data?.content || data;
       
@@ -153,10 +152,10 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
             }
             try {
               toast({ title: "Iniciando", description: "Gerando 10 flashcards baseados no seu estudo atual..." });
-              const { data, error } = await supabase.functions.invoke("generate-flashcards", {
-                body: { topic, quantity: 10 }
+              const response = await callTutorV3({ topic, quantity: 10 }, { 
+                functionName: "generate-flashcards" 
               });
-              if (error) throw error;
+              const data = await response.json();
               toast({ title: "Sucesso!", description: `${data.count} flashcards gerados e salvos no FSRS.` });
               window.open(`/dashboard/flashcards`, "_blank");
             } catch (err: any) {

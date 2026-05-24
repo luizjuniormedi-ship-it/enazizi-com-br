@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,15 +18,16 @@ export function TutorDiagnosticPanel() {
     setResults(null);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("mentor-chat", {
-        body: {
-          messages: [{ role: "user", content: "Responda apenas: API OK" }],
-          bypassRAG: true,
-          conversationId: "debug-test-" + Date.now()
-        }
+      const response = await callTutorV3({
+        messages: [{ role: "user", content: "Responda apenas: API OK" }],
+        bypassRAG: true,
+        conversationId: "debug-test-" + Date.now()
+      }, { 
+        functionName: "mentor-chat",
+        stream: false 
       });
 
-      if (error) throw error;
+      const data = await response.json();
       setResults({ type: 'bypassRAG', data });
       toast.success("Teste bypassRAG concluído");
     } catch (err: any) {
@@ -42,15 +44,16 @@ export function TutorDiagnosticPanel() {
     setResults(null);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("mentor-chat", {
-        body: {
-          messages: [{ role: "user", content: "O que é TEP?" }],
-          debugOnlyRAG: true,
-          conversationId: "debug-rag-" + Date.now()
-        }
+      const response = await callTutorV3({
+        messages: [{ role: "user", content: "O que é TEP?" }],
+        debugOnlyRAG: true,
+        conversationId: "debug-rag-" + Date.now()
+      }, { 
+        functionName: "mentor-chat",
+        stream: false 
       });
 
-      if (error) throw error;
+      const data = await response.json();
       setResults({ type: 'debugOnlyRAG', data });
       toast.success("Teste debugOnlyRAG concluído");
     } catch (err: any) {

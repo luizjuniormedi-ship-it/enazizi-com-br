@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
@@ -215,18 +216,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       if (!overridePrompt && messages.length <= 1) {
         console.log(`[TUTOR_V3_06_INVOKE_START] Healthcheck triggered for ${requestId}`);
         
-        // v13 HARDENING: Use standard fetch for healthcheck to match stream logic
-        const { data: { session } } = await supabase.auth.getSession();
-        fetch(CHAT_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'x-correlation-id': correlationId
-          },
-          body: JSON.stringify({ healthcheck: true })
-        })
+        callTutorV3({ healthcheck: true }, { functionName })
           .then(async (resp) => {
             const data = await resp.json().catch(() => ({}));
             if (!resp.ok) {

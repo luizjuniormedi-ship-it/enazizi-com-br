@@ -6,7 +6,7 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { 
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
@@ -93,23 +93,17 @@ const StudySessionContent = () => {
     setIsLoading(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mentor-chat`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          Authorization: `Bearer ${session?.access_token}` 
-        },
-        body: JSON.stringify({
-          messages: [...messages, { role: "user", content: userMsg }],
-          topic,
-          phase
-        })
+      const response = await callTutorV3({
+        messages: [...messages, { role: "user", content: userMsg }],
+        topic,
+        phase
+      }, { 
+        functionName: "mentor-chat",
+        stream: false 
       });
       
-      if (!resp.ok) throw new Error("Erro na resposta do mentor");
-      
-      const data = await resp.json();
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: "assistant", content: data.content || data.message || "" }]);
       setMessages(prev => [...prev, { role: "assistant", content: data.content || data.message || "" }]);
     } catch (err) {
       console.error(err);
