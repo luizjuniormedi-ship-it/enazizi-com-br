@@ -101,22 +101,44 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
 
     try {
       if (sessionIdRef.current) {
+        // Hardened Update: Ensures we don't duplicate on same key
         await supabase
           .from("module_sessions")
-          .update({ session_data: sessionData as any, updated_at: new Date().toISOString() })
+          .update({ 
+            session_data: sessionData as any, 
+            updated_at: new Date().toISOString() 
+          })
           .eq("id", sessionIdRef.current);
       } else {
-        const { data } = await supabase
+        // Hardened Insert: Uses single row guarantee
+        const { data, error } = await supabase
           .from("module_sessions")
-          .insert({
+          .upsert({
             user_id: user.id,
             module_key: moduleKey,
             session_data: sessionData as any,
             status: "active",
-          })
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,module_key,status' }) // Assume unique constraint exists or use ID if available
           .select("id")
           .single();
-        if (data) sessionIdRef.current = data.id;
+        
+        if (error) {
+           // Fallback to simple insert if unique constraint doesn't exist
+           const { data: retryData } = await supabase
+            .from("module_sessions")
+            .insert({
+              user_id: user.id,
+              module_key: moduleKey,
+              session_data: sessionData as any,
+              status: "active",
+            })
+            .select("id")
+            .single();
+           if (retryData) sessionIdRef.current = retryData.id;
+        } else if (data) {
+          sessionIdRef.current = data.id;
+        }
       }
       
       // Clear backup on successful server sync

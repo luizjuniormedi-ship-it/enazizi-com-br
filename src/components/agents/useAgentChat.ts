@@ -288,12 +288,19 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         requestId
       });
 
-      // Watchdog implementation (Reduced to 45s per requirement)
+      // Watchdog implementation (Hardened: Checks for partial content)
       const watchdogTimeout = setTimeout(() => {
         if (isLoading) {
-          console.error(`[TUTOR_TIMEOUT] id=${requestId} - Stage: ${loadingStage} - elapsed=${Date.now() - startTime}ms`);
-          finalizeLoading();
+          console.error(`[TUTOR_TIMEOUT] id=${requestId} - Stage: ${loadingStage} - ContentLen: ${assistantSoFar.length}`);
           
+          if (assistantSoFar.length > 50) {
+            // We have enough content, just finalize gracefully
+            console.warn(`[TUTOR_UI_RECOVERY] watchdog tripped but we have content. finalizing.`);
+            finalizeLoading();
+            return;
+          }
+
+          finalizeLoading();
           const fallbackMsg = "O Tutor está demorando mais que o esperado para processar esta complexidade médica. Por favor, tente uma pergunta mais específica ou tente novamente em alguns instantes.";
           
           setMessages(prev => {
@@ -314,6 +321,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           });
         }
       }, 45000); 
+
 
 
       const convId = await history.ensureConversation(text);
