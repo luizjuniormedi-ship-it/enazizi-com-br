@@ -10,6 +10,8 @@ import { createSafeWaitUntil, SafeWaitUntil } from "./safe-wait-until.ts";
 import { callAi, AiRequest } from "./ai-router.ts";
 import { validateAiQuality, QualityCheckResult } from "./ai-quality-lock.ts";
 import { corsHeaders } from "../cors.ts";
+export { corsHeaders };
+
 
 
 export interface EnterpriseContext {
