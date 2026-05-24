@@ -132,8 +132,14 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
             method: req.method,
             status_code: response.status,
             latency_ms: latency,
-            metadata: { url: req.url, pipeline_id: correlation.pipelineId }
+            user_id: correlation.userId,
+            metadata: { 
+              url: req.url, 
+              pipeline_id: correlation.pipelineId,
+              stage: "COMPLETED"
+            }
           });
+          logger.info("FINISH", `Request completed in ${latency}ms`, { status: response.status });
         } catch (telemetryErr) {
           console.error("[enterprise-edge] Global telemetry failed:", telemetryErr);
         }
