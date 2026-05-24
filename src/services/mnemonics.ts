@@ -172,9 +172,8 @@ export async function generateMnemonic(input: MnemonicRequest & { onStatus?: (st
   try {
     console.log("[MNEMONIC_03_INVOKE_START]", { tema: input.tema, termsCount: input.termos?.length });
     
-    const response = await aiGateway.invoke("generate-mnemonic", input, {
+    const response = await aiRouter.execute("generate-mnemonic", input, {
       tier: 'REASONING',
-      ttlDays: 30,
       onStatus: input.onStatus
     });
 
