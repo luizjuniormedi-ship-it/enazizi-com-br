@@ -84,7 +84,9 @@ REGRAS:
 
       logger.info("AI_RESPONSE_PARSED", `Received ${questions.length} questions from AI`);
 
+      let savedCount = 0;
       const profile = resolveBanca("ENARE").profile;
+
       for (const q of questions) {
         try {
           const forensic = await analyzeQuestionForensic(q, profile, supabaseAdmin);
