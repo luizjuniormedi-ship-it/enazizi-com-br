@@ -26957,6 +26957,13 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      check_duplicate_tutor_sessions: {
+        Args: never
+        Returns: {
+          cluster_count: number
+          conversation_id: string
+        }[]
+      }
       check_feature_access: {
         Args: { f_name: string; u_id: string }
         Returns: boolean
@@ -27025,6 +27032,7 @@ export type Database = {
           weight: number
         }[]
       }
+      get_avg_tutor_latency: { Args: { hours: number }; Returns: number }
       get_banca_coverage_report: {
         Args: never
         Returns: {
