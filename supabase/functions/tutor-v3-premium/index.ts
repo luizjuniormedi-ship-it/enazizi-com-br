@@ -242,10 +242,14 @@ REGRAS CRÍTICAS:
     })());
 
     return corsResponse({
-      success: false,
-      error: "O sistema Tutor está instável. Recalibrando...",
+      success: true, // v12: Always true for recovery UX
+      content: "Tutor V3 em modo seguro. Vamos começar pelo essencial do tema.",
+      currentBlock: "BLOCO_1_MISSAO_CLINICA",
+      shouldWaitForStudent: true,
+      debug_stage: "safe_fallback",
+      error: err.message,
       recovery_available: true,
       request_id: requestId
-    }, 500);
+    }, 200); // v12: Return 200 to prevent frontend toast "Failed to send"
   }
 }));
