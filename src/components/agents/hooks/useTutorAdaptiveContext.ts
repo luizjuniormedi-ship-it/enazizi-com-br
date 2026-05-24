@@ -10,7 +10,7 @@
 //  - Telemetria local apenas via console (sem writeback em banco nesta sprint).
 
 import { useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 export interface AdaptiveContext {
