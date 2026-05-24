@@ -59,18 +59,24 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
 
           // Quality Lock
           if (!options.skipQualityLock) {
-            const content = response.choices?.[0]?.message?.content || "";
+            // Flexible content extraction for quality check
+            const content = response.choices?.[0]?.message?.content || 
+                          response.content || 
+                          response.message || 
+                          "";
+            
             const quality = validateAiQuality(content, { taskType: request.taskType || "reasoning" }, logger);
             
             // Log quality results
             waitUntil((async () => {
+              const requestId = response.id || correlation.requestId;
               await supabaseAdmin.from("ai_governance_logs")
-                .update({ 
+                .upsert({ 
+                  metadata: { request_id: requestId },
                   hallucination_score: quality.hallucination_detected ? 0 : 100,
                   medical_consistency_score: quality.medical_consistency_score,
                   quality_lock_status: quality.passed ? "passed" : "failed"
-                })
-                .match({ metadata: { request_id: response.id } });
+                }, { onConflict: 'metadata' });
             })());
 
             if (!quality.passed) {
