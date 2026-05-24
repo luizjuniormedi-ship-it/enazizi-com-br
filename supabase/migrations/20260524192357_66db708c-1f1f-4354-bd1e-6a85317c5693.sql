@@ -1,0 +1,1 @@
+ALTER TABLE public.golden_exam_dataset ADD COLUMN IF NOT EXISTS topic TEXT;

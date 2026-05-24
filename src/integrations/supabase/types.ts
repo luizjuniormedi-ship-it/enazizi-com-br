@@ -12366,6 +12366,7 @@ export type Database = {
           statement: string
           stmt_length: number | null
           tech_density_score: number | null
+          topic: string | null
           updated_at: string | null
           year: number | null
         }
@@ -12387,6 +12388,7 @@ export type Database = {
           statement: string
           stmt_length?: number | null
           tech_density_score?: number | null
+          topic?: string | null
           updated_at?: string | null
           year?: number | null
         }
@@ -12408,6 +12410,7 @@ export type Database = {
           statement?: string
           stmt_length?: number | null
           tech_density_score?: number | null
+          topic?: string | null
           updated_at?: string | null
           year?: number | null
         }
