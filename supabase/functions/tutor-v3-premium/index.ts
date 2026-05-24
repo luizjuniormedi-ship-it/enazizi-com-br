@@ -10,18 +10,21 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   const { requestId, correlationId, userId } = correlation;
 
   try {
+    // 0. HEALTHCHECK PRE-FLIGHT
+    const body = await req.json().catch(() => ({}));
+    if (body.healthcheck) {
+      logger.info("HEALTHCHECK", "Pre-flight check passed", { requestId });
+      return corsResponse({ 
+        success: true, 
+        ok: true, 
+        message: "Tutor V3 Premium is operational.",
+        requestId 
+      }, 200);
+    }
+
     if (!userId) throw new Error("UNAUTHORIZED: Session required");
 
-    const body = await req.json().catch(() => ({}));
-    const { 
-      message, 
-      sessionId, 
-      currentBlock: bodyBlock, 
-      newTopic, 
-      pedagogicalContext, 
-      stream = true,
-      history = []
-    } = body;
+    const { message, sessionId, currentBlock: bodyBlock, newTopic, pedagogicalContext, stream = true, history = [] } = body;
 
     // ── 1. SESSION RECOVERY & HYDRATION ──────────────────────────────────────────
     let session = null;
