@@ -19,10 +19,23 @@ Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, supabaseAd
       throw new Error("BAD_REQUEST: Messages array expected");
     }
 
-    // ── 1. PEDAGOGICAL INJECTION ──────────────────────────────────────────
+    // ── 1. PEDAGOGICAL INJECTION (Unified Enterprise logic) ──────────────────
     let enhancedSystemPrompt = PROMPT_COMPLETO;
+    
     if (topic) {
-      enhancedSystemPrompt += `\n\nTEMA EM FOCO: ${topic}\nBLOCO ATUAL: ${currentBlock || 1}`;
+      enhancedSystemPrompt += `
+      
+==================================================
+🚨 REGRA ABSOLUTA: GERAÇÃO DE BLOCO ÚNICO
+==================================================
+Você está no MODO DE PRECEPTORIA ITERATIVA. 
+Sua missão é gerar APENAS UM BLOCO por vez (BLOCO ATUAL: ${currentBlock || 1}). 
+É PROIBIDO gerar roadmap completo ou outros blocos.
+TEMA: ${topic}
+
+Ao concluir o bloco, encerre com a pergunta obrigatória: 
+"Antes de avançar, escolha uma opção: A) Entendi, avançar B) Aprofundar C) Simplificar D) Explicar por analogia E) Ver exemplo clínico"
+==================================================`;
     }
 
     // ── 2. AI EXECUTION (Prioritize stability) ──────────────────────────────
