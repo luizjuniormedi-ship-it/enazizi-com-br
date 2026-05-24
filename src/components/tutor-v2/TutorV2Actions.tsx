@@ -40,8 +40,9 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
     setActiveMode(mode);
     try {
       console.log("[GERAR_AULA] FUNCTION_START", { sessionId: session.id, mode });
-      const response = await callTutorV3({ sessionId: session.id, mode }, { 
-        functionName: "generate-tutor-v2-lesson" 
+      const response = await callTutorV3({ sessionId: session.id, mode: "generate_lesson", study_mode: mode }, { 
+        functionName: "tutor-v3-premium",
+        stream: false 
       });
       const data = await response.json();
 
