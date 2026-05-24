@@ -3,88 +3,92 @@ import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 
 /**
- * MENTOR CHAT — ENTERPRISE HARDENING
- * Standard Chat Engine with Pedagogical Context Support
+ * MENTOR CHAT — ENTERPRISE HARDENING v2
+ * High-resilience chat orchestrator.
  */
 Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
   const { requestId, correlationId, userId } = correlation;
 
   try {
-    if (!userId) throw new Error("UNAUTHORIZED: Authentication required");
+    if (!userId) throw new Error("UNAUTHORIZED: Session required");
 
     const body = await req.json().catch(() => ({}));
-    const { messages, conversationId, pedagogicalContext } = body;
+    const { messages, conversationId, topic, currentBlock } = body;
 
     if (!messages || !Array.isArray(messages)) {
-      throw new Error("INVALID_REQUEST: Messages array is required");
+      throw new Error("BAD_REQUEST: Messages array expected");
     }
 
-    // 1. CONTEXT HYDRATION
-    let systemPrompt = PROMPT_COMPLETO;
-    if (pedagogicalContext) {
-      systemPrompt += `
-      
-[MODO PEDAGÓGICO ATIVO]
-- Tema: ${pedagogicalContext.topic || "Geral"}
-- Bloco Atual: ${pedagogicalContext.currentBlock || 1}
-- Nível: ${pedagogicalContext.cognitiveState || "Iniciante"}
-`;
+    // ── 1. PEDAGOGICAL INJECTION ──────────────────────────────────────────
+    let enhancedSystemPrompt = PROMPT_COMPLETO;
+    if (topic) {
+      enhancedSystemPrompt += `\n\nTEMA EM FOCO: ${topic}\nBLOCO ATUAL: ${currentBlock || 1}`;
     }
 
-    // 2. AI CALL (Standard Generation)
+    // ── 2. AI EXECUTION (Prioritize stability) ──────────────────────────────
     const response = await ai({
       taskType: "generation",
       complexity: "média",
       userId,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: enhancedSystemPrompt },
         ...messages
-      ],
-      stream: false // Mentor chat usually handled with discrete messages for better persistence
-    });
+      ]
+    }, { retries: 2 });
 
     const content = response.choices?.[0]?.message?.content || "";
 
-    // 3. IDEMPOTENT PERSISTENCE
+    // ── 3. RESILIENT PERSISTENCE ───────────────────────────────────────────
     if (conversationId) {
-      // Save Message
-      await supabaseAdmin.from("chat_messages").insert({
+      // Async message saving
+      supabaseAdmin.from("chat_messages").insert({
         conversation_id: conversationId,
         user_id: userId,
         role: "assistant",
         content,
-        metadata: { correlation_id: correlationId, request_id: requestId }
+        metadata: { request_id: requestId, correlation_id: correlationId }
+      }).then(({ error }) => {
+        if (error) logger.error("CHAT_SAVE_FAIL", error.message);
       });
 
-      // Update Session/Conversation State (Upsert-like via update)
-      if (pedagogicalContext?.topic) {
-        const { error: sessionError } = await supabaseAdmin
-          .from("tutor_sessions")
-          .upsert({
-            conversation_id: conversationId,
-            user_id: userId,
-            topic: pedagogicalContext.topic,
-            current_block: String(pedagogicalContext.currentBlock || 1),
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'conversation_id' });
-        
-        if (sessionError) logger.error("SESSION_UPSERT_ERROR", sessionError.message);
+      // Session Upsert (Prevent duplicates)
+      if (topic) {
+        supabaseAdmin.from("tutor_sessions").upsert({
+          conversation_id: conversationId,
+          user_id: userId,
+          topic: topic,
+          current_block: String(currentBlock || 1),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'conversation_id' }).then(({ error }) => {
+          if (error) logger.error("SESSION_UPSERT_FAIL", error.message);
+        });
       }
     }
 
     return corsResponse({
       success: true,
       content,
-      correlation_id: correlationId,
-      request_id: requestId
+      request_id: requestId,
+      correlation_id: correlationId
     }, 200);
 
-  } catch (error) {
-    logger.error("MENTOR_CHAT_ERROR", error.message);
+  } catch (err) {
+    logger.error("MENTOR_CHAT_RUNTIME_ERROR", err.message);
+    
+    // Telemetry incident
+    supabaseAdmin.from("runtime_incidents").insert({
+      function_name: "mentor-chat",
+      incident_type: "chat_failure",
+      severity: "warning",
+      message: err.message,
+      correlation_id: correlationId,
+      user_id: userId
+    }).then();
+
     return corsResponse({
       success: false,
-      error: "Mentor ENAZIZI em manutenção. Tente novamente em breve.",
-      debug_id: requestId
+      error: "Tivemos um problema ao processar sua dúvida médica.",
+      request_id: requestId
     }, 500);
   }
 }));
