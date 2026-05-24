@@ -662,14 +662,11 @@ E) Ver exemplo clínico"
 
   } catch (error) {
     console.error("[TUTOR-V2-CHAT] Error:", error instanceof Error ? { message: error.message, stack: error.stack, requestId } : { error: String(error), requestId });
-    return new Response(JSON.stringify({
+    return corsResponse({
       ok: false,
       error: "TUTOR_V2_INTERNAL_ERROR",
       message: "O Tutor encontrou uma falha interna controlada. Sua sessão foi preservada. Tente novamente.",
       requestId,
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    }, 500);
   }
 });
