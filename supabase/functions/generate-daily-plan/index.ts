@@ -291,27 +291,22 @@ SAÍDA ESPERADA (JSON):
     }
 
     // 7. Success Response
-    return new Response(JSON.stringify({ 
+    return corsResponse({ 
       success: true, 
       planId: finalPlan.id, 
       tasks,
       coachTip: planJson.ai_coach_tip 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    }, 200);
 
   } catch (err) {
     logger.critical("UNHANDLED_COORDINATOR_ERROR", err.message, { stack: err.stack });
     
     // Fallback JSON Response to avoid White Screen
-    return new Response(JSON.stringify({
+    return corsResponse({
       success: false,
       error: "O Coordenador Adaptativo encontrou um problema temporário.",
       details: err.message,
       type: "ADAPTIVE_ERROR"
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    }, 500);
   }
 }));
