@@ -72,6 +72,8 @@ const AIPipelineHardening = lazyWithRetry(() => import("./pages/admin/AIPipeline
 const CognitiveObservatory = lazyWithRetry(() => import("./pages/admin/CognitiveObservatory"), "CognitiveObservatory");
 const ExecutiveIntelligence = lazyWithRetry(() => import("./pages/admin/ExecutiveIntelligence"), "ExecutiveIntelligence");
 const MedicalKnowledgeGraphPage = lazyWithRetry(() => import("./pages/admin/MedicalKnowledgeGraph"), "MedicalKnowledgeGraph");
+const QuestionQuality = lazyWithRetry(() => import("./pages/admin/QuestionQuality"), "QuestionQuality");
+
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
