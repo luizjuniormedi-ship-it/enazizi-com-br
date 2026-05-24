@@ -20,6 +20,17 @@ export async function requireAuth(req: Request): Promise<AuthResult> {
   if (!authHeader) throw new Error("UNAUTHORIZED: Missing authorization header");
 
   const token = authHeader.replace("Bearer ", "");
+  
+  // 1. Allow Service Role Key (for internal system calls)
+  if (token === SUPABASE_SERVICE_ROLE_KEY) {
+    return {
+      user: { id: "00000000-0000-0000-0000-000000000000", email: "system@enazizi.com.br" } as User,
+      isAdmin: true,
+      supabaseAdmin,
+    };
+  }
+
+  // 2. Validate User Token
   const { data, error } = await supabaseAdmin.auth.getUser(token);
   const user = data?.user;
 
