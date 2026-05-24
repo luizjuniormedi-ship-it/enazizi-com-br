@@ -12,6 +12,8 @@ import { MascotAvatar } from "../mascot/MascotAvatar";
 import { MascotBubble } from "../mascot/MascotBubble";
 import { useMascotState } from "../mascot/useMascotState";
 import { motion } from "framer-motion";
+import { BLOCK_SEQUENCE as BLOCK_SEQUENCE_FRONTEND } from "@/lib/tutor/pedagogicalSequence";
+
 
 
 
@@ -100,7 +102,14 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
               tutor_session_id: session.id,
               user_id: user.id,
               created_at: new Date().toISOString(),
-              metadata: { fallback_used: !!response.fallback, provider: response.provider },
+              metadata: { 
+                fallback_used: !!response.fallback, 
+                provider: response.provider,
+                blockTitle: response.blockTitle,
+                socraticQuestion: response.socraticQuestion,
+                actionsContext: response.actionsContext
+              },
+
             },
           ];
         });
@@ -182,16 +191,16 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-0.5">
               <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
-                Estágio Cognitivo: <span className="text-white">{session.current_stage || 'Exploração'}</span>
+                Estágio Cognitivo: <span className="text-white">{session.current_block || session.current_stage || 'Missão Clínica'}</span>
               </span>
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                {session.cognitive_progress || 0}% Concluído
+                {session.cognitive_progress || (session.current_block ? Math.round((BLOCK_SEQUENCE_FRONTEND.indexOf(session.current_block) + 1) / 9 * 100) : 0)}% Concluído
               </span>
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
-                animate={{ width: `${session.cognitive_progress || 0}%` }}
+                animate={{ width: `${session.cognitive_progress || (session.current_block ? Math.round((BLOCK_SEQUENCE_FRONTEND.indexOf(session.current_block) + 1) / 9 * 100) : 0)}%` }}
                 className="h-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-400"
               />
             </div>

@@ -1,6 +1,8 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
+import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockId } from "../_shared/tutor/pedagogical-logic.ts";
+
 
 console.log("[TUTOR_V3_BOOT] Function module loaded");
 
@@ -76,44 +78,70 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }
     }
 
-    // ── 3. AI PRECEPTORSHIP ─────────────────────────────────
-    const currentStage = session?.current_block || bodyBlock || "BLOCO_1_MISSAO_CLINICA";
+    // ── 3. PEDAGOGICAL ORCHESTRATION (DETERMINISTIC) ──────────────────────
+    const prevBlock = (session?.current_block as TutorBlockId) || (bodyBlock as TutorBlockId) || "BLOCO_1_MISSAO_CLINICA";
+    const studentIntent = newTopic ? "new_topic" : classifyStudentIntent(message || "");
+    const { nextBlock, stayInBlock } = decideTutorStep(prevBlock, studentIntent);
     
+    const currentBlockConfig = PEDAGOGICAL_BLOCKS[nextBlock];
+    const blockObjective = currentBlockConfig.objective;
+
+    console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
+
     const aiConfig: any = {
       taskType: "tutor_deep",
       complexity: "alta",
       userId,
-      stream,
+      stream: false, // Force JSON for structured orchestration
+      response_format: { type: "json_object" },
       messages: [
         { 
           role: "system", 
-          content: `${PROMPT_COMPLETO}\n\nTEMA: ${topic}\nESTÁGIO: ${currentStage}\nDOMÍNIO: ${masteryLevel}\n${memoryContext}`
+          content: `${PROMPT_COMPLETO}
+          
+          # OBJETIVO OBRIGATÓRIO DO MOMENTO:
+          Você está no ${nextBlock}: ${currentBlockConfig.title}.
+          Sua missão única agora: ${blockObjective}
+
+          # REGRAS DE SAÍDA JSON:
+          Você DEVE retornar um JSON com:
+          {
+            "content": "Sua explicação em Markdown",
+            "socraticQuestion": "Uma pergunta para o aluno",
+            "teachingPhase": "ENSINAR",
+            "shouldWaitForStudent": true,
+            "actionsContext": {
+              "topic": "${topic}",
+              "block": "${nextBlock}"
+            }
+          }
+          
+          TEMA ATUAL: ${topic}
+          CONTESTO DE MEMÓRIA: ${memoryContext}`
         },
         ...history,
         { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula") }
       ]
     };
 
-    if (body.force_json || !stream) {
-      aiConfig.stream = false;
-      aiConfig.response_format = { type: "json_object" };
-    }
 
-    const startTime = Date.now();
     const aiResponse = await ai(aiConfig, { retries: 2 });
 
-    if (stream && !aiConfig.stream === false) {
-      return aiResponse;
-    }
-
-    // ── 4. STABILITY LAYER ───────────────────────────────
+    // ── 4. STABILITY & PARSING ───────────────────────────────
     const rawAi = aiResponse.choices?.[0]?.message?.content || "{}";
     let parsed: any = {};
     try {
       parsed = JSON.parse(rawAi);
     } catch (e) {
-      parsed = { content: rawAi, socraticQuestion: "Ficou clara essa explicação?" };
+      console.error("[TUTOR_JSON_PARSE_ERROR]", e, rawAi);
+      parsed = { 
+        content: rawAi, 
+        socraticQuestion: "Ficou clara essa explicação?",
+        teachingPhase: "ENSINAR",
+        shouldWaitForStudent: true
+      };
     }
+
 
     // ── 5. IDEMPOTENT PERSISTENCE ──────────────────────────
     waitUntil((async () => {
@@ -121,30 +149,56 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         await supabaseAdmin.from("tutor_learning_memory").upsert({
           user_id: userId,
           topic: topic,
-          block_title: currentStage,
+          block_title: nextBlock,
           mastery_level: parsed.mastery_level || masteryLevel,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id,topic' });
+
+        if (sessionId) {
+          await supabaseAdmin.from("tutor_sessions").update({
+            current_block: nextBlock,
+            updated_at: new Date().toISOString()
+          }).eq("id", sessionId);
+        }
         
         await supabaseAdmin.from("tutor_messages").insert({
           tutor_session_id: sessionId,
           user_id: userId,
           role: "assistant",
           content: parsed.content || "Resposta processada.",
-          metadata: { request_id: requestId, correlation_id: correlationId }
+          metadata: { 
+            request_id: requestId, 
+            correlation_id: correlationId,
+            block: nextBlock,
+            blockTitle: currentBlockConfig.title,
+            intent: studentIntent,
+            socraticQuestion: parsed.socraticQuestion,
+            actionsContext: parsed.actionsContext
+          }
+
         });
+
       }
     })());
 
     return corsResponse({
       success: true,
       ok: true,
-      content: parsed.content || "Tutor V3 respondeu em modo JSON simples.",
-      currentBlock: currentStage,
+      content: parsed.content || "Tutor V3 respondeu.",
+      currentBlock: nextBlock,
+      blockTitle: currentBlockConfig.title,
+      teachingPhase: parsed.teachingPhase || "ENSINAR",
+      shouldWaitForStudent: parsed.shouldWaitForStudent ?? true,
+      socraticQuestion: parsed.socraticQuestion || "",
+      actionsContext: parsed.actionsContext || { topic, block: nextBlock },
       topic,
-      shouldWaitForStudent: true,
-      correlation_id: correlationId
+      correlation_id: correlationId,
+      debug: {
+        studentIntent,
+        nextBlock
+      }
     }, 200);
+
 
   } catch (err) {
     logger.critical("HARDENED_RUNTIME_CRASH", err.message);
