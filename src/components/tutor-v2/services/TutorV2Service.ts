@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { callTutorV3 } from "@/lib/tutor/tutorClient";
 
 const FRIENDLY_PROVIDER_ERROR = "O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.";
 
