@@ -127,7 +127,7 @@ export async function callAi(
               "Content-Type": "application/json",
               "X-Correlation-Id": logger.correlationId
             },
-            body: JSON.stringify({ ...payload, model: modelString }),
+            body: JSON.stringify({ ...standardPayload, model: modelString }),
             signal: controller.signal
           });
         }
