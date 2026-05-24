@@ -94,13 +94,26 @@ REGRAS CRÍTICAS:
     }, { retries: 2 });
 
     // ── 4. STABILITY LAYER (Output Normalization) ───────────────────────────────
-    const rawAi = aiResponse.choices?.[0]?.message?.content || "{}";
     let parsed: any = {};
-    try {
-      parsed = JSON.parse(rawAi);
-    } catch (e) {
-      logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed", { rawAi });
-      parsed = { content: rawAi, socraticQuestion: "Ficou clara essa explicação?" };
+    const rawAi = aiResponse.choices?.[0]?.message?.content;
+    
+    if (rawAi) {
+      try {
+        parsed = JSON.parse(rawAi);
+      } catch (e) {
+        logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed", { rawAi });
+        parsed = { content: rawAi, socraticQuestion: "Ficou clara essa explicação?" };
+      }
+    } else if (aiResponse.content || aiResponse.message || aiResponse.frase_mnemonica) {
+      // Handle normalized or fallback responses directly
+      parsed = {
+        content: aiResponse.content || aiResponse.message || aiResponse.explicacao_didatica || aiResponse.frase_mnemonica || "Resposta recuperada do sistema de segurança.",
+        socraticQuestion: aiResponse.socraticQuestion || "Ficou clara essa explicação?",
+        mastery_level: aiResponse.mastery_level || masteryLevel
+      };
+    } else {
+      logger.error("INVALID_AI_RESPONSE_STRUCTURE", "No content found in AI response", { aiResponse });
+      parsed = { content: "O sistema Tutor está operando em modo de segurança. Como posso ajudar?", socraticQuestion: "Podemos continuar?" };
     }
 
     // ── 5. IDEMPOTENT PERSISTENCE (The Hardening Core) ──────────────────────────
