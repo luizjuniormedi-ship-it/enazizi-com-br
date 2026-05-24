@@ -41,13 +41,11 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
       
       if (existingPlan) {
         logger.info("DAILY_PLAN_EXISTS", "Returning existing plan", { planId: existingPlan.id });
-        return new Response(JSON.stringify({ 
+        return corsResponse({ 
           success: true, 
           planId: existingPlan.id,
           message: "Plano já existente carregado."
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        }, 200);
       }
     }
 
