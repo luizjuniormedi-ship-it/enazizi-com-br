@@ -231,9 +231,7 @@ serve(async (req) => {
         { tutor_session_id: sessionId, user_id: userId, role: "user", content: message, metadata: { off_topic: true } },
         { tutor_session_id: sessionId, user_id: userId, role: "assistant", content: OFF_TOPIC_RESPONSE, metadata: { off_topic_redirect: true } },
       ]);
-      return new Response(JSON.stringify({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true, requestId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true, requestId }, 200);
     }
     // ── END INJECTION GUARD ──────────────────────────────────────────
 
