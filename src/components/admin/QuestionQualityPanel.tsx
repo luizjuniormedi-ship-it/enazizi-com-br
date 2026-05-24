@@ -32,7 +32,7 @@ export const QuestionQualityPanel = () => {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return data as ForensicLog[];
+      return data as unknown as ForensicLog[];
     }
   });
 
