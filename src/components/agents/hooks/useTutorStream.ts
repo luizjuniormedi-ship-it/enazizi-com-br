@@ -164,10 +164,9 @@ export function useTutorStream() {
       // transparently refresh + retry on 401 (post-Sprint-1 hardening).
       const doFetch = async (token: string) => {
         const correlationId = (body.correlation_id as string) || (body.requestId as string) || crypto.randomUUID();
-        // [TUTOR_05_INVOKE_START]
-        console.log(`[TUTOR_05_INVOKE_START] correlationId=${correlationId}`);
-        // [TUTOR_06_FUNCTION_NAME]
-        console.log(`[TUTOR_06_FUNCTION_NAME] function=${url}`);
+        
+        // [TUTOR_V3_02_FUNCTION_NAME]
+        console.log(`[TUTOR_V3_02_FUNCTION_NAME] function=${url}`);
 
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -175,10 +174,13 @@ export function useTutorStream() {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           "x-correlation-id": correlationId,
         };
-        console.log(`[useTutorStream] Requesting ${url}`, { correlationId: headers["x-correlation-id"], method: "POST" });
+        
+        // [TUTOR_V3_03_SUPABASE_URL]
+        console.log(`[TUTOR_V3_03_SUPABASE_URL] Requesting ${url}`, { correlationId, method: "POST" });
         
         try {
-          return await fetch(url, {
+          // v13 HARDENING: Using standard fetch for streaming resilience
+          const fetchResponse = await fetch(url, {
             method: "POST",
             headers,
             body: JSON.stringify(body),
@@ -186,8 +188,11 @@ export function useTutorStream() {
             mode: 'cors',
             credentials: 'omit'
           });
+          
+          console.log(`[TUTOR_V3_07_INVOKE_DATA] Response status: ${fetchResponse.status}`);
+          return fetchResponse;
         } catch (fetchErr: any) {
-          console.error("[useTutorStream] Fetch failed immediately:", fetchErr);
+          console.error(`[TUTOR_V3_08_INVOKE_ERROR] Fetch failed immediately:`, fetchErr);
           throw fetchErr;
         }
       };
