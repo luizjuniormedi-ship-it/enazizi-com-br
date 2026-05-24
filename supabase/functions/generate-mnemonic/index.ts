@@ -14,7 +14,7 @@ const corsHeaders = {
 
 // ═══ CONFIG ═══
 const AI_MODEL = ALLOWED_MODELS.generation;
-const IMAGE_MODEL = "google/gemini-2.5-flash-image";
+const IMAGE_MODEL = "openai/gpt-4o-mini"; // Stabilized for image generation via multimodal prompt
 const GLOBAL_TIMEOUT_MS = 110_000;
 const GEMINI_TIMEOUT_MS = 25_000;
 const OPENAI_TIMEOUT_MS = 30_000;
@@ -241,14 +241,17 @@ async function generateImage(prompt: string): Promise<{ url: string | null; fail
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) return { url: null, failed: true, error: "LOVABLE_API_KEY missing" };
   try {
+    const isOpenAI = IMAGE_MODEL.includes("openai");
+    const payload = {
+      model: isOpenAI ? IMAGE_MODEL.replace("openai/", "") : IMAGE_MODEL,
+      messages: [{ role: "user", content: `Generate this image: ${prompt}. IMPORTANT: NO text, labels, letters, or words anywhere in the image.` }],
+      max_tokens: 4000,
+    };
+
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: IMAGE_MODEL,
-        messages: [{ role: "user", content: `Generate this image: ${prompt}. IMPORTANT: NO text, labels, letters, or words anywhere in the image.` }],
-        modalities: ["image", "text"],
-      }),
+      body: JSON.stringify(payload),
     });
     if (!r.ok) return { url: null, failed: true, error: `HTTP ${r.status}` };
     const j = await r.json();

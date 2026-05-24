@@ -99,6 +99,7 @@ export type TelemetryEventName =
   | 'hydration_mismatch'
   | 'memory_pressure'
   | 'cognitive_decision_created'
+  | 'mnemonic_auto_trigger_started'
   | 'mnemonic_generated'
   | 'mnemonic_saved'
   | 'mnemonic_rejected'

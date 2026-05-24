@@ -11,6 +11,7 @@ import ImageQuestionViewer from "./ImageQuestion";
 import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
 
 export interface SimQuestion {
+  id?: string;
   statement: string;
   options: string[];
   correct: number;

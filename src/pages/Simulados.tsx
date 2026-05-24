@@ -36,7 +36,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import SimuladoSetup from "@/components/simulados/SimuladoSetup";
 import type { SimuladoMode } from "@/components/simulados/SimuladoSetup";
-import SimuladoExam, { type SimQuestion } from "@/components/simulados/SimuladoExam";
+import SimuladoExam from "@/components/simulados/SimuladoExam";
+import type { SimQuestion } from "@/components/simulados/SimuladoExam";
 import SimuladoResult from "@/components/simulados/SimuladoResult";
 import TRIResult from "@/components/simulados/TRIResult";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";

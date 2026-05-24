@@ -285,7 +285,7 @@ export default function MnemonicGeneratorPage() {
 
     autoTriggeredRef.current = true;
     setGeneratingStatus("🧠 Iniciando geração automática do mnemônico...");
-    telemetry.track('mnemonic_auto_trigger_started', { tema: topic, origin: searchParams.get("origin") || null });
+    telemetry.track('mnemonic_auto_trigger_started' as any, { tema: topic, origin: searchParams.get("origin") || null });
     console.info("[MnemonicStudio] auto-trigger started", { tema: topic, search: location.search });
     const t = setTimeout(() => { handleGenerate(); }, 500);
     return () => clearTimeout(t);
