@@ -76,37 +76,25 @@ export function useTutorAdaptiveContext() {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), ADAPTIVE_TIMEOUT_MS);
 
-        const invokePromise = supabase.functions.invoke("tutor-context-builder", {
-          body: {
-            message: args.message,
-            topic: args.topic ?? null,
-            subtopic: args.subtopic ?? null,
-            conversation_id: args.conversationId ?? null,
-          },
+        const response = await callTutorV3({
+          message: args.message,
+          topic: args.topic ?? null,
+          subtopic: args.subtopic ?? null,
+          conversation_id: args.conversationId ?? null,
+        }, {
+          functionName: "tutor-context-builder",
+          stream: false,
+          signal: controller.signal
         });
 
-        // supabase-js não aceita signal; usamos race manual.
-        const raceResult = await Promise.race([
-          invokePromise,
-          new Promise<{ data: null; error: Error }>((resolve) =>
-            setTimeout(
-              () =>
-                resolve({
-                  data: null,
-                  error: new Error("adaptive_context_timeout"),
-                }),
-              ADAPTIVE_TIMEOUT_MS
-            )
-          ),
-        ]);
+        const data = await response.json();
         clearTimeout(timer);
 
-        const { data, error } = raceResult;
         const latency = Math.round(performance.now() - started);
 
-        if (error || !data) {
+        if (!data) {
           lastStatusRef.current = "failed";
-          console.warn("[TutorAdaptive] failed:", error?.message ?? "no data", `${latency}ms`);
+          console.warn("[TutorAdaptive] failed: no data", `${latency}ms`);
           return { context: null, status: "failed", latency_ms: latency };
         }
 
