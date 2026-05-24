@@ -44,15 +44,16 @@ export function TutorDiagnosticPanel() {
     setResults(null);
     setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("mentor-chat", {
-        body: {
-          messages: [{ role: "user", content: "O que é TEP?" }],
-          debugOnlyRAG: true,
-          conversationId: "debug-rag-" + Date.now()
-        }
+      const response = await callTutorV3({
+        messages: [{ role: "user", content: "O que é TEP?" }],
+        debugOnlyRAG: true,
+        conversationId: "debug-rag-" + Date.now()
+      }, { 
+        functionName: "mentor-chat",
+        stream: false 
       });
 
-      if (error) throw error;
+      const data = await response.json();
       setResults({ type: 'debugOnlyRAG', data });
       toast.success("Teste debugOnlyRAG concluído");
     } catch (err: any) {
