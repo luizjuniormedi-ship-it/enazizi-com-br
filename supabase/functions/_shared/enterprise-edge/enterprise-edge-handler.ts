@@ -9,12 +9,8 @@ import { StructuredLogger } from "./structured-logger.ts";
 import { createSafeWaitUntil, SafeWaitUntil } from "./safe-wait-until.ts";
 import { callAi, AiRequest } from "./ai-router.ts";
 import { validateAiQuality, QualityCheckResult } from "./ai-quality-lock.ts";
+import { corsHeaders } from "../cors.ts";
 
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-correlation-id, x-pipeline-id, x-regression-test",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
 
 export interface EnterpriseContext {
   req: Request;
