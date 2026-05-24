@@ -221,9 +221,7 @@ serve(async (req) => {
         userId, sessionId, topic: null, eventType: "injection_blocked", outcome: "blocked",
         payload: { message_preview: message.slice(0, 100), request_id: requestId },
       });
-      return new Response(JSON.stringify({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true, requestId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true, requestId }, 200);
     }
 
     if (isOffTopic(message)) {
