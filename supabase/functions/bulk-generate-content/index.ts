@@ -121,6 +121,9 @@ REGRAS:
             source: "bulk-ai-generator",
             review_status: "approved",
             board: "ENARE",
+            board_similarity_score: forensic.fidelity_score,
+            quality_tier: forensic.fidelity_score >= 90 ? 'GOLD' : 'SILVER',
+
             year: 2025,
             user_id: user.id
           });
