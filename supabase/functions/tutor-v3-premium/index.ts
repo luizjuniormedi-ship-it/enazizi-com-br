@@ -131,18 +131,20 @@ REGRAS CRÍTICAS:
 
     // Handle Streaming response
     if (stream) {
-      // In streaming mode, we don't block for persistence, we use waitUntil
       waitUntil((async () => {
-        // Record telemetry for streaming start
-        await supabaseAdmin.from("tutor_ia_telemetry").insert({
-          user_id: userId,
-          session_id: sessionId || correlationId,
-          event_type: "streaming_start",
-          topic: topic,
-          model_used: "gpt-4o", // Default in reasoning chain
-          duration_ms: Date.now() - startTime,
-          metadata: { requestId, correlationId }
-        });
+        try {
+          await supabaseAdmin.from("tutor_ia_telemetry").insert({
+            user_id: userId,
+            session_id: sessionId || correlationId,
+            event_type: "streaming_start",
+            topic: topic,
+            model_used: "gpt-4o",
+            duration_ms: Date.now() - startTime,
+            metadata: { requestId, correlationId }
+          });
+        } catch (e) {
+          console.error("Telemetry failed:", e.message);
+        }
       })());
       
       return aiResponse;
@@ -154,16 +156,14 @@ REGRAS CRÍTICAS:
     try {
       parsed = JSON.parse(rawAi);
     } catch (e) {
-      logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed, attempting partial recovery", { rawAi });
+      logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed", { rawAi });
       parsed = { content: rawAi, socraticQuestion: "Ficou clara essa explicação?" };
     }
 
     // ── 5. IDEMPOTENT PERSISTENCE (The Hardening Core) ──────────────────────────
-    // Uses upsert with proper constraints to prevent duplication errors
     waitUntil((async () => {
       try {
         if (userId && topic) {
-          // Update Longitudinal Memory
           await supabaseAdmin.from("tutor_learning_memory").upsert({
             user_id: userId,
             topic: topic,
@@ -172,7 +172,6 @@ REGRAS CRÍTICAS:
             updated_at: new Date().toISOString()
           }, { onConflict: 'user_id,topic' });
           
-          // Update Session
           if (sessionId) {
             await supabaseAdmin.from("tutor_sessions").update({
               current_block: currentStage,
@@ -181,7 +180,6 @@ REGRAS CRÍTICAS:
             }).eq("id", sessionId);
           }
 
-          // Save Message
           await supabaseAdmin.from("tutor_messages").insert({
             tutor_session_id: sessionId,
             user_id: userId,
@@ -190,7 +188,6 @@ REGRAS CRÍTICAS:
             metadata: { request_id: requestId, correlation_id: correlationId }
           });
           
-          // Record Detailed Telemetry
           await supabaseAdmin.from("tutor_ia_telemetry").insert({
             user_id: userId,
             session_id: sessionId || correlationId,
@@ -198,7 +195,7 @@ REGRAS CRÍTICAS:
             topic: topic,
             model_used: aiResponse.model || "reasoning_tier",
             duration_ms: Date.now() - startTime,
-            confidence: 100, // Normalized
+            confidence: 100,
             metadata: { 
               requestId, 
               correlationId, 
@@ -208,11 +205,10 @@ REGRAS CRÍTICAS:
           });
         }
       } catch (persistenceErr) {
-        logger.error("BACKGROUND_PERSISTENCE_FAIL", persistenceErr.message);
+        console.error("BACKGROUND_PERSISTENCE_FAIL", persistenceErr.message);
       }
     })());
 
-    // ── 6. RETURN HARDENED RESPONSE ─────────────────────────────────────────────
     return corsResponse({
       success: true,
       content: parsed.content || "Erro pedagógico na normalização.",
@@ -226,17 +222,20 @@ REGRAS CRÍTICAS:
   } catch (err) {
     logger.critical("HARDENED_RUNTIME_CRASH", err.message, { requestId });
     
-    // Log incident
     waitUntil((async () => {
-      await supabaseAdmin.from("runtime_incidents").insert({
-        function_name: "tutor-v3-premium",
-        incident_type: "runtime_crash",
-        severity: "critical",
-        message: err.message,
-        correlation_id: correlationId,
-        user_id: userId,
-        metadata: { requestId, stack: err.stack }
-      });
+      try {
+        await supabaseAdmin.from("runtime_incidents").insert({
+          function_name: "tutor-v3-premium",
+          incident_type: "runtime_crash",
+          severity: "critical",
+          message: err.message,
+          correlation_id: correlationId,
+          user_id: userId,
+          metadata: { requestId, stack: err.stack }
+        });
+      } catch (e) {
+        console.error("Incident logging failed:", e.message);
+      }
     })());
 
     return corsResponse({
@@ -246,4 +245,4 @@ REGRAS CRÍTICAS:
       request_id: requestId
     }, 500);
   }
-});
+}));
