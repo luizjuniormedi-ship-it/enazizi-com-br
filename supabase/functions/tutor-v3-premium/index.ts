@@ -1,24 +1,23 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 
 /**
- * TUTOR V3 PREMIUM — ENTERPRISE HARDENING
- * Longitudinal Pedagogical Engine with Resilient Persistence
+ * TUTOR V3 PREMIUM — ENTERPRISE HARDENING v2
+ * High-stability longitudinal pedagogical engine.
  */
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
   const { requestId, correlationId, userId } = correlation;
 
   try {
-    if (!userId) throw new Error("UNAUTHORIZED: Authentication required");
+    if (!userId) throw new Error("UNAUTHORIZED: Session required");
 
     const body = await req.json().catch(() => ({}));
-    const { message, sessionId, currentBlock: bodyBlock, newTopic, pedagogicalContext: bodyPedContext } = body;
+    const { message, sessionId, currentBlock: bodyBlock, newTopic, pedagogicalContext } = body;
 
-    // 1. SESSION ORCHESTRATION (Resilient)
+    // ── 1. SESSION RECOVERY & HYDRATION ──────────────────────────────────────────
     let session = null;
-    let sessionTopic = newTopic || bodyPedContext?.topic;
+    let topic = newTopic || pedagogicalContext?.topic;
     
     if (sessionId) {
       const { data, error } = await supabaseAdmin
@@ -27,43 +26,48 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         .eq("id", sessionId)
         .maybeSingle();
       
-      if (error) logger.error("SESSION_FETCH_ERROR", error.message);
-      session = data;
-      if (data?.topic && !sessionTopic) sessionTopic = data.topic;
-    }
-
-    // 2. LONGITUDINAL MEMORY HYDRATION
-    let longitudinalContext = "";
-    if (userId && sessionTopic) {
-      const { data: memory, error: memError } = await supabaseAdmin
-        .from("tutor_learning_memory")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("topic", sessionTopic)
-        .maybeSingle();
-
-      if (memError) logger.warn("MEMORY_FETCH_ERROR", memError.message);
-
-      if (memory) {
-        longitudinalContext = `
-[HISTÓRICO LONGITUDINAL DO ALUNO — TEMA: ${sessionTopic}]
-- Nível de Domínio: ${memory.mastery_level || 'Iniciante'}
-- Erros Recorrentes: ${memory.misconceptions_detected?.join(", ") || 'Nenhum identificado'}
-- Analogias Eficazes: ${memory.effective_analogies?.join(", ") || 'Nenhuma'}
-- Último Bloco Concluído: ${memory.block_title || 'Nenhum'}
-- Status Cognitivo: ${memory.last_retention_score ? `Retenção em ${memory.last_retention_score}%` : 'Em análise'}
-`;
-        logger.info("COGNITIVE_HYDRATION", "Longitudinal memory loaded", { topic: sessionTopic, mastery: memory.mastery_level });
+      if (error) {
+        logger.error("SESSION_LOAD_FAIL", error.message);
       } else {
-        longitudinalContext = `[HISTÓRICO: Aluno iniciando este tema pela primeira vez.]`;
+        session = data;
+        if (!topic) topic = session?.topic;
       }
     }
 
-    // 3. PEDAGOGICAL STATE MANAGEMENT
-    const currentBlock = session?.current_block ?? bodyBlock ?? bodyPedContext?.currentBlock ?? "BLOCO_1_MISSAO_CLINICA";
-    const cognitiveState = memory?.mastery_level || bodyPedContext?.cognitiveState || "INITIAL";
+    if (!topic) {
+       logger.warn("MISSING_TOPIC", "Request without topic context", { requestId });
+    }
 
-    // 4. AI INVOCATION (OpenAI Priority + Quality Lock)
+    // ── 2. LONGITUDINAL MEMORY SYNC ──────────────────────────────────────────────
+    let memoryContext = "";
+    let masteryLevel = "INITIAL";
+    
+    if (userId && topic) {
+      const { data: mem, error: memErr } = await supabaseAdmin
+        .from("tutor_learning_memory")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("topic", topic)
+        .maybeSingle();
+      
+      if (memErr) logger.warn("MEMORY_SYNC_FAIL", memErr.message);
+      
+      if (mem) {
+        masteryLevel = mem.mastery_level || "INITIAL";
+        memoryContext = `
+[MEMÓRIA COGNITIVA LONGITUDINAL]
+- Nível de Domínio: ${masteryLevel}
+- Erros em Provas Anteriores: ${mem.misconceptions_detected?.join(", ") || "Nenhum"}
+- Blocos Teóricos já Vistos: ${mem.block_title || "Introdução"}
+- Pontos de Travamento Identificados: ${mem.explanation_summary || "Nenhum"}
+`;
+        logger.info("COGNITIVE_RECALL", `Hydrated context for ${topic}`, { mastery: masteryLevel });
+      }
+    }
+
+    // ── 3. AI PRECEPTORSHIP (High Reasoning Tier) ─────────────────────────────────
+    const currentStage = session?.current_block || bodyBlock || "BLOCO_1_MISSAO_CLINICA";
+    
     const aiResponse = await ai({
       taskType: "reasoning",
       complexity: "alta",
@@ -73,87 +77,85 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           role: "system", 
           content: `${PROMPT_COMPLETO}
           
-ASSUNTO ATUAL: ${sessionTopic || "Geral"}
-ESTÁGIO PEDAGÓGICO: ${currentBlock}
-ESTADO COGNITIVO DO ALUNO: ${cognitiveState}
-${longitudinalContext}
+CONTEXTO OPERACIONAL:
+- TEMA: ${topic || "Medicina Geral"}
+- ESTÁGIO: ${currentStage}
+- DOMÍNIO DO ALUNO: ${masteryLevel}
+${memoryContext}
 
-Responda OBRIGATORIAMENTE em JSON conforme especificado no manual do preceptor.` 
+REGRAS CRÍTICAS:
+- Responda OBRIGATORIAMENTE em JSON.
+- Mantenha a identidade de Preceptor ENAZIZI.
+- Seja profundo tecnicamente, mas didático.` 
         },
-        { 
-          role: "user", 
-          content: newTopic 
-            ? `Quero iniciar/mudar para o tema: ${newTopic}. Comece do Bloco 1.` 
-            : (message || "Continuar explicação") 
-        }
+        { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${newTopic}.` : (message || "Continuar aula") }
       ],
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-    }, { skipQualityLock: false });
+      response_format: { type: "json_object" }
+    }, { retries: 2 });
 
-    // 5. RESPONSE NORMALIZATION (Anti-corruption Layer)
-    const rawContent = aiResponse.choices?.[0]?.message?.content || "";
-    let parsedContent: any = {};
-    
+    // ── 4. STABILITY LAYER (Output Normalization) ───────────────────────────────
+    const rawAi = aiResponse.choices?.[0]?.message?.content || "{}";
+    let parsed: any = {};
     try {
-      parsedContent = JSON.parse(rawContent);
+      parsed = JSON.parse(rawAi);
     } catch (e) {
-      logger.warn("AI_PARSE_ERROR", "AI returned invalid JSON, attempting recovery", { rawContent });
-      parsedContent = { content: rawContent, socraticQuestion: "O que você achou desta explicação?" };
+      logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed", { rawAi });
+      parsed = { content: rawAi, socraticQuestion: "Ficou clara essa explicação?" };
     }
 
-    const content = parsedContent.content || parsedContent.explanation || "Erro ao processar conteúdo pedagógico.";
-    const socraticQuestion = parsedContent.socraticQuestion || "";
-
-    // 6. IDEMPOTENT PERSISTENCE (Hardening)
-    // Update Memory
-    if (userId && sessionTopic) {
-      const { error: upsertError } = await supabaseAdmin
-        .from("tutor_learning_memory")
-        .upsert({
-          user_id: userId,
-          topic: sessionTopic,
-          block_title: currentBlock,
-          mastery_level: parsedContent.mastery_level || cognitiveState,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id,topic' });
+    // ── 5. IDEMPOTENT PERSISTENCE (The Hardening Core) ──────────────────────────
+    // All background updates use waitUntil for non-blocking UI
+    if (userId && topic) {
+      // Background memory update
+      supabaseAdmin.from("tutor_learning_memory").upsert({
+        user_id: userId,
+        topic: topic,
+        block_title: currentStage,
+        mastery_level: parsed.mastery_level || masteryLevel,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,topic' }).then(({ error }) => {
+        if (error) logger.error("BACKGROUND_PERSISTENCE_FAIL", error.message);
+      });
       
-      if (upsertError) logger.error("MEMORY_UPSERT_FAILED", upsertError.message);
+      // Update/Create session
+      if (sessionId) {
+        supabaseAdmin.from("tutor_sessions").update({
+          current_block: currentStage,
+          topic: topic,
+          updated_at: new Date().toISOString()
+        }).eq("id", sessionId).then();
+      }
     }
 
-    // Update Session
-    if (sessionId) {
-      await supabaseAdmin
-        .from("tutor_sessions")
-        .update({
-          current_block: currentBlock,
-          updated_at: new Date().toISOString(),
-          topic: sessionTopic,
-          cognitive_progress: Math.min(100, (session?.cognitive_progress || 0) + 10)
-        })
-        .eq("id", sessionId);
-    }
-
-    // 7. RETURN RESILIENT RESPONSE
+    // ── 6. RETURN HARDENED RESPONSE ─────────────────────────────────────────────
     return corsResponse({
       success: true,
-      content: content + (socraticQuestion ? `\n\n${socraticQuestion}` : ""),
-      currentBlock,
-      topic: sessionTopic,
-      teachingMode: parsedContent.teachingMode || "PRECEPTOR",
-      interactionMode: parsedContent.interactionMode || "BALANCED",
-      socraticQuestion,
-      correlation_id: correlationId,
-      request_id: requestId,
-      longitudinal_active: !!longitudinalContext
+      content: parsed.content || "Erro pedagógico.",
+      socraticQuestion: parsed.socraticQuestion || "",
+      currentBlock: currentStage,
+      topic: topic,
+      longitudinal_sync: !!memoryContext,
+      correlation_id: correlationId
     }, 200);
 
-  } catch (error) {
-    logger.critical("TUTOR_V3_FATAL", error.message, { stack: error.stack });
+  } catch (err) {
+    logger.critical("HARDENED_RUNTIME_CRASH", err.message, { requestId });
+    
+    // Log incident for dashboarding
+    supabaseAdmin.from("runtime_incidents").insert({
+      function_name: "tutor-v3-premium",
+      incident_type: "runtime_crash",
+      severity: "critical",
+      message: err.message,
+      correlation_id: correlationId,
+      user_id: userId
+    }).then();
+
     return corsResponse({
       success: false,
-      error: "O Preceptor ENAZIZI está recalibrando sua base de conhecimento. Por favor, tente em alguns segundos.",
-      debug_id: requestId
+      error: "O sistema Tutor está instável. Recalibrando...",
+      recovery_available: true,
+      request_id: requestId
     }, 500);
   }
 }));
