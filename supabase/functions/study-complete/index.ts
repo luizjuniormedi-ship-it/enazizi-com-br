@@ -1,5 +1,7 @@
 // study-complete - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
-import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
+
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
 
