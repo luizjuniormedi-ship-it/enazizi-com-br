@@ -111,6 +111,7 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
         return (
         <motion.div
           key={msg.id || idx}
+          data-testid={msg.role === "assistant" ? "tutor-response" : undefined}
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
