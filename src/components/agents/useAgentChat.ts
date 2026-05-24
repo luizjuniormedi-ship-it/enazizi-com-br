@@ -186,8 +186,18 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       
       const text = overridePrompt || input.trim();
 
-      // [TUTOR_01_SEND_CLICKED]
-      console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId} correlationId=${correlationId}`);
+      // [TUTOR_V3_01_SEND]
+      console.log(`[TUTOR_V3_01_SEND] requestId=${requestId} text="${text.slice(0, 50)}..."`);
+      
+      // [TUTOR_V3_02_FUNCTION_NAME]
+      console.log(`[TUTOR_V3_02_FUNCTION_NAME] calling: ${functionName}`);
+
+      // [TUTOR_V3_03_SUPABASE_URL]
+      console.log(`[TUTOR_V3_03_SUPABASE_URL] endpoint: ${import.meta.env.VITE_SUPABASE_URL}`);
+
+      // [TUTOR_V3_04_HAS_AUTH_SESSION]
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      console.log(`[TUTOR_V3_04_HAS_AUTH_SESSION] tokenPresent: ${!!authSession?.access_token} userId: ${authSession?.user?.id}`);
       
       // [TUTOR_V3_INVOKE] Real-time Forensics
       console.log(`%c[TUTOR_V3_INVOKE] ${requestId}`, "background: #10b981; color: white; padding: 2px 5px; border-radius: 2px;", {
@@ -203,14 +213,23 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       // 0. Healthcheck pre-flight (silent but logged)
       if (!overridePrompt && messages.length <= 1) {
+        console.log(`[TUTOR_V3_06_INVOKE_START] Healthcheck triggered for ${requestId}`);
         supabase.functions.invoke(functionName, { 
           body: { healthcheck: true },
           headers: { "x-correlation-id": correlationId }
         })
           .then(({ data, error }) => {
+            if (error) {
+              console.error(`[TUTOR_V3_08_INVOKE_ERROR] Healthcheck failed for ${requestId}`, error);
+            } else {
+              console.log(`[TUTOR_V3_07_INVOKE_DATA] Healthcheck data for ${requestId}`, data);
+            }
             console.log(`%c[TUTOR_V3_HEALTH] ${requestId}`, "color: #10b981", { data, error, ok: data?.ok });
           })
-          .catch(e => console.error(`[TUTOR_V3_HEALTH_FATAL] ${requestId}`, e));
+          .catch(e => {
+            console.error(`[TUTOR_V3_08_INVOKE_ERROR] Healthcheck exception for ${requestId}`, e);
+            console.error(`[TUTOR_V3_HEALTH_FATAL] ${requestId}`, e);
+          });
       }
 
       // Lógica de Gating Incremental Real
