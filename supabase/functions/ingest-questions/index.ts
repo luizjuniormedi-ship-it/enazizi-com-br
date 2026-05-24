@@ -151,7 +151,14 @@ serve(async (req) => {
     let sourceName = "";
     let questions: any[] = [];
 
-    if (mode === "upload" && upload_id) {
+    if (mode === "pdf_url" && url) {
+      sourceName = `URL: ${url}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Failed to download PDF: ${resp.status}`);
+      const pdfBytes = new Uint8Array(await resp.arrayBuffer());
+      fullText = await extractPdfTextFromBytes(pdfBytes);
+      questions = parseQuestionsFromPdfExamText(fullText, banca || "Geral");
+    } else if (mode === "upload" && upload_id) {
       const { data: upload } = await supabase.from("uploads").select("*").eq("id", upload_id).single();
       if (!upload) throw new Error("Upload not found");
       sourceName = `Upload: ${upload.filename}`;
