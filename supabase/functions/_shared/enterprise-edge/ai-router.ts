@@ -115,7 +115,7 @@ export async function callAi(
           res = await fetch(OPENAI_API, {
             method: "POST",
             headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ ...standardPayload, model: modelName }),
+            body: JSON.stringify({ ...standardPayload, model: modelName, messages }),
             signal: controller.signal
           });
         } else {
