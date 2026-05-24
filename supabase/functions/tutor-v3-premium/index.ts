@@ -84,23 +84,33 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       complexity: "alta",
       userId,
       messages: [
-        { role: "system", content: `${PROMPT_COMPLETO}\n\nASSUNTO: ${sessionTopic || "Assunto Geral"}\nBLOCO ATUAL: ${currentBlock}\n${memoryContext}` },
-        { role: "user", content: newTopic ? `Olá preceptor, quero mudar de assunto para: ${newTopic}. Vamos começar do Bloco 1 com um novo caso clínico.` : message }
+        { role: "system", content: `${PROMPT_COMPLETO}\n\nASSUNTO: ${sessionTopic || "Assunto Geral"}\nBLOCO ATUAL: ${currentBlock}\n${memoryContext}\n\nResponda OBRIGATORIAMENTE em formato JSON válido.` },
+        { role: "user", content: (newTopic ? `Olá preceptor, quero mudar de assunto para: ${newTopic}. Vamos começar do Bloco 1 com um novo caso clínico.` : message) + " (Responda em JSON)" }
       ],
       temperature: 0.7,
       response_format: { type: "json_object" },
     }, { skipQualityLock: false });
 
-    const rawContent = aiResponse.choices?.[0]?.message?.content || "{}";
-    let parsedContent;
-    try {
-      parsedContent = JSON.parse(rawContent);
-    } catch (e) {
-      logger.error("AI_PARSE_ERROR", "Error parsing AI response JSON", { rawContent });
-      parsedContent = { content: rawContent };
+    // Handle both OpenAI response format and direct fallback objects
+    const rawContent = aiResponse.choices?.[0]?.message?.content || "";
+    logger.info("AI_RAW_RESPONSE", "Received content from AI", { length: rawContent.length, preview: rawContent.slice(0, 100) });
+
+    let parsedContent: any = {};
+    if (rawContent && rawContent.trim().startsWith("{")) {
+      try {
+        parsedContent = JSON.parse(rawContent);
+      } catch (e) {
+        logger.warn("AI_PARSE_ERROR", "Failed to parse JSON, using as string", { rawContent });
+        parsedContent = { content: rawContent };
+      }
+    } else if (aiResponse.content || aiResponse.phrase) {
+      // It's already a normalized fallback object from ai-router
+      parsedContent = aiResponse;
+    } else {
+      parsedContent = { content: rawContent || "Ocorreu um erro ao gerar a resposta da IA." };
     }
 
-    const content = parsedContent.content || "Ocorreu um erro ao gerar a resposta da IA.";
+    const content = parsedContent.content || parsedContent.explanation || parsedContent.text || parsedContent.phrase || "Ocorreu um erro ao processar a resposta pedagógica.";
     const socraticQuestion = parsedContent.socraticQuestion || "";
 
     // Simple advancement logic (gating)
