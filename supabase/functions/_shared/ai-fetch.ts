@@ -84,8 +84,8 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       continue;
     }
 
-    const maxRetries = options.maxRetries ?? 3;
-    const timeoutMs = options.timeoutMs ?? 90000;
+    const maxRetries = provider === 'openai' ? 2 : 1;
+    const timeoutMs = provider === 'openai' ? 25000 : 20000;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const startTime = Date.now();
