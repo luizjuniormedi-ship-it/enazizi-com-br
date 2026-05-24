@@ -174,7 +174,13 @@ serve(async (req) => {
 
       if (!response.ok) throw new Error(`AI_ERROR_${response.status}`);
 
-      return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+      return new Response(response.body, { 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "text/event-stream",
+          "X-Content-Type-Options": "nosniff"
+        } 
+      });
 
     } catch (aiErr) {
       console.error(`[study-session] id=${requestId} AI Call failed:`, aiErr);
