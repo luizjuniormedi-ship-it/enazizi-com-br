@@ -152,10 +152,10 @@ export default function TutorV2Actions({ session, onSendMessage }: TutorV2Action
             }
             try {
               toast({ title: "Iniciando", description: "Gerando 10 flashcards baseados no seu estudo atual..." });
-              const { data, error } = await supabase.functions.invoke("generate-flashcards", {
-                body: { topic, quantity: 10 }
+              const response = await callTutorV3({ topic, quantity: 10 }, { 
+                functionName: "generate-flashcards" 
               });
-              if (error) throw error;
+              const data = await response.json();
               toast({ title: "Sucesso!", description: `${data.count} flashcards gerados e salvos no FSRS.` });
               window.open(`/dashboard/flashcards`, "_blank");
             } catch (err: any) {
