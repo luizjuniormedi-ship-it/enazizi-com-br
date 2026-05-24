@@ -8,7 +8,7 @@ const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 
 // Retryable status codes (transient errors)
-const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_STATUSES = new Set([402, 429, 500, 502, 503, 504]);
 
 interface AiFetchOptions {
   model?: string;
