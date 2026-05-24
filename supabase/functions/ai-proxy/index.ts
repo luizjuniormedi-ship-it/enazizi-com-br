@@ -1,14 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods':
-    'GET, POST, OPTIONS',
-};
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -32,20 +25,15 @@ serve(async (req: Request) => {
 
     if (!response.ok) {
       const err = await response.text();
-      return new Response(JSON.stringify({ error: err }), {
-        status: response.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ error: err }, response.status);
     }
 
     const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return corsResponse(data, 200);
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return corsResponse({ 
+      error: e instanceof Error ? e.message : String(e),
+      log: "[EDGE_SAFE_FAIL]"
+    }, 500);
   }
 });

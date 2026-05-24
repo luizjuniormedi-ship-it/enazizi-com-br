@@ -1,5 +1,7 @@
 // generate-daily-plan - ENAZIZI COORDENADOR ADAPTATIVO (PLANNER INTELIGENTE)
-import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
+
 import { requireAuth } from "../_shared/require-auth.ts";
 import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { calculatePremiumPriority, calculateExamProximityScore, calculateFsrsRiskScore } from "../_shared/study-prioritization.ts";
@@ -39,13 +41,11 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
       
       if (existingPlan) {
         logger.info("DAILY_PLAN_EXISTS", "Returning existing plan", { planId: existingPlan.id });
-        return new Response(JSON.stringify({ 
+        return corsResponse({ 
           success: true, 
           planId: existingPlan.id,
           message: "Plano já existente carregado."
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        }, 200);
       }
     }
 
@@ -128,14 +128,11 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
 
     // 4. Check if user has a macro plan
     if (!studyPlanRes.data && (revisoesRes.data || []).length === 0) {
-      return new Response(JSON.stringify({ 
+      return corsResponse({ 
         success: false, 
         error: "Crie um cronograma antes de gerar a Missão do Dia.",
         type: "NO_STUDY_PLAN"
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      }, 400);
     }
 
     // Calculate real days until exam
@@ -294,27 +291,22 @@ SAÍDA ESPERADA (JSON):
     }
 
     // 7. Success Response
-    return new Response(JSON.stringify({ 
+    return corsResponse({ 
       success: true, 
       planId: finalPlan.id, 
       tasks,
       coachTip: planJson.ai_coach_tip 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    }, 200);
 
   } catch (err) {
     logger.critical("UNHANDLED_COORDINATOR_ERROR", err.message, { stack: err.stack });
     
     // Fallback JSON Response to avoid White Screen
-    return new Response(JSON.stringify({
+    return corsResponse({
       success: false,
       error: "O Coordenador Adaptativo encontrou um problema temporário.",
       details: err.message,
       type: "ADAPTIVE_ERROR"
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    }, 500);
   }
 }));

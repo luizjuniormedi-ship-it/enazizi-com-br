@@ -1,9 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -29,9 +25,7 @@ Deno.serve(async (req) => {
       .in("status", ["scheduled", "published"]);
 
     if (!simulados || simulados.length === 0) {
-      return new Response(JSON.stringify({ message: "No reminders to send", count: 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ message: "No reminders to send", count: 0 }, 200);
     }
 
     let totalSent = 0;
@@ -66,13 +60,8 @@ Deno.serve(async (req) => {
       totalSent += notifications.length;
     }
 
-    return new Response(JSON.stringify({ message: "Reminders sent", count: totalSent }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return corsResponse({ message: "Reminders sent", count: totalSent }, 200);
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return corsResponse({ error: e.message, log: "[EDGE_SAFE_FAIL]" }, 500);
   }
 });

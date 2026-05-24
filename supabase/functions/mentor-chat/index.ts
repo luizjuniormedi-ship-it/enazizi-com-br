@@ -1,13 +1,16 @@
 // mentor-chat - ENAZIZI ENTERPRISE UNIFIED FRAMEWORK
-import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { getKnowledgeCache, saveKnowledgeCache, extractTopic } from "../_shared/knowledge-cache.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "../_shared/injection-guard.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
 Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil, supabaseAdmin }) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
   const { messages, conversationId, jsonResponse, pedagogicalContext } = body;
@@ -16,10 +19,10 @@ Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, waitUntil,
   const lastUserMessage = [...(messages || [])].reverse().find((m: any) => m.role === "user")?.content || "";
   if (detectInjection(lastUserMessage)) {
     logger.warn("[MENTOR_CHAT_INJECTION_BLOCKED]", { userId: user.id, preview: lastUserMessage.slice(0, 80) });
-    return new Response(JSON.stringify({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return corsResponse({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true }, 200);
   }
   if (isOffTopic(lastUserMessage)) {
-    return new Response(JSON.stringify({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return corsResponse({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true }, 200);
   }
   // ── END INJECTION GUARD ──────────────────────────────────────────
 
@@ -95,8 +98,14 @@ Ao terminar, encerre com a pergunta obrigatória: "Antes de avançar, escolha um
         ).catch(e => logger.error("[MENTOR_CACHE_SAVE_ERROR]", e));
       }
     }
-    return new Response(JSON.stringify({ ok: true, content }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return corsResponse({ ok: true, content }, 200);
   }
 
-  return new Response(aiResponse.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+  return new Response(aiResponse.body, { 
+    headers: { 
+      ...corsHeaders, 
+      "Content-Type": "text/event-stream",
+      "X-Content-Type-Options": "nosniff"
+    } 
+  });
 }));

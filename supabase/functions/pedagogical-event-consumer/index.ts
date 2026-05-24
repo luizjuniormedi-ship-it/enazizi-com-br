@@ -1,13 +1,14 @@
-
-import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
 /**
- * ENAZIZI ALOS — Fase 2.5: Cognitive Event Consumer (Hardened v10)
+ * ENAZIZI ALOS — Fase 2.5: Cognitive Event Consumer (Hardened v11)
  * Blind orchestrator that ensures events are processed without interrupting UX.
+ * v11: Unified CORS, NON-BLOCKING, NEVER returns 400.
  */
 Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, logger, supabaseAdmin, waitUntil }) => {
-  // Always allow OPTIONS for CORS preflight
+  // Always allow OPTIONS for CORS preflight (redundant due to enterpriseEdgeHandler but good for clarity)
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -25,22 +26,21 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
     const body = await req.json().catch(() => ({}));
     const { event } = body;
 
-    // v10: Never return 400. Always 200 OK for telemetria safety.
+    // v11: NEVER return 400. Always 200 OK for telemetria safety.
     if (!event) {
-      console.warn("[EVENT_CONSUMER_BLIND] Payload missing, returning silent success.");
-      return new Response(JSON.stringify({ success: true, message: "Ignored empty payload" }), { 
-        status: 200, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      });
+      console.warn("[PEDAGOGICAL_EVENT_IGNORED] Payload missing, returning silent success.");
+      return corsResponse({ success: true, ignored: true, message: "No event payload" }, 200);
     }
 
     const eventId = event.id ?? event.idempotency_key ?? crypto.randomUUID();
     const userId = user?.id ?? event.user_id;
 
     if (!userId) {
-      console.warn("[EVENT_CONSUMER_BLIND] No user context, dropping event.");
-      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+      console.warn("[PEDAGOGICAL_EVENT_IGNORED] No user context, dropping event.");
+      return corsResponse({ success: true, ignored: true, message: "No user context" }, 200);
     }
+
+    console.info("[PREFLIGHT_OK] Event received", { eventType: event.event_type, eventId });
 
     // PROCESS ASYNC: Don't wait for state updates to respond
     waitUntil((async () => {
@@ -75,28 +75,35 @@ Deno.serve(enterpriseEdgeHandler("pedagogical-event-consumer", async ({ req, log
         }
 
         // 3. Mark Consumed
-        await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
+        const { error: rpcErr } = await supabaseAdmin.rpc("mark_pedagogical_event_consumed", {
           event_id: eventId,
-          consumer_name: "cognitive-runtime-v10",
+          consumer_name: "cognitive-runtime-v11",
           success: true
         });
 
+        if (!rpcErr) {
+          console.info("[UPSERT_OK] Event consumed successfully");
+        }
+
       } catch (innerErr) {
-        console.error("[EVENT_PROCESS_FAIL]", innerErr.message);
+        console.error("[EDGE_SAFE_FAIL] Event process fail", innerErr.message);
       }
     })());
 
-    return new Response(JSON.stringify({ success: true, blind_ok: true }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    return corsResponse({ 
+      success: true, 
+      blind_ok: true,
+      log: "[CORS_OK]"
+    }, 200);
 
   } catch (err) {
     logger.error("COG_RUNTIME_CRITICAL_FAIL", err.message);
-    // Still return 200 for stability
-    return new Response(JSON.stringify({ success: false, silent: true }), { 
-      status: 200, 
-      headers: { ...corsHeaders, "Content-Type": "application/json" } 
-    });
+    // [EDGE_SAFE_FAIL] Always return 200 for stability
+    return corsResponse({ 
+      success: false, 
+      silent: true, 
+      error: err.message,
+      log: "[EDGE_SAFE_FAIL]"
+    }, 200);
   }
 }));

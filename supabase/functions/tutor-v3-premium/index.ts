@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
+import { corsResponse } from "../_shared/cors.ts";
+
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
@@ -136,7 +138,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }).eq("id", sessionId);
     }
 
-    return new Response(JSON.stringify({
+    return corsResponse({
       success: true,
       content: content + (socraticQuestion ? `\n\n${socraticQuestion}` : ""),
       currentBlock: nextBlock,
@@ -150,21 +152,17 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       request_id: requestId,
       debug_stage: "stable_v3_ready",
       memory_active: !!memoryContext
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    }, 200);
 
   } catch (error) {
     logger.error("FATAL_HANDLER_ERROR", error.message, { stack: error.stack });
-    return new Response(JSON.stringify({
+    return corsResponse({
       success: true,
       content: "Preceptor ENAZIZI: Tive um pequeno problema técnico, mas estou aqui. Poderia repetir sua última dúvida?",
       currentBlock: "ERROR_RECOVERED",
       shouldWaitForStudent: true,
       debug_stage: "error_fallback",
       error: error.message
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    }, 200);
   }
 }));

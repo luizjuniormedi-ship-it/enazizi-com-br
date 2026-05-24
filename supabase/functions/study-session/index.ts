@@ -15,17 +15,11 @@ import { aiFetch, getModelForTier } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 /** Standard JSON response helper */
-const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
-  status,
-  headers: { ...corsHeaders, "Content-Type": "application/json" },
-});
+const json = (data: any, status = 200) => corsResponse(data, status);
 
 // Helper functions (same as before)
 function getLevelPrompt(performanceData: unknown): string {
@@ -180,7 +174,13 @@ serve(async (req) => {
 
       if (!response.ok) throw new Error(`AI_ERROR_${response.status}`);
 
-      return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+      return new Response(response.body, { 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "text/event-stream",
+          "X-Content-Type-Options": "nosniff"
+        } 
+      });
 
     } catch (aiErr) {
       console.error(`[study-session] id=${requestId} AI Call failed:`, aiErr);

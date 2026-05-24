@@ -5,14 +5,8 @@ import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { runAI, type AIComplexity, type AICognitiveLoad } from "../_shared/ai-runtime-orchestrator.ts";
 import { getKnowledgeCache, saveKnowledgeCache, extractTopic } from "../_shared/knowledge-cache.ts";
 import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "../_shared/injection-guard.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods':
-    'GET, POST, OPTIONS',
-};
 
 type TutorContext = {
   mission?: { title?: string } | null;
@@ -212,10 +206,7 @@ serve(async (req) => {
 
     const { sessionId, message, pedagogicalInteraction } = await req.json();
     if (!sessionId || !message || typeof message !== "string") {
-      return new Response(JSON.stringify({ ok: false, error: "INVALID_REQUEST", message: "Sessão e mensagem são obrigatórias.", requestId }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ ok: false, error: "INVALID_REQUEST", message: "Sessão e mensagem são obrigatórias.", requestId }, 400);
     }
 
     // ── INJECTION GUARD ──────────────────────────────────────────────
@@ -230,9 +221,7 @@ serve(async (req) => {
         userId, sessionId, topic: null, eventType: "injection_blocked", outcome: "blocked",
         payload: { message_preview: message.slice(0, 100), request_id: requestId },
       });
-      return new Response(JSON.stringify({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true, requestId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ ok: true, content: SAFE_RESPONSE, injectionBlocked: true, requestId }, 200);
     }
 
     if (isOffTopic(message)) {
@@ -242,9 +231,7 @@ serve(async (req) => {
         { tutor_session_id: sessionId, user_id: userId, role: "user", content: message, metadata: { off_topic: true } },
         { tutor_session_id: sessionId, user_id: userId, role: "assistant", content: OFF_TOPIC_RESPONSE, metadata: { off_topic_redirect: true } },
       ]);
-      return new Response(JSON.stringify({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true, requestId }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ ok: true, content: OFF_TOPIC_RESPONSE, offTopicRedirect: true, requestId }, 200);
     }
     // ── END INJECTION GUARD ──────────────────────────────────────────
 
@@ -263,10 +250,7 @@ serve(async (req) => {
 
     if (sessionError || !session) {
       console.error("[TUTOR_V2] Session error:", { message: sessionError?.message, requestId });
-      return new Response(JSON.stringify({ ok: false, error: "SESSION_NOT_FOUND", message: "Sessão não encontrada. Por favor, inicie um novo tema.", requestId }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ ok: false, error: "SESSION_NOT_FOUND", message: "Sessão não encontrada. Por favor, inicie um novo tema.", requestId }, 404);
     }
 
     const { data: history, error: historyError } = await supabase
@@ -659,7 +643,7 @@ E) Ver exemplo clínico"
 
     console.log("[TUTOR_V2_RESPONSE_SENT]", { latency, provider: providerResult.provider, model: providerResult.model, fallbackUsed: providerResult.fallbackUsed, requestId });
 
-    return new Response(JSON.stringify({ 
+    return corsResponse({ 
       ok: true,
       success: true,
       fallback: providerResult.fallbackUsed,
@@ -674,20 +658,15 @@ E) Ver exemplo clínico"
       audit: { pedagogicalScore, feynmanScore },
       provider: { name: providerResult.provider, model: providerResult.model, attempts: providerResult.attempts.map(a => ({ model: a.model, success: a.success, status: a.status, code: a.code, latency_ms: a.latency_ms })) },
       requestId,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    }, 200);
 
   } catch (error) {
     console.error("[TUTOR-V2-CHAT] Error:", error instanceof Error ? { message: error.message, stack: error.stack, requestId } : { error: String(error), requestId });
-    return new Response(JSON.stringify({
+    return corsResponse({
       ok: false,
       error: "TUTOR_V2_INTERNAL_ERROR",
       message: "O Tutor encontrou uma falha interna controlada. Sua sessão foi preservada. Tente novamente.",
       requestId,
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    }, 500);
   }
 });

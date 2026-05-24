@@ -4,13 +4,8 @@ import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edg
 import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
 import { buildPromptHash, getCachedAIResponse, saveAIResponseToCache, logAIUsage } from "../_shared/ai-cache.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
 
 // ═══ CONFIG ═══
 const AI_MODEL = ALLOWED_MODELS.generation;
@@ -41,7 +36,7 @@ interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; pub
 
 // ═══ HELPERS ═══
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  return corsResponse(body, status);
 }
 function requireEnv(name: string): string { const v = Deno.env.get(name); if (!v) throw new Error(`Env ${name} missing`); return v; }
 
