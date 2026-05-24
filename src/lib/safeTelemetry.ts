@@ -24,3 +24,16 @@ export function safeTelemetryFireAndForget<T>(
 ): void {
   void safeTelemetry(fn, label);
 }
+
+export function emitSafeEvent(eventName: string, properties: any = {}) {
+  // Non-blocking fire and forget
+  setTimeout(async () => {
+    try {
+      const { telemetry } = await import("@/lib/pedagogicalTelemetry");
+      telemetry.track(eventName as any, properties);
+      console.log(`[SAFE_EVENT] ${eventName}`);
+    } catch (e) {
+      console.warn("[SAFE_EVENT_FAIL]", eventName, e);
+    }
+  }, 0);
+}
