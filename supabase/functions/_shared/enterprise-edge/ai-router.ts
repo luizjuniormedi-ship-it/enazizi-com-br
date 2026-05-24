@@ -26,14 +26,14 @@ export interface AiRequest {
 
 const FALLBACK_CHAINS = {
   FAST: [
+    "openai/gpt-4o-mini",
     "google/gemini-2.5-flash-lite",
-    "google/gemini-2.5-flash",
-    "openai/gpt-4o-mini"
+    "google/gemini-2.5-flash"
   ],
   REASONING: [
+    "openai/gpt-4o",
     "google/gemini-2.5-pro",
-    "openai/o3-mini",
-    "openai/gpt-4o"
+    "openai/o3-mini"
   ]
 };
 
