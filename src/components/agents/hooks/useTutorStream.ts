@@ -162,7 +162,7 @@ export function useTutorStream() {
           const data = await resp.json();
           const content = data.content || data.message || data.answer || data.response || "";
 
-          if (!content && data.ok === false) {
+          if (!content && data.ok === false && data.success !== true) {
             onError?.({ status: resp.status, message: data.message || "Erro na resposta da IA" });
             return null;
           }
