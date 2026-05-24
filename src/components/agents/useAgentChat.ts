@@ -181,14 +181,19 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const handleSend = useCallback(
     async (overridePrompt?: string, contextOverride?: string, pedagogicalInteraction?: string) => {
       const requestId = crypto.randomUUID();
-      const correlationId = crypto.randomUUID();
       const startTime = Date.now();
       
       const text = overridePrompt || input.trim();
 
       // [TUTOR_01_SEND_CLICKED]
-      console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId} correlationId=${correlationId}`);
+      console.log(`[TUTOR_01_SEND_CLICKED] requestId=${requestId}`);
       
+      // [TUTOR_02_MESSAGE_TEXT]
+      console.log(`[TUTOR_02_MESSAGE_TEXT] text="${text.slice(0, 50)}..."`);
+
+      // [TUTOR_03_AUTH_SESSION]
+      console.log(`[TUTOR_03_AUTH_SESSION] userId=${user?.id} hasSession=${!!history.activeConversationId}`);
+
       // [TUTOR_V3_INVOKE] Real-time Forensics
       console.log(`%c[TUTOR_V3_INVOKE] ${requestId}`, "background: #10b981; color: white; padding: 2px 5px; border-radius: 2px;", {
         function: functionName,
@@ -197,16 +202,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         topic,
         userId: user?.id,
         sessionId: history.activeConversationId,
-        url: CHAT_URL,
-        correlationId
+        url: CHAT_URL
       });
 
       // 0. Healthcheck pre-flight (silent but logged)
       if (!overridePrompt && messages.length <= 1) {
-        supabase.functions.invoke(functionName, { 
-          body: { healthcheck: true },
-          headers: { "x-correlation-id": correlationId }
-        })
+        supabase.functions.invoke(functionName, { body: { healthcheck: true } })
           .then(({ data, error }) => {
             console.log(`%c[TUTOR_V3_HEALTH] ${requestId}`, "color: #10b981", { data, error, ok: data?.ok });
           })
