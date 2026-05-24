@@ -161,7 +161,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       if (generated.length > 0) {
         await supabaseAdmin.from("questions_bank").insert(generated.map(q => ({
           user_id: userId, statement: q.statement, options: q.options, correct_index: q.correct,
-          explanation: q.explanation, topic: q.topic, difficulty: q.difficulty, board: q.board, is_global: false, review_status: 'pending'
+          explanation: q.explanation, topic: q.topic, difficulty: q.difficulty, board: q.board, is_global: false, review_status: 'approved',
+          board_similarity_score: q.forensic_score, quality_tier: q.forensic_score >= 90 ? 'GOLD' : 'SILVER'
+
         })));
       }
     }
