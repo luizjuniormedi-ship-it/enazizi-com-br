@@ -4,9 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, Legend, Cell, PieChart, Pie
+  PieChart, Pie, Cell, Legend
 } from "recharts";
-import { ShieldCheck, AlertTriangle, CheckCircle2, XCircle, Search, Microscope } from "lucide-react";
+import { ShieldCheck, AlertTriangle, CheckCircle2, Microscope, Search } from "lucide-react";
+
+interface ForensicLog {
+  id: string;
+  board: string;
+  fidelity_score: number;
+  structural_score: number;
+  lexical_score: number;
+  cognitive_score: number;
+  pedagogical_score: number;
+  ai_pattern_score: number;
+  flags: string[];
+  decision: string;
+  created_at: string;
+}
 
 export const QuestionQualityPanel = () => {
   const { data: logs, isLoading } = useQuery({
@@ -18,39 +32,38 @@ export const QuestionQualityPanel = () => {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return data;
+      return data as ForensicLog[];
     }
   });
 
   const { data: stats } = useQuery({
     queryKey: ["forensic-stats"],
     queryFn: async () => {
-      // Simplified aggregate query
-      const { data, error } = await supabase.rpc("get_forensic_stats" as any);
-      // Fallback to manual aggregate if RPC missing
-      if (error) {
-        const boards = [...new Set(logs?.map(l => l.board) || [])];
-        return boards.map(board => {
-          const boardLogs = logs?.filter(l => l.board === board) || [];
-          return {
-            board,
-            avg_fidelity: boardLogs.reduce((a, b) => a + b.fidelity_score, 0) / boardLogs.length,
-            reject_rate: (boardLogs.filter(l => l.decision === 'REJECT').length / boardLogs.length) * 100
-          };
-        });
-      }
-      return data;
+      const boards = [...new Set(logs?.map(l => l.board) || [])];
+      return boards.map(board => {
+        const boardLogs = logs?.filter(l => l.board === board) || [];
+        return {
+          board,
+          avg_fidelity: boardLogs.reduce((a, b) => a + b.fidelity_score, 0) / boardLogs.length,
+          reject_rate: (boardLogs.filter(l => l.decision === 'REJECT').length / boardLogs.length) * 100
+        };
+      });
     },
-    enabled: !!logs
+    enabled: !!logs && logs.length > 0
   });
 
   if (isLoading) return <div className="animate-pulse h-96 bg-white/5 rounded-xl" />;
 
+  const totalLogs = logs?.length || 1;
   const acceptanceData = [
     { name: "Aceitas", value: logs?.filter(l => l.decision === 'ACCEPT').length || 0, color: "#10b981" },
     { name: "Rejeitadas", value: logs?.filter(l => l.decision === 'REJECT').length || 0, color: "#ef4444" },
     { name: "Retry", value: logs?.filter(l => l.decision === 'RETRY').length || 0, color: "#f59e0b" },
   ];
+
+  const avgFidelity = logs?.length ? Math.round(logs.reduce((a, b) => a + b.fidelity_score, 0) / logs.length) : 0;
+  const rejectRate = logs?.length ? Math.round((logs.filter(l => l.decision === 'REJECT').length / logs.length) * 100) : 0;
+  const aiPatternCount = logs?.filter(l => (l.ai_pattern_score || 0) > 30).length || 0;
 
   return (
     <div className="space-y-6">
@@ -60,7 +73,7 @@ export const QuestionQualityPanel = () => {
             <ShieldCheck className="h-3 w-3" /> Fidelity Score Médio
           </div>
           <div className="text-3xl font-black text-white">
-            {Math.round(logs?.reduce((a, b) => a + b.fidelity_score, 0) / (logs?.length || 1))}%
+            {avgFidelity}%
           </div>
         </Card>
         
@@ -69,7 +82,7 @@ export const QuestionQualityPanel = () => {
             <Microscope className="h-3 w-3" /> Taxa de Rejeição
           </div>
           <div className="text-3xl font-black text-red-500">
-            {Math.round((logs?.filter(l => l.decision === 'REJECT').length / (logs?.length || 1)) * 100)}%
+            {rejectRate}%
           </div>
         </Card>
 
@@ -78,16 +91,16 @@ export const QuestionQualityPanel = () => {
             <AlertTriangle className="h-3 w-3" /> Padrões IA Detectados
           </div>
           <div className="text-3xl font-black text-amber-500">
-            {logs?.filter(l => l.ai_pattern_score > 30).length}
+            {aiPatternCount}
           </div>
         </Card>
 
         <Card className="p-4 bg-white/5 border-white/10 space-y-2">
           <div className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
-            <CheckCircle2 className="h-3 w-3" /> Auditadas (FSRS)
+            <CheckCircle2 className="h-3 w-3" /> Total de Auditorias
           </div>
           <div className="text-3xl font-black text-emerald-500">
-            {logs?.length}
+            {logs?.length || 0}
           </div>
         </Card>
       </div>
@@ -180,6 +193,13 @@ export const QuestionQualityPanel = () => {
                   </td>
                 </tr>
               ))}
+              {!logs?.length && (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-white/20 italic">
+                    Nenhum log forense disponível. Inicie uma geração para ver dados.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
