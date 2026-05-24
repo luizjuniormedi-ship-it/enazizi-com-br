@@ -2,7 +2,7 @@
  * Mnemonic Module — Service layer (Supabase client-side queries + edge function calls).
  */
 import { supabase } from "@/integrations/supabase/client";
-import { aiGateway } from "@/lib/ai/aiGateway";
+import { aiRouter } from "@/lib/ai/router";
 
 import type {
   MnemonicRequest,
