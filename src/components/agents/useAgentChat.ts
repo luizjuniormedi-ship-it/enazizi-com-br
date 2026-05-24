@@ -214,21 +214,30 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       // 0. Healthcheck pre-flight (silent but logged)
       if (!overridePrompt && messages.length <= 1) {
         console.log(`[TUTOR_V3_06_INVOKE_START] Healthcheck triggered for ${requestId}`);
-        supabase.functions.invoke(functionName, { 
-          body: { healthcheck: true },
-          headers: { "x-correlation-id": correlationId }
+        
+        // v13 HARDENING: Use standard fetch for healthcheck to match stream logic
+        const { data: { session } } = await supabase.auth.getSession();
+        fetch(CHAT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'x-correlation-id': correlationId
+          },
+          body: JSON.stringify({ healthcheck: true })
         })
-          .then(({ data, error }) => {
-            if (error) {
-              console.error(`[TUTOR_V3_08_INVOKE_ERROR] Healthcheck failed for ${requestId}`, error);
+          .then(async (resp) => {
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+              console.error(`[TUTOR_V3_08_INVOKE_ERROR] Healthcheck failed for ${requestId}`, data);
             } else {
               console.log(`[TUTOR_V3_07_INVOKE_DATA] Healthcheck data for ${requestId}`, data);
             }
-            console.log(`%c[TUTOR_V3_HEALTH] ${requestId}`, "color: #10b981", { data, error, ok: data?.ok });
+            console.log(`%c[TUTOR_V3_HEALTH] ${requestId}`, "color: #10b981", { ok: resp.ok, status: resp.status, data });
           })
           .catch(e => {
             console.error(`[TUTOR_V3_08_INVOKE_ERROR] Healthcheck exception for ${requestId}`, e);
-            console.error(`[TUTOR_V3_HEALTH_FATAL] ${requestId}`, e);
           });
       }
 
