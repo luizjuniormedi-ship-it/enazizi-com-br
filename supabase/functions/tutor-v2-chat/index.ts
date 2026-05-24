@@ -250,10 +250,7 @@ serve(async (req) => {
 
     if (sessionError || !session) {
       console.error("[TUTOR_V2] Session error:", { message: sessionError?.message, requestId });
-      return new Response(JSON.stringify({ ok: false, error: "SESSION_NOT_FOUND", message: "Sessão não encontrada. Por favor, inicie um novo tema.", requestId }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsResponse({ ok: false, error: "SESSION_NOT_FOUND", message: "Sessão não encontrada. Por favor, inicie um novo tema.", requestId }, 404);
     }
 
     const { data: history, error: historyError } = await supabase
