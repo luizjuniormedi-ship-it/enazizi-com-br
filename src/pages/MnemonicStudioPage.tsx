@@ -573,9 +573,13 @@ export default function MnemonicGeneratorPage() {
       {/* Loading */}
       {isLoading && !result && (
         <Card className="border-primary/20" data-testid="mnemonic-loading">
-          <CardContent className="py-12 text-center space-y-3">
+          <CardContent className="py-12 text-center space-y-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-            <p className="text-sm text-muted-foreground">{generatingStatus}</p>
+            <p className="text-sm font-bold animate-pulse text-primary">{generatingStatus}</p>
+            <div className="space-y-2 max-w-sm mx-auto">
+              <div className="h-4 bg-muted rounded-full w-full animate-pulse" />
+              <div className="h-4 bg-muted rounded-full w-2/3 mx-auto animate-pulse" />
+            </div>
             <p className="text-xs text-muted-foreground">
               O sistema valida automaticamente e regenera se a qualidade não for suficiente.
             </p>
