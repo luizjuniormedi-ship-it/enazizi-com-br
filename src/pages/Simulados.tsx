@@ -125,7 +125,8 @@ async function generateBatch(
   mode: SimuladoMode = "estudo",
   avoidIds?: string[]
 ): Promise<SimQuestion[]> {
-  console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard, autoDistribution, avoidIdsCount: avoidIds?.length });
+  // [QUESTION_GEN_START]
+  console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
   
   try {
     const { data, error } = await supabase.functions.invoke("question-generator", {
@@ -148,12 +149,20 @@ async function generateBatch(
 
     if (error) throw error;
     if (!data?.success) {
-      console.error("[SIMULADO_GEN] Generator returned error:", data);
+      console.error("[SIMULADO_GEN] Generator failed:", data);
       throw new Error(data?.error || "Falha na geração");
     }
 
-    console.log("[DEBUG] Questions generated, session created:", data.session_id);
+    // [QUESTION_GEN_COUNT] check
+    const receivedCount = data.questions?.length || 0;
+    if (receivedCount < count) {
+      console.warn(`[QUESTION_GEN_COUNT_MISMATCH] Requested ${count}, got ${receivedCount}`);
+    }
+
+    // [QUESTION_GEN_FINAL_OK]
+    console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount}`);
     return mapQuestions(data.questions || [], topics);
+
   } catch (e) {
     console.error("[SIMULADO_GEN] Batch failed:", e);
     throw e;
