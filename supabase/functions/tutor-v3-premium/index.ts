@@ -3,21 +3,29 @@ import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 
 /**
- * TUTOR V3 PREMIUM — ENTERPRISE HARDENING v3
- * High-stability longitudinal pedagogical engine with real streaming.
+ * TUTOR V3 PREMIUM — ENTERPRISE HARDENING v4
+ * High-stability longitudinal pedagogical engine with resilience against duplicate keys and session loss.
  */
-Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
+Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const { requestId, correlationId, userId } = correlation;
 
   try {
     if (!userId) throw new Error("UNAUTHORIZED: Session required");
 
     const body = await req.json().catch(() => ({}));
-    const { message, sessionId, currentBlock: bodyBlock, newTopic, pedagogicalContext, stream = true } = body;
+    const { 
+      message, 
+      sessionId, 
+      currentBlock: bodyBlock, 
+      newTopic, 
+      pedagogicalContext, 
+      stream = true,
+      history = []
+    } = body;
 
     // ── 1. SESSION RECOVERY & HYDRATION ──────────────────────────────────────────
     let session = null;
-    let topic = newTopic || pedagogicalContext?.topic;
+    let topic = newTopic || pedagogicalContext?.topic || body.topic;
     
     if (sessionId) {
       const { data, error } = await supabaseAdmin
@@ -35,12 +43,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
 
     if (!topic) {
-       logger.warn("MISSING_TOPIC", "Request without topic context", { requestId });
+       logger.warn("MISSING_TOPIC", "Request without topic context, using default.", { requestId });
+       topic = "Medicina Geral";
     }
 
     // ── 2. LONGITUDINAL MEMORY SYNC ──────────────────────────────────────────────
     let memoryContext = "";
     let masteryLevel = "INITIAL";
+    let recoveryMode = false;
     
     if (userId && topic) {
       const { data: mem, error: memErr } = await supabaseAdmin
@@ -54,22 +64,37 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       
       if (mem) {
         masteryLevel = mem.mastery_level || "INITIAL";
+        recoveryMode = masteryLevel === "RECOVERY" || (mem.comprehension_score !== null && mem.comprehension_score < 40);
+        
         memoryContext = `
 [MEMÓRIA COGNITIVA LONGITUDINAL]
 - Nível de Domínio: ${masteryLevel}
 - Erros em Provas Anteriores: ${mem.misconceptions_detected?.join(", ") || "Nenhum"}
 - Blocos Teóricos já Vistos: ${mem.block_title || "Introdução"}
 - Pontos de Travamento Identificados: ${mem.explanation_summary || "Nenhum"}
+- Modo Atual: ${recoveryMode ? "RECUPERAÇÃO ATIVA" : "PROGRESSÃO NORMAL"}
 `;
-        logger.info("COGNITIVE_RECALL", `Hydrated context for ${topic}`, { mastery: masteryLevel });
+        logger.info("COGNITIVE_RECALL", `Hydrated context for ${topic}`, { mastery: masteryLevel, recoveryMode });
       }
     }
 
     // ── 3. AI PRECEPTORSHIP (High Reasoning Tier) ─────────────────────────────────
     const currentStage = session?.current_block || bodyBlock || "BLOCO_1_MISSAO_CLINICA";
     
+    // Recovery Logic Injection
+    let recoveryInstructions = "";
+    if (recoveryMode) {
+      recoveryInstructions = `
+⚠️ MODO RECUPERAÇÃO ATIVADO:
+O aluno demonstrou dificuldade significativa neste tema anteriormente. 
+- Use analogias ultra simples.
+- Evite termos técnicos sem explicação leiga imediata.
+- Reduza a complexidade clínica em 40%.
+- Foque na correção de conceitos fundamentais antes de avançar.`;
+    }
+
     const aiConfig: any = {
-      taskType: "tutor_deep", // Trigger pedagogical blocks check
+      taskType: "tutor_deep",
       complexity: "alta",
       userId,
       stream,
@@ -79,18 +104,21 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           content: `${PROMPT_COMPLETO}
           
 CONTEXTO OPERACIONAL:
-- TEMA: ${topic || "Medicina Geral"}
-- ESTÁGIO: ${currentStage}
+- TEMA: ${topic}
+- ESTÁGIO ATUAL: ${currentStage}
 - DOMÍNIO DO ALUNO: ${masteryLevel}
 ${memoryContext}
+${recoveryInstructions}
 
 REGRAS CRÍTICAS:
-- Responda seguindo RIGOROSAMENTE a estrutura de 15 blocos pedagógicos se for o início de um tema.
+- Responda seguindo RIGOROSAMENTE a estrutura de 15 blocos pedagógicos se for o início de um tema ou novo estágio.
 - Mantenha a identidade de Preceptor ENAZIZI.
 - Seja profundo tecnicamente, mas didático.
+- IMPORTANTE: Se o aluno estiver em modo recuperação, certifique-se de validar cada conceito antes de progredir.
 - Se não estiver em modo streaming, responda OBRIGATORIAMENTE em JSON.` 
         },
-        { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${newTopic}.` : (message || "Continuar aula") }
+        ...history,
+        { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula") }
       ]
     };
 
@@ -98,10 +126,25 @@ REGRAS CRÍTICAS:
       aiConfig.response_format = { type: "json_object" };
     }
 
+    const startTime = Date.now();
     const aiResponse = await ai(aiConfig, { retries: 2 });
 
     // Handle Streaming response
     if (stream) {
+      // In streaming mode, we don't block for persistence, we use waitUntil
+      waitUntil((async () => {
+        // Record telemetry for streaming start
+        await supabaseAdmin.from("tutor_ia_telemetry").insert({
+          user_id: userId,
+          session_id: sessionId || correlationId,
+          event_type: "streaming_start",
+          topic: topic,
+          model_used: "gpt-4o", // Default in reasoning chain
+          duration_ms: Date.now() - startTime,
+          metadata: { requestId, correlationId }
+        });
+      })());
+      
       return aiResponse;
     }
 
@@ -111,33 +154,68 @@ REGRAS CRÍTICAS:
     try {
       parsed = JSON.parse(rawAi);
     } catch (e) {
-      logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed", { rawAi });
+      logger.error("CORRUPTED_AI_OUTPUT", "JSON parse failed, attempting partial recovery", { rawAi });
       parsed = { content: rawAi, socraticQuestion: "Ficou clara essa explicação?" };
     }
 
     // ── 5. IDEMPOTENT PERSISTENCE (The Hardening Core) ──────────────────────────
-    if (userId && topic) {
-      supabaseAdmin.from("tutor_learning_memory").upsert({
-        user_id: userId,
-        topic: topic,
-        block_title: currentStage,
-        mastery_level: parsed.mastery_level || masteryLevel,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,topic' }).then();
-      
-      if (sessionId) {
-        supabaseAdmin.from("tutor_sessions").update({
-          current_block: currentStage,
-          topic: topic,
-          updated_at: new Date().toISOString()
-        }).eq("id", sessionId).then();
+    // Uses upsert with proper constraints to prevent duplication errors
+    waitUntil((async () => {
+      try {
+        if (userId && topic) {
+          // Update Longitudinal Memory
+          await supabaseAdmin.from("tutor_learning_memory").upsert({
+            user_id: userId,
+            topic: topic,
+            block_title: currentStage,
+            mastery_level: parsed.mastery_level || masteryLevel,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id,topic' });
+          
+          // Update Session
+          if (sessionId) {
+            await supabaseAdmin.from("tutor_sessions").update({
+              current_block: currentStage,
+              topic: topic,
+              updated_at: new Date().toISOString()
+            }).eq("id", sessionId);
+          }
+
+          // Save Message
+          await supabaseAdmin.from("tutor_messages").insert({
+            tutor_session_id: sessionId,
+            user_id: userId,
+            role: "assistant",
+            content: parsed.content || "Resposta processada.",
+            metadata: { request_id: requestId, correlation_id: correlationId }
+          });
+          
+          // Record Detailed Telemetry
+          await supabaseAdmin.from("tutor_ia_telemetry").insert({
+            user_id: userId,
+            session_id: sessionId || correlationId,
+            event_type: "response_generated",
+            topic: topic,
+            model_used: aiResponse.model || "reasoning_tier",
+            duration_ms: Date.now() - startTime,
+            confidence: 100, // Normalized
+            metadata: { 
+              requestId, 
+              correlationId, 
+              masteryLevel: parsed.mastery_level,
+              stage: currentStage
+            }
+          });
+        }
+      } catch (persistenceErr) {
+        logger.error("BACKGROUND_PERSISTENCE_FAIL", persistenceErr.message);
       }
-    }
+    })());
 
     // ── 6. RETURN HARDENED RESPONSE ─────────────────────────────────────────────
     return corsResponse({
       success: true,
-      content: parsed.content || "Erro pedagógico.",
+      content: parsed.content || "Erro pedagógico na normalização.",
       socraticQuestion: parsed.socraticQuestion || "",
       currentBlock: currentStage,
       topic: topic,
@@ -148,14 +226,18 @@ REGRAS CRÍTICAS:
   } catch (err) {
     logger.critical("HARDENED_RUNTIME_CRASH", err.message, { requestId });
     
-    supabaseAdmin.from("runtime_incidents").insert({
-      function_name: "tutor-v3-premium",
-      incident_type: "runtime_crash",
-      severity: "critical",
-      message: err.message,
-      correlation_id: correlationId,
-      user_id: userId
-    }).then();
+    // Log incident
+    waitUntil((async () => {
+      await supabaseAdmin.from("runtime_incidents").insert({
+        function_name: "tutor-v3-premium",
+        incident_type: "runtime_crash",
+        severity: "critical",
+        message: err.message,
+        correlation_id: correlationId,
+        user_id: userId,
+        metadata: { requestId, stack: err.stack }
+      });
+    })());
 
     return corsResponse({
       success: false,
