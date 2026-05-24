@@ -30,13 +30,15 @@ const DIFFICULTY_OPTIONS = [
 const EXAM_BOARDS = [
   { value: "all", label: "Todas as bancas" },
   { value: "ENARE", label: "ENARE" },
+  { value: "CEBRASPE", label: "CEBRASPE (Certo/Errado)" },
+  { value: "FGV", label: "FGV" },
+  { value: "FCC", label: "FCC" },
+  { value: "ENAMED", label: "ENAMED" },
   { value: "REVALIDA", label: "REVALIDA" },
-  { value: "USP-SP", label: "USP-SP" },
+  { value: "USP", label: "USP-SP" },
   { value: "UNIFESP", label: "UNIFESP" },
-  { value: "SUS-SP", label: "SUS-SP" },
-  { value: "UNICAMP", label: "UNICAMP" },
-  { value: "SANTA_CASA", label: "Santa Casa SP" },
 ];
+
 
 export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
 
