@@ -121,12 +121,35 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             board: profile.label
           };
 
+          // Forensic Validation v14
+          const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
           const validation = validateQuestionAgainstBoard(cleanQ, profile);
+          
           const hash = btoa(cleanQ.statement.substring(0, 50).toLowerCase().trim());
-          if (validation.isValid && !seenHashes.has(hash)) {
-            finalQuestions.push({ ...cleanQ, _source: "generated" });
+          
+          // Log Forensic Analysis
+          await supabaseAdmin.from("forensic_quality_logs").insert({
+            board: profile.label,
+            fidelity_score: forensic.fidelity_score,
+            structural_score: forensic.structural_score,
+            lexical_score: forensic.lexical_score,
+            cognitive_score: forensic.cognitive_score,
+            pedagogical_score: forensic.pedagogical_score,
+            ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
+            flags: forensic.reasons,
+            decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
+            correlation_id: correlationId,
+            raw_response_preview: cleanQ.statement.substring(0, 200)
+          });
+
+          if (forensic.isValid && validation.isValid && !seenHashes.has(hash)) {
+            finalQuestions.push({ ...cleanQ, _source: "generated", forensic_score: forensic.fidelity_score });
             seenHashes.add(hash);
+            console.log(`[FORENSIC_ACCEPT] score=${forensic.fidelity_score} banca=${profile.label}`);
+          } else {
+            console.log(`[FORENSIC_REJECT] score=${forensic.fidelity_score} reasons=${forensic.reasons.join(',')}`);
           }
+
         }
       }
     }
