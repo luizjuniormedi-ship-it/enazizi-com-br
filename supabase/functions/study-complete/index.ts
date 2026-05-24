@@ -42,5 +42,5 @@ Deno.serve(enterpriseEdgeHandler("study-complete", async ({ req, logger, supabas
     }
   }
 
-  return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  return corsResponse({ success: true }, 200);
 }));
