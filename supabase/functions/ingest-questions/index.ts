@@ -2,7 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getServiceClient, logPipelineAlert } from "../_shared/pipeline-logger.ts";
-import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
+import { aiFetch } from "../_shared/ai-fetch.ts";
+import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
