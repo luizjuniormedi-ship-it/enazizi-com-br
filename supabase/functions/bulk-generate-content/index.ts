@@ -136,22 +136,18 @@ REGRAS:
   // 3. EXECUTE
   if (body.background !== false) {
     waitUntil(processGeneration());
-    return new Response(JSON.stringify({ 
+    return corsResponse({ 
       status: "processing", 
       specialty, 
       correlation_id: correlation.correlationId 
-    }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    }, 200);
   } else {
     const result = await processGeneration();
-    return new Response(JSON.stringify({ 
+    return corsResponse({ 
       status: "completed", 
       specialty,
       result,
       correlation_id: correlation.correlationId 
-    }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    }, 200);
   }
 }));
