@@ -486,10 +486,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
           onComplete: (finalText) => {
+            console.log(`[TUTOR_V3_07_INVOKE_DATA] Stream complete for ${requestId}. Content length: ${finalText?.length}`);
             console.log(`[TUTOR_UI_MESSAGE_APPENDED] FINAL id=${requestId}`, { len: finalText?.length });
             finalizeLoading();
           },
           onError: ({ status, message }) => {
+            console.error(`[TUTOR_V3_08_INVOKE_ERROR] Stream failed for ${requestId}. Status: ${status} Error: ${message}`);
             console.error(`%c[TUTOR_V3_ERROR] ${requestId}`, "background: #ef4444; color: white; padding: 2px 5px;", { 
               status, 
               message,
