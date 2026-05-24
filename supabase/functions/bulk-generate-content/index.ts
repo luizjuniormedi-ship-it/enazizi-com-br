@@ -6,6 +6,8 @@ import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
 import { callAi } from "../_shared/enterprise-edge/ai-router.ts";
 import { parseAiJson, sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { corsHeaders, corsResponse } from "../_shared/cors.ts";
+
 
 const SPECIALTIES = [
   "Cardiologia", "Pneumologia", "Neurologia", "Endocrinologia",
