@@ -98,36 +98,50 @@ const SmartPlanner = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const [temasRes, revisoesRes, desRes, configRes, approvalRes, chanceRes, fsrsRes, errorRes, profileRes, recoveryRes, studyPlanRes] = await Promise.all([
-        supabase.from("temas_estudados").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_estudo", { ascending: false }),
-        supabase.from("revisoes").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_revisao", { ascending: true }),
-        supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).gt("data_registro", resetAt || "1900-01-01T00:00:00Z").order("data_registro", { ascending: false }),
+      console.debug("[PLANNER_HYDRATION_START]");
+      
+      // Step 1: Core configuration and profile (FAST)
+      const [configRes, profileRes] = await Promise.all([
         supabase.from("cronograma_config").select("*").eq("user_id", user.id).maybeSingle(),
-        supabase.from("approval_scores").select("score, phase").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
-        chanceByExamEnabled ? supabase.from("chance_by_exam").select("banca, chance_score").eq("user_id", user.id) : Promise.resolve({ data: [], error: null }),
-        supabase.from("fsrs_cards").select("id, card_ref_id, card_type, due, stability, difficulty, state, reps, lapses").eq("user_id", user.id).gt("updated_at", resetAt || "1900-01-01T00:00:00Z"),
-        supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").order("vezes_errado", { ascending: false }).limit(20),
-        supabase.from("profiles").select("exam_date, target_exams").eq("user_id", user.id).maybeSingle(),
-        recoveryFlagEnabled ? supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").maybeSingle() : Promise.resolve({ data: null, error: null }),
-        supabase.from("study_plans").select("id").eq("user_id", user.id).eq("status", "completed").order("updated_at", { ascending: false }).limit(1).maybeSingle()
+        supabase.from("profiles").select("exam_date, target_exams").eq("user_id", user.id).maybeSingle()
+      ]);
+      
+      setConfig((configRes.data as any) || null);
+      setExamDate(profileRes.data?.exam_date || null);
+      setTargetExams((profileRes.data?.target_exams as string[]) || []);
+
+      // Step 2: Main study data (Essential for summary)
+      const [temasRes, revisoesRes, desRes] = await Promise.all([
+        supabase.from("temas_estudados").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_estudo", { ascending: false }).limit(200),
+        supabase.from("revisoes").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_revisao", { ascending: true }).limit(500),
+        supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).gt("data_registro", resetAt || "1900-01-01T00:00:00Z").order("data_registro", { ascending: false }).limit(500)
       ]);
 
       setTemas((temasRes.data as any[]) || []);
       setRevisoes((revisoesRes.data as any[]) || []);
       setDesempenhos((desRes.data as any[]) || []);
-      setConfig((configRes.data as any) || null);
+
+      // Step 3: Auxiliary data (Async)
+      const [approvalRes, chanceRes, fsrsRes, errorRes, recoveryRes, studyPlanRes] = await Promise.all([
+        supabase.from("approval_scores").select("score, phase").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+        chanceByExamEnabled ? supabase.from("chance_by_exam").select("banca, chance_score").eq("user_id", user.id) : Promise.resolve({ data: [], error: null }),
+        supabase.from("fsrs_cards").select("id, card_ref_id, card_type, due, stability, difficulty, state, reps, lapses").eq("user_id", user.id).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").limit(500),
+        supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").order("vezes_errado", { ascending: false }).limit(20),
+        recoveryFlagEnabled ? supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").maybeSingle() : Promise.resolve({ data: null, error: null }),
+        supabase.from("study_plans").select("id").eq("user_id", user.id).eq("status", "completed").order("updated_at", { ascending: false }).limit(1).maybeSingle()
+      ]);
+
       setApprovalScore(approvalRes.data?.score || 0);
       setChanceByExam((chanceRes.data as any[]) || []);
       setFsrsCards((fsrsRes.data as any[]) || []);
       setErrorBank((errorRes.data as any[]) || []);
-      setExamDate(profileRes.data?.exam_date || null);
-      setTargetExams((profileRes.data?.target_exams as string[]) || []);
       setRecoveryMode(!!recoveryRes.data);
       setHeavyRecoveryPhase(recoveryRes.data?.mode === "heavy" ? (recoveryRes.data?.phase || 1) : undefined);
       setPlanId(studyPlanRes.data?.id || null);
+      
+      console.debug("[PLANNER_HYDRATION_OK]");
     } catch (err) {
       console.error("[SmartPlanner.loadData] failed:", err);
-      // Fallback: don't show toast if it's just a background sync
     } finally {
       setLoading(false);
     }
