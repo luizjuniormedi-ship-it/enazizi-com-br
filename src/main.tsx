@@ -24,20 +24,22 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-const canonical = "enazizi.com";
+const canonical = "enazizi.com.br";
 
 const isLocalHost = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
 const isPreviewHost = 
   window.location.hostname.includes("id-preview--") || 
   window.location.hostname.includes("lovable") || 
   window.location.hostname.includes("gptengineer") ||
-  window.location.hostname.includes("lovableproject.com");
+  window.location.hostname.includes("lovableproject.com") ||
+  window.location.hostname.includes("enazizi-com-br.lovable.app");
 
 const shouldRedirectToCanonical =
   !isLocalHost &&
   !isPreviewHost &&
   window.location.hostname !== canonical &&
-  window.location.hostname !== `www.${canonical}`;
+  window.location.hostname !== `www.${canonical}` &&
+  window.location.hostname !== "enazizi.com"; // Accept both .com and .com.br for now if needed
 
 const isInIframe = (() => {
   try {
