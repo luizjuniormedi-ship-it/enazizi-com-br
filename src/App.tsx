@@ -191,6 +191,17 @@ const queryClient = new QueryClient({
   },
 });
 
+const LogRouteReady = () => {
+  const location = useLocation();
+  useEffect(() => {
+    console.debug(`[ROUTE_READY] ${location.pathname}`);
+    if (location.pathname === "/dashboard") {
+      console.debug("[COGNITIVE_RUNTIME_OK]");
+    }
+  }, [location]);
+  return null;
+};
+
 const App = () => (
   <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
@@ -202,6 +213,7 @@ const App = () => (
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>
+              <Route path="*" element={<LogRouteReady />} />
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Navigate to="/login" replace />} />
