@@ -10,9 +10,10 @@ import AdminRoute from "@/components/auth/AdminRoute";
 import ProfessorRoute from "@/components/auth/ProfessorRoute";
 import InstitutionalRoute from "@/components/auth/InstitutionalRoute";
 import { ModuleGuard } from "@/components/guards/ModuleGuard";
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function RedirectWithSearch({ to }: { to: string }) {
   const location = useLocation();
@@ -108,42 +109,98 @@ const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "Rese
 const Favoritos = lazyWithRetry(() => import("./pages/Favoritos"), "Favoritos");
 const Historico = lazyWithRetry(() => import("./pages/Historico"), "Historico");
 
-const PageLoader = () => (
-  <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 space-y-6 animate-in fade-in duration-500">
-    <div className="relative">
-      <div className="h-16 w-16 rounded-full border-t-2 border-primary animate-spin" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <Loader2 className="h-6 w-6 text-primary animate-pulse" />
+const PageLoader = () => {
+  const [timedOut, setTimedOut] = useState(false);
+  
+  useEffect(() => {
+    console.debug("[BOOT_START]");
+    const timer = setTimeout(() => {
+      setTimedOut(true);
+      console.warn("[DASHBOARD_HYDRATION_TIMEOUT] Sincronização demorando mais de 15s...");
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 space-y-6 animate-in fade-in duration-500">
+      <div className="relative">
+        <div className="h-16 w-16 rounded-full border-t-2 border-primary animate-spin" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 text-primary animate-pulse" />
+        </div>
       </div>
+      <div className="text-center space-y-2">
+        <h2 className="text-lg font-black uppercase tracking-widest text-white/80 animate-pulse">ENAZIZI</h2>
+        <p className="text-[10px] text-white/30 font-bold uppercase tracking-tighter">Sincronizando Ecossistema Cognitivo</p>
+        
+        {timedOut && (
+          <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+            <p className="text-xs text-amber-500/80 mb-4">A sincronização está demorando mais que o esperado.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all"
+            >
+              Tentar Recarregar
+            </button>
+          </div>
+        )}
+      </div>
+      {!timedOut && (
+        <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+          <div className="h-full bg-primary/40 animate-progress-loading" />
+        </div>
+      )}
     </div>
-    <div className="text-center space-y-2">
-      <h2 className="text-lg font-black uppercase tracking-widest text-white/80 animate-pulse">ENAZIZI</h2>
-      <p className="text-[10px] text-white/30 font-bold uppercase tracking-tighter">Sincronizando Ecossistema Cognitivo</p>
+  );
+};
+
+const ModuleBoundary = ({ children, name }: { children: React.ReactNode, name: string }) => (
+  <ErrorBoundary fallback={
+    <div className="p-8 rounded-3xl bg-red-500/5 border border-red-500/10 text-center space-y-4">
+      <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
+      <h3 className="text-lg font-bold">Módulo {name} falhou</h3>
+      <p className="text-sm text-white/40">Houve um erro ao carregar este componente.</p>
+      <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+        Tentar Novamente
+      </Button>
     </div>
-    <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
-      <div className="h-full bg-primary/40 animate-progress-loading" />
-    </div>
-  </div>
+  }>
+    {children}
+  </ErrorBoundary>
 );
 
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 10 * 60 * 1000, // 10 minutes default
-      gcTime: 30 * 60 * 1000,    // 30 minutes cache duration
-      refetchOnWindowFocus: true,
+      staleTime: 5 * 60 * 1000, // 5 minutes default
+      gcTime: 15 * 60 * 1000,    // 15 minutes cache duration
+      refetchOnWindowFocus: false, // Reduced pressure
       retry: (failureCount, error: any) => {
-        if (failureCount >= 3) return false;
-        // Don't retry on certain errors
+        // Query Budget Protection: limit retries and specific errors
+        if (failureCount >= 2) {
+          console.warn("[QUERY_BUDGET_EXCEEDED] Limiting retries for performance");
+          return false;
+        }
         if (error?.status === 404 || error?.status === 401 || error?.status === 403) return false;
         return true;
       },
-      refetchOnMount: true,
+      refetchOnMount: false, // Avoid storm on mount
       refetchOnReconnect: 'always',
     },
   },
 });
+
+const LogRouteReady = () => {
+  const location = useLocation();
+  useEffect(() => {
+    console.debug(`[ROUTE_READY] ${location.pathname}`);
+    if (location.pathname === "/dashboard") {
+      console.debug("[COGNITIVE_RUNTIME_OK]");
+    }
+  }, [location]);
+  return null;
+};
 
 const App = () => (
   <ErrorBoundary>
@@ -155,6 +212,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
+            <LogRouteReady />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
@@ -192,19 +250,19 @@ const App = () => (
               <Route element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route path="/enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
                 <Route path="/dashboard">
-                  <Route index element={<Dashboard />} />
+                  <Route index element={<ModuleBoundary name="Dashboard"><Dashboard /></ModuleBoundary>} />
                   <Route path="profile" element={<Navigate to="/dashboard/perfil" replace />} />
                   <Route path="cockpit" element={<Navigate to="/dashboard/metrics" replace />} />
-                  <Route path="metrics" element={<GovernanceMetrics />} />
+                  <Route path="metrics" element={<ModuleBoundary name="Metrics"><GovernanceMetrics /></ModuleBoundary>} />
                   
                   {/* Rotas Reais de Funcionalidades */}
-                  <Route path="planner" element={<SmartPlanner />} />
-                  <Route path="sessao-estudo" element={<TutorV2Page />} />
-                  <Route path="sessao-estudo/:sessionId" element={<TutorV2Page />} />
+                  <Route path="planner" element={<ModuleBoundary name="Planner"><SmartPlanner /></ModuleBoundary>} />
+                  <Route path="sessao-estudo" element={<ModuleBoundary name="Tutor"><TutorV2Page /></ModuleBoundary>} />
+                  <Route path="sessao-estudo/:sessionId" element={<ModuleBoundary name="Tutor"><TutorV2Page /></ModuleBoundary>} />
                   <Route path="tutor-legacy" element={<StudySession />} />
-                  <Route path="simulados" element={<Simulados />} />
-                  <Route path="flashcards" element={<Flashcards />} />
-                  <Route path="banco-erros" element={<ErrorBank />} />
+                  <Route path="simulados" element={<ModuleBoundary name="Simulados"><Simulados /></ModuleBoundary>} />
+                  <Route path="flashcards" element={<ModuleBoundary name="FSRS"><Flashcards /></ModuleBoundary>} />
+                  <Route path="banco-erros" element={<ModuleBoundary name="ErrorBank"><ErrorBank /></ModuleBoundary>} />
                   <Route path="chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                   <Route path="agentes" element={<AgentsHub />} />
@@ -229,7 +287,7 @@ const App = () => (
                   <Route path="analytics" element={<Navigate to="/dashboard/progress" replace />} />
                   <Route path="predictor" element={<PerformancePredictor />} />
                   <Route path="mapa-dominio" element={<MedicalDomainMap />} />
-                  <Route path="proficiencia" element={<StudentSimulados />} />
+                  <Route path="proficiencia" element={<ModuleBoundary name="Proficiency"><StudentSimulados /></ModuleBoundary>} />
                   <Route path="coach" element={<MotivationalCoach />} />
                   <Route path="rankings" element={<Rankings />} />
                   <Route path="revisor" element={<MedicalReviewer />} />

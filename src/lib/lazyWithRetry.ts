@@ -20,6 +20,7 @@ export const lazyWithRetry = <T extends ComponentType<any>>(
     try {
       const module = await importer();
       const loadTime = performance.now() - startTime;
+      console.debug(`[LAZY_MODULE_LOAD] ${cacheKey} in ${Math.round(loadTime)}ms`);
 
       if (typeof window !== "undefined") {
         sessionStorage.removeItem(`${LAZY_RETRY_PREFIX}:${cacheKey}:${window.location.pathname}`);
