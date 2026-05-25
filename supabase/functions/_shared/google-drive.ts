@@ -10,41 +10,48 @@ async function extractQuestionsDirect(base64Pdf: string, fileName: string, logge
   const systemPrompt = `Você é um especialista em medicina e extração de dados. Extraia questões médicas de provas em PDF. SEMPRE enriqueça cada questão com: board, year, institution, topic, subtopic, difficulty (1-5), explanation, clinical_case, tags.`;
   const userPrompt = `Extraia questões deste PDF de prova médica. Formato JSON: {"questions": [{"statement": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation": "...", "topic": "...", "subtopic": "...", "board": "...", "year": 2024, "institution": "...", "difficulty": 3, "clinical_case": true, "tags": ["tag1"]}]}`;
 
-  // --- TRY 1: OpenAI direct (gpt-4o-mini) ---
+  // --- TRY 1: OpenAI Responses API (gpt-4o-mini) — accepts PDF natively via input_file ---
   if (OPENAI_API_KEY) {
     try {
-      logger.info("AI_OPENAI", `Calling OpenAI gpt-4o-mini for ${fileName}`);
+      logger.info("AI_OPENAI", `Calling OpenAI Responses API gpt-4o-mini for ${fileName}`);
       const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 60000);
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const t = setTimeout(() => ctrl.abort(), 90000);
+      const res = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
         signal: ctrl.signal,
         body: JSON.stringify({
           model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: [
-              { type: "text", text: userPrompt },
-              { type: "image_url", image_url: { url: `data:application/pdf;base64,${base64Pdf}` } }
-            ]}
-          ],
-          response_format: { type: "json_object" },
-          max_tokens: 8000
+          instructions: systemPrompt,
+          input: [{
+            role: "user",
+            content: [
+              { type: "input_text", text: userPrompt },
+              { type: "input_file", filename: fileName, file_data: `data:application/pdf;base64,${base64Pdf}` }
+            ]
+          }],
+          text: { format: { type: "json_object" } },
+          max_output_tokens: 8000
         })
       });
       clearTimeout(t);
       if (res.ok) {
         const data = await res.json();
+        // Responses API: output_text is the convenience accessor; fall back to digging through output array
+        const text = data.output_text
+          || data.output?.[0]?.content?.[0]?.text
+          || data.output?.find?.((o:any)=>o.type==='message')?.content?.find?.((c:any)=>c.type==='output_text')?.text
+          || "{}";
         logger.info("AI_OPENAI_OK", `OpenAI succeeded for ${fileName}`);
-        return data.choices?.[0]?.message?.content || "{}";
+        return text;
       }
-      const errTxt = (await res.text()).slice(0, 200);
+      const errTxt = (await res.text()).slice(0, 300);
       logger.warn("AI_OPENAI_FAIL", `OpenAI ${res.status}: ${errTxt}`);
     } catch (e) {
       logger.warn("AI_OPENAI_EXCEPTION", `OpenAI threw: ${e.message}`);
     }
   }
+
 
   // --- TRY 2: Gemini direct API (uses GEMINI_API_KEY, not Lovable Gateway) ---
   if (GEMINI_API_KEY) {
