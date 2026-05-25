@@ -48,6 +48,31 @@ interface ProfileRow {
 const PROFILE_FIELDS =
   "user_id, is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type, target_exams";
 
+const PROFILE_FALLBACK_FIELDS =
+  "user_id, is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type, target_exam";
+
+type ProfileQueryRow = ProfileRow | (Omit<ProfileRow, "target_exams"> & { target_exam?: string | null });
+
+function normalizeProfileRow(data: ProfileQueryRow | null): ProfileRow | null {
+  if (!data) return null;
+  const targetExams = "target_exams" in data && Array.isArray(data.target_exams)
+    ? data.target_exams
+    : "target_exam" in data && data.target_exam
+      ? [data.target_exam]
+      : null;
+
+  return {
+    ...data,
+    target_exams: targetExams,
+  } as ProfileRow;
+}
+
+function shouldFallbackProfileQuery(error: any) {
+  const status = Number(error?.status || error?.code || 0);
+  const message = String(error?.message || error?.details || "");
+  return status >= 500 || /target_exams|schema cache|column|profiles/i.test(message);
+}
+
 export function useProfileStatus(): ProfileStatus {
   const { user, loading: authLoading } = useAuth();
 
@@ -65,8 +90,23 @@ export function useProfileStatus(): ProfileStatus {
         .select(PROFILE_FIELDS)
         .eq("user_id", user.id)
         .maybeSingle();
-      if (error) throw error;
-      return (data ?? null) as ProfileRow | null;
+
+      if (!error) return normalizeProfileRow((data ?? null) as ProfileQueryRow | null);
+      if (!shouldFallbackProfileQuery(error)) throw error;
+
+      console.warn("[useProfileStatus] full profile query failed; retrying fallback fields", {
+        status: error.status,
+        message: error.message,
+      });
+
+      const fallback = await supabase
+        .from("profiles")
+        .select(PROFILE_FALLBACK_FIELDS)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (fallback.error) throw fallback.error;
+      return normalizeProfileRow((fallback.data ?? null) as ProfileQueryRow | null);
     },
   });
 
