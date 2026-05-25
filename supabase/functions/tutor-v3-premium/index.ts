@@ -2,6 +2,7 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockId } from "../_shared/tutor/pedagogical-logic.ts";
+import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory } from "../_shared/tutor-memory.ts";
 
 
 console.log("[TUTOR_V3_BOOT] Function module loaded");
@@ -88,6 +89,73 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
 
+    // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory antes da IA) ──────────────
+    // Só tenta cache quando há pergunta real do aluno (não em "new topic" ou continuação automática).
+    const userQuestion = (message || "").trim();
+    let memoryHit: Awaited<ReturnType<typeof lookupTutorMemory>> = null;
+    if (!newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
+      memoryHit = await lookupTutorMemory(supabaseAdmin, userQuestion, {
+        userId,
+        topic,
+        specialty: null,
+      });
+    }
+
+    if (memoryHit) {
+      // Reuse: incrementa contador e retorna direto, sem chamar IA.
+      waitUntil((async () => {
+        await markMemoryReused(supabaseAdmin, memoryHit!.id);
+        if (sessionId && userId) {
+          await supabaseAdmin.from("tutor_messages").insert({
+            tutor_session_id: sessionId,
+            user_id: userId,
+            role: "assistant",
+            content: memoryHit!.answer,
+            metadata: {
+              request_id: requestId,
+              correlation_id: correlationId,
+              block: nextBlock,
+              fromMemory: true,
+              memoryId: memoryHit!.id,
+              memoryReuseCount: memoryHit!.reuseCount + 1,
+              memoryQualityScore: memoryHit!.qualityScore,
+            },
+          });
+        }
+      })());
+
+      return corsResponse({
+        success: true,
+        ok: true,
+        content: memoryHit.answer,
+        currentBlock: nextBlock,
+        blockTitle: currentBlockConfig.title,
+        teachingPhase: "ENSINAR",
+        shouldWaitForStudent: true,
+        socraticQuestion: "",
+        actionsContext: { topic, block: nextBlock },
+        topic,
+        correlation_id: correlationId,
+        fromMemory: true,
+        memoryId: memoryHit.id,
+        memoryReuseCount: memoryHit.reuseCount + 1,
+        memoryQualityScore: memoryHit.qualityScore,
+        memoryScope: memoryHit.scope,
+        memoryBlocks: memoryHit.blocks,
+        debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity },
+      }, 200);
+    }
+
+    // ── 3.6 RAG semantic context (não substitui IA, enriquece) ──────────────
+    let ragContext = "";
+    if (userQuestion.length >= 8) {
+      const ragHits = await lookupRagSemantic(supabaseAdmin, userQuestion, 3);
+      if (ragHits.length > 0) {
+        ragContext = "\n\n[CONTEXTO RAG RELEVANTE]\n" +
+          ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
+      }
+    }
+
     const aiConfig: any = {
       taskType: "tutor_deep",
       complexity: "alta",
@@ -117,14 +185,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           }
           
           TEMA ATUAL: ${topic}
-          CONTESTO DE MEMÓRIA: ${memoryContext}`
+          CONTESTO DE MEMÓRIA: ${memoryContext}${ragContext}`
         },
         ...history,
         { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula") }
       ]
     };
 
-
+    console.log("[MEMORY_MISS_OPENAI]", { topic, qLen: userQuestion.length });
     const aiResponse = await ai(aiConfig, { retries: 2 });
 
     // ── 4. STABILITY & PARSING ───────────────────────────────
@@ -178,6 +246,21 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
         });
 
+      }
+
+      // Save em tutor_knowledge_memory (global) — só quando houve pergunta real do aluno.
+      if (userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
+        await saveTutorMemory(supabaseAdmin, {
+          question: userQuestion,
+          answer: parsed.content || "",
+          blocks: parsed.blocks || [],
+          topic,
+          specialty: null,
+          qualityScore: 0.7,
+          modelUsed: aiResponse?.model || "openai",
+          source: "tutor_v3",
+          scope: "global",
+        });
       }
     })());
 
