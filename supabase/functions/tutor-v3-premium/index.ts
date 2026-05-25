@@ -247,6 +247,21 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         });
 
       }
+
+      // Save em tutor_knowledge_memory (global) — só quando houve pergunta real do aluno.
+      if (userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
+        await saveTutorMemory(supabaseAdmin, {
+          question: userQuestion,
+          answer: parsed.content || "",
+          blocks: parsed.blocks || [],
+          topic,
+          specialty: null,
+          qualityScore: 0.7,
+          modelUsed: aiResponse?.model || "openai",
+          source: "tutor_v3",
+          scope: "global",
+        });
+      }
     })());
 
     return corsResponse({
