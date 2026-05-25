@@ -68,8 +68,8 @@ const ErrorBank = () => {
     setLoading(true);
     try {
       const [activeRes, masteredRes] = await Promise.all([
-        supabase.from("error_bank").select("*").eq("user_id", user.id).or("dominado.is.null,dominado.eq.false").order("vezes_errado", { ascending: false }),
-        supabase.from("error_bank").select("*").eq("user_id", user.id).eq("dominado", true).order("dominado_em", { ascending: false }),
+        supabase.from("error_bank").select("*").eq("user_id", user.id).or("dominado.is.null,dominado.eq.false").order("vezes_errado", { ascending: false }).limit(50),
+        supabase.from("error_bank").select("*").eq("user_id", user.id).eq("dominado", true).order("dominado_em", { ascending: false }).limit(50),
       ]);
       setErrors((activeRes.data as ErrorEntry[]) || []);
       setMasteredErrors((masteredRes.data as ErrorEntry[]) || []);
