@@ -1,6 +1,99 @@
 import { ALLOWED_MODELS } from "./ai-model-registry.ts";
 import { sanitizeForPostgres, generateStatementHash } from "./db-utils.ts";
-import { callAi } from "./enterprise-edge/ai-router.ts";
+
+// Direct AI extraction: OpenAI primary, Gemini fallback. Bypasses ai-router to avoid
+// Lovable Gateway credit exhaustion and circuit breaker noise for high-volume PDF ingestion.
+async function extractQuestionsDirect(base64Pdf: string, fileName: string, logger: any) {
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+
+  const systemPrompt = `Você é um especialista em medicina e extração de dados. Extraia questões médicas de provas em PDF. SEMPRE enriqueça cada questão com: board, year, institution, topic, subtopic, difficulty (1-5), explanation, clinical_case, tags.`;
+  const userPrompt = `Extraia questões deste PDF de prova médica. Formato JSON: {"questions": [{"statement": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation": "...", "topic": "...", "subtopic": "...", "board": "...", "year": 2024, "institution": "...", "difficulty": 3, "clinical_case": true, "tags": ["tag1"]}]}`;
+
+  // --- TRY 1: OpenAI Responses API (gpt-4o-mini) — accepts PDF natively via input_file ---
+  if (OPENAI_API_KEY) {
+    try {
+      logger.info("AI_OPENAI", `Calling OpenAI Responses API gpt-4o-mini for ${fileName}`);
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 90000);
+      const res = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          instructions: systemPrompt,
+          input: [{
+            role: "user",
+            content: [
+              { type: "input_text", text: userPrompt },
+              { type: "input_file", filename: fileName, file_data: `data:application/pdf;base64,${base64Pdf}` }
+            ]
+          }],
+          text: { format: { type: "json_object" } },
+          max_output_tokens: 8000
+        })
+      });
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json();
+        // Responses API: output_text is the convenience accessor; fall back to digging through output array
+        const text = data.output_text
+          || data.output?.[0]?.content?.[0]?.text
+          || data.output?.find?.((o:any)=>o.type==='message')?.content?.find?.((c:any)=>c.type==='output_text')?.text
+          || "{}";
+        logger.info("AI_OPENAI_OK", `OpenAI succeeded for ${fileName}`);
+        return text;
+      }
+      const errTxt = (await res.text()).slice(0, 300);
+      logger.warn("AI_OPENAI_FAIL", `OpenAI ${res.status}: ${errTxt}`);
+    } catch (e) {
+      logger.warn("AI_OPENAI_EXCEPTION", `OpenAI threw: ${e.message}`);
+    }
+  }
+
+
+  // --- TRY 2: Gemini direct API (uses GEMINI_API_KEY, not Lovable Gateway) ---
+  if (GEMINI_API_KEY) {
+    try {
+      logger.info("AI_GEMINI", `Calling Gemini direct for ${fileName}`);
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 60000);
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: ctrl.signal,
+          body: JSON.stringify({
+            contents: [{
+              role: "user",
+              parts: [
+                { text: `${systemPrompt}\n\n${userPrompt}` },
+                { inline_data: { mime_type: "application/pdf", data: base64Pdf } }
+              ]
+            }],
+            generationConfig: { response_mime_type: "application/json", maxOutputTokens: 8000 }
+          })
+        }
+      );
+      clearTimeout(t);
+      if (res.ok) {
+        const data = await res.json();
+        logger.info("AI_GEMINI_OK", `Gemini succeeded for ${fileName}`);
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      }
+      const errTxt = (await res.text()).slice(0, 200);
+      throw new Error(`Gemini ${res.status}: ${errTxt}`);
+    } catch (e) {
+      logger.error("AI_GEMINI_FAIL", `Gemini failed for ${fileName}: ${e.message}`);
+      throw new Error(`Both OpenAI and Gemini failed: ${e.message}`);
+    }
+  }
+
+  throw new Error("No AI provider available (missing OPENAI_API_KEY and GEMINI_API_KEY)");
+}
+
 
 // Shared Hardcoded Credentials (Temporary for validation)
 export const GOOGLE_SA_EMAIL = "enazizi-drive-reader@enazizi.iam.gserviceaccount.com";
@@ -150,48 +243,11 @@ export async function processSingleDriveFile(
     }
     const base64Pdf = btoa(binary);
 
-    // 4. Call AI for extraction
+    // 4. Call AI for extraction (OpenAI primary, Gemini fallback — bypasses ai-router)
     logger.info("AI_EXTRACTION", `Sending ${file.name} to AI...`);
-    const aiResponse = await callAi({
-      taskType: "generation",
-      complexity: "alta",
-      userId: user.id,
-      messages: [
-        {
-          role: "system",
-          content: `Você é um especialista em medicina e extração de dados. 
-          Extraia questões médicas de provas em PDF.
-          SEMPRE enriqueça cada questão com:
-          - board: nome da banca (ex: REVALIDA, ENARE, USP, UNICAMP, SUS-SP)
-          - year: ano da prova
-          - institution: instituição
-          - topic: especialidade médica (ex: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Preventiva)
-          - subtopic: subtema específico (ex: ICC, DPOC, Apendicite)
-          - difficulty: 1 a 5 baseado na complexidade
-          - explanation: explicação detalhada com referência bibliográfica se possível
-          - clinical_case: true/false se a questão apresenta um caso clínico
-          - tags: palavras-chave relevantes
-          `
-        },
-        {
-          role: "user",
-          content: "Extraia questões deste PDF de prova médica. Formato JSON: {\"questions\": [{\"statement\": \"...\", \"options\": [\"A\", \"B\", \"C\", \"D\"], \"correct_index\": 0, \"explanation\": \"...\", \"topic\": \"...\", \"subtopic\": \"...\", \"board\": \"...\", \"year\": 2024, \"institution\": \"...\", \"difficulty\": 3, \"clinical_case\": true, \"tags\": [\"tag1\"]}]}"
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: { url: `data:application/pdf;base64,${base64Pdf}` }
-            }
-          ]
-        }
-      ],
-      response_format: { type: "json_object" }
-    }, logger, supabaseAdmin);
-
-    const aiContent = aiResponse.choices?.[0]?.message?.content || "{}";
+    const aiContent = await extractQuestionsDirect(base64Pdf, file.name, logger);
     logger.info("AI_RESPONSE_RAW", `Raw response: ${aiContent.substring(0, 500)}`);
+
     
     const parsed = JSON.parse(aiContent);
     const questions = parsed.questions || [];
