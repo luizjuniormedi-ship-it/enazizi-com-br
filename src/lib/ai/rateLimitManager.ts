@@ -107,16 +107,17 @@ class RateLimitManager {
   }
 
   public getRecommendation(tier: 'FAST' | 'REASONING'): string[] {
+    // OpenAI-first priority. Gemini kept as fallback if OpenAI fails / quota.
     const priorities = {
       FAST: [
-        'google/gemini-2.5-flash-lite', 
-        'google/gemini-2.5-flash', 
-        'openai/gpt-4o-mini'
+        'openai/gpt-4o-mini',
+        'google/gemini-2.5-flash-lite',
+        'google/gemini-2.5-flash'
       ],
       REASONING: [
-        'google/gemini-2.5-pro', 
         'openai/gpt-4o',
-        'openai/gpt-4o-mini'
+        'openai/gpt-4o-mini',
+        'google/gemini-2.5-pro'
       ]
     };
 
