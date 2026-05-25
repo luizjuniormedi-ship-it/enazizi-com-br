@@ -31,11 +31,11 @@ export const ALLOWED_AI_MODELS = [
  * Returns the correct token parameter name based on the model.
  */
 export function getTokenParameterName(model: string): string {
-  const isNewModel = /^o[13]/i.test(model) || 
-                    model.includes("/o1") || 
-                    model.includes("/o3") ||
-                    model.includes("gpt-5");
-  return isNewModel ? "max_completion_tokens" : "max_tokens";
+  // OpenAI deprecated `max_tokens` em favor de `max_completion_tokens` para
+  // todos os modelos atuais (gpt-4o, gpt-4o-mini, o1, o3, gpt-5...).
+  // Só Gemini/Google ainda aceita o nome antigo.
+  const isOpenAI = model.includes("openai/") || /^(o[13]|gpt-)/i.test(model);
+  return isOpenAI ? "max_completion_tokens" : "max_tokens";
 }
 
 /**
