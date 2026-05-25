@@ -236,48 +236,11 @@ export async function processSingleDriveFile(
     }
     const base64Pdf = btoa(binary);
 
-    // 4. Call AI for extraction
+    // 4. Call AI for extraction (OpenAI primary, Gemini fallback — bypasses ai-router)
     logger.info("AI_EXTRACTION", `Sending ${file.name} to AI...`);
-    const aiResponse = await callAi({
-      taskType: "generation",
-      complexity: "alta",
-      userId: user.id,
-      messages: [
-        {
-          role: "system",
-          content: `Você é um especialista em medicina e extração de dados. 
-          Extraia questões médicas de provas em PDF.
-          SEMPRE enriqueça cada questão com:
-          - board: nome da banca (ex: REVALIDA, ENARE, USP, UNICAMP, SUS-SP)
-          - year: ano da prova
-          - institution: instituição
-          - topic: especialidade médica (ex: Clínica Médica, Cirurgia, Pediatria, Ginecologia e Obstetrícia, Preventiva)
-          - subtopic: subtema específico (ex: ICC, DPOC, Apendicite)
-          - difficulty: 1 a 5 baseado na complexidade
-          - explanation: explicação detalhada com referência bibliográfica se possível
-          - clinical_case: true/false se a questão apresenta um caso clínico
-          - tags: palavras-chave relevantes
-          `
-        },
-        {
-          role: "user",
-          content: "Extraia questões deste PDF de prova médica. Formato JSON: {\"questions\": [{\"statement\": \"...\", \"options\": [\"A\", \"B\", \"C\", \"D\"], \"correct_index\": 0, \"explanation\": \"...\", \"topic\": \"...\", \"subtopic\": \"...\", \"board\": \"...\", \"year\": 2024, \"institution\": \"...\", \"difficulty\": 3, \"clinical_case\": true, \"tags\": [\"tag1\"]}]}"
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: { url: `data:application/pdf;base64,${base64Pdf}` }
-            }
-          ]
-        }
-      ],
-      response_format: { type: "json_object" }
-    }, logger, supabaseAdmin);
-
-    const aiContent = aiResponse.choices?.[0]?.message?.content || "{}";
+    const aiContent = await extractQuestionsDirect(base64Pdf, file.name, logger);
     logger.info("AI_RESPONSE_RAW", `Raw response: ${aiContent.substring(0, 500)}`);
+
     
     const parsed = JSON.parse(aiContent);
     const questions = parsed.questions || [];
