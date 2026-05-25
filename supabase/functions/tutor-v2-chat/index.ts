@@ -356,12 +356,23 @@ serve(async (req) => {
 
     const cogState = (context as any).cognitive_state || { state: 'novato' };
 
-    // --- KNOWLEDGE CACHE LOGIC ---
+    // --- KNOWLEDGE CACHE LOGIC (v22: hybrid semantic + fallback regex) ---
     let cachedContext = "";
+    // 1. extractTopic regex (mantido como hint barato)
     const detectedTopicInfo = extractTopic(message);
     const effectiveTopic = detectedTopicInfo?.topic || session.topic;
-    
-    if (effectiveTopic) {
+
+    // 2. RAG semantic: cobre qualquer tema, não só os 10 hardcoded
+    if (message && message.length >= 8) {
+      const ragHits = await lookupRagSemantic(supabase, message, 3);
+      if (ragHits.length > 0) {
+        cachedContext += "\n\nCONTEXTO RAG SEMÂNTICO:\n" +
+          ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
+      }
+    }
+
+    // 3. Fallback legado: cache por tema (rag_knowledge_base via topic)
+    if (!cachedContext && effectiveTopic) {
       const cacheData = await getKnowledgeCache(supabase, effectiveTopic);
       if (cacheData) {
         cachedContext = `\n\nCONTEXTO DISPONÍVEL (CACHE): \n${cacheData.content}\n`;
