@@ -329,35 +329,59 @@ export async function checkAndIncrementUsage(
   return { allowed: true, remaining: limit - used - cost };
 }
 
-// ── AI calls ──
+// ── AI calls (OpenAI primary, Gemini fallback) ──
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const LIGHT_MODEL = "google/gemini-2.5-flash";
-const HEAVY_MODEL = "google/gemini-2.5-flash";
+const OPENAI_API = "https://api.openai.com/v1/chat/completions";
+const LIGHT_MODEL = "openai/gpt-4o-mini";
+const HEAVY_MODEL = "openai/gpt-4o-mini";
+const GEMINI_FALLBACK_LIGHT = "google/gemini-2.5-flash-lite";
+const GEMINI_FALLBACK_HEAVY = "google/gemini-2.5-flash";
 
-async function callAI(model: string, system: string, user: string, maxTokens: number): Promise<{ content: string; tokensInput: number; tokensOutput: number }> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
-
-  const res = await fetch(GATEWAY, {
+async function callOnce(url: string, apiKey: string, model: string, system: string, user: string, maxTokens: number) {
+  const res = await fetch(url, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], max_completion_tokens: maxTokens }),
   });
-
   if (!res.ok) {
     const t = await res.text();
-    console.error(`AI (${model}) failed (${res.status}):`, t.slice(0, 200));
-    if (res.status === 429) throw new Error("AI_RATE_LIMITED");
-    if (res.status === 402) throw new Error("AI_CREDITS_EXHAUSTED");
-    throw new Error("AI_SERVICE_UNAVAILABLE");
+    const err: any = new Error(`AI_${res.status}`);
+    err.status = res.status;
+    err.body = t.slice(0, 200);
+    throw err;
   }
-
   const json = await res.json();
   return {
     content: json.choices?.[0]?.message?.content || "",
     tokensInput: json.usage?.prompt_tokens || 0,
     tokensOutput: json.usage?.completion_tokens || 0
   };
+}
+
+async function callAI(model: string, system: string, user: string, maxTokens: number): Promise<{ content: string; tokensInput: number; tokensOutput: number }> {
+  const openaiKey = Deno.env.get("OPENAI_API_KEY");
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+
+  // 1. Try OpenAI direct first (if model is OpenAI and key exists)
+  if (model.startsWith("openai/") && openaiKey) {
+    try {
+      return await callOnce(OPENAI_API, openaiKey, model.replace("openai/", ""), system, user, maxTokens);
+    } catch (e: any) {
+      console.warn(`[AI_HELPERS] OpenAI direct failed (${e.status}): ${e.body || e.message}. Falling back to Gemini via gateway.`);
+    }
+  }
+
+  // 2. Fallback: Lovable Gateway with Gemini equivalent
+  if (!lovableKey) throw new Error("LOVABLE_API_KEY not configured");
+  const fallbackModel = maxTokens > 1500 ? GEMINI_FALLBACK_HEAVY : GEMINI_FALLBACK_LIGHT;
+  try {
+    return await callOnce(GATEWAY, lovableKey, fallbackModel, system, user, maxTokens);
+  } catch (e: any) {
+    console.error(`[AI_HELPERS] Gemini fallback failed (${e.status}): ${e.body || e.message}`);
+    if (e.status === 429) throw new Error("AI_RATE_LIMITED");
+    if (e.status === 402) throw new Error("AI_CREDITS_EXHAUSTED");
+    throw new Error("AI_SERVICE_UNAVAILABLE");
+  }
 }
 
 export async function callLightAI(system: string, user: string): Promise<string> {
