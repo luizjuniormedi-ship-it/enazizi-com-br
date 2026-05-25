@@ -7,11 +7,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 }
 
+const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+const BLACKLIST = ["MEDICO LEGISTA", "DIREITO PENAL", "DIREITO CONSTITUCIONAL", "DIREITO ADMINISTRATIVO", "DIREITO PROCESSUAL", "PORTUGUES", "INFORMATICA", "CRIMINALISTICA", "MEDICINA LEGAL", "RLM", "NOCOES DE DIREITO"];
+
 async function listFilesRecursive(folderId: string, accessToken: string, supabase: any, user: any, logger: any, path: string = "root", depth = 0) {
   if (depth > 15) return; // Increased depth
   
-  // IGNORE "MEDICO LEGISTA"
-  if (path.toUpperCase().includes("MEDICO LEGISTA")) {
+  const np = normalize(path);
+  if (BLACKLIST.some(b => np.includes(b))) {
     logger.info("SCAN", `Skipping blacklisted folder: ${path}`);
     return;
   }
