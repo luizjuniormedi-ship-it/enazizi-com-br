@@ -212,8 +212,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
+            <LogRouteReady />
             <Routes>
-              <Route path="*" element={<LogRouteReady />} />
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Navigate to="/login" replace />} />
