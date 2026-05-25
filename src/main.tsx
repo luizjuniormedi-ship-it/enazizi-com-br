@@ -1,4 +1,4 @@
-/* [LOAD_START] Initializing ENAZIZI Boot */
+/* [SOAK_START] Initializing ENAZIZI Soak Test v18 */
 /* [STALL_01_BOOT_START] */
 console.log("[STALL_01_BOOT_START] href=" + window.location.href);
 import { createRoot } from "react-dom/client";
