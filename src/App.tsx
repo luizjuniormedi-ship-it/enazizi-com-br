@@ -192,6 +192,7 @@ const App = () => (
                 <Route path="/enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
                 <Route path="/dashboard">
                   <Route index element={<Dashboard />} />
+                  <Route path="profile" element={<Navigate to="/dashboard/perfil" replace />} />
                   <Route path="cockpit" element={<Navigate to="/dashboard/metrics" replace />} />
                   <Route path="metrics" element={<GovernanceMetrics />} />
                   
