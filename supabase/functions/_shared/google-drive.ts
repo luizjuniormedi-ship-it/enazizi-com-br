@@ -1,97 +1,153 @@
 import { ALLOWED_MODELS } from "./ai-model-registry.ts";
 import { sanitizeForPostgres, generateStatementHash } from "./db-utils.ts";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 
-// Direct AI extraction: OpenAI primary, Gemini fallback. Bypasses ai-router to avoid
-// Lovable Gateway credit exhaustion and circuit breaker noise for high-volume PDF ingestion.
-async function extractQuestionsDirect(base64Pdf: string, fileName: string, logger: any) {
+// Direct AI extraction with page-based chunking for large PDFs.
+// OpenAI primary (180s timeout), Gemini fallback. Bypasses ai-router/Lovable Gateway.
+async function callOpenAIOnce(base64Pdf: string, fileName: string, logger: any, timeoutMs = 180000): Promise<string | null> {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-
+  if (!OPENAI_API_KEY) return null;
   const systemPrompt = `Você é um especialista em medicina e extração de dados. Extraia questões médicas de provas em PDF. SEMPRE enriqueça cada questão com: board, year, institution, topic, subtopic, difficulty (1-5), explanation, clinical_case, tags.`;
   const userPrompt = `Extraia questões deste PDF de prova médica. Formato JSON: {"questions": [{"statement": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation": "...", "topic": "...", "subtopic": "...", "board": "...", "year": 2024, "institution": "...", "difficulty": 3, "clinical_case": true, "tags": ["tag1"]}]}`;
+  try {
+    logger.info("AI_OPENAI", `Calling OpenAI gpt-4o-mini for ${fileName} (timeout ${timeoutMs}ms)`);
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    const res = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        instructions: systemPrompt,
+        input: [{
+          role: "user",
+          content: [
+            { type: "input_text", text: userPrompt },
+            { type: "input_file", filename: fileName, file_data: `data:application/pdf;base64,${base64Pdf}` }
+          ]
+        }],
+        text: { format: { type: "json_object" } },
+        max_output_tokens: 8000
+      })
+    });
+    clearTimeout(t);
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.output_text
+        || data.output?.[0]?.content?.[0]?.text
+        || data.output?.find?.((o:any)=>o.type==='message')?.content?.find?.((c:any)=>c.type==='output_text')?.text
+        || "{}";
+      logger.info("AI_OPENAI_OK", `OpenAI succeeded for ${fileName}`);
+      return text;
+    }
+    const errTxt = (await res.text()).slice(0, 300);
+    logger.warn("AI_OPENAI_FAIL", `OpenAI ${res.status}: ${errTxt}`);
+    return null;
+  } catch (e) {
+    logger.warn("AI_OPENAI_EXCEPTION", `OpenAI threw: ${(e as Error).message}`);
+    return null;
+  }
+}
 
-  // --- TRY 1: OpenAI Responses API (gpt-4o-mini) — accepts PDF natively via input_file ---
-  if (OPENAI_API_KEY) {
-    try {
-      logger.info("AI_OPENAI", `Calling OpenAI Responses API gpt-4o-mini for ${fileName}`);
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 90000);
-      const res = await fetch("https://api.openai.com/v1/responses", {
+async function callGeminiOnce(base64Pdf: string, fileName: string, logger: any): Promise<string | null> {
+  const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+  if (!GEMINI_API_KEY) return null;
+  const systemPrompt = `Você é um especialista em medicina. Extraia questões médicas com board, year, institution, topic, subtopic, difficulty, explanation, clinical_case, tags.`;
+  const userPrompt = `Extraia questões. JSON: {"questions":[{"statement":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"...","topic":"...","subtopic":"...","board":"...","year":2024,"institution":"...","difficulty":3,"clinical_case":true,"tags":[]}]}`;
+  try {
+    logger.info("AI_GEMINI", `Calling Gemini direct for ${fileName}`);
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 90000);
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
         method: "POST",
-        headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         signal: ctrl.signal,
         body: JSON.stringify({
-          model: "gpt-4o-mini",
-          instructions: systemPrompt,
-          input: [{
-            role: "user",
-            content: [
-              { type: "input_text", text: userPrompt },
-              { type: "input_file", filename: fileName, file_data: `data:application/pdf;base64,${base64Pdf}` }
-            ]
-          }],
-          text: { format: { type: "json_object" } },
-          max_output_tokens: 8000
+          contents: [{ role: "user", parts: [
+            { text: `${systemPrompt}\n\n${userPrompt}` },
+            { inline_data: { mime_type: "application/pdf", data: base64Pdf } }
+          ]}],
+          generationConfig: { response_mime_type: "application/json", maxOutputTokens: 8000 }
         })
-      });
-      clearTimeout(t);
-      if (res.ok) {
-        const data = await res.json();
-        // Responses API: output_text is the convenience accessor; fall back to digging through output array
-        const text = data.output_text
-          || data.output?.[0]?.content?.[0]?.text
-          || data.output?.find?.((o:any)=>o.type==='message')?.content?.find?.((c:any)=>c.type==='output_text')?.text
-          || "{}";
-        logger.info("AI_OPENAI_OK", `OpenAI succeeded for ${fileName}`);
-        return text;
       }
-      const errTxt = (await res.text()).slice(0, 300);
-      logger.warn("AI_OPENAI_FAIL", `OpenAI ${res.status}: ${errTxt}`);
-    } catch (e) {
-      logger.warn("AI_OPENAI_EXCEPTION", `OpenAI threw: ${e.message}`);
+    );
+    clearTimeout(t);
+    if (res.ok) {
+      const data = await res.json();
+      logger.info("AI_GEMINI_OK", `Gemini succeeded for ${fileName}`);
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     }
+    const errTxt = (await res.text()).slice(0, 200);
+    logger.warn("AI_GEMINI_FAIL", `Gemini ${res.status}: ${errTxt}`);
+    return null;
+  } catch (e) {
+    logger.warn("AI_GEMINI_EXCEPTION", `Gemini threw: ${(e as Error).message}`);
+    return null;
   }
+}
 
-
-  // --- TRY 2: Gemini direct API (uses GEMINI_API_KEY, not Lovable Gateway) ---
-  if (GEMINI_API_KEY) {
-    try {
-      logger.info("AI_GEMINI", `Calling Gemini direct for ${fileName}`);
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 60000);
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: ctrl.signal,
-          body: JSON.stringify({
-            contents: [{
-              role: "user",
-              parts: [
-                { text: `${systemPrompt}\n\n${userPrompt}` },
-                { inline_data: { mime_type: "application/pdf", data: base64Pdf } }
-              ]
-            }],
-            generationConfig: { response_mime_type: "application/json", maxOutputTokens: 8000 }
-          })
-        }
-      );
-      clearTimeout(t);
-      if (res.ok) {
-        const data = await res.json();
-        logger.info("AI_GEMINI_OK", `Gemini succeeded for ${fileName}`);
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-      }
-      const errTxt = (await res.text()).slice(0, 200);
-      throw new Error(`Gemini ${res.status}: ${errTxt}`);
-    } catch (e) {
-      logger.error("AI_GEMINI_FAIL", `Gemini failed for ${fileName}: ${e.message}`);
-      throw new Error(`Both OpenAI and Gemini failed: ${e.message}`);
-    }
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode(...chunk);
   }
+  return btoa(binary);
+}
 
-  throw new Error("No AI provider available (missing OPENAI_API_KEY and GEMINI_API_KEY)");
+async function splitPdfByPages(pdfBytes: Uint8Array, pagesPerChunk: number, logger: any): Promise<string[]> {
+  const src = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+  const total = src.getPageCount();
+  if (total <= pagesPerChunk) return [bytesToBase64(pdfBytes)];
+  logger.info("PDF_SPLIT", `Splitting PDF with ${total} pages into chunks of ${pagesPerChunk}`);
+  const chunks: string[] = [];
+  for (let start = 0; start < total; start += pagesPerChunk) {
+    const end = Math.min(start + pagesPerChunk, total);
+    const out = await PDFDocument.create();
+    const indices = Array.from({ length: end - start }, (_, i) => start + i);
+    const copied = await out.copyPages(src, indices);
+    copied.forEach(p => out.addPage(p));
+    const outBytes = await out.save();
+    chunks.push(bytesToBase64(outBytes));
+  }
+  return chunks;
+}
+
+async function extractFromChunk(base64Pdf: string, label: string, logger: any): Promise<any[]> {
+  let raw = await callOpenAIOnce(base64Pdf, label, logger, 180000);
+  if (!raw) raw = await callGeminiOnce(base64Pdf, label, logger);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed.questions) ? parsed.questions : [];
+  } catch (e) {
+    logger.warn("AI_PARSE_FAIL", `Could not parse JSON for ${label}: ${(e as Error).message}`);
+    return [];
+  }
+}
+
+async function extractQuestionsDirect(pdfBytes: Uint8Array, fileName: string, logger: any): Promise<string> {
+  const PAGES_PER_CHUNK = 30;
+  let chunks: string[];
+  try {
+    chunks = await splitPdfByPages(pdfBytes, PAGES_PER_CHUNK, logger);
+  } catch (e) {
+    logger.warn("PDF_SPLIT_FAIL", `Could not parse PDF for splitting, sending whole: ${(e as Error).message}`);
+    chunks = [bytesToBase64(pdfBytes)];
+  }
+  const allQuestions: any[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const label = chunks.length > 1 ? `${fileName}#chunk${i + 1}/${chunks.length}` : fileName;
+    const qs = await extractFromChunk(chunks[i], label, logger);
+    logger.info("AI_CHUNK_OK", `${label}: ${qs.length} questions`);
+    allQuestions.push(...qs);
+  }
+  if (allQuestions.length === 0) throw new Error("AI returned zero questions across all chunks");
+  return JSON.stringify({ questions: allQuestions });
 }
 
 
@@ -233,20 +289,12 @@ export async function processSingleDriveFile(
     });
     const arrayBuffer = await dlResp.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    
-    // Base64 encode chunk-safe
-    let binary = "";
-    const chunkSize = 8192;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-      binary += String.fromCharCode(...chunk);
-    }
-    const base64Pdf = btoa(binary);
 
-    // 4. Call AI for extraction (OpenAI primary, Gemini fallback — bypasses ai-router)
-    logger.info("AI_EXTRACTION", `Sending ${file.name} to AI...`);
-    const aiContent = await extractQuestionsDirect(base64Pdf, file.name, logger);
+    // 4. Call AI for extraction with page-based chunking (OpenAI primary, Gemini fallback)
+    logger.info("AI_EXTRACTION", `Sending ${file.name} (${bytes.length} bytes) to AI...`);
+    const aiContent = await extractQuestionsDirect(bytes, file.name, logger);
     logger.info("AI_RESPONSE_RAW", `Raw response: ${aiContent.substring(0, 500)}`);
+
 
     
     const parsed = JSON.parse(aiContent);
