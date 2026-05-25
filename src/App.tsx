@@ -74,6 +74,7 @@ const CognitiveObservatory = lazyWithRetry(() => import("./pages/admin/Cognitive
 const ExecutiveIntelligence = lazyWithRetry(() => import("./pages/admin/ExecutiveIntelligence"), "ExecutiveIntelligence");
 const MedicalKnowledgeGraphPage = lazyWithRetry(() => import("./pages/admin/MedicalKnowledgeGraph"), "MedicalKnowledgeGraph");
 const QuestionQuality = lazyWithRetry(() => import("./pages/admin/QuestionQuality"), "QuestionQuality");
+const LoadMonitor = lazyWithRetry(() => import("./pages/admin/LoadMonitor"), "LoadMonitor");
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
@@ -308,6 +309,7 @@ const App = () => (
                 <Route path="intervention-policies" element={<Admin initialTab="features" />} />
                 <Route path="video-lessons" element={<Admin initialTab="uploads" />} />
                 <Route path="question-quality" element={<QuestionQuality />} />
+                <Route path="load-monitor" element={<LoadMonitor />} />
 
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>

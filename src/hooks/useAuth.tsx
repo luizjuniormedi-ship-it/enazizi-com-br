@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // a refresh — that was racing against the listener and contributing to
     // "Invalid Refresh Token" errors during hard reload.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      console.info(`[LOAD_USER] Auth event: ${event}`, { userId: nextSession?.user?.id });
       console.debug(`[Auth] event: ${event}`, { userId: nextSession?.user?.id });
       
       setSession(nextSession);
@@ -70,6 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (event === "TOKEN_REFRESHED") {
+        console.info("[LOAD_SESSION] Token refreshed successfully");
         console.debug("[Auth] token refreshed");
       }
     });
