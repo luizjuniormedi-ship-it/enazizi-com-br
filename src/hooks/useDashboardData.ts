@@ -78,13 +78,17 @@ export const useDashboardData = () => {
       const startTime = Date.now();
 
       try {
+        // Safe RPC call with timeout protection (implicitly handled by Supabase, but we add try-catch)
         const { data: unified, error: unifiedError } = await supabase.rpc('get_unified_dashboard_data', {
           p_user_id: userId,
           p_reset_at: resetAt || "1900-01-01T00:00:00Z",
           p_today_iso: todayIso
         });
 
-        if (unifiedError) throw unifiedError;
+        if (unifiedError) {
+          console.warn("[Dashboard] RPC Error, using fallback:", unifiedError.message);
+          throw unifiedError;
+        }
 
         const uni = unified as any;
         const metrics: DashboardMetrics = {
