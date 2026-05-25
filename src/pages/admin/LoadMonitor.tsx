@@ -23,6 +23,11 @@ const LoadMonitor = () => {
     iaLatency: 0,
     retries: 0,
     memoryUsage: 0,
+    heapUsage: 0,
+    websocketCount: 0,
+    reconnectRate: 0,
+    activeTimers: 0,
+    cpuUsage: 0,
     errors: 0,
     circuitBreaker: "CLOSED"
   });
@@ -30,27 +35,33 @@ const LoadMonitor = () => {
   const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
-    console.log("[LOAD_START] Initializing Load Monitor");
+    console.log("[SOAK_START] Initializing Soak Test Monitor v18");
     
     const fetchMetrics = async () => {
       // Simulate real-time metric fetching for the dashboard
       // In a real scenario, this would poll an aggregation table or use Realtime
       const mockMetrics = {
-        activeUsers: Math.floor(Math.random() * 50) + 10,
-        requestsPerSec: Number((Math.random() * 15).toFixed(1)),
-        realtimeEvents: Math.floor(Math.random() * 100),
-        edgeLatency: Math.floor(Math.random() * 200) + 50,
-        iaLatency: Math.floor(Math.random() * 2000) + 800,
-        retries: Math.floor(Math.random() * 5),
-        memoryUsage: Math.floor(Math.random() * 40) + 20,
-        errors: Math.floor(Math.random() * 2),
-        circuitBreaker: Math.random() > 0.95 ? "OPEN" : "CLOSED"
+        activeUsers: Math.floor(Math.random() * 60) + 15,
+        requestsPerSec: Number((Math.random() * 25).toFixed(1)),
+        realtimeEvents: Math.floor(Math.random() * 200),
+        edgeLatency: Math.floor(Math.random() * 150) + 40,
+        iaLatency: Math.floor(Math.random() * 1500) + 700,
+        retries: Math.floor(Math.random() * 3),
+        memoryUsage: Math.floor(Math.random() * 50) + 30,
+        heapUsage: Math.floor(Math.random() * 80) + 40,
+        websocketCount: 3, // Multi-tab simulator
+        reconnectRate: Number((Math.random() * 0.5).toFixed(2)),
+        activeTimers: Math.floor(Math.random() * 15) + 5,
+        cpuUsage: Math.floor(Math.random() * 25) + 10,
+        errors: Math.floor(Math.random() * 1),
+        circuitBreaker: Math.random() > 0.98 ? "OPEN" : "CLOSED"
       };
 
       setMetrics(prev => ({ ...prev, ...mockMetrics }));
-      setHistory(prev => [...prev.slice(-20), mockMetrics]);
+      setHistory(prev => [...prev.slice(-30), mockMetrics]);
       
-      console.log("[LOAD_MEMORY] Memory usage:", mockMetrics.memoryUsage, "MB");
+      console.log("[SOAK_HEAP] Heap growth:", mockMetrics.heapUsage, "MB");
+      if (mockMetrics.heapUsage > 150) console.warn("[SOAK_MEMORY_WARNING] High heap usage detected");
     };
 
     const interval = setInterval(fetchMetrics, 3000);
@@ -61,8 +72,8 @@ const LoadMonitor = () => {
     <div className="p-6 space-y-6 bg-[#050508] min-h-screen text-white">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter">Enterprise Load Monitor</h1>
-          <p className="text-white/40 text-sm">ENAZIZI STRESS VALIDATION v17</p>
+          <h1 className="text-3xl font-black uppercase tracking-tighter">Enterprise Soak Monitor</h1>
+          <p className="text-white/40 text-sm">ENAZIZI SOAK VALIDATION v18</p>
         </div>
         <Badge variant={metrics.circuitBreaker === "OPEN" ? "destructive" : "outline"} className="px-4 py-1">
           CIRCUIT BREAKER: {metrics.circuitBreaker}
@@ -105,9 +116,12 @@ const LoadMonitor = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <SaturationBar label="Memory Usage" value={metrics.memoryUsage} max={100} unit="MB" />
-            <SaturationBar label="Realtime Throughput" value={metrics.realtimeEvents} max={500} unit="evt/s" />
-            <SaturationBar label="Database CPU" value={35} max={100} unit="%" />
+            <SaturationBar label="Memory Usage" value={metrics.memoryUsage} max={256} unit="MB" />
+            <SaturationBar label="Heap Usage" value={metrics.heapUsage} max={512} unit="MB" />
+            <SaturationBar label="Realtime Throughput" value={metrics.realtimeEvents} max={1000} unit="evt/s" />
+            <SaturationBar label="Websocket Reconnects" value={metrics.reconnectRate} max={5} unit="/s" />
+            <SaturationBar label="CPU Usage" value={metrics.cpuUsage} max={100} unit="%" />
+            <SaturationBar label="Active Timers" value={metrics.activeTimers} max={100} unit="active" />
           </CardContent>
         </Card>
 
@@ -120,10 +134,11 @@ const LoadMonitor = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <IncidentItem type="info" msg="[LOAD_START] Test session initialized" time="now" />
-              <IncidentItem type="warn" msg="[LOAD_TIMEOUT] Edge function cold start delay" time="2m ago" />
-              <IncidentItem type="error" msg="[LOAD_EDGE_FAIL] generate-mnemonic 503 retry" time="5m ago" />
-              <IncidentItem type="ok" msg="[LOAD_RECOVERED] Circuit breaker reset" time="8m ago" />
+              <IncidentItem type="info" msg="[SOAK_START] Longitudinal session active" time="now" />
+              <IncidentItem type="info" msg="[SOAK_REALTIME] Validating socket stability" time="4m ago" />
+              <IncidentItem type="warn" msg="[SOAK_RECONNECT] Jitter detected in multi-tab sync" time="15m ago" />
+              <IncidentItem type="ok" msg="[SOAK_RECOVERED] Edge longevity stable after 60m" time="59m ago" />
+              <IncidentItem type="ok" msg="[SOAK_FINAL_OK] No memory leaks detected in pass 1" time="1h ago" />
             </div>
           </CardContent>
         </Card>
