@@ -10,7 +10,7 @@ import AdminRoute from "@/components/auth/AdminRoute";
 import ProfessorRoute from "@/components/auth/ProfessorRoute";
 import InstitutionalRoute from "@/components/auth/InstitutionalRoute";
 import { ModuleGuard } from "@/components/guards/ModuleGuard";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -111,14 +111,18 @@ const Historico = lazyWithRetry(() => import("./pages/Historico"), "Historico");
 
 const PageLoader = () => {
   const [timedOut, setTimedOut] = useState(false);
+  const mountTime = useRef(Date.now());
   
   useEffect(() => {
-    console.debug("[BOOT_START]");
+    console.debug("[CognitiveHydration START]");
     const timer = setTimeout(() => {
       setTimedOut(true);
-      console.warn("[DASHBOARD_HYDRATION_TIMEOUT] Sincronização demorando mais de 15s...");
+      console.warn("[CognitiveHydration FAIL] Sincronização demorando mais de 15s...");
     }, 15000);
-    return () => clearTimeout(timer);
+    return () => {
+      console.debug(`[CognitiveHydration END] Duration: ${Date.now() - mountTime.current}ms`);
+      clearTimeout(timer);
+    };
   }, []);
 
   return (
@@ -136,12 +140,23 @@ const PageLoader = () => {
         {timedOut && (
           <div className="mt-4 animate-in fade-in slide-in-from-top-2">
             <p className="text-xs text-amber-500/80 mb-4">A sincronização está demorando mais que o esperado.</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all"
-            >
-              Tentar Recarregar
-            </button>
+            <div className="flex flex-col gap-2">
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all"
+              >
+                Tentar Recarregar
+              </button>
+              <button 
+                onClick={() => {
+                  // Force unmount/bypass if possible (though Suspense doesn't work this way)
+                  console.info("[CognitiveHydration] User opted to wait in partial mode");
+                }}
+                className="text-[8px] text-white/20 uppercase tracking-widest hover:text-white/40 transition-colors"
+              >
+                Continuar Aguardando
+              </button>
+            </div>
           </div>
         )}
       </div>

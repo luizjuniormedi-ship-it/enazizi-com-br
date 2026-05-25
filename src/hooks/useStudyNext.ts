@@ -57,16 +57,53 @@ async function fetchStudyNext(): Promise<StudyNextResponse> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Não autenticado");
 
-  const { data, error } = await supabase.functions.invoke("study-next", {
-    body: { context: {} },
-  });
+  console.debug("[StudyNext] Fetching recommendation...");
+  const startTime = Date.now();
 
-  if (error) throw new Error(error.message || "Erro ao buscar recomendação");
-  
-  if (data?.data) {
-    return data.data as StudyNextResponse;
+  try {
+    // Add a manual timeout of 10s for the edge function
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const { data, error } = await supabase.functions.invoke("study-next", {
+      body: { context: { traceId: crypto.randomUUID() } },
+    });
+
+    clearTimeout(timeoutId);
+
+    if (error) throw new Error(error.message || "Erro ao buscar recomendação");
+    
+    console.debug(`[StudyNext] Recommendation received in ${Date.now() - startTime}ms`);
+
+    if (data?.data) {
+      return data.data as StudyNextResponse;
+    }
+    return data as StudyNextResponse;
+  } catch (err: any) {
+    console.warn("[StudyNext] Edge Function failed or timed out:", err?.message || err);
+    // Return a safe fallback recommendation instead of throwing
+    return {
+      success: false,
+      recommendation: {
+        type: "free_study",
+        title: "Continue seus estudos",
+        description: "A IA está processando seu próximo passo. Continue de onde parou.",
+        estimatedMinutes: 30,
+        priorityScore: 0
+      },
+      justification: "Falha na sincronização cognitiva (fail-open)",
+      alternativeActions: [],
+      adaptiveState: {
+        approvalScore: 0,
+        approvalZone: "stable",
+        recoveryActive: false,
+        contentLocked: false,
+        pendingReviews: 0,
+        weakTopicsCount: 0,
+        examProximityDays: null
+      }
+    };
   }
-  return data as StudyNextResponse;
 }
 
 export function useStudyNext() {
