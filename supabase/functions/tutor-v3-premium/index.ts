@@ -2,6 +2,7 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockId } from "../_shared/tutor/pedagogical-logic.ts";
+import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory } from "../_shared/tutor-memory.ts";
 
 
 console.log("[TUTOR_V3_BOOT] Function module loaded");
