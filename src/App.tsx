@@ -10,7 +10,7 @@ import AdminRoute from "@/components/auth/AdminRoute";
 import ProfessorRoute from "@/components/auth/ProfessorRoute";
 import InstitutionalRoute from "@/components/auth/InstitutionalRoute";
 import { ModuleGuard } from "@/components/guards/ModuleGuard";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
