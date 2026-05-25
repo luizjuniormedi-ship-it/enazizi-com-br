@@ -4,6 +4,7 @@ import { requireAuth } from "../_shared/require-auth.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { runAI, type AIComplexity, type AICognitiveLoad } from "../_shared/ai-runtime-orchestrator.ts";
 import { getKnowledgeCache, saveKnowledgeCache, extractTopic } from "../_shared/knowledge-cache.ts";
+import { lookupTutorMemory, lookupRagSemantic, markMemoryReused } from "../_shared/tutor-memory.ts";
 import { detectInjection, isOffTopic, SAFE_RESPONSE, OFF_TOPIC_RESPONSE } from "../_shared/injection-guard.ts";
 import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 
