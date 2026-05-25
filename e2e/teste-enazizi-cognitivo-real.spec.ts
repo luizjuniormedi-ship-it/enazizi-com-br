@@ -1,9 +1,9 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 test.setTimeout(600000);
 
 test('ENAZIZI - teste real Planner FSRS e funções cognitivas', async ({ page }) => {
-  const errors = [];
+  const errors: string[] = [];
 
   page.on('response', res => {
     const status = res.status();
