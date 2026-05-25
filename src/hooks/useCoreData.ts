@@ -31,6 +31,9 @@ export interface CoreDataResult {
 }
 
 async function fetchCoreData(userId: string): Promise<CoreDataResult> {
+  console.debug("[CoreData] Starting hydration for user:", userId);
+  const startTime = Date.now();
+
   const profileRes = await supabase.from("profiles")
     .select("display_name, has_completed_diagnostic, target_exams, target_exam, exam_date, last_study_plan_reset_at")
     .eq("user_id", userId).maybeSingle();
@@ -38,59 +41,74 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
   const ep = profileRes.data as any;
   const resetAt = ep?.last_study_plan_reset_at || null;
 
+  // Helper for resilient fetching
+  const safeFetch = async <T>(promise: Promise<{ data: T | null; error: any; count?: number | null }>) => {
+    try {
+      const res = await promise;
+      if (res.error) {
+        console.warn("[CoreData] Partial fetch error:", res.error.message);
+        return { data: null, count: 0 };
+      }
+      return { data: res.data, count: res.count ?? 0 };
+    } catch (e) {
+      console.error("[CoreData] Critical partial fetch failure:", e);
+      return { data: null, count: 0 };
+    }
+  };
+
   const [
     practiceRes, revisoesRes, examRes,
     anamnesisRes, temasRes, simRes, osceRes,
     gamRes, errorRes, approvalRes, domainRes,
     adaptiveRes,
   ] = await Promise.all([
-    supabase.from("practice_attempts")
+    safeFetch(supabase.from("practice_attempts")
       .select("correct, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(500),
-    supabase.from("revisoes")
+      .limit(500)),
+    safeFetch(supabase.from("revisoes")
       .select("id, status, data_revisao, created_at")
       .eq("user_id", userId)
-      .gt("created_at", resetAt || "1900-01-01T00:00:00Z"),
-    supabase.from("exam_sessions")
+      .gt("created_at", resetAt || "1900-01-01T00:00:00Z")),
+    safeFetch(supabase.from("exam_sessions")
       .select("score, total_questions, finished_at")
       .eq("user_id", userId).eq("status", "finished")
       .order("finished_at", { ascending: false })
-      .limit(50),
-    supabase.from("anamnesis_results")
+      .limit(50)),
+    safeFetch(supabase.from("anamnesis_results")
       .select("final_score, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(10),
-    supabase.from("temas_estudados")
+      .limit(10)),
+    safeFetch(supabase.from("temas_estudados")
       .select("id, tema, especialidade, created_at", { count: "exact" })
       .eq("user_id", userId)
-      .gt("created_at", resetAt || "1900-01-01T00:00:00Z"),
-    supabase.from("simulation_sessions")
+      .gt("created_at", resetAt || "1900-01-01T00:00:00Z")),
+    safeFetch(supabase.from("simulation_sessions")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", userId).eq("status", "finished"),
-    supabase.from("chronicle_osce_sessions")
+      .eq("user_id", userId).eq("status", "finished")),
+    safeFetch(supabase.from("chronicle_osce_sessions")
       .select("score")
-      .eq("user_id", userId),
-    supabase.from("user_gamification")
+      .eq("user_id", userId)),
+    safeFetch(supabase.from("user_gamification")
       .select("current_streak, xp, level")
-      .eq("user_id", userId).maybeSingle(),
-    supabase.from("error_bank")
+      .eq("user_id", userId).maybeSingle()),
+    safeFetch(supabase.from("error_bank")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .gt("updated_at", resetAt || "1900-01-01T00:00:00Z"),
-    supabase.from("approval_scores")
+      .gt("updated_at", resetAt || "1900-01-01T00:00:00Z")),
+    safeFetch(supabase.from("approval_scores")
       .select("score, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(10),
-    supabase.from("medical_domain_map")
+      .limit(10)),
+    safeFetch(supabase.from("medical_domain_map")
       .select("specialty, domain_score, questions_answered, correct_answers")
-      .eq("user_id", userId),
-    supabase.from("adaptive_student_profiles")
+      .eq("user_id", userId)),
+    safeFetch(supabase.from("adaptive_student_profiles")
       .select("cognitive_stress_index, recovery_mode_active, current_session_mode")
-      .eq("user_id", userId).maybeSingle(),
+      .eq("user_id", userId).maybeSingle()),
   ]);
 
   let targetExams: string[] = [];
@@ -99,6 +117,8 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
   } else if (ep?.target_exam) {
     targetExams = [ep.target_exam];
   }
+
+  console.debug(`[CoreData] Hydration finished in ${Date.now() - startTime}ms`);
 
   return {
     profile: {
