@@ -43,8 +43,8 @@ async function listFilesRecursive(folderId: string, accessToken: string, supabas
     pageToken = data.nextPageToken;
 
     for (const item of items) {
-      // Skip files with the name
-      if (item.name.toUpperCase().includes("MEDICO LEGISTA")) continue;
+      const nName = normalize(item.name);
+      if (BLACKLIST.some(b => nName.includes(b))) continue;
 
       let targetId = item.id;
       let targetMimeType = item.mimeType;
