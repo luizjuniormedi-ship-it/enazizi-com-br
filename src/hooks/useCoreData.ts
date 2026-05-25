@@ -42,9 +42,9 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
   const resetAt = ep?.last_study_plan_reset_at || null;
 
   // Helper for resilient fetching
-  const safeFetch = async <T>(promise: Promise<{ data: T | null; error: any; count?: number | null }>) => {
+  const safeFetch = async (query: any) => {
     try {
-      const res = await promise;
+      const res = await query;
       if (res.error) {
         console.warn("[CoreData] Partial fetch error:", res.error.message);
         return { data: null, count: 0 };
