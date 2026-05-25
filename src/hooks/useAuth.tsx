@@ -71,6 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (event === "TOKEN_REFRESHED") {
+        console.info("[LOAD_SESSION] Token refreshed successfully");
         console.debug("[Auth] token refreshed");
       }
     });
