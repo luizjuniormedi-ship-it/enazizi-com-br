@@ -74,6 +74,7 @@ const CognitiveObservatory = lazyWithRetry(() => import("./pages/admin/Cognitive
 const ExecutiveIntelligence = lazyWithRetry(() => import("./pages/admin/ExecutiveIntelligence"), "ExecutiveIntelligence");
 const MedicalKnowledgeGraphPage = lazyWithRetry(() => import("./pages/admin/MedicalKnowledgeGraph"), "MedicalKnowledgeGraph");
 const QuestionQuality = lazyWithRetry(() => import("./pages/admin/QuestionQuality"), "QuestionQuality");
+const LoadMonitor = lazyWithRetry(() => import("./pages/admin/LoadMonitor"), "LoadMonitor");
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
