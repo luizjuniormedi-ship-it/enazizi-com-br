@@ -58,7 +58,9 @@ test('ENAZIZI - teste real Planner FSRS e funções cognitivas', async ({ page }
     timeout: 60000
   });
 
-  await page.waitForTimeout(5000);
+  // Se aparecer "SINCRONIZANDO ECOSSISTEMA COGNITIVO" após 20s, falhar
+  const syncLoader = page.locator('text=Sincronizando Ecossistema Cognitivo');
+  await expect(syncLoader).not.toBeVisible({ timeout: 20000 });
 
   let body = await page.locator('body').innerText();
 
@@ -153,6 +155,9 @@ test('ENAZIZI - teste real Planner FSRS e funções cognitivas', async ({ page }
   body = await page.locator('body').innerText();
 
   expect(body).toMatch(/Simulados|Provas|TRI|Adaptativo|Questões/i);
+  
+  // Verificar se o container principal do simulado carregou
+  await expect(page.locator('[data-testid="simulados-page"]')).toBeVisible({ timeout: 15000 });
 
   await page.screenshot({ path: 'cog-08-simulados.png', fullPage: true });
 
