@@ -17,7 +17,7 @@ const Footer = forwardRef<HTMLElement>((_, ref) => (
       <div className="flex items-center gap-6">
         <a href="/termos" className="text-xs text-muted-foreground hover:text-primary transition-colors">Termos de Uso</a>
         <a href="/privacidade" className="text-xs text-muted-foreground hover:text-primary transition-colors">Privacidade</a>
-        <a href="mailto:contato@enazizi.com.br" className="text-xs text-muted-foreground hover:text-primary transition-colors">Suporte</a>
+        <a href="/support" className="text-xs text-muted-foreground hover:text-primary transition-colors">Suporte</a>
       </div>
 
       <p className="text-xs text-muted-foreground">

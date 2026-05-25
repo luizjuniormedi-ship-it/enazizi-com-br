@@ -67,6 +67,7 @@ const MedicalChronicles = lazyWithRetry(() => import("./pages/MedicalChronicles"
 const ForgotPassword = lazyWithRetry(() => import("./pages/ForgotPassword"), "ForgotPassword");
 const Terms = lazyWithRetry(() => import("./pages/Terms"), "Terms");
 const Privacy = lazyWithRetry(() => import("./pages/Privacy"), "Privacy");
+const Support = lazyWithRetry(() => import("./pages/Support"), "Support");
 const FeynmanTrainer = lazyWithRetry(() => import("./pages/ContentSummarizer"), "ContentSummarizer");
 const AIPipelineHardening = lazyWithRetry(() => import("./pages/admin/AIPipelineHardening"), "AIPipelineHardening");
 const CognitiveObservatory = lazyWithRetry(() => import("./pages/admin/CognitiveObservatory"), "CognitiveObservatory");
@@ -164,8 +165,11 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/termos" element={<Terms />} />
               <Route path="/privacidade" element={<Privacy />} />
+              <Route path="/support" element={<Support />} />
               <Route path="/term" element={<Navigate to="/termos" replace />} />
+              <Route path="/terms" element={<Navigate to="/termos" replace />} />
               <Route path="/privacy" element={<Navigate to="/privacidade" replace />} />
+              <Route path="/suporte" element={<Navigate to="/support" replace />} />
               
               <Route path="/chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/mentor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
