@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
+import { aiFetch } from "../_shared/ai-fetch.ts";
+import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
 
 const corsHeaders = {
