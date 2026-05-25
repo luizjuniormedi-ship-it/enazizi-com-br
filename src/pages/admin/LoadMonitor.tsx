@@ -37,7 +37,7 @@ const LoadMonitor = () => {
       // In a real scenario, this would poll an aggregation table or use Realtime
       const mockMetrics = {
         activeUsers: Math.floor(Math.random() * 50) + 10,
-        requestsPerSec: (Math.random() * 15).toFixed(1),
+        requestsPerSec: Number((Math.random() * 15).toFixed(1)),
         realtimeEvents: Math.floor(Math.random() * 100),
         edgeLatency: Math.floor(Math.random() * 200) + 50,
         iaLatency: Math.floor(Math.random() * 2000) + 800,
