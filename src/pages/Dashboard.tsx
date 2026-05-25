@@ -40,7 +40,14 @@ const Dashboard = () => {
   const retryFiredRef = useRef(false);
   
   useEffect(() => {
-    console.debug("[DASHBOARD_HYDRATION_START]");
+    console.debug("[DashboardHydration START]");
+    const timer = setTimeout(() => {
+      console.warn("[DashboardHydration STUCK] Hydration taking > 10s");
+    }, 10000);
+    return () => {
+      console.debug("[DashboardHydration UNMOUNT]");
+      clearTimeout(timer);
+    };
   }, []);
 
   useRevisionNotifier();
@@ -58,7 +65,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (dashData && studyNext && snapshot) {
-      console.debug(`[DASHBOARD_HYDRATION_OK] ${Date.now() - mountTimeRef.current}ms`);
+      console.debug(`[DashboardHydration END] ${Date.now() - mountTimeRef.current}ms`);
     }
   }, [dashData, studyNext, snapshot]);
 
