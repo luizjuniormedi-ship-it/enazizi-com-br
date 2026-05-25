@@ -289,20 +289,12 @@ export async function processSingleDriveFile(
     });
     const arrayBuffer = await dlResp.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    
-    // Base64 encode chunk-safe
-    let binary = "";
-    const chunkSize = 8192;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-      binary += String.fromCharCode(...chunk);
-    }
-    const base64Pdf = btoa(binary);
 
-    // 4. Call AI for extraction (OpenAI primary, Gemini fallback — bypasses ai-router)
-    logger.info("AI_EXTRACTION", `Sending ${file.name} to AI...`);
-    const aiContent = await extractQuestionsDirect(base64Pdf, file.name, logger);
+    // 4. Call AI for extraction with page-based chunking (OpenAI primary, Gemini fallback)
+    logger.info("AI_EXTRACTION", `Sending ${file.name} (${bytes.length} bytes) to AI...`);
+    const aiContent = await extractQuestionsDirect(bytes, file.name, logger);
     logger.info("AI_RESPONSE_RAW", `Raw response: ${aiContent.substring(0, 500)}`);
+
 
     
     const parsed = JSON.parse(aiContent);
