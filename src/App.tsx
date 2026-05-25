@@ -309,6 +309,7 @@ const App = () => (
                 <Route path="intervention-policies" element={<Admin initialTab="features" />} />
                 <Route path="video-lessons" element={<Admin initialTab="uploads" />} />
                 <Route path="question-quality" element={<QuestionQuality />} />
+                <Route path="load-monitor" element={<LoadMonitor />} />
 
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
