@@ -39,6 +39,10 @@ const Dashboard = () => {
   const telemetryFiredRef = useRef(false);
   const retryFiredRef = useRef(false);
   
+  useEffect(() => {
+    console.debug("[DASHBOARD_HYDRATION_START]");
+  }, []);
+
   useRevisionNotifier();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -51,6 +55,12 @@ const Dashboard = () => {
   const enaflixUsage = useEnaflixUsage();
   const recentIds = enaflixUsage.recentIds;
   const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
+
+  useEffect(() => {
+    if (dashData && studyNext && snapshot) {
+      console.debug(`[DASHBOARD_HYDRATION_OK] ${Date.now() - mountTimeRef.current}ms`);
+    }
+  }, [dashData, studyNext, snapshot]);
 
   useEffect(() => {
     if (!dashLoading && dashData) {
@@ -349,16 +359,22 @@ const Dashboard = () => {
           </div>
           <div className="space-y-6">
             <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
-            <Suspense fallback={<LocalSectionSkeleton />}>
-              <MedicalMasteryDashboard />
-            </Suspense>
+            {dashData && (
+              <Suspense fallback={<LocalSectionSkeleton />}>
+                <MedicalMasteryDashboard />
+              </Suspense>
+            )}
           </div>
         </div>
 
         <div className="px-4 sm:px-8 lg:px-14 pb-12">
           <EnaflixSectionTitle kicker="MÉTRICAS DETALHADAS" title="Estatísticas de Estudo" />
           <div className="mt-6">
-            {dashData && <DashboardMetricsGrid stats={dashData.stats} metrics={dashData.metrics} />}
+            {dashData ? (
+              <DashboardMetricsGrid stats={dashData.stats} metrics={dashData.metrics} />
+            ) : (
+              <div className="h-48 rounded-[32px] bg-white/5 border border-white/10 animate-pulse" />
+            )}
           </div>
         </div>
       </div>
