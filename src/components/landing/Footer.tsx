@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import { Brain } from "lucide-react";
 
 const Footer = forwardRef<HTMLElement>((_, ref) => (
-  <footer ref={ref} className="border-t border-border/50 py-12">
+  <footer ref={ref} className="border-t border-border/50 py-12 bg-background relative z-20">
     <div className="container flex flex-col md:flex-row items-center justify-between gap-6">
       <div className="flex flex-col items-center md:items-start gap-2">
         <div className="flex items-center gap-2">

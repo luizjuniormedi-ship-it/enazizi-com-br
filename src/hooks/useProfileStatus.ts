@@ -95,7 +95,7 @@ export function useProfileStatus(): ProfileStatus {
       if (!shouldFallbackProfileQuery(error)) throw error;
 
       console.warn("[useProfileStatus] full profile query failed; retrying fallback fields", {
-        status: error.status,
+        code: error.code,
         message: error.message,
       });
 
