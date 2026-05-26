@@ -287,20 +287,30 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }
 
       // Save em tutor_knowledge_memory (global) — só quando houve pergunta real do aluno.
+      // Quality gate v22.1 bloqueia respostas ruins automaticamente.
       if (userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
-        await saveTutorMemory(supabaseAdmin, {
+        const answerText = parsed.content || "";
+        const autoQuality = estimateQualityScore(answerText);
+        const savedId = await saveTutorMemory(supabaseAdmin, {
           question: userQuestion,
-          answer: parsed.content || "",
+          answer: answerText,
           blocks: parsed.blocks || [],
           topic,
           specialty: null,
-          qualityScore: 0.7,
+          qualityScore: autoQuality,
           modelUsed: aiResponse?.model || "openai",
           source: "tutor_v3",
           scope: "global",
+          teachingMode: nextBlock,
         });
+        if (savedId) {
+          await bumpMetric(supabaseAdmin, "saves");
+        } else {
+          await bumpMetric(supabaseAdmin, "rejected_saves");
+        }
       }
     })());
+
 
     return corsResponse({
       success: true,
