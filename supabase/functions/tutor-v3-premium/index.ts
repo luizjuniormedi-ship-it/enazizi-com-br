@@ -101,37 +101,45 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
 
     // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory + RAG em paralelo) ────────
-
+    // 🚨 P0 EMERGENCY BYPASS — DISABLE_TUTOR_MEMORY flag (v29 incident response)
+    const MEMORY_DISABLED = (Deno.env.get("DISABLE_TUTOR_MEMORY") || "").toLowerCase() === "true";
+    if (MEMORY_DISABLED) console.log("[TUTOR_SAFE_MODE] DISABLE_TUTOR_MEMORY=true — skipping memory/RAG/trace");
 
     const userQuestion = (message || "").trim();
     let memoryHit: Awaited<ReturnType<typeof lookupTutorMemory>> = null;
     let ragHits: Awaited<ReturnType<typeof lookupRagSemantic>> = [];
 
-    if (!newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
-      // Lookup paralelo: memória + RAG ao mesmo tempo
-      const [m, r] = await Promise.all([
-        lookupTutorMemory(supabaseAdmin, userQuestion, {
-          userId,
-          topic,
-          specialty: null,
-        }),
-        lookupRagSemantic(supabaseAdmin, userQuestion, 3),
-      ]);
-      memoryHit = m;
-      ragHits = r;
+    if (!MEMORY_DISABLED && !newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
+      // Lookup paralelo defensivo: memória + RAG nunca devem travar o Tutor
+      try {
+        const [m, r] = await Promise.all([
+          lookupTutorMemory(supabaseAdmin, userQuestion, { userId, topic, specialty: null }),
+          lookupRagSemantic(supabaseAdmin, userQuestion, 3),
+        ]);
+        memoryHit = m;
+        ragHits = r;
+      } catch (e: any) {
+        console.warn("[MEMORY_LOOKUP_FAIL_SOFT]", e?.message);
+        memoryHit = null;
+        ragHits = [];
+      }
     }
 
-    waitUntil(bumpMetric(supabaseAdmin, "total_lookups"));
-    if (ragHits.length > 0) waitUntil(bumpMetric(supabaseAdmin, "rag_hits"));
+    if (!MEMORY_DISABLED) {
+      waitUntil(bumpMetric(supabaseAdmin, "total_lookups"));
+      if (ragHits.length > 0) waitUntil(bumpMetric(supabaseAdmin, "rag_hits"));
+    }
 
     // Orchestrator decide o que fazer com o hit
-    const decision = decideMemoryAction({
-      memoryHit,
-      ragHits,
-      userProfile: { cognitiveStage: null, difficultyLevel: null },
-    });
+    const decision = MEMORY_DISABLED
+      ? { action: "regenerate_fresh" as const, reason: "safe_mode", useRagContext: false, memoryId: null as any }
+      : decideMemoryAction({
+          memoryHit,
+          ragHits,
+          userProfile: { cognitiveStage: null, difficultyLevel: null },
+        });
 
-    const useMemoryDirect = decision.action === "use_as_is" || decision.action === "use_with_rag";
+    const useMemoryDirect = !MEMORY_DISABLED && (decision.action === "use_as_is" || decision.action === "use_with_rag");
 
     // Fire-and-forget orchestration trace (v23 observability)
     waitUntil((async () => {
