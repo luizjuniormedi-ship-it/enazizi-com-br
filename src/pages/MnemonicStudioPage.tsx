@@ -265,14 +265,24 @@ export default function MnemonicGeneratorPage() {
     const auto = searchParams.get("auto") || (state?.fromErrorBank ? "1" : null);
     const autoEnabled = auto === "1" || auto === "true";
     if (!autoEnabled) return;
-    if (!hydrationReadyRef.current) return;
-    if (autoTriggeredRef.current) return;
-    if (isLoading || result) return;
+    if (!hydrationReadyRef.current) {
+      console.info("[MNEMONIC_AUTO_TRIGGER_SKIP]", { reason: "hydration_not_ready" });
+      return;
+    }
+    if (autoTriggeredRef.current) {
+      console.info("[MNEMONIC_AUTO_TRIGGER_SKIP]", { reason: "already_triggered" });
+      return;
+    }
+    if (isLoading || result) {
+      console.info("[MNEMONIC_AUTO_TRIGGER_SKIP]", { reason: isLoading ? "loading" : "has_result" });
+      return;
+    }
 
     const topic = (tema || searchParams.get("tema") || searchParams.get("topic") || "").trim();
     if (topic.length < 3) {
       autoTriggeredRef.current = true;
       const msg = "Não encontrei um tema válido vindo do Tutor. Informe o tema para gerar o mnemônico.";
+      console.info("[MNEMONIC_AUTO_TRIGGER_SKIP]", { reason: "no_topic", topic });
       setResultError(msg);
       toast.info(msg);
       return;
@@ -280,16 +290,21 @@ export default function MnemonicGeneratorPage() {
 
     if (topic !== tema.trim()) {
       setTema(topic);
+      console.info("[MNEMONIC_AUTO_TRIGGER_SKIP]", { reason: "awaiting_tema_sync", topic, currentTema: tema });
       return;
     }
 
     autoTriggeredRef.current = true;
     setGeneratingStatus("🧠 Iniciando geração automática do mnemônico...");
     telemetry.track('mnemonic_auto_trigger_started' as any, { tema: topic, origin: searchParams.get("origin") || null });
-    console.info("[MnemonicStudio] auto-trigger started", { tema: topic, search: location.search });
-    const t = setTimeout(() => { handleGenerate(); }, 500);
+    console.info("[MNEMONIC_AUTO_TRIGGER]", { tema: topic, search: location.search });
+    const t = setTimeout(() => {
+      handleGenerate();
+      console.info("[MNEMONIC_AUTO_TRIGGER_DONE]", { tema: topic });
+    }, 500);
     return () => clearTimeout(t);
   }, [location.search, location.state, searchParams, tema, isLoading, result, handleGenerate]);
+
 
   const handleCopy = useCallback(() => {
     if (!result) return;
