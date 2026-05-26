@@ -283,6 +283,22 @@ export function evaluateQualityGate(
   };
 }
 
+/**
+ * Estima quality_score heuristicamente quando o caller não tem score próprio.
+ * Faixa: 0.50 a 1.00. Respostas com biblio + profundidade + tamanho passam o gate (>=0.80).
+ */
+export function estimateQualityScore(answer: string): number {
+  const a = answer || "";
+  let score = 0.50;
+  if (a.length >= 400) score += 0.10;
+  if (a.length >= 800) score += 0.10;
+  if (BIBLIOGRAPHY_REGEX.test(a)) score += 0.15;
+  if (!ENGLISH_LEAK_REGEX.test(a)) score += 0.05;
+  if (/\n\s*[-*•]/.test(a)) score += 0.05;
+  if (/\b(exemplo|caso|paciente|quadro clínico|conduta|diagnóstico)\b/i.test(a)) score += 0.05;
+  return Math.min(1, Number(score.toFixed(2)));
+}
+
 // ─── Save ─────────────────────────────────────────────────────────────────
 
 export interface SaveMemoryInput {
