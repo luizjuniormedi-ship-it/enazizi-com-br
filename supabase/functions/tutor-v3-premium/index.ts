@@ -112,8 +112,38 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       });
     }
 
-    if (memoryHit) {
-      // Reuse: incrementa contador e retorna direto, sem chamar IA.
+    const userQuestion = (message || "").trim();
+    let memoryHit: Awaited<ReturnType<typeof lookupTutorMemory>> = null;
+    let ragHits: Awaited<ReturnType<typeof lookupRagSemantic>> = [];
+
+    if (!newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
+      // Lookup paralelo: memória + RAG ao mesmo tempo
+      const [m, r] = await Promise.all([
+        lookupTutorMemory(supabaseAdmin, userQuestion, {
+          userId,
+          topic,
+          specialty: null,
+        }),
+        lookupRagSemantic(supabaseAdmin, userQuestion, 3),
+      ]);
+      memoryHit = m;
+      ragHits = r;
+    }
+
+    waitUntil(bumpMetric(supabaseAdmin, "total_lookups"));
+    if (ragHits.length > 0) waitUntil(bumpMetric(supabaseAdmin, "rag_hits"));
+
+    // Orchestrator decide o que fazer com o hit
+    const decision = decideMemoryAction({
+      memoryHit,
+      ragHits,
+      userProfile: { cognitiveStage: null, difficultyLevel: null },
+    });
+
+    const useMemoryDirect = decision.action === "use_as_is" || decision.action === "use_with_rag";
+
+    if (useMemoryDirect && memoryHit) {
+      waitUntil(bumpMetric(supabaseAdmin, decision.action === "use_as_is" ? "exact_hits" : "semantic_hits"));
       waitUntil((async () => {
         await markMemoryReused(supabaseAdmin, memoryHit!.id);
         if (sessionId && userId) {
@@ -130,6 +160,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
               memoryId: memoryHit!.id,
               memoryReuseCount: memoryHit!.reuseCount + 1,
               memoryQualityScore: memoryHit!.qualityScore,
+              promotionStatus: memoryHit!.promotionStatus,
+              orchestratorAction: decision.action,
             },
           });
         }
@@ -153,19 +185,22 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         memoryQualityScore: memoryHit.qualityScore,
         memoryScope: memoryHit.scope,
         memoryBlocks: memoryHit.blocks,
-        debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity },
+        promotionStatus: memoryHit.promotionStatus,
+        orchestratorAction: decision.action,
+        debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity, action: decision.action },
       }, 200);
     }
 
-    // ── 3.6 RAG semantic context (não substitui IA, enriquece) ──────────────
+    // ── 3.6 RAG context para enriquecer prompt quando regeneramos ───────────
     let ragContext = "";
-    if (userQuestion.length >= 8) {
-      const ragHits = await lookupRagSemantic(supabaseAdmin, userQuestion, 3);
-      if (ragHits.length > 0) {
-        ragContext = "\n\n[CONTEXTO RAG RELEVANTE]\n" +
-          ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
-      }
+    if (decision.useRagContext && ragHits.length > 0) {
+      ragContext = "\n\n[CONTEXTO RAG RELEVANTE]\n" +
+        ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
     }
+    if (decision.action === "regenerate_and_compare") {
+      console.log("[MEMORY_AB_REGEN_PROCEED]", { memoryId: decision.memoryId });
+    }
+
 
     const aiConfig: any = {
       taskType: "tutor_deep",
