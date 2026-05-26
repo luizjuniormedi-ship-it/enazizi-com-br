@@ -193,16 +193,20 @@ const FlashcardExam = ({
       </div>
 
       {/* Card */}
-      <div className="perspective-1000 min-h-[400px] flex items-center justify-center relative">
+      <div
+        className="perspective-1000 min-h-[400px] flex items-center justify-center relative"
+        data-flashcard-state={flipped ? "answer" : "question"}
+        data-revealed={flipped ? "true" : "false"}
+      >
         <AnimatePresence mode="wait">
           <motion.div 
             key={`${current}-${flipped}`}
             initial={{ rotateY: flipped ? -90 : 90, opacity: 0 }}
             animate={{ rotateY: 0, opacity: 1 }}
             exit={{ rotateY: flipped ? 90 : -90, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            transition={{ type: "tween", duration: 0.18, ease: "easeOut" }}
             className="w-full h-full cursor-pointer"
-            onClick={() => !answerSubmitted && setFlipped(!flipped)}
+            onClick={() => setFlipped((f) => !f)}
           >
             {!flipped ? (
               <div className="glass-card-pixar p-8 min-h-[350px] flex flex-col justify-center shadow-pixar border-primary/20 bg-card-pixar/40">
@@ -218,11 +222,17 @@ const FlashcardExam = ({
                   </button>
                 </div>
                 <div className="text-xs uppercase tracking-widest text-primary/60 mb-4 font-black text-center">Pergunta</div>
-                <p className="text-xl sm:text-2xl font-bold text-white text-center leading-tight">{card.question}</p>
-                <div className="mt-12 flex justify-center">
-                  <span className="text-xs text-white/30 font-medium flex items-center gap-2 animate-pulse">
-                    <RotateCcw className="h-3 w-3" /> Toque para revelar resposta
-                  </span>
+                <p className="text-xl sm:text-2xl font-bold text-white text-center leading-tight" data-testid="flashcard-question">{card.question}</p>
+                <div className="mt-12 flex flex-col items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setFlipped(true); }}
+                    className="text-xs px-4 py-2 rounded-full bg-primary/20 text-primary font-semibold border border-primary/30 hover:bg-primary/30 transition-all flex items-center gap-2"
+                    data-testid="flashcard-reveal-btn"
+                  >
+                    <RotateCcw className="h-3 w-3" /> Mostrar resposta
+                  </button>
+                  <span className="text-xs text-white/30 font-medium">Toque no card ou pressione Enter</span>
                 </div>
               </div>
             ) : (
@@ -236,7 +246,7 @@ const FlashcardExam = ({
                     </span>
                   </div>
                 )}
-                <p className="text-xl sm:text-2xl font-bold text-white text-center leading-relaxed italic">
+                <p className="text-xl sm:text-2xl font-bold text-white text-center leading-relaxed italic" data-testid="flashcard-answer">
                   {card.answer}
                 </p>
                 <div className="mt-8 flex justify-center">
@@ -247,6 +257,7 @@ const FlashcardExam = ({
           </motion.div>
         </AnimatePresence>
       </div>
+
 
       {/* Input / FSRS buttons */}
       {!flipped ? (
