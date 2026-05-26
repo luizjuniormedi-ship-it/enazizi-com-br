@@ -142,26 +142,29 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     const useMemoryDirect = !MEMORY_DISABLED && (decision.action === "use_as_is" || decision.action === "use_with_rag");
 
     // Fire-and-forget orchestration trace (v23 observability)
-    waitUntil((async () => {
-      try {
-        await supabaseAdmin.from("memory_orchestration_traces").insert({
-          user_id: userId,
-          function_name: "tutor-v3-premium",
-          question_preview: userQuestion.slice(0, 200),
-          exact_hit: !!memoryHit && (memoryHit as any).matchType === "exact",
-          semantic_hit: !!memoryHit && (memoryHit as any).matchType !== "exact",
-          rag_hit: ragHits.length > 0,
-          openai_called: !useMemoryDirect,
-          memory_id: memoryHit?.id ?? null,
-          orchestrator_action: decision.action,
-          orchestrator_reason: decision.reason,
-          similarity: memoryHit?.similarity ?? null,
-          ab_compared: decision.action === "regenerate_and_compare",
-        });
-      } catch (e) {
-        console.warn("[MEMORY_TRACE_INSERT_FAIL]", (e as any)?.message);
-      }
-    })());
+    // Fire-and-forget orchestration trace (v23 observability) — bypass em modo seguro
+    if (!MEMORY_DISABLED) {
+      waitUntil((async () => {
+        try {
+          await supabaseAdmin.from("memory_orchestration_traces").insert({
+            user_id: userId,
+            function_name: "tutor-v3-premium",
+            question_preview: userQuestion.slice(0, 200),
+            exact_hit: !!memoryHit && (memoryHit as any).matchType === "exact",
+            semantic_hit: !!memoryHit && (memoryHit as any).matchType !== "exact",
+            rag_hit: ragHits.length > 0,
+            openai_called: !useMemoryDirect,
+            memory_id: memoryHit?.id ?? null,
+            orchestrator_action: decision.action,
+            orchestrator_reason: decision.reason,
+            similarity: memoryHit?.similarity ?? null,
+            ab_compared: decision.action === "regenerate_and_compare",
+          });
+        } catch (e) {
+          console.warn("[MEMORY_TRACE_INSERT_FAIL]", (e as any)?.message);
+        }
+      })());
+    }
 
     if (useMemoryDirect && memoryHit) {
       waitUntil(bumpMetric(supabaseAdmin, decision.action === "use_as_is" ? "exact_hits" : "semantic_hits"));
