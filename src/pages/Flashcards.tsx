@@ -532,9 +532,6 @@ const Flashcards = () => {
           subtitle="Foco total na retenção de longo prazo com algoritmos de repetição espaçada (FSRS)."
         />
       </div>
-      <div className="px-4 sm:px-8 lg:px-14">
-        <FlashcardUpload userId={user?.id || ""} onSuccess={fetchData} />
-      </div>
 
       {pendingSession && (
         <div className="px-4 sm:px-8 lg:px-14">
