@@ -76,6 +76,8 @@ const ExecutiveIntelligence = lazyWithRetry(() => import("./pages/admin/Executiv
 const MedicalKnowledgeGraphPage = lazyWithRetry(() => import("./pages/admin/MedicalKnowledgeGraph"), "MedicalKnowledgeGraph");
 const QuestionQuality = lazyWithRetry(() => import("./pages/admin/QuestionQuality"), "QuestionQuality");
 const LoadMonitor = lazyWithRetry(() => import("./pages/admin/LoadMonitor"), "LoadMonitor");
+const MemoryHealth = lazyWithRetry(() => import("./pages/admin/MemoryHealth"), "MemoryHealth");
+const MemoryHallucinations = lazyWithRetry(() => import("./pages/admin/MemoryHallucinations"), "MemoryHallucinations");
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
@@ -383,6 +385,8 @@ const App = () => (
                 <Route path="video-lessons" element={<Admin initialTab="uploads" />} />
                 <Route path="question-quality" element={<QuestionQuality />} />
                 <Route path="load-monitor" element={<LoadMonitor />} />
+                <Route path="memory-health" element={<MemoryHealth />} />
+                <Route path="memory-hallucinations" element={<MemoryHallucinations />} />
 
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
