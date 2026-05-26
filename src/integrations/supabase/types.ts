@@ -14906,6 +14906,69 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_governance_metrics: {
+        Row: {
+          cost_saved_usd: number
+          created_at: string
+          day: string
+          exact_hits: number
+          feedback_down: number
+          feedback_halluc: number
+          feedback_up: number
+          hit_rate: number
+          id: string
+          openai_calls: number
+          poisoning_rate: number
+          quarantined_total: number
+          rag_hits: number
+          rejected_saves: number
+          saves: number
+          semantic_hits: number
+          total_lookups: number
+          updated_at: string
+        }
+        Insert: {
+          cost_saved_usd?: number
+          created_at?: string
+          day: string
+          exact_hits?: number
+          feedback_down?: number
+          feedback_halluc?: number
+          feedback_up?: number
+          hit_rate?: number
+          id?: string
+          openai_calls?: number
+          poisoning_rate?: number
+          quarantined_total?: number
+          rag_hits?: number
+          rejected_saves?: number
+          saves?: number
+          semantic_hits?: number
+          total_lookups?: number
+          updated_at?: string
+        }
+        Update: {
+          cost_saved_usd?: number
+          created_at?: string
+          day?: string
+          exact_hits?: number
+          feedback_down?: number
+          feedback_halluc?: number
+          feedback_up?: number
+          hit_rate?: number
+          id?: string
+          openai_calls?: number
+          poisoning_rate?: number
+          quarantined_total?: number
+          rag_hits?: number
+          rejected_saves?: number
+          saves?: number
+          semantic_hits?: number
+          total_lookups?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mental_maps: {
         Row: {
           content_json: Json
@@ -24039,25 +24102,37 @@ export type Database = {
           answer_summary: string | null
           block_types: string[] | null
           blocks: Json
+          cognitive_stage: string | null
           created_at: string
+          decay_score: number
           difficulty_level: string | null
           embedding: string | null
           embedding_model: string | null
           embedding_status: string
           embedding_updated_at: string | null
+          hallucination_flag: boolean
+          has_bibliography: boolean
           id: string
           intent: string | null
+          language_purity: boolean
           last_used_at: string | null
+          last_validated_at: string | null
           model_used: string | null
+          pedagogical_depth: number | null
+          promotion_status: string
           quality_score: number
           question_normalized: string
           question_original: string
           reuse_count: number
+          reuse_failure_count: number
+          reuse_success_count: number
           scope: string
           source: string
           specialty: string | null
           subtopic: string | null
           symptom_keywords: string[] | null
+          target_profile: Json | null
+          teaching_mode: string | null
           topic: string | null
           updated_at: string
           user_id: string | null
@@ -24066,25 +24141,37 @@ export type Database = {
           answer_summary?: string | null
           block_types?: string[] | null
           blocks?: Json
+          cognitive_stage?: string | null
           created_at?: string
+          decay_score?: number
           difficulty_level?: string | null
           embedding?: string | null
           embedding_model?: string | null
           embedding_status?: string
           embedding_updated_at?: string | null
+          hallucination_flag?: boolean
+          has_bibliography?: boolean
           id?: string
           intent?: string | null
+          language_purity?: boolean
           last_used_at?: string | null
+          last_validated_at?: string | null
           model_used?: string | null
+          pedagogical_depth?: number | null
+          promotion_status?: string
           quality_score?: number
           question_normalized: string
           question_original: string
           reuse_count?: number
+          reuse_failure_count?: number
+          reuse_success_count?: number
           scope?: string
           source?: string
           specialty?: string | null
           subtopic?: string | null
           symptom_keywords?: string[] | null
+          target_profile?: Json | null
+          teaching_mode?: string | null
           topic?: string | null
           updated_at?: string
           user_id?: string | null
@@ -24093,25 +24180,37 @@ export type Database = {
           answer_summary?: string | null
           block_types?: string[] | null
           blocks?: Json
+          cognitive_stage?: string | null
           created_at?: string
+          decay_score?: number
           difficulty_level?: string | null
           embedding?: string | null
           embedding_model?: string | null
           embedding_status?: string
           embedding_updated_at?: string | null
+          hallucination_flag?: boolean
+          has_bibliography?: boolean
           id?: string
           intent?: string | null
+          language_purity?: boolean
           last_used_at?: string | null
+          last_validated_at?: string | null
           model_used?: string | null
+          pedagogical_depth?: number | null
+          promotion_status?: string
           quality_score?: number
           question_normalized?: string
           question_original?: string
           reuse_count?: number
+          reuse_failure_count?: number
+          reuse_success_count?: number
           scope?: string
           source?: string
           specialty?: string | null
           subtopic?: string | null
           symptom_keywords?: string[] | null
+          target_profile?: Json | null
+          teaching_mode?: string | null
           topic?: string | null
           updated_at?: string
           user_id?: string | null
@@ -24471,6 +24570,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tutor_memory_feedback: {
+        Row: {
+          created_at: string
+          feedback: string
+          id: string
+          memory_id: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback: string
+          id?: string
+          memory_id: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          memory_id?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_memory_feedback_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_knowledge_memory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tutor_memory_search_logs: {
         Row: {
@@ -27412,45 +27546,82 @@ export type Database = {
           user_id: string
         }[]
       }
-      match_tutor_memory_hybrid: {
-        Args: {
-          match_count?: number
-          match_threshold?: number
-          query_abbrev?: string[]
-          query_embedding: string
-          query_subtopic?: string
-          query_symptoms?: string[]
-          query_topic?: string
-          user_id_filter?: string
-        }
-        Returns: {
-          abbreviation_overlap_count: number
-          answer_summary: string
-          block_types: string[]
-          blocks: Json
-          created_at: string
-          difficulty_level: string
-          hybrid_score: number
-          id: string
-          intent: string
-          last_used_at: string
-          model_used: string
-          quality_score: number
-          question_normalized: string
-          question_original: string
-          reuse_count: number
-          scope: string
-          similarity: number
-          source: string
-          specialty: string
-          subtopic: string
-          symptom_keywords: string[]
-          symptom_overlap_count: number
-          topic: string
-          topic_overlap: boolean
-          updated_at: string
-          user_id: string
-        }[]
+      match_tutor_memory_hybrid:
+        | {
+            Args: {
+              match_count?: number
+              match_threshold?: number
+              query_abbrev?: string[]
+              query_embedding: string
+              query_subtopic?: string
+              query_symptoms?: string[]
+              query_topic?: string
+              user_id_filter?: string
+            }
+            Returns: {
+              abbreviation_overlap_count: number
+              answer_summary: string
+              block_types: string[]
+              blocks: Json
+              created_at: string
+              difficulty_level: string
+              hybrid_score: number
+              id: string
+              intent: string
+              last_used_at: string
+              model_used: string
+              quality_score: number
+              question_normalized: string
+              question_original: string
+              reuse_count: number
+              scope: string
+              similarity: number
+              source: string
+              specialty: string
+              subtopic: string
+              symptom_keywords: string[]
+              symptom_overlap_count: number
+              topic: string
+              topic_overlap: boolean
+              updated_at: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
+              cognitive_stage_filter?: string
+              difficulty_filter?: string
+              match_count: number
+              match_threshold: number
+              query_abbrev: string[]
+              query_embedding: string
+              query_subtopic: string
+              query_symptoms: string[]
+              query_topic: string
+              user_id_filter: string
+            }
+            Returns: {
+              answer_summary: string
+              blocks: Json
+              cognitive_stage: string
+              decay_score: number
+              difficulty_level: string
+              id: string
+              promotion_status: string
+              quality_score: number
+              question_original: string
+              reuse_count: number
+              scope: string
+              similarity: number
+              source: string
+              specialty: string
+              subtopic: string
+              topic: string
+            }[]
+          }
+      memory_metrics_increment: {
+        Args: { _day: string; _delta?: number; _field: string }
+        Returns: undefined
       }
       move_to_dlq: {
         Args: {
@@ -27538,6 +27709,16 @@ export type Database = {
         Args: { _memory_id: string }
         Returns: undefined
       }
+      tutor_memory_register_feedback: {
+        Args: {
+          _feedback: string
+          _memory_id: string
+          _note?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      tutor_memory_run_promotion_cycle: { Args: never; Returns: Json }
       update_pipeline_health: {
         Args: {
           p_error: number

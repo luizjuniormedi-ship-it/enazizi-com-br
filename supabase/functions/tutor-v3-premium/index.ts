@@ -2,7 +2,18 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockId } from "../_shared/tutor/pedagogical-logic.ts";
-import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory } from "../_shared/tutor-memory.ts";
+import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory, estimateQualityScore } from "../_shared/tutor-memory.ts";
+import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
+
+// Métrica fire-and-forget — nunca trava o fluxo.
+async function bumpMetric(supabaseAdmin: any, field: string, delta = 1) {
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    await supabaseAdmin.rpc("memory_metrics_increment", { _day: day, _field: field, _delta: delta });
+  } catch (e: any) {
+    console.warn("[MEMORY_METRIC_ERROR]", field, e?.message);
+  }
+}
 
 
 console.log("[TUTOR_V3_BOOT] Function module loaded");
@@ -89,20 +100,41 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
 
-    // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory antes da IA) ──────────────
-    // Só tenta cache quando há pergunta real do aluno (não em "new topic" ou continuação automática).
+    // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory + RAG em paralelo) ────────
+
+
     const userQuestion = (message || "").trim();
     let memoryHit: Awaited<ReturnType<typeof lookupTutorMemory>> = null;
+    let ragHits: Awaited<ReturnType<typeof lookupRagSemantic>> = [];
+
     if (!newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
-      memoryHit = await lookupTutorMemory(supabaseAdmin, userQuestion, {
-        userId,
-        topic,
-        specialty: null,
-      });
+      // Lookup paralelo: memória + RAG ao mesmo tempo
+      const [m, r] = await Promise.all([
+        lookupTutorMemory(supabaseAdmin, userQuestion, {
+          userId,
+          topic,
+          specialty: null,
+        }),
+        lookupRagSemantic(supabaseAdmin, userQuestion, 3),
+      ]);
+      memoryHit = m;
+      ragHits = r;
     }
 
-    if (memoryHit) {
-      // Reuse: incrementa contador e retorna direto, sem chamar IA.
+    waitUntil(bumpMetric(supabaseAdmin, "total_lookups"));
+    if (ragHits.length > 0) waitUntil(bumpMetric(supabaseAdmin, "rag_hits"));
+
+    // Orchestrator decide o que fazer com o hit
+    const decision = decideMemoryAction({
+      memoryHit,
+      ragHits,
+      userProfile: { cognitiveStage: null, difficultyLevel: null },
+    });
+
+    const useMemoryDirect = decision.action === "use_as_is" || decision.action === "use_with_rag";
+
+    if (useMemoryDirect && memoryHit) {
+      waitUntil(bumpMetric(supabaseAdmin, decision.action === "use_as_is" ? "exact_hits" : "semantic_hits"));
       waitUntil((async () => {
         await markMemoryReused(supabaseAdmin, memoryHit!.id);
         if (sessionId && userId) {
@@ -119,6 +151,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
               memoryId: memoryHit!.id,
               memoryReuseCount: memoryHit!.reuseCount + 1,
               memoryQualityScore: memoryHit!.qualityScore,
+              promotionStatus: memoryHit!.promotionStatus,
+              orchestratorAction: decision.action,
             },
           });
         }
@@ -142,19 +176,22 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         memoryQualityScore: memoryHit.qualityScore,
         memoryScope: memoryHit.scope,
         memoryBlocks: memoryHit.blocks,
-        debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity },
+        promotionStatus: memoryHit.promotionStatus,
+        orchestratorAction: decision.action,
+        debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity, action: decision.action },
       }, 200);
     }
 
-    // ── 3.6 RAG semantic context (não substitui IA, enriquece) ──────────────
+    // ── 3.6 RAG context para enriquecer prompt quando regeneramos ───────────
     let ragContext = "";
-    if (userQuestion.length >= 8) {
-      const ragHits = await lookupRagSemantic(supabaseAdmin, userQuestion, 3);
-      if (ragHits.length > 0) {
-        ragContext = "\n\n[CONTEXTO RAG RELEVANTE]\n" +
-          ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
-      }
+    if (decision.useRagContext && ragHits.length > 0) {
+      ragContext = "\n\n[CONTEXTO RAG RELEVANTE]\n" +
+        ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
     }
+    if (decision.action === "regenerate_and_compare") {
+      console.log("[MEMORY_AB_REGEN_PROCEED]", { memoryId: decision.memoryId });
+    }
+
 
     const aiConfig: any = {
       taskType: "tutor_deep",
@@ -192,7 +229,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       ]
     };
 
-    console.log("[MEMORY_MISS_OPENAI]", { topic, qLen: userQuestion.length });
+    console.log("[MEMORY_MISS_OPENAI]", { topic, qLen: userQuestion.length, action: decision.action });
+    waitUntil(bumpMetric(supabaseAdmin, "openai_calls"));
     const aiResponse = await ai(aiConfig, { retries: 2 });
 
     // ── 4. STABILITY & PARSING ───────────────────────────────
@@ -249,20 +287,30 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }
 
       // Save em tutor_knowledge_memory (global) — só quando houve pergunta real do aluno.
+      // Quality gate v22.1 bloqueia respostas ruins automaticamente.
       if (userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
-        await saveTutorMemory(supabaseAdmin, {
+        const answerText = parsed.content || "";
+        const autoQuality = estimateQualityScore(answerText);
+        const savedId = await saveTutorMemory(supabaseAdmin, {
           question: userQuestion,
-          answer: parsed.content || "",
+          answer: answerText,
           blocks: parsed.blocks || [],
           topic,
           specialty: null,
-          qualityScore: 0.7,
+          qualityScore: autoQuality,
           modelUsed: aiResponse?.model || "openai",
           source: "tutor_v3",
           scope: "global",
+          teachingMode: nextBlock,
         });
+        if (savedId) {
+          await bumpMetric(supabaseAdmin, "saves");
+        } else {
+          await bumpMetric(supabaseAdmin, "rejected_saves");
+        }
       }
     })());
+
 
     return corsResponse({
       success: true,
