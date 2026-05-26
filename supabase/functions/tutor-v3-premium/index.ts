@@ -369,9 +369,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     return corsResponse({
       success: true,
       ok: true,
-      content: "Tutor V3 em modo seguro. Vamos começar pelo essencial do tema.",
+      content: "Tutor IA restaurado em modo seguro. Vamos continuar pelo essencial do tema.",
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
       shouldWaitForStudent: true,
+      debug_stage: "safe_mode_no_memory",
       error: err.message,
       request_id: requestId
     }, 200);
