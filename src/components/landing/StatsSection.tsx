@@ -1,6 +1,6 @@
 import { Users, BookOpen, Trophy, Brain } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchLoginStats } from "@/lib/loginPublicData";
 
 const formatCount = (n: number): string => {
   if (n >= 1000) {
@@ -14,15 +14,16 @@ const StatsSection = () => {
   const [dynamic, setDynamic] = useState({ alunos: "—", questoes: "—", flashcards: "—" });
 
   useEffect(() => {
-    supabase.rpc("get_login_stats").maybeSingle().then(({ data }) => {
-      if (data) {
-        setDynamic({
-          alunos: formatCount(Number(data.alunos)),
-          questoes: formatCount(Number(data.questoes)),
-          flashcards: formatCount(Number(data.flashcards)),
-        });
-      }
+    let cancelled = false;
+    fetchLoginStats().then((data) => {
+      if (cancelled || !data) return;
+      setDynamic({
+        alunos: formatCount(data.alunos),
+        questoes: formatCount(data.questoes),
+        flashcards: formatCount(data.flashcards),
+      });
     });
+    return () => { cancelled = true; };
   }, []);
 
   const stats = [

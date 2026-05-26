@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchLoginStats, fetchLoginTestimonials } from "@/lib/loginPublicData";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { motion } from "framer-motion";
 
@@ -69,27 +70,23 @@ const Login = () => {
   }, [session, authLoading, navigate]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsRes, testimonialsRes] = await Promise.all([
-          supabase.rpc("get_login_stats").maybeSingle(),
-          supabase.rpc("get_login_testimonials"),
-        ]);
-        if (statsRes.data) {
-          setDynamicStats({
-            alunos: formatCount(Number(statsRes.data.alunos)),
-            questoes: formatCount(Number(statsRes.data.questoes)),
-            flashcards: formatCount(Number(statsRes.data.flashcards)),
-          });
-        }
-        if (testimonialsRes.data && Array.isArray(testimonialsRes.data)) {
-          setTestimonials(testimonialsRes.data as Testimonial[]);
-        }
-      } catch {
-        // keep defaults on error
+    let cancelled = false;
+    (async () => {
+      const [stats, tList] = await Promise.all([
+        fetchLoginStats(),
+        fetchLoginTestimonials(),
+      ]);
+      if (cancelled) return;
+      if (stats) {
+        setDynamicStats({
+          alunos: formatCount(stats.alunos),
+          questoes: formatCount(stats.questoes),
+          flashcards: formatCount(stats.flashcards),
+        });
       }
-    };
-    fetchData();
+      if (tList) setTestimonials(tList as Testimonial[]);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const stats = [
