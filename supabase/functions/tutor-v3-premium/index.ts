@@ -101,59 +101,70 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
 
     // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory + RAG em paralelo) ────────
-
+    // 🚨 P0 EMERGENCY BYPASS — DISABLE_TUTOR_MEMORY flag (v29 incident response)
+    const MEMORY_DISABLED = (Deno.env.get("DISABLE_TUTOR_MEMORY") || "").toLowerCase() === "true";
+    if (MEMORY_DISABLED) console.log("[TUTOR_SAFE_MODE] DISABLE_TUTOR_MEMORY=true — skipping memory/RAG/trace");
 
     const userQuestion = (message || "").trim();
     let memoryHit: Awaited<ReturnType<typeof lookupTutorMemory>> = null;
     let ragHits: Awaited<ReturnType<typeof lookupRagSemantic>> = [];
 
-    if (!newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
-      // Lookup paralelo: memória + RAG ao mesmo tempo
-      const [m, r] = await Promise.all([
-        lookupTutorMemory(supabaseAdmin, userQuestion, {
-          userId,
-          topic,
-          specialty: null,
-        }),
-        lookupRagSemantic(supabaseAdmin, userQuestion, 3),
-      ]);
-      memoryHit = m;
-      ragHits = r;
+    if (!MEMORY_DISABLED && !newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
+      // Lookup paralelo defensivo: memória + RAG nunca devem travar o Tutor
+      try {
+        const [m, r] = await Promise.all([
+          lookupTutorMemory(supabaseAdmin, userQuestion, { userId, topic, specialty: null }),
+          lookupRagSemantic(supabaseAdmin, userQuestion, 3),
+        ]);
+        memoryHit = m;
+        ragHits = r;
+      } catch (e: any) {
+        console.warn("[MEMORY_LOOKUP_FAIL_SOFT]", e?.message);
+        memoryHit = null;
+        ragHits = [];
+      }
     }
 
-    waitUntil(bumpMetric(supabaseAdmin, "total_lookups"));
-    if (ragHits.length > 0) waitUntil(bumpMetric(supabaseAdmin, "rag_hits"));
+    if (!MEMORY_DISABLED) {
+      waitUntil(bumpMetric(supabaseAdmin, "total_lookups"));
+      if (ragHits.length > 0) waitUntil(bumpMetric(supabaseAdmin, "rag_hits"));
+    }
 
     // Orchestrator decide o que fazer com o hit
-    const decision = decideMemoryAction({
-      memoryHit,
-      ragHits,
-      userProfile: { cognitiveStage: null, difficultyLevel: null },
-    });
+    const decision = MEMORY_DISABLED
+      ? { action: "regenerate_fresh" as const, reason: "safe_mode", useRagContext: false, memoryId: null as any }
+      : decideMemoryAction({
+          memoryHit,
+          ragHits,
+          userProfile: { cognitiveStage: null, difficultyLevel: null },
+        });
 
-    const useMemoryDirect = decision.action === "use_as_is" || decision.action === "use_with_rag";
+    const useMemoryDirect = !MEMORY_DISABLED && (decision.action === "use_as_is" || decision.action === "use_with_rag");
 
     // Fire-and-forget orchestration trace (v23 observability)
-    waitUntil((async () => {
-      try {
-        await supabaseAdmin.from("memory_orchestration_traces").insert({
-          user_id: userId,
-          function_name: "tutor-v3-premium",
-          question_preview: userQuestion.slice(0, 200),
-          exact_hit: !!memoryHit && (memoryHit as any).matchType === "exact",
-          semantic_hit: !!memoryHit && (memoryHit as any).matchType !== "exact",
-          rag_hit: ragHits.length > 0,
-          openai_called: !useMemoryDirect,
-          memory_id: memoryHit?.id ?? null,
-          orchestrator_action: decision.action,
-          orchestrator_reason: decision.reason,
-          similarity: memoryHit?.similarity ?? null,
-          ab_compared: decision.action === "regenerate_and_compare",
-        });
-      } catch (e) {
-        console.warn("[MEMORY_TRACE_INSERT_FAIL]", (e as any)?.message);
-      }
-    })());
+    // Fire-and-forget orchestration trace (v23 observability) — bypass em modo seguro
+    if (!MEMORY_DISABLED) {
+      waitUntil((async () => {
+        try {
+          await supabaseAdmin.from("memory_orchestration_traces").insert({
+            user_id: userId,
+            function_name: "tutor-v3-premium",
+            question_preview: userQuestion.slice(0, 200),
+            exact_hit: !!memoryHit && (memoryHit as any).matchType === "exact",
+            semantic_hit: !!memoryHit && (memoryHit as any).matchType !== "exact",
+            rag_hit: ragHits.length > 0,
+            openai_called: !useMemoryDirect,
+            memory_id: memoryHit?.id ?? null,
+            orchestrator_action: decision.action,
+            orchestrator_reason: decision.reason,
+            similarity: memoryHit?.similarity ?? null,
+            ab_compared: decision.action === "regenerate_and_compare",
+          });
+        } catch (e) {
+          console.warn("[MEMORY_TRACE_INSERT_FAIL]", (e as any)?.message);
+        }
+      })());
+    }
 
     if (useMemoryDirect && memoryHit) {
       waitUntil(bumpMetric(supabaseAdmin, decision.action === "use_as_is" ? "exact_hits" : "semantic_hits"));
@@ -310,7 +321,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
       // Save em tutor_knowledge_memory (global) — só quando houve pergunta real do aluno.
       // Quality gate v22.1 bloqueia respostas ruins automaticamente.
-      if (userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
+      if (!MEMORY_DISABLED && userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
         const answerText = parsed.content || "";
         const autoQuality = estimateQualityScore(answerText);
         const savedId = await saveTutorMemory(supabaseAdmin, {
@@ -358,9 +369,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     return corsResponse({
       success: true,
       ok: true,
-      content: "Tutor V3 em modo seguro. Vamos começar pelo essencial do tema.",
+      content: "Tutor IA restaurado em modo seguro. Vamos continuar pelo essencial do tema.",
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
       shouldWaitForStudent: true,
+      debug_stage: "safe_mode_no_memory",
       error: err.message,
       request_id: requestId
     }, 200);
