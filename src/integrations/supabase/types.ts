@@ -14969,6 +14969,78 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_orchestration_traces: {
+        Row: {
+          ab_compared: boolean
+          ab_delta_quality: number | null
+          created_at: string
+          embedding_ms: number | null
+          exact_hit: boolean
+          function_name: string
+          id: string
+          latency_ms: number | null
+          llm_ms: number | null
+          lookup_ms: number | null
+          memory_id: string | null
+          model_used: string | null
+          openai_called: boolean
+          orchestrator_action: string | null
+          orchestrator_reason: string | null
+          question_preview: string | null
+          rag_hit: boolean
+          rag_ms: number | null
+          semantic_hit: boolean
+          similarity: number | null
+          user_id: string | null
+        }
+        Insert: {
+          ab_compared?: boolean
+          ab_delta_quality?: number | null
+          created_at?: string
+          embedding_ms?: number | null
+          exact_hit?: boolean
+          function_name: string
+          id?: string
+          latency_ms?: number | null
+          llm_ms?: number | null
+          lookup_ms?: number | null
+          memory_id?: string | null
+          model_used?: string | null
+          openai_called?: boolean
+          orchestrator_action?: string | null
+          orchestrator_reason?: string | null
+          question_preview?: string | null
+          rag_hit?: boolean
+          rag_ms?: number | null
+          semantic_hit?: boolean
+          similarity?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          ab_compared?: boolean
+          ab_delta_quality?: number | null
+          created_at?: string
+          embedding_ms?: number | null
+          exact_hit?: boolean
+          function_name?: string
+          id?: string
+          latency_ms?: number | null
+          llm_ms?: number | null
+          lookup_ms?: number | null
+          memory_id?: string | null
+          model_used?: string | null
+          openai_called?: boolean
+          orchestrator_action?: string | null
+          orchestrator_reason?: string | null
+          question_preview?: string | null
+          rag_hit?: boolean
+          rag_ms?: number | null
+          semantic_hit?: boolean
+          similarity?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       mental_maps: {
         Row: {
           content_json: Json
@@ -24106,6 +24178,7 @@ export type Database = {
           created_at: string
           decay_score: number
           difficulty_level: string | null
+          drift_score: number
           embedding: string | null
           embedding_model: string | null
           embedding_status: string
@@ -24115,6 +24188,7 @@ export type Database = {
           id: string
           intent: string | null
           language_purity: boolean
+          last_drift_check_at: string | null
           last_used_at: string | null
           last_validated_at: string | null
           model_used: string | null
@@ -24124,8 +24198,10 @@ export type Database = {
           question_normalized: string
           question_original: string
           reuse_count: number
+          reuse_entropy: number
           reuse_failure_count: number
           reuse_success_count: number
+          risk_level: string
           scope: string
           source: string
           specialty: string | null
@@ -24145,6 +24221,7 @@ export type Database = {
           created_at?: string
           decay_score?: number
           difficulty_level?: string | null
+          drift_score?: number
           embedding?: string | null
           embedding_model?: string | null
           embedding_status?: string
@@ -24154,6 +24231,7 @@ export type Database = {
           id?: string
           intent?: string | null
           language_purity?: boolean
+          last_drift_check_at?: string | null
           last_used_at?: string | null
           last_validated_at?: string | null
           model_used?: string | null
@@ -24163,8 +24241,10 @@ export type Database = {
           question_normalized: string
           question_original: string
           reuse_count?: number
+          reuse_entropy?: number
           reuse_failure_count?: number
           reuse_success_count?: number
+          risk_level?: string
           scope?: string
           source?: string
           specialty?: string | null
@@ -24184,6 +24264,7 @@ export type Database = {
           created_at?: string
           decay_score?: number
           difficulty_level?: string | null
+          drift_score?: number
           embedding?: string | null
           embedding_model?: string | null
           embedding_status?: string
@@ -24193,6 +24274,7 @@ export type Database = {
           id?: string
           intent?: string | null
           language_purity?: boolean
+          last_drift_check_at?: string | null
           last_used_at?: string | null
           last_validated_at?: string | null
           model_used?: string | null
@@ -24202,8 +24284,10 @@ export type Database = {
           question_normalized?: string
           question_original?: string
           reuse_count?: number
+          reuse_entropy?: number
           reuse_failure_count?: number
           reuse_success_count?: number
+          risk_level?: string
           scope?: string
           source?: string
           specialty?: string | null
@@ -27619,6 +27703,24 @@ export type Database = {
               topic: string
             }[]
           }
+      memory_drift_analysis: { Args: never; Returns: Json }
+      memory_hallucination_forensics: {
+        Args: { p_limit?: number }
+        Returns: {
+          cognitive_stage: string
+          created_at: string
+          drift_score: number
+          id: string
+          last_validated_at: string
+          promotion_status: string
+          question_original: string
+          reuse_count: number
+          reuse_failure_count: number
+          risk_level: string
+          specialty: string
+        }[]
+      }
+      memory_health_dashboard: { Args: never; Returns: Json }
       memory_metrics_increment: {
         Args: { _day: string; _delta?: number; _field: string }
         Returns: undefined
