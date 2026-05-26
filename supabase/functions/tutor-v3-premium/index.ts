@@ -100,17 +100,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
 
-    // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory antes da IA) ──────────────
-    // Só tenta cache quando há pergunta real do aluno (não em "new topic" ou continuação automática).
-    const userQuestion = (message || "").trim();
-    let memoryHit: Awaited<ReturnType<typeof lookupTutorMemory>> = null;
-    if (!newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
-      memoryHit = await lookupTutorMemory(supabaseAdmin, userQuestion, {
-        userId,
-        topic,
-        specialty: null,
-      });
-    }
+    // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory + RAG em paralelo) ────────
+
 
     const userQuestion = (message || "").trim();
     let memoryHit: Awaited<ReturnType<typeof lookupTutorMemory>> = null;
