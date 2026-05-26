@@ -2,7 +2,18 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockId } from "../_shared/tutor/pedagogical-logic.ts";
-import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory } from "../_shared/tutor-memory.ts";
+import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory, estimateQualityScore } from "../_shared/tutor-memory.ts";
+import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
+
+// Métrica fire-and-forget — nunca trava o fluxo.
+async function bumpMetric(supabaseAdmin: any, field: string, delta = 1) {
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    await supabaseAdmin.rpc("memory_metrics_increment", { _day: day, _field: field, _delta: delta });
+  } catch (e: any) {
+    console.warn("[MEMORY_METRIC_ERROR]", field, e?.message);
+  }
+}
 
 
 console.log("[TUTOR_V3_BOOT] Function module loaded");
