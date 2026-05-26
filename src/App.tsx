@@ -433,6 +433,8 @@ const App = () => (
               {/* Redirects for broken navigate() targets */}
               <Route path="/image-quiz" element={<Navigate to="/dashboard/image-quiz" replace />} />
               <Route path="/banco-questoes" element={<Navigate to="/dashboard/banco-questoes" replace />} />
+              <Route path="/mnemonico" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
+              <Route path="/mnemonic-studio" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
