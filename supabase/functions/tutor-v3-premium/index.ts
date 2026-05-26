@@ -321,7 +321,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
       // Save em tutor_knowledge_memory (global) — só quando houve pergunta real do aluno.
       // Quality gate v22.1 bloqueia respostas ruins automaticamente.
-      if (userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
+      if (!MEMORY_DISABLED && userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
         const answerText = parsed.content || "";
         const autoQuality = estimateQualityScore(answerText);
         const savedId = await saveTutorMemory(supabaseAdmin, {
