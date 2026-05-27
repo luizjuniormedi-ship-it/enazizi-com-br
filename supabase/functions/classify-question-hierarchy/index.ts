@@ -336,12 +336,19 @@ Deno.serve(async (req) => {
       : "questions_bank";
     const batchSize = Math.min(Math.max(parseInt(body.batch_size ?? 100, 10), 10), 500);
     const dryRun: boolean = body.dry_run === true;
+    // [v25-controlled] Filtro defensivo: processar apenas questões adicionadas a partir de uma data
+    // Garante que rodadas operacionais não afetem o restante do banco (Freeze v25).
+    const createdAfter: string | null = typeof body.created_after === "string" && body.created_after.length > 0
+      ? body.created_after
+      : null;
     console.info("[classify-hierarchy] start", {
       user: userData.user.id,
       tableSource,
       batchSize,
       dryRun,
+      createdAfter,
     });
+
 
     // 1) Carregar currículo (cache em memória do invocador)
     const { data: specsRaw } = await admin
@@ -410,12 +417,16 @@ Deno.serve(async (req) => {
 
     // 3) Buscar lote NÃO classificado ainda (specialty_id IS NULL)
     const selectCols = "id, topic, subtopic, classification_confidence";
-    const { data: rows, error: rowsErr } = await admin
+    let query = admin
       .from(tableSource)
       .select(selectCols)
-      .is("specialty_id", null)
-      .limit(batchSize);
+      .is("specialty_id", null);
+    if (createdAfter) {
+      query = query.gte("created_at", createdAfter);
+    }
+    const { data: rows, error: rowsErr } = await query.limit(batchSize);
     if (rowsErr) throw new Error(`failed to fetch rows: ${rowsErr.message}`);
+
 
     const breakdown: Record<string, number> = { alias_exact: 0, exact_text: 0, heuristic: 0, ai: 0 };
     const aliasEvents: Array<{
