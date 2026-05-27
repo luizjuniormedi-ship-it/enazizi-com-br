@@ -635,12 +635,14 @@ export default function ClassificationRunner() {
         console.warn("Falha no snapshot pré-execução", e);
       }
 
+      const realBody: Record<string, unknown> = {
+        table_source: realParams.table_source,
+        batch_size: realParams.batch_size,
+        dry_run: false,
+      };
+      if (createdAfterIso) realBody.created_after = createdAfterIso;
       const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
-        body: {
-          table_source: realParams.table_source,
-          batch_size: realParams.batch_size,
-          dry_run: false,
-        },
+        body: realBody,
       });
       if (error) {
         setErrorPayload({ message: error.message, raw: data ?? error });
