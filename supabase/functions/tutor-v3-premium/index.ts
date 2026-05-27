@@ -319,8 +319,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
       }
 
-      // Save em tutor_knowledge_memory (global) — só quando houve pergunta real do aluno.
-      // Quality gate v22.1 bloqueia respostas ruins automaticamente.
+      // Save em tutor_knowledge_memory (LGPD-SAFE — Opção C / Hardening v25.1):
+      // Toda memória nasce PRIVADA (scope='user'). Promoção para 'global' acontece
+      // exclusivamente via tutor-memory-promotion-cron, que sanitiza PII antes.
       if (!MEMORY_DISABLED && userQuestion.length >= 8 && (parsed.content || "").length >= 60 && studentIntent !== "new_topic") {
         const answerText = parsed.content || "";
         const autoQuality = estimateQualityScore(answerText);
@@ -333,10 +334,12 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           qualityScore: autoQuality,
           modelUsed: aiResponse?.model || "openai",
           source: "tutor_v3",
-          scope: "global",
+          scope: "user",
+          userId,
           teachingMode: nextBlock,
         });
         if (savedId) {
+          console.log("[TUTOR_MEMORY_PRIVATE_SAVE]", { savedId, userId, topic });
           await bumpMetric(supabaseAdmin, "saves");
         } else {
           await bumpMetric(supabaseAdmin, "rejected_saves");
