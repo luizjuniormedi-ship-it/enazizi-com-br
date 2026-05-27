@@ -105,15 +105,19 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     }
 
 
-    // 2.2 AI Fallback
+    // 2.2 AI Fallback — only when bank cannot satisfy the deficit
     step = "ai_generation";
     let attempts = 0;
+    if (finalQuestions.length < targetCount) {
+      console.log(`[SIMULADO_AI_FALLBACK] bank_filled=${finalQuestions.length}/${targetCount} → calling AI`);
+    }
     while (finalQuestions.length < targetCount && attempts < 2) {
       attempts++;
       const deficit = targetCount - finalQuestions.length;
-      
+
       // [QUESTION_GEN_COUNT]
-      console.log(`[QUESTION_GEN_COUNT] deficit=${deficit}`);
+      console.log(`[QUESTION_GEN_COUNT] deficit=${deficit} attempt=${attempts}`);
+
 
       const aiResponse = await ai({
         model: normalizeModel(body.model || AI_MODELS.FAST),
