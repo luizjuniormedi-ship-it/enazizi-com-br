@@ -75,3 +75,17 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Edge Contract Guard
+
+Antes de deployar Edge Functions, valide localmente:
+
+```bash
+npm run validate:edge
+```
+
+Isso roda:
+- `npm run check:edge-imports` — bloqueia imports diretos de `../_shared/*.ts` em Edge Functions. Permitido apenas `../_shared/contracts/*` e `../_shared/public/*`.
+- `npx playwright test e2e/edge-function-boot.spec.ts` — smoke test que valida que as Edge Functions críticas inicializam sem `BOOT_ERROR`.
+
+O CI executa o mesmo guard via `.github/workflows/edge-contract-guard.yml` em todo PR que toca `supabase/functions/**`. Build falha se qualquer função nova importar helper interno diretamente.
