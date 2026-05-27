@@ -102,7 +102,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       if (matchedTopics.length > 0) {
         const { data: bankQs, error: bankErr } = await supabaseAdmin
           .from("real_exam_questions")
-          .select("id, statement, options, correct_index, explanation, topic, difficulty, board")
+          .select("id, statement, options, correct_index, explanation, topic, difficulty, board, answer_source, tags")
           .in("topic", matchedTopics)
           .eq("is_active", true)
           .limit(targetCount * 4);
@@ -118,7 +118,9 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
         .slice(0, targetCount);
 
       if (ordered.length > 0) {
-        console.log(`[SIMULADO_BANK_HIT] reused=${ordered.length} preferred_board=${preferred.length}`);
+        const aiReused = ordered.filter((q: any) => q.answer_source === "ai_generated" || (Array.isArray(q.tags) && q.tags.includes("ai_generated"))).length;
+        console.log(`[SIMULADO_BANK_HIT] reused=${ordered.length} preferred_board=${preferred.length} ai_generated_reused=${aiReused}`);
+        if (aiReused > 0) console.log(`[SIMULADO_BANK_REUSE_AI_GENERATED] count=${aiReused}`);
         for (const q of ordered) {
           const hash = makeHash(q.statement || "");
           if (seenHashes.has(hash)) continue;
@@ -202,6 +204,49 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
             seenHashes.add(hash);
             // [QUESTION_GEN_VALIDATED]
             console.log(`[QUESTION_GEN_VALIDATED] Quality=${forensic.fidelity_score}`);
+
+            // ── OPÇÃO A — Persistir questão IA aprovada em real_exam_questions ──
+            // Freeze v25: ajuste operacional mínimo. Sem nova tabela, sem novo
+            // orchestrator. Reusa schema existente + dedup via UNIQUE(statement_hash).
+            try {
+              const persistHash = await (async () => {
+                const data = new TextEncoder().encode(
+                  (cleanQ.statement || "").toLowerCase().replace(/\s+/g, " ").trim()
+                );
+                const buf = await crypto.subtle.digest("SHA-256", data);
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+              })();
+
+              console.log(`[AI_QUESTION_ACCEPTED_FOR_REUSE] hash=${persistHash.slice(0,12)} score=${forensic.fidelity_score}`);
+
+              const { error: persistErr, data: persistRow } = await supabaseAdmin
+                .from("real_exam_questions")
+                .upsert({
+                  statement: cleanQ.statement,
+                  options: cleanQ.options,
+                  correct_index: cleanQ.correct,
+                  explanation: cleanQ.explanation,
+                  topic: cleanQ.topic,
+                  difficulty: cleanQ.difficulty,
+                  board: profile.label,
+                  statement_hash: persistHash,
+                  quality_score: forensic.fidelity_score,
+                  answer_source: "ai_generated",
+                  is_active: true,
+                  tags: ["ai_generated", "approved", `correlation:${correlationId}`],
+                }, { onConflict: "statement_hash", ignoreDuplicates: true })
+                .select("id");
+
+              if (persistErr) {
+                console.warn(`[AI_QUESTION_REUSE_INSERT_FAIL] ${persistErr.message}`);
+              } else if (!persistRow || persistRow.length === 0) {
+                console.log(`[AI_QUESTION_REUSE_DUPLICATE_SKIP] hash=${persistHash.slice(0,12)}`);
+              } else {
+                console.log(`[AI_QUESTION_REUSE_INSERT_OK] id=${persistRow[0].id}`);
+              }
+            } catch (persistEx) {
+              console.warn(`[AI_QUESTION_REUSE_INSERT_FAIL] ${(persistEx as Error).message}`);
+            }
           }
 
         }
