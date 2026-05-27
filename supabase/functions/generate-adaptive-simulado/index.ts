@@ -1,13 +1,6 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
-// P0 BOOT FIX (Freeze v25): ai-fetch.ts não exporta cleanQuestionText/parseAiJson.
-// A função estava em BOOT_ERROR contínuo. Shim mínimo inline, sem refactor.
-const cleanQuestionText = (s: unknown): string => String(s ?? "").replace(/\s+/g, " ").trim();
-const parseAiJson = (raw: string): any => {
-  try {
-    const m = String(raw || "").match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-    return m ? JSON.parse(m[0]) : JSON.parse(raw);
-  } catch { return []; }
-};
+// Contract layer v1 — símbolos estáveis (vide _shared/contracts/README.md)
+import { cleanQuestionText, parseAiJson } from "../_shared/contracts/parser.contract.ts";
 import { SIMULADO_MOTOR_PREMIUM, QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
