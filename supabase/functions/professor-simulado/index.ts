@@ -65,6 +65,32 @@ function normalizeDifficultyLevel(value: unknown): DifficultyLevel | null {
   return null;
 }
 
+const STUDENT_USER_TYPES = ["student", "estudante", "medico"];
+const NO_FACULDADE_MATCH = "__NO_FACULDADE_MATCH__";
+
+function normalizeStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+}
+
+function normalizePeriodArray(value: unknown): number[] {
+  return Array.isArray(value)
+    ? value.map((item) => parseInt(String(item), 10)).filter((item) => Number.isFinite(item))
+    : [];
+}
+
+function scopedFaculdadeFilters(requested: unknown, professorFaculdade: string | null, isAdmin: boolean): string[] {
+  const clean = normalizeStringArray(requested);
+  if (isAdmin || !professorFaculdade) return clean;
+  if (clean.length === 0) return [professorFaculdade];
+  return clean.includes(professorFaculdade) ? [professorFaculdade] : [NO_FACULDADE_MATCH];
+}
+
+function sanitizeStudentSearch(value: unknown): string {
+  return String(value || "").replace(/[%_,()]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function inferDifficultyLevel(question: any, requestedDifficulty?: string): DifficultyLevel {
   const explicit = normalizeDifficultyLevel(question?.difficulty_level);
   if (explicit) return explicit;
