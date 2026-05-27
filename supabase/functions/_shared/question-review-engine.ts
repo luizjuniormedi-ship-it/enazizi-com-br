@@ -1,9 +1,9 @@
 /**
  * ENAZIZI ENTERPRISE — Question Review Engine
- * Handles the logic for auditing, classifying, and enriching medical questions.
+ * Audita, classifica e enriquece questões médicas.
+ * Plano Agressivo: força gpt-4o-mini, retorna campos adicionais (is_clinical_case, tri_difficulty_score, guideline_year).
  */
 
-import { AiModelName, ALLOWED_MODELS } from "./ai-model-registry.ts";
 import { callAi } from "./enterprise-edge/ai-router.ts";
 import { parseAiJson, sanitizeAiContent } from "./enterprise-edge/parse-ai-json.ts";
 import { StructuredLogger } from "./enterprise-edge/structured-logger.ts";
@@ -24,13 +24,14 @@ export interface ReviewResult {
     cognitive_complexity_score: number;
     realism_score: number;
   };
-  flashcards: Array<{
-    question: string;
-    answer: string;
-    explanation: string;
-  }>;
+  flashcards: Array<{ question: string; answer: string; explanation: string }>;
   banca_style_detected: string;
   guideline_reference?: string;
+  guideline_year?: number;
+  is_clinical_case?: boolean;
+  tri_difficulty_score?: number;
+  tokens_in?: number;
+  tokens_out?: number;
 }
 
 export async function reviewAndEnrich(
@@ -40,29 +41,31 @@ export async function reviewAndEnrich(
   supabaseAdmin: any
 ): Promise<ReviewResult> {
   const bancaProfile = getBancaProfile(targetBanca || question.board);
-  
+
   const systemPrompt = `Você é um PRECEPTOR DE RESIDÊNCIA MÉDICA DE ELITE (ENARE, USP, UNICAMP).
-Sua missão é executar o QUESTION_REVIEW_MODE ENTERPRISE.
+Execute o QUESTION_REVIEW_MODE ENTERPRISE.
 
 OBJETIVO:
-1. Auditar a qualidade técnica e pedagógica da questão.
+1. Auditar qualidade técnica e pedagógica.
 2. Classificar como GOLD, SILVER, BASIC ou REJECTED.
-3. Se abaixo de GOLD, executar ENRIQUECIMENTO COMPLETO para torná-la GOLD.
-4. Garantir densidade clínica, raciocínio profundo e alternativas plausíveis (padrão banca real).
+3. Se abaixo de GOLD, ENRIQUECER para GOLD (caso clínico denso, sinais vitais, lab, diferenciais).
+4. Citar SEMPRE guideline 2023/2024/2025 (Nelson, Sabiston, SBP, ESC, AHA, NICE, UpToDate).
 
-REGRAS DE OURO:
-- GOLD: Caso clínico denso, sinais vitais, laboratório, diferenciais, guideline 2024/2025.
-- SILVER: Boa qualidade, mas falta profundidade.
-- BASIC: Superficial, genérica.
-- REJECTED: Errada, incoerente ou IA rasa.
+REGRAS RÍGIDAS:
+- Enunciado >= 400 caracteres (caso clínico).
+- Explicação >= 200 caracteres com blocos: correta / erradas / guideline / diferencial / ponto de prova.
+- 4 a 5 alternativas plausíveis.
+- Estritamente pt-BR. SEM "however", "therefore", inglês ou LaTeX.
+- is_clinical_case=true quando houver paciente, idade, queixa, exame, conduta.
+- tri_difficulty_score: 1 (fácil) a 5 (muito difícil) seguindo modelo 3PL.
 
-SAÍDA OBRIGATÓRIA (JSON):
+SAÍDA OBRIGATÓRIA (JSON puro, sem markdown):
 {
-  "quality_tier": "GOLD | SILVER | BASIC | REJECTED",
-  "statement": "Enunciado enriquecido (se necessário)",
-  "options": ["A", "B", "C", "D", "E"],
+  "quality_tier": "GOLD|SILVER|BASIC|REJECTED",
+  "statement": "Enunciado enriquecido >= 400 chars",
+  "options": ["A","B","C","D","E"],
   "correct_index": 0,
-  "explanation": "Explicação padrão preceptor (blocos: correta, erradas, guideline, diferencial, ponto de prova)",
+  "explanation": ">= 200 chars com bibliografia",
   "scores": {
     "clinical_density_score": 0-100,
     "reasoning_score": 0-100,
@@ -72,23 +75,25 @@ SAÍDA OBRIGATÓRIA (JSON):
     "cognitive_complexity_score": 0-100,
     "realism_score": 0-100
   },
-  "flashcards": [
-    {"question": "...", "answer": "...", "explanation": "..."}
-  ],
-  "banca_style_detected": "Estilo detectado",
-  "guideline_reference": "Fonte/Ano"
+  "flashcards": [{"question":"...","answer":"...","explanation":"..."}],
+  "banca_style_detected": "...",
+  "guideline_reference": "Fonte (ex: Nelson 22ª ed)",
+  "guideline_year": 2024,
+  "is_clinical_case": true,
+  "tri_difficulty_score": 3
 }`;
 
   const userPrompt = `QUESTÃO ORIGINAL:
 Enunciado: ${question.statement}
 Alternativas: ${JSON.stringify(question.options)}
-Explicação Atual: ${question.explanation}
+Explicação Atual: ${question.explanation || "(vazia)"}
 Banca Alvo: ${bancaProfile.label} (${bancaProfile.style})
 
-Analise e transforme em PADRÃO OURO. Se a questão for irremediavelmente ruim, marque como REJECTED.`;
+Transforme em PADRÃO OURO. Se irremediavelmente ruim, marque REJECTED.`;
 
   const response = await callAi({
-    taskType: "question_upgrade",
+    taskType: "generation",
+    model: "openai/gpt-4o-mini",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt }
@@ -101,9 +106,10 @@ Analise e transforme em PADRÃO OURO. Se a questão for irremediavelmente ruim, 
   const rawContent = response.choices?.[0]?.message?.content || "";
   const result = parseAiJson<ReviewResult>(rawContent);
 
-  // Post-processing: ensure sanitization
   result.statement = sanitizeAiContent(result.statement);
   result.explanation = sanitizeAiContent(result.explanation);
-  
+  result.tokens_in = response.usage?.prompt_tokens || 0;
+  result.tokens_out = response.usage?.completion_tokens || 0;
+
   return result;
 }
