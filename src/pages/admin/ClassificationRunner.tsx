@@ -1183,6 +1183,16 @@ export default function ClassificationRunner() {
                 </>
               )}
             </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={runBatch500}
+              disabled={!ready || running || (!createdAfterIso && !overrideFullBank)}
+              title="Executa lote real de 500 questões com o created_after definido."
+            >
+              <Flame className="h-4 w-4 mr-2" />
+              Rodar lote de 500 (real)
+            </Button>
             {errorPayload && (
               <Button variant="outline" size="lg" onClick={runWithCurrentParams} disabled={!ready || running}>
                 <RotateCcw className="h-4 w-4 mr-2" />
