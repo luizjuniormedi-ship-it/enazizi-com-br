@@ -52,25 +52,58 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     // 2. Fetch/Generate Loop
     let finalQuestions: any[] = [];
     const seenHashes = new Set<string>();
-    
-    // 2.1 Try Bank
+
+    // P1 FIX (Freeze v25 — ajuste defensivo): hash unificado banco+IA+fallback.
+    // Antes: banco usava 100 chars, IA usava 50 chars → duplicatas reais escapavam.
+    // Agora: normaliza (lowercase + trim + colapsa whitespace) e usa 100 chars sempre.
+    const makeHash = (statement: string): string => {
+      const normalized = (statement || "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim()
+        .substring(0, 100);
+      return btoa(unescape(encodeURIComponent(normalized)));
+    };
+
+    // 2.1 Try Bank (real_exam_questions)
+    // P0 FIX (Freeze v25 — bugfix de produção): antes consultava `questions_bank`
+    // que NÃO existe no schema → bankQs sempre null → fallback IA 100% → custo alto.
+    // Agora consulta `real_exam_questions` (6789 linhas reais, RLS+grants ok).
+    // Board é usado como preferência (soft filter), não como filtro rígido,
+    // porque a maioria das linhas tem board="Não especificado".
     step = "bank_fetch";
     if (body.mode !== 'ai_generation') {
-      const { data: bankQs } = await supabaseAdmin
-        .from("questions_bank")
-        .select("*")
+      const { data: bankQs, error: bankErr } = await supabaseAdmin
+        .from("real_exam_questions")
+        .select("id, statement, options, correct_index, explanation, topic, difficulty, board")
         .in("topic", topics)
-        .eq("board", profile.label)
-        .limit(targetCount);
-      
-      if (bankQs) {
-        for (const q of bankQs) {
-          const hash = btoa(q.statement.substring(0, 100).toLowerCase().trim());
+        .eq("is_active", true)
+        .limit(targetCount * 3); // overfetch so we can prefer matching board
+
+      if (bankErr) {
+        console.warn(`[SIMULADO_BANK_ERROR] ${bankErr.message}`);
+      }
+
+      const bankList = bankQs || [];
+      // Soft-prefer questions matching the requested board
+      const preferred = bankList.filter((q: any) =>
+        q.board && profile.label && String(q.board).toLowerCase().includes(String(profile.label).toLowerCase()),
+      );
+      const ordered = [...preferred, ...bankList.filter((q: any) => !preferred.includes(q))].slice(0, targetCount);
+
+      if (ordered.length > 0) {
+        console.log(`[SIMULADO_BANK_HIT] reused=${ordered.length} preferred_board=${preferred.length}`);
+        for (const q of ordered) {
+          const hash = makeHash(q.statement || "");
+          if (seenHashes.has(hash)) continue;
           finalQuestions.push({ ...q, correct: q.correct_index, _source: "bank" });
           seenHashes.add(hash);
         }
+      } else {
+        console.log(`[SIMULADO_BANK_EMPTY] topics=${topics.join(",")} board=${profile.label}`);
       }
     }
+
 
     // 2.2 AI Fallback
     step = "ai_generation";
