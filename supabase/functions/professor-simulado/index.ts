@@ -323,10 +323,42 @@ serve(async (req) => {
       }
 
       case "get_students": {
-        const { faculdades, periodos, query, limit = 25, offset = 0 } = params;
+        const {
+          faculdades,
+          periodos,
+          query,
+          limit = 25,
+          offset = 0,
+          class_ids,
+          professor_turma_ids,
+          all_active,
+        } = params;
 
         const effectiveFaculdades = scopedFaculdadeFilters(faculdades, professorFaculdade, isAdmin);
         const pInts = normalizePeriodArray(periodos);
+
+        // Pré-resolução de user_ids quando o filtro vem por turma institucional ou turma do professor
+        let restrictUserIds: string[] | null = null;
+        if (Array.isArray(class_ids) && class_ids.length > 0) {
+          const { data: members, error: cmErr } = await sb
+            .from("class_members")
+            .select("user_id")
+            .in("class_id", class_ids)
+            .eq("is_active", true);
+          if (cmErr) throw cmErr;
+          restrictUserIds = (members || []).map((m: any) => m.user_id).filter(Boolean);
+        } else if (Array.isArray(professor_turma_ids) && professor_turma_ids.length > 0) {
+          const { data: members, error: ptErr } = await sb
+            .from("professor_turma_students")
+            .select("student_id")
+            .in("turma_id", professor_turma_ids);
+          if (ptErr) throw ptErr;
+          restrictUserIds = (members || []).map((m: any) => m.student_id).filter(Boolean);
+        }
+
+        if (restrictUserIds && restrictUserIds.length === 0) {
+          return ok({ students: [], total: 0 });
+        }
 
         let q = sb
           .from("profiles")
@@ -334,12 +366,20 @@ serve(async (req) => {
           .eq("status", "active")
           .in("user_type", STUDENT_USER_TYPES);
 
-        if (effectiveFaculdades.length > 0) {
-          q = q.in("faculdade", effectiveFaculdades);
+        if (restrictUserIds) {
+          q = q.in("user_id", restrictUserIds);
         }
 
-        if (pInts.length > 0) {
-          q = q.in("periodo", pInts);
+        // No modo "all_active" mantemos apenas o escopo de faculdade do professor (não-admin)
+        if (!restrictUserIds && !all_active) {
+          if (effectiveFaculdades.length > 0) {
+            q = q.in("faculdade", effectiveFaculdades);
+          }
+          if (pInts.length > 0) {
+            q = q.in("periodo", pInts);
+          }
+        } else if (all_active && !isAdmin && professorFaculdade) {
+          q = q.eq("faculdade", professorFaculdade);
         }
 
         const safe = sanitizeStudentSearch(query);
@@ -353,6 +393,7 @@ serve(async (req) => {
         if (error) throw error;
         return ok({ students: students || [], total: count || 0 });
       }
+
 
       case "search_students": {
         const { query, limit = 25, offset = 0 } = params;
