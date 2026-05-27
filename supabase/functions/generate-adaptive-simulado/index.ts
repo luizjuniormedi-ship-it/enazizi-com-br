@@ -118,7 +118,9 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
         .slice(0, targetCount);
 
       if (ordered.length > 0) {
-        console.log(`[SIMULADO_BANK_HIT] reused=${ordered.length} preferred_board=${preferred.length}`);
+        const aiReused = ordered.filter((q: any) => q.answer_source === "ai_generated" || (Array.isArray(q.tags) && q.tags.includes("ai_generated"))).length;
+        console.log(`[SIMULADO_BANK_HIT] reused=${ordered.length} preferred_board=${preferred.length} ai_generated_reused=${aiReused}`);
+        if (aiReused > 0) console.log(`[SIMULADO_BANK_REUSE_AI_GENERATED] count=${aiReused}`);
         for (const q of ordered) {
           const hash = makeHash(q.statement || "");
           if (seenHashes.has(hash)) continue;
