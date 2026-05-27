@@ -746,7 +746,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         student_ids: (assignmentMode === "manual" || assignmentMode === "filter") ? (selectedStudentIds || []) : null,
         class_ids: assignmentMode === "classes" ? (selectedClassIds || []) : null,
         professor_turma_ids: assignmentMode === "professor_turmas" ? (selectedProfessorTurmaIds || []) : null,
-        assignment_mode: assignmentMode === "filter" && selectedStudentIds.length > 0 ? "manual" : (assignmentMode || "all"),
+        assignment_mode: assignmentMode === "filter" ? "manual" : (assignmentMode || "all"),
         scheduled_at: scheduledAt || null,
         end_at: endAt || null,
         max_attempts: parseInt(maxAttempts) || 1,
@@ -836,7 +836,12 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         return;
       }
 
-      if ((assignmentMode === "manual" || (assignmentMode === "filter" && previewStudents.length > 0)) && selectedStudentIds.length === 0) {
+      if (assignmentMode === "filter" && previewStudents.length === 0) {
+        toast({ title: "Abra a seleção de alunos", description: "Após escolher universidade/período, clique em abrir seleção e marque os alunos 1 a 1.", variant: "destructive" });
+        return;
+      }
+
+      if ((assignmentMode === "manual" || assignmentMode === "filter") && selectedStudentIds.length === 0) {
         toast({ title: "Nenhum aluno selecionado", description: "Selecione alunos ou mude o modo de atribuição.", variant: "destructive" });
         return;
       }
@@ -849,7 +854,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       setCreating(true);
       try {
         let count = 0;
-        if (assignmentMode === "manual" || (assignmentMode === "filter" && previewStudents.length > 0)) count = selectedStudentIds.length;
+        if (assignmentMode === "manual" || assignmentMode === "filter") count = selectedStudentIds.length;
         else if (assignmentMode === "all") {
           const { data } = await callAPI({ action: "get_students_count" });
           count = data?.count || 0;
