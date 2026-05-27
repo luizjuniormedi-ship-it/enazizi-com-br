@@ -124,7 +124,7 @@ async function generateBatch(
   includePreviousErrors?: boolean,
   mode: SimuladoMode = "estudo",
   avoidIds?: string[]
-): Promise<SimQuestion[]> {
+): Promise<{ questions: SimQuestion[]; sessionId: string | null }> {
   // [QUESTION_GEN_START]
   console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
   
@@ -161,7 +161,7 @@ async function generateBatch(
 
     // [QUESTION_GEN_FINAL_OK]
     console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount}`);
-    return mapQuestions(data.questions || [], topics);
+    return { questions: mapQuestions(data.questions || [], topics), sessionId: data.session_id || null };
 
   } catch (e) {
     console.error("[SIMULADO_GEN] Batch failed:", e);
@@ -228,6 +228,7 @@ const Simulados = () => {
   const startTimeRef = useRef<Date>();
   const elapsedSecondsRef = useRef<number>(0);
   const configRef = useRef<any>(null);
+  const simuladoSessionIdRef = useRef<string | null>(null);
   const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
   const triParamsRef = useRef<TRIParams[]>([]);
   
@@ -410,6 +411,7 @@ const Simulados = () => {
     }
 
     configRef.current = config;
+    simuladoSessionIdRef.current = null;
     setMode(config.mode || "estudo");
     
     setLoadingProgress("Iniciando geração...");
@@ -442,6 +444,11 @@ const Simulados = () => {
 
           if (fnError) throw fnError;
           if (!data?.success) throw new Error(data?.error || "Falha na geração adaptativa");
+
+          if (data?.session_id) {
+            simuladoSessionIdRef.current = data.session_id;
+            console.log(`[SIMULADO_SESSION_CAPTURED] adaptive=${data.session_id}`);
+          }
 
           setLoadingPercent(90);
           setLoadingProgress("Finalizando ambiente...");
@@ -577,8 +584,12 @@ const Simulados = () => {
               config.mode || "estudo",
               avoidIds
             );
-            batchData = { success: true, questions: batchQs };
-            console.log(`[Simulados] Lote ${batchNum} finalizado com sucesso. Recebidas ${batchQs.length} questões.`);
+            batchData = { success: true, questions: batchQs.questions, session_id: batchQs.sessionId };
+            if (batchQs.sessionId && !simuladoSessionIdRef.current) {
+              simuladoSessionIdRef.current = batchQs.sessionId;
+              console.log(`[SIMULADO_SESSION_CAPTURED] ${batchQs.sessionId}`);
+            }
+            console.log(`[Simulados] Lote ${batchNum} finalizado com sucesso. Recebidas ${batchQs.questions.length} questões.`);
           } catch (e) {
             console.error("[Simulados] generateBatch falhou, tentando invoke direto:", e);
             const { data, error } = await supabase.functions.invoke(
@@ -608,6 +619,10 @@ const Simulados = () => {
             );
             batchData = data;
             batchErr = error;
+            if (data?.session_id && !simuladoSessionIdRef.current) {
+              simuladoSessionIdRef.current = data.session_id;
+              console.log(`[SIMULADO_SESSION_CAPTURED] ${data.session_id}`);
+            }
           }
 
           if (batchErr) {
@@ -698,11 +713,13 @@ const Simulados = () => {
 
   const handleFinish = async (answers: Record<number, number>, flagged: number[]) => {
     clearInterval(elapsedSecondsRef.current);
+    console.log("[SIMULADO_FINALIZE_START]", { sessionId: simuladoSessionIdRef.current, totalQs: questions.length });
 
     if (user) {
-      const elapsed = startTimeRef.current
-        ? Math.round((new Date().getTime() - startTimeRef.current.getTime()) / 60000)
+      const durationSeconds = startTimeRef.current
+        ? Math.round((new Date().getTime() - startTimeRef.current.getTime()) / 1000)
         : 0;
+      const elapsed = Math.round(durationSeconds / 60);
 
       const areaResults: Record<string, { correct: number; total: number }> = {};
       questions.forEach((q, i) => {
@@ -714,12 +731,65 @@ const Simulados = () => {
       const correctCount = Object.values(answers).filter((ans, idx) => ans === questions[idx]?.correct).length;
       const finalScore = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
 
+      // P0 FIX: finalize the real simulado_sessions row (was stuck on 'active')
+      const sessionId = simuladoSessionIdRef.current;
+      if (sessionId) {
+        try {
+          const { error: updErr } = await supabase
+            .from("simulado_sessions")
+            .update({
+              status: "finished",
+              finished_at: new Date().toISOString(),
+              score: finalScore,
+              correct_count: correctCount,
+              total_questions: questions.length,
+              metadata: { duration_seconds: durationSeconds, elapsed_minutes: elapsed } as any,
+            })
+            .eq("id", sessionId);
+          if (updErr) {
+            console.error("[SIMULADO_SESSION_UPDATE_FAIL]", updErr);
+          } else {
+            console.log("[SIMULADO_SESSION_UPDATE_OK]", sessionId);
+          }
+
+          // Best-effort: register per-question analytics so adaptive engine has data
+          try {
+            const rows = questions.map((q, idx) => ({
+              simulado_session_id: sessionId,
+              user_id: user.id,
+              question_id: (q as any).id ?? null,
+              question_index: idx,
+              selected_answer: answers[idx] ?? null,
+              correct_answer: q.correct,
+              is_correct: answers[idx] === q.correct,
+              mode: (configRef.current?.mode as string) || "estudo",
+              specialty: q.topic ?? null,
+            }));
+            const { error: anaErr } = await supabase
+              .from("simulado_question_analytics")
+              .insert(rows as any);
+            if (anaErr) {
+              console.warn("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaErr.message);
+            } else {
+              console.log("[SIMULADO_ANALYTICS_INSERT_OK]", rows.length);
+            }
+          } catch (anaCatch) {
+            console.warn("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaCatch);
+          }
+        } catch (e) {
+          console.error("[SIMULADO_SESSION_UPDATE_FAIL]", e);
+        }
+      } else {
+        console.warn("[SIMULADO_SESSION_UPDATE_SKIP] no sessionId captured");
+      }
+
+      // Legacy history insert (kept for backward compatibility)
       try {
         const { error: insertErr } = await supabase.from("exam_sessions").insert({
           user_id: user.id,
           title: `Simulado - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
           total_questions: questions.length,
-          time_limit_minutes: questions.length * 3, // Default 3 min per question
+          time_limit_minutes: questions.length * 3,
           status: "finished",
           finished_at: new Date().toISOString(),
           answers_json: answers as any,
@@ -734,14 +804,10 @@ const Simulados = () => {
           console.error("XP error (non-fatal):", xpErr);
         }
       } catch (err) {
-        console.error("Erro ao salvar simulado:", err);
-        toast({
-          title: "Aviso",
-          description: "Simulado finalizado, mas não foi possível salvar o histórico. Tente novamente mais tarde.",
-          variant: "destructive",
-        });
+        console.error("Erro ao salvar simulado (exam_sessions):", err);
       }
     }
+
 
     setFinalAnswers(answers);
     setFlaggedQuestions(flagged);
