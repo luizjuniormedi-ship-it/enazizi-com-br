@@ -124,7 +124,7 @@ async function generateBatch(
   includePreviousErrors?: boolean,
   mode: SimuladoMode = "estudo",
   avoidIds?: string[]
-): Promise<SimQuestion[]> {
+): Promise<{ questions: SimQuestion[]; sessionId: string | null }> {
   // [QUESTION_GEN_START]
   console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
   
@@ -161,7 +161,7 @@ async function generateBatch(
 
     // [QUESTION_GEN_FINAL_OK]
     console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount}`);
-    return mapQuestions(data.questions || [], topics);
+    return { questions: mapQuestions(data.questions || [], topics), sessionId: data.session_id || null };
 
   } catch (e) {
     console.error("[SIMULADO_GEN] Batch failed:", e);
