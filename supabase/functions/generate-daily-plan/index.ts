@@ -67,11 +67,11 @@ Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, su
       supabaseAdmin.from("profiles")
         .select("daily_study_hours, target_exams, level, study_streak, exam_date")
         .eq("user_id", user.id)
-        .single(),
+        .maybeSingle(),
       supabaseAdmin.from("study_plans")
-        .select("id, plan_json, start_date, exam_date")
+        .select("id, plan_json, start_date, exam_date, status")
         .eq("user_id", user.id)
-        .eq("status", "completed")
+        .in("status", ["active", "in_progress", "completed"])
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle(),

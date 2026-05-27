@@ -8,15 +8,21 @@
  * Reusa useDashboardData (sem nova query). Estimativa de minutos restantes
  * deriva de subjectHours (média por task pendente).
  */
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target, ArrowRight, Plus, Clock } from "lucide-react";
+import { Target, ArrowRight, Plus, Clock, Loader2 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function MissionCard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useDashboardData();
+  const [generating, setGenerating] = useState(false);
 
   const total = data?.stats.todayTotal ?? 0;
   const done = data?.stats.todayCompleted ?? 0;
@@ -28,7 +34,39 @@ export default function MissionCard() {
   const minutesLeft = remaining * 25;
 
   const handleContinue = () => navigate("/dashboard/sessao-estudo", { state: { source: "daily_plan", mode: "guided_tasks" } });
-  const handleGenerate = () => navigate("/dashboard/planner?source=guided_mission");
+  const handleGenerate = async () => {
+    if (generating) return;
+    setGenerating(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke("generate-daily-plan", {
+        body: { force: true },
+      });
+      if (error) throw error;
+      if (result?.success === false) {
+        if (result?.type === "NO_STUDY_PLAN") {
+          toast({
+            title: "Cronograma necessário",
+            description: "Crie um cronograma primeiro para gerar a missão do dia.",
+            variant: "destructive",
+          });
+          navigate("/dashboard/planner");
+          return;
+        }
+        throw new Error(result?.error || "Falha ao gerar missão");
+      }
+      toast({ title: "✅ Missão do dia gerada", description: "Vamos começar." });
+      await queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+      navigate("/dashboard/missao-do-dia");
+    } catch (err: any) {
+      toast({
+        title: "Erro ao gerar missão",
+        description: err?.message || "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <Card className="overflow-hidden border-border/60">
@@ -57,9 +95,13 @@ export default function MissionCard() {
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           ) : (
-            <Button size="sm" variant="outline" onClick={handleGenerate} className="shrink-0">
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Gerar missão
+            <Button size="sm" variant="outline" onClick={handleGenerate} disabled={generating} className="shrink-0">
+              {generating ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Plus className="mr-1 h-3.5 w-3.5" />
+              )}
+              {generating ? "Gerando…" : "Gerar missão"}
             </Button>
           )}
         </div>
