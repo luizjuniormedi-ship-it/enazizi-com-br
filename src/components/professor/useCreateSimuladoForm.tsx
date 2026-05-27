@@ -191,6 +191,15 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       const total = res.total || 0;
       
       setPreviewStudents(prev => isLoadMore ? [...prev, ...students] : students);
+      // Auto-seleciona todos os alunos retornados — professor desmarca os que não devem participar
+      const newIds = students.map((s: any) => s.user_id).filter(Boolean);
+      setSelectedStudentIds(prev => {
+        if (isLoadMore) {
+          const merged = new Set([...prev, ...newIds]);
+          return Array.from(merged);
+        }
+        return newIds;
+      });
       setStudentPagination({
         offset,
         total,
