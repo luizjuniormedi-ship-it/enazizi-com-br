@@ -22,8 +22,14 @@ export function cleanQuestionText(input: unknown): string {
   s = s.replace(/```json\s*/gi, "").replace(/```/g, "");
   // strip <thought>...</thought>
   s = s.replace(/<thought>[\s\S]*?<\/thought>/gi, "");
+  // strip vazamento de gabarito dentro do texto/opções
+  s = s.replace(/\s*[\[(]\s*(?:resposta\s+)?(?:correta|correto|gabarito|verdadeira|certa)\s*[\])]\s*/gi, "");
+  s = s.replace(/\s*[✓✔☑]\s*/g, "");
+  s = s.replace(/\*{0,2}\s*(?:resposta\s+correta|gabarito)\s*:?\s*[a-eA-E]\s*\*{0,2}/g, "");
+  s = s.replace(/\s*-?\s*\*{0,2}correta\*{0,2}\s*$/gi, "");
   return s.trim();
 }
+
 
 /**
  * Parse robusto de JSON de IA com 3 estratégias:
