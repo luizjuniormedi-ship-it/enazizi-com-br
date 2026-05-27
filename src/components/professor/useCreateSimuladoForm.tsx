@@ -216,22 +216,17 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       const total = res.total || 0;
 
       setPreviewStudents(prev => isLoadMore ? [...prev, ...students] : students);
-      // Auto-seleciona todos os alunos retornados — professor desmarca os que não devem participar
+      // Auto-seleciona todos os alunos retornados E PRESERVA seleções anteriores de outros filtros/buscas.
+      // Sem isso, mudar universidade/período/busca apagava os nomes já marcados (bug reportado).
       const newIds = students.map((s: any) => s.user_id).filter(Boolean);
       setSelectedStudentIds(prev => {
-        if (isLoadMore) {
-          const merged = new Set([...prev, ...newIds]);
-          return Array.from(merged);
-        }
-        return newIds;
+        const merged = new Set([...prev, ...newIds]);
+        return Array.from(merged);
       });
       setSelectedStudentsData(prev => {
-        if (isLoadMore) {
-          const map = new Map(prev.map((s: any) => [s.user_id, s]));
-          students.forEach((s: any) => map.set(s.user_id, s));
-          return Array.from(map.values());
-        }
-        return students;
+        const map = new Map(prev.map((s: any) => [s.user_id, s]));
+        students.forEach((s: any) => map.set(s.user_id, s));
+        return Array.from(map.values());
       });
       setStudentPagination({
         offset,
