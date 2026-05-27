@@ -120,7 +120,8 @@ export async function callAi(
             signal: controller.signal
           });
         } else {
-          // Use Lovable Gateway - it handles the payload as is
+          // Use Lovable Gateway — strip internal ENAZIZI metadata to avoid 400 from downstream provider
+          const { taskType: _tt, complexity: _cx, userId: _uid, skipCache: _sc, ...gatewayPayload } = payload;
           res = await fetch(LOVABLE_GATEWAY, {
             method: "POST",
             headers: { 
@@ -128,7 +129,7 @@ export async function callAi(
               "Content-Type": "application/json",
               "X-Correlation-Id": logger.correlationId
             },
-            body: JSON.stringify({ ...payload, model: modelString }),
+            body: JSON.stringify({ ...gatewayPayload, model: modelString }),
             signal: controller.signal
           });
         }
