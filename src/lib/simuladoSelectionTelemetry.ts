@@ -72,9 +72,12 @@ export async function logSimuladoSelection(t: SimuladoSelectionTelemetry): Promi
       .from("simulado_selection_runs")
       .insert(payload as any);
     if (error) {
-      console.warn("[simulado-selection] insert failed:", error.message);
+      console.warn("[SIMULADO_SELECTION_LOG_FAIL]", error.message, error);
+    } else {
+      console.info("[SIMULADO_SELECTION_LOG_OK]", { endpoint: payload.endpoint, mode: payload.mode, final: payload.final_count });
     }
   } catch (e) {
-    console.warn("[simulado-selection] threw:", (e as Error).message);
+    console.warn("[SIMULADO_SELECTION_LOG_FAIL] threw:", (e as Error).message);
+
   }
 }
