@@ -298,32 +298,65 @@ serve(async (req) => {
 
       case "get_students": {
         const { faculdades, periodos, query, limit = 25, offset = 0 } = params;
-        let q = sb.from("profiles").select("*", { count: "exact" }).in("user_type", ["student", "estudante", "medico"]);
-        
-        if (faculdades?.length > 0) q = q.in("faculdade", faculdades);
-        if (periodos?.length > 0) q = q.in("periodo", periodos);
-        if (query) q = q.or(`display_name.ilike.%${query}%,email.ilike.%${query}%`);
-        
-        const { data: students, count, error } = await q.range(offset, offset + limit - 1).order("display_name");
+
+        // Escopo: admin vê tudo; professor padrão restringe à própria faculdade
+        // quando nenhum filtro de faculdade for enviado.
+        const effectiveFaculdades = (Array.isArray(faculdades) && faculdades.length > 0)
+          ? faculdades
+          : (isAdmin ? [] : (professorFaculdade ? [professorFaculdade] : []));
+
+        let q = sb
+          .from("profiles")
+          .select("user_id, display_name, email, faculdade, periodo, status, user_type", { count: "exact" })
+          .in("user_type", ["student", "estudante", "medico"]);
+
+        if (effectiveFaculdades.length > 0) {
+          q = q.in("faculdade", effectiveFaculdades);
+        }
+
+        // periodo é INTEGER no banco — converter strings antes do .in()
+        if (Array.isArray(periodos) && periodos.length > 0) {
+          const pInts = periodos
+            .map((p: any) => parseInt(p, 10))
+            .filter((p: number) => !isNaN(p));
+          if (pInts.length > 0) q = q.in("periodo", pInts);
+        }
+
+        if (query && String(query).trim().length > 0) {
+          const safe = String(query).replace(/[,()]/g, " ").trim();
+          q = q.or(`display_name.ilike.%${safe}%,email.ilike.%${safe}%`);
+        }
+
+        const { data: students, count, error } = await q
+          .range(offset, offset + limit - 1)
+          .order("display_name");
         if (error) throw error;
-        return ok({ students, total: count });
+        return ok({ students: students || [], total: count || 0 });
       }
 
       case "search_students": {
         const { query, limit = 25, offset = 0 } = params;
         if (!query || query.length < 3) return ok({ students: [], total: 0 });
-        
-        const { data: students, count, error } = await sb
+
+        const safe = String(query).replace(/[,()]/g, " ").trim();
+        let q = sb
           .from("profiles")
-          .select("*", { count: "exact" })
+          .select("user_id, display_name, email, faculdade, periodo, status, user_type", { count: "exact" })
           .in("user_type", ["student", "estudante", "medico"])
-          .or(`display_name.ilike.%${query}%,email.ilike.%${query}%`)
+          .or(`display_name.ilike.%${safe}%,email.ilike.%${safe}%`);
+
+        // Aplica mesmo escopo de faculdade para professor não-admin
+        if (!isAdmin && professorFaculdade) {
+          q = q.eq("faculdade", professorFaculdade);
+        }
+
+        const { data: students, count, error } = await q
           .range(offset, offset + limit - 1)
           .order("display_name");
-          
         if (error) throw error;
-        return ok({ students, total: count });
+        return ok({ students: students || [], total: count || 0 });
       }
+
 
       case "generate_questions": {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements, examBoard } = params;
