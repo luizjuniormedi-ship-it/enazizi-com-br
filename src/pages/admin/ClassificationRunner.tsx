@@ -250,6 +250,18 @@ export default function ClassificationRunner() {
   const [batchSize, setBatchSize] = useState(100);
   const [dryRun, setDryRun] = useState(true);
 
+  // Filtro created_after — bloqueia rodar no banco inteiro (Freeze v25)
+  const todayMidnightLocal = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+  })();
+  const [createdAfter, setCreatedAfter] = useState<string>(todayMidnightLocal);
+  const [overrideFullBank, setOverrideFullBank] = useState(false);
+  const [eligibleCount, setEligibleCount] = useState<number | null>(null);
+  const [eligibleLoading, setEligibleLoading] = useState(false);
+
   const [running, setRunning] = useState(false);
   const [errorPayload, setErrorPayload] = useState<{ message: string; raw?: unknown } | null>(null);
   const [result, setResult] = useState<RunResult | null>(null);
@@ -449,21 +461,61 @@ export default function ClassificationRunner() {
     }
   }, [ready, tableSource, fetchPersisted]);
 
+  // ── created_after helpers ───────────────────────────────────────
+  const createdAfterIso = useMemo(() => {
+    if (!createdAfter) return null;
+    const d = new Date(createdAfter);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }, [createdAfter]);
+
+  const refreshEligibleCount = useCallback(async () => {
+    if (!createdAfterIso) {
+      setEligibleCount(null);
+      return;
+    }
+    setEligibleLoading(true);
+    try {
+      const { count } = await supabase
+        .from(tableSource)
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", createdAfterIso)
+        .is("specialty_id", null);
+      setEligibleCount(count ?? 0);
+    } catch {
+      setEligibleCount(null);
+    } finally {
+      setEligibleLoading(false);
+    }
+  }, [tableSource, createdAfterIso]);
+
+  useEffect(() => {
+    void refreshEligibleCount();
+  }, [refreshEligibleCount]);
+
   // ── Execução ────────────────────────────────────────────────────
   const execute = useCallback(
-    async (params: { table_source: TableSource; batch_size: number; dry_run: boolean }) => {
+    async (params: { table_source: TableSource; batch_size: number; dry_run: boolean; created_after?: string | null }) => {
       if (!ready) return;
+      if (!params.created_after && !overrideFullBank) {
+        toast.error("created_after vazio — bloqueado pelo Freeze v25. Defina a data ou ative o override.");
+        return;
+      }
+      if (!params.created_after && overrideFullBank) {
+        if (!confirm("⚠️ Você está prestes a classificar TODO o banco. Isso é bloqueado pelo Freeze v25. Continuar mesmo assim?")) return;
+      }
       if (!params.dry_run && !confirm("dry_run está DESLIGADO. Vai ESCREVER no banco. Confirmar?")) return;
 
       setRunning(true);
       setErrorPayload(null);
       try {
+        const body: Record<string, unknown> = {
+          table_source: params.table_source,
+          batch_size: Math.max(10, Math.min(500, params.batch_size)),
+          dry_run: params.dry_run,
+        };
+        if (params.created_after) body.created_after = params.created_after;
         const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
-          body: {
-            table_source: params.table_source,
-            batch_size: Math.max(10, Math.min(500, params.batch_size)),
-            dry_run: params.dry_run,
-          },
+          body,
         });
         if (error) {
           setErrorPayload({ message: error.message, raw: data ?? error });
@@ -484,6 +536,7 @@ export default function ClassificationRunner() {
         }
         toast.success(params.dry_run ? "Dry-run concluído" : "Lote real concluído");
         void fetchPersisted();
+        void refreshEligibleCount();
       } catch (e) {
         setErrorPayload({ message: (e as Error).message, raw: e });
         toast.error("Falha ao invocar edge function");
@@ -491,11 +544,14 @@ export default function ClassificationRunner() {
         setRunning(false);
       }
     },
-    [ready, fetchPersisted],
+    [ready, fetchPersisted, overrideFullBank, refreshEligibleCount],
   );
 
   const runWithCurrentParams = () =>
-    execute({ table_source: tableSource, batch_size: batchSize, dry_run: dryRun });
+    execute({ table_source: tableSource, batch_size: batchSize, dry_run: dryRun, created_after: createdAfterIso });
+
+  const runBatch500 = () =>
+    execute({ table_source: tableSource, batch_size: 500, dry_run: false, created_after: createdAfterIso });
 
   const reRunLastDryRun = () => {
     if (!lastRun || !lastRun.dry_run) {
@@ -509,6 +565,7 @@ export default function ClassificationRunner() {
       table_source: lastRun.table_source as TableSource,
       batch_size: lastRun.batch_size,
       dry_run: true,
+      created_after: createdAfterIso,
     });
   };
 
@@ -578,12 +635,14 @@ export default function ClassificationRunner() {
         console.warn("Falha no snapshot pré-execução", e);
       }
 
+      const realBody: Record<string, unknown> = {
+        table_source: realParams.table_source,
+        batch_size: realParams.batch_size,
+        dry_run: false,
+      };
+      if (createdAfterIso) realBody.created_after = createdAfterIso;
       const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
-        body: {
-          table_source: realParams.table_source,
-          batch_size: realParams.batch_size,
-          dry_run: false,
-        },
+        body: realBody,
       });
       if (error) {
         setErrorPayload({ message: error.message, raw: data ?? error });
@@ -633,7 +692,7 @@ export default function ClassificationRunner() {
       setConfirmOpen(false);
       setConfirmPhrase("");
     }
-  }, [guardrails.passed, realParams, fetchPersisted]);
+  }, [guardrails.passed, realParams, fetchPersisted, createdAfterIso]);
 
   const realRunsHistory = useMemo(() => history.filter((r) => !r.dry_run), [history]);
 
@@ -1051,6 +1110,56 @@ export default function ClassificationRunner() {
             </div>
           </div>
 
+          {/* created_after — Freeze v25 guard */}
+          <div className="grid gap-4 sm:grid-cols-3 items-end">
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Classificar apenas questões criadas após</Label>
+              <Input
+                type="datetime-local"
+                value={createdAfter}
+                onChange={(e) => setCreatedAfter(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Use para evitar classificar o banco inteiro. Padrão: hoje 00:00.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Elegíveis (sem specialty_id)</Label>
+              <div className="h-10 flex items-center gap-2">
+                {eligibleLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Badge variant="outline" className="text-sm">
+                    {eligibleCount ?? "—"} {createdAfterIso ? "desde a data" : "(banco inteiro)"}
+                  </Badge>
+                )}
+                <Button size="sm" variant="ghost" onClick={refreshEligibleCount} disabled={eligibleLoading}>
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {!createdAfter && (
+            <Alert variant="destructive">
+              <Lock className="h-4 w-4" />
+              <AlertTitle>Bloqueado pelo Freeze v25</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  Sem <code>created_after</code> a execução roda contra o banco inteiro. Defina uma data
+                  acima ou ative o override admin abaixo.
+                </p>
+                <div className="flex items-center gap-2">
+                  <Switch checked={overrideFullBank} onCheckedChange={setOverrideFullBank} />
+                  <span className="text-xs">
+                    Override admin: permitir rodar no banco inteiro (sob sua responsabilidade)
+                  </span>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+
           {!dryRun && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -1073,6 +1182,16 @@ export default function ClassificationRunner() {
                   {dryRun ? "Executar dry-run" : "Executar lote real"}
                 </>
               )}
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={runBatch500}
+              disabled={!ready || running || (!createdAfterIso && !overrideFullBank)}
+              title="Executa lote real de 500 questões com o created_after definido."
+            >
+              <Flame className="h-4 w-4 mr-2" />
+              Rodar lote de 500 (real)
             </Button>
             {errorPayload && (
               <Button variant="outline" size="lg" onClick={runWithCurrentParams} disabled={!ready || running}>
