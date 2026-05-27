@@ -530,8 +530,10 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               })}
             </div>
           )}
+          {selectedClassIds.length > 0 && <NominalStudentList />}
         </div>
       )}
+
 
       {assignmentMode === "professor_turmas" && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
