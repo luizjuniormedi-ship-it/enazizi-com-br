@@ -755,14 +755,15 @@ const Simulados = () => {
           // Best-effort: register per-question analytics so adaptive engine has data
           try {
             const rows = questions.map((q, idx) => ({
-              session_id: sessionId,
+              simulado_session_id: sessionId,
               user_id: user.id,
               question_id: (q as any).id ?? null,
-              order_index: idx,
-              selected_index: answers[idx] ?? null,
-              correct_index: q.correct,
+              question_index: idx,
+              selected_answer: answers[idx] ?? null,
+              correct_answer: q.correct,
               is_correct: answers[idx] === q.correct,
-              topic: q.topic ?? null,
+              mode: (configRef.current?.mode as string) || "estudo",
+              specialty: q.topic ?? null,
             }));
             const { error: anaErr } = await supabase
               .from("simulado_question_analytics")
