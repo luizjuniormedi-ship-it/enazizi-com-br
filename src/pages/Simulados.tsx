@@ -578,8 +578,12 @@ const Simulados = () => {
               config.mode || "estudo",
               avoidIds
             );
-            batchData = { success: true, questions: batchQs };
-            console.log(`[Simulados] Lote ${batchNum} finalizado com sucesso. Recebidas ${batchQs.length} questões.`);
+            batchData = { success: true, questions: batchQs.questions, session_id: batchQs.sessionId };
+            if (batchQs.sessionId && !simuladoSessionIdRef.current) {
+              simuladoSessionIdRef.current = batchQs.sessionId;
+              console.log(`[SIMULADO_SESSION_CAPTURED] ${batchQs.sessionId}`);
+            }
+            console.log(`[Simulados] Lote ${batchNum} finalizado com sucesso. Recebidas ${batchQs.questions.length} questões.`);
           } catch (e) {
             console.error("[Simulados] generateBatch falhou, tentando invoke direto:", e);
             const { data, error } = await supabase.functions.invoke(
@@ -609,6 +613,10 @@ const Simulados = () => {
             );
             batchData = data;
             batchErr = error;
+            if (data?.session_id && !simuladoSessionIdRef.current) {
+              simuladoSessionIdRef.current = data.session_id;
+              console.log(`[SIMULADO_SESSION_CAPTURED] ${data.session_id}`);
+            }
           }
 
           if (batchErr) {
