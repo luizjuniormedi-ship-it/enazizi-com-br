@@ -752,59 +752,78 @@ const Simulados = () => {
             console.log("[SIMULADO_SESSION_UPDATE_OK]", sessionId);
           }
 
-          // Best-effort: register per-question analytics so adaptive engine has data
+          // P0 FIX (OPÇÃO A): create exam_sessions row FIRST with the SAME id as simulado_sessions
+          // so the FK simulado_question_analytics.simulado_session_id -> exam_sessions(id) is
+          // satisfied and the fan-out triggers actually fire (practice_attempts, error_bank,
+          // fsrs_cards, user_topic_profiles, cognitive_state_snapshots, TRI).
           try {
-            const rows = questions.map((q, idx) => ({
-              simulado_session_id: sessionId,
+            const { error: examErr } = await supabase.from("exam_sessions").insert({
+              id: sessionId,
               user_id: user.id,
-              question_id: (q as any).id ?? null,
-              question_index: idx,
-              selected_answer: answers[idx] ?? null,
-              correct_answer: q.correct,
-              is_correct: answers[idx] === q.correct,
-              mode: (configRef.current?.mode as string) || "estudo",
-              specialty: q.topic ?? null,
-            }));
+              title: `Simulado - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
+              total_questions: questions.length,
+              time_limit_minutes: questions.length * 3,
+              status: "finished",
+              finished_at: new Date().toISOString(),
+              answers_json: answers as any,
+              results_json: areaResults as any,
+              score: finalScore,
+            });
+            if (examErr) {
+              // 23505 = duplicate id (already inserted) — safe to ignore
+              if ((examErr as any).code !== "23505") {
+                console.warn("[SIMULADO_EXAM_SESSION_INSERT_FAIL]", examErr.message);
+              }
+            } else {
+              console.log("[SIMULADO_EXAM_SESSION_INSERT_OK]", sessionId);
+            }
+            try { await addXp(XP_REWARDS.simulado_completed); } catch (xpErr) { console.error("XP error (non-fatal):", xpErr); }
+          } catch (err) {
+            console.error("[SIMULADO_EXAM_SESSION_INSERT_FAIL]", err);
+          }
+
+          // Per-question analytics — triggers the cognitive fan-out pipeline
+          try {
+            console.log("[SIMULADO_ANALYTICS_INSERT_START]", { sessionId, userId: user.id, count: questions.length });
+            const rows = questions.map((q, idx) => {
+              const rawMode = (configRef.current?.mode as string) || "";
+              const hasImg = !!((q as any).image_url || (q as any).has_image || rawMode === "image");
+              const safeMode = hasImg ? "image" : "text"; // CHECK constraint: image|text|fallback_text
+              return {
+                simulado_session_id: sessionId,
+                user_id: user.id,
+                question_id: (q as any).id ?? null,
+                question_index: idx,
+                selected_answer: answers[idx] ?? null,
+                correct_answer: q.correct,
+                is_correct: answers[idx] === q.correct,
+                mode: safeMode,
+                specialty: q.topic ?? null,
+              };
+            });
             const { error: anaErr } = await supabase
               .from("simulado_question_analytics")
               .insert(rows as any);
             if (anaErr) {
-              console.warn("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaErr.message);
+              console.error("[SIMULADO_ANALYTICS_INSERT_FAIL]", {
+                message: anaErr.message,
+                code: (anaErr as any).code,
+                details: (anaErr as any).details,
+                hint: (anaErr as any).hint,
+                sessionId,
+                userId: user.id,
+              });
             } else {
-              console.log("[SIMULADO_ANALYTICS_INSERT_OK]", rows.length);
+              console.log("[SIMULADO_ANALYTICS_INSERT_OK]", { sessionId, rows: rows.length });
             }
-          } catch (anaCatch) {
-            console.warn("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaCatch);
+          } catch (anaCatch: any) {
+            console.error("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaCatch?.message || anaCatch);
           }
         } catch (e) {
           console.error("[SIMULADO_SESSION_UPDATE_FAIL]", e);
         }
       } else {
         console.warn("[SIMULADO_SESSION_UPDATE_SKIP] no sessionId captured");
-      }
-
-      // Legacy history insert (kept for backward compatibility)
-      try {
-        const { error: insertErr } = await supabase.from("exam_sessions").insert({
-          user_id: user.id,
-          title: `Simulado - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
-          total_questions: questions.length,
-          time_limit_minutes: questions.length * 3,
-          status: "finished",
-          finished_at: new Date().toISOString(),
-          answers_json: answers as any,
-          results_json: areaResults as any,
-          score: finalScore,
-        });
-        if (insertErr) throw insertErr;
-
-        try {
-          await addXp(XP_REWARDS.simulado_completed);
-        } catch (xpErr) {
-          console.error("XP error (non-fatal):", xpErr);
-        }
-      } catch (err) {
-        console.error("Erro ao salvar simulado (exam_sessions):", err);
       }
     }
 
