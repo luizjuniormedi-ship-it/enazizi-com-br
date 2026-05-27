@@ -411,6 +411,7 @@ const Simulados = () => {
     }
 
     configRef.current = config;
+    simuladoSessionIdRef.current = null;
     setMode(config.mode || "estudo");
     
     setLoadingProgress("Iniciando geração...");
