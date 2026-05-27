@@ -286,7 +286,9 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
     );
   };
 
+  return (
     <div className="space-y-6">
+
       <div className="space-y-3">
         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Atribuição do Simulado</Label>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
