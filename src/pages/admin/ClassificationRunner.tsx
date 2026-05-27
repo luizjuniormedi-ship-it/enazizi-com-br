@@ -461,21 +461,61 @@ export default function ClassificationRunner() {
     }
   }, [ready, tableSource, fetchPersisted]);
 
+  // ── created_after helpers ───────────────────────────────────────
+  const createdAfterIso = useMemo(() => {
+    if (!createdAfter) return null;
+    const d = new Date(createdAfter);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }, [createdAfter]);
+
+  const refreshEligibleCount = useCallback(async () => {
+    if (!createdAfterIso) {
+      setEligibleCount(null);
+      return;
+    }
+    setEligibleLoading(true);
+    try {
+      const { count } = await supabase
+        .from(tableSource)
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", createdAfterIso)
+        .is("specialty_id", null);
+      setEligibleCount(count ?? 0);
+    } catch {
+      setEligibleCount(null);
+    } finally {
+      setEligibleLoading(false);
+    }
+  }, [tableSource, createdAfterIso]);
+
+  useEffect(() => {
+    void refreshEligibleCount();
+  }, [refreshEligibleCount]);
+
   // ── Execução ────────────────────────────────────────────────────
   const execute = useCallback(
-    async (params: { table_source: TableSource; batch_size: number; dry_run: boolean }) => {
+    async (params: { table_source: TableSource; batch_size: number; dry_run: boolean; created_after?: string | null }) => {
       if (!ready) return;
+      if (!params.created_after && !overrideFullBank) {
+        toast.error("created_after vazio — bloqueado pelo Freeze v25. Defina a data ou ative o override.");
+        return;
+      }
+      if (!params.created_after && overrideFullBank) {
+        if (!confirm("⚠️ Você está prestes a classificar TODO o banco. Isso é bloqueado pelo Freeze v25. Continuar mesmo assim?")) return;
+      }
       if (!params.dry_run && !confirm("dry_run está DESLIGADO. Vai ESCREVER no banco. Confirmar?")) return;
 
       setRunning(true);
       setErrorPayload(null);
       try {
+        const body: Record<string, unknown> = {
+          table_source: params.table_source,
+          batch_size: Math.max(10, Math.min(500, params.batch_size)),
+          dry_run: params.dry_run,
+        };
+        if (params.created_after) body.created_after = params.created_after;
         const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
-          body: {
-            table_source: params.table_source,
-            batch_size: Math.max(10, Math.min(500, params.batch_size)),
-            dry_run: params.dry_run,
-          },
+          body,
         });
         if (error) {
           setErrorPayload({ message: error.message, raw: data ?? error });
@@ -496,6 +536,7 @@ export default function ClassificationRunner() {
         }
         toast.success(params.dry_run ? "Dry-run concluído" : "Lote real concluído");
         void fetchPersisted();
+        void refreshEligibleCount();
       } catch (e) {
         setErrorPayload({ message: (e as Error).message, raw: e });
         toast.error("Falha ao invocar edge function");
@@ -503,11 +544,14 @@ export default function ClassificationRunner() {
         setRunning(false);
       }
     },
-    [ready, fetchPersisted],
+    [ready, fetchPersisted, overrideFullBank, refreshEligibleCount],
   );
 
   const runWithCurrentParams = () =>
-    execute({ table_source: tableSource, batch_size: batchSize, dry_run: dryRun });
+    execute({ table_source: tableSource, batch_size: batchSize, dry_run: dryRun, created_after: createdAfterIso });
+
+  const runBatch500 = () =>
+    execute({ table_source: tableSource, batch_size: 500, dry_run: false, created_after: createdAfterIso });
 
   const reRunLastDryRun = () => {
     if (!lastRun || !lastRun.dry_run) {
