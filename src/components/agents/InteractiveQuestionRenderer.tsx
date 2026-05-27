@@ -78,7 +78,19 @@ function parseOneQuestion(block: string): InteractiveQuestion | null {
 
   if (!statement) return null;
 
-  const options = optionMatches.map((o) => o.replace(OPTION_CLEAN_RE, "").trim());
+  // Limpa vazamento de gabarito (IA às vezes anexa "(correta)", "✓", "[CORRETA]" na opção certa)
+  const stripAnswerLeak = (t: string) => t
+    .replace(/\s*[\[(]\s*(?:resposta\s+)?(?:correta|correto|gabarito|verdadeira|certa)\s*[\])]\s*/gi, "")
+    .replace(/\s*[✓✔☑]\s*/g, "")
+    .replace(/\s*[—\-–]\s*\*{0,2}(?:resposta\s+)?correta\*{0,2}\s*$/gi, "")
+    .replace(/\*{2,}/g, "")
+    .trim();
+
+  statement = stripAnswerLeak(statement)
+    .replace(/^\s*\*{0,2}(?:resposta\s+correta|gabarito)\s*:?\s*[a-eA-E]\s*\*{0,2}\s*$/gim, "")
+    .trim();
+
+  const options = optionMatches.map((o) => stripAnswerLeak(o.replace(OPTION_CLEAN_RE, "").trim()));
 
   // Determine correct answer
   const letterMatch = gabText.match(/([a-e])/i);
@@ -86,6 +98,7 @@ function parseOneQuestion(block: string): InteractiveQuestion | null {
 
   return { statement, options, correctIndex, explanation, topic, reference };
 }
+
 
 interface Props {
   content: string;
