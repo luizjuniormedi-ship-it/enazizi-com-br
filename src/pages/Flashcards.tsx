@@ -109,20 +109,38 @@ const Flashcards = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [ownRes, globalRes, fsrsRes] = await Promise.all([
-        supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("user_id", user.id).order("created_at", { ascending: false }).limit(200),
-        supabase.from("flashcards").select("id, question, answer, topic, is_global, user_id").eq("is_global", true).neq("user_id", user.id).order("created_at", { ascending: false }).limit(300),
+      // Paginated fetch to bypass PostgREST default 1000-row cap.
+      // Carrega até 5000 próprios e 5000 globais para refletir o banco real.
+      const PAGE = 1000;
+      const fetchPaged = async (filter: (q: any) => any, maxRows: number) => {
+        const out: any[] = [];
+        for (let from = 0; from < maxRows; from += PAGE) {
+          const to = Math.min(from + PAGE - 1, maxRows - 1);
+          const q = filter(
+            supabase
+              .from("flashcards")
+              .select("id, question, answer, topic, is_global, user_id")
+              .order("created_at", { ascending: false })
+              .range(from, to)
+          );
+          const { data, error } = await q;
+          if (error) throw error;
+          out.push(...(data || []));
+          if (!data || data.length < PAGE) break;
+        }
+        return out;
+      };
+
+      const [ownCards, globalCards, fsrsRes] = await Promise.all([
+        fetchPaged((q) => q.eq("user_id", user.id), 5000),
+        fetchPaged((q) => q.eq("is_global", true).neq("user_id", user.id), 5000),
         supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
       ]);
 
-      if (ownRes.error) throw ownRes.error;
-      if (globalRes.error) throw globalRes.error;
       if (fsrsRes.error) throw fsrsRes.error;
 
-      const ownCards = ownRes.data || [];
-      const globalCards = globalRes.data || [];
-      const ownIds = new Set(ownCards.map(c => c.id));
-      const merged = [...ownCards, ...globalCards.filter(c => !ownIds.has(c.id))]
+      const ownIds = new Set(ownCards.map((c: any) => c.id));
+      const merged = [...ownCards, ...globalCards.filter((c: any) => !ownIds.has(c.id))]
         .filter(c => isMedicalContent(`${c.question} ${c.answer}`));
       setAllCards(merged);
 
