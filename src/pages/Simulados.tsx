@@ -743,7 +743,7 @@ const Simulados = () => {
               score: finalScore,
               correct_count: correctCount,
               total_questions: questions.length,
-              duration_seconds: durationSeconds,
+              metadata: { duration_seconds: durationSeconds, elapsed_minutes: elapsed } as any,
             })
             .eq("id", sessionId);
           if (updErr) {
