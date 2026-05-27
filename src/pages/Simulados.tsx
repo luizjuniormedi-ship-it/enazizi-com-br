@@ -438,6 +438,10 @@ const Simulados = () => {
               body: {
                 target_question_count: config.count || 20,
                 performance: perf,
+                topics: config.topics && config.topics.length > 0 ? config.topics : undefined,
+                discipline: (config.topics && config.topics[0]) || undefined,
+                targetExam: config.realExamProfile || config.examBoard || undefined,
+                mode: config.mode || "adaptativo",
               },
             }
           );
