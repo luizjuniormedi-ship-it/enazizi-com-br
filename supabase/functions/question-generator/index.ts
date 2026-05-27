@@ -1,5 +1,29 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
-import { cleanQuestionText, parseAiJson } from "../_shared/ai-fetch.ts";
+// Inline shims (ai-fetch.ts no longer exports these)
+const cleanQuestionText = (s: string): string =>
+  String(s ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+const parseAiJson = (raw: string): any => {
+  if (!raw) throw new Error("empty_ai_response");
+  let txt = String(raw).trim();
+  txt = txt.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  const first = txt.indexOf("{");
+  const firstArr = txt.indexOf("[");
+  let start = -1;
+  if (first === -1) start = firstArr;
+  else if (firstArr === -1) start = first;
+  else start = Math.min(first, firstArr);
+  if (start > 0) txt = txt.slice(start);
+  const lastObj = txt.lastIndexOf("}");
+  const lastArr = txt.lastIndexOf("]");
+  const end = Math.max(lastObj, lastArr);
+  if (end > 0) txt = txt.slice(0, end + 1);
+  return JSON.parse(txt);
+};
 import { QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
