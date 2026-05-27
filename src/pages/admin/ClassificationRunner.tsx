@@ -692,7 +692,7 @@ export default function ClassificationRunner() {
       setConfirmOpen(false);
       setConfirmPhrase("");
     }
-  }, [guardrails.passed, realParams, fetchPersisted]);
+  }, [guardrails.passed, realParams, fetchPersisted, createdAfterIso]);
 
   const realRunsHistory = useMemo(() => history.filter((r) => !r.dry_run), [history]);
 
