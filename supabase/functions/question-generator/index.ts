@@ -126,7 +126,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
           const validation = validateQuestionAgainstBoard(cleanQ, profile);
           
-          const hash = btoa(cleanQ.statement.substring(0, 50).toLowerCase().trim());
+          const hash = safeHash(cleanQ.statement, 50);
           
           // Log Forensic Analysis
           await supabaseAdmin.from("forensic_quality_logs").insert({
