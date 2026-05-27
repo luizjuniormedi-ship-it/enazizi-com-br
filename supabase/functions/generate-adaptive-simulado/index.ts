@@ -132,7 +132,8 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       });
 
       const raw = aiResponse?.choices?.[0]?.message?.content || "[]";
-      const batch = parseAiJson(raw);
+      let batch: any;
+      try { batch = parseAiJson(raw); } catch { batch = []; }
 
       if (Array.isArray(batch)) {
         for (const q of batch) {
