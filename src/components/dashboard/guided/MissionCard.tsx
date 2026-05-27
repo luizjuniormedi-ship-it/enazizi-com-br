@@ -33,7 +33,9 @@ export default function MissionCard() {
   // Estimativa simples: 25min por tarefa pendente (média típica de bloco de estudo).
   const minutesLeft = remaining * 25;
 
-  const handleContinue = () => navigate("/dashboard/sessao-estudo", { state: { source: "daily_plan", mode: "guided_tasks" } });
+  // Direciona para a visão completa do dia (todas as tarefas designadas pelo Planner),
+  // não apenas para a próxima sessão isolada. Mantém state como fallback.
+  const handleContinue = () => navigate("/dashboard/plano-dia", { state: { source: "daily_plan", mode: "guided_tasks" } });
   const handleGenerate = async () => {
     if (generating) return;
     setGenerating(true);
@@ -56,7 +58,7 @@ export default function MissionCard() {
       }
       toast({ title: "✅ Missão do dia gerada", description: "Vamos começar." });
       await queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-      navigate("/dashboard/missao-do-dia");
+      navigate("/dashboard/plano-dia");
     } catch (err: any) {
       toast({
         title: "Erro ao gerar missão",
