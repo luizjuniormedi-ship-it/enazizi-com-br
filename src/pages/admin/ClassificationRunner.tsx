@@ -1110,6 +1110,56 @@ export default function ClassificationRunner() {
             </div>
           </div>
 
+          {/* created_after — Freeze v25 guard */}
+          <div className="grid gap-4 sm:grid-cols-3 items-end">
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Classificar apenas questões criadas após</Label>
+              <Input
+                type="datetime-local"
+                value={createdAfter}
+                onChange={(e) => setCreatedAfter(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Use para evitar classificar o banco inteiro. Padrão: hoje 00:00.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Elegíveis (sem specialty_id)</Label>
+              <div className="h-10 flex items-center gap-2">
+                {eligibleLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Badge variant="outline" className="text-sm">
+                    {eligibleCount ?? "—"} {createdAfterIso ? "desde a data" : "(banco inteiro)"}
+                  </Badge>
+                )}
+                <Button size="sm" variant="ghost" onClick={refreshEligibleCount} disabled={eligibleLoading}>
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {!createdAfter && (
+            <Alert variant="destructive">
+              <Lock className="h-4 w-4" />
+              <AlertTitle>Bloqueado pelo Freeze v25</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  Sem <code>created_after</code> a execução roda contra o banco inteiro. Defina uma data
+                  acima ou ative o override admin abaixo.
+                </p>
+                <div className="flex items-center gap-2">
+                  <Switch checked={overrideFullBank} onCheckedChange={setOverrideFullBank} />
+                  <span className="text-xs">
+                    Override admin: permitir rodar no banco inteiro (sob sua responsabilidade)
+                  </span>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
+
           {!dryRun && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
