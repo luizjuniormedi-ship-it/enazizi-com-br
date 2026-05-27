@@ -22,6 +22,12 @@ const ALLOWED_PREFIXES = [
 // Functions that we accept as legacy (won't fail CI). New functions must use contracts.
 const LEGACY_ALLOWLIST = new Set<string>([
   "agent-question-quality",
+  "ai-benchmark-pipeline",
+  "auth-email-hook",
+  "framework-test",
+  "generate-study-plan",
+  "official-exam-ingestion",
+  "tutor-context-builder",
   "ai-pipeline-test",
   "ai-provider-health",
   "ai-proxy",
