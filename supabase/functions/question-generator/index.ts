@@ -8,6 +8,23 @@ import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 
+// safeHash: btoa não aceita caracteres não-Latin1 (acentos pt-BR quebram).
+// Usamos uma hash determinística baseada em char codes + slug normalizado.
+function safeHash(input: string, len = 100): string {
+  const normalized = (input || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .substring(0, len);
+  let h = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    h = ((h << 5) - h) + normalized.charCodeAt(i);
+    h |= 0;
+  }
+  return `${normalized.length}_${Math.abs(h).toString(36)}_${normalized.substring(0, 40)}`;
+}
+
 
 /**
  * ENAZIZI — ADAPTIVE QUESTION-GENERATOR v13 (HARD FIX)
@@ -78,7 +95,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       const { data: bankQs } = await query.limit(requestedCount);
       if (bankQs) {
         for (const q of bankQs) {
-          const hash = btoa(q.statement.substring(0, 100).toLowerCase().trim());
+          const hash = safeHash(q.statement, 100);
           if (!seenHashes.has(hash)) {
             finalQuestions.push({ ...q, correct: q.correct_index, _source: "bank" });
             seenHashes.add(hash);
@@ -126,7 +143,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
           const validation = validateQuestionAgainstBoard(cleanQ, profile);
           
-          const hash = btoa(cleanQ.statement.substring(0, 50).toLowerCase().trim());
+          const hash = safeHash(cleanQ.statement, 50);
           
           // Log Forensic Analysis
           await supabaseAdmin.from("forensic_quality_logs").insert({
