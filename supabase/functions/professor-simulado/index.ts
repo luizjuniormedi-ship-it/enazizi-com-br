@@ -750,9 +750,11 @@ REGRAS INVIOLÁVEIS:
         const isScheduled = start && new Date(start) > new Date();
         const simStatus = status || (isScheduled ? "scheduled" : "published");
 
-        // Normalize filters to arrays
-        const facFilters = Array.isArray(faculdade_filters) ? faculdade_filters : (faculdade_filter ? [faculdade_filter] : []);
-        const perFilters = Array.isArray(periodo_filters) ? periodo_filters : (periodo_filter ? [parseInt(periodo_filter)] : []);
+        // Normalize filters to arrays and keep non-admin professores scoped to their own faculdade.
+        const requestedFacFilters = Array.isArray(faculdade_filters) ? faculdade_filters : (faculdade_filter ? [faculdade_filter] : []);
+        const facFilters = scopedFaculdadeFilters(requestedFacFilters, professorFaculdade, isAdmin);
+        const requestedPerFilters = Array.isArray(periodo_filters) ? periodo_filters : (periodo_filter ? [periodo_filter] : []);
+        const perFilters = normalizePeriodArray(requestedPerFilters);
 
         // Insert principal (isolado)
         const { data: simulado, error } = await sb.from("teacher_simulados").insert({
@@ -760,7 +762,7 @@ REGRAS INVIOLÁVEIS:
           title: title || "Simulado",
           description: description || null,
           topics: topics || [],
-          faculdade_filter: facFilters[0] || professorFaculdade || null,
+          faculdade_filter: facFilters[0] === NO_FACULDADE_MATCH ? null : (facFilters[0] || professorFaculdade || null),
           periodo_filter: perFilters[0] || null,
           faculdade_filters: facFilters,
           periodo_filters: perFilters,
@@ -823,7 +825,7 @@ REGRAS INVIOLÁVEIS:
             studentList = allStudents || [];
           } else {
             // Default: filter
-            let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
+            let studentQuery = sb.from("profiles").select("user_id").eq("status", "active").in("user_type", STUDENT_USER_TYPES);
             
             if (facFilters.length > 0) {
               studentQuery = studentQuery.in("faculdade", facFilters);
@@ -853,7 +855,7 @@ REGRAS INVIOLÁVEIS:
             await sb.from("teacher_simulado_assignments").insert({
               simulado_id: simulado.id,
               target_type: assignment_mode === 'all' ? 'all' : 'filter',
-              metadata: assignment_mode === 'filter' ? { faculdade: faculdade_filter, periodo: periodo_filter } : null,
+              metadata: assignment_mode === 'filter' ? { faculdade_filters: facFilters.filter((f) => f !== NO_FACULDADE_MATCH), periodo_filters: perFilters } : null,
               trace_id: tid
             });
           }
