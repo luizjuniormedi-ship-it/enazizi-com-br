@@ -250,6 +250,18 @@ export default function ClassificationRunner() {
   const [batchSize, setBatchSize] = useState(100);
   const [dryRun, setDryRun] = useState(true);
 
+  // Filtro created_after — bloqueia rodar no banco inteiro (Freeze v25)
+  const todayMidnightLocal = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+  })();
+  const [createdAfter, setCreatedAfter] = useState<string>(todayMidnightLocal);
+  const [overrideFullBank, setOverrideFullBank] = useState(false);
+  const [eligibleCount, setEligibleCount] = useState<number | null>(null);
+  const [eligibleLoading, setEligibleLoading] = useState(false);
+
   const [running, setRunning] = useState(false);
   const [errorPayload, setErrorPayload] = useState<{ message: string; raw?: unknown } | null>(null);
   const [result, setResult] = useState<RunResult | null>(null);
