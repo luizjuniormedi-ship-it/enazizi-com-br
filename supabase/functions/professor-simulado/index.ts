@@ -798,6 +798,14 @@ REGRAS INVIOLÁVEIS:
           exact_count: missingCount === 0,
           difficulty_distribution: finalDistribution,
           slot_metrics: slotMetrics,
+          bank_pool: {
+            ...bankPoolStats,
+            by_level: {
+              facil: cacheByLevel.facil.length,
+              intermediario: cacheByLevel.intermediario.length,
+              dificil: cacheByLevel.dificil.length,
+            },
+          },
         });
       }
 
