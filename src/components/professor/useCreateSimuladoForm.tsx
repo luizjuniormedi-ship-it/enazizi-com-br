@@ -174,7 +174,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   // ============ Handlers de Alunos ============
   const previewMatchingStudents = useCallback(async (isLoadMore = false) => {
     setPreviewLoading(true);
-    const limit = 25;
+    const limit = assignmentMode === "filter" ? 1000 : 25;
     const offset = isLoadMore ? studentPagination.offset + limit : 0;
 
     // Parâmetros conforme o modo de atribuição
@@ -743,10 +743,10 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         total_questions: questions.length,
         time_limit_minutes: parseInt(timeLimit) || 60,
         questions_json: questions,
-        student_ids: assignmentMode === "manual" ? (selectedStudentIds || []) : null,
+        student_ids: (assignmentMode === "manual" || assignmentMode === "filter") ? (selectedStudentIds || []) : null,
         class_ids: assignmentMode === "classes" ? (selectedClassIds || []) : null,
         professor_turma_ids: assignmentMode === "professor_turmas" ? (selectedProfessorTurmaIds || []) : null,
-        assignment_mode: assignmentMode || "all",
+        assignment_mode: assignmentMode === "filter" && selectedStudentIds.length > 0 ? "manual" : (assignmentMode || "all"),
         scheduled_at: scheduledAt || null,
         end_at: endAt || null,
         max_attempts: parseInt(maxAttempts) || 1,
@@ -836,7 +836,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         return;
       }
 
-      if (assignmentMode === "manual" && selectedStudentIds.length === 0) {
+      if ((assignmentMode === "manual" || (assignmentMode === "filter" && previewStudents.length > 0)) && selectedStudentIds.length === 0) {
         toast({ title: "Nenhum aluno selecionado", description: "Selecione alunos ou mude o modo de atribuição.", variant: "destructive" });
         return;
       }
@@ -849,7 +849,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       setCreating(true);
       try {
         let count = 0;
-        if (assignmentMode === "manual") count = selectedStudentIds.length;
+        if (assignmentMode === "manual" || (assignmentMode === "filter" && previewStudents.length > 0)) count = selectedStudentIds.length;
         else if (assignmentMode === "all") {
           const { data } = await callAPI({ action: "get_students_count" });
           count = data?.count || 0;
@@ -883,7 +883,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         setCreating(false);
       }
     });
-  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilters, periodoFilters, callAPI, toast, safeAction]);
+  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilters, periodoFilters, previewStudents.length, callAPI, toast, safeAction]);
 
 
   const allQs = useMemo(() => {
