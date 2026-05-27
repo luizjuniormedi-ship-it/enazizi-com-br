@@ -1253,19 +1253,17 @@ REGRAS INVIOLÁVEIS:
         } else if (class_ids && Array.isArray(class_ids) && class_ids.length > 0) {
           query = sb.from("class_members").select("user_id", { count: 'exact', head: true }).in("class_id", class_ids).eq("is_active", true);
         } else {
-          query = sb.from("profiles").select("user_id", { count: 'exact', head: true }).eq("status", "active");
+          query = sb.from("profiles").select("user_id", { count: 'exact', head: true }).eq("status", "active").in("user_type", STUDENT_USER_TYPES);
+          const requestedFaculdades = Array.isArray(faculdades) && faculdades.length > 0 ? faculdades : (faculdade ? [faculdade] : []);
+          const effectiveFaculdades = scopedFaculdadeFilters(requestedFaculdades, professorFaculdade, isAdmin);
+          const pInts = normalizePeriodArray(Array.isArray(periodos) && periodos.length > 0 ? periodos : (periodo ? [periodo] : []));
           
-          if (faculdades && Array.isArray(faculdades) && faculdades.length > 0) {
-            query = query.in("faculdade", faculdades);
-          } else if (faculdade || professorFaculdade) {
-            query = query.eq("faculdade", faculdade || professorFaculdade);
+          if (effectiveFaculdades.length > 0) {
+            query = query.in("faculdade", effectiveFaculdades);
           }
 
-          if (periodos && Array.isArray(periodos) && periodos.length > 0) {
-            const pInts = periodos.map((p: any) => parseInt(p)).filter((p: number) => !isNaN(p));
-            if (pInts.length > 0) query = query.in("periodo", pInts);
-          } else if (periodo) {
-            query = query.eq("periodo", parseInt(periodo));
+          if (pInts.length > 0) {
+            query = query.in("periodo", pInts);
           }
         }
 
