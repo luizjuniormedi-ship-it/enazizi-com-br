@@ -78,6 +78,7 @@ const QuestionQuality = lazyWithRetry(() => import("./pages/admin/QuestionQualit
 const LoadMonitor = lazyWithRetry(() => import("./pages/admin/LoadMonitor"), "LoadMonitor");
 const MemoryHealth = lazyWithRetry(() => import("./pages/admin/MemoryHealth"), "MemoryHealth");
 const MemoryHallucinations = lazyWithRetry(() => import("./pages/admin/MemoryHallucinations"), "MemoryHallucinations");
+const EnrichmentProgress = lazyWithRetry(() => import("./pages/admin/EnrichmentProgress"), "EnrichmentProgress");
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
