@@ -176,20 +176,45 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     setPreviewLoading(true);
     const limit = 25;
     const offset = isLoadMore ? studentPagination.offset + limit : 0;
-    
+
+    // Parâmetros conforme o modo de atribuição
+    const extra: Record<string, unknown> = {};
+    if (assignmentMode === "classes") {
+      if (selectedClassIds.length === 0) {
+        setPreviewStudents([]);
+        setStudentPagination({ offset: 0, total: 0, hasMore: false });
+        setPreviewLoading(false);
+        return;
+      }
+      extra.class_ids = selectedClassIds;
+    } else if (assignmentMode === "professor_turmas") {
+      if (selectedProfessorTurmaIds.length === 0) {
+        setPreviewStudents([]);
+        setStudentPagination({ offset: 0, total: 0, hasMore: false });
+        setPreviewLoading(false);
+        return;
+      }
+      extra.professor_turma_ids = selectedProfessorTurmaIds;
+    } else if (assignmentMode === "all") {
+      extra.all_active = true;
+    } else {
+      // filter / manual
+      if (faculdadeFilters.length > 0) extra.faculdades = faculdadeFilters;
+      if (periodoFilters.length > 0) extra.periodos = periodoFilters;
+    }
+
     try {
       const res = await callAPI({
         action: "get_students",
-        faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
-        periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
+        ...extra,
         query: studentSearch.length >= 3 ? studentSearch : undefined,
         limit,
-        offset
+        offset,
       });
-      
+
       const students = res.students || [];
       const total = res.total || 0;
-      
+
       setPreviewStudents(prev => isLoadMore ? [...prev, ...students] : students);
       // Auto-seleciona todos os alunos retornados — professor desmarca os que não devem participar
       const newIds = students.map((s: any) => s.user_id).filter(Boolean);
@@ -199,6 +224,14 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
           return Array.from(merged);
         }
         return newIds;
+      });
+      setSelectedStudentsData(prev => {
+        if (isLoadMore) {
+          const map = new Map(prev.map((s: any) => [s.user_id, s]));
+          students.forEach((s: any) => map.set(s.user_id, s));
+          return Array.from(map.values());
+        }
+        return students;
       });
       setStudentPagination({
         offset,
@@ -211,9 +244,9 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     } finally {
       setPreviewLoading(false);
     }
-  }, [callAPI, faculdadeFilters, periodoFilters, studentSearch, studentPagination.offset]);
+  }, [callAPI, assignmentMode, faculdadeFilters, periodoFilters, selectedClassIds, selectedProfessorTurmaIds, studentSearch, studentPagination.offset]);
 
-  // Debounced search effect
+  // Debounced search effect — recarrega quando filtros, modo ou seleções de turma mudam
   useEffect(() => {
     const timer = setTimeout(() => {
       if (studentSearch.length === 0 || studentSearch.length >= 3) {
@@ -221,7 +254,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [studentSearch, faculdadeFilters, periodoFilters]);
+  }, [studentSearch, faculdadeFilters, periodoFilters, assignmentMode, selectedClassIds, selectedProfessorTurmaIds]);
+
 
   const searchStudentGlobal = useCallback(async (isLoadMore = false) => {
     if (studentSearch.length < 3) {
