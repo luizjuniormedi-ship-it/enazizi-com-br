@@ -197,8 +197,98 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
 
   const periodOptions = Array.from({ length: 12 }, (_, i) => String(i + 1));
 
+  // Painel reutilizável de seleção nominal/individual de alunos do filtro atual.
+  // Aparece em todos os modos para o professor desmarcar quem não vai participar.
+  const NominalStudentList = () => {
+    if (previewLoading && previewStudents.length === 0) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      );
+    }
+    if (previewStudents.length === 0) {
+      return (
+        <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-2xl opacity-40 flex flex-col items-center">
+          <Users className="h-8 w-8 mb-3" />
+          <p className="text-[11px] font-black uppercase tracking-widest">Nenhum aluno no filtro selecionado</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-4 pt-4 border-t border-white/5">
+        <div className="flex items-center justify-between px-2">
+          <div className="space-y-0.5">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40">
+              Alunos do filtro: {studentPagination.total}
+            </h4>
+            <p className="text-[9px] font-bold text-primary/60 uppercase">
+              {selectedStudentIds.length} participarão · desmarque para excluir
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onToggleAllStudents()}
+            className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors"
+          >
+            {selectedStudentIds.length >= previewStudents.length && previewStudents.length > 0 ? "DESMARCAR PÁGINA" : "MARCAR PÁGINA"}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+          {previewStudents.map((s: any) => {
+            const isSelected = selectedStudentIds.includes(s.user_id);
+            return (
+              <button
+                key={s.user_id}
+                type="button"
+                onClick={() => onToggleStudent(s)}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-xl border text-left transition-all group",
+                  isSelected
+                    ? "bg-primary/10 border-primary/40 shadow-glow-sm"
+                    : "bg-background/40 border-white/5 hover:border-white/10"
+                )}
+              >
+                <div className={cn(
+                  "h-5 w-5 rounded flex items-center justify-center border transition-colors",
+                  isSelected ? "bg-primary border-primary text-primary-foreground" : "bg-white/5 border-white/10 group-hover:border-primary/50"
+                )}>
+                  {isSelected && <CheckSquare className="h-3.5 w-3.5" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-tight truncate">{s.display_name || s.email}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="outline" className="text-[8px] h-4 px-1 opacity-60 uppercase">{s.faculdade || "N/A"}</Badge>
+                    <span className="text-[10px] font-bold text-white/30">{s.periodo}º PERÍODO</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {studentPagination.hasMore && (
+          <div className="flex justify-center pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onPreviewMatchingStudents(true)}
+              disabled={previewLoading}
+              className="text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10"
+            >
+              {previewLoading ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Plus className="h-3 w-3 mr-2" />}
+              CARREGAR MAIS ({studentPagination.total - previewStudents.length} RESTANTES)
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
+
       <div className="space-y-3">
         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Atribuição do Simulado</Label>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -440,8 +530,10 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               })}
             </div>
           )}
+          {selectedClassIds.length > 0 && <NominalStudentList />}
         </div>
       )}
+
 
       {assignmentMode === "professor_turmas" && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
@@ -484,18 +576,23 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               })}
             </div>
           )}
+          {selectedProfessorTurmaIds.length > 0 && <NominalStudentList />}
         </div>
       )}
 
       {assignmentMode === "all" && (
-        <div className="py-16 text-center border-2 border-dashed border-primary/20 bg-primary/5 rounded-3xl flex flex-col items-center animate-in fade-in slide-in-from-top-2">
-          <Globe className="h-10 w-10 text-primary mb-4" />
-          <p className="text-sm font-black uppercase tracking-widest">Visibilidade Global</p>
-          <p className="text-[11px] font-medium opacity-60 mt-1 max-w-[280px]">Este simulado ficará disponível para todos os alunos ativos da plataforma.</p>
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+          <div className="py-8 text-center border-2 border-dashed border-primary/20 bg-primary/5 rounded-3xl flex flex-col items-center">
+            <Globe className="h-10 w-10 text-primary mb-3" />
+            <p className="text-sm font-black uppercase tracking-widest">Visibilidade Global</p>
+            <p className="text-[11px] font-medium opacity-60 mt-1 max-w-[320px]">Todos os alunos ativos abaixo receberão. Desmarque individualmente quem não deve participar.</p>
+          </div>
+          <NominalStudentList />
         </div>
       )}
     </div>
   );
 });
+
 
 export default SimuladoAssignmentManager;
