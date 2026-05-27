@@ -1,26 +1,41 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Award, BarChart3, RotateCcw, Calendar } from "lucide-react";
+import { BarChart3, RotateCcw, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+// P0 FIX (Freeze v25 — bugfix localizado):
+// Antes lia `exam_sessions` (3 linhas) — fonte errada.
+// Agora lê `simulado_sessions` (3299 linhas) — fonte real onde
+// `generate-adaptive-simulado` persiste as sessões do aluno.
 interface HistorySession {
   id: string;
-  title: string;
+  mode: string;
+  discipline: string | null;
+  topic: string | null;
   score: number | null;
+  correct_count: number | null;
   total_questions: number;
-  created_at: string;
+  started_at: string | null;
   finished_at: string | null;
-  results_json: any;
-  answers_json: any;
-  status: string;
+  status: string | null;
+  metadata: any;
 }
 
 interface SimuladoHistoryProps {
   userId?: string;
   onRetryErrors: (sessionId: string) => void;
 }
+
+const buildTitle = (s: HistorySession): string => {
+  const parts: string[] = [];
+  if (s.discipline) parts.push(s.discipline);
+  if (s.topic && s.topic !== s.discipline) parts.push(s.topic);
+  const base = parts.join(" • ") || "Simulado";
+  const modeLabel = s.mode === "prova_real" ? "Prova Real" : s.mode === "tri" ? "TRI" : s.mode === "estudo" ? "Estudo" : "Adaptativo";
+  return `${base} — ${modeLabel}`;
+};
 
 const SimuladoHistory = ({ userId, onRetryErrors }: SimuladoHistoryProps) => {
   const [sessions, setSessions] = useState<HistorySession[]>([]);
@@ -30,13 +45,19 @@ const SimuladoHistory = ({ userId, onRetryErrors }: SimuladoHistoryProps) => {
   useEffect(() => {
     if (!userId) return;
     const fetchHistory = async () => {
-      const { data } = await supabase
-        .from("exam_sessions")
-        .select("id, title, score, total_questions, created_at, finished_at, results_json, answers_json, status")
+      // P0 FIX: read from real source (simulado_sessions).
+      // We don't filter by status='finished' because today legacy rows stay 'active';
+      // ordering by finished_at (then started_at) surfaces real completed sessions first.
+      const { data, error } = await supabase
+        .from("simulado_sessions")
+        .select("id, mode, discipline, topic, score, correct_count, total_questions, started_at, finished_at, status, metadata")
         .eq("user_id", userId)
-        .eq("status", "finished")
-        .order("created_at", { ascending: false })
+        .order("finished_at", { ascending: false, nullsFirst: false })
+        .order("started_at", { ascending: false })
         .limit(20);
+      if (error) {
+        console.warn("[SimuladoHistory] fetch failed:", error.message);
+      }
       setSessions((data as HistorySession[]) || []);
       setLoading(false);
     };
@@ -61,9 +82,14 @@ const SimuladoHistory = ({ userId, onRetryErrors }: SimuladoHistoryProps) => {
     <div className="space-y-3">
       {sessions.map(s => {
         const score = Math.round(s.score ?? 0);
-        const results = (typeof s.results_json === "object" && s.results_json) ? s.results_json as Record<string, { correct: number; total: number }> : {};
-        const hasErrors = score < 100;
+        // results breakdown comes from metadata.results when present
+        const results = (s.metadata && typeof s.metadata === "object" && (s.metadata as any).results && typeof (s.metadata as any).results === "object")
+          ? (s.metadata as any).results as Record<string, { correct: number; total: number }>
+          : {};
+        const hasErrors = score < 100 && (s.correct_count ?? 0) < s.total_questions;
         const isExpanded = expandedId === s.id;
+        const displayDate = s.finished_at || s.started_at;
+        const title = buildTitle(s);
 
         return (
           <div key={s.id} className="glass-card p-4 space-y-2">
@@ -75,11 +101,12 @@ const SimuladoHistory = ({ userId, onRetryErrors }: SimuladoHistoryProps) => {
                   {score}%
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{s.title}</p>
+                  <p className="text-sm font-medium">{title}</p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    {format(new Date(s.created_at), "dd MMM yyyy, HH:mm", { locale: ptBR })}
+                    {displayDate ? format(new Date(displayDate), "dd MMM yyyy, HH:mm", { locale: ptBR }) : "—"}
                     {" • "}{s.total_questions} questões
+                    {s.status && s.status !== "finished" ? ` • ${s.status}` : ""}
                   </p>
                 </div>
               </div>
@@ -93,7 +120,7 @@ const SimuladoHistory = ({ userId, onRetryErrors }: SimuladoHistoryProps) => {
             {isExpanded && Object.keys(results).length > 0 && (
               <div className="pt-2 border-t border-border mt-2 space-y-2">
                 {Object.entries(results).map(([area, { correct, total }]) => {
-                  const pct = Math.round((correct / total) * 100);
+                  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
                   return (
                     <div key={area}>
                       <div className="flex justify-between text-xs mb-0.5">
