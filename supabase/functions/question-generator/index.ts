@@ -78,7 +78,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       const { data: bankQs } = await query.limit(requestedCount);
       if (bankQs) {
         for (const q of bankQs) {
-          const hash = btoa(q.statement.substring(0, 100).toLowerCase().trim());
+          const hash = safeHash(q.statement, 100);
           if (!seenHashes.has(hash)) {
             finalQuestions.push({ ...q, correct: q.correct_index, _source: "bank" });
             seenHashes.add(hash);
