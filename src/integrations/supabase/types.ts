@@ -27400,6 +27400,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      enrichment_dashboard: { Args: never; Returns: Json }
       ensure_user_medical_domain_map: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -27841,6 +27842,38 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      reset_enrichment_daily_counter: { Args: never; Returns: undefined }
+      sample_enriched_questions: {
+        Args: { _n?: number }
+        Returns: {
+          correct_index: number
+          explanation: string
+          guideline_reference: string
+          id: string
+          is_clinical_case: boolean
+          options: Json
+          quality_tier: string
+          statement: string
+          updated_at: string
+        }[]
+      }
+      set_enrichment_paused: {
+        Args: { _paused: boolean; _reason?: string }
+        Returns: {
+          id: number
+          is_paused: boolean
+          last_batch_at: string | null
+          pause_reason: string | null
+          processed_today: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrichment_control"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       student_has_clinical_case_result: {
         Args: { _case_id: string; _user_id: string }
