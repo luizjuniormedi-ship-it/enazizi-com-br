@@ -1217,37 +1217,9 @@ REGRAS INVIOLÁVEIS:
         return ok({ success: true, simulado: data });
       }
 
-      case "get_students": {
-        const { faculdade, periodo, faculdades, periodos, query: nameQuery, limit = 50, offset = 0 } = params;
-        let query = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, status", { count: "exact" });
-        
-        // Se não for admin, restringir à faculdade do professor por padrão se nada for especificado
-        const effectiveFaculdades = (faculdades && Array.isArray(faculdades) && faculdades.length > 0) 
-          ? faculdades 
-          : (faculdade && faculdade !== "all" ? [faculdade] : (isAdmin ? [] : (professorFaculdade ? [professorFaculdade] : [])));
+      // (removido) case "get_students" duplicado — handler ativo está acima (linha ~299).
 
-        if (effectiveFaculdades.length > 0) {
-          query = query.in("faculdade", effectiveFaculdades);
-        }
 
-        if (periodos && Array.isArray(periodos) && periodos.length > 0) {
-          const pInts = periodos.map((p: any) => parseInt(p)).filter((p: number) => !isNaN(p));
-          if (pInts.length > 0) query = query.in("periodo", pInts);
-        } else if (periodo && periodo !== "all") {
-          query = query.eq("periodo", parseInt(periodo));
-        }
-
-        if (nameQuery) {
-          query = query.or(`display_name.ilike.%${nameQuery}%,email.ilike.%${nameQuery}%`);
-        }
-
-        const { data: students, count, error } = await query
-          .order("display_name")
-          .range(offset, offset + limit - 1);
-        
-        if (error) throw error;
-        return ok({ students: students || [], total: count || 0 });
-      }
 
       case "get_students_count": {
         const { faculdade, periodo, faculdades, periodos, class_ids, professor_turma_ids } = params;
