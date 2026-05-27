@@ -18,7 +18,9 @@
     "test:watch": "vitest",
     "check:tailwind": "node scripts/check-tailwind-ambiguous.mjs",
     "check:smoke": "vitest run src/test/navigation-smoke.test.tsx",
-    "check:all": "npm run check:tailwind && npm run check:smoke",
+    "check:edge-imports": "tsx scripts/check-edge-imports.ts --strict",
+    "validate:edge": "npm run check:edge-imports && npx playwright test e2e/edge-function-boot.spec.ts",
+    "check:all": "npm run check:tailwind && npm run check:smoke && npm run check:edge-imports",
     "capsync": "npx cap sync && node scripts/fix-orientation.mjs",
     "postbuild": "node scripts/fix-orientation.mjs"
   },
