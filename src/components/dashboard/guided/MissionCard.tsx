@@ -95,9 +95,13 @@ export default function MissionCard() {
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           ) : (
-            <Button size="sm" variant="outline" onClick={handleGenerate} className="shrink-0">
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Gerar missão
+            <Button size="sm" variant="outline" onClick={handleGenerate} disabled={generating} className="shrink-0">
+              {generating ? (
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Plus className="mr-1 h-3.5 w-3.5" />
+              )}
+              {generating ? "Gerando…" : "Gerar missão"}
             </Button>
           )}
         </div>
