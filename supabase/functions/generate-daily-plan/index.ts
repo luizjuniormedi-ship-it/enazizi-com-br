@@ -216,6 +216,16 @@ SAÍDA ESPERADA (JSON):
 }`;
 
     let planJson: any = null;
+    const deterministicFallback = () => ({
+      tasks: [
+        { type: "fsrs_review", title: "Revisão Espaçada (FSRS)", topic: "Revisões Vencidas", subject: "Geral", priority: 90, estimated_minutes: 30, rationale: "Recuperação de memória necessária.", objectives: ["Revisar temas vencidos"] },
+        { type: "error_recovery", title: "Recuperação de Erros", topic: "Banco de Erros", subject: "Geral", priority: 85, estimated_minutes: 30, rationale: "Foco nos erros recentes.", objectives: ["Dominar subtemas falhos"] },
+        { type: "question_practice", title: "Prática de Questões", topic: currentWeekItems[0]?.topic || "Tema da Semana", subject: currentWeekItems[0]?.discipline || "Geral", priority: 75, estimated_minutes: 30, rationale: "Manter ritmo de prática.", objectives: ["Resolver 20 questões"] }
+      ],
+      daily_focus: "Recuperação e Estabilidade (Fallback)",
+      ai_coach_tip: "Plano gerado em modo de contingência — IA temporariamente indisponível.",
+      expected_outcome: "Manutenção do ritmo de estudo."
+    });
     try {
       const aiResponse = await ai({
         taskType: "planner" as any,
@@ -225,19 +235,20 @@ SAÍDA ESPERADA (JSON):
         ],
         complexity: "high" as any
       });
-      planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
+      const rawContent = aiResponse?.choices?.[0]?.message?.content;
+      if (!rawContent) {
+        logger.warn("AI_PLANNER_EMPTY", "AI returned non-chat shape (likely static fallback). Using deterministic fallback.", { hasChoices: !!aiResponse?.choices, isFallback: !!aiResponse?.fallback });
+        planJson = deterministicFallback();
+      } else {
+        planJson = parseAiJson(rawContent);
+        if (!planJson || !Array.isArray(planJson.tasks) || planJson.tasks.length === 0) {
+          logger.warn("AI_PLANNER_NO_TASKS", "AI response parsed but no tasks. Using deterministic fallback.", {});
+          planJson = deterministicFallback();
+        }
+      }
     } catch (aiErr) {
-      logger.error("AI_PLANNER_FAILURE", "AI failed to generate plan, using fallback", { error: aiErr.message });
-      // Fallback determinístico
-      planJson = {
-        tasks: [
-          { type: "fsrs_review", title: "Revisão Espaçada (FSRS)", topic: "Revisões Vencidas", subject: "Geral", priority: 90, estimated_minutes: 30, rationale: "Recuperação de memória necessária.", objectives: ["Revisar temas vencidos"] },
-          { type: "error_recovery", title: "Recuperação de Erros", topic: "Banco de Erros", subject: "Geral", priority: 85, estimated_minutes: 30, rationale: "Foco nos erros recentes.", objectives: ["Dominar subtemas falhos"] }
-        ],
-        daily_focus: "Recuperação e Estabilidade (Modo Fallback)",
-        ai_coach_tip: "A IA está em manutenção leve, mas sua meta de revisão continua ativa!",
-        expected_outcome: "Manutenção do ritmo de estudo."
-      };
+      logger.error("AI_PLANNER_FAILURE", "AI threw, using fallback", { error: (aiErr as any).message });
+      planJson = deterministicFallback();
     }
 
     const tasks = planJson.tasks || [];
