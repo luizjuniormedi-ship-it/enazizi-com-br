@@ -137,7 +137,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     if (finalQuestions.length < targetCount) {
       console.log(`[SIMULADO_AI_FALLBACK] bank_filled=${finalQuestions.length}/${targetCount} → calling AI`);
     }
-    while (finalQuestions.length < targetCount && attempts < 2) {
+    while (finalQuestions.length < targetCount && attempts < 3) {
       attempts++;
       const deficit = targetCount - finalQuestions.length;
 
@@ -148,7 +148,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       const aiResponse = await ai({
         model: normalizeModel(body.model || AI_MODELS.FAST),
         taskType: "simulados",
-        complexity: "alta",
+        complexity: attempts >= 3 ? "media" : "alta",
         messages: [
           { role: "system", content: QUESTION_MOTOR_PREMIUM + SIMULADO_MOTOR_PREMIUM + buildBancaBlock(profile) },
           { role: "user", content: `Gere exatamente ${deficit} questões adaptativas sobre ${topics.join(", ")}. Estilo: ${profile.label}.` }
@@ -175,24 +175,27 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
 
           const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
           const validation = validateQuestionAgainstBoard(cleanQ, profile);
-          
           const hash = makeHash(cleanQ.statement);
 
-
-          // Log Forensic Analysis
-          await supabaseAdmin.from("forensic_quality_logs").insert({
-            board: profile.label,
-            fidelity_score: forensic.fidelity_score,
-            structural_score: forensic.structural_score,
-            lexical_score: forensic.lexical_score,
-            cognitive_score: forensic.cognitive_score,
-            pedagogical_score: forensic.pedagogical_score,
-            ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
-            flags: forensic.reasons,
-            decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
-            correlation_id: correlationId,
-            raw_response_preview: cleanQ.statement.substring(0, 200)
-          });
+          // P1 FIX (Freeze v25 — ajuste defensivo): try/catch para não derrubar a
+          // function inteira se o schema de forensic_quality_logs mudar.
+          try {
+            await supabaseAdmin.from("forensic_quality_logs").insert({
+              board: profile.label,
+              fidelity_score: forensic.fidelity_score,
+              structural_score: forensic.structural_score,
+              lexical_score: forensic.lexical_score,
+              cognitive_score: forensic.cognitive_score,
+              pedagogical_score: forensic.pedagogical_score,
+              ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
+              flags: forensic.reasons,
+              decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
+              correlation_id: correlationId,
+              raw_response_preview: cleanQ.statement.substring(0, 200)
+            });
+          } catch (logErr) {
+            console.warn(`[FORENSIC_LOG_FAIL] ${(logErr as Error).message}`);
+          }
 
           if (forensic.isValid && validation.isValid && !seenHashes.has(hash)) {
             finalQuestions.push({ ...cleanQ, _source: "generated", forensic_score: forensic.fidelity_score });
@@ -205,8 +208,26 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       }
     }
 
+    // P1 FIX: fallback parcial — se IA não atingiu o target, devolve o que tem
+    // ao invés de quebrar o frontend com 0 questões.
+    if (finalQuestions.length === 0) {
+      console.warn(`[SIMULADO_EMPTY] zero questions after ${attempts} attempts — returning safe response`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Não foi possível gerar questões para os tópicos selecionados. Tente outros tópicos ou banca.",
+        questions: [],
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+    if (finalQuestions.length < targetCount) {
+      console.log(`[SIMULADO_PARTIAL] delivered=${finalQuestions.length}/${targetCount}`);
+    }
+
     // 3. Persistence
     step = "persistence";
+    // P1 FIX: simulado_sessions não tem coluna `board` → vai para metadata.
     const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'adaptativo',
@@ -214,9 +235,10 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       status: 'active',
       discipline: specialty,
       topic: topics[0],
-      board: profile.label,
-      started_at: new Date().toISOString()
+      started_at: new Date().toISOString(),
+      metadata: { board: profile.label, requested: targetCount, partial: finalQuestions.length < targetCount }
     }).select().single();
+
 
     if (sess) {
       await supabaseAdmin.from("simulado_questions").insert(
