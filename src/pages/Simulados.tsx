@@ -445,6 +445,11 @@ const Simulados = () => {
           if (fnError) throw fnError;
           if (!data?.success) throw new Error(data?.error || "Falha na geração adaptativa");
 
+          if (data?.session_id) {
+            simuladoSessionIdRef.current = data.session_id;
+            console.log(`[SIMULADO_SESSION_CAPTURED] adaptive=${data.session_id}`);
+          }
+
           setLoadingPercent(90);
           setLoadingProgress("Finalizando ambiente...");
 
