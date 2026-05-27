@@ -358,7 +358,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                 className="h-11 px-8 bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
               >
                 {previewLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-                BUSCAR ALUNOS
+                ABRIR SELEÇÃO DE ALUNOS
               </Button>
             </div>
           </div>
@@ -367,7 +367,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
             <Alert className="bg-primary/5 border-primary/20">
               <Building2 className="h-4 w-4 text-primary" />
               <AlertDescription className="text-[11px] font-bold uppercase tracking-widest opacity-70">
-                Modo Automático: O simulado será atribuído a todos os alunos que atenderem aos critérios acima agora e no futuro.
+                Após escolher universidade/período, abra a seleção nominal abaixo: somente os alunos marcados 1 a 1 receberão o simulado.
               </AlertDescription>
             </Alert>
           )}
