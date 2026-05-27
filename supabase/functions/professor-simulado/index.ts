@@ -559,29 +559,75 @@ REGRAS INVIOLÁVEIS:
         };
 
         // ── Cache lookup (shared across slots) ──
+        // FIX v25 (auditoria 2026-05-27):
+        //   - LIMIT antigo era `requestedCount * 2` → para 10 questões só puxava 20 do banco,
+        //     particionava por 3 dificuldades e quase sempre caía pra IA. Sensação: "só vem IA".
+        //   - Agora puxa um POOL GRANDE (até 1000) e particiona depois.
+        //   - Adicionado ORDER BY created_at DESC para priorizar conteúdo recém-ingerido (downloads de hoje).
+        //   - Telemetria nova: bank_pool_size + por nível.
+        const BANK_POOL_LIMIT = Math.max(requestedCount * 20, 500);
         const topicFilters = baseTopics.map((t: string) => `topic.ilike.%${t}%`).join(",");
         let allCached: any[] = [];
+        let bankPoolStats = { questions_bank: 0, real_exam_questions: 0, after_filters: 0 };
 
         if (hasSubtopicFilter) {
           const subFilters = subtopicTerms.map((s: string) => `topic.ilike.%${s}%`).join(",");
           const [{ data: subBank }, { data: subReal }] = await Promise.all([
-            sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(subFilters).eq("is_global", true).eq("review_status", "approved").limit(requestedCount * 2),
-            sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(subFilters).eq("is_active", true).limit(requestedCount * 2),
+            sb.from("questions_bank")
+              .select("statement, options, correct_index, explanation, topic, difficulty, source")
+              .or(subFilters).eq("is_global", true).eq("review_status", "approved")
+              .order("created_at", { ascending: false })
+              .limit(BANK_POOL_LIMIT),
+            sb.from("real_exam_questions")
+              .select("statement, options, correct_index, explanation, topic, difficulty")
+              .or(subFilters).eq("is_active", true)
+              .order("created_at", { ascending: false })
+              .limit(BANK_POOL_LIMIT),
           ]);
+          bankPoolStats.questions_bank += subBank?.length || 0;
+          bankPoolStats.real_exam_questions += subReal?.length || 0;
           allCached = [...(subBank || []), ...(subReal || [])];
         }
 
-        if (allCached.length < requestedCount) {
+        if (allCached.length < requestedCount * 4) {
           const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
-            sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_global", true).eq("review_status", "approved").limit(requestedCount * 2),
-            sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_active", true).limit(requestedCount * 2),
+            sb.from("questions_bank")
+              .select("statement, options, correct_index, explanation, topic, difficulty, source")
+              .or(topicFilters).eq("is_global", true).eq("review_status", "approved")
+              .order("created_at", { ascending: false })
+              .limit(BANK_POOL_LIMIT),
+            sb.from("real_exam_questions")
+              .select("statement, options, correct_index, explanation, topic, difficulty")
+              .or(topicFilters).eq("is_active", true)
+              .order("created_at", { ascending: false })
+              .limit(BANK_POOL_LIMIT),
           ]);
+          bankPoolStats.questions_bank += cachedBank?.length || 0;
+          bankPoolStats.real_exam_questions += cachedReal?.length || 0;
           const existingKeys = new Set(allCached.map((q: any) => String(q.statement || "").slice(0, 80).toLowerCase()));
-          const broadResults = [...(cachedBank || []), ...(cachedReal || [])].filter((q: any) => !existingKeys.has(String(q.statement || "").slice(0, 80).toLowerCase()));
+          const broadResults = [...(cachedBank || []), ...(cachedReal || [])]
+            .filter((q: any) => !existingKeys.has(String(q.statement || "").slice(0, 80).toLowerCase()));
           allCached = [...allCached, ...broadResults];
         }
 
-        // Filter cache: remove English + image refs
+        // Filtro adicional opcional por banca (quando o professor escolhe USP/UNIFESP/ENARE).
+        if (examBoard) {
+          const boardKey = String(examBoard).toUpperCase();
+          const beforeBoard = allCached.length;
+          const boardFiltered = allCached.filter((q: any) =>
+            String(q.source || "").toUpperCase().includes(boardKey)
+            || String(q.topic || "").toUpperCase().includes(boardKey)
+          );
+          // Só aplica o filtro de banca se sobrar pelo menos 1 questão; caso contrário mantém pool genérico.
+          if (boardFiltered.length >= Math.min(5, requestedCount)) {
+            allCached = boardFiltered;
+            console.log(`[Bank] Filtro banca ${boardKey}: ${beforeBoard} -> ${allCached.length}`);
+          } else {
+            console.log(`[Bank] Filtro banca ${boardKey} ignorado (resultado <${Math.min(5, requestedCount)}); mantém pool genérico`);
+          }
+        }
+
+        // Filter cache: remove English + image refs + perguntas já vistas
         const allPrevStatements = Array.isArray(previousStatements) ? [...previousStatements] : [];
         if (allPrevStatements.length > 0) {
           const prevKeys = new Set(allPrevStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
@@ -591,12 +637,17 @@ REGRAS INVIOLÁVEIS:
           const stmt = String(q.statement || "");
           return !IMAGE_REF_PATTERN.test(stmt) && !ENGLISH_PATTERN.test(stmt);
         });
+        // Shuffle global para variar conteúdo entre simulados.
+        allCached = shuffleArray(allCached);
+        bankPoolStats.after_filters = allCached.length;
+        console.log(`[Bank] Pool final: ${allCached.length} | questions_bank=${bankPoolStats.questions_bank} real_exam=${bankPoolStats.real_exam_questions}`);
 
         // ── Partition cache by difficulty ──
         const cacheByLevel: Record<DifficultyLevel, any[]> = { facil: [], intermediario: [], dificil: [] };
         for (const q of allCached) {
           cacheByLevel[inferDifficultyLevel(q, difficulty)].push(q);
         }
+        console.log(`[Bank] Por dificuldade: facil=${cacheByLevel.facil.length} interm=${cacheByLevel.intermediario.length} dificil=${cacheByLevel.dificil.length}`);
 
         // ── SLOT-BASED GENERATION ──
         let allQuestions: any[] = [];
@@ -747,6 +798,14 @@ REGRAS INVIOLÁVEIS:
           exact_count: missingCount === 0,
           difficulty_distribution: finalDistribution,
           slot_metrics: slotMetrics,
+          bank_pool: {
+            ...bankPoolStats,
+            by_level: {
+              facil: cacheByLevel.facil.length,
+              intermediario: cacheByLevel.intermediario.length,
+              dificil: cacheByLevel.dificil.length,
+            },
+          },
         });
       }
 
