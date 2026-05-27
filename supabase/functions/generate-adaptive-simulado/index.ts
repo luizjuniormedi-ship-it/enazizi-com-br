@@ -73,24 +73,49 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     // Board é usado como preferência (soft filter), não como filtro rígido,
     // porque a maioria das linhas tem board="Não especificado".
     step = "bank_fetch";
-    if (body.mode !== 'ai_generation') {
-      const { data: bankQs, error: bankErr } = await supabaseAdmin
-        .from("real_exam_questions")
-        .select("id, statement, options, correct_index, explanation, topic, difficulty, board")
-        .in("topic", topics)
-        .eq("is_active", true)
-        .limit(targetCount * 3); // overfetch so we can prefer matching board
+    // P0 FIX (Freeze v25 — bugfix de produção): normalização de tópicos.
+    // Antes: .in("topic", topics) com match exato → "Clínica Médica" vs "Clinica Medica"
+    // não casava e bank ficava vazio → fallback IA caro e lento.
+    // Agora: busca distinct topics e resolve via normalização (lower + sem acento).
+    const stripAccents = (s: string) =>
+      (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
-      if (bankErr) {
-        console.warn(`[SIMULADO_BANK_ERROR] ${bankErr.message}`);
+    if (body.mode !== 'ai_generation') {
+      const { data: topicRows } = await supabaseAdmin
+        .from("real_exam_questions")
+        .select("topic")
+        .eq("is_active", true)
+        .limit(20000);
+      const distinctTopics = Array.from(
+        new Set((topicRows || []).map((r: any) => r.topic).filter(Boolean)),
+      );
+      const requestedNorm = topics.map(stripAccents).filter(Boolean);
+      const matchedTopics = distinctTopics.filter((t) => {
+        const n = stripAccents(t);
+        return requestedNorm.some((r) => n === r || n.includes(r) || r.includes(n));
+      });
+      console.log(
+        `[SIMULADO_BANK_MATCH] requested=${topics.length} matched_db_topics=${matchedTopics.length} sample=${matchedTopics.slice(0, 3).join("|")}`,
+      );
+
+      let bankList: any[] = [];
+      if (matchedTopics.length > 0) {
+        const { data: bankQs, error: bankErr } = await supabaseAdmin
+          .from("real_exam_questions")
+          .select("id, statement, options, correct_index, explanation, topic, difficulty, board")
+          .in("topic", matchedTopics)
+          .eq("is_active", true)
+          .limit(targetCount * 4);
+        if (bankErr) console.warn(`[SIMULADO_BANK_ERROR] ${bankErr.message}`);
+        bankList = bankQs || [];
       }
 
-      const bankList = bankQs || [];
-      // Soft-prefer questions matching the requested board
       const preferred = bankList.filter((q: any) =>
         q.board && profile.label && String(q.board).toLowerCase().includes(String(profile.label).toLowerCase()),
       );
-      const ordered = [...preferred, ...bankList.filter((q: any) => !preferred.includes(q))].slice(0, targetCount);
+      const ordered = [...preferred, ...bankList.filter((q: any) => !preferred.includes(q))]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, targetCount);
 
       if (ordered.length > 0) {
         console.log(`[SIMULADO_BANK_HIT] reused=${ordered.length} preferred_board=${preferred.length}`);
@@ -112,7 +137,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     if (finalQuestions.length < targetCount) {
       console.log(`[SIMULADO_AI_FALLBACK] bank_filled=${finalQuestions.length}/${targetCount} → calling AI`);
     }
-    while (finalQuestions.length < targetCount && attempts < 2) {
+    while (finalQuestions.length < targetCount && attempts < 3) {
       attempts++;
       const deficit = targetCount - finalQuestions.length;
 
@@ -123,7 +148,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       const aiResponse = await ai({
         model: normalizeModel(body.model || AI_MODELS.FAST),
         taskType: "simulados",
-        complexity: "alta",
+        complexity: attempts >= 3 ? "media" : "alta",
         messages: [
           { role: "system", content: QUESTION_MOTOR_PREMIUM + SIMULADO_MOTOR_PREMIUM + buildBancaBlock(profile) },
           { role: "user", content: `Gere exatamente ${deficit} questões adaptativas sobre ${topics.join(", ")}. Estilo: ${profile.label}.` }
@@ -150,24 +175,27 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
 
           const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
           const validation = validateQuestionAgainstBoard(cleanQ, profile);
-          
           const hash = makeHash(cleanQ.statement);
 
-
-          // Log Forensic Analysis
-          await supabaseAdmin.from("forensic_quality_logs").insert({
-            board: profile.label,
-            fidelity_score: forensic.fidelity_score,
-            structural_score: forensic.structural_score,
-            lexical_score: forensic.lexical_score,
-            cognitive_score: forensic.cognitive_score,
-            pedagogical_score: forensic.pedagogical_score,
-            ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
-            flags: forensic.reasons,
-            decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
-            correlation_id: correlationId,
-            raw_response_preview: cleanQ.statement.substring(0, 200)
-          });
+          // P1 FIX (Freeze v25 — ajuste defensivo): try/catch para não derrubar a
+          // function inteira se o schema de forensic_quality_logs mudar.
+          try {
+            await supabaseAdmin.from("forensic_quality_logs").insert({
+              board: profile.label,
+              fidelity_score: forensic.fidelity_score,
+              structural_score: forensic.structural_score,
+              lexical_score: forensic.lexical_score,
+              cognitive_score: forensic.cognitive_score,
+              pedagogical_score: forensic.pedagogical_score,
+              ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
+              flags: forensic.reasons,
+              decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
+              correlation_id: correlationId,
+              raw_response_preview: cleanQ.statement.substring(0, 200)
+            });
+          } catch (logErr) {
+            console.warn(`[FORENSIC_LOG_FAIL] ${(logErr as Error).message}`);
+          }
 
           if (forensic.isValid && validation.isValid && !seenHashes.has(hash)) {
             finalQuestions.push({ ...cleanQ, _source: "generated", forensic_score: forensic.fidelity_score });
@@ -180,8 +208,26 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       }
     }
 
+    // P1 FIX: fallback parcial — se IA não atingiu o target, devolve o que tem
+    // ao invés de quebrar o frontend com 0 questões.
+    if (finalQuestions.length === 0) {
+      console.warn(`[SIMULADO_EMPTY] zero questions after ${attempts} attempts — returning safe response`);
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Não foi possível gerar questões para os tópicos selecionados. Tente outros tópicos ou banca.",
+        questions: [],
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+    if (finalQuestions.length < targetCount) {
+      console.log(`[SIMULADO_PARTIAL] delivered=${finalQuestions.length}/${targetCount}`);
+    }
+
     // 3. Persistence
     step = "persistence";
+    // P1 FIX: simulado_sessions não tem coluna `board` → vai para metadata.
     const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'adaptativo',
@@ -189,9 +235,10 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       status: 'active',
       discipline: specialty,
       topic: topics[0],
-      board: profile.label,
-      started_at: new Date().toISOString()
+      started_at: new Date().toISOString(),
+      metadata: { board: profile.label, requested: targetCount, partial: finalQuestions.length < targetCount }
     }).select().single();
+
 
     if (sess) {
       await supabaseAdmin.from("simulado_questions").insert(
