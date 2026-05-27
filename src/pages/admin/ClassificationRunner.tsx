@@ -565,6 +565,7 @@ export default function ClassificationRunner() {
       table_source: lastRun.table_source as TableSource,
       batch_size: lastRun.batch_size,
       dry_run: true,
+      created_after: createdAfterIso,
     });
   };
 
