@@ -73,24 +73,49 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     // Board é usado como preferência (soft filter), não como filtro rígido,
     // porque a maioria das linhas tem board="Não especificado".
     step = "bank_fetch";
-    if (body.mode !== 'ai_generation') {
-      const { data: bankQs, error: bankErr } = await supabaseAdmin
-        .from("real_exam_questions")
-        .select("id, statement, options, correct_index, explanation, topic, difficulty, board")
-        .in("topic", topics)
-        .eq("is_active", true)
-        .limit(targetCount * 3); // overfetch so we can prefer matching board
+    // P0 FIX (Freeze v25 — bugfix de produção): normalização de tópicos.
+    // Antes: .in("topic", topics) com match exato → "Clínica Médica" vs "Clinica Medica"
+    // não casava e bank ficava vazio → fallback IA caro e lento.
+    // Agora: busca distinct topics e resolve via normalização (lower + sem acento).
+    const stripAccents = (s: string) =>
+      (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
-      if (bankErr) {
-        console.warn(`[SIMULADO_BANK_ERROR] ${bankErr.message}`);
+    if (body.mode !== 'ai_generation') {
+      const { data: topicRows } = await supabaseAdmin
+        .from("real_exam_questions")
+        .select("topic")
+        .eq("is_active", true)
+        .limit(20000);
+      const distinctTopics = Array.from(
+        new Set((topicRows || []).map((r: any) => r.topic).filter(Boolean)),
+      );
+      const requestedNorm = topics.map(stripAccents).filter(Boolean);
+      const matchedTopics = distinctTopics.filter((t) => {
+        const n = stripAccents(t);
+        return requestedNorm.some((r) => n === r || n.includes(r) || r.includes(n));
+      });
+      console.log(
+        `[SIMULADO_BANK_MATCH] requested=${topics.length} matched_db_topics=${matchedTopics.length} sample=${matchedTopics.slice(0, 3).join("|")}`,
+      );
+
+      let bankList: any[] = [];
+      if (matchedTopics.length > 0) {
+        const { data: bankQs, error: bankErr } = await supabaseAdmin
+          .from("real_exam_questions")
+          .select("id, statement, options, correct_index, explanation, topic, difficulty, board")
+          .in("topic", matchedTopics)
+          .eq("is_active", true)
+          .limit(targetCount * 4);
+        if (bankErr) console.warn(`[SIMULADO_BANK_ERROR] ${bankErr.message}`);
+        bankList = bankQs || [];
       }
 
-      const bankList = bankQs || [];
-      // Soft-prefer questions matching the requested board
       const preferred = bankList.filter((q: any) =>
         q.board && profile.label && String(q.board).toLowerCase().includes(String(profile.label).toLowerCase()),
       );
-      const ordered = [...preferred, ...bankList.filter((q: any) => !preferred.includes(q))].slice(0, targetCount);
+      const ordered = [...preferred, ...bankList.filter((q: any) => !preferred.includes(q))]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, targetCount);
 
       if (ordered.length > 0) {
         console.log(`[SIMULADO_BANK_HIT] reused=${ordered.length} preferred_board=${preferred.length}`);
