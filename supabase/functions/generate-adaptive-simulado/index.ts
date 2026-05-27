@@ -102,7 +102,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       if (matchedTopics.length > 0) {
         const { data: bankQs, error: bankErr } = await supabaseAdmin
           .from("real_exam_questions")
-          .select("id, statement, options, correct_index, explanation, topic, difficulty, board")
+          .select("id, statement, options, correct_index, explanation, topic, difficulty, board, answer_source, tags")
           .in("topic", matchedTopics)
           .eq("is_active", true)
           .limit(targetCount * 4);
