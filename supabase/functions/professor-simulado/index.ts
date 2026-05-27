@@ -325,31 +325,25 @@ serve(async (req) => {
       case "get_students": {
         const { faculdades, periodos, query, limit = 25, offset = 0 } = params;
 
-        // Escopo: admin vê tudo; professor padrão restringe à própria faculdade
-        // quando nenhum filtro de faculdade for enviado.
-        const effectiveFaculdades = (Array.isArray(faculdades) && faculdades.length > 0)
-          ? faculdades
-          : (isAdmin ? [] : (professorFaculdade ? [professorFaculdade] : []));
+        const effectiveFaculdades = scopedFaculdadeFilters(faculdades, professorFaculdade, isAdmin);
+        const pInts = normalizePeriodArray(periodos);
 
         let q = sb
           .from("profiles")
-          .select("user_id, display_name, email, faculdade, periodo, status, user_type", { count: "exact" })
-          .in("user_type", ["student", "estudante", "medico"]);
+          .select("id, user_id, display_name, email, faculdade, periodo, status, user_type", { count: "exact" })
+          .eq("status", "active")
+          .in("user_type", STUDENT_USER_TYPES);
 
         if (effectiveFaculdades.length > 0) {
           q = q.in("faculdade", effectiveFaculdades);
         }
 
-        // periodo é INTEGER no banco — converter strings antes do .in()
-        if (Array.isArray(periodos) && periodos.length > 0) {
-          const pInts = periodos
-            .map((p: any) => parseInt(p, 10))
-            .filter((p: number) => !isNaN(p));
-          if (pInts.length > 0) q = q.in("periodo", pInts);
+        if (pInts.length > 0) {
+          q = q.in("periodo", pInts);
         }
 
-        if (query && String(query).trim().length > 0) {
-          const safe = String(query).replace(/[,()]/g, " ").trim();
+        const safe = sanitizeStudentSearch(query);
+        if (safe.length > 0) {
           q = q.or(`display_name.ilike.%${safe}%,email.ilike.%${safe}%`);
         }
 
@@ -364,14 +358,15 @@ serve(async (req) => {
         const { query, limit = 25, offset = 0 } = params;
         if (!query || query.length < 3) return ok({ students: [], total: 0 });
 
-        const safe = String(query).replace(/[,()]/g, " ").trim();
+        const safe = sanitizeStudentSearch(query);
+        if (safe.length < 3) return ok({ students: [], total: 0 });
         let q = sb
           .from("profiles")
-          .select("user_id, display_name, email, faculdade, periodo, status, user_type", { count: "exact" })
-          .in("user_type", ["student", "estudante", "medico"])
+          .select("id, user_id, display_name, email, faculdade, periodo, status, user_type", { count: "exact" })
+          .eq("status", "active")
+          .in("user_type", STUDENT_USER_TYPES)
           .or(`display_name.ilike.%${safe}%,email.ilike.%${safe}%`);
 
-        // Aplica mesmo escopo de faculdade para professor não-admin
         if (!isAdmin && professorFaculdade) {
           q = q.eq("faculdade", professorFaculdade);
         }
