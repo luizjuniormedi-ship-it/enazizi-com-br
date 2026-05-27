@@ -8,11 +8,15 @@
  * Reusa useDashboardData (sem nova query). Estimativa de minutos restantes
  * deriva de subjectHours (média por task pendente).
  */
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target, ArrowRight, Plus, Clock } from "lucide-react";
+import { Target, ArrowRight, Plus, Clock, Loader2 } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function MissionCard() {
   const navigate = useNavigate();
