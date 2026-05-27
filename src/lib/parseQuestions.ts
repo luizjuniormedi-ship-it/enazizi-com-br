@@ -94,7 +94,7 @@ function parseBlock(block: string): ParsedQuestion | null {
     const firstOptIdx = block.search(/^\*{0,2}[a-dA-D][).]\*{0,2}\s*/im);
     let statement = block.slice(0, firstOptIdx).trim();
     statement = cleanStatement(statement);
-    const options = optionMatches.map((o) => o.replace(OPTION_CLEAN_RE, "").trim());
+    const options = optionMatches.map((o) => stripAnswerLeak(o.replace(OPTION_CLEAN_RE, "").trim()));
 
     const letterMatch = gabText.match(/([a-e])/i);
     const correctIndex = letterMatch ? letterMatch[1].toLowerCase().charCodeAt(0) - 97 : 0;
@@ -106,11 +106,22 @@ function parseBlock(block: string): ParsedQuestion | null {
   return null;
 }
 
-function cleanStatement(text: string): string {
+function stripAnswerLeak(text: string): string {
   return text
+    .replace(/\s*[\[(]\s*(?:resposta\s+)?(?:correta|correto|gabarito|verdadeira|certa)\s*[\])]\s*/gi, "")
+    .replace(/\s*[✓✔☑]\s*/g, "")
+    .replace(/\s*[—\-–]\s*\*{0,2}(?:resposta\s+)?correta\*{0,2}\s*$/gi, "")
+    .replace(/\*{2,}/g, "")
+    .trim();
+}
+
+function cleanStatement(text: string): string {
+  return stripAnswerLeak(text
     .replace(/\*{0,2}Questão\s*\d*\s*:?\s*\*{0,2}\s*/gi, "")
     .replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*\[[^\]]*\]\s*/gi, "")
     .replace(/\*{0,2}Tópico\s*:?\s*\*{0,2}\s*[^\n(]{1,80}(?=\s)/i, "")
     .replace(/^\s*\([^)]{0,30}\)\s*/i, "") // Remove orphan parenthetical at start
-    .trim();
+    .replace(/^\s*\*{0,2}(?:resposta\s+correta|gabarito)\s*:?\s*[a-eA-E]\s*\*{0,2}\s*$/gim, "")
+  ).trim();
 }
+
