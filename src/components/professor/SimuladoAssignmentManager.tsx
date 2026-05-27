@@ -576,18 +576,23 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               })}
             </div>
           )}
+          {selectedProfessorTurmaIds.length > 0 && <NominalStudentList />}
         </div>
       )}
 
       {assignmentMode === "all" && (
-        <div className="py-16 text-center border-2 border-dashed border-primary/20 bg-primary/5 rounded-3xl flex flex-col items-center animate-in fade-in slide-in-from-top-2">
-          <Globe className="h-10 w-10 text-primary mb-4" />
-          <p className="text-sm font-black uppercase tracking-widest">Visibilidade Global</p>
-          <p className="text-[11px] font-medium opacity-60 mt-1 max-w-[280px]">Este simulado ficará disponível para todos os alunos ativos da plataforma.</p>
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+          <div className="py-8 text-center border-2 border-dashed border-primary/20 bg-primary/5 rounded-3xl flex flex-col items-center">
+            <Globe className="h-10 w-10 text-primary mb-3" />
+            <p className="text-sm font-black uppercase tracking-widest">Visibilidade Global</p>
+            <p className="text-[11px] font-medium opacity-60 mt-1 max-w-[320px]">Todos os alunos ativos abaixo receberão. Desmarque individualmente quem não deve participar.</p>
+          </div>
+          <NominalStudentList />
         </div>
       )}
     </div>
   );
 });
+
 
 export default SimuladoAssignmentManager;
