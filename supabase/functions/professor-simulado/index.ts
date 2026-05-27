@@ -1272,21 +1272,7 @@ REGRAS INVIOLÁVEIS:
         return ok({ data: { count: count || 0 } });
       }
 
-      case "search_students": {
-        const { query, limit = 25, offset = 0 } = params;
-        if (!query || query.length < 3) throw new Error("Digite pelo menos 3 caracteres para buscar");
-        const searchTerm = `%${query}%`;
-        const { data: found, count, error } = await sb.from("profiles")
-          .select("user_id, display_name, email, faculdade, periodo", { count: "exact" })
-          .eq("status", "active")
-          .in("user_type", ["estudante", "medico"])
-          .or(`display_name.ilike.${searchTerm},email.ilike.${searchTerm}`)
-          .order("display_name")
-          .range(offset, offset + limit - 1);
-        
-        if (error) throw error;
-        return ok({ students: found || [], total: count || 0 });
-      }
+      // (removido) case "search_students" duplicado — handler ativo está acima, junto do get_students.
 
       case "class_analytics": {
         const { faculdade, periodo } = params;
