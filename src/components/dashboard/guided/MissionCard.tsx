@@ -58,7 +58,7 @@ export default function MissionCard() {
       }
       toast({ title: "✅ Missão do dia gerada", description: "Vamos começar." });
       await queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-      navigate("/dashboard/missao-do-dia");
+      navigate("/dashboard/plano-dia");
     } catch (err: any) {
       toast({
         title: "Erro ao gerar missão",
