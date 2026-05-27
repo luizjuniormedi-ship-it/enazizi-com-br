@@ -10995,6 +10995,33 @@ export type Database = {
         }
         Relationships: []
       }
+      enrichment_control: {
+        Row: {
+          id: number
+          is_paused: boolean
+          last_batch_at: string | null
+          pause_reason: string | null
+          processed_today: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          is_paused?: boolean
+          last_batch_at?: string | null
+          pause_reason?: string | null
+          processed_today?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          is_paused?: boolean
+          last_batch_at?: string | null
+          pause_reason?: string | null
+          processed_today?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       error_bank: {
         Row: {
           categoria_erro: string | null
@@ -19665,6 +19692,7 @@ export type Database = {
           organization_id: string | null
           original_question_id: string | null
           permission_type: string | null
+          previous_version: Json | null
           quality_tier: string
           question_order: number | null
           realism_score: number | null
@@ -19737,6 +19765,7 @@ export type Database = {
           organization_id?: string | null
           original_question_id?: string | null
           permission_type?: string | null
+          previous_version?: Json | null
           quality_tier?: string
           question_order?: number | null
           realism_score?: number | null
@@ -19809,6 +19838,7 @@ export type Database = {
           organization_id?: string | null
           original_question_id?: string | null
           permission_type?: string | null
+          previous_version?: Json | null
           quality_tier?: string
           question_order?: number | null
           realism_score?: number | null
@@ -26990,6 +27020,22 @@ export type Database = {
         }
         Relationships: []
       }
+      v_enrichment_progress: {
+        Row: {
+          enriched_24h: number | null
+          expl_ok: number | null
+          gold_total: number | null
+          has_biblio: number | null
+          has_case: number | null
+          pct_biblio: number | null
+          pct_expl_ok: number | null
+          pct_stem_ok: number | null
+          queue_remaining: number | null
+          stem_ok: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
       v_enterprise_telemetry_summary: {
         Row: {
           event_count: number | null
@@ -27584,6 +27630,13 @@ export type Database = {
           success: boolean
         }
         Returns: boolean
+      }
+      mark_questions_for_upgrade: {
+        Args: never
+        Returns: {
+          marked_count: number
+          total_in_queue: number
+        }[]
       }
       mark_stale_cme_jobs_failed: { Args: never; Returns: undefined }
       match_rag_chunks: {
