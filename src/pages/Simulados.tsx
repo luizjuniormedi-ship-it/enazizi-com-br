@@ -228,6 +228,7 @@ const Simulados = () => {
   const startTimeRef = useRef<Date>();
   const elapsedSecondsRef = useRef<number>(0);
   const configRef = useRef<any>(null);
+  const simuladoSessionIdRef = useRef<string | null>(null);
   const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
   const triParamsRef = useRef<TRIParams[]>([]);
   
