@@ -388,6 +388,7 @@ const App = () => (
                 <Route path="load-monitor" element={<LoadMonitor />} />
                 <Route path="memory-health" element={<MemoryHealth />} />
                 <Route path="memory-hallucinations" element={<MemoryHallucinations />} />
+                <Route path="enriquecimento" element={<EnrichmentProgress />} />
 
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
