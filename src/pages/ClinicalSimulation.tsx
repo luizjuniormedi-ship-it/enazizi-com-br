@@ -258,6 +258,9 @@ const ClinicalSimulation = () => {
     if (data.abcdeChecklist) setAbcdeChecklist(data.abcdeChecklist);
     if (data.medicalRecord) setMedicalRecord(data.medicalRecord);
     if (data.categoryScores) setCategoryScores(data.categoryScores);
+    // Wave 1.2 — restore: derruba qualquer timer prévio e re-arma com o snapshot.
+    countdownTimer.stop("RESTORE");
+    if (typeof data.countdown === "number" && data.countdown > 0) countdownTimer.start(data.countdown);
     setPhase("active", "RESTORE");
     clearPending();
   }, [clearPending]);
@@ -414,7 +417,7 @@ const ClinicalSimulation = () => {
     lastActionTimeRef.current = Date.now();
     deteriorationIntervalRef.current = setInterval(() => {
       const elapsed = (Date.now() - lastActionTimeRef.current) / 1000;
-      if (elapsed >= 60 && elapsed < 90) setInactivityWarning(true);
+      if (elapsed >= 60 && elapsed < 90) { setInactivityWarning(true); countdownTimer.logInactivityWarning(elapsed); }
       else if (elapsed < 60) setInactivityWarning(false);
       if (elapsed >= 90) {
         setInactivityWarning(false);
@@ -678,7 +681,7 @@ const ClinicalSimulation = () => {
   };
 
   const finishSimulation = useCallback(async () => {
-    setLoading(true); setPhase("finishing", "FINISH");
+    setLoading(true); countdownTimer.stop("FINISH"); setPhase("finishing", "FINISH");
     try {
       const res = await callAPI({ action: "finish", conversation_history: conversationHistory, ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}) });
       setFinalEval(res);
@@ -707,7 +710,7 @@ const ClinicalSimulation = () => {
       }
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-      setPhase("active", "FINISH_FAILED");
+      countdownTimer.stop("ERROR"); setPhase("active", "FINISH_FAILED");
     } finally {
       setLoading(false);
     }
@@ -715,7 +718,7 @@ const ClinicalSimulation = () => {
   }, [callAPI, conversationHistory, teacherCaseId, completePersistedSession, addXp, user, specialty, difficulty, refresh, toast]);
 
   const reset = useCallback(() => {
-    setPhase("lobby", "RESET");
+    countdownTimer.stop("RESET"); setPhase("lobby", "RESET");
     setMessages([]); setConversationHistory([]);
     setScore(50); setPrevScore(50); setTimeElapsed(0);
     setFinalEval(null); setVitals(null); setCountdown(0);
