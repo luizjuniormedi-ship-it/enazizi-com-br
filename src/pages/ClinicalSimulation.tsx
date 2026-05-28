@@ -674,11 +674,12 @@ const ClinicalSimulation = () => {
       setConversationHistory([...conversationHistory, { role: "user", content: "Solicito ajuda do preceptor" }, { role: "assistant", content: JSON.stringify(res) }]);
     } catch (e) {
       setIsTyping(false);
+      try { cs.track("plantao_error", csExtras({ where: "hint", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [loading, conversationHistory, callAPI, addToTimeline, toast]);
+  }, [loading, conversationHistory, callAPI, addToTimeline, toast, cs, csExtras]);
 
   const requestSpecialistOpinion = async () => {
     if (loading || !specialistArea.trim()) return;
