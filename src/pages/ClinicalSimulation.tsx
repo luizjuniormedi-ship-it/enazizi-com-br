@@ -233,10 +233,32 @@ const ClinicalSimulation = () => {
 
   useEffect(() => { registerAutoSave(getClinicalState); }, [getClinicalState, registerAutoSave]);
 
+  // Wave 1.3 — payload comum p/ telemetria clínica (fire-and-forget via cs.track).
+  const csExtras = useCallback((extra: Record<string, unknown> = {}) => ({
+    score,
+    time_elapsed: timeElapsed,
+    learner_mode: learnerMode,
+    real_mode: realisticMode,
+    patient_status: patientStatus,
+    teacher_case_id: teacherCaseId || null,
+    ...extra,
+  }), [score, timeElapsed, learnerMode, realisticMode, patientStatus, teacherCaseId]);
+
   // Telemetry: module opened (Fase A baseline)
   useEffect(() => {
     telemetry.track('plantao_opened', { teacher_case_id: teacherCaseId || null });
   }, []);
+
+  // Wave 1.3 — emite plantao_abandoned se o aluno fechar a aba durante phase=active.
+  useEffect(() => {
+    const onBeforeUnload = () => {
+      if (phase === "active") {
+        try { cs.track("plantao_abandoned", csExtras({ reason: "beforeunload" })); } catch {}
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [phase, cs, csExtras]);
 
   const restoreClinicalSession = useCallback((data: Record<string, any>) => {
     if (data.specialty) setSpecialty(data.specialty);
@@ -262,8 +284,9 @@ const ClinicalSimulation = () => {
     countdownTimer.stop("RESTORE");
     if (typeof data.countdown === "number" && data.countdown > 0) countdownTimer.start(data.countdown);
     setPhase("active", "RESTORE");
+    try { cs.track("plantao_restored", csExtras({ from: "persisted_session" })); } catch {}
     clearPending();
-  }, [clearPending]);
+  }, [clearPending, cs, csExtras]);
 
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clinical-simulation`;
@@ -376,6 +399,7 @@ const ClinicalSimulation = () => {
     setLoading(true); setIsTyping(true); setInactivityWarning(false);
 
     setMessages((prev) => [...prev, { role: "doctor", content: `⚠️ [Sistema] Paciente aguardou sem conduta — deterioração automática (nível ${level})`, timestamp: Date.now() }]);
+    try { cs.track("plantao_deterioration_triggered", csExtras({ level, reason: "inactivity" })); } catch {}
     try {
       const updatedHistory = [...conversationHistory, { role: "user", content: `[SISTEMA: O aluno ficou inativo por 90 segundos. Nível de deterioração: ${level}/3. Piore o paciente proporcionalmente.]` }];
       const res = await callAPI({ action: "deteriorate", deterioration_level: level, conversation_history: updatedHistory, triage_color: triageColor, patient_status: patientStatus });
@@ -504,6 +528,7 @@ const ClinicalSimulation = () => {
       setConversationHistory([{ role: "assistant", content: JSON.stringify(res) }]);
       setPhase("active", "START");
       addToTimeline("Caso iniciado", "🏥");
+      try { cs.track("plantao_started", csExtras({ setting: res.setting || null, triage_color: res.triage_color || null })); } catch {}
 
       if (user) {
         const origin = teacherCaseId ? "assigned" as SessionOrigin : paramOrigin;
@@ -511,6 +536,7 @@ const ClinicalSimulation = () => {
       }
       setTimeout(() => inputRef.current?.focus(), 300);
     } catch (e) {
+      try { cs.track("plantao_error", csExtras({ where: "start", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao iniciar", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -596,6 +622,10 @@ const ClinicalSimulation = () => {
           if (res.treatment_outcome === "improved") playSound("positive");
           if (res.treatment_outcome === "worsened") playSound("worsened");
         }
+        try {
+          if (res.treatment_outcome === "improved") cs.track("plantao_patient_improved", csExtras({ outcome: res.treatment_outcome }));
+          if (res.treatment_outcome === "worsened") cs.track("plantao_patient_worsened", csExtras({ outcome: res.treatment_outcome }));
+        } catch {}
         addToTimeline(`💊 Tratamento: ${res.treatment_outcome === "improved" ? "eficaz" : res.treatment_outcome === "worsened" ? "inadequado" : "parcial"}`, "💊");
       }
 
@@ -632,6 +662,7 @@ const ClinicalSimulation = () => {
     if (loading) return;
     setLoading(true); setIsTyping(true);
     addToTimeline("Ajuda preceptor", "🆘");
+    try { cs.track("plantao_hint_used", csExtras()); } catch {}
     setMessages((prev) => [...prev, { role: "doctor", content: "🆘 Solicitando ajuda do preceptor...", timestamp: Date.now() }]);
     try {
       const res = await callAPI({ action: "hint", conversation_history: conversationHistory });
@@ -643,17 +674,19 @@ const ClinicalSimulation = () => {
       setConversationHistory([...conversationHistory, { role: "user", content: "Solicito ajuda do preceptor" }, { role: "assistant", content: JSON.stringify(res) }]);
     } catch (e) {
       setIsTyping(false);
+      try { cs.track("plantao_error", csExtras({ where: "hint", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [loading, conversationHistory, callAPI, addToTimeline, toast]);
+  }, [loading, conversationHistory, callAPI, addToTimeline, toast, cs, csExtras]);
 
   const requestSpecialistOpinion = async () => {
     if (loading || !specialistArea.trim()) return;
     setSpecialistDialogOpen(false);
     setLoading(true); setIsTyping(true);
     addToTimeline(`Parecer: ${specialistArea}`, "📋");
+    try { cs.track("plantao_specialist_consulted", csExtras({ specialist_area: specialistArea })); } catch {}
     setMessages((prev) => [...prev, { role: "doctor", content: `📋 Solicitando parecer de ${specialistArea}...`, timestamp: Date.now() }]);
     try {
       const res = await callAPI({ action: "specialist", specialist_area: specialistArea, conversation_history: conversationHistory });
@@ -674,6 +707,7 @@ const ClinicalSimulation = () => {
       setSpecialistArea("");
     } catch (e) {
       setIsTyping(false);
+      try { cs.track("plantao_error", csExtras({ where: "specialist", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -689,6 +723,7 @@ const ClinicalSimulation = () => {
       await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
       telemetry.track('plantao_completed', { specialty: specialty || null, difficulty, final_score: res?.final_score ?? null });
+      try { cs.track("plantao_completed", csExtras({ final_score: res?.final_score ?? null, grade: res?.grade ?? null })); } catch {}
       if (user?.id) {
         await completeStudyAction({
           userId: user.id, taskType: "clinical",
@@ -709,6 +744,7 @@ const ClinicalSimulation = () => {
         });
       }
     } catch (e) {
+      try { cs.track("plantao_error", csExtras({ where: "finish", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
       countdownTimer.stop("ERROR"); setPhase("active", "FINISH_FAILED");
     } finally {
@@ -786,7 +822,10 @@ const ClinicalSimulation = () => {
   const handleOpenMobileVitals = useCallback(() => setMobileVitalsOpen(true), []);
   const handleOpenPrescription = useCallback(() => setPrescriptionDialogOpen(true), []);
   const handleOpenSpecialist = useCallback(() => setSpecialistDialogOpen(true), []);
-  const handlePrescriptionSubmit = useCallback((text: string) => sendMessage(text, "Prescrição"), [sendMessage]);
+  const handlePrescriptionSubmit = useCallback((text: string) => {
+    try { cs.track("plantao_prescription_submitted", csExtras({ length: text?.length || 0 })); } catch {}
+    return sendMessage(text, "Prescrição");
+  }, [sendMessage, cs, csExtras]);
 
   // Memoized derived values for stable Active region
   const recentTimeline = useMemo(() => actionTimeline.slice(-8), [actionTimeline]);
