@@ -248,8 +248,9 @@ FORMATO JSON:
 
     return new Response(JSON.stringify({
       success: true,
-      count: rows.length,
-      message: `${rows.length} flashcards gerados com revisão espaçada ativada`,
+      count: insertedFlashcards.length,
+      rejected_count: rejected.length,
+      message: `${insertedFlashcards.length} flashcards gerados com FSRS ativo (gov=${FLASHCARD_GOV_VERSION})`,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
