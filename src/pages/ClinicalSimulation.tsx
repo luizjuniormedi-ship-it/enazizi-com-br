@@ -662,6 +662,7 @@ const ClinicalSimulation = () => {
     if (loading) return;
     setLoading(true); setIsTyping(true);
     addToTimeline("Ajuda preceptor", "🆘");
+    try { cs.track("plantao_hint_used", csExtras()); } catch {}
     setMessages((prev) => [...prev, { role: "doctor", content: "🆘 Solicitando ajuda do preceptor...", timestamp: Date.now() }]);
     try {
       const res = await callAPI({ action: "hint", conversation_history: conversationHistory });
