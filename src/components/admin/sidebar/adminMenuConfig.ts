@@ -22,7 +22,8 @@ import {
   Image as ImageIcon, MessageSquare, Bell, MessageCircleHeart, Bot,
   Settings2, Flag, KeyRound, Plug, Cpu,
   Workflow, Server, Activity, Wrench, Network, BrainCircuit,
-  ClipboardList, Sparkles, DollarSign, ShieldCheck, Database
+  ClipboardList, Sparkles, DollarSign, ShieldCheck, Database,
+  GitBranch,
 } from "lucide-react";
 import type { AdminScope } from "@/hooks/useAdminScope";
 
