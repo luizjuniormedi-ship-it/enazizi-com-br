@@ -707,6 +707,7 @@ const ClinicalSimulation = () => {
       setSpecialistArea("");
     } catch (e) {
       setIsTyping(false);
+      try { cs.track("plantao_error", csExtras({ where: "specialist", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setLoading(false);
