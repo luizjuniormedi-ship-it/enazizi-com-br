@@ -233,10 +233,32 @@ const ClinicalSimulation = () => {
 
   useEffect(() => { registerAutoSave(getClinicalState); }, [getClinicalState, registerAutoSave]);
 
+  // Wave 1.3 — payload comum p/ telemetria clínica (fire-and-forget via cs.track).
+  const csExtras = useCallback((extra: Record<string, unknown> = {}) => ({
+    score,
+    time_elapsed: timeElapsed,
+    learner_mode: learnerMode,
+    real_mode: realisticMode,
+    patient_status: patientStatus,
+    teacher_case_id: teacherCaseId || null,
+    ...extra,
+  }), [score, timeElapsed, learnerMode, realisticMode, patientStatus, teacherCaseId]);
+
   // Telemetry: module opened (Fase A baseline)
   useEffect(() => {
     telemetry.track('plantao_opened', { teacher_case_id: teacherCaseId || null });
   }, []);
+
+  // Wave 1.3 — emite plantao_abandoned se o aluno fechar a aba durante phase=active.
+  useEffect(() => {
+    const onBeforeUnload = () => {
+      if (phase === "active") {
+        try { cs.track("plantao_abandoned", csExtras({ reason: "beforeunload" })); } catch {}
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [phase, cs, csExtras]);
 
   const restoreClinicalSession = useCallback((data: Record<string, any>) => {
     if (data.specialty) setSpecialty(data.specialty);
