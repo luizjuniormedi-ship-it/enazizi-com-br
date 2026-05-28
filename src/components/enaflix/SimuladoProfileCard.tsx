@@ -11,9 +11,11 @@ interface Props {
   image?: string;
   badge?: string;
   onClick: () => void;
+  dataTestId?: string;
+  "data-testid"?: string;
 }
 
-export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, difficulty, image, badge, onClick }: Props) {
+export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, difficulty, image, badge, onClick, dataTestId, "data-testid": dataTestIdAttr }: Props) {
   const diffLabels = {
     facil: "Iniciante",
     intermediario: "Intermediário",
@@ -26,6 +28,16 @@ export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, diffi
       whileHover={{ y: -5, scale: 1.02 }}
       className="group relative flex-shrink-0 w-[300px] h-[200px] cursor-pointer overflow-hidden rounded-2xl bg-[#1a1a1e] border border-white/5 transition-all duration-500"
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      data-testid={dataTestId || dataTestIdAttr}
+      aria-label={`Gerar simulado: ${title}`}
     >
       {/* Thumbnail */}
       {image ? (

@@ -130,6 +130,7 @@ async function generateBatch(
   
   try {
     const { data, error } = await supabase.functions.invoke("question-generator", {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       body: {
         count,
         difficulty,
@@ -173,6 +174,7 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
     .map((q: any) => ({
       id: q.id,
+      bankId: q.id,
       statement: String(q.statement || ""),
       options: Array.isArray(q.options) ? q.options.map(String) : [],
       correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
@@ -229,6 +231,7 @@ const Simulados = () => {
   const elapsedSecondsRef = useRef<number>(0);
   const configRef = useRef<any>(null);
   const simuladoSessionIdRef = useRef<string | null>(null);
+  const e2eCorrelationIdRef = useRef<string | null>(null);
   const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
   const triParamsRef = useRef<TRIParams[]>([]);
   
@@ -351,6 +354,9 @@ const Simulados = () => {
       forceStart?: boolean; // New flag to bypass config step
     }) => {
     console.log("[Simulados] iniciar clicado", config);
+    const correlationId = crypto.randomUUID();
+    e2eCorrelationIdRef.current = correlationId;
+    console.log("[E2E_SIMULADO_START]", { correlation_id: correlationId, config });
     
     // Safety check: ensure topics are loaded from distribution if missing
     const hasManualTopics = Array.isArray(config.topics) && config.topics.length > 0;
@@ -420,6 +426,7 @@ const Simulados = () => {
     setShowConfigStep(false); // Ensure config step is hidden when starting
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       if (config.mode === "adaptativo") {
         setLoadingProgress("Analisando seu desempenho...");
         setLoadingPercent(20);
@@ -435,6 +442,7 @@ const Simulados = () => {
           const { data, error: fnError } = await supabase.functions.invoke(
             "generate-adaptive-simulado",
             {
+              headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
               body: {
                 target_question_count: config.count || 20,
                 performance: perf,
@@ -452,6 +460,7 @@ const Simulados = () => {
           if (data?.session_id) {
             simuladoSessionIdRef.current = data.session_id;
             console.log(`[SIMULADO_SESSION_CAPTURED] adaptive=${data.session_id}`);
+            console.log("[E2E_SIMULADO_SESSION_CREATED]", { correlation_id: correlationId, session_id: data.session_id, source: "adaptive" });
           }
 
           setLoadingPercent(90);
@@ -475,6 +484,7 @@ const Simulados = () => {
 
           setLoadingPercent(100);
           setTimeout(() => {
+            console.log("[E2E_SIMULADO_QUESTIONS_RENDERED]", { correlation_id: correlationId, session_id: simuladoSessionIdRef.current, questions: adaptiveQs.length });
             startExamWithQuestions(adaptiveQs, config);
           }, 500);
           return;
@@ -482,7 +492,6 @@ const Simulados = () => {
       }
 
       // Fluxo Normal com JOB e BATCHING
-      const { data: { session } } = await supabase.auth.getSession();
       const requestedTotal = config.count || 10;
       setTargetCount(requestedTotal);
       cancelGenerationRef.current = false;
@@ -735,31 +744,12 @@ const Simulados = () => {
       const correctCount = Object.values(answers).filter((ans, idx) => ans === questions[idx]?.correct).length;
       const finalScore = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
 
-      // P0 FIX: finalize the real simulado_sessions row (was stuck on 'active')
+          console.log("[E2E_SIMULADO_FINALIZE_START]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, user_id: user.id, total_questions: questions.length });
+
+          // Create exam_sessions row BEFORE analytics so the FK from analytics is satisfied.
       const sessionId = simuladoSessionIdRef.current;
       if (sessionId) {
         try {
-          const { error: updErr } = await supabase
-            .from("simulado_sessions")
-            .update({
-              status: "finished",
-              finished_at: new Date().toISOString(),
-              score: finalScore,
-              correct_count: correctCount,
-              total_questions: questions.length,
-              metadata: { duration_seconds: durationSeconds, elapsed_minutes: elapsed } as any,
-            })
-            .eq("id", sessionId);
-          if (updErr) {
-            console.error("[SIMULADO_SESSION_UPDATE_FAIL]", updErr);
-          } else {
-            console.log("[SIMULADO_SESSION_UPDATE_OK]", sessionId);
-          }
-
-          // P0 FIX (OPÇÃO A): create exam_sessions row FIRST with the SAME id as simulado_sessions
-          // so the FK simulado_question_analytics.simulado_session_id -> exam_sessions(id) is
-          // satisfied and the fan-out triggers actually fire (practice_attempts, error_bank,
-          // fsrs_cards, user_topic_profiles, cognitive_state_snapshots, TRI).
           try {
             const { error: examErr } = await supabase.from("exam_sessions").insert({
               id: sessionId,
@@ -797,6 +787,7 @@ const Simulados = () => {
                 simulado_session_id: sessionId,
                 user_id: user.id,
                 question_id: (q as any).id ?? null,
+                bank_question_id: (q as any).bankId ?? ((q as any).source === "bank" || (q as any)._source === "bank" ? (q as any).id : null),
                 question_index: idx,
                 selected_answer: answers[idx] ?? null,
                 correct_answer: q.correct,
@@ -819,9 +810,28 @@ const Simulados = () => {
               });
             } else {
               console.log("[SIMULADO_ANALYTICS_INSERT_OK]", { sessionId, rows: rows.length });
+              console.log("[E2E_SIMULADO_ANALYTICS_OK]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, rows: rows.length });
             }
           } catch (anaCatch: any) {
             console.error("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaCatch?.message || anaCatch);
+          }
+
+          const { error: updErr } = await supabase
+            .from("simulado_sessions")
+            .update({
+              status: "finished",
+              finished_at: new Date().toISOString(),
+              score: finalScore,
+              correct_count: correctCount,
+              total_questions: questions.length,
+              metadata: { duration_seconds: durationSeconds, elapsed_minutes: elapsed, correlation_id: e2eCorrelationIdRef.current } as any,
+            })
+            .eq("id", sessionId);
+          if (updErr) {
+            console.error("[E2E_SIMULADO_FAIL]", { stage: "session_finish", code: (updErr as any).code, details: (updErr as any).details, hint: (updErr as any).hint, session_id: sessionId, correlation_id: e2eCorrelationIdRef.current });
+          } else {
+            console.log("[E2E_SIMULADO_FANOUT_OK]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId });
+            console.log("[E2E_SIMULADO_FINISHED]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, score: finalScore });
           }
         } catch (e) {
           console.error("[SIMULADO_SESSION_UPDATE_FAIL]", e);
