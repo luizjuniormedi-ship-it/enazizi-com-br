@@ -1590,6 +1590,10 @@ export default function ClassificationRunner() {
 
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm">
+                <div className="rounded border-2 border-destructive bg-destructive/10 p-2 text-center">
+                  <div className="text-lg font-black text-destructive">dry_run = false</div>
+                  <div className="text-xs">Esta ação ESCREVE no banco</div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <span className="text-muted-foreground">Tabela:</span>
                   <span className="font-mono">{realParams?.table_source}</span>
@@ -1602,6 +1606,7 @@ export default function ClassificationRunner() {
                       : "—"}
                   </span>
                 </div>
+
                 {lastDryRunVerdict && (
                   <div className="grid grid-cols-4 gap-2 p-2 rounded border text-center text-xs">
                     <div>
