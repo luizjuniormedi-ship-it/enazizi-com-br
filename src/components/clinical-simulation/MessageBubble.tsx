@@ -86,6 +86,19 @@ interface MessageBubbleProps {
 
 const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
   const TypeIcon = getTypeIcon(msg.type);
+  return (
+    <div className={`flex gap-2 min-w-0 ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}>
+      {msg.role === "simulation" && (
+        <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-1">
+          {msg.type === "preceptor_hint" ? (
+            <Brain className="h-3.5 w-3.5 text-amber-500" />
+          ) : msg.type === "specialist_opinion" ? (
+            <Users className="h-3.5 w-3.5 text-blue-500" />
+          ) : (
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+        </div>
+      )}
       <div
         className={`max-w-[78%] min-w-0 overflow-x-hidden rounded-2xl px-4 py-3 text-sm ${
           msg.role === "doctor"
@@ -98,19 +111,6 @@ const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
         }`}
       >
 
-        </div>
-      )}
-      <div
-        className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm ${
-          msg.role === "doctor"
-            ? "bg-primary text-primary-foreground rounded-br-md"
-            : msg.type === "preceptor_hint"
-            ? "bg-amber-500/10 border-2 border-amber-500/30 rounded-bl-md"
-            : msg.type === "specialist_opinion"
-            ? "bg-blue-500/10 border-2 border-blue-500/30 rounded-bl-md"
-            : "bg-muted/50 border border-border/50 rounded-bl-md"
-        }`}
-      >
         {msg.role === "simulation" && msg.type && (
           <div className="flex items-center gap-1.5 mb-1.5">
             <TypeIcon className="h-3.5 w-3.5 opacity-60" />
