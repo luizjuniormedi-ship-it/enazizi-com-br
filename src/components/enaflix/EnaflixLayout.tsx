@@ -21,7 +21,7 @@ export function EnaflixLayout({ children }: Props) {
   const { isProfessor } = useProfessorCheck();
   
   // Immersive routes: Tutor IA and sessions must occupy full screen
-  const immersiveRoutes = ["/dashboard/mentor", "/dashboard/tutor", "/mentor", "/tutor", "/study/tutor", "/dashboard/sessao-estudo", "/dashboard/clinical-simulation", "/dashboard/anamnese"];
+  const immersiveRoutes = ["/dashboard/mentor", "/dashboard/tutor", "/mentor", "/tutor", "/study/tutor", "/dashboard/sessao-estudo", "/dashboard/clinical-simulation", "/dashboard/simulacao-clinica", "/dashboard/anamnese"];
   const isImmersive = immersiveRoutes.some((r) => location.pathname === r || location.pathname.startsWith(r + "/"));
 
   // Sidebar for Admin/Professor or in standard student view
