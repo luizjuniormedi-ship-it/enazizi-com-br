@@ -111,12 +111,13 @@ const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
         }`}
       >
 
-        {msg.role === "simulation" && msg.type && (
+        {msg.role === "simulation" && typeof msg.type === "string" && msg.type && (
           <div className="flex items-center gap-1.5 mb-1.5">
             <TypeIcon className="h-3.5 w-3.5 opacity-60" />
             <span className="text-xs opacity-60 capitalize">
-              {msg.type === "preceptor_hint" ? "Preceptor" : msg.type === "specialist_opinion" ? "Parecer Especialista" : msg.type?.replace("_", " ")}
+              {msg.type === "preceptor_hint" ? "Preceptor" : msg.type === "specialist_opinion" ? "Parecer Especialista" : msg.type.replace("_", " ")}
             </span>
+
             {(() => {
               // Defensive coercion: edge function may return scoreDelta as an object
               // shaped like { anamnesis, physical_exam, complementary_exams, management }.
