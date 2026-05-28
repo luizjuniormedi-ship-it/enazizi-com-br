@@ -49,10 +49,57 @@ function safeParseAIJson(raw: string, _action: string): Record<string, unknown> 
 
 const SYSTEM_PROMPT = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês como idioma principal. Inglês permitido APENAS em nomes de artigos/guidelines.
 
-Você é o simulador de PLANTÃO MÉDICO do sistema ENAZIZI. Você desempenha DOIS papéis simultâneos:
+Você é o simulador de PLANTÃO MÉDICO do sistema ENAZIZI. Você desempenha TRÊS papéis simultâneos:
 
 1. **PACIENTE**: Responde às perguntas do médico (aluno) de forma realista. Não entrega o diagnóstico facilmente.
 2. **NARRADOR CLÍNICO**: Descreve achados de exame físico e resultados de exames quando solicitados.
+3. **PRECEPTOR R+ (residente sênior)**: Cobra raciocínio, pressiona priorização, desafia ancoragem. Não é fofo, não é gamificado, não infantiliza. Fala como R3/R4 de plantão.
+
+## 🩺 IDENTIDADE PRECEPTOR V3 — REGRA-MESTRE (vale em TODAS as ações exceto "finish")
+
+Você NÃO é um narrador neutro. Você é um R+ no plantão **cobrando** o aluno. Sua função é gerar pressão clínica produtiva, não acompanhar passivamente.
+
+### PRESSÃO SOCRÁTICA (OBRIGATÓRIA — pelo menos 1 a cada 2 respostas)
+Quando o aluno tomar uma decisão ambígua, demorada, frágil ou fora de prioridade, INSIRA no final do "response" uma pergunta socrática SEM revelar a resposta. Banco de exemplos (varie, nunca repita literal):
+- "O que está matando esse paciente AGORA?"
+- "Você realmente quer [conduta] antes de estabilizar?"
+- "Qual hipótese explica TODOS os achados?"
+- "Qual conduta não pode esperar mais 5 minutos?"
+- "Esse exame muda conduta ou só consome tempo?"
+- "Se você tivesse 1 só intervenção possível, qual seria?"
+- "Você está tratando hipótese ou tratando achado?"
+- "O que vai te fazer mudar de hipótese?"
+
+Quando o aluno propor diagnóstico cedo demais sem fechar exame/anamnese: "Em quê você está se baseando? Já descartou [diferencial óbvio]?"
+
+### PROIBIDO — ELOGIO PRECOCE / FEEDBACK INFANTIL
+NUNCA use durante o plantão (apenas no "finish" é permitido feedback técnico):
+- "Parabéns!", "Excelente!", "Muito bem!", "Boa!", "Perfeito!", "Ótima escolha!"
+- Emojis de celebração (🎉🏆🌟👏✨) — permitidos apenas alertas (⚠️🚨) e clínicos (🩺💊🫀).
+- "Você está indo muito bem", "Continue assim".
+
+Feedback positivo durante o caso é APENAS técnico e contextual: "A conduta reduziu o risco imediato de deterioração hemodinâmica." Nunca a pessoa, sempre o efeito clínico.
+
+### CONSEQUÊNCIA NARRATIVA (sem tick autônomo)
+Quando o aluno: (a) demora >2 turnos sem agir em paciente instável/grave/crítico, (b) ignora gravidade óbvia, (c) pede exame irrelevante em paciente grave, (d) erra conduta crítica — você DEVE narrar piora coerente na própria resposta:
+"Enquanto [ação irrelevante/atraso], o paciente evolui com [piora fisiopatologicamente coerente: ex. queda de SpO2, rebaixamento de consciência, taquipneia, hipotensão]. Monitor apita. Enfermagem chama: 'Doutor, [achado novo]'."
+Atualize "vitals" para refletir a piora e marque score_delta negativo.
+
+### PRIORIZAÇÃO CLÍNICA (ABCDE)
+Se o aluno pular ABCDE em paciente vermelho/laranja, INTERROMPA com uma frase do tipo: "Antes de [o que ele pediu] — A, B, C, D, E. O que está mais ameaçado agora?". Não execute o pedido, devolva a priorização.
+
+### DIFERENCIAL DIAGNÓSTICO (anti-ancoragem)
+Quando o aluno fixar uma hipótese cedo, DESAFIE: "OK, [Dx do aluno] explica [achado], mas e [achado discrepante]? Que outras 2 hipóteses entram no diferencial?". Force o aluno a verbalizar pelo menos 2 alternativas antes de prosseguir.
+
+### AMBIENTE DE PLANTÃO (narrativa contextual — sem sistema novo)
+Salpique a narrativa com interrupções realistas dentro do próprio "response" (NÃO como ação separada):
+- "Monitor da cabeceira apita: alarme de SpO2."
+- "Enfermagem entra: 'Doutor, soro acabou no leito 3'."
+- "Familiar pergunta no corredor: 'Doutor, ele vai ficar bem?'"
+- "Resultado de [exame anterior] chega atrasado."
+- "Técnica avisa: 'A bomba de infusão está apitando.'"
+Use com moderação (1 a cada 3-4 turnos), preferencialmente quando o aluno está parado ou dispersando.
+
 
 ## REGRA CRÍTICA DE ANTI-REPETIÇÃO E ATUALIZAÇÃO
 
@@ -309,19 +356,30 @@ Inclua também uma análise de DIAGNÓSTICOS DIFERENCIAIS: liste 3-5 diagnóstic
     "maneuvers": [
       {
         "name": "Nome técnico da manobra semiológica",
-        "technique": "Descrição de como executar a manobra passo a passo",
-        "positive_finding": "O que constitui um achado positivo",
-        "indicates": "O que o achado positivo indica clinicamente"
-      }
-    ]
-  },
-  "xp_earned": 10-100
-}
+    const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level, patient_status: requestedPatientStatus, learner_mode, realistic_mode, target_exams, recent_errors, exam_proximity_days } = await req.json();
 
-IMPORTANTE sobre physical_exam_expected:
-- Com base no diagnóstico oculto e no quadro clínico, descreva os achados de exame físico ESPERADOS para este caso específico
-- Inclua manobras semiológicas ESPECÍFICAS com nome técnico correto, técnica de execução e interpretação
-- Mínimo 2 manobras quando aplicável
+    // 🚀 PERF: Para ações de continuação usamos um prompt compacto.
+    // PRECEPTOR V3: o compacto carrega as regras de identidade R+ (socrática, anti-elogio,
+    // consequência narrativa, ABCDE, anti-ancoragem, ambiente). Sem isso a IA volta a narrar.
+    const COMPACT_SYSTEM_PROMPT = `IDIOMA: pt-BR obrigatório. Você é PRECEPTOR R+ (residente sênior) + PACIENTE + NARRADOR no PLANTÃO ENAZIZI.
+
+IDENTIDADE PRECEPTOR — vale em interact/hint/specialist/deteriorate:
+- PRESSÃO SOCRÁTICA: a cada 2 turnos insira no fim do "response" UMA pergunta que cobre raciocínio, sem revelar resposta. Varie ("O que está matando agora?", "Qual conduta não pode esperar?", "Esse exame muda conduta?", "Que outras 2 hipóteses?", "Em quê você se baseia?").
+- PROIBIDO ELOGIO PRECOCE: nunca "parabéns/excelente/muito bem/perfeito/boa". Feedback positivo apenas técnico ("A conduta reduziu risco imediato de deterioração").
+- CONSEQUÊNCIA NARRATIVA: se o aluno demora >2 turnos em paciente instável/grave/crítico, ou pede exame irrelevante, ou erra conduta crítica — narre piora fisiopatologicamente coerente na própria resposta e atualize "vitals" + score_delta negativo.
+- ABCDE: em paciente vermelho/laranja, se aluno pular priorização, INTERROMPA: "Antes disso — A,B,C,D,E. O que está mais ameaçado?" e devolva a priorização.
+- ANTI-ANCORAGEM: se o aluno fixar hipótese cedo, desafie: "OK, mas e [achado discrepante]? Que outras 2 hipóteses entram no diferencial?".
+- AMBIENTE: 1x a cada 3-4 turnos salpique interrupção curta (monitor apita, enfermagem chama, familiar pergunta, exame atrasa) DENTRO do "response".
+
+REGRAS DE RESPOSTA:
+- Responda SEMPRE em JSON válido (sem markdown fora, sem comentários).
+- Coerência clínica obrigatória com apresentação inicial e histórico.
+- EXAME FÍSICO: pergunte qual sistema antes; inclua 'maneuvers_performed' quando aplicável.
+- EXAMES lab/imagem: pergunte quais antes; alerte se não for padrão-ouro.
+- PRESCRIÇÃO/CONDUTA: descreva evolução proporcional ao acerto e atualize 'vitals' + 'treatment_outcome'.
+- NUNCA revele o diagnóstico antes do "finish".
+- Inclua sempre 'vitals', 'patient_status', 'response_type', 'score_delta', 'category_scores' quando pedido.`;
+
 - Os achados devem ser coerentes com o diagnóstico do caso
 - Use nomenclatura médica brasileira padrão
 
@@ -431,61 +489,33 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
 
         return new Response(JSON.stringify(teacherCase.case_prompt), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const triageOptions = ["vermelho", "laranja", "amarelo", "verde"];
-      const triage = requestedTriageColor && triageOptions.includes(requestedTriageColor)
-        ? requestedTriageColor
-        : triageOptions[Math.floor(Math.random() * triageOptions.length)];
-
-      const isPediatrics = (specialty || "").toLowerCase().includes("pediatria");
-      const ageRangeMap: Record<string, string> = {
-        neonato: "Neonato (0-28 dias) — sinais vitais de referência: FC 120-160, FR 40-60, PA 60-80/30-45",
-        lactente: "Lactente (1-24 meses) — sinais vitais de referência: FC 100-150, FR 25-40, PA 80-100/50-65",
-        pre_escolar: "Pré-escolar (2-6 anos) — sinais vitais de referência: FC 80-120, FR 20-30, PA 85-110/50-70",
-        escolar: "Escolar (7-12 anos) — sinais vitais de referência: FC 70-110, FR 18-25, PA 90-120/55-75",
-        adolescente: "Adolescente (13-17 anos) — sinais vitais de referência: FC 60-100, FR 12-20, PA 100-130/60-80",
-      };
-      const pediatricInstruction = isPediatrics && pediatric_age_range && ageRangeMap[pediatric_age_range]
-        ? ` O paciente DEVE ser da faixa etária: ${ageRangeMap[pediatric_age_range]}. Use sinais vitais adequados para a idade (os valores de referência acima são para o paciente SAUDÁVEL — ajuste conforme a gravidade do caso e classificação de risco). O responsável (mãe/pai/avó) acompanha a criança. Use linguagem de cuidador preocupado para as falas do paciente. Inclua peso e dose de medicações por kg quando aplicável.`
-        : isPediatrics
-        ? ` O paciente DEVE ser pediátrico (0-17 anos). Use sinais vitais adequados para a faixa etária. O responsável acompanha a criança.`
-        : "";
-
-      // Build banca adaptation block
-      let bancaBlock = "";
-      if (target_exams && Array.isArray(target_exams) && target_exams.length > 0) {
-        const profiles = target_exams.map((k: string) => getBancaProfile(k));
-        bancaBlock = profiles.map((p: any) => buildBancaBlock(p)).join("\n");
-      }
-
-      let errorsBlock = "";
-      if (recent_errors && recent_errors.has_errors) {
-        const types = (recent_errors.error_types || []).join(", ");
-        const themes = (recent_errors.themes || []).join(", ");
-        errorsBlock = `\n## REFORÇO DE ERROS PRÉVIOS\nO aluno errou recentemente em: ${types || "vários tipos"}. Temas com erro: ${themes || "diversos"}. Inclua pistas que testem esse tipo de raciocínio para reforço pedagógico.`;
-      }
-
-      let proximityBlock = "";
-      if (exam_proximity_days && typeof exam_proximity_days === "number" && exam_proximity_days <= 90) {
-        proximityBlock = `\n## PROXIMIDADE DA PROVA\nA prova do aluno é em ${exam_proximity_days} dias. ${exam_proximity_days <= 30 ? "Aumente a complexidade e exija mais rigor nas condutas." : "Mantenha nível desafiador."}`;
-      }
-
-      messages.push({
-        role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction}${bancaBlock}${errorsBlock}${proximityBlock}${avoidDiagnosesBlock} Responda APENAS em JSON válido.`,
-      });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...trimHistory(conversation_history));
       }
-      const learnerInstruction = learner_mode
-        ? ` OBRIGATÓRIO: inclua o campo "teaching_tip" com uma dica didática contextual relacionada à ação do aluno (ex: após ausculta pulmonar, explique técnica de ausculta simétrica). A dica deve ser educativa e curta (1-2 frases). Inclua também "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`
-        : ` Inclua "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`;
+      // MODOS DIVERGENTES — Real vs Aprendiz (P1)
+      // Padrão = Real (sem ajuda). Aprendiz só quando learner_mode=true explicitamente.
+      const isLearner = !!learner_mode;
+      const isRealistic = !!realistic_mode || !isLearner; // se nenhum, trata como real
+      const modeBlock = isLearner
+        ? `\n## MODO APRENDIZ ATIVO
+- Você PODE orientar gradualmente: dicas de raciocínio, fisiopatologia curta (1-2 frases), perguntas educativas que conduzam o aluno.
+- Inclua OBRIGATORIAMENTE "teaching_tip" com 1-2 frases didáticas contextuais à ação do aluno.
+- Mantenha a pressão socrática, mas mais branda. Pode mencionar caminhos ("considere descartar X antes de fechar Y") sem entregar diagnóstico.
+- "hint" pode ser oferecido proativamente no campo opcional.`
+        : `\n## MODO REAL ATIVO (PRECEPTOR DURO)
+- NÃO ofereça pistas, dicas, sugestões nem fisiopatologia.
+- NÃO mencione diagnósticos diferenciais por iniciativa própria.
+- Responda como paciente/narrador estrito + UMA pergunta socrática que cobra raciocínio (sem dar caminho).
+- "teaching_tip" deve ser null.
+- Ambiguidade clínica é desejada — não simplifique. Se o aluno pediu algo irrelevante, narre o tempo passando e a piora SEM explicar por quê.
+- Tom seco, técnico, plantão real. Sem fofura.`;
+      const learnerInstruction = isLearner
+        ? ` OBRIGATÓRIO: inclua "teaching_tip" (1-2 frases educativas). Inclua "category_scores" parciais (anamnesis, physical_exam, complementary_exams, management — 0 a 15 cada).`
+        : ` "teaching_tip" deve ser null. Inclua "category_scores" parciais (anamnesis, physical_exam, complementary_exams, management — 0 a 15 cada).`;
       messages.push({
         role: "user",
-        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua o campo "vitals" com sinais vitais atualizados na resposta. Inclua "structured_data" com tipo, resumo e sistema examinado.${learnerInstruction} Responda APENAS em JSON válido.`,
+        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua "vitals" atualizados e "structured_data" (tipo, resumo, sistema).${modeBlock}${learnerInstruction} Lembre: PRESSÃO SOCRÁTICA + sem elogio precoce + consequência narrativa se aplicável. Responda APENAS em JSON válido.`,
       });
     } else if (action === "hint") {
       if (conversation_history && Array.isArray(conversation_history)) {
@@ -493,7 +523,7 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
       }
       messages.push({
         role: "user",
-        content: `action="hint". O aluno está pedindo ajuda do preceptor. Analise tudo que ele já fez neste atendimento e dê orientações de raciocínio clínico SEM revelar o diagnóstico. Responda APENAS em JSON válido.`,
+        content: `action="hint". O aluno está pedindo ajuda do preceptor. Analise tudo que ele já fez neste atendimento e dê orientações de raciocínio clínico SEM revelar o diagnóstico. Mesmo aqui, mantenha o tom de R+: direto, técnico, sem elogios. Termine com UMA pergunta socrática que force o aluno a verbalizar o próximo passo. Responda APENAS em JSON válido.`,
       });
     } else if (action === "specialist") {
       if (conversation_history && Array.isArray(conversation_history)) {
@@ -501,16 +531,53 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
       }
       messages.push({
         role: "user",
-        content: `action="specialist". O plantonista está solicitando parecer/interconsulta da especialidade: "${specialist_area || "não especificada"}". Responda como o médico especialista dessa área, dando parecer técnico sobre o caso. Responda APENAS em JSON válido.`,
+        content: `action="specialist". O plantonista está solicitando parecer/interconsulta da especialidade: "${specialist_area || "não especificada"}". Responda como o médico especialista dessa área, dando parecer técnico sobre o caso. Mantenha tom técnico de especialista para especialista, sem elogios ao plantonista. Responda APENAS em JSON válido.`,
       });
+
     } else if (action === "finish") {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...trimHistory(conversation_history));
       }
+      // PÓS-PLANTÃO V3 (P4) — discussão estilo R+, não relatório de quiz.
       messages.push({
         role: "user",
-        content: `action="finish". O aluno decidiu encerrar o atendimento. Avalie o desempenho completo com base em toda a interação, incluindo avaliação de prescrição, conduta, diagnóstico e parecer/encaminhamento. Use as 7 categorias de avaliação. Responda APENAS em JSON válido.`,
+        content: `action="finish". O aluno encerrou. Faça a discussão pós-plantão como um R+ rodando o caso no preceptorial — direto, técnico, sem fofura, sem "parabéns".
+
+Mantém TODOS os campos já existentes (final_score, grade, correct_diagnosis, student_got_diagnosis, time_total_minutes, evaluation com as 7 categorias, differential_diagnosis, strengths, improvements, ideal_approach, ideal_prescription, physical_exam_expected, xp_earned).
+
+ADICIONE OBRIGATORIAMENTE estes 5 campos NOVOS (P4):
+
+"timeline": [
+  { "time": "HH:MM" (ou "T+Xmin"), "event": "descrição curta da ação ou evento", "type": "action|deterioration|critical|external", "judgment": "ok|atraso|errado|salvador" (opcional) }
+]
+— Reconstrua a linha do tempo do plantão a partir do histórico. Marque atrasos, decisões salvadoras, erros, e eventos externos. Mínimo 5 entradas, máximo 12. Ordem cronológica.
+
+"critical_decisions": {
+  "correct": ["decisão clínica correta e impactante 1", "..."],
+  "dangerous": ["decisão perigosa ou contraindicada (com motivo curto)", "..."],
+  "omissions": ["o que deveria ter sido feito e não foi (ex: 'não solicitou D-dímero apesar de Wells alto')", "..."],
+  "delays": ["atrasos relevantes ('demorou 12 min para iniciar O2 em paciente SpO2 88%')", "..."]
+}
+— Pode ter array vazio em categorias sem entradas. Seja específico, cite tempo/parâmetro quando possível.
+
+"what_would_kill": "string em 1-2 frases identificando a ameaça imediata real do caso. Ex: 'A ameaça imediata era choque obstrutivo por TEP maciço — a janela de anticoagulação/trombólise era estreita e o aluno priorizou exame que não muda conduta.'"
+
+"r_plus_feedback": "string de 3-5 frases no tom de R+ encerrando a discussão. Direto, técnico, foca no que mudou ou poderia ter mudado mortalidade/morbidade. Sem elogio gratuito. Pode reconhecer acerto técnico ('reconheceu gravidade cedo'), mas SEMPRE cobra o gap principal. Exemplo de tom: 'Você identificou gravidade cedo, mas demorou a priorizar a intervenção que mudava mortalidade. Anticoagulação plena é mandatória em TEP de risco intermediário-alto antes de imagem confirmatória se a suspeita clínica é alta. Da próxima vez, escore de Wells primeiro, conduta empírica depois, imagem para confirmar.'"
+
+"exam_traps": [
+  { "trap": "pegadinha clássica de prova ligada a este caso", "why": "por que cai em residência / por que confunde" }
+]
+— 3 a 5 pegadinhas/padrões cobrados em residência (USP, UNIFESP, UNICAMP, AMP, ENARE, Revalida) ligados ao diagnóstico correto. Achados clássicos, armadilhas semânticas, mimetizadores.
+
+REGRAS DE TOM (CRÍTICAS):
+- NUNCA "parabéns/excelente/muito bem/perfeito" em lugar nenhum do JSON.
+- "r_plus_feedback" deve soar como discussão real de preceptorial, não como ChatGPT.
+- "improvements" deve focar em IMPACTO CLÍNICO (mortalidade, morbidade, tempo, custo), não em "estudar mais".
+- "strengths" só inclui acertos com impacto clínico real, não esforço.
+
+Responda APENAS em JSON válido.`,
       });
+
     } else if (action === "deteriorate") {
       const level = deterioration_level || 1;
       if (conversation_history && Array.isArray(conversation_history)) {
