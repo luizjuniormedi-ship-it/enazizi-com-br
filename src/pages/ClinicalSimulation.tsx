@@ -139,6 +139,20 @@ const ClinicalSimulation = () => {
   const [loading, setLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Lock body scroll while fullscreen to prevent double-scroll / viewport bounce.
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = (document.body.style as any).overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    (document.body.style as any).overscrollBehavior = "contain";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      (document.body.style as any).overscrollBehavior = prevOverscroll;
+    };
+  }, [isFullscreen]);
+
+
   // ─── EXECUTION STATE (active session) ───
   const [vitals, setVitals] = useState<Vitals | null>(null);
   const [setting, setSetting] = useState("");
