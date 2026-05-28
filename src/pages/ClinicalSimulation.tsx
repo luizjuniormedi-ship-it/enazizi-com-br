@@ -44,6 +44,7 @@ import type { ChatMessage, ManeuverPerformed } from "@/components/clinical-simul
 import { exportToPdf } from "@/lib/exportPdf";
 import { useClinicalSimulation as useClinicalSimulationModule } from "@/modules/clinical-simulation/hooks/useClinicalSimulation";
 import { usePhaseMachine } from "@/modules/clinical-simulation/state/usePhaseMachine";
+import { useCountdownTimer } from "@/modules/clinical-simulation/state/useCountdownTimer";
 
 const EVAL_LABELS: Record<string, string> = {
   anamnesis: "Anamnese", physical_exam: "Exame Físico", complementary_exams: "Exames Complementares",
