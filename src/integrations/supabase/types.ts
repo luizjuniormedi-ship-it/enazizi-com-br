@@ -3036,6 +3036,33 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_questions_bank_classification_20260527: {
+        Row: {
+          approved_for_generation: boolean | null
+          id: string | null
+          specialty_id: string | null
+          subtopic: string | null
+          topic: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_for_generation?: boolean | null
+          id?: string | null
+          specialty_id?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_for_generation?: boolean | null
+          id?: string | null
+          specialty_id?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       behavioral_telemetry: {
         Row: {
           action_kind: string | null
