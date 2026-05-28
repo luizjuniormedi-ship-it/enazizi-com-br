@@ -950,7 +950,8 @@ const ClinicalSimulation = () => {
             </div>
 
             {/* CENTER: Chat */}
-            <Card className="overflow-hidden flex flex-col min-h-0 border-0 rounded-none lg:border lg:rounded-xl">
+            <Card className="overflow-hidden flex flex-col min-h-0 min-w-0 border-0 rounded-none lg:border lg:rounded-xl">
+
 
               <CardContent className="p-0 flex flex-col flex-1 min-h-0 overflow-hidden">
                 <MessageList messages={messages} isTyping={isTyping && phase === "active"} isFinishing={phase === "finishing"} />
