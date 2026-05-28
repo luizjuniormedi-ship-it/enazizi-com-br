@@ -80,6 +80,24 @@ const DRY_RUN_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 horas
 const CONFIRM_PHRASE = "EXECUTAR LOTE REAL";
 const POLL_INTERVAL_MS = 5000;
 
+// ── Batch clamp (client-side guardrail) ───────────────────────────
+const BATCH_MIN = 10;
+const BATCH_MAX = 500;
+function clampBatch(n: number): { value: number; clamped: boolean } {
+  if (!Number.isFinite(n) || Number.isNaN(n)) return { value: 100, clamped: true };
+  const rounded = Math.round(n);
+  if (rounded > BATCH_MAX) return { value: BATCH_MAX, clamped: true };
+  if (rounded < BATCH_MIN) return { value: BATCH_MIN, clamped: true };
+  return { value: rounded, clamped: false };
+}
+
+// ── Tópicos pendentes de decisão curricular ───────────────────────
+// Skipped por esses padrões NÃO é falha do classificador — é lacuna
+// curricular consciente (Anestesiologia, Nutrição). Usado para calcular
+// métricas ajustadas SEM mascarar a métrica bruta.
+const CURRICULAR_PENDING_TOPIC_PATTERNS = ["%anestesi%", "%nutri%"];
+const CURRICULAR_PENDING_LABEL = "Anestesia / Anestesiologia / Nutrição (decisão curricular pendente)";
+
 type TableSource = "questions_bank" | "real_exam_questions";
 
 interface MethodBreakdown {
