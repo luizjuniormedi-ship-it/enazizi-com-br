@@ -781,31 +781,31 @@ const ClinicalSimulation = () => {
   // Memoized derived values for stable Active region
   const recentTimeline = useMemo(() => actionTimeline.slice(-8), [actionTimeline]);
 
+  const initialCountdown = DIFFICULTY_TIMER[difficulty] || 20 * 60;
+  const isActiveLike = phase === "active" || phase === "finishing";
+
   const content = (
     <div className={`animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background overflow-auto flex flex-col" : "max-w-6xl mx-auto space-y-4"}`}>
-      {/* Header */}
-      <div className={`flex items-center justify-between ${isFullscreen ? "px-4 py-2 border-b border-border bg-background/95 backdrop-blur-sm shrink-0" : "mb-4 lg:pr-[320px]"}`}>
-        <div className="flex items-center gap-2 min-w-0">
-          <Activity className="h-5 w-5 text-destructive shrink-0" />
-          <h1 className="text-lg font-bold truncate">Modo Plantão</h1>
-          {!isFullscreen && (
-            <p className="text-xs text-muted-foreground hidden md:block">Simulação interativa de atendimento clínico</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
-            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
-          {phase === "active" && (
-            <Button variant="destructive" size="sm" className="h-8 text-xs gap-1.5" onClick={finishSimulation} disabled={loading}>
-              <ClipboardCheck className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Encerrar Plantão</span>
+      {/* Outer header — hidden while a case is running to avoid duplicating ShiftHeader */}
+      {!isActiveLike && (
+        <div className={`flex items-center justify-between ${isFullscreen ? "px-4 py-2 border-b border-border bg-background/95 backdrop-blur-sm shrink-0" : "mb-4 lg:pr-[320px]"}`}>
+          <div className="flex items-center gap-2 min-w-0">
+            <Activity className="h-5 w-5 text-destructive shrink-0" />
+            <h1 className="text-lg font-bold truncate">Modo Plantão</h1>
+            {!isFullscreen && (
+              <p className="text-xs text-muted-foreground hidden md:block">Simulação interativa de atendimento clínico</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className={isFullscreen ? "flex-1 overflow-auto p-2 sm:p-4" : ""}>
+
 
       {/* LOBBY */}
       {phase === "lobby" && (
@@ -842,21 +842,33 @@ const ClinicalSimulation = () => {
 
       {/* ACTIVE SIMULATION */}
       {(phase === "active" || phase === "finishing") && (
-        <div className="flex flex-col" style={{ height: isFullscreen ? "calc(100vh - 56px)" : "calc(100vh - 120px)" }}>
-          <div className="shrink-0">
-            <ShiftHeader
-              patientStatus={patientStatus}
-              statusAlert={statusAlert}
-              countdown={countdown}
-              timerExpired={timerExpired}
-              score={score}
-              scoreFlash={scoreFlash}
-              triageColor={triageColor}
-              setting={setting}
-              inactivityWarning={inactivityWarning}
-              abcdeChecklist={abcdeChecklist}
-            />
+        <div className="flex flex-col" style={{ height: isFullscreen ? "calc(100vh - 8px)" : "calc(100vh - 80px)" }}>
+          <div className="shrink-0 flex items-stretch">
+            <div className="flex-1 min-w-0">
+              <ShiftHeader
+                patientStatus={patientStatus}
+                statusAlert={statusAlert}
+                countdown={countdown}
+                initialCountdown={initialCountdown}
+                timerExpired={timerExpired}
+                score={score}
+                scoreFlash={scoreFlash}
+                triageColor={triageColor}
+                setting={setting}
+                inactivityWarning={inactivityWarning}
+                abcdeChecklist={abcdeChecklist}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+              className="px-2 border-b border-border/50 bg-background/95 backdrop-blur-sm hover:bg-muted/40 text-muted-foreground"
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
           </div>
+
 
           {recentTimeline.length > 0 && (
             <div className="flex gap-1.5 overflow-x-auto py-1.5 px-3 border-b border-border/30 bg-muted/5 shrink-0">
