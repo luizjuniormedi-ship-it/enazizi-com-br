@@ -124,7 +124,113 @@ const ResultPanel = memo(function ResultPanel({
           </div>
           <Progress value={finalEval.final_score} className="h-2" />
         </CardContent>
-      </Card>
+
+      {/* P4 — Feedback R+ (vem primeiro: tom de preceptor) */}
+      {finalEval.r_plus_feedback && (
+        <Card className="border-2 border-amber-500/40 bg-amber-500/5">
+          <CardContent className="p-5 space-y-2">
+            <h4 className="text-base font-bold flex items-center gap-2">
+              <MessageSquareQuote className="h-5 w-5 text-amber-600" /> Discussão pós-plantão (R+)
+            </h4>
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">{finalEval.r_plus_feedback}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* P4 — O que mataria o paciente */}
+      {finalEval.what_would_kill && (
+        <Card className="border border-destructive/40 bg-destructive/5">
+          <CardContent className="p-5 space-y-2">
+            <h4 className="text-sm font-bold flex items-center gap-2">
+              <Skull className="h-4 w-4 text-destructive" /> Ameaça imediata real
+            </h4>
+            <p className="text-sm leading-relaxed">{finalEval.what_would_kill}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* P4 — Linha do tempo */}
+      {finalEval.timeline && finalEval.timeline.length > 0 && (
+        <Card className="border border-blue-500/30">
+          <CardContent className="p-5 space-y-3">
+            <h4 className="text-sm font-bold flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-500" /> Linha do tempo
+            </h4>
+            <ol className="space-y-2">
+              {finalEval.timeline.map((t, i) => {
+                const tone =
+                  t.judgment === "errado" || t.type === "critical" ? "border-destructive/40 bg-destructive/5"
+                  : t.judgment === "atraso" || t.type === "deterioration" ? "border-amber-500/40 bg-amber-500/5"
+                  : t.judgment === "salvador" ? "border-green-500/40 bg-green-500/5"
+                  : "border-border/50 bg-muted/30";
+                return (
+                  <li key={i} className={`flex gap-3 p-2.5 rounded-lg border ${tone}`}>
+                    <span className="text-xs font-mono font-bold text-muted-foreground shrink-0 w-16">{t.time}</span>
+                    <span className="text-xs flex-1">{t.event}</span>
+                    {t.judgment && (
+                      <Badge variant="outline" className="text-[10px] uppercase">{t.judgment}</Badge>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* P4 — Decisões críticas */}
+      {finalEval.critical_decisions && (
+        <Card className="border border-purple-500/30">
+          <CardContent className="p-5 space-y-3">
+            <h4 className="text-sm font-bold flex items-center gap-2">
+              <Activity className="h-4 w-4 text-purple-500" /> Decisões críticas
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(["correct","dangerous","omissions","delays"] as const).map((k) => {
+                const items = finalEval.critical_decisions?.[k] || [];
+                if (items.length === 0) return null;
+                const meta: Record<string, { label: string; cls: string }> = {
+                  correct:   { label: "Corretas",   cls: "border-green-500/30 bg-green-500/5" },
+                  dangerous: { label: "Perigosas",  cls: "border-destructive/40 bg-destructive/5" },
+                  omissions: { label: "Omissões",   cls: "border-amber-500/40 bg-amber-500/5" },
+                  delays:    { label: "Atrasos",    cls: "border-orange-500/40 bg-orange-500/5" },
+                };
+                return (
+                  <div key={k} className={`p-3 rounded-lg border ${meta[k].cls}`}>
+                    <p className="text-xs font-bold uppercase mb-1.5">{meta[k].label}</p>
+                    <ul className="space-y-1">
+                      {items.map((it, i) => (
+                        <li key={i} className="text-xs text-muted-foreground">• {it}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* P4 — Pegadinhas de prova */}
+      {finalEval.exam_traps && finalEval.exam_traps.length > 0 && (
+        <Card className="border border-indigo-500/30">
+          <CardContent className="p-5 space-y-3">
+            <h4 className="text-sm font-bold flex items-center gap-2">
+              <Brain className="h-4 w-4 text-indigo-500" /> Pontos de prova
+            </h4>
+            <ul className="space-y-2">
+              {finalEval.exam_traps.map((t, i) => (
+                <li key={i} className="p-2.5 rounded-lg bg-indigo-500/5 border border-indigo-500/20">
+                  <p className="text-xs font-bold text-indigo-700 dark:text-indigo-400">{t.trap}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{t.why}</p>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Correct diagnosis */}
 
       {/* Correct diagnosis */}
       <Card className="border-2 border-primary/30">
