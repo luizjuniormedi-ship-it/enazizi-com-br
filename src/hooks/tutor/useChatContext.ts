@@ -21,9 +21,12 @@ export function useChatContext(userId: string | undefined, currentTopic: string)
   useEffect(() => {
     if (!userId) return;
     const load = async () => {
+      // SECURITY: restrict to user's own uploads. Global/org RAG content
+      // is served exclusively via Edge Functions with service_role.
       const { data } = await supabase
         .from("uploads")
         .select("id, filename, extracted_text, category")
+        .eq("user_id", userId)
         .eq("status", "processed")
         .not("extracted_text", "is", null)
         .order("created_at", { ascending: false })
