@@ -424,7 +424,12 @@ Deno.serve(async (req) => {
     if (createdAfter) {
       query = query.gte("created_at", createdAfter);
     }
-    const { data: rows, error: rowsErr } = await query.limit(batchSize);
+    // FIX OPERACIONAL: ordenação determinística (oldest eligible first)
+    // evita viés por ordem física da tabela no LIMIT
+    const { data: rows, error: rowsErr } = await query
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(batchSize);
     if (rowsErr) throw new Error(`failed to fetch rows: ${rowsErr.message}`);
 
 
