@@ -25,7 +25,8 @@ const MessageList = memo(function MessageList({ messages, isTyping, isFinishing 
   }, [messages.length, isTyping, isFinishing]);
 
   return (
-    <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-3">
+    <div ref={containerRef} className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain p-4 space-y-3">
+
       {messages.map((msg, i) => (
         <MessageBubble key={i} msg={msg} />
       ))}
