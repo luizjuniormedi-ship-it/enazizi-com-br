@@ -79,6 +79,9 @@ const LoadMonitor = lazyWithRetry(() => import("./pages/admin/LoadMonitor"), "Lo
 const MemoryHealth = lazyWithRetry(() => import("./pages/admin/MemoryHealth"), "MemoryHealth");
 const MemoryHallucinations = lazyWithRetry(() => import("./pages/admin/MemoryHallucinations"), "MemoryHallucinations");
 const EnrichmentProgress = lazyWithRetry(() => import("./pages/admin/EnrichmentProgress"), "EnrichmentProgress");
+const ClassificationRunner = lazyWithRetry(() => import("./pages/admin/ClassificationRunner"), "ClassificationRunner");
+const ClassificationHealthDashboard = lazyWithRetry(() => import("./pages/admin/ClassificationHealthDashboard"), "ClassificationHealthDashboard");
+const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
@@ -389,6 +392,9 @@ const App = () => (
                 <Route path="memory-health" element={<MemoryHealth />} />
                 <Route path="memory-hallucinations" element={<MemoryHallucinations />} />
                 <Route path="enriquecimento" element={<EnrichmentProgress />} />
+                <Route path="classification-runner" element={<ClassificationRunner />} />
+                <Route path="classification-health" element={<ClassificationHealthDashboard />} />
+                <Route path="classification" element={<ClassificationBackfill />} />
 
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
