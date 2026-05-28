@@ -339,15 +339,7 @@ export default function SemanticObservatory() {
           </CardContent>
         </Card>
       )}
-
-          </CardHeader>
-          <CardContent>
-            <pre className="text-xs bg-muted p-3 rounded overflow-auto">
-              {JSON.stringify(snap.ontology_health, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
+
