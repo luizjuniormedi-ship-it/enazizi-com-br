@@ -4,6 +4,14 @@ import { FLASHCARD_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { AI_MODELS, normalizeModelStrict } from "../_shared/ai-models.ts";
+import {
+  clampQuantity,
+  applyQualityGate,
+  checkDailyFlashcardLimit,
+  insertFlashcardsWithFsrs,
+  FLASHCARD_MAX_QUANTITY,
+  FLASHCARD_GOV_VERSION,
+} from "../_shared/flashcard-governance.ts";
 
 /**
  * ENAZIZI — GENERATE FLASHCARDS
@@ -25,9 +33,27 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
     }
   }
 
-  const { topic, uploadId, discipline, quantity = 10 } = body;
+  const { topic, uploadId, discipline } = body;
+  // FASE 1 P0 — clamp server-side
+  const quantity = clampQuantity(body.quantity ?? 10);
+  if (body.quantity && Number(body.quantity) > FLASHCARD_MAX_QUANTITY) {
+    logger.info("FLASHCARD_QUANTITY_CLAMPED", `Cliente pediu ${body.quantity}, clampado para ${quantity}`, { userId });
+  }
 
-  logger.info("FLASHCARD_GEN_START", `Generating ${quantity} flashcards for topic: ${topic}`, { userId, uploadId });
+  // FASE 1 P0 — limite diário server-side
+  const limitCheck = await checkDailyFlashcardLimit(supabaseAdmin, userId);
+  if (!limitCheck.allowed) {
+    logger.info("FLASHCARD_DAILY_LIMIT_HIT", `User ${userId} ${limitCheck.used}/${limitCheck.limit}`, { userId });
+    return new Response(JSON.stringify({
+      success: false,
+      error: "daily_limit_reached",
+      message: `Limite diário atingido (${limitCheck.used}/${limitCheck.limit} cards nas últimas 24h). Tente novamente amanhã ou foque em revisar cards pendentes.`,
+      limit: limitCheck.limit,
+      used: limitCheck.used,
+    }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  logger.info("FLASHCARD_GEN_START", `Generating ${quantity} flashcards for topic: ${topic} [gov=${FLASHCARD_GOV_VERSION}]`, { userId, uploadId, dailyUsed: limitCheck.used, dailyLimit: limitCheck.limit, bypass: limitCheck.bypass });
 
   // 1. Create Job
   const { data: job, error: jobErr } = await supabaseAdmin.from("flashcard_generation_jobs").insert({
@@ -92,86 +118,94 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
     }
 
     if (cards.length > 0) {
+      // FASE 1 P0 — quality gate (dedup + rejeições)
+      const normalizedCards = cards.map((c: any) => {
+        const front = c.front || c.frente || c.pergunta || "";
+        const detail = c.question_detail || "";
+        const question = detail ? `${front}\n\n${detail}` : front;
+        const answer = c.back || c.verso || c.resposta || "";
+        const explanation = c.explanation || c.explicacao || c.justificativa || "";
+        return {
+          question,
+          answer,
+          explanation,
+          difficulty: c.difficulty,
+        };
+      });
+      const { accepted, rejected } = applyQualityGate(normalizedCards);
+      logger.info("FLASHCARD_QUALITY_GATE", `accepted=${accepted.length} rejected=${rejected.length}`, { rejected: rejected.slice(0, 5) });
+
+      if (accepted.length === 0) {
+        await supabaseAdmin.from("flashcard_generation_jobs").update({
+          status: 'failed',
+          error_message: `quality_gate_rejected_all (${rejected.length})`,
+          updated_at: new Date().toISOString()
+        }).eq("id", job.id);
+        return new Response(JSON.stringify({
+          success: false,
+          error: "quality_gate_rejected_all",
+          message: "Todos os cards gerados foram rejeitados pelo gate de qualidade (triviais, sem contexto clínico ou genéricos). Refine o tema/contexto.",
+          rejected_count: rejected.length,
+          rejected_samples: rejected.slice(0, 3),
+        }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       const { data: deck } = await supabaseAdmin.from("flashcard_decks")
-        .upsert({ 
-          user_id: userId, 
-          name: topic || "Novo Deck", 
-          topic: topic, 
-          discipline: discipline || "Geral" 
+        .upsert({
+          user_id: userId,
+          name: topic || "Novo Deck",
+          topic: topic,
+          discipline: discipline || "Geral"
         })
         .select().single();
 
-      // 1. Insert into flashcards first to get IDs
-      const { data: insertedFlashcards, error: flashError } = await supabaseAdmin.from("flashcards").insert(
-        cards.map((c: any) => {
-          const front = c.front || c.frente || c.pergunta || "";
-          const detail = c.question_detail || "";
-          const question = detail ? `${front}\n\n${detail}` : front;
-          
-          return {
-            user_id: userId,
-            question,
-            answer: c.back || c.verso || c.resposta || "",
-            explanation: c.explanation || c.explicacao || c.justificativa || "",
-            topic: topic,
-            is_global: false
-          };
-        })
-      ).select();
+      const rows = accepted.map((c) => ({
+        user_id: userId,
+        question: c.question,
+        answer: c.answer,
+        explanation: c.explanation,
+        topic: topic,
+        is_global: false,
+      }));
 
-      if (flashError || !insertedFlashcards) throw flashError || new Error("Falha ao salvar flashcards");
+      const difficultyByQuestion = new Map<string, number>(
+        accepted.map((c) => [String(c.question), Number(c.difficulty) || 3])
+      );
 
-      // 2. Insert into fsrs_cards for scheduling using the flashcard IDs
-      const { data: insertedCards, error: insertError } = await supabaseAdmin.from("fsrs_cards").insert(
-        insertedFlashcards.map((f: any) => {
-          // Find original AI card to get difficulty if present
-          const original = cards.find((c: any) => c.front === f.question);
-          return {
-            user_id: userId,
-            deck_id: deck.id,
-            front: f.question,
-            back: f.answer,
-            explanation: f.explanation,
-            topic: topic,
-            discipline: discipline || "Geral",
-            difficulty: original?.difficulty || 3,
-            due: new Date().toISOString(),
-            stability: 0,
-            elapsed_days: 0,
-            scheduled_days: 0,
-            reps: 0,
-            lapses: 0,
-            state: 0,
-            card_type: 'flashcard',
-            card_ref_id: f.id // Correctly linking to the flashcard ID
-          };
-        })
-      ).select();
-
-      if (insertError) {
-        logger.error("FSRS_INSERT_ERROR", insertError.message);
-        // We don't throw here to avoid failing the whole request since flashcards are already saved
-      }
+      // FASE 1 P0 — insert atômico com rollback se FSRS falhar (zero novos órfãos)
+      const { flashcards: insertedFlashcards, fsrsCount } = await insertFlashcardsWithFsrs(
+        supabaseAdmin,
+        rows,
+        {
+          userId,
+          topic,
+          discipline: discipline || "Geral",
+          deckId: deck?.id,
+          difficultyByQuestion,
+        }
+      );
 
       // Update Job
       await supabaseAdmin.from("flashcard_generation_jobs").update({
         status: 'completed',
-        total_cards_generated: cards.length,
+        total_cards_generated: insertedFlashcards.length,
         updated_at: new Date().toISOString()
       }).eq("id", job.id);
 
-      const messageContent = cards.map((c: any, i: number) => 
-        `**FLASHCARD ${i+1}**\nCASO CLÍNICO: ${c.front || c.question || ''}\nPERGUNTA: ${c.question_detail || 'Qual a conduta?'}\nRESPOSTA: ${c.back || c.answer || ''}\nEXPLICAÇÃO CLÍNICA: ${c.explanation || ''}\n---`
+      const messageContent = accepted.map((c: any, i: number) =>
+        `**FLASHCARD ${i+1}**\nPERGUNTA: ${c.question}\nRESPOSTA: ${c.answer}\nEXPLICAÇÃO: ${c.explanation || ''}\n---`
       ).join('\n\n');
 
-      return new Response(JSON.stringify({ 
-        success: true, 
-        count: cards.length,
-        generated_count: cards.length,
+      return new Response(JSON.stringify({
+        success: true,
+        count: insertedFlashcards.length,
+        generated_count: insertedFlashcards.length,
+        rejected_count: rejected.length,
+        fsrs_inserted: fsrsCount,
         source: "ai",
         jobId: job.id,
         job_id: job.id,
-        cards: insertedCards,
+        cards: insertedFlashcards,
         message: messageContent,
         content: messageContent,
         correlation_id: correlationId,
