@@ -1125,12 +1125,19 @@ export default function ClassificationRunner() {
               <p className="text-xs text-muted-foreground">10–500</p>
             </div>
             <div className="space-y-2">
-              <Label>Dry-run</Label>
+              <Label>Modo de execução</Label>
               <div className="flex items-center gap-2 h-10">
-                <Switch checked={dryRun} onCheckedChange={setDryRun} />
-                <span className="text-sm">{dryRun ? "ligado (não escreve)" : "DESLIGADO (escreve!)"}</span>
+                <Switch
+                  checked={!dryRun}
+                  onCheckedChange={(v) => setDryRun(!v)}
+                  className="data-[state=checked]:bg-destructive"
+                />
+                <span className="text-xs text-muted-foreground">
+                  {dryRun ? "switch off = simulação" : "switch ON = lote real"}
+                </span>
               </div>
             </div>
+
           </div>
 
           {/* created_after — Freeze v25 guard */}
