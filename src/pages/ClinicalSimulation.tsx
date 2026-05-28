@@ -717,7 +717,7 @@ const ClinicalSimulation = () => {
   const finishSimulation = useCallback(async () => {
     setLoading(true); countdownTimer.stop("FINISH"); setPhase("finishing", "FINISH");
     try {
-      const res = await callAPI({ action: "finish", conversation_history: conversationHistory, ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}) });
+      const res = await callAPI({ action: "finish", conversation_history: conversationHistory, learner_mode: learnerMode, realistic_mode: realisticMode, ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}) });
       setFinalEval(res);
       setPhase("result", "FINISH_OK");
       await completePersistedSession();
