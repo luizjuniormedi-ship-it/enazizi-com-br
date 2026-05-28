@@ -27840,6 +27840,7 @@ export type Database = {
         Returns: number
       }
       normalize_medical_topic: { Args: { t: string }; Returns: string }
+      ontology_observatory_snapshot: { Args: never; Returns: Json }
       professor_owns_clinical_case: {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean
