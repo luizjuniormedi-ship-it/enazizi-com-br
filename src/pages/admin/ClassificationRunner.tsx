@@ -1190,40 +1190,65 @@ export default function ClassificationRunner() {
           )}
 
 
-          {!dryRun && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Atenção</AlertTitle>
-              <AlertDescription>
-                Dry-run está desligado. Isso aplicará classificação real em <code>{tableSource}</code>.
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* ════ Banner gigante MODO SEGURO / MODO REAL ════ */}
+          <div
+            className={
+              "rounded-lg border-4 px-6 py-5 text-center transition-colors " +
+              (dryRun
+                ? "border-primary/60 bg-primary/10"
+                : "border-destructive bg-destructive/10 animate-pulse")
+            }
+          >
+            <div
+              className={
+                "text-3xl font-black tracking-wider " +
+                (dryRun ? "text-primary" : "text-destructive")
+              }
+            >
+              {dryRun ? "🛡️  MODO SEGURO" : "🔥  MODO REAL"}
+            </div>
+            <div className="mt-1 text-sm font-mono">
+              dry_run = <span className="font-bold">{dryRun ? "true" : "false"}</span>
+              {!dryRun && " — VAI ESCREVER NO BANCO"}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {dryRun
+                ? "Nada é escrito. Apenas simula classificação para auditoria."
+                : "O botão principal abrirá modal de confirmação com digitação obrigatória."}
+            </div>
+          </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button onClick={runWithCurrentParams} disabled={!ready || running} size="lg">
-              {running ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  {dryRun ? "Executar dry-run" : "Executar lote real"}
-                </>
-              )}
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={runBatch500}
-              disabled={!ready || running || (!createdAfterIso && !overrideFullBank)}
-              title="Executa lote real de 500 questões com o created_after definido."
-            >
-              <Flame className="h-4 w-4 mr-2" />
-              Rodar lote de 500 (real)
-            </Button>
-            {errorPayload && (
+            {dryRun ? (
+              <Button onClick={runWithCurrentParams} disabled={!ready || running} size="lg">
+                {running ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Executar dry-run
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={openRealBatchModal}
+                disabled={!ready || running || !guardrails.passed}
+                title={
+                  guardrails.passed
+                    ? "Abre modal de confirmação com digitação obrigatória"
+                    : "Guardrails do lote real não passaram — veja card 'Execução real'"
+                }
+              >
+                <Flame className="h-4 w-4 mr-2" />
+                Abrir confirmação de lote real
+              </Button>
+            )}
+            {errorPayload && dryRun && (
               <Button variant="outline" size="lg" onClick={runWithCurrentParams} disabled={!ready || running}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Tentar novamente
@@ -1235,6 +1260,7 @@ export default function ClassificationRunner() {
               onClick={testConnection}
               disabled={!ready || connTesting}
               title="Dispara dry-run mínimo (batch=10) só para medir latência e validar conectividade."
+
             >
               {connTesting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
