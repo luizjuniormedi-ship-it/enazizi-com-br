@@ -293,30 +293,8 @@ const ClinicalSimulation = () => {
     }
   }, [patientStatus]);
 
-  // Countdown timer
-  useEffect(() => {
-    if (phase === "active" && countdown > 0) {
-      countdownRef.current = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownRef.current!);
-            setTimerExpired(true);
-            toast({ title: "⏰ Tempo esgotado!", description: "O tempo do plantão acabou! Encerre o atendimento agora.", variant: "destructive" });
-            try {
-              cs.sound("timeout");
-              cs.track("plantao_time_expired", { phase: "active" });
-            } catch {}
-            return 0;
-          }
-          if (prev === 121) toast({ title: "⚠️ 2 minutos restantes!", description: "Finalize seu atendimento rapidamente." });
-          if (prev === 301) toast({ title: "⏱️ 5 minutos restantes", description: "Considere fechar seu diagnóstico e prescrição." });
-          return prev - 1;
-        });
-      }, 1000);
-      return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-    }
-    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-  }, [phase, countdown > 0]);
+  // Wave 1.2 — countdown loop migrado para useCountdownTimer (acima).
+  // Mantido apenas o hook de logs/cleanup; nenhum setInterval local aqui.
 
   const fetchHistory = useCallback(async () => {
     if (!user) return;
