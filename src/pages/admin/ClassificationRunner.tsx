@@ -356,6 +356,100 @@ export default function ClassificationRunner() {
     }
   }, [result, evaluation, snapshotTs, tableSource, batchSize]);
 
+  // ── Fetch curricular-pending skipped count from DB ──────────────
+  // Conta questões que o classificador legitimamente pula porque a specialty
+  // ainda não existe na ontologia (decisão curricular: Anestesiologia/Nutrição).
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchCurricular() {
+      if (!result || !result.total_processed) {
+        setCurricularSkipped(0);
+        return;
+      }
+      setCurricularLoading(true);
+      try {
+        const orFilter = CURRICULAR_PENDING_TOPIC_PATTERNS
+          .map((p) => `topic.ilike.${p}`)
+          .join(",");
+        let query = supabase
+          .from(tableSource)
+          .select("id", { count: "exact", head: true })
+          .is("specialty_id", null)
+          .or(orFilter);
+        if (createdAfterIso) query = query.gte("created_at", createdAfterIso);
+        const { count } = await query;
+        if (!cancelled) {
+          const bounded = Math.min(count ?? 0, result.total_skipped ?? 0);
+          setCurricularSkipped(bounded);
+        }
+      } catch {
+        if (!cancelled) setCurricularSkipped(null);
+      } finally {
+        if (!cancelled) setCurricularLoading(false);
+      }
+    }
+    fetchCurricular();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, tableSource]);
+
+  // ── Métricas e veredito ajustados (descontando lacuna curricular) ─
+  // CRÍTICO: mesmos thresholds. NÃO mascarar rejeição — só descontar
+  // skipped legítimo por ausência ontológica decidida.
+  const adjustedView = useMemo(() => {
+    if (!result || !result.total_processed) return null;
+    const total = result.total_processed;
+    const exact = result.method_breakdown?.exact_text ?? 0;
+    const alias = result.method_breakdown?.alias_exact ?? 0;
+    const skip = result.total_skipped ?? 0;
+    const queue = result.total_queued_review ?? 0;
+    const curricular = curricularSkipped ?? 0;
+    const realSkip = Math.max(skip - curricular, 0);
+    const adjustedTotal = Math.max(total - curricular, 1);
+    const detAdjPct = pct(exact + alias, adjustedTotal);
+    const skipAdjPct = pct(realSkip, adjustedTotal);
+    const queueAdjPct = pct(queue, adjustedTotal);
+
+    let verdict: Verdict = "healthy";
+    const reasons: string[] = [];
+    if (detAdjPct < 85) {
+      if (detAdjPct >= 65) {
+        verdict = "borderline";
+        reasons.push(`exact + alias ajustado ${detAdjPct}% (esperado ≥ 85%)`);
+      } else {
+        verdict = "rejected";
+        reasons.push(`exact + alias ajustado ${detAdjPct}% muito baixo`);
+      }
+    }
+    if (skipAdjPct >= 5) {
+      if (skipAdjPct < 15) {
+        verdict = verdict === "rejected" ? verdict : "borderline";
+        reasons.push(`skipped ajustado ${skipAdjPct}% (esperado < 5%)`);
+      } else {
+        verdict = "rejected";
+        reasons.push(`skipped ajustado ${skipAdjPct}% acima do limite`);
+      }
+    }
+    if (queueAdjPct > 10) {
+      verdict = verdict === "rejected" ? verdict : "borderline";
+      reasons.push(`fila ajustada ${queueAdjPct}% (esperado < 10%)`);
+    }
+    if (verdict === "healthy") reasons.push("Distribuição ajustada dentro dos thresholds");
+
+    return {
+      curricular,
+      realSkip,
+      adjustedTotal,
+      detAdjPct,
+      skipAdjPct,
+      queueAdjPct,
+      verdict,
+      reasons,
+    };
+  }, [result, curricularSkipped]);
+
   // ── Reidratar localStorage ──────────────────────────────────────
   useEffect(() => {
     try {
