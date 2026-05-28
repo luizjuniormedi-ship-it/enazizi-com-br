@@ -367,6 +367,21 @@ Deno.serve(async (req) => {
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
+        // [ANALYTICS_EXCLUSION_APPLIED] Sprint 2.3 — filtro defensivo de usuários sintéticos/bots.
+        // NÃO altera dados crus; apenas exclui da camada analítica oficial.
+        const { data: excludedRows } = await supabaseAuth
+          .from("analytics_excluded_users")
+          .select("user_id");
+        const excludedIds: string[] = (excludedRows || []).map((r: any) => r.user_id);
+        const excludedPgList = excludedIds.length > 0
+          ? `(${excludedIds.map((id) => `"${id}"`).join(",")})`
+          : null;
+        console.log(`[ANALYTICS_EXCLUSION_APPLIED] get_bi_data excluding ${excludedIds.length} user(s) from analytics`);
+        console.log(`[ANALYTICS_RAW_DATA_PRESERVED] historical sessions/attempts untouched — filter is read-only`);
+
+        const applyExcl = (q: any, col = "user_id") =>
+          excludedPgList ? q.not(col, "in", excludedPgList) : q;
+
         const [
           { data: allProfiles },
           { data: recentAttempts },
@@ -383,19 +398,20 @@ Deno.serve(async (req) => {
           { data: teacherResults },
         ] = await Promise.all([
           supabaseAuth.from("profiles").select("user_id, display_name, email, faculdade, periodo, status, created_at"),
-          supabaseAuth.from("practice_attempts").select("user_id, correct, created_at").gte("created_at", thirtyDaysAgo),
-          supabaseAuth.from("practice_attempts").select("id", { count: "exact", head: true }),
-          supabaseAuth.from("practice_attempts").select("id", { count: "exact", head: true }).eq("correct", true),
-          supabaseAuth.from("simulation_history").select("id", { count: "exact", head: true }),
-          supabaseAuth.from("anamnesis_results").select("id", { count: "exact", head: true }),
-          supabaseAuth.from("discursive_attempts").select("id", { count: "exact", head: true }).not("finished_at", "is", null),
+          applyExcl(supabaseAuth.from("practice_attempts").select("user_id, correct, created_at").gte("created_at", thirtyDaysAgo)),
+          applyExcl(supabaseAuth.from("practice_attempts").select("id", { count: "exact", head: true })),
+          applyExcl(supabaseAuth.from("practice_attempts").select("id", { count: "exact", head: true }).eq("correct", true)),
+          applyExcl(supabaseAuth.from("simulation_history").select("id", { count: "exact", head: true })),
+          applyExcl(supabaseAuth.from("anamnesis_results").select("id", { count: "exact", head: true })),
+          applyExcl(supabaseAuth.from("discursive_attempts").select("id", { count: "exact", head: true }).not("finished_at", "is", null)),
           supabaseAuth.from("summaries").select("id", { count: "exact", head: true }),
           supabaseAuth.from("uploads").select("id", { count: "exact", head: true }),
           supabaseAuth.from("user_presence").select("user_id, last_seen_at, current_page"),
-          supabaseAuth.from("user_presence").select("user_id", { count: "exact", head: true }).gte("last_seen_at", sevenDaysAgo),
-          supabaseAuth.from("exam_sessions").select("id, user_id, score, total_questions, status").eq("status", "finished"),
-          supabaseAuth.from("teacher_simulado_results").select("id, student_id, score, total_questions").not("score", "is", null),
+          applyExcl(supabaseAuth.from("user_presence").select("user_id", { count: "exact", head: true }).gte("last_seen_at", sevenDaysAgo)),
+          applyExcl(supabaseAuth.from("exam_sessions").select("id, user_id, score, total_questions, status").eq("status", "finished")),
+          applyExcl(supabaseAuth.from("teacher_simulado_results").select("id, student_id, score, total_questions").not("score", "is", null), "student_id"),
         ]);
+        console.log(`[ANALYTICS_WIDGET_VALIDATED] get_bi_data simulados/practice: totalAttempts=${totalAttempts ?? 0} simulations=${simulations ?? 0} examSessions=${examSessionsData?.length ?? 0}`);
 
         // KPIs
         const totalQuestions = (totalAttempts || 0) + (examSessionsData?.length || 0) + (teacherResults?.length || 0);
