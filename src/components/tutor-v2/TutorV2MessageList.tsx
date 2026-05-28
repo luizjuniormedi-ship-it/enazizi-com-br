@@ -55,16 +55,35 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
     if (!user?.id) return;
     try {
       const topic = suggestedTopic || "Medicina";
-      const { error } = await supabase.from("flashcards").insert({
-        user_id: user.id,
-        question: suggestion.front,
-        answer: suggestion.back,
-        explanation: suggestion.explanation || "",
-        topic: topic,
-        is_global: false
-      });
+      const { error, data: inserted } = await supabase
+        .from("flashcards")
+        .insert({
+          user_id: user.id,
+          question: suggestion.front,
+          answer: suggestion.back,
+          explanation: suggestion.explanation || "",
+          topic: topic,
+          is_global: false
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
+
+      // Fase 1B: vincular FSRS imediatamente (com rollback em caso de falha)
+      if (inserted?.id) {
+        const { ensurePersonalFlashcardFsrs } = await import("@/lib/personalFlashcardFsrs");
+        const res = await ensurePersonalFlashcardFsrs({
+          userId: user.id,
+          flashcardId: inserted.id,
+          source: "tutor_v2",
+        });
+        if (!res.ok) {
+          toast.error("Flashcard não pôde ser vinculado ao FSRS e foi revertido.");
+          return;
+        }
+      }
+
       toast.success("Flashcard salvo com sucesso!");
     } catch (err) {
       console.error("Erro ao salvar flashcard:", err);

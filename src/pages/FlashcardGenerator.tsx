@@ -105,8 +105,29 @@ const FlashcardGenerator = () => {
       decision_id: decisionIdRef.current,
     }));
 
-    const { error } = await supabase.from("flashcards").insert(rows);
+    const { error, data: inserted } = await supabase
+      .from("flashcards")
+      .insert(rows)
+      .select("id, is_global");
     if (error) throw new Error("Erro ao salvar: " + error.message);
+
+    // Fase 1B: vincular FSRS para todo card pessoal recém-criado
+    const personalIds = (inserted || [])
+      .filter((c: any) => c.is_global === false)
+      .map((c: any) => c.id);
+    if (personalIds.length > 0) {
+      const { ensurePersonalFlashcardsFsrsBatch } = await import("@/lib/personalFlashcardFsrs");
+      const { failed } = await ensurePersonalFlashcardsFsrsBatch(
+        user.id,
+        personalIds,
+        "flashcard_generator",
+      );
+      if (failed.length > 0) {
+        throw new Error(
+          `${failed.length} flashcard(s) foram revertidos por falha no vínculo FSRS.`,
+        );
+      }
+    }
 
     await addXp(XP_REWARDS.flashcard_created * parsed.length);
 
