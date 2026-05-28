@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { Trophy, CheckCircle, XCircle, Target, ShieldAlert, AlertTriangle, Star, Syringe, Stethoscope, Eye, Hand, Ear, Bone, HeartPulse, Award, BookOpen, Download, ClipboardCheck } from "lucide-react";
+import { Trophy, CheckCircle, XCircle, Target, ShieldAlert, AlertTriangle, Star, Syringe, Stethoscope, Eye, Hand, Ear, Bone, HeartPulse, Award, BookOpen, Download, ClipboardCheck, Clock, Activity, Skull, MessageSquareQuote, Brain } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
