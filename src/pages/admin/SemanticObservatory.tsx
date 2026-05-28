@@ -304,6 +304,79 @@ export default function SemanticObservatory() {
         </CardContent>
       </Card>
 
+      {/* Ownership Charter */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ownership Charter</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Ver <code>docs/ontology/OWNERSHIP_CHARTER.md</code>. Sem owner explícito, a ontologia degrada.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Área</TableHead>
+                <TableHead>Owner oficial</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[
+                ["Curriculum RFC", "Coordenação pedagógica"],
+                ["Drift Review", "Arquitetura + Pedagogia"],
+                ["Semantic Observatory", "Plataforma"],
+                ["Rollback Authority", "Engenharia"],
+                ["Ontology Versions", "Governance Board"],
+                ["Consumer Certification", "Arquitetura"],
+                ["Runtime Activation", "Comitê Técnico"],
+              ].map(([area, owner]) => (
+                <TableRow key={area}>
+                  <TableCell className="font-medium">{area}</TableCell>
+                  <TableCell className="text-xs">{owner}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* SLOs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Operational SLOs</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Ver <code>docs/ontology/SLOs.md</code>. Violação sustentada → suspender expansão.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Métrica</TableHead>
+                <TableHead>Target</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[
+                ["Rollback time", "< 2 min"],
+                ["Drift unresolved", "< 5%"],
+                ["Unregistered consumers", "0"],
+                ["Runtime incidents", "0"],
+                ["Semantic review SLA", "< 7 dias"],
+                ["RFC review SLA", "< 14 dias"],
+              ].map(([m, t]) => (
+                <TableRow key={m}>
+                  <TableCell className="font-medium">{m}</TableCell>
+                  <TableCell><Badge variant="outline">{t}</Badge></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+
+
       {/* Wave 2 Gates */}
       <Card className="border-amber-500/30 bg-amber-500/5">
         <CardHeader>
