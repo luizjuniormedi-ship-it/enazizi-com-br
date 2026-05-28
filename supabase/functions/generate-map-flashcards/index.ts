@@ -28,6 +28,23 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
+    // Admin client para limit check + insert atômico via service role
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // FASE 1 P0 — limite diário server-side
+    const limitCheck = await checkDailyFlashcardLimit(supabaseAdmin, user.id);
+    if (!limitCheck.allowed) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "daily_limit_reached",
+        message: `Limite diário atingido (${limitCheck.used}/${limitCheck.limit} cards nas últimas 24h).`,
+        limit: limitCheck.limit,
+        used: limitCheck.used,
+      }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { map_id } = await req.json();
     if (!map_id) {
