@@ -4,6 +4,14 @@ import { FLASHCARD_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { AI_MODELS, normalizeModelStrict } from "../_shared/ai-models.ts";
+import {
+  clampQuantity,
+  applyQualityGate,
+  checkDailyFlashcardLimit,
+  insertFlashcardsWithFsrs,
+  FLASHCARD_MAX_QUANTITY,
+  FLASHCARD_GOV_VERSION,
+} from "../_shared/flashcard-governance.ts";
 
 /**
  * ENAZIZI — GENERATE FLASHCARDS
