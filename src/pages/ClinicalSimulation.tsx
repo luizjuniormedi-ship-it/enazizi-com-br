@@ -234,7 +234,7 @@ const ClinicalSimulation = () => {
     if (data.abcdeChecklist) setAbcdeChecklist(data.abcdeChecklist);
     if (data.medicalRecord) setMedicalRecord(data.medicalRecord);
     if (data.categoryScores) setCategoryScores(data.categoryScores);
-    setPhase("active");
+    setPhase("active", "RESTORE");
     clearPending();
   }, [clearPending]);
 
@@ -497,7 +497,7 @@ const ClinicalSimulation = () => {
       };
       setMessages([simMsg]);
       setConversationHistory([{ role: "assistant", content: JSON.stringify(res) }]);
-      setPhase("active");
+      setPhase("active", "START");
       addToTimeline("Caso iniciado", "🏥");
 
       if (user) {
@@ -676,11 +676,11 @@ const ClinicalSimulation = () => {
   };
 
   const finishSimulation = useCallback(async () => {
-    setLoading(true); setPhase("finishing");
+    setLoading(true); setPhase("finishing", "FINISH");
     try {
       const res = await callAPI({ action: "finish", conversation_history: conversationHistory, ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}) });
       setFinalEval(res);
-      setPhase("result");
+      setPhase("result", "FINISH_OK");
       await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
       telemetry.track('plantao_completed', { specialty: specialty || null, difficulty, final_score: res?.final_score ?? null });
@@ -705,7 +705,7 @@ const ClinicalSimulation = () => {
       }
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-      setPhase("active");
+      setPhase("active", "FINISH_FAILED");
     } finally {
       setLoading(false);
     }
@@ -713,7 +713,7 @@ const ClinicalSimulation = () => {
   }, [callAPI, conversationHistory, teacherCaseId, completePersistedSession, addXp, user, specialty, difficulty, refresh, toast]);
 
   const reset = useCallback(() => {
-    setPhase("lobby");
+    setPhase("lobby", "RESET");
     setMessages([]); setConversationHistory([]);
     setScore(50); setPrevScore(50); setTimeElapsed(0);
     setFinalEval(null); setVitals(null); setCountdown(0);
