@@ -496,14 +496,21 @@ export default function ClassificationRunner() {
   const execute = useCallback(
     async (params: { table_source: TableSource; batch_size: number; dry_run: boolean; created_after?: string | null }) => {
       if (!ready) return;
+      // 🚫 BLINDAGEM UX: lote real NUNCA pode passar por aqui.
+      // Tudo que escreve no banco precisa ir pelo modal guardrailed (executeRealBatch).
+      if (!params.dry_run) {
+        toast.error(
+          "Lote real bloqueado neste fluxo. Use o card 'Execução real' com confirmação por digitação.",
+        );
+        return;
+      }
       if (!params.created_after && !overrideFullBank) {
         toast.error("created_after vazio — bloqueado pelo Freeze v25. Defina a data ou ative o override.");
         return;
       }
       if (!params.created_after && overrideFullBank) {
-        if (!confirm("⚠️ Você está prestes a classificar TODO o banco. Isso é bloqueado pelo Freeze v25. Continuar mesmo assim?")) return;
+        if (!confirm("⚠️ Você está prestes a rodar dry-run contra TODO o banco. Continuar?")) return;
       }
-      if (!params.dry_run && !confirm("dry_run está DESLIGADO. Vai ESCREVER no banco. Confirmar?")) return;
 
       setRunning(true);
       setErrorPayload(null);
@@ -511,7 +518,7 @@ export default function ClassificationRunner() {
         const body: Record<string, unknown> = {
           table_source: params.table_source,
           batch_size: Math.max(10, Math.min(500, params.batch_size)),
-          dry_run: params.dry_run,
+          dry_run: true, // 🔒 redundante: nunca chega aqui com false
         };
         if (params.created_after) body.created_after = params.created_after;
         const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
@@ -534,7 +541,7 @@ export default function ClassificationRunner() {
         } catch {
           /* ignore quota */
         }
-        toast.success(params.dry_run ? "Dry-run concluído" : "Lote real concluído");
+        toast.success("Dry-run concluído");
         void fetchPersisted();
         void refreshEligibleCount();
       } catch (e) {
@@ -547,11 +554,27 @@ export default function ClassificationRunner() {
     [ready, fetchPersisted, overrideFullBank, refreshEligibleCount],
   );
 
-  const runWithCurrentParams = () =>
-    execute({ table_source: tableSource, batch_size: batchSize, dry_run: dryRun, created_after: createdAfterIso });
 
-  const runBatch500 = () =>
-    execute({ table_source: tableSource, batch_size: 500, dry_run: false, created_after: createdAfterIso });
+  const runWithCurrentParams = () =>
+    execute({ table_source: tableSource, batch_size: batchSize, dry_run: true, created_after: createdAfterIso });
+
+  // ⚠️ Lote real só via modal guardrailed. Esse atalho agora apenas abre o modal.
+  const openRealBatchModal = () => {
+    if (!ready) {
+      toast.error("Login admin necessário");
+      return;
+    }
+    if (dryRun) {
+      toast.error("Desligue o switch 'Modo' para abrir a confirmação de lote real.");
+      return;
+    }
+    if (!guardrails.passed) {
+      toast.error("Guardrails do lote real não passaram. Veja o card 'Execução real'.");
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
 
   const reRunLastDryRun = () => {
     if (!lastRun || !lastRun.dry_run) {
@@ -1102,12 +1125,19 @@ export default function ClassificationRunner() {
               <p className="text-xs text-muted-foreground">10–500</p>
             </div>
             <div className="space-y-2">
-              <Label>Dry-run</Label>
+              <Label>Modo de execução</Label>
               <div className="flex items-center gap-2 h-10">
-                <Switch checked={dryRun} onCheckedChange={setDryRun} />
-                <span className="text-sm">{dryRun ? "ligado (não escreve)" : "DESLIGADO (escreve!)"}</span>
+                <Switch
+                  checked={!dryRun}
+                  onCheckedChange={(v) => setDryRun(!v)}
+                  className="data-[state=checked]:bg-destructive"
+                />
+                <span className="text-xs text-muted-foreground">
+                  {dryRun ? "switch off = simulação" : "switch ON = lote real"}
+                </span>
               </div>
             </div>
+
           </div>
 
           {/* created_after — Freeze v25 guard */}
@@ -1160,40 +1190,65 @@ export default function ClassificationRunner() {
           )}
 
 
-          {!dryRun && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Atenção</AlertTitle>
-              <AlertDescription>
-                Dry-run está desligado. Isso aplicará classificação real em <code>{tableSource}</code>.
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* ════ Banner gigante MODO SEGURO / MODO REAL ════ */}
+          <div
+            className={
+              "rounded-lg border-4 px-6 py-5 text-center transition-colors " +
+              (dryRun
+                ? "border-primary/60 bg-primary/10"
+                : "border-destructive bg-destructive/10 animate-pulse")
+            }
+          >
+            <div
+              className={
+                "text-3xl font-black tracking-wider " +
+                (dryRun ? "text-primary" : "text-destructive")
+              }
+            >
+              {dryRun ? "🛡️  MODO SEGURO" : "🔥  MODO REAL"}
+            </div>
+            <div className="mt-1 text-sm font-mono">
+              dry_run = <span className="font-bold">{dryRun ? "true" : "false"}</span>
+              {!dryRun && " — VAI ESCREVER NO BANCO"}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {dryRun
+                ? "Nada é escrito. Apenas simula classificação para auditoria."
+                : "O botão principal abrirá modal de confirmação com digitação obrigatória."}
+            </div>
+          </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button onClick={runWithCurrentParams} disabled={!ready || running} size="lg">
-              {running ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  {dryRun ? "Executar dry-run" : "Executar lote real"}
-                </>
-              )}
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={runBatch500}
-              disabled={!ready || running || (!createdAfterIso && !overrideFullBank)}
-              title="Executa lote real de 500 questões com o created_after definido."
-            >
-              <Flame className="h-4 w-4 mr-2" />
-              Rodar lote de 500 (real)
-            </Button>
-            {errorPayload && (
+            {dryRun ? (
+              <Button onClick={runWithCurrentParams} disabled={!ready || running} size="lg">
+                {running ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Executar dry-run
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={openRealBatchModal}
+                disabled={!ready || running || !guardrails.passed}
+                title={
+                  guardrails.passed
+                    ? "Abre modal de confirmação com digitação obrigatória"
+                    : "Guardrails do lote real não passaram — veja card 'Execução real'"
+                }
+              >
+                <Flame className="h-4 w-4 mr-2" />
+                Abrir confirmação de lote real
+              </Button>
+            )}
+            {errorPayload && dryRun && (
               <Button variant="outline" size="lg" onClick={runWithCurrentParams} disabled={!ready || running}>
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Tentar novamente
@@ -1205,6 +1260,7 @@ export default function ClassificationRunner() {
               onClick={testConnection}
               disabled={!ready || connTesting}
               title="Dispara dry-run mínimo (batch=10) só para medir latência e validar conectividade."
+
             >
               {connTesting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1529,10 +1585,15 @@ export default function ClassificationRunner() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <Flame className="h-5 w-5" /> Confirmar execução real
+              <Flame className="h-5 w-5" /> Confirmar execução real — MODO REAL
             </AlertDialogTitle>
+
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm">
+                <div className="rounded border-2 border-destructive bg-destructive/10 p-2 text-center">
+                  <div className="text-lg font-black text-destructive">dry_run = false</div>
+                  <div className="text-xs">Esta ação ESCREVE no banco</div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <span className="text-muted-foreground">Tabela:</span>
                   <span className="font-mono">{realParams?.table_source}</span>
@@ -1545,6 +1606,7 @@ export default function ClassificationRunner() {
                       : "—"}
                   </span>
                 </div>
+
                 {lastDryRunVerdict && (
                   <div className="grid grid-cols-4 gap-2 p-2 rounded border text-center text-xs">
                     <div>
