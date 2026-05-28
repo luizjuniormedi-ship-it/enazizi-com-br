@@ -373,8 +373,27 @@ export default function MnemonicGeneratorPage() {
       if (!user) { toast.error("Faça login."); return; }
       const question = `${result.frase_mnemonica}\n\nQual conceito médico?`;
       const answer = `${result.tema}\n\n${(result as any).explicacao_associacao || result.explicacao_didatica}`;
-      const { error } = await supabase.from("flashcards").insert({ user_id: user.id, question, answer, topic: result.tema, is_global: false });
+      const { error, data: inserted } = await supabase
+        .from("flashcards")
+        .insert({ user_id: user.id, question, answer, topic: result.tema, is_global: false })
+        .select("id")
+        .single();
       if (error) throw error;
+
+      // Fase 1B: vincular FSRS imediatamente (com rollback em caso de falha)
+      if (inserted?.id) {
+        const { ensurePersonalFlashcardFsrs } = await import("@/lib/personalFlashcardFsrs");
+        const res = await ensurePersonalFlashcardFsrs({
+          userId: user.id,
+          flashcardId: inserted.id,
+          source: "mnemonic_studio",
+        });
+        if (!res.ok) {
+          toast.error("Flashcard não pôde ser vinculado ao FSRS e foi revertido.");
+          return;
+        }
+      }
+
       telemetry.track('mnemonic_used_in_flashcard', { tema: result.tema, result_id: result.result_id });
       toast.success("Flashcard criado!");
     } catch (err: any) { toast.error(err.message || "Erro."); }
