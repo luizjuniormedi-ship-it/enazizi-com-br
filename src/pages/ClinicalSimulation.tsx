@@ -42,6 +42,7 @@ import QuickActionsBar from "@/components/clinical-simulation/QuickActionsBar";
 import MessageList from "@/components/clinical-simulation/MessageList";
 import type { ChatMessage, ManeuverPerformed } from "@/components/clinical-simulation/MessageBubble";
 import { exportToPdf } from "@/lib/exportPdf";
+import { useClinicalSimulation as useClinicalSimulationModule } from "@/modules/clinical-simulation/hooks/useClinicalSimulation";
 
 const EVAL_LABELS: Record<string, string> = {
   anamnesis: "Anamnese", physical_exam: "Exame Físico", complementary_exams: "Exames Complementares",
@@ -114,6 +115,9 @@ const ClinicalSimulation = () => {
   const teacherCaseId = searchParams.get("teacher_case_id");
   const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
   const { startSession: startTrackedSession, completeSession: completeTrackedSession } = useSessionTracking();
+  // Wave 1.0 — módulo clinical-simulation (audioRuntime + clinicalTelemetry).
+  // Coexiste com a lógica legada; será expandido nas sub-waves 1.1–1.6.
+  const cs = useClinicalSimulationModule({ specialty: studyCtx?.specialty, difficulty: "intermediário", teacherCaseId });
 
   // ─── SETUP STATE (lobby only) ───
   const [specialty, setSpecialty] = useState(studyCtx?.specialty || "Clínica Médica");
@@ -270,12 +274,8 @@ const ClinicalSimulation = () => {
             setTimerExpired(true);
             toast({ title: "⏰ Tempo esgotado!", description: "O tempo do plantão acabou! Encerre o atendimento agora.", variant: "destructive" });
             try {
-              const ctx = new AudioContext();
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.connect(gain); gain.connect(ctx.destination);
-              osc.frequency.value = 880; gain.gain.value = 0.3;
-              osc.start(); osc.stop(ctx.currentTime + 0.5);
+              cs.sound("timeout");
+              cs.track("plantao_time_expired", { phase: "active" });
             } catch {}
             return 0;
           }
