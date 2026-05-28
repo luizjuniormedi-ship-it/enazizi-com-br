@@ -139,6 +139,20 @@ const ClinicalSimulation = () => {
   const [loading, setLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Lock body scroll while fullscreen to prevent double-scroll / viewport bounce.
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = (document.body.style as any).overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    (document.body.style as any).overscrollBehavior = "contain";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      (document.body.style as any).overscrollBehavior = prevOverscroll;
+    };
+  }, [isFullscreen]);
+
+
   // ─── EXECUTION STATE (active session) ───
   const [vitals, setVitals] = useState<Vitals | null>(null);
   const [setting, setSetting] = useState("");
@@ -950,7 +964,8 @@ const ClinicalSimulation = () => {
             </div>
 
             {/* CENTER: Chat */}
-            <Card className="overflow-hidden flex flex-col min-h-0 border-0 rounded-none lg:border lg:rounded-xl">
+            <Card className="overflow-hidden flex flex-col min-h-0 min-w-0 border-0 rounded-none lg:border lg:rounded-xl">
+
 
               <CardContent className="p-0 flex flex-col flex-1 min-h-0 overflow-hidden">
                 <MessageList messages={messages} isTyping={isTyping && phase === "active"} isFinishing={phase === "finishing"} />

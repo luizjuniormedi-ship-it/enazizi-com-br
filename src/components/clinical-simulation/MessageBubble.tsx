@@ -63,9 +63,22 @@ const getTypeIcon = (type?: string) => {
 };
 
 const MARKDOWN_COMPONENTS = {
-  p: ({ children }: any) => <p>{highlightVitals(children)}</p>,
-  li: ({ children }: any) => <li>{highlightVitals(children)}</li>,
+  p: ({ children }: any) => <p className="break-words">{highlightVitals(children)}</p>,
+  li: ({ children }: any) => <li className="break-words">{highlightVitals(children)}</li>,
+  a: ({ children, href }: any) => (
+    <a href={href} target="_blank" rel="noreferrer" className="break-all underline">{children}</a>
+  ),
+  pre: ({ children }: any) => (
+    <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words text-xs">{children}</pre>
+  ),
+  code: ({ children }: any) => (
+    <code className="break-words whitespace-pre-wrap">{children}</code>
+  ),
+  table: ({ children }: any) => (
+    <div className="max-w-full overflow-x-auto"><table className="text-xs">{children}</table></div>
+  ),
 };
+
 
 interface MessageBubbleProps {
   msg: ChatMessage;
@@ -74,7 +87,7 @@ interface MessageBubbleProps {
 const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
   const TypeIcon = getTypeIcon(msg.type);
   return (
-    <div className={`flex gap-2 ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}>
+    <div className={`flex gap-2 min-w-0 ${msg.role === "doctor" ? "justify-end" : "justify-start"}`}>
       {msg.role === "simulation" && (
         <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-1">
           {msg.type === "preceptor_hint" ? (
@@ -87,7 +100,7 @@ const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
         </div>
       )}
       <div
-        className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm ${
+        className={`max-w-[78%] min-w-0 overflow-x-hidden rounded-2xl px-4 py-3 text-sm ${
           msg.role === "doctor"
             ? "bg-primary text-primary-foreground rounded-br-md"
             : msg.type === "preceptor_hint"
@@ -97,6 +110,7 @@ const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
             : "bg-muted/50 border border-border/50 rounded-bl-md"
         }`}
       >
+
         {msg.role === "simulation" && msg.type && (
           <div className="flex items-center gap-1.5 mb-1.5">
             <TypeIcon className="h-3.5 w-3.5 opacity-60" />
@@ -110,7 +124,8 @@ const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
             )}
           </div>
         )}
-        <div className={`break-words whitespace-pre-wrap leading-relaxed ${msg.role === "simulation" ? "prose prose-sm max-w-none dark:prose-invert" : ""}`}>
+        <div className={`break-words whitespace-pre-wrap leading-relaxed max-w-full overflow-x-hidden ${msg.role === "simulation" ? "prose prose-sm max-w-none dark:prose-invert" : ""}`}>
+
           {msg.role === "simulation" ? (
             <ReactMarkdown components={MARKDOWN_COMPONENTS}>{msg.content}</ReactMarkdown>
           ) : (
