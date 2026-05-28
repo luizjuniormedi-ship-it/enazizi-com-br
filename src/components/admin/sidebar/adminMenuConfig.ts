@@ -285,6 +285,24 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     ],
   },
   {
+    id: "governance",
+    label: "Governance",
+    icon: ShieldCheck,
+    description: "Governança semântica, ontologia e controle curatorial.",
+    scopes: ["super_admin", "semantic_board", "platform_admin"],
+    items: [
+      {
+        to: "/admin/semantic-review-center",
+        label: "Semantic Review",
+        description: "Painel de revisão e aprovação humana da ontologia semântica.",
+        icon: GitBranch,
+        scopes: ["super_admin", "semantic_board", "platform_admin"],
+        badge: "Ontology",
+        keywords: ["semantic", "ontology", "review", "curadoria", "classificação"],
+      },
+    ],
+  },
+  {
     id: "sistema",
     label: "Sistema",
     icon: Settings2,
