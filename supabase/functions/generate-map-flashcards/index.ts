@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireAuth } from "../_shared/require-auth.ts";
+import {
+  applyQualityGate,
+  checkDailyFlashcardLimit,
+  insertFlashcardsWithFsrs,
+  clampQuantity,
+  FLASHCARD_GOV_VERSION,
+} from "../_shared/flashcard-governance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
