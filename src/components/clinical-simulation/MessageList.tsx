@@ -14,14 +14,18 @@ interface MessageListProps {
  * só renderizam o item adicionado, não a lista inteira.
  */
 const MessageList = memo(function MessageList({ messages, isTyping, isFinishing }: MessageListProps) {
-  const endRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length, isTyping]);
+    // Scroll APENAS o container interno, nunca a página.
+    // Evita window.scrollTo implícito do scrollIntoView que empurra o layout.
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages.length, isTyping, isFinishing]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+    <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-3">
       {messages.map((msg, i) => (
         <MessageBubble key={i} msg={msg} />
       ))}
@@ -47,10 +51,9 @@ const MessageList = memo(function MessageList({ messages, isTyping, isFinishing 
           </div>
         </div>
       )}
-
-      <div ref={endRef} />
     </div>
   );
 });
+
 
 export default MessageList;
