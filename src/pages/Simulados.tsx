@@ -174,6 +174,7 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
     .map((q: any) => ({
       id: q.id,
+      bankId: q.id,
       statement: String(q.statement || ""),
       options: Array.isArray(q.options) ? q.options.map(String) : [],
       correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
@@ -353,6 +354,9 @@ const Simulados = () => {
       forceStart?: boolean; // New flag to bypass config step
     }) => {
     console.log("[Simulados] iniciar clicado", config);
+    const correlationId = crypto.randomUUID();
+    e2eCorrelationIdRef.current = correlationId;
+    console.log("[E2E_SIMULADO_START]", { correlation_id: correlationId, config });
     
     // Safety check: ensure topics are loaded from distribution if missing
     const hasManualTopics = Array.isArray(config.topics) && config.topics.length > 0;
@@ -437,6 +441,7 @@ const Simulados = () => {
           const { data, error: fnError } = await supabase.functions.invoke(
             "generate-adaptive-simulado",
             {
+              headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
               body: {
                 target_question_count: config.count || 20,
                 performance: perf,
@@ -454,6 +459,7 @@ const Simulados = () => {
           if (data?.session_id) {
             simuladoSessionIdRef.current = data.session_id;
             console.log(`[SIMULADO_SESSION_CAPTURED] adaptive=${data.session_id}`);
+            console.log("[E2E_SIMULADO_SESSION_CREATED]", { correlation_id: correlationId, session_id: data.session_id, source: "adaptive" });
           }
 
           setLoadingPercent(90);
@@ -477,6 +483,7 @@ const Simulados = () => {
 
           setLoadingPercent(100);
           setTimeout(() => {
+            console.log("[E2E_SIMULADO_QUESTIONS_RENDERED]", { correlation_id: correlationId, session_id: simuladoSessionIdRef.current, questions: adaptiveQs.length });
             startExamWithQuestions(adaptiveQs, config);
           }, 500);
           return;
