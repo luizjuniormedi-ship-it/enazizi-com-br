@@ -284,8 +284,9 @@ const ClinicalSimulation = () => {
     countdownTimer.stop("RESTORE");
     if (typeof data.countdown === "number" && data.countdown > 0) countdownTimer.start(data.countdown);
     setPhase("active", "RESTORE");
+    try { cs.track("plantao_restored", csExtras({ from: "persisted_session" })); } catch {}
     clearPending();
-  }, [clearPending]);
+  }, [clearPending, cs, csExtras]);
 
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clinical-simulation`;
