@@ -297,7 +297,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         description: "Painel de revisão e aprovação humana da ontologia semântica.",
         icon: GitBranch,
         scopes: ["super_admin", "semantic_board", "platform_admin"],
-        badge: "Ontology",
+        badge: "Novo",
         keywords: ["semantic", "ontology", "review", "curadoria", "classificação"],
       },
     ],
