@@ -97,8 +97,11 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
         const apiKey = isDirectOpenAI ? OPENAI_API_KEY : LOVABLE_API_KEY;
         
         const tokenKey = getTokenParameterName(model);
+        // Lovable AI Gateway exige o prefixo provider/ (ex: "google/gemini-2.5-flash").
+        // OpenAI direta exige modelo cru (ex: "gpt-4o-mini"). Só strippa nesse caso.
+        const payloadModel = isDirectOpenAI ? model.replace('openai/', '') : model;
         const payload = {
-          model: model.replace('openai/', '').replace('google/', ''),
+          model: payloadModel,
           messages: options.messages,
           [tokenKey]: options.maxTokens ?? 16384,
           temperature: 1,
