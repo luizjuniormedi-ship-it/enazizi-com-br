@@ -163,11 +163,35 @@ const ClinicalSimulation = () => {
 
   // ─── TIMER / DETERIORATION ───
   // Wave 1.2 — countdown agora vive em useCountdownTimer (interval único + logs).
-  // `countdown`, `setCountdown` e `timerExpired` mantêm a API antiga via shim.
   const [deteriorationCount, setDeteriorationCount] = useState(0);
   const [inactivityWarning, setInactivityWarning] = useState(false);
   const lastActionTimeRef = useRef<number>(Date.now());
   const deteriorationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const countdownTimer = useCountdownTimer({
+    enabled: phaseMachine.phase === "active",
+    initialSeconds: 0,
+    correlationId: cs.correlationId,
+    onMilestone: (remaining) => {
+      if (remaining === 121) toast({ title: "⚠️ 2 minutos restantes!", description: "Finalize seu atendimento rapidamente." });
+      if (remaining === 301) toast({ title: "⏱️ 5 minutos restantes", description: "Considere fechar seu diagnóstico e prescrição." });
+    },
+    onExpired: () => {
+      toast({ title: "⏰ Tempo esgotado!", description: "O tempo do plantão acabou! Encerre o atendimento agora.", variant: "destructive" });
+      try { cs.sound("timeout"); cs.track("plantao_time_expired", { phase: "active" }); } catch {}
+    },
+  });
+  const countdown = countdownTimer.remaining;
+  const timerExpired = countdownTimer.expired;
+  // Shim de compatibilidade — mantém as call sites antigas funcionando.
+  const setCountdown = useCallback((n: number) => {
+    if (n > 0) countdownTimer.start(n);
+    else countdownTimer.reset(0);
+  }, [countdownTimer]);
+  const setTimerExpired = useCallback((v: boolean) => {
+    if (!v) countdownTimer.reset(countdownTimer.remaining);
+  }, [countdownTimer]);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null); // legacy noop ref (cleanup chamado em stop())
 
   // ─── UI / DIALOGS STATE ───
   const [specialistDialogOpen, setSpecialistDialogOpen] = useState(false);
