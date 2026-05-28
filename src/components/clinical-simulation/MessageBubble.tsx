@@ -63,9 +63,22 @@ const getTypeIcon = (type?: string) => {
 };
 
 const MARKDOWN_COMPONENTS = {
-  p: ({ children }: any) => <p>{highlightVitals(children)}</p>,
-  li: ({ children }: any) => <li>{highlightVitals(children)}</li>,
+  p: ({ children }: any) => <p className="break-words">{highlightVitals(children)}</p>,
+  li: ({ children }: any) => <li className="break-words">{highlightVitals(children)}</li>,
+  a: ({ children, href }: any) => (
+    <a href={href} target="_blank" rel="noreferrer" className="break-all underline">{children}</a>
+  ),
+  pre: ({ children }: any) => (
+    <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words text-xs">{children}</pre>
+  ),
+  code: ({ children }: any) => (
+    <code className="break-words whitespace-pre-wrap">{children}</code>
+  ),
+  table: ({ children }: any) => (
+    <div className="max-w-full overflow-x-auto"><table className="text-xs">{children}</table></div>
+  ),
 };
+
 
 interface MessageBubbleProps {
   msg: ChatMessage;
