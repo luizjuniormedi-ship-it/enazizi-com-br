@@ -3063,6 +3063,30 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_questions_bank_diacritic_20260528: {
+        Row: {
+          approved_for_generation: boolean | null
+          id: string | null
+          snapshotted_at: string | null
+          specialty_id_before: string | null
+          topic: string | null
+        }
+        Insert: {
+          approved_for_generation?: boolean | null
+          id?: string | null
+          snapshotted_at?: string | null
+          specialty_id_before?: string | null
+          topic?: string | null
+        }
+        Update: {
+          approved_for_generation?: boolean | null
+          id?: string | null
+          snapshotted_at?: string | null
+          specialty_id_before?: string | null
+          topic?: string | null
+        }
+        Relationships: []
+      }
       behavioral_telemetry: {
         Row: {
           action_kind: string | null
