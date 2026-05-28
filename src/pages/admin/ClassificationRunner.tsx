@@ -1585,8 +1585,9 @@ export default function ClassificationRunner() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <Flame className="h-5 w-5" /> Confirmar execução real
+              <Flame className="h-5 w-5" /> Confirmar execução real — MODO REAL
             </AlertDialogTitle>
+
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm">
                 <div className="grid grid-cols-2 gap-2">
