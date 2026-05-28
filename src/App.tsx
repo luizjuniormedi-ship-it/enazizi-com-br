@@ -396,6 +396,8 @@ const App = () => (
                 <Route path="classification-runner" element={<ClassificationRunner />} />
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="classification" element={<ClassificationBackfill />} />
+                <Route path="semantic-observatory" element={<SemanticObservatory />} />
+
 
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
