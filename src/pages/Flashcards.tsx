@@ -241,6 +241,26 @@ const Flashcards = () => {
       const { error, data: inserted } = await supabase.from("flashcards").insert(newCards).select("id, question, answer, topic, is_global, user_id");
       if (error) throw error;
 
+      // Fase 1B: vincular FSRS para todo card pessoal recém-criado
+      const personalIds = (inserted || [])
+        .filter((c: any) => c.is_global === false)
+        .map((c: any) => c.id);
+      if (personalIds.length > 0) {
+        const { ensurePersonalFlashcardsFsrsBatch } = await import("@/lib/personalFlashcardFsrs");
+        const { okCount, failed } = await ensurePersonalFlashcardsFsrsBatch(
+          user.id,
+          personalIds,
+          "flashcards_bank",
+        );
+        if (failed.length > 0) {
+          toast({
+            title: "Alguns flashcards não foram salvos",
+            description: `${okCount} ok, ${failed.length} revertidos (falha no FSRS).`,
+            variant: "destructive",
+          });
+        }
+      }
+
       toast({ title: `${newCards.length} flashcards gerados!`, description: `Prontos para revisão de "${search}".` });
       await fetchData();
 
