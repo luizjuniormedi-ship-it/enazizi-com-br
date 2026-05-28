@@ -496,14 +496,21 @@ export default function ClassificationRunner() {
   const execute = useCallback(
     async (params: { table_source: TableSource; batch_size: number; dry_run: boolean; created_after?: string | null }) => {
       if (!ready) return;
+      // 🚫 BLINDAGEM UX: lote real NUNCA pode passar por aqui.
+      // Tudo que escreve no banco precisa ir pelo modal guardrailed (executeRealBatch).
+      if (!params.dry_run) {
+        toast.error(
+          "Lote real bloqueado neste fluxo. Use o card 'Execução real' com confirmação por digitação.",
+        );
+        return;
+      }
       if (!params.created_after && !overrideFullBank) {
         toast.error("created_after vazio — bloqueado pelo Freeze v25. Defina a data ou ative o override.");
         return;
       }
       if (!params.created_after && overrideFullBank) {
-        if (!confirm("⚠️ Você está prestes a classificar TODO o banco. Isso é bloqueado pelo Freeze v25. Continuar mesmo assim?")) return;
+        if (!confirm("⚠️ Você está prestes a rodar dry-run contra TODO o banco. Continuar?")) return;
       }
-      if (!params.dry_run && !confirm("dry_run está DESLIGADO. Vai ESCREVER no banco. Confirmar?")) return;
 
       setRunning(true);
       setErrorPayload(null);
@@ -511,7 +518,7 @@ export default function ClassificationRunner() {
         const body: Record<string, unknown> = {
           table_source: params.table_source,
           batch_size: Math.max(10, Math.min(500, params.batch_size)),
-          dry_run: params.dry_run,
+          dry_run: true, // 🔒 redundante: nunca chega aqui com false
         };
         if (params.created_after) body.created_after = params.created_after;
         const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
@@ -534,7 +541,7 @@ export default function ClassificationRunner() {
         } catch {
           /* ignore quota */
         }
-        toast.success(params.dry_run ? "Dry-run concluído" : "Lote real concluído");
+        toast.success("Dry-run concluído");
         void fetchPersisted();
         void refreshEligibleCount();
       } catch (e) {
@@ -546,6 +553,7 @@ export default function ClassificationRunner() {
     },
     [ready, fetchPersisted, overrideFullBank, refreshEligibleCount],
   );
+
 
   const runWithCurrentParams = () =>
     execute({ table_source: tableSource, batch_size: batchSize, dry_run: dryRun, created_after: createdAfterIso });
