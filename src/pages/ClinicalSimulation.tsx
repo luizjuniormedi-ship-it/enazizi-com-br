@@ -274,12 +274,8 @@ const ClinicalSimulation = () => {
             setTimerExpired(true);
             toast({ title: "⏰ Tempo esgotado!", description: "O tempo do plantão acabou! Encerre o atendimento agora.", variant: "destructive" });
             try {
-              const ctx = new AudioContext();
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.connect(gain); gain.connect(ctx.destination);
-              osc.frequency.value = 880; gain.gain.value = 0.3;
-              osc.start(); osc.stop(ctx.currentTime + 0.5);
+              cs.sound("timeout");
+              cs.track("plantao_time_expired", { phase: "active" });
             } catch {}
             return 0;
           }
