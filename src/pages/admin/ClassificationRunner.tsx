@@ -285,6 +285,10 @@ export default function ClassificationRunner() {
   const [result, setResult] = useState<RunResult | null>(null);
   const [snapshotTs, setSnapshotTs] = useState<string | null>(null);
 
+  // Curricular-pending skipped count (fetched from DB after each run)
+  const [curricularSkipped, setCurricularSkipped] = useState<number | null>(null);
+  const [curricularLoading, setCurricularLoading] = useState(false);
+
   const [lastRun, setLastRun] = useState<PersistedRun | null>(null);
   const [history, setHistory] = useState<PersistedRun[]>([]);
   const [queueStats, setQueueStats] = useState<{ pending: number; approved: number; rejected: number } | null>(null);
