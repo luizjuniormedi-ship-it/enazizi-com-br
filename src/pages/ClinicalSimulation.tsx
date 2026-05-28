@@ -254,7 +254,7 @@ const ClinicalSimulation = () => {
     if (data.actionTimeline) setActionTimeline(data.actionTimeline);
     if (data.examResults) setExamResults(data.examResults);
     if (data.vitalsSnapshots) setVitalsSnapshots(data.vitalsSnapshots);
-    if (typeof data.countdown === "number") setCountdown(data.countdown);
+    // countdown é re-armado abaixo via countdownTimer.start() (não usar shim aqui).
     if (data.abcdeChecklist) setAbcdeChecklist(data.abcdeChecklist);
     if (data.medicalRecord) setMedicalRecord(data.medicalRecord);
     if (data.categoryScores) setCategoryScores(data.categoryScores);
