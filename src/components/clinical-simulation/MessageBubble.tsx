@@ -124,7 +124,8 @@ const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
             )}
           </div>
         )}
-        <div className={`break-words whitespace-pre-wrap leading-relaxed ${msg.role === "simulation" ? "prose prose-sm max-w-none dark:prose-invert" : ""}`}>
+        <div className={`break-words whitespace-pre-wrap leading-relaxed max-w-full overflow-x-hidden ${msg.role === "simulation" ? "prose prose-sm max-w-none dark:prose-invert" : ""}`}>
+
           {msg.role === "simulation" ? (
             <ReactMarkdown components={MARKDOWN_COMPONENTS}>{msg.content}</ReactMarkdown>
           ) : (
