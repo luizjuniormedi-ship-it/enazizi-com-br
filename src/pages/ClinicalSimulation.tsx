@@ -399,6 +399,7 @@ const ClinicalSimulation = () => {
     setLoading(true); setIsTyping(true); setInactivityWarning(false);
 
     setMessages((prev) => [...prev, { role: "doctor", content: `⚠️ [Sistema] Paciente aguardou sem conduta — deterioração automática (nível ${level})`, timestamp: Date.now() }]);
+    try { cs.track("plantao_deterioration_triggered", csExtras({ level, reason: "inactivity" })); } catch {}
     try {
       const updatedHistory = [...conversationHistory, { role: "user", content: `[SISTEMA: O aluno ficou inativo por 90 segundos. Nível de deterioração: ${level}/3. Piore o paciente proporcionalmente.]` }];
       const res = await callAPI({ action: "deteriorate", deterioration_level: level, conversation_history: updatedHistory, triage_color: triageColor, patient_status: patientStatus });
