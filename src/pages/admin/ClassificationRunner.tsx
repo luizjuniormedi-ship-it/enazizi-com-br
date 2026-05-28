@@ -80,6 +80,24 @@ const DRY_RUN_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 horas
 const CONFIRM_PHRASE = "EXECUTAR LOTE REAL";
 const POLL_INTERVAL_MS = 5000;
 
+// ── Batch clamp (client-side guardrail) ───────────────────────────
+const BATCH_MIN = 10;
+const BATCH_MAX = 500;
+function clampBatch(n: number): { value: number; clamped: boolean } {
+  if (!Number.isFinite(n) || Number.isNaN(n)) return { value: 100, clamped: true };
+  const rounded = Math.round(n);
+  if (rounded > BATCH_MAX) return { value: BATCH_MAX, clamped: true };
+  if (rounded < BATCH_MIN) return { value: BATCH_MIN, clamped: true };
+  return { value: rounded, clamped: false };
+}
+
+// ── Tópicos pendentes de decisão curricular ───────────────────────
+// Skipped por esses padrões NÃO é falha do classificador — é lacuna
+// curricular consciente (Anestesiologia, Nutrição). Usado para calcular
+// métricas ajustadas SEM mascarar a métrica bruta.
+const CURRICULAR_PENDING_TOPIC_PATTERNS = ["%anestesi%", "%nutri%"];
+const CURRICULAR_PENDING_LABEL = "Anestesia / Anestesiologia / Nutrição (decisão curricular pendente)";
+
 type TableSource = "questions_bank" | "real_exam_questions";
 
 interface MethodBreakdown {
@@ -267,6 +285,10 @@ export default function ClassificationRunner() {
   const [result, setResult] = useState<RunResult | null>(null);
   const [snapshotTs, setSnapshotTs] = useState<string | null>(null);
 
+  // Curricular-pending skipped count (fetched from DB after each run)
+  const [curricularSkipped, setCurricularSkipped] = useState<number | null>(null);
+  const [curricularLoading, setCurricularLoading] = useState(false);
+
   const [lastRun, setLastRun] = useState<PersistedRun | null>(null);
   const [history, setHistory] = useState<PersistedRun[]>([]);
   const [queueStats, setQueueStats] = useState<{ pending: number; approved: number; rejected: number } | null>(null);
@@ -333,6 +355,100 @@ export default function ClassificationRunner() {
       }
     }
   }, [result, evaluation, snapshotTs, tableSource, batchSize]);
+
+  // ── Fetch curricular-pending skipped count from DB ──────────────
+  // Conta questões que o classificador legitimamente pula porque a specialty
+  // ainda não existe na ontologia (decisão curricular: Anestesiologia/Nutrição).
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchCurricular() {
+      if (!result || !result.total_processed) {
+        setCurricularSkipped(0);
+        return;
+      }
+      setCurricularLoading(true);
+      try {
+        const orFilter = CURRICULAR_PENDING_TOPIC_PATTERNS
+          .map((p) => `topic.ilike.${p}`)
+          .join(",");
+        let query = supabase
+          .from(tableSource)
+          .select("id", { count: "exact", head: true })
+          .is("specialty_id", null)
+          .or(orFilter);
+        if (createdAfterIso) query = query.gte("created_at", createdAfterIso);
+        const { count } = await query;
+        if (!cancelled) {
+          const bounded = Math.min(count ?? 0, result.total_skipped ?? 0);
+          setCurricularSkipped(bounded);
+        }
+      } catch {
+        if (!cancelled) setCurricularSkipped(null);
+      } finally {
+        if (!cancelled) setCurricularLoading(false);
+      }
+    }
+    fetchCurricular();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, tableSource]);
+
+  // ── Métricas e veredito ajustados (descontando lacuna curricular) ─
+  // CRÍTICO: mesmos thresholds. NÃO mascarar rejeição — só descontar
+  // skipped legítimo por ausência ontológica decidida.
+  const adjustedView = useMemo(() => {
+    if (!result || !result.total_processed) return null;
+    const total = result.total_processed;
+    const exact = result.method_breakdown?.exact_text ?? 0;
+    const alias = result.method_breakdown?.alias_exact ?? 0;
+    const skip = result.total_skipped ?? 0;
+    const queue = result.total_queued_review ?? 0;
+    const curricular = curricularSkipped ?? 0;
+    const realSkip = Math.max(skip - curricular, 0);
+    const adjustedTotal = Math.max(total - curricular, 1);
+    const detAdjPct = pct(exact + alias, adjustedTotal);
+    const skipAdjPct = pct(realSkip, adjustedTotal);
+    const queueAdjPct = pct(queue, adjustedTotal);
+
+    let verdict: Verdict = "healthy";
+    const reasons: string[] = [];
+    if (detAdjPct < 85) {
+      if (detAdjPct >= 65) {
+        verdict = "borderline";
+        reasons.push(`exact + alias ajustado ${detAdjPct}% (esperado ≥ 85%)`);
+      } else {
+        verdict = "rejected";
+        reasons.push(`exact + alias ajustado ${detAdjPct}% muito baixo`);
+      }
+    }
+    if (skipAdjPct >= 5) {
+      if (skipAdjPct < 15) {
+        verdict = verdict === "rejected" ? verdict : "borderline";
+        reasons.push(`skipped ajustado ${skipAdjPct}% (esperado < 5%)`);
+      } else {
+        verdict = "rejected";
+        reasons.push(`skipped ajustado ${skipAdjPct}% acima do limite`);
+      }
+    }
+    if (queueAdjPct > 10) {
+      verdict = verdict === "rejected" ? verdict : "borderline";
+      reasons.push(`fila ajustada ${queueAdjPct}% (esperado < 10%)`);
+    }
+    if (verdict === "healthy") reasons.push("Distribuição ajustada dentro dos thresholds");
+
+    return {
+      curricular,
+      realSkip,
+      adjustedTotal,
+      detAdjPct,
+      skipAdjPct,
+      queueAdjPct,
+      verdict,
+      reasons,
+    };
+  }, [result, curricularSkipped]);
 
   // ── Reidratar localStorage ──────────────────────────────────────
   useEffect(() => {
@@ -1117,12 +1233,32 @@ export default function ClassificationRunner() {
               <Label>Tamanho do lote</Label>
               <Input
                 type="number"
-                min={10}
-                max={500}
+                min={BATCH_MIN}
+                max={BATCH_MAX}
                 value={batchSize}
-                onChange={(e) => setBatchSize(Number(e.target.value) || 100)}
+                onChange={(e) => {
+                  const rawStr = e.target.value;
+                  if (rawStr === "") {
+                    setBatchSize(BATCH_MIN);
+                    return;
+                  }
+                  const raw = Number(rawStr);
+                  const { value, clamped } = clampBatch(raw);
+                  setBatchSize(value);
+                  if (clamped && !Number.isNaN(raw)) {
+                    toast.warning(
+                      `Batch permitido: ${BATCH_MIN}–${BATCH_MAX}. Ajustado para ${value}.`
+                    );
+                  }
+                }}
+                onBlur={(e) => {
+                  const { value } = clampBatch(Number(e.target.value));
+                  if (value !== batchSize) setBatchSize(value);
+                }}
               />
-              <p className="text-xs text-muted-foreground">10–500</p>
+              <p className="text-xs text-muted-foreground">
+                Batch permitido: {BATCH_MIN}–{BATCH_MAX}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Modo de execução</Label>
@@ -1269,7 +1405,11 @@ export default function ClassificationRunner() {
               )}
               Testar conexão com edge function
             </Button>
-          </div>
+              </div>
+
+
+
+
 
           {connTest && (
             <Alert variant={connTest.ok ? "default" : "destructive"}>
@@ -1386,6 +1526,119 @@ export default function ClassificationRunner() {
                   <div className="text-xs text-muted-foreground">skip</div>
                 </div>
               </div>
+
+              {/* ════ Bruto × Ajustado (lacuna curricular) ════ */}
+              {adjustedView && (
+                <div className="rounded-lg border-2 border-dashed p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <Label className="text-sm font-semibold">Métricas brutas × ajustadas</Label>
+                    {curricularLoading ? (
+                      <Badge variant="outline" className="text-xs">
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" /> calculando lacuna curricular
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        {adjustedView.curricular} item(ns) sem specialty por decisão curricular
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* BRUTO */}
+                    <div className="rounded border p-3 space-y-2 bg-background">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wide">Bruto</span>
+                        {evaluation.verdict === "healthy" && (
+                          <Badge className="bg-primary text-primary-foreground text-xs">HEALTHY</Badge>
+                        )}
+                        {evaluation.verdict === "borderline" && (
+                          <Badge variant="secondary" className="text-xs">BORDERLINE</Badge>
+                        )}
+                        {evaluation.verdict === "rejected" && (
+                          <Badge variant="destructive" className="text-xs">REJECTED</Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <div className="font-bold">{evaluation.metrics.deterministicPct}%</div>
+                          <div className="text-xs text-muted-foreground">deterministic bruto</div>
+                        </div>
+                        <div>
+                          <div className="font-bold">{evaluation.metrics.skipPct}%</div>
+                          <div className="text-xs text-muted-foreground">skipped bruto</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        total = {result.total_processed ?? 0} · skipped = {result.total_skipped ?? 0}
+                      </div>
+                    </div>
+
+                    {/* AJUSTADO */}
+                    <div className="rounded border p-3 space-y-2 bg-background">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wide">
+                          Ajustado (− lacuna curricular)
+                        </span>
+                        {adjustedView.verdict === "healthy" && (
+                          <Badge className="bg-primary text-primary-foreground text-xs">HEALTHY</Badge>
+                        )}
+                        {adjustedView.verdict === "borderline" && (
+                          <Badge variant="secondary" className="text-xs">BORDERLINE</Badge>
+                        )}
+                        {adjustedView.verdict === "rejected" && (
+                          <Badge variant="destructive" className="text-xs">REJECTED</Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <div className="font-bold">{adjustedView.detAdjPct}%</div>
+                          <div className="text-xs text-muted-foreground">deterministic ajustado</div>
+                        </div>
+                        <div>
+                          <div className="font-bold">{adjustedView.skipAdjPct}%</div>
+                          <div className="text-xs text-muted-foreground">skipped ajustado</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        total ajustado = {adjustedView.adjustedTotal} · skipped real = {adjustedView.realSkip}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded border p-3 bg-background text-xs space-y-1">
+                    <div className="font-semibold mb-1">Decomposição do skipped</div>
+                    <div className="flex justify-between">
+                      <span>Sem specialty por decisão curricular</span>
+                      <span className="font-mono">
+                        {curricularLoading ? "…" : adjustedView.curricular}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground ml-2 italic">
+                      {CURRICULAR_PENDING_LABEL}
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Sem specialty por falha real do classificador</span>
+                      <span className="font-mono font-semibold">{adjustedView.realSkip}</span>
+                    </div>
+                  </div>
+
+                  {adjustedView.reasons.length > 0 && (
+                    <ul className="text-xs list-disc pl-5 text-muted-foreground">
+                      {adjustedView.reasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Thresholds idênticos ao bruto (det ≥ 85%, skip &lt; 5%, fila &lt; 10%).
+                    A versão ajustada apenas exclui questões cuja specialty ainda não existe
+                    na ontologia por decisão curricular pendente. Nenhum threshold foi reduzido.
+                  </p>
+                </div>
+              )}
+
+
 
               <div>
                 <Label className="text-xs text-muted-foreground">method_breakdown</Label>
