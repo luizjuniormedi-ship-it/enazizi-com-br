@@ -556,10 +556,25 @@ export default function ClassificationRunner() {
 
 
   const runWithCurrentParams = () =>
-    execute({ table_source: tableSource, batch_size: batchSize, dry_run: dryRun, created_after: createdAfterIso });
+    execute({ table_source: tableSource, batch_size: batchSize, dry_run: true, created_after: createdAfterIso });
 
-  const runBatch500 = () =>
-    execute({ table_source: tableSource, batch_size: 500, dry_run: false, created_after: createdAfterIso });
+  // ⚠️ Lote real só via modal guardrailed. Esse atalho agora apenas abre o modal.
+  const openRealBatchModal = () => {
+    if (!ready) {
+      toast.error("Login admin necessário");
+      return;
+    }
+    if (dryRun) {
+      toast.error("Desligue o switch 'Modo' para abrir a confirmação de lote real.");
+      return;
+    }
+    if (!guardrails.passed) {
+      toast.error("Guardrails do lote real não passaram. Veja o card 'Execução real'.");
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
 
   const reRunLastDryRun = () => {
     if (!lastRun || !lastRun.dry_run) {
