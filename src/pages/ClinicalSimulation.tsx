@@ -130,7 +130,11 @@ const ClinicalSimulation = () => {
   const [learnerMode, setLearnerMode] = useState(false);
 
   // ─── ORCHESTRATION STATE ───
-  const [phase, setPhase] = useState<Phase>("lobby");
+  // Wave 1.1 — phase agora vem do state machine real (`usePhaseMachine`).
+  // Toda transição é logada como [PLANTAO_STATE_TRANSITION] com correlation_id.
+  const phaseMachine = usePhaseMachine({ initial: "lobby", correlationId: cs.correlationId });
+  const phase = phaseMachine.phase as Phase;
+  const setPhase = phaseMachine.setPhase;
   const [loading, setLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
