@@ -1,13 +1,20 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import ProtectedRoute from "./ProtectedRoute";
 
-const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminCheck();
+interface AdminRouteProps {
+  children: React.ReactNode;
+  requiredRoles?: string[];
+}
 
-  if (authLoading || adminLoading) {
+const AdminRoute = ({ children, requiredRoles }: AdminRouteProps) => {
+  const { user, loading: authLoading } = useAuth();
+  const { roles, loading: rolesLoading } = useUserRoles();
+
+  const loading = authLoading || rolesLoading;
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -16,7 +23,13 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (!isAdmin) return <Navigate to="/enaflix" replace />;
+
+  // Se requiredRoles fornecido, verifica contra roles do usuário; senão, exige 'admin'
+  const hasAccess = requiredRoles
+    ? requiredRoles.some((r) => roles.includes(r))
+    : roles.includes("admin");
+
+  if (!hasAccess) return <Navigate to="/enaflix" replace />;
 
   return <ProtectedRoute>{children}</ProtectedRoute>;
 };
