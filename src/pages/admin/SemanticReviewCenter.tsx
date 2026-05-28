@@ -3,18 +3,17 @@
  *
  * Freeze v25 — Enterprise Governance Mode
  *
- * REGRAS ABSOLUTAS (não negociáveis):
- *  - Read-only por padrão (observabilidade + aprovação humana).
- *  - JAMAIS toca: questions_bank.specialty_id, FSRS, Planner, Tutor, TRI, simulados.
- *  - JAMAIS faz: auto-classificação, fuzzy, IA, heurística destrutiva, dual-write.
- *  - Toda escrita futura: via RPC service_role, append-only, em schema `ontology`.
- *  - Frontend NUNCA escreve direto em tabelas críticas.
- *
- * Fonte de dados única: RPC `ontology_observatory_snapshot` (já existente, read-only).
- * Ações são confirmadas via modal e enviadas a RPCs governadas
- * (`ontology_review_action` quando disponível). Sem RPC → toast informativo.
+ * Regras absolutas:
+ *  - Único caminho de escrita: RPC `ontology_review_action` (server-side validada).
+ *  - Allow-list de 4 ações: approve_semantic_link · reject_semantic_review ·
+ *    mark_semantic_noise · escalate_to_rfc.
+ *  - Se a RPC não estiver disponível → painel entra em modo READ-ONLY explícito
+ *    com botões desabilitados (nada de toast pós-clique fingindo workflow).
+ *  - Toda ação exige justificativa (≥10 chars). `escalate_to_rfc` exige RFC ID.
+ *  - `approve_semantic_link` exige dupla confirmação adicional.
+ *  - Jamais toca: questions_bank.specialty_id, FSRS, Planner, Tutor, TRI, simulados.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,15 +24,16 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ShieldCheck, GitPullRequest, AlertTriangle, Layers, Trash2, Undo2,
-  ClipboardList, RefreshCw, Loader2, Lock, FileWarning, Network, History, Copy,
+  ShieldCheck, GitPullRequest, AlertTriangle, Layers, Undo2,
+  ClipboardList, RefreshCw, Loader2, Lock, FileWarning, Network, History, Copy, ShieldAlert,
 } from "lucide-react";
 
 // ───────────────────────────────────────────────────────────────
@@ -45,92 +45,78 @@ type Snapshot = {
   ontology_runtime_enabled?: boolean;
   ontology_health: any | null;
   semantic_drift: any[] | null;
-  resolution_backlog: Array<{
-    resolution_type: string;
-    question_count: number;
-    rfc_pending: number;
-    human_review_pending: number;
-    unreviewed: number;
-  }>;
-  pending_rfc_domains: Array<{
-    topic_normalized: string;
-    topic_original: string;
-    question_count: number;
-    first_seen?: string;
-    last_seen?: string;
-    suggested_resolution_type?: string;
-  }>;
+  resolution_backlog: Array<{ resolution_type: string; question_count: number; rfc_pending: number; human_review_pending: number; unreviewed: number }>;
+  pending_rfc_domains: Array<{ topic_normalized: string; topic_original: string; question_count: number; suggested_resolution_type?: string }>;
   semantic_noise: Array<{ topic_normalized: string; question_count: number }>;
   transversal_topics: Array<{ topic_normalized: string; question_count: number }>;
   cross_domain_candidates: Array<{ topic_normalized: string; question_count: number }>;
 };
 
+/** Allow-list canônica da RPC governada. */
 type ActionKind =
-  | "approve_rfc" | "reject_rfc" | "mark_transversal" | "keep_null" | "send_to_noise"
-  | "approve_link" | "reject_link" | "mark_noise" | "escalate_rfc" | "multi_axis"
-  | "approve_cross_domain" | "reject_cross_domain"
-  | "keep_noise" | "promote_noise" | "manual_map";
+  | "approve_semantic_link"
+  | "reject_semantic_review"
+  | "mark_semantic_noise"
+  | "escalate_to_rfc";
 
-type PendingAction = {
-  kind: ActionKind;
-  target: string;       // topic_normalized or question_id
-  context?: string;     // descriptive label shown in modal
-  meta?: Record<string, any>;
-};
-
-// ───────────────────────────────────────────────────────────────
-// Helpers
-// ───────────────────────────────────────────────────────────────
 const ACTION_LABELS: Record<ActionKind, string> = {
-  approve_rfc: "Aprovar RFC curricular",
-  reject_rfc: "Rejeitar RFC",
-  mark_transversal: "Marcar como tema transversal",
-  keep_null: "Manter NULL (backlog curricular)",
-  send_to_noise: "Enviar para semantic noise",
-  approve_link: "Aprovar semantic link",
-  reject_link: "Rejeitar semantic link",
-  mark_noise: "Marcar como noise",
-  escalate_rfc: "Escalar para RFC curricular",
-  multi_axis: "Associar multi-eixo (read-only)",
-  approve_cross_domain: "Aprovar cross-domain",
-  reject_cross_domain: "Rejeitar cross-domain",
-  keep_noise: "Manter como noise",
-  promote_noise: "Promover noise a RFC",
-  manual_map: "Mapear manualmente (abrir RFC)",
+  approve_semantic_link: "Aprovar link semântico",
+  reject_semantic_review: "Rejeitar revisão",
+  mark_semantic_noise: "Marcar como noise",
+  escalate_to_rfc: "Escalar para RFC",
 };
 
 const RISK_BY_ACTION: Record<ActionKind, "low" | "medium" | "high"> = {
-  approve_rfc: "high",
-  reject_rfc: "medium",
-  mark_transversal: "medium",
-  keep_null: "low",
-  send_to_noise: "low",
-  approve_link: "high",
-  reject_link: "low",
-  mark_noise: "low",
-  escalate_rfc: "medium",
-  multi_axis: "high",
-  approve_cross_domain: "high",
-  reject_cross_domain: "low",
-  keep_noise: "low",
-  promote_noise: "medium",
-  manual_map: "medium",
+  approve_semantic_link: "high",      // cria link → dupla confirmação
+  reject_semantic_review: "low",
+  mark_semantic_noise: "low",
+  escalate_to_rfc: "medium",          // exige RFC ID
 };
 
-function riskColor(risk: "low" | "medium" | "high"): string {
-  if (risk === "high") return "destructive";
-  if (risk === "medium") return "default";
-  return "secondary";
-}
+type PendingAction = {
+  kind: ActionKind;
+  target: string;
+  /** Rótulo amigável mostrado no diálogo. */
+  contextLabel?: string;
+};
+
+type RpcStatus = "probing" | "available" | "unavailable";
 
 // ───────────────────────────────────────────────────────────────
 // Component
 // ───────────────────────────────────────────────────────────────
 export default function SemanticReviewCenter() {
   const { toast } = useToast();
-  const [pending, setPending] = useState<PendingAction | null>(null);
-  const [confirmText, setConfirmText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [rpcStatus, setRpcStatus] = useState<RpcStatus>("probing");
+
+  // Probe da RPC: chamamos com payload deliberadamente inválido.
+  // - Se função existir → erro de validação (justification required / invalid action).
+  // - Se função não existir → PGRST202 / "could not find function".
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { error } = await supabase.rpc("ontology_review_action" as any, {
+        p_kind: "__probe__",
+        p_target: "__probe__",
+        p_meta: {},
+      });
+      if (cancelled) return;
+      if (!error) {
+        // jamais deveria suceder com payload de probe; trate como disponível
+        setRpcStatus("available");
+        return;
+      }
+      const msg = (error.message || "").toLowerCase();
+      const code = (error as any).code || "";
+      const notFound =
+        code === "PGRST202" ||
+        msg.includes("could not find the function") ||
+        msg.includes("does not exist") ||
+        msg.includes("not found");
+      setRpcStatus(notFound ? "unavailable" : "available");
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const { data, isLoading, refetch, isFetching, error } = useQuery<Snapshot | null>({
     queryKey: ["semantic-review-center"],
@@ -142,40 +128,53 @@ export default function SemanticReviewCenter() {
     refetchInterval: 60_000,
   });
 
-  const snap = data;
-  const runtimeOff = !snap?.ontology_runtime_enabled;
+  // ── Confirmation dialog state ────────────────────────────────
+  const [pending, setPending] = useState<PendingAction | null>(null);
+  const [justification, setJustification] = useState("");
+  const [rfcId, setRfcId] = useState("");
+  const [doubleConfirm, setDoubleConfirm] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  async function executeAction(a: PendingAction) {
+  function openDialog(a: PendingAction) {
+    setPending(a);
+    setJustification("");
+    setRfcId("");
+    setDoubleConfirm("");
+  }
+  function closeDialog() {
+    setPending(null);
+    setJustification("");
+    setRfcId("");
+    setDoubleConfirm("");
+  }
+
+  async function executeAction() {
+    if (!pending) return;
     setSubmitting(true);
     try {
-      // RPC governada de aprovação humana. Se não existir ainda,
-      // mantemos a ação como observação registrada no toast (sem dual-write).
-      const { error } = await supabase.rpc("ontology_review_action" as any, {
-        p_kind: a.kind,
-        p_target: a.target,
-        p_meta: a.meta ?? {},
+      const { data, error } = await supabase.rpc("ontology_review_action" as any, {
+        p_kind: pending.kind,
+        p_target: pending.target,
+        p_meta: {
+          justification: justification.trim(),
+          ...(rfcId.trim() ? { rfc_id: rfcId.trim() } : {}),
+        },
       });
       if (error) throw error;
       toast({
         title: "Ação registrada",
-        description: `${ACTION_LABELS[a.kind]} — ${a.target}`,
+        description: `${ACTION_LABELS[pending.kind]} · audit_id ${(data as any)?.audit_id?.slice?.(0, 8) ?? "—"}`,
       });
+      closeDialog();
       refetch();
     } catch (e: any) {
-      // RPC ainda não disponível → comunicar honestamente (freeze v25)
-      const msg = (e?.message || "").toLowerCase();
-      const noRpc = msg.includes("does not exist") || msg.includes("not found") || msg.includes("could not find");
       toast({
-        title: noRpc ? "Aguardando RPC governada" : "Falha ao registrar ação",
-        description: noRpc
-          ? `Ação "${ACTION_LABELS[a.kind]}" requer RPC ontology_review_action. Nenhuma alteração foi feita.`
-          : e?.message ?? "Erro desconhecido",
-        variant: noRpc ? "default" : "destructive",
+        title: "Falha ao registrar ação",
+        description: e?.message ?? "Erro desconhecido",
+        variant: "destructive",
       });
     } finally {
       setSubmitting(false);
-      setPending(null);
-      setConfirmText("");
     }
   }
 
@@ -186,7 +185,6 @@ export default function SemanticReviewCenter() {
       </div>
     );
   }
-
   if (error) {
     return (
       <Card className="border-destructive m-6">
@@ -196,6 +194,17 @@ export default function SemanticReviewCenter() {
       </Card>
     );
   }
+
+  const snap = data;
+  const readOnly = rpcStatus !== "available";
+
+  // ── Justification validations ───────────────────────────────
+  const needsRfc = pending?.kind === "escalate_to_rfc";
+  const needsDouble = pending?.kind === "approve_semantic_link";
+  const justOk = justification.trim().length >= 10;
+  const rfcOk = !needsRfc || rfcId.trim().length > 0;
+  const doubleOk = !needsDouble || doubleConfirm === "APROVAR LINK";
+  const canSubmit = !!pending && justOk && rfcOk && doubleOk && !submitting;
 
   return (
     <div className="space-y-6 p-6">
@@ -208,7 +217,7 @@ export default function SemanticReviewCenter() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Mesa operacional de governança curricular — Freeze v25 ·
-            Consumer: <code>admin-semantic-review-center</code> · Read-only por padrão · Append-only · Reversível
+            Consumer: <code>admin-semantic-review-center</code> · Append-only · Auditado server-side
           </p>
         </div>
         <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
@@ -217,24 +226,49 @@ export default function SemanticReviewCenter() {
         </Button>
       </div>
 
-      {/* Governance banner */}
-      <Alert className="border-amber-500/40 bg-amber-500/5">
-        <Lock className="h-4 w-4 text-amber-600" />
-        <AlertTitle className="text-amber-700 dark:text-amber-400">
-          Modo Observacional — Freeze v25 ativo
-        </AlertTitle>
-        <AlertDescription className="text-xs text-muted-foreground space-y-1">
-          <div>
-            ontology_runtime_enabled = <code>{String(snap?.ontology_runtime_enabled ?? false)}</code> ·
-            kill_switch = <code>{String(snap?.kill_switch_enabled ?? false)}</code>
-          </div>
-          <div>
-            Este painel <strong>NÃO</strong> altera <code>questions_bank.specialty_id</code>,
-            FSRS, Planner, Tutor, TRI ou simulados. Toda aprovação é append-only em
-            <code> ontology.question_semantic_links</code> via RPC governada.
-          </div>
-        </AlertDescription>
-      </Alert>
+      {/* RPC status banner */}
+      {rpcStatus === "probing" && (
+        <Alert>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertTitle>Verificando governança server-side…</AlertTitle>
+          <AlertDescription className="text-xs">
+            Probing <code>ontology_review_action</code>.
+          </AlertDescription>
+        </Alert>
+      )}
+      {rpcStatus === "unavailable" && (
+        <Alert className="border-destructive/40 bg-destructive/5">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <AlertTitle className="text-destructive">
+            Modo READ-ONLY — RPC governada indisponível
+          </AlertTitle>
+          <AlertDescription className="text-xs">
+            A função <code>public.ontology_review_action</code> não está deployada.
+            Nenhuma aprovação humana pode ser executada até que ela exista.
+            Todos os botões de ação estão <strong>desabilitados</strong>.
+          </AlertDescription>
+        </Alert>
+      )}
+      {rpcStatus === "available" && (
+        <Alert className="border-amber-500/40 bg-amber-500/5">
+          <Lock className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-700 dark:text-amber-400">
+            Modo Governança Ativa — Freeze v25
+          </AlertTitle>
+          <AlertDescription className="text-xs text-muted-foreground space-y-1">
+            <div>
+              ontology_runtime_enabled = <code>{String(snap?.ontology_runtime_enabled ?? false)}</code> ·
+              kill_switch = <code>{String(snap?.kill_switch_enabled ?? false)}</code>
+            </div>
+            <div>
+              Toda escrita passa por <code>ontology_review_action</code> (SECURITY DEFINER) com
+              validação de papel, justificativa ≥10 chars, RFC obrigatório em escalações
+              e auditoria append-only. <strong>Zero impacto</strong> em
+              <code> questions_bank.specialty_id</code>, FSRS, Planner, Tutor, TRI ou simulados.
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -256,20 +290,17 @@ export default function SemanticReviewCenter() {
           <TabsTrigger value="timeline"><History className="h-4 w-4 mr-1" /> Governance Timeline</TabsTrigger>
         </TabsList>
 
-        {/* 1. RFC Queue */}
+        {/* RFC Queue */}
         <TabsContent value="rfc">
-          <Section
-            title="Pending Curriculum RFC Queue"
-            source="ontology.v_pending_curriculum_rfc"
-            description="Domínios candidatos a RFC formal. NUNCA altera specialty_id."
-          >
+          <Section title="Pending Curriculum RFC Queue" source="ontology.v_pending_curriculum_rfc"
+            description="Domínios candidatos a RFC formal. Apenas escalação (NUNCA altera specialty_id).">
             {snap?.pending_rfc_domains?.length ? (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Topic</TableHead>
                     <TableHead>Qtd</TableHead>
-                    <TableHead>Resolução sugerida</TableHead>
+                    <TableHead>Sugestão</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -283,10 +314,9 @@ export default function SemanticReviewCenter() {
                       <TableCell><Badge variant="secondary">{r.question_count}</Badge></TableCell>
                       <TableCell><Badge variant="outline">{r.suggested_resolution_type ?? "rfc_curriculum"}</Badge></TableCell>
                       <TableCell className="text-right space-x-1">
-                        <ActionBtn kind="approve_rfc"     target={r.topic_normalized} onPick={setPending} />
-                        <ActionBtn kind="mark_transversal" target={r.topic_normalized} onPick={setPending} />
-                        <ActionBtn kind="send_to_noise"    target={r.topic_normalized} onPick={setPending} />
-                        <ActionBtn kind="reject_rfc"       target={r.topic_normalized} onPick={setPending} />
+                        <ActionBtn kind="escalate_to_rfc"        target={r.topic_normalized} disabled={readOnly} onPick={openDialog} />
+                        <ActionBtn kind="mark_semantic_noise"    target={r.topic_normalized} disabled={readOnly} onPick={openDialog} />
+                        <ActionBtn kind="reject_semantic_review" target={r.topic_normalized} disabled={readOnly} onPick={openDialog} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -296,29 +326,23 @@ export default function SemanticReviewCenter() {
           </Section>
         </TabsContent>
 
-        {/* 2. Semantic Review Queue */}
+        {/* Review Queue */}
         <TabsContent value="review">
-          <Section
-            title="Semantic Review Queue"
-            source="ontology.pending_semantic_review"
-            description="Propostas humanas. Aprovação → INSERT append-only em ontology.question_semantic_links."
-          >
-            <ReviewQueueTable onPick={setPending} />
+          <Section title="Semantic Review Queue" source="ontology.pending_semantic_review"
+            description="Aprovação humana → INSERT append-only em ontology.question_semantic_links via RPC.">
+            <ReviewQueueTable readOnly={readOnly} onPick={openDialog} />
           </Section>
         </TabsContent>
 
-        {/* 3. Drift */}
+        {/* Drift */}
         <TabsContent value="drift">
-          <Section
-            title="Drift Analysis"
-            source="ontology.v_semantic_drift"
-            description="Observacional. NUNCA corrige automaticamente."
-          >
+          <Section title="Drift Analysis" source="ontology.v_semantic_drift"
+            description="Observacional. NUNCA corrige automaticamente.">
             {snap?.semantic_drift?.length ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Drift type</TableHead>
+                    <TableHead>Drift</TableHead>
                     <TableHead>Detalhe</TableHead>
                     <TableHead>Afetados</TableHead>
                   </TableRow>
@@ -336,23 +360,20 @@ export default function SemanticReviewCenter() {
                   ))}
                 </TableBody>
               </Table>
-            ) : <Empty label="Nenhum drift detectado no snapshot." />}
+            ) : <Empty label="Nenhum drift detectado." />}
           </Section>
         </TabsContent>
 
-        {/* 4. Cross-Domain */}
+        {/* Cross-Domain */}
         <TabsContent value="cross">
-          <Section
-            title="Cross-Domain Candidates"
-            source="ontology.v_cross_domain_candidates"
-            description="Candidatos a múltiplos eixos. Aprovação humana apenas."
-          >
+          <Section title="Cross-Domain Candidates" source="ontology.v_cross_domain_candidates"
+            description="Apenas escalação para RFC ou rejeição.">
             {snap?.cross_domain_candidates?.length ? (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Topic</TableHead>
-                    <TableHead>Frequência</TableHead>
+                    <TableHead>Freq</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -362,9 +383,8 @@ export default function SemanticReviewCenter() {
                       <TableCell><code className="text-xs">{c.topic_normalized}</code></TableCell>
                       <TableCell><Badge variant="secondary">{c.question_count}</Badge></TableCell>
                       <TableCell className="text-right space-x-1">
-                        <ActionBtn kind="approve_cross_domain" target={c.topic_normalized} onPick={setPending} />
-                        <ActionBtn kind="escalate_rfc"          target={c.topic_normalized} onPick={setPending} />
-                        <ActionBtn kind="reject_cross_domain"   target={c.topic_normalized} onPick={setPending} />
+                        <ActionBtn kind="escalate_to_rfc"        target={c.topic_normalized} disabled={readOnly} onPick={openDialog} />
+                        <ActionBtn kind="reject_semantic_review" target={c.topic_normalized} disabled={readOnly} onPick={openDialog} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -374,13 +394,10 @@ export default function SemanticReviewCenter() {
           </Section>
         </TabsContent>
 
-        {/* 5. Noise */}
+        {/* Noise */}
         <TabsContent value="noise">
-          <Section
-            title="Semantic Noise Center"
-            source="ontology.v_semantic_noise"
-            description="Tópicos sem sinal pedagógico claro (Geral, Diagnóstico, Tratamento, etc.)."
-          >
+          <Section title="Semantic Noise Center" source="ontology.v_semantic_noise"
+            description="Tópicos sem sinal pedagógico claro. Manter, promover (RFC) ou rejeitar.">
             {snap?.semantic_noise?.length ? (
               <Table>
                 <TableHeader>
@@ -396,9 +413,9 @@ export default function SemanticReviewCenter() {
                       <TableCell><code className="text-xs">{n.topic_normalized}</code></TableCell>
                       <TableCell><Badge variant="outline">{n.question_count}</Badge></TableCell>
                       <TableCell className="text-right space-x-1">
-                        <ActionBtn kind="keep_noise"    target={n.topic_normalized} onPick={setPending} />
-                        <ActionBtn kind="promote_noise" target={n.topic_normalized} onPick={setPending} />
-                        <ActionBtn kind="manual_map"    target={n.topic_normalized} onPick={setPending} />
+                        <ActionBtn kind="mark_semantic_noise"    target={n.topic_normalized} disabled={readOnly} onPick={openDialog} />
+                        <ActionBtn kind="escalate_to_rfc"        target={n.topic_normalized} disabled={readOnly} onPick={openDialog} />
+                        <ActionBtn kind="reject_semantic_review" target={n.topic_normalized} disabled={readOnly} onPick={openDialog} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -408,75 +425,101 @@ export default function SemanticReviewCenter() {
           </Section>
         </TabsContent>
 
-        {/* 6. Rollback */}
+        {/* Rollback */}
         <TabsContent value="rollback">
-          <Section
-            title="Rollback Center"
-            source="ontology.ontology_versions + migrations"
-            description="Comandos sugeridos apenas. NUNCA executa rollback automaticamente."
-          >
+          <Section title="Rollback Center" source="ontology.ontology_versions + migrations"
+            description="Comandos sugeridos apenas. NUNCA executa rollback automaticamente.">
             <RollbackHints />
           </Section>
         </TabsContent>
 
-        {/* 7. Governance Timeline */}
+        {/* Governance Timeline */}
         <TabsContent value="timeline">
-          <Section
-            title="Governance Timeline"
-            source="semantic_change_audit + consumer_certifications + ontology_access_log"
-            description="Quem aprovou o quê, quando, em qual versão."
-          >
+          <Section title="Governance Timeline" source="ontology.semantic_change_audit"
+            description="Quem aprovou, o quê, quando, com qual justificativa e em qual versão.">
             <GovernanceTimeline />
           </Section>
         </TabsContent>
       </Tabs>
 
-      {/* Confirmation Dialog */}
-      <Dialog open={!!pending} onOpenChange={(o) => { if (!o) { setPending(null); setConfirmText(""); } }}>
-        <DialogContent>
+      {/* ── Confirmation Dialog ───────────────────────────────── */}
+      <Dialog open={!!pending} onOpenChange={(o) => { if (!o) closeDialog(); }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5" />
-              Confirmação de governança
+              {pending && ACTION_LABELS[pending.kind]}
             </DialogTitle>
-            <DialogDescription>
-              {pending && (
-                <>
-                  <div className="mt-2"><strong>Ação:</strong> {ACTION_LABELS[pending.kind]}</div>
-                  <div><strong>Alvo:</strong> <code>{pending.target}</code></div>
-                  <div className="mt-1">
-                    <strong>Risco:</strong>{" "}
-                    <Badge variant={riskColor(RISK_BY_ACTION[pending.kind]) as any}>
+            <DialogDescription asChild>
+              <div className="space-y-1 text-sm">
+                <div><strong>Alvo:</strong> <code className="text-xs">{pending?.target}</code></div>
+                <div>
+                  <strong>Risco:</strong>{" "}
+                  {pending && (
+                    <Badge variant={
+                      RISK_BY_ACTION[pending.kind] === "high" ? "destructive" :
+                      RISK_BY_ACTION[pending.kind] === "medium" ? "default" : "secondary"
+                    }>
                       {RISK_BY_ACTION[pending.kind]}
                     </Badge>
-                  </div>
-                </>
-              )}
+                  )}
+                </div>
+              </div>
             </DialogDescription>
           </DialogHeader>
+
           <Alert className="border-amber-500/40 bg-amber-500/5">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-xs">
-              Esta ação será registrada via RPC governada <code>ontology_review_action</code>,
-              append-only e reversível. <strong>Não</strong> altera runtime legado.
-              Digite <strong>APROVAR</strong> para confirmar.
+              Esta ação será registrada via <code>ontology_review_action</code>,
+              append-only em <code>ontology.semantic_change_audit</code>.
+              {needsDouble && " Como cria link semântico, exige confirmação dupla."}
             </AlertDescription>
           </Alert>
-          <input
-            className="mt-2 w-full rounded border border-input bg-background px-3 py-2 text-sm"
-            placeholder="Digite APROVAR"
-            value={confirmText}
-            onChange={(e) => setConfirmText(e.target.value)}
-          />
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="just">Justificativa (mín. 10 caracteres) *</Label>
+              <Textarea
+                id="just"
+                value={justification}
+                onChange={(e) => setJustification(e.target.value)}
+                placeholder="Ex.: Tema recorrente em emergência, validado por dois revisores; impacto observacional apenas."
+                rows={3}
+              />
+              <div className="text-[11px] text-muted-foreground">
+                {justification.trim().length}/10 chars
+              </div>
+            </div>
+
+            {needsRfc && (
+              <div className="space-y-1">
+                <Label htmlFor="rfc">RFC ID *</Label>
+                <Input
+                  id="rfc"
+                  value={rfcId}
+                  onChange={(e) => setRfcId(e.target.value)}
+                  placeholder="RFC-2026-XX-NOME"
+                />
+              </div>
+            )}
+
+            {needsDouble && (
+              <div className="space-y-1">
+                <Label htmlFor="dbl">Digite <strong>APROVAR LINK</strong> para confirmar criação do vínculo semântico *</Label>
+                <Input
+                  id="dbl"
+                  value={doubleConfirm}
+                  onChange={(e) => setDoubleConfirm(e.target.value)}
+                  placeholder="APROVAR LINK"
+                />
+              </div>
+            )}
+          </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setPending(null); setConfirmText(""); }}>
-              Cancelar
-            </Button>
-            <Button
-              variant="default"
-              disabled={confirmText !== "APROVAR" || submitting}
-              onClick={() => pending && executeAction(pending)}
-            >
+            <Button variant="outline" onClick={closeDialog} disabled={submitting}>Cancelar</Button>
+            <Button variant="default" disabled={!canSubmit} onClick={executeAction}>
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Confirmar
             </Button>
@@ -528,29 +571,30 @@ function Empty({ label }: { label: string }) {
 }
 
 function ActionBtn({
-  kind, target, onPick,
-}: { kind: ActionKind; target: string; onPick: (p: PendingAction) => void }) {
+  kind, target, disabled, onPick,
+}: { kind: ActionKind; target: string; disabled: boolean; onPick: (p: PendingAction) => void }) {
   const risk = RISK_BY_ACTION[kind];
   return (
     <Button
       size="sm"
       variant={risk === "high" ? "destructive" : risk === "medium" ? "default" : "outline"}
       onClick={() => onPick({ kind, target })}
+      disabled={disabled}
       className="text-xs h-7"
+      title={disabled ? "Modo read-only: RPC governada indisponível" : ACTION_LABELS[kind]}
     >
       {ACTION_LABELS[kind]}
     </Button>
   );
 }
 
-function ReviewQueueTable({ onPick }: { onPick: (p: PendingAction) => void }) {
-  // Read-only fetch direto da view (RLS protege). Sem escrita.
+function ReviewQueueTable({ readOnly, onPick }: { readOnly: boolean; onPick: (p: PendingAction) => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ["pending-semantic-review-list"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("pending_semantic_review")
-        .select("id, question_id, topic, subtopic, proposed_node, confidence, source, ontology_version, reviewer, created_at")
+        .select("id, question_id, topic, subtopic, proposed_node, confidence, source, ontology_version, reviewer, created_at, review_status")
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
@@ -569,27 +613,31 @@ function ReviewQueueTable({ onPick }: { onPick: (p: PendingAction) => void }) {
           <TableHead>Topic</TableHead>
           <TableHead>Proposed node</TableHead>
           <TableHead>Conf.</TableHead>
-          <TableHead>Source</TableHead>
+          <TableHead>Status</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {data.map((r: any) => (
-          <TableRow key={r.id}>
-            <TableCell><code className="text-xs">{String(r.question_id).slice(0, 8)}</code></TableCell>
-            <TableCell className="text-xs">{r.topic}{r.subtopic ? ` › ${r.subtopic}` : ""}</TableCell>
-            <TableCell><Badge variant="outline">{r.proposed_node ?? "—"}</Badge></TableCell>
-            <TableCell>{r.confidence != null ? Number(r.confidence).toFixed(2) : "—"}</TableCell>
-            <TableCell className="text-xs text-muted-foreground">{r.source ?? "—"}</TableCell>
-            <TableCell className="text-right space-x-1">
-              <ActionBtn kind="approve_link"  target={r.id} onPick={onPick} />
-              <ActionBtn kind="multi_axis"    target={r.id} onPick={onPick} />
-              <ActionBtn kind="escalate_rfc"  target={r.id} onPick={onPick} />
-              <ActionBtn kind="mark_noise"    target={r.id} onPick={onPick} />
-              <ActionBtn kind="reject_link"   target={r.id} onPick={onPick} />
-            </TableCell>
-          </TableRow>
-        ))}
+        {data.map((r: any) => {
+          const finalized = r.review_status && !["pending", "in_review"].includes(r.review_status);
+          return (
+            <TableRow key={r.id}>
+              <TableCell><code className="text-xs">{String(r.question_id).slice(0, 8)}</code></TableCell>
+              <TableCell className="text-xs">{r.topic}{r.subtopic ? ` › ${r.subtopic}` : ""}</TableCell>
+              <TableCell><Badge variant="outline">{r.proposed_node ?? "—"}</Badge></TableCell>
+              <TableCell>{r.confidence != null ? Number(r.confidence).toFixed(2) : "—"}</TableCell>
+              <TableCell>
+                <Badge variant={finalized ? "secondary" : "default"}>{r.review_status ?? "pending"}</Badge>
+              </TableCell>
+              <TableCell className="text-right space-x-1">
+                <ActionBtn kind="approve_semantic_link"  target={r.id} disabled={readOnly || finalized} onPick={onPick} />
+                <ActionBtn kind="escalate_to_rfc"        target={r.id} disabled={readOnly || finalized} onPick={onPick} />
+                <ActionBtn kind="mark_semantic_noise"    target={r.id} disabled={readOnly || finalized} onPick={onPick} />
+                <ActionBtn kind="reject_semantic_review" target={r.id} disabled={readOnly || finalized} onPick={onPick} />
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
@@ -599,8 +647,8 @@ function RollbackHints() {
   const { toast } = useToast();
   const items = [
     { label: "Rollback semantic_resolution_status (Wave 1)", sql: "DELETE FROM ontology.semantic_resolution_status WHERE rollout_stage = 'shadow' AND created_at > now() - interval '7 days';" },
-    { label: "Reset feature flag ontology_runtime_enabled", sql: "UPDATE public.feature_flags SET enabled = false WHERE key = 'ontology_runtime_enabled';" },
-    { label: "Revogar última versão de ontologia", sql: "UPDATE ontology.ontology_versions SET status = 'deprecated' WHERE id = (SELECT id FROM ontology.ontology_versions ORDER BY created_at DESC LIMIT 1);" },
+    { label: "Reset feature flag ontology_runtime_enabled",  sql: "UPDATE public.system_settings SET value = jsonb_set(value,'{enabled}','false'::jsonb) WHERE key = 'ontology_runtime_enabled';" },
+    { label: "Revogar última versão da ontologia",           sql: "UPDATE ontology.ontology_versions SET status = 'deprecated' WHERE id = (SELECT id FROM ontology.ontology_versions ORDER BY created_at DESC LIMIT 1);" },
   ];
   return (
     <div className="space-y-2">
@@ -616,10 +664,8 @@ function RollbackHints() {
             <div className="text-sm font-medium">{it.label}</div>
             <pre className="text-[11px] text-muted-foreground bg-muted/40 rounded px-2 py-1 overflow-x-auto">{it.sql}</pre>
           </div>
-          <Button
-            size="sm" variant="outline"
-            onClick={() => { navigator.clipboard.writeText(it.sql); toast({ title: "SQL copiado" }); }}
-          >
+          <Button size="sm" variant="outline"
+            onClick={() => { navigator.clipboard.writeText(it.sql); toast({ title: "SQL copiado" }); }}>
             <Copy className="h-3 w-3 mr-1" /> Copiar
           </Button>
         </div>
@@ -634,7 +680,7 @@ function GovernanceTimeline() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("semantic_change_audit")
-        .select("id, actor, action, target, ontology_version, rollout_stage, rollback_available, created_at")
+        .select("id, actor, action, target, rfc_id, justification, ontology_version, rollout_stage, rollback_available, created_at")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -653,22 +699,20 @@ function GovernanceTimeline() {
           <TableHead>Ator</TableHead>
           <TableHead>Ação</TableHead>
           <TableHead>Alvo</TableHead>
-          <TableHead>Versão</TableHead>
-          <TableHead>Rollback</TableHead>
+          <TableHead>RFC</TableHead>
+          <TableHead>Justificativa</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {data.map((r: any) => (
           <TableRow key={r.id}>
             <TableCell className="text-xs">{new Date(r.created_at).toLocaleString("pt-BR")}</TableCell>
-            <TableCell className="text-xs">{r.actor ?? "—"}</TableCell>
+            <TableCell className="text-xs"><code>{String(r.actor).slice(0, 8)}</code></TableCell>
             <TableCell><Badge variant="outline">{r.action}</Badge></TableCell>
-            <TableCell className="text-xs"><code>{r.target}</code></TableCell>
-            <TableCell className="text-xs">{r.ontology_version ?? "—"}</TableCell>
-            <TableCell>
-              {r.rollback_available
-                ? <Badge variant="secondary">disponível</Badge>
-                : <Badge variant="destructive">indisponível</Badge>}
+            <TableCell className="text-xs"><code>{String(r.target).slice(0, 14)}</code></TableCell>
+            <TableCell className="text-xs">{r.rfc_id ?? "—"}</TableCell>
+            <TableCell className="text-xs max-w-[300px] truncate" title={r.justification}>
+              {r.justification}
             </TableCell>
           </TableRow>
         ))}
