@@ -193,58 +193,57 @@ FORMATO JSON:
       });
     }
 
-    // Insert flashcards
-    const rows = flashcardsData.flashcards
+    // FASE 1 P0 — quality gate + dedup
+    const rawCards = flashcardsData.flashcards
       .filter((f: any) => f.question && f.answer)
-      .map((f: any) => ({
-        user_id: user.id,
-        question: f.question,
-        answer: f.answer,
-        topic: contentJson.title,
-        is_global: false,
-        source_map_id: map_id,
-      }));
+      .map((f: any) => ({ question: String(f.question), answer: String(f.answer), explanation: "" }));
+    const { accepted, rejected } = applyQualityGate(rawCards);
+    console.log(`[MAP_FLASHCARDS] gov=${FLASHCARD_GOV_VERSION} accepted=${accepted.length} rejected=${rejected.length}`);
 
-    const { data: inserted, error: insertErr } = await supabase
-      .from("flashcards")
-      .insert(rows)
-      .select("id");
+    // clamp final ≤ 15
+    const finalCards = accepted.slice(0, clampQuantity(accepted.length));
 
-    if (insertErr) {
-      console.error("Insert error:", insertErr);
-      return new Response(JSON.stringify({ error: "Erro ao salvar flashcards" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (finalCards.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "quality_gate_rejected_all",
+        message: "Cards do mapa rejeitados pelo gate de qualidade (triviais ou sem contexto clínico).",
+        rejected_count: rejected.length,
+      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Create FSRS cards for spaced repetition
-    const now = new Date();
-    const fsrsRows = (inserted || []).map((fc: any) => ({
+    const rows = finalCards.map((f) => ({
       user_id: user.id,
-      card_type: "flashcard",
-      card_ref_id: fc.id,
-      stability: 1.0,
-      difficulty: 5.0,
-      elapsed_days: 0,
-      scheduled_days: 1,
-      reps: 0,
-      lapses: 0,
-      state: 0,
-      due: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-      last_review: null,
+      question: f.question,
+      answer: f.answer,
+      explanation: f.explanation || null,
+      topic: contentJson.title,
+      is_global: false,
+      source_map_id: map_id,
     }));
 
-    if (fsrsRows.length > 0) {
-      await supabase.from("fsrs_cards").insert(fsrsRows);
+    // FASE 1 P0 — insert atômico via service role (rollback se FSRS falhar)
+    let insertedFlashcards: any[] = [];
+    try {
+      const result = await insertFlashcardsWithFsrs(supabaseAdmin, rows, {
+        userId: user.id,
+        topic: contentJson.title,
+        discipline: null,
+        deckId: null,
+      });
+      insertedFlashcards = result.flashcards;
+    } catch (e: any) {
+      console.error("[MAP_FLASHCARDS] insert+fsrs falhou (rolled back):", e?.message);
+      return new Response(JSON.stringify({
+        success: false,
+        error: "insert_failed_no_orphans",
+        message: e?.message || "Erro ao salvar flashcards (rollback aplicado).",
+      }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Update counter on map
-    const svc = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-    await svc.from("mental_maps")
-      .update({ flashcards_count: rows.length })
+    await supabaseAdmin.from("mental_maps")
+      .update({ flashcards_count: insertedFlashcards.length })
       .eq("id", map_id);
 
     return new Response(JSON.stringify({
