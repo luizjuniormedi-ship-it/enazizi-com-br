@@ -82,6 +82,7 @@ const EnrichmentProgress = lazyWithRetry(() => import("./pages/admin/EnrichmentP
 const ClassificationRunner = lazyWithRetry(() => import("./pages/admin/ClassificationRunner"), "ClassificationRunner");
 const ClassificationHealthDashboard = lazyWithRetry(() => import("./pages/admin/ClassificationHealthDashboard"), "ClassificationHealthDashboard");
 const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
+const SemanticObservatory = lazyWithRetry(() => import("./pages/admin/SemanticObservatory"), "SemanticObservatory");
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
