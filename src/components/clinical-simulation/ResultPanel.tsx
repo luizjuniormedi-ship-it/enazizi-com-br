@@ -232,7 +232,6 @@ const ResultPanel = memo(function ResultPanel({
 
       {/* Correct diagnosis */}
 
-      {/* Correct diagnosis */}
       <Card className="border-2 border-primary/30">
         <CardContent className="p-5 space-y-3">
           <h4 className="text-base font-bold flex items-center gap-2">
