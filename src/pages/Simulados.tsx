@@ -744,10 +744,10 @@ const Simulados = () => {
       const correctCount = Object.values(answers).filter((ans, idx) => ans === questions[idx]?.correct).length;
       const finalScore = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
 
-          console.log("[E2E_SIMULADO_FINALIZE_START]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, user_id: user.id, total_questions: questions.length });
-
           // Create exam_sessions row BEFORE analytics so the FK from analytics is satisfied.
       const sessionId = simuladoSessionIdRef.current;
+      console.log("[E2E_SIMULADO_FINALIZE_START]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, user_id: user.id, total_questions: questions.length });
+
       if (sessionId) {
         try {
           try {
