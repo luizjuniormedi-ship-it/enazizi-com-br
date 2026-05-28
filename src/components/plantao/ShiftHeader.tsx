@@ -5,6 +5,8 @@ interface ShiftHeaderProps {
   patientStatus: string;
   statusAlert: boolean;
   countdown: number;
+  /** Total seconds the case started with — used to scale the progress bar correctly per difficulty. */
+  initialCountdown?: number;
   timerExpired: boolean;
   score: number;
   scoreFlash: "green" | "red" | null;
@@ -29,7 +31,7 @@ const STATUS_CONFIG: Record<string, { color: string; pulse: boolean }> = {
 };
 
 export default function ShiftHeader({
-  patientStatus, statusAlert, countdown, timerExpired,
+  patientStatus, statusAlert, countdown, initialCountdown, timerExpired,
   score, scoreFlash, triageColor, setting, inactivityWarning,
   abcdeChecklist,
 }: ShiftHeaderProps) {
@@ -41,7 +43,8 @@ export default function ShiftHeader({
 
   const triage = TRIAGE_CONFIG[triageColor] || TRIAGE_CONFIG.amarelo;
   const status = STATUS_CONFIG[patientStatus] || STATUS_CONFIG.estável;
-  const timerPercent = countdown > 0 ? (countdown / (30 * 60)) * 100 : 0;
+  const baseTimer = initialCountdown && initialCountdown > 0 ? initialCountdown : 30 * 60;
+  const timerPercent = countdown > 0 ? Math.min(100, (countdown / baseTimer) * 100) : 0;
   const timerCritical = countdown <= 120;
   const timerWarning = countdown <= 300;
   const abcdeCount = Object.values(abcdeChecklist).filter(Boolean).length;
