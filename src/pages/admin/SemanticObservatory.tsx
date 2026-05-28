@@ -399,6 +399,85 @@ export default function SemanticObservatory() {
         </CardContent>
       </Card>
 
+      {/* NULL Resolution Roadmap */}
+      <Card className="border-primary/20">
+        <CardHeader>
+          <CardTitle>NULL Resolution Roadmap — 8 Fases</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Estratégia oficial para os 5.032 NULL restantes. Princípio: "NULL correto é melhor do que classificação errada."
+            Detalhes em <code>docs/ontology/NULL_RESOLUTION_ROADMAP.md</code>.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fase</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Gate de saída</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell>1</TableCell>
+                <TableCell>Estabilização (30–60d)</TableCell>
+                <TableCell><Badge>Em curso</Badge></TableCell>
+                <TableCell className="text-xs">Governança humana provada</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>2</TableCell>
+                <TableCell>Curriculum RFCs</TableCell>
+                <TableCell><Badge variant="outline">Pendente</Badge></TableCell>
+                <TableCell className="text-xs">RFCs aprovados pelo Semantic Board</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>3</TableCell>
+                <TableCell>Wave 2 controlada</TableCell>
+                <TableCell><Badge variant="outline">Bloqueada</Badge></TableCell>
+                <TableCell className="text-xs">5 gates Wave 2 verdes</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>4</TableCell>
+                <TableCell>Classificação multi-eixo</TableCell>
+                <TableCell><Badge variant="outline">Futuro</Badge></TableCell>
+                <TableCell className="text-xs">specialty_id legado preservado</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>5</TableCell>
+                <TableCell>Shadow consumers (analytics)</TableCell>
+                <TableCell><Badge variant="outline">Futuro</Badge></TableCell>
+                <TableCell className="text-xs">Divergência logada e auditável</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>6</TableCell>
+                <TableCell>Human review pipeline</TableCell>
+                <TableCell><Badge variant="outline">Futuro</Badge></TableCell>
+                <TableCell className="text-xs">Sem auto-resolução de semantic noise</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>7</TableCell>
+                <TableCell>Longitudinal validation</TableCell>
+                <TableCell><Badge variant="outline">Futuro</Badge></TableCell>
+                <TableCell className="text-xs">Meses de drift/retention/stability</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>8</TableCell>
+                <TableCell>Runtime integration</TableCell>
+                <TableCell><Badge variant="destructive">Proibido sem 8 gates</Badge></TableCell>
+                <TableCell className="text-xs">Canário, fail-closed, shadow-first</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <div className="mt-4 p-3 rounded bg-destructive/5 border border-destructive/20 text-xs space-y-1">
+            <p className="font-semibold text-destructive">Proibições absolutas:</p>
+            <p>❌ IA para preencher specialty_id · ❌ fuzzy automático · ❌ reduzir thresholds · ❌ specialty automática · ❌ sobrescrever runtime legado · ❌ ligar <code>ontology_runtime_enabled</code> globalmente</p>
+          </div>
+        </CardContent>
+      </Card>
+
+
+
       {/* Health raw */}
       {snap?.ontology_health && (
         <Card>
