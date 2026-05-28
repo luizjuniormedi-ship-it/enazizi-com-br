@@ -822,7 +822,10 @@ const ClinicalSimulation = () => {
   const handleOpenMobileVitals = useCallback(() => setMobileVitalsOpen(true), []);
   const handleOpenPrescription = useCallback(() => setPrescriptionDialogOpen(true), []);
   const handleOpenSpecialist = useCallback(() => setSpecialistDialogOpen(true), []);
-  const handlePrescriptionSubmit = useCallback((text: string) => sendMessage(text, "Prescrição"), [sendMessage]);
+  const handlePrescriptionSubmit = useCallback((text: string) => {
+    try { cs.track("plantao_prescription_submitted", csExtras({ length: text?.length || 0 })); } catch {}
+    return sendMessage(text, "Prescrição");
+  }, [sendMessage, cs, csExtras]);
 
   // Memoized derived values for stable Active region
   const recentTimeline = useMemo(() => actionTimeline.slice(-8), [actionTimeline]);
