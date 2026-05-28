@@ -124,6 +124,8 @@ const ResultPanel = memo(function ResultPanel({
           </div>
           <Progress value={finalEval.final_score} className="h-2" />
         </CardContent>
+      </Card>
+
 
       {/* P4 — Feedback R+ (vem primeiro: tom de preceptor) */}
       {finalEval.r_plus_feedback && (
