@@ -115,6 +115,9 @@ const ClinicalSimulation = () => {
   const teacherCaseId = searchParams.get("teacher_case_id");
   const paramOrigin = (searchParams.get("origin") as SessionOrigin) || "manual";
   const { startSession: startTrackedSession, completeSession: completeTrackedSession } = useSessionTracking();
+  // Wave 1.0 — módulo clinical-simulation (audioRuntime + clinicalTelemetry).
+  // Coexiste com a lógica legada; será expandido nas sub-waves 1.1–1.6.
+  const cs = useClinicalSimulationModule({ specialty: studyCtx?.specialty, difficulty: "intermediário", teacherCaseId });
 
   // ─── SETUP STATE (lobby only) ───
   const [specialty, setSpecialty] = useState(studyCtx?.specialty || "Clínica Médica");
