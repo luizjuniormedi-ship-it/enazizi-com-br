@@ -12,9 +12,10 @@ interface Props {
   badge?: string;
   onClick: () => void;
   dataTestId?: string;
+  "data-testid"?: string;
 }
 
-export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, difficulty, image, badge, onClick, dataTestId }: Props) {
+export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, difficulty, image, badge, onClick, dataTestId, "data-testid": dataTestIdAttr }: Props) {
   const diffLabels = {
     facil: "Iniciante",
     intermediario: "Intermediário",
@@ -35,7 +36,7 @@ export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, diffi
       }}
       role="button"
       tabIndex={0}
-      data-testid={dataTestId}
+      data-testid={dataTestId || dataTestIdAttr}
       aria-label={`Gerar simulado: ${title}`}
     >
       {/* Thumbnail */}
