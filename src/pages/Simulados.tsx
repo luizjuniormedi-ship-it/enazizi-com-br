@@ -744,31 +744,12 @@ const Simulados = () => {
       const correctCount = Object.values(answers).filter((ans, idx) => ans === questions[idx]?.correct).length;
       const finalScore = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
 
-      // P0 FIX: finalize the real simulado_sessions row (was stuck on 'active')
+          console.log("[E2E_SIMULADO_FINALIZE_START]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, user_id: user.id, total_questions: questions.length });
+
+          // Create exam_sessions row BEFORE analytics so the FK from analytics is satisfied.
       const sessionId = simuladoSessionIdRef.current;
       if (sessionId) {
         try {
-          const { error: updErr } = await supabase
-            .from("simulado_sessions")
-            .update({
-              status: "finished",
-              finished_at: new Date().toISOString(),
-              score: finalScore,
-              correct_count: correctCount,
-              total_questions: questions.length,
-              metadata: { duration_seconds: durationSeconds, elapsed_minutes: elapsed } as any,
-            })
-            .eq("id", sessionId);
-          if (updErr) {
-            console.error("[SIMULADO_SESSION_UPDATE_FAIL]", updErr);
-          } else {
-            console.log("[SIMULADO_SESSION_UPDATE_OK]", sessionId);
-          }
-
-          // P0 FIX (OPÇÃO A): create exam_sessions row FIRST with the SAME id as simulado_sessions
-          // so the FK simulado_question_analytics.simulado_session_id -> exam_sessions(id) is
-          // satisfied and the fan-out triggers actually fire (practice_attempts, error_bank,
-          // fsrs_cards, user_topic_profiles, cognitive_state_snapshots, TRI).
           try {
             const { error: examErr } = await supabase.from("exam_sessions").insert({
               id: sessionId,
@@ -806,6 +787,7 @@ const Simulados = () => {
                 simulado_session_id: sessionId,
                 user_id: user.id,
                 question_id: (q as any).id ?? null,
+                bank_question_id: (q as any).bankId ?? ((q as any).source === "bank" || (q as any)._source === "bank" ? (q as any).id : null),
                 question_index: idx,
                 selected_answer: answers[idx] ?? null,
                 correct_answer: q.correct,
@@ -828,9 +810,28 @@ const Simulados = () => {
               });
             } else {
               console.log("[SIMULADO_ANALYTICS_INSERT_OK]", { sessionId, rows: rows.length });
+              console.log("[E2E_SIMULADO_ANALYTICS_OK]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, rows: rows.length });
             }
           } catch (anaCatch: any) {
             console.error("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaCatch?.message || anaCatch);
+          }
+
+          const { error: updErr } = await supabase
+            .from("simulado_sessions")
+            .update({
+              status: "finished",
+              finished_at: new Date().toISOString(),
+              score: finalScore,
+              correct_count: correctCount,
+              total_questions: questions.length,
+              metadata: { duration_seconds: durationSeconds, elapsed_minutes: elapsed, correlation_id: e2eCorrelationIdRef.current } as any,
+            })
+            .eq("id", sessionId);
+          if (updErr) {
+            console.error("[E2E_SIMULADO_FAIL]", { stage: "session_finish", code: (updErr as any).code, details: (updErr as any).details, hint: (updErr as any).hint, session_id: sessionId, correlation_id: e2eCorrelationIdRef.current });
+          } else {
+            console.log("[E2E_SIMULADO_FANOUT_OK]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId });
+            console.log("[E2E_SIMULADO_FINISHED]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, score: finalScore });
           }
         } catch (e) {
           console.error("[SIMULADO_SESSION_UPDATE_FAIL]", e);
