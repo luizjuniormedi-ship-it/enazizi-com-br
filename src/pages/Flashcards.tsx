@@ -110,7 +110,7 @@ const Flashcards = () => {
     setLoading(true);
     try {
       // Paginated fetch to bypass PostgREST default 1000-row cap.
-      // Carrega até 5000 próprios e 5000 globais para refletir o banco real.
+      // Cap elevado para 20.000 globais para refletir o banco real (16k+).
       const PAGE = 1000;
       const fetchPaged = async (filter: (q: any) => any, maxRows: number) => {
         const out: any[] = [];
@@ -133,7 +133,7 @@ const Flashcards = () => {
 
       const [ownCards, globalCards, fsrsRes] = await Promise.all([
         fetchPaged((q) => q.eq("user_id", user.id), 5000),
-        fetchPaged((q) => q.eq("is_global", true).neq("user_id", user.id), 5000),
+        fetchPaged((q) => q.eq("is_global", true).neq("user_id", user.id), 20000),
         supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
       ]);
 
