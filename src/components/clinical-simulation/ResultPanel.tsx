@@ -30,6 +30,21 @@ interface DifferentialDiagnosis {
 
 interface EvalCategory { score: number; feedback: string }
 
+// P4 — Pós-plantão R+ (novos campos opcionais devolvidos pelo edge)
+export interface TimelineEntry {
+  time: string;
+  event: string;
+  type?: "action" | "deterioration" | "critical" | "external";
+  judgment?: "ok" | "atraso" | "errado" | "salvador";
+}
+export interface CriticalDecisions {
+  correct?: string[];
+  dangerous?: string[];
+  omissions?: string[];
+  delays?: string[];
+}
+export interface ExamTrap { trap: string; why: string }
+
 export interface FinalEval {
   final_score: number;
   grade: string;
@@ -50,6 +65,12 @@ export interface FinalEval {
     maneuvers?: { name: string; technique: string; positive_finding: string; indicates: string }[];
   };
   xp_earned: number;
+  // P4 — Pós-plantão R+
+  timeline?: TimelineEntry[];
+  critical_decisions?: CriticalDecisions;
+  what_would_kill?: string;
+  r_plus_feedback?: string;
+  exam_traps?: ExamTrap[];
 }
 
 interface ResultPanelProps {
