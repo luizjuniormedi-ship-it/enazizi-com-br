@@ -2367,6 +2367,27 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_excluded_users: {
+        Row: {
+          excluded_at: string
+          notes: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          excluded_at?: string
+          notes?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          excluded_at?: string
+          notes?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       anamnesis_interactions: {
         Row: {
           category: string | null
@@ -19744,6 +19765,7 @@ export type Database = {
           original_question_id: string | null
           permission_type: string | null
           previous_version: Json | null
+          psychometric_status: string
           quality_tier: string
           question_order: number | null
           realism_score: number | null
@@ -19817,6 +19839,7 @@ export type Database = {
           original_question_id?: string | null
           permission_type?: string | null
           previous_version?: Json | null
+          psychometric_status?: string
           quality_tier?: string
           question_order?: number | null
           realism_score?: number | null
@@ -19890,6 +19913,7 @@ export type Database = {
           original_question_id?: string | null
           permission_type?: string | null
           previous_version?: Json | null
+          psychometric_status?: string
           quality_tier?: string
           question_order?: number | null
           realism_score?: number | null
@@ -20451,6 +20475,7 @@ export type Database = {
           is_clinical_case: boolean | null
           microtopic_id: string | null
           options: Json
+          psychometric_status: string
           quality_score: number
           source_drive_id: string | null
           source_file: string | null
@@ -20486,6 +20511,7 @@ export type Database = {
           is_clinical_case?: boolean | null
           microtopic_id?: string | null
           options?: Json
+          psychometric_status?: string
           quality_score?: number
           source_drive_id?: string | null
           source_file?: string | null
@@ -20521,6 +20547,7 @@ export type Database = {
           is_clinical_case?: boolean | null
           microtopic_id?: string | null
           options?: Json
+          psychometric_status?: string
           quality_score?: number
           source_drive_id?: string | null
           source_file?: string | null
@@ -27626,6 +27653,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_analytics_excluded: { Args: { _user_id: string }; Returns: boolean }
       is_lesson_staff: { Args: { _user_id: string }; Returns: boolean }
       list_student_facets_for_professor: {
         Args: never
