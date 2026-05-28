@@ -686,6 +686,7 @@ const ClinicalSimulation = () => {
     setSpecialistDialogOpen(false);
     setLoading(true); setIsTyping(true);
     addToTimeline(`Parecer: ${specialistArea}`, "📋");
+    try { cs.track("plantao_specialist_consulted", csExtras({ specialist_area: specialistArea })); } catch {}
     setMessages((prev) => [...prev, { role: "doctor", content: `📋 Solicitando parecer de ${specialistArea}...`, timestamp: Date.now() }]);
     try {
       const res = await callAPI({ action: "specialist", specialist_area: specialistArea, conversation_history: conversationHistory });
