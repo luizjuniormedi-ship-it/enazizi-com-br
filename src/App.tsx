@@ -398,6 +398,7 @@ const App = () => (
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="classification" element={<ClassificationBackfill />} />
                 <Route path="semantic-observatory" element={<SemanticObservatory />} />
+                <Route path="semantic-review-center" element={<SemanticReviewCenter />} />
 
 
               </Route>
