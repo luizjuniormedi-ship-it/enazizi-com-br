@@ -886,19 +886,23 @@ const ClinicalSimulation = () => {
 
           {/* 3-column layout */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-0 min-h-0 overflow-hidden shrink">
-            <SidePanel
-              vitalsSnapshots={vitalsSnapshots}
-              patientStatus={patientStatus}
-              statusAlert={statusAlert}
-              abcdeChecklist={abcdeChecklist}
-              categoryScores={categoryScores}
-              medicalRecord={medicalRecord}
-              medRecordOpen={medRecordOpen}
-              onMedRecordOpenChange={setMedRecordOpen}
-            />
+            {/* SidePanel: hidden on mobile (vitals available via QuickActions → Sheet) to keep chat the primary surface */}
+            <div className="hidden lg:block min-h-0">
+              <SidePanel
+                vitalsSnapshots={vitalsSnapshots}
+                patientStatus={patientStatus}
+                statusAlert={statusAlert}
+                abcdeChecklist={abcdeChecklist}
+                categoryScores={categoryScores}
+                medicalRecord={medicalRecord}
+                medRecordOpen={medRecordOpen}
+                onMedRecordOpenChange={setMedRecordOpen}
+              />
+            </div>
 
             {/* CENTER: Chat */}
             <Card className="overflow-hidden flex flex-col min-h-0 border-0 rounded-none lg:border lg:rounded-xl">
+
               <CardContent className="p-0 flex flex-col flex-1 min-h-0 overflow-hidden">
                 <MessageList messages={messages} isTyping={isTyping && phase === "active"} isFinishing={phase === "finishing"} />
 
