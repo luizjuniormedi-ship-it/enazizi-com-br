@@ -228,11 +228,118 @@ export default function SemanticObservatory() {
         </Card>
       </div>
 
+      {/* Operational Rituals */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Operational Rituals (Freeze v25)</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Cadência obrigatória. Ver <code>docs/ontology/OPERATIONAL_RITUALS.md</code>.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ritual</TableHead>
+                <TableHead>Frequência</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead>Saída</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[
+                ["Semantic RFC Review", "semanal", "Curriculum board", "RFCs priorizados"],
+                ["Drift Review", "semanal", "Platform admin", "Decisão por drift"],
+                ["Ontology Health Review", "quinzenal", "Platform admin", "Snapshot arquivado"],
+                ["Rollback Drill", "mensal", "Platform admin", "Log do drill"],
+                ["Consumer Certification Review", "mensal", "Platform admin", "Auditoria L0–L5"],
+              ].map(([r, f, o, s]) => (
+                <TableRow key={r}>
+                  <TableCell className="font-medium">{r}</TableCell>
+                  <TableCell><Badge variant="outline">{f}</Badge></TableCell>
+                  <TableCell className="text-xs">{o}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{s}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Drift Governance Matrix */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Drift Governance Matrix</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Resposta humana obrigatória. Ver <code>docs/ontology/DRIFT_GOVERNANCE_MATRIX.md</code>.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Drift Type</TableHead>
+                <TableHead>Ação</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead>SLA</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[
+                ["specialty_mismatch", "RFC review", "Curriculum board", "7d"],
+                ["deprecated_node_link", "Ontology cleanup", "Platform admin", "14d"],
+                ["multiple_specialty_links", "Human validation", "Curriculum board", "7d"],
+                ["semantic_noise", "Backlog review", "Platform admin", "30d"],
+                ["unresolved_transversal", "Curriculum board review", "Curriculum board", "30d"],
+              ].map(([t, a, o, sla]) => (
+                <TableRow key={t}>
+                  <TableCell className="font-mono text-xs">{t}</TableCell>
+                  <TableCell>{a}</TableCell>
+                  <TableCell className="text-xs">{o}</TableCell>
+                  <TableCell><Badge variant="secondary">{sla}</Badge></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Wave 2 Gates */}
+      <Card className="border-amber-500/30 bg-amber-500/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            Wave 2 — Gates obrigatórios
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Wave 2 (transversal + cross-domain + multi-axis) NÃO pode rodar sem todos os gates verdes.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm">
+            <li>☐ 7 dias sem incidente desde Wave 1</li>
+            <li>☐ Rollback drill aprovado no mês corrente</li>
+            <li>☐ <code>v_ontology_health.drift_count</code> dentro de baseline</li>
+            <li>☐ <code>unregistered_access_groups == 0</code></li>
+            <li>☐ Aprovação explícita registrada</li>
+          </ul>
+        </CardContent>
+      </Card>
+
       {/* Health raw */}
       {snap?.ontology_health && (
         <Card>
           <CardHeader>
-            <CardTitle>Ontology Health</CardTitle>
+            <CardTitle>Ontology Health (raw snapshot)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <pre className="text-xs bg-muted p-3 rounded overflow-auto">
+              {JSON.stringify(snap.ontology_health, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
+
           </CardHeader>
           <CardContent>
             <pre className="text-xs bg-muted p-3 rounded overflow-auto">
