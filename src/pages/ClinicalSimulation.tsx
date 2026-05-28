@@ -744,6 +744,7 @@ const ClinicalSimulation = () => {
         });
       }
     } catch (e) {
+      try { cs.track("plantao_error", csExtras({ where: "finish", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
       countdownTimer.stop("ERROR"); setPhase("active", "FINISH_FAILED");
     } finally {
