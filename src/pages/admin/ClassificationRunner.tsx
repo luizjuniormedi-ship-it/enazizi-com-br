@@ -1527,6 +1527,119 @@ export default function ClassificationRunner() {
                 </div>
               </div>
 
+              {/* ════ Bruto × Ajustado (lacuna curricular) ════ */}
+              {adjustedView && (
+                <div className="rounded-lg border-2 border-dashed p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <Label className="text-sm font-semibold">Métricas brutas × ajustadas</Label>
+                    {curricularLoading ? (
+                      <Badge variant="outline" className="text-xs">
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" /> calculando lacuna curricular
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">
+                        {adjustedView.curricular} item(ns) sem specialty por decisão curricular
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* BRUTO */}
+                    <div className="rounded border p-3 space-y-2 bg-background">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wide">Bruto</span>
+                        {evaluation.verdict === "healthy" && (
+                          <Badge className="bg-primary text-primary-foreground text-xs">HEALTHY</Badge>
+                        )}
+                        {evaluation.verdict === "borderline" && (
+                          <Badge variant="secondary" className="text-xs">BORDERLINE</Badge>
+                        )}
+                        {evaluation.verdict === "rejected" && (
+                          <Badge variant="destructive" className="text-xs">REJECTED</Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <div className="font-bold">{evaluation.metrics.deterministicPct}%</div>
+                          <div className="text-xs text-muted-foreground">deterministic bruto</div>
+                        </div>
+                        <div>
+                          <div className="font-bold">{evaluation.metrics.skipPct}%</div>
+                          <div className="text-xs text-muted-foreground">skipped bruto</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        total = {result.total_processed ?? 0} · skipped = {result.total_skipped ?? 0}
+                      </div>
+                    </div>
+
+                    {/* AJUSTADO */}
+                    <div className="rounded border p-3 space-y-2 bg-background">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wide">
+                          Ajustado (− lacuna curricular)
+                        </span>
+                        {adjustedView.verdict === "healthy" && (
+                          <Badge className="bg-primary text-primary-foreground text-xs">HEALTHY</Badge>
+                        )}
+                        {adjustedView.verdict === "borderline" && (
+                          <Badge variant="secondary" className="text-xs">BORDERLINE</Badge>
+                        )}
+                        {adjustedView.verdict === "rejected" && (
+                          <Badge variant="destructive" className="text-xs">REJECTED</Badge>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <div className="font-bold">{adjustedView.detAdjPct}%</div>
+                          <div className="text-xs text-muted-foreground">deterministic ajustado</div>
+                        </div>
+                        <div>
+                          <div className="font-bold">{adjustedView.skipAdjPct}%</div>
+                          <div className="text-xs text-muted-foreground">skipped ajustado</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        total ajustado = {adjustedView.adjustedTotal} · skipped real = {adjustedView.realSkip}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded border p-3 bg-background text-xs space-y-1">
+                    <div className="font-semibold mb-1">Decomposição do skipped</div>
+                    <div className="flex justify-between">
+                      <span>Sem specialty por decisão curricular</span>
+                      <span className="font-mono">
+                        {curricularLoading ? "…" : adjustedView.curricular}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground ml-2 italic">
+                      {CURRICULAR_PENDING_LABEL}
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Sem specialty por falha real do classificador</span>
+                      <span className="font-mono font-semibold">{adjustedView.realSkip}</span>
+                    </div>
+                  </div>
+
+                  {adjustedView.reasons.length > 0 && (
+                    <ul className="text-xs list-disc pl-5 text-muted-foreground">
+                      {adjustedView.reasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <p className="text-[10px] text-muted-foreground italic">
+                    Thresholds idênticos ao bruto (det ≥ 85%, skip &lt; 5%, fila &lt; 10%).
+                    A versão ajustada apenas exclui questões cuja specialty ainda não existe
+                    na ontologia por decisão curricular pendente. Nenhum threshold foi reduzido.
+                  </p>
+                </div>
+              )}
+
+
+
               <div>
                 <Label className="text-xs text-muted-foreground">method_breakdown</Label>
                 <div className="flex flex-wrap gap-2 mt-1">
