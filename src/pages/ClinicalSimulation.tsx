@@ -723,6 +723,7 @@ const ClinicalSimulation = () => {
       await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
       telemetry.track('plantao_completed', { specialty: specialty || null, difficulty, final_score: res?.final_score ?? null });
+      try { cs.track("plantao_completed", csExtras({ final_score: res?.final_score ?? null, grade: res?.grade ?? null })); } catch {}
       if (user?.id) {
         await completeStudyAction({
           userId: user.id, taskType: "clinical",
