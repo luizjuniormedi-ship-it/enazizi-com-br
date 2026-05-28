@@ -130,6 +130,7 @@ async function generateBatch(
   
   try {
     const { data, error } = await supabase.functions.invoke("question-generator", {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       body: {
         count,
         difficulty,
@@ -229,6 +230,7 @@ const Simulados = () => {
   const elapsedSecondsRef = useRef<number>(0);
   const configRef = useRef<any>(null);
   const simuladoSessionIdRef = useRef<string | null>(null);
+  const e2eCorrelationIdRef = useRef<string | null>(null);
   const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
   const triParamsRef = useRef<TRIParams[]>([]);
   
