@@ -83,6 +83,7 @@ const ClassificationRunner = lazyWithRetry(() => import("./pages/admin/Classific
 const ClassificationHealthDashboard = lazyWithRetry(() => import("./pages/admin/ClassificationHealthDashboard"), "ClassificationHealthDashboard");
 const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
 const SemanticObservatory = lazyWithRetry(() => import("./pages/admin/SemanticObservatory"), "SemanticObservatory");
+const SemanticReviewCenter = lazyWithRetry(() => import("./pages/admin/SemanticReviewCenter"), "SemanticReviewCenter");
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
@@ -397,6 +398,7 @@ const App = () => (
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="classification" element={<ClassificationBackfill />} />
                 <Route path="semantic-observatory" element={<SemanticObservatory />} />
+                <Route path="semantic-review-center" element={<SemanticReviewCenter />} />
 
 
               </Route>
