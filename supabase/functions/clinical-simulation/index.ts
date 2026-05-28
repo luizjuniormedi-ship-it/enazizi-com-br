@@ -489,41 +489,44 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
 
         return new Response(JSON.stringify(teacherCase.case_prompt), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    } else if (action === "interact") {
+      if (conversation_history && Array.isArray(conversation_history)) {
+        messages.push(...trimHistory(conversation_history));
       }
-
-      const triageOptions = ["vermelho", "laranja", "amarelo", "verde"];
-      const triage = requestedTriageColor && triageOptions.includes(requestedTriageColor)
-        ? requestedTriageColor
-        : triageOptions[Math.floor(Math.random() * triageOptions.length)];
-
-      const isPediatrics = (specialty || "").toLowerCase().includes("pediatria");
-      const ageRangeMap: Record<string, string> = {
-        neonato: "Neonato (0-28 dias) — sinais vitais de referência: FC 120-160, FR 40-60, PA 60-80/30-45",
-        lactente: "Lactente (1-24 meses) — sinais vitais de referência: FC 100-150, FR 25-40, PA 80-100/50-65",
-        pre_escolar: "Pré-escolar (2-6 anos) — sinais vitais de referência: FC 80-120, FR 20-30, PA 85-110/50-70",
-        escolar: "Escolar (7-12 anos) — sinais vitais de referência: FC 70-110, FR 18-25, PA 90-120/55-75",
-        adolescente: "Adolescente (13-17 anos) — sinais vitais de referência: FC 60-100, FR 12-20, PA 100-130/60-80",
-      };
-      const pediatricInstruction = isPediatrics && pediatric_age_range && ageRangeMap[pediatric_age_range]
-        ? ` O paciente DEVE ser da faixa etária: ${ageRangeMap[pediatric_age_range]}. Use sinais vitais adequados para a idade (os valores de referência acima são para o paciente SAUDÁVEL — ajuste conforme a gravidade do caso e classificação de risco). O responsável (mãe/pai/avó) acompanha a criança. Use linguagem de cuidador preocupado para as falas do paciente. Inclua peso e dose de medicações por kg quando aplicável.`
-        : isPediatrics
-        ? ` O paciente DEVE ser pediátrico (0-17 anos). Use sinais vitais adequados para a faixa etária. O responsável acompanha a criança.`
-        : "";
-
-      // Build banca adaptation block
-      let bancaBlock = "";
-      if (target_exams && Array.isArray(target_exams) && target_exams.length > 0) {
-        const profiles = target_exams.map((k: string) => getBancaProfile(k));
-        bancaBlock = profiles.map((p: any) => buildBancaBlock(p)).join("\n");
+      // MODOS DIVERGENTES — Real vs Aprendiz (P1)
+      // Padrão = Real (sem ajuda). Aprendiz só quando learner_mode=true explicitamente.
+      const isLearner = !!learner_mode;
+      const isRealistic = !!realistic_mode || !isLearner; // se nenhum, trata como real
+      const modeBlock = isLearner
+        ? `\n## MODO APRENDIZ ATIVO
+- Você PODE orientar gradualmente: dicas de raciocínio, fisiopatologia curta (1-2 frases), perguntas educativas que conduzam o aluno.
+- Inclua OBRIGATORIAMENTE "teaching_tip" com 1-2 frases didáticas contextuais à ação do aluno.
+- Mantenha a pressão socrática, mas mais branda. Pode mencionar caminhos ("considere descartar X antes de fechar Y") sem entregar diagnóstico.
+- "hint" pode ser oferecido proativamente no campo opcional.`
+        : `\n## MODO REAL ATIVO (PRECEPTOR DURO)
+- NÃO ofereça pistas, dicas, sugestões nem fisiopatologia.
+- NÃO mencione diagnósticos diferenciais por iniciativa própria.
+- Responda como paciente/narrador estrito + UMA pergunta socrática que cobra raciocínio (sem dar caminho).
+- "teaching_tip" deve ser null.
+- Ambiguidade clínica é desejada — não simplifique. Se o aluno pediu algo irrelevante, narre o tempo passando e a piora SEM explicar por quê.
+- Tom seco, técnico, plantão real. Sem fofura.`;
+      const learnerInstruction = isLearner
+        ? ` OBRIGATÓRIO: inclua "teaching_tip" (1-2 frases educativas). Inclua "category_scores" parciais (anamnesis, physical_exam, complementary_exams, management — 0 a 15 cada).`
+        : ` "teaching_tip" deve ser null. Inclua "category_scores" parciais (anamnesis, physical_exam, complementary_exams, management — 0 a 15 cada).`;
+      messages.push({
+        role: "user",
+        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua "vitals" atualizados e "structured_data" (tipo, resumo, sistema).${modeBlock}${learnerInstruction} Lembre: PRESSÃO SOCRÁTICA + sem elogio precoce + consequência narrativa se aplicável. Responda APENAS em JSON válido.`,
+      });
+    } else if (action === "hint") {
+      if (conversation_history && Array.isArray(conversation_history)) {
+        messages.push(...trimHistory(conversation_history));
       }
+      messages.push({
+        role: "user",
+        content: `action="hint". O aluno está pedindo ajuda do preceptor. Analise tudo que ele já fez neste atendimento e dê orientações de raciocínio clínico SEM revelar o diagnóstico. Mesmo aqui, mantenha o tom de R+: direto, técnico, sem elogios. Termine com UMA pergunta socrática que force o aluno a verbalizar o próximo passo. Responda APENAS em JSON válido.`,
+      });
+    } else if (action === "specialist") {
 
-      let errorsBlock = "";
-      if (recent_errors && recent_errors.has_errors) {
-        const types = (recent_errors.error_types || []).join(", ");
-        const themes = (recent_errors.themes || []).join(", ");
-        errorsBlock = `\n## REFORÇO DE ERROS PRÉVIOS\nO aluno errou recentemente em: ${types || "vários tipos"}. Temas com erro: ${themes || "diversos"}. Inclua pistas que testem esse tipo de raciocínio para reforço pedagógico.`;
-      }
 
       let proximityBlock = "";
       if (exam_proximity_days && typeof exam_proximity_days === "number" && exam_proximity_days <= 90) {
