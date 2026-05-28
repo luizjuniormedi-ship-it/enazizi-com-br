@@ -68,9 +68,21 @@ interface MedicalRecordEntry {
 
 interface ActionTimelineEntry { label: string; icon: string; timestamp: number }
 
+// Reusable AudioContext — browsers cap ~6 concurrent contexts; previous code
+// created a new one per beep, eventually throwing and silently breaking audio.
+let _sharedAudioCtx: AudioContext | null = null;
+const getAudioCtx = () => {
+  try {
+    if (!_sharedAudioCtx || _sharedAudioCtx.state === "closed") {
+      _sharedAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (_sharedAudioCtx.state === "suspended") _sharedAudioCtx.resume().catch(() => {});
+    return _sharedAudioCtx;
+  } catch { return null; }
+};
 const playSound = (type: "response" | "worsened" | "positive" | "negative") => {
   try {
-    const ctx = new AudioContext();
+    const ctx = getAudioCtx(); if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
@@ -83,6 +95,7 @@ const playSound = (type: "response" | "worsened" | "positive" | "negative") => {
     }
   } catch {}
 };
+
 
 const getTriageEmoji = (color: string) => {
   const map: Record<string, string> = { vermelho: "🔴 Vermelho (Emergência)", laranja: "🟠 Laranja (Muito Urgente)", amarelo: "🟡 Amarelo (Urgente)", verde: "🟢 Verde (Pouco Urgente)" };
@@ -196,21 +209,26 @@ const ClinicalSimulation = () => {
     if (data.specialty) setSpecialty(data.specialty);
     if (data.difficulty) setDifficulty(data.difficulty);
     if (data.realisticMode !== undefined) setRealisticMode(data.realisticMode);
+    if (data.learnerMode !== undefined) setLearnerMode(data.learnerMode);
     if (data.messages) setMessages(data.messages);
     if (data.vitals) setVitals(data.vitals);
     if (data.setting) setSetting(data.setting);
     if (data.triageColor) setTriageColor(data.triageColor);
-    if (data.patientStatus) setPatientStatus(data.patientStatus);
-    if (typeof data.score === "number") setScore(data.score);
+    if (data.patientStatus) { setPatientStatus(data.patientStatus); setPrevPatientStatus(data.patientStatus); }
+    if (typeof data.score === "number") { setScore(data.score); setPrevScore(data.score); }
     if (typeof data.timeElapsed === "number") setTimeElapsed(data.timeElapsed);
     if (data.conversationHistory) setConversationHistory(data.conversationHistory);
     if (data.actionTimeline) setActionTimeline(data.actionTimeline);
     if (data.examResults) setExamResults(data.examResults);
     if (data.vitalsSnapshots) setVitalsSnapshots(data.vitalsSnapshots);
     if (typeof data.countdown === "number") setCountdown(data.countdown);
+    if (data.abcdeChecklist) setAbcdeChecklist(data.abcdeChecklist);
+    if (data.medicalRecord) setMedicalRecord(data.medicalRecord);
+    if (data.categoryScores) setCategoryScores(data.categoryScores);
     setPhase("active");
     clearPending();
   }, [clearPending]);
+
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/clinical-simulation`;
 
@@ -522,12 +540,16 @@ const ClinicalSimulation = () => {
       };
       setMessages((prev) => [...prev, simMsg]);
 
-      const newScore = Math.max(0, Math.min(100, score + (res.score_delta || 0)));
       if (res.score_delta && res.score_delta !== 0) {
         setScoreFlash(res.score_delta > 0 ? "green" : "red");
         playSound(res.score_delta > 0 ? "positive" : "negative");
       }
-      setPrevScore(score); setScore(newScore);
+      // Functional updater avoids race when multiple replies arrive close together
+      setScore((prev) => {
+        setPrevScore(prev);
+        return Math.max(0, Math.min(100, prev + (res.score_delta || 0)));
+      });
+
 
       const newTimeElapsed = res.time_elapsed_minutes || timeElapsed + 5;
       setTimeElapsed(newTimeElapsed);
@@ -731,15 +753,12 @@ const ClinicalSimulation = () => {
   }, [finalEval, specialty, toast]);
 
   const retryWithSameConfig = useCallback(() => {
-    setPhase("lobby");
-    setMessages([]); setConversationHistory([]);
-    setScore(50); setPrevScore(50); setTimeElapsed(0);
-    setFinalEval(null); setVitals(null); setCountdown(0);
-    setTimerExpired(false); setVitalsSnapshots([]); setExamResults([]);
-    setActionTimeline([]);
+    // Reuse the same full-reset to avoid state leaks (abcde, medicalRecord, categoryScores, etc.)
+    reset();
     setTimeout(() => startSimulation(), 300);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reset]);
+
 
   const openTutorReview = useCallback(() => {
     if (!finalEval) return;
