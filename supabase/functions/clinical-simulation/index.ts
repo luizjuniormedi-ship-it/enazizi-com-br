@@ -526,44 +526,14 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
         content: `action="hint". O aluno está pedindo ajuda do preceptor. Analise tudo que ele já fez neste atendimento e dê orientações de raciocínio clínico SEM revelar o diagnóstico. Mesmo aqui, mantenha o tom de R+: direto, técnico, sem elogios. Termine com UMA pergunta socrática que force o aluno a verbalizar o próximo passo. Responda APENAS em JSON válido.`,
       });
     } else if (action === "specialist") {
-
-
-      let proximityBlock = "";
-      if (exam_proximity_days && typeof exam_proximity_days === "number" && exam_proximity_days <= 90) {
-        proximityBlock = `\n## PROXIMIDADE DA PROVA\nA prova do aluno é em ${exam_proximity_days} dias. ${exam_proximity_days <= 30 ? "Aumente a complexidade e exija mais rigor nas condutas." : "Mantenha nível desafiador."}`;
-      }
-
-      messages.push({
-        role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction}${bancaBlock}${errorsBlock}${proximityBlock}${avoidDiagnosesBlock} Responda APENAS em JSON válido.`,
-      });
-    } else if (action === "interact") {
-      if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...trimHistory(conversation_history));
-      }
-      const learnerInstruction = learner_mode
-        ? ` OBRIGATÓRIO: inclua o campo "teaching_tip" com uma dica didática contextual relacionada à ação do aluno (ex: após ausculta pulmonar, explique técnica de ausculta simétrica). A dica deve ser educativa e curta (1-2 frases). Inclua também "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`
-        : ` Inclua "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`;
-      messages.push({
-        role: "user",
-        content: `action="interact". Mensagem do médico plantonista: "${message}". OBRIGATÓRIO: inclua o campo "vitals" com sinais vitais atualizados na resposta. Inclua "structured_data" com tipo, resumo e sistema examinado.${learnerInstruction} Responda APENAS em JSON válido.`,
-      });
-    } else if (action === "hint") {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...trimHistory(conversation_history));
       }
       messages.push({
         role: "user",
-        content: `action="hint". O aluno está pedindo ajuda do preceptor. Analise tudo que ele já fez neste atendimento e dê orientações de raciocínio clínico SEM revelar o diagnóstico. Responda APENAS em JSON válido.`,
+        content: `action="specialist". O plantonista está solicitando parecer/interconsulta da especialidade: "${specialist_area || "não especificada"}". Responda como o médico especialista dessa área, dando parecer técnico sobre o caso. Mantenha tom técnico de especialista para especialista, sem elogios ao plantonista. Responda APENAS em JSON válido.`,
       });
-    } else if (action === "specialist") {
-      if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...trimHistory(conversation_history));
-      }
-      messages.push({
-        role: "user",
-        content: `action="specialist". O plantonista está solicitando parecer/interconsulta da especialidade: "${specialist_area || "não especificada"}". Responda como o médico especialista dessa área, dando parecer técnico sobre o caso. Responda APENAS em JSON válido.`,
-      });
+
     } else if (action === "finish") {
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...trimHistory(conversation_history));
