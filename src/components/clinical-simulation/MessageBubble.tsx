@@ -111,17 +111,33 @@ const MessageBubble = memo(function MessageBubble({ msg }: MessageBubbleProps) {
         }`}
       >
 
-        {msg.role === "simulation" && msg.type && (
+        {msg.role === "simulation" && typeof msg.type === "string" && msg.type && (
           <div className="flex items-center gap-1.5 mb-1.5">
             <TypeIcon className="h-3.5 w-3.5 opacity-60" />
             <span className="text-xs opacity-60 capitalize">
-              {msg.type === "preceptor_hint" ? "Preceptor" : msg.type === "specialist_opinion" ? "Parecer Especialista" : msg.type?.replace("_", " ")}
+              {msg.type === "preceptor_hint" ? "Preceptor" : msg.type === "specialist_opinion" ? "Parecer Especialista" : msg.type.replace("_", " ")}
             </span>
-            {msg.scoreDelta !== undefined && msg.scoreDelta !== 0 && (
-              <Badge variant={msg.scoreDelta > 0 ? "default" : "destructive"} className="text-[10px] px-1.5 py-0 h-4">
-                {msg.scoreDelta > 0 ? `+${msg.scoreDelta}` : msg.scoreDelta}
-              </Badge>
-            )}
+
+            {(() => {
+              // Defensive coercion: edge function may return scoreDelta as an object
+              // shaped like { anamnesis, physical_exam, complementary_exams, management }.
+              // Sum object values; otherwise keep numeric. Anything non-finite is dropped.
+              const raw = msg.scoreDelta as unknown;
+              let delta = 0;
+              if (typeof raw === "number") delta = raw;
+              else if (raw && typeof raw === "object") {
+                for (const v of Object.values(raw as Record<string, unknown>)) {
+                  if (typeof v === "number" && Number.isFinite(v)) delta += v;
+                }
+              }
+              if (!Number.isFinite(delta) || delta === 0) return null;
+              return (
+                <Badge variant={delta > 0 ? "default" : "destructive"} className="text-[10px] px-1.5 py-0 h-4">
+                  {delta > 0 ? `+${delta}` : `${delta}`}
+                </Badge>
+              );
+            })()}
+
           </div>
         )}
         <div className={`break-words whitespace-pre-wrap leading-relaxed max-w-full overflow-x-hidden ${msg.role === "simulation" ? "prose prose-sm max-w-none dark:prose-invert" : ""}`}>
