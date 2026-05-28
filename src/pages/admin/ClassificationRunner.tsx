@@ -1233,12 +1233,32 @@ export default function ClassificationRunner() {
               <Label>Tamanho do lote</Label>
               <Input
                 type="number"
-                min={10}
-                max={500}
+                min={BATCH_MIN}
+                max={BATCH_MAX}
                 value={batchSize}
-                onChange={(e) => setBatchSize(Number(e.target.value) || 100)}
+                onChange={(e) => {
+                  const rawStr = e.target.value;
+                  if (rawStr === "") {
+                    setBatchSize(BATCH_MIN);
+                    return;
+                  }
+                  const raw = Number(rawStr);
+                  const { value, clamped } = clampBatch(raw);
+                  setBatchSize(value);
+                  if (clamped && !Number.isNaN(raw)) {
+                    toast.warning(
+                      `Batch permitido: ${BATCH_MIN}–${BATCH_MAX}. Ajustado para ${value}.`
+                    );
+                  }
+                }}
+                onBlur={(e) => {
+                  const { value } = clampBatch(Number(e.target.value));
+                  if (value !== batchSize) setBatchSize(value);
+                }}
               />
-              <p className="text-xs text-muted-foreground">10–500</p>
+              <p className="text-xs text-muted-foreground">
+                Batch permitido: {BATCH_MIN}–{BATCH_MAX}
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Modo de execução</Label>
