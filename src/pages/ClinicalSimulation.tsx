@@ -528,6 +528,7 @@ const ClinicalSimulation = () => {
       setConversationHistory([{ role: "assistant", content: JSON.stringify(res) }]);
       setPhase("active", "START");
       addToTimeline("Caso iniciado", "🏥");
+      try { cs.track("plantao_started", csExtras({ setting: res.setting || null, triage_color: res.triage_color || null })); } catch {}
 
       if (user) {
         const origin = teacherCaseId ? "assigned" as SessionOrigin : paramOrigin;
@@ -535,6 +536,7 @@ const ClinicalSimulation = () => {
       }
       setTimeout(() => inputRef.current?.focus(), 300);
     } catch (e) {
+      try { cs.track("plantao_error", csExtras({ where: "start", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro ao iniciar", variant: "destructive" });
     } finally {
       setLoading(false);
