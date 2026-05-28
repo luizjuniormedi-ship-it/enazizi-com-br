@@ -33,9 +33,27 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
     }
   }
 
-  const { topic, uploadId, discipline, quantity = 10 } = body;
+  const { topic, uploadId, discipline } = body;
+  // FASE 1 P0 — clamp server-side
+  const quantity = clampQuantity(body.quantity ?? 10);
+  if (body.quantity && Number(body.quantity) > FLASHCARD_MAX_QUANTITY) {
+    logger.info("FLASHCARD_QUANTITY_CLAMPED", `Cliente pediu ${body.quantity}, clampado para ${quantity}`, { userId });
+  }
 
-  logger.info("FLASHCARD_GEN_START", `Generating ${quantity} flashcards for topic: ${topic}`, { userId, uploadId });
+  // FASE 1 P0 — limite diário server-side
+  const limitCheck = await checkDailyFlashcardLimit(supabaseAdmin, userId);
+  if (!limitCheck.allowed) {
+    logger.info("FLASHCARD_DAILY_LIMIT_HIT", `User ${userId} ${limitCheck.used}/${limitCheck.limit}`, { userId });
+    return new Response(JSON.stringify({
+      success: false,
+      error: "daily_limit_reached",
+      message: `Limite diário atingido (${limitCheck.used}/${limitCheck.limit} cards nas últimas 24h). Tente novamente amanhã ou foque em revisar cards pendentes.`,
+      limit: limitCheck.limit,
+      used: limitCheck.used,
+    }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+  logger.info("FLASHCARD_GEN_START", `Generating ${quantity} flashcards for topic: ${topic} [gov=${FLASHCARD_GOV_VERSION}]`, { userId, uploadId, dailyUsed: limitCheck.used, dailyLimit: limitCheck.limit, bypass: limitCheck.bypass });
 
   // 1. Create Job
   const { data: job, error: jobErr } = await supabaseAdmin.from("flashcard_generation_jobs").insert({
