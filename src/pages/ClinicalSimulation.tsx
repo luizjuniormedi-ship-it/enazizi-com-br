@@ -161,9 +161,8 @@ const ClinicalSimulation = () => {
   const [categoryScores, setCategoryScores] = useState<CategoryScores>({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
 
   // ─── TIMER / DETERIORATION ───
-  const [countdown, setCountdown] = useState(0);
-  const [timerExpired, setTimerExpired] = useState(false);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Wave 1.2 — countdown agora vive em useCountdownTimer (interval único + logs).
+  // `countdown`, `setCountdown` e `timerExpired` mantêm a API antiga via shim.
   const [deteriorationCount, setDeteriorationCount] = useState(0);
   const [inactivityWarning, setInactivityWarning] = useState(false);
   const lastActionTimeRef = useRef<number>(Date.now());
