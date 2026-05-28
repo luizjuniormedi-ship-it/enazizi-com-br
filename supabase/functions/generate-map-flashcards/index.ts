@@ -152,7 +152,7 @@ REGRAS:
 - Linguagem: português brasileiro médico.
 - Foco: informações que caem em prova de residência.
 - Evite perguntas genéricas. Priorize: diagnóstico, tratamento, complicações, diferenciais.
-- Gere entre 8 e 20 flashcards, priorizando qualidade.
+- Gere no MÁXIMO 15 flashcards, priorizando qualidade sobre quantidade.
 
 FORMATO JSON:
 {
