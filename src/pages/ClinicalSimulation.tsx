@@ -42,6 +42,7 @@ import QuickActionsBar from "@/components/clinical-simulation/QuickActionsBar";
 import MessageList from "@/components/clinical-simulation/MessageList";
 import type { ChatMessage, ManeuverPerformed } from "@/components/clinical-simulation/MessageBubble";
 import { exportToPdf } from "@/lib/exportPdf";
+import { useClinicalSimulation as useClinicalSimulationModule } from "@/modules/clinical-simulation/hooks/useClinicalSimulation";
 
 const EVAL_LABELS: Record<string, string> = {
   anamnesis: "Anamnese", physical_exam: "Exame Físico", complementary_exams: "Exames Complementares",
