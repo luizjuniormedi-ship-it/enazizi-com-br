@@ -538,10 +538,46 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
       if (conversation_history && Array.isArray(conversation_history)) {
         messages.push(...trimHistory(conversation_history));
       }
+      // PÓS-PLANTÃO V3 (P4) — discussão estilo R+, não relatório de quiz.
       messages.push({
         role: "user",
-        content: `action="finish". O aluno decidiu encerrar o atendimento. Avalie o desempenho completo com base em toda a interação, incluindo avaliação de prescrição, conduta, diagnóstico e parecer/encaminhamento. Use as 7 categorias de avaliação. Responda APENAS em JSON válido.`,
+        content: `action="finish". O aluno encerrou. Faça a discussão pós-plantão como um R+ rodando o caso no preceptorial — direto, técnico, sem fofura, sem "parabéns".
+
+Mantém TODOS os campos já existentes (final_score, grade, correct_diagnosis, student_got_diagnosis, time_total_minutes, evaluation com as 7 categorias, differential_diagnosis, strengths, improvements, ideal_approach, ideal_prescription, physical_exam_expected, xp_earned).
+
+ADICIONE OBRIGATORIAMENTE estes 5 campos NOVOS (P4):
+
+"timeline": [
+  { "time": "HH:MM" (ou "T+Xmin"), "event": "descrição curta da ação ou evento", "type": "action|deterioration|critical|external", "judgment": "ok|atraso|errado|salvador" (opcional) }
+]
+— Reconstrua a linha do tempo do plantão a partir do histórico. Marque atrasos, decisões salvadoras, erros, e eventos externos. Mínimo 5 entradas, máximo 12. Ordem cronológica.
+
+"critical_decisions": {
+  "correct": ["decisão clínica correta e impactante 1", "..."],
+  "dangerous": ["decisão perigosa ou contraindicada (com motivo curto)", "..."],
+  "omissions": ["o que deveria ter sido feito e não foi (ex: 'não solicitou D-dímero apesar de Wells alto')", "..."],
+  "delays": ["atrasos relevantes ('demorou 12 min para iniciar O2 em paciente SpO2 88%')", "..."]
+}
+— Pode ter array vazio em categorias sem entradas. Seja específico, cite tempo/parâmetro quando possível.
+
+"what_would_kill": "string em 1-2 frases identificando a ameaça imediata real do caso. Ex: 'A ameaça imediata era choque obstrutivo por TEP maciço — a janela de anticoagulação/trombólise era estreita e o aluno priorizou exame que não muda conduta.'"
+
+"r_plus_feedback": "string de 3-5 frases no tom de R+ encerrando a discussão. Direto, técnico, foca no que mudou ou poderia ter mudado mortalidade/morbidade. Sem elogio gratuito. Pode reconhecer acerto técnico ('reconheceu gravidade cedo'), mas SEMPRE cobra o gap principal. Exemplo de tom: 'Você identificou gravidade cedo, mas demorou a priorizar a intervenção que mudava mortalidade. Anticoagulação plena é mandatória em TEP de risco intermediário-alto antes de imagem confirmatória se a suspeita clínica é alta. Da próxima vez, escore de Wells primeiro, conduta empírica depois, imagem para confirmar.'"
+
+"exam_traps": [
+  { "trap": "pegadinha clássica de prova ligada a este caso", "why": "por que cai em residência / por que confunde" }
+]
+— 3 a 5 pegadinhas/padrões cobrados em residência (USP, UNIFESP, UNICAMP, AMP, ENARE, Revalida) ligados ao diagnóstico correto. Achados clássicos, armadilhas semânticas, mimetizadores.
+
+REGRAS DE TOM (CRÍTICAS):
+- NUNCA "parabéns/excelente/muito bem/perfeito" em lugar nenhum do JSON.
+- "r_plus_feedback" deve soar como discussão real de preceptorial, não como ChatGPT.
+- "improvements" deve focar em IMPACTO CLÍNICO (mortalidade, morbidade, tempo, custo), não em "estudar mais".
+- "strengths" só inclui acertos com impacto clínico real, não esforço.
+
+Responda APENAS em JSON válido.`,
       });
+
     } else if (action === "deteriorate") {
       const level = deterioration_level || 1;
       if (conversation_history && Array.isArray(conversation_history)) {
