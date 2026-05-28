@@ -398,9 +398,10 @@ const App = () => (
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="classification" element={<ClassificationBackfill />} />
                 <Route path="semantic-observatory" element={<SemanticObservatory />} />
-                <Route path="semantic-review-center" element={<AdminRoute requiredRoles={["admin", "semantic_board", "platform_admin"]}><SemanticReviewCenter /></AdminRoute>} />
-
-
+              </Route>
+              {/* Rota separada para SemanticReviewCenter — acesso por admin, semantic_board, platform_admin */}
+              <Route path="/admin/semantic-review-center" element={<AdminRoute requiredRoles={["admin", "semantic_board", "platform_admin"]}><AdminLayout /></AdminRoute>}>
+                <Route index element={<SemanticReviewCenter />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
