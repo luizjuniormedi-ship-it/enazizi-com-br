@@ -426,6 +426,7 @@ const Simulados = () => {
     setShowConfigStep(false); // Ensure config step is hidden when starting
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       if (config.mode === "adaptativo") {
         setLoadingProgress("Analisando seu desempenho...");
         setLoadingPercent(20);
@@ -491,7 +492,6 @@ const Simulados = () => {
       }
 
       // Fluxo Normal com JOB e BATCHING
-      const { data: { session } } = await supabase.auth.getSession();
       const requestedTotal = config.count || 10;
       setTargetCount(requestedTotal);
       cancelGenerationRef.current = false;
