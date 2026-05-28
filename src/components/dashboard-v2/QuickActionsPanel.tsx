@@ -30,7 +30,7 @@ export default function QuickActionsPanel({ hasErrors, hasPendingReviews }: Prop
     { icon: <Sparkles className="h-5 w-5" />, label: "Mnemônico", path: "/dashboard/mnemonico" },
     { icon: <MessageSquare className="h-5 w-5" />, label: "Tutor IA", path: "/dashboard/sessao-estudo" },
     { icon: <Map className="h-5 w-5" />, label: "Mapas Mentais", path: "/dashboard/mapas-mentais" },
-    { icon: <Stethoscope className="h-5 w-5" />, label: "Plantão", path: "/dashboard/clinical-simulation" },
+    { icon: <Stethoscope className="h-5 w-5" />, label: "Plantão", path: "/dashboard/simulacao-clinica" },
     { icon: <BookOpen className="h-5 w-5" />, label: "Revisões", path: "/dashboard/revisoes", highlight: hasPendingReviews },
   ];
 
