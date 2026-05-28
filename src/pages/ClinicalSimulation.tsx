@@ -563,7 +563,7 @@ const ClinicalSimulation = () => {
 
     try {
       const updatedHistory = [...conversationHistory, { role: "user", content: msg }];
-      const res = await callAPI({ action: "interact", message: msg, conversation_history: updatedHistory, learner_mode: learnerMode });
+      const res = await callAPI({ action: "interact", message: msg, conversation_history: updatedHistory, learner_mode: learnerMode, realistic_mode: realisticMode });
       detectABCDE(msg);
       setIsTyping(false);
       playSound("response");
