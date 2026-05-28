@@ -622,6 +622,10 @@ const ClinicalSimulation = () => {
           if (res.treatment_outcome === "improved") playSound("positive");
           if (res.treatment_outcome === "worsened") playSound("worsened");
         }
+        try {
+          if (res.treatment_outcome === "improved") cs.track("plantao_patient_improved", csExtras({ outcome: res.treatment_outcome }));
+          if (res.treatment_outcome === "worsened") cs.track("plantao_patient_worsened", csExtras({ outcome: res.treatment_outcome }));
+        } catch {}
         addToTimeline(`💊 Tratamento: ${res.treatment_outcome === "improved" ? "eficaz" : res.treatment_outcome === "worsened" ? "inadequado" : "parcial"}`, "💊");
       }
 
