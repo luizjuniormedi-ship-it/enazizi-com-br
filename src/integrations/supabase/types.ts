@@ -9522,6 +9522,58 @@ export type Database = {
           },
         ]
       }
+      curriculum_edges: {
+        Row: {
+          child_node_id: string
+          created_at: string
+          edge_type: string
+          id: string
+          metadata: Json
+          ontology_version_id: string
+          parent_node_id: string
+        }
+        Insert: {
+          child_node_id: string
+          created_at?: string
+          edge_type: string
+          id?: string
+          metadata?: Json
+          ontology_version_id: string
+          parent_node_id: string
+        }
+        Update: {
+          child_node_id?: string
+          created_at?: string
+          edge_type?: string
+          id?: string
+          metadata?: Json
+          ontology_version_id?: string
+          parent_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_edges_child_node_id_fkey"
+            columns: ["child_node_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_edges_ontology_version_id_fkey"
+            columns: ["ontology_version_id"]
+            isOneToOne: false
+            referencedRelation: "ontology_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_edges_parent_node_id_fkey"
+            columns: ["parent_node_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       curriculum_matrix: {
         Row: {
           ativo: boolean
@@ -9658,6 +9710,66 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_subtopic_question_density"
             referencedColumns: ["subtopic_id"]
+          },
+        ]
+      }
+      curriculum_nodes: {
+        Row: {
+          active: boolean
+          created_at: string
+          deprecated_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          node_type: string
+          normalized_name: string
+          ontology_version_id: string
+          replaced_by: string | null
+          slug: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          deprecated_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          node_type: string
+          normalized_name: string
+          ontology_version_id: string
+          replaced_by?: string | null
+          slug: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          deprecated_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          node_type?: string
+          normalized_name?: string
+          ontology_version_id?: string
+          replaced_by?: string | null
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_nodes_ontology_version_id_fkey"
+            columns: ["ontology_version_id"]
+            isOneToOne: false
+            referencedRelation: "ontology_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_nodes_replaced_by_fkey"
+            columns: ["replaced_by"]
+            isOneToOne: false
+            referencedRelation: "curriculum_nodes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -16611,6 +16723,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ontology_versions: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          version_name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          version_name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          version_name?: string
+        }
+        Relationships: []
+      }
       operational_digests: {
         Row: {
           content: Json | null
@@ -17289,6 +17425,73 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pending_semantic_review: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          id: string
+          ontology_version_id: string
+          payload: Json
+          question_id: string
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rollback_snapshot: Json | null
+          source: string
+          suggested_node_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          ontology_version_id: string
+          payload?: Json
+          question_id: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rollback_snapshot?: Json | null
+          source: string
+          suggested_node_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          ontology_version_id?: string
+          payload?: Json
+          question_id?: string
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rollback_snapshot?: Json | null
+          source?: string
+          suggested_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_semantic_review_ontology_version_id_fkey"
+            columns: ["ontology_version_id"]
+            isOneToOne: false
+            referencedRelation: "ontology_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_semantic_review_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_semantic_review_suggested_node_id_fkey"
+            columns: ["suggested_node_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       performance_by_topic: {
         Row: {
@@ -19519,6 +19722,64 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      question_semantic_links: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          id: string
+          metadata: Json
+          node_id: string
+          ontology_version_id: string
+          question_id: string
+          review_status: string
+          source: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          node_id: string
+          ontology_version_id: string
+          question_id: string
+          review_status?: string
+          source: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          node_id?: string
+          ontology_version_id?: string
+          question_id?: string
+          review_status?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_semantic_links_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_semantic_links_ontology_version_id_fkey"
+            columns: ["ontology_version_id"]
+            isOneToOne: false
+            referencedRelation: "ontology_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_semantic_links_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       question_topic_links: {
         Row: {
