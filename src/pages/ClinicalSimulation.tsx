@@ -44,6 +44,7 @@ import type { ChatMessage, ManeuverPerformed } from "@/components/clinical-simul
 import { exportToPdf } from "@/lib/exportPdf";
 import { useClinicalSimulation as useClinicalSimulationModule } from "@/modules/clinical-simulation/hooks/useClinicalSimulation";
 import { usePhaseMachine } from "@/modules/clinical-simulation/state/usePhaseMachine";
+import { useCountdownTimer } from "@/modules/clinical-simulation/state/useCountdownTimer";
 
 const EVAL_LABELS: Record<string, string> = {
   anamnesis: "Anamnese", physical_exam: "Exame Físico", complementary_exams: "Exames Complementares",
@@ -161,13 +162,36 @@ const ClinicalSimulation = () => {
   const [categoryScores, setCategoryScores] = useState<CategoryScores>({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
 
   // ─── TIMER / DETERIORATION ───
-  const [countdown, setCountdown] = useState(0);
-  const [timerExpired, setTimerExpired] = useState(false);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Wave 1.2 — countdown agora vive em useCountdownTimer (interval único + logs).
   const [deteriorationCount, setDeteriorationCount] = useState(0);
   const [inactivityWarning, setInactivityWarning] = useState(false);
   const lastActionTimeRef = useRef<number>(Date.now());
   const deteriorationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const countdownTimer = useCountdownTimer({
+    enabled: phaseMachine.phase === "active",
+    initialSeconds: 0,
+    correlationId: cs.correlationId,
+    onMilestone: (remaining) => {
+      if (remaining === 121) toast({ title: "⚠️ 2 minutos restantes!", description: "Finalize seu atendimento rapidamente." });
+      if (remaining === 301) toast({ title: "⏱️ 5 minutos restantes", description: "Considere fechar seu diagnóstico e prescrição." });
+    },
+    onExpired: () => {
+      toast({ title: "⏰ Tempo esgotado!", description: "O tempo do plantão acabou! Encerre o atendimento agora.", variant: "destructive" });
+      try { cs.sound("timeout"); cs.track("plantao_time_expired", { phase: "active" }); } catch {}
+    },
+  });
+  const countdown = countdownTimer.remaining;
+  const timerExpired = countdownTimer.expired;
+  // Shim de compatibilidade — mantém as call sites antigas funcionando.
+  const setCountdown = useCallback((n: number) => {
+    if (n > 0) countdownTimer.start(n);
+    else countdownTimer.reset(0);
+  }, [countdownTimer]);
+  const setTimerExpired = useCallback((v: boolean) => {
+    if (!v) countdownTimer.reset(countdownTimer.remaining);
+  }, [countdownTimer]);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null); // legacy noop ref (cleanup chamado em stop())
 
   // ─── UI / DIALOGS STATE ───
   const [specialistDialogOpen, setSpecialistDialogOpen] = useState(false);
@@ -230,10 +254,13 @@ const ClinicalSimulation = () => {
     if (data.actionTimeline) setActionTimeline(data.actionTimeline);
     if (data.examResults) setExamResults(data.examResults);
     if (data.vitalsSnapshots) setVitalsSnapshots(data.vitalsSnapshots);
-    if (typeof data.countdown === "number") setCountdown(data.countdown);
+    // countdown é re-armado abaixo via countdownTimer.start() (não usar shim aqui).
     if (data.abcdeChecklist) setAbcdeChecklist(data.abcdeChecklist);
     if (data.medicalRecord) setMedicalRecord(data.medicalRecord);
     if (data.categoryScores) setCategoryScores(data.categoryScores);
+    // Wave 1.2 — restore: derruba qualquer timer prévio e re-arma com o snapshot.
+    countdownTimer.stop("RESTORE");
+    if (typeof data.countdown === "number" && data.countdown > 0) countdownTimer.start(data.countdown);
     setPhase("active", "RESTORE");
     clearPending();
   }, [clearPending]);
@@ -269,30 +296,8 @@ const ClinicalSimulation = () => {
     }
   }, [patientStatus]);
 
-  // Countdown timer
-  useEffect(() => {
-    if (phase === "active" && countdown > 0) {
-      countdownRef.current = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownRef.current!);
-            setTimerExpired(true);
-            toast({ title: "⏰ Tempo esgotado!", description: "O tempo do plantão acabou! Encerre o atendimento agora.", variant: "destructive" });
-            try {
-              cs.sound("timeout");
-              cs.track("plantao_time_expired", { phase: "active" });
-            } catch {}
-            return 0;
-          }
-          if (prev === 121) toast({ title: "⚠️ 2 minutos restantes!", description: "Finalize seu atendimento rapidamente." });
-          if (prev === 301) toast({ title: "⏱️ 5 minutos restantes", description: "Considere fechar seu diagnóstico e prescrição." });
-          return prev - 1;
-        });
-      }, 1000);
-      return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-    }
-    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-  }, [phase, countdown > 0]);
+  // Wave 1.2 — countdown loop migrado para useCountdownTimer (acima).
+  // Mantido apenas o hook de logs/cleanup; nenhum setInterval local aqui.
 
   const fetchHistory = useCallback(async () => {
     if (!user) return;
@@ -412,7 +417,7 @@ const ClinicalSimulation = () => {
     lastActionTimeRef.current = Date.now();
     deteriorationIntervalRef.current = setInterval(() => {
       const elapsed = (Date.now() - lastActionTimeRef.current) / 1000;
-      if (elapsed >= 60 && elapsed < 90) setInactivityWarning(true);
+      if (elapsed >= 60 && elapsed < 90) { setInactivityWarning(true); countdownTimer.logInactivityWarning(elapsed); }
       else if (elapsed < 60) setInactivityWarning(false);
       if (elapsed >= 90) {
         setInactivityWarning(false);
@@ -676,7 +681,7 @@ const ClinicalSimulation = () => {
   };
 
   const finishSimulation = useCallback(async () => {
-    setLoading(true); setPhase("finishing", "FINISH");
+    setLoading(true); countdownTimer.stop("FINISH"); setPhase("finishing", "FINISH");
     try {
       const res = await callAPI({ action: "finish", conversation_history: conversationHistory, ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}) });
       setFinalEval(res);
@@ -705,7 +710,7 @@ const ClinicalSimulation = () => {
       }
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
-      setPhase("active", "FINISH_FAILED");
+      countdownTimer.stop("ERROR"); setPhase("active", "FINISH_FAILED");
     } finally {
       setLoading(false);
     }
@@ -713,7 +718,7 @@ const ClinicalSimulation = () => {
   }, [callAPI, conversationHistory, teacherCaseId, completePersistedSession, addXp, user, specialty, difficulty, refresh, toast]);
 
   const reset = useCallback(() => {
-    setPhase("lobby", "RESET");
+    countdownTimer.stop("RESET"); setPhase("lobby", "RESET");
     setMessages([]); setConversationHistory([]);
     setScore(50); setPrevScore(50); setTimeElapsed(0);
     setFinalEval(null); setVitals(null); setCountdown(0);
