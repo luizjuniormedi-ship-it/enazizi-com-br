@@ -187,11 +187,20 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     }
 
     if (createSession) {
-      const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
+      const { data: sess, error: sessionError } = await supabaseAdmin.from("simulado_sessions").insert({
         user_id: userId, mode: mode, total_questions: finalQuestions.length, status: 'active',
-        discipline: specialty, topic: topics[0], difficulty: difficulty, board: profile.label,
-        source: finalQuestions.every(q => q._source === 'bank') ? 'bank' : 'mixed', started_at: new Date().toISOString()
+        discipline: specialty, topic: topics[0], difficulty: difficulty,
+        source: finalQuestions.every(q => q._source === 'bank') ? 'bank' : 'mixed', started_at: new Date().toISOString(),
+        metadata: { board: profile.label, requested_count: requestedCount, correlation_id: correlationId }
       }).select().single();
+      if (sessionError) {
+        return jsonError("SESSION_CREATE_FAILED", 500, {
+          message: sessionError.message,
+          code: sessionError.code,
+          details: sessionError.details,
+          hint: sessionError.hint,
+        });
+      }
       if (sess) {
         sessionId = sess.id;
         await supabaseAdmin.from("simulado_questions").insert(finalQuestions.map((q, idx) => ({
