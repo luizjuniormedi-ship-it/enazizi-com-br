@@ -89,7 +89,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       let qrParsed: any = {};
       let qrRaw = "{}";
       try {
-        const qrResponse = await ai(qrAiConfig, { retries: 2 });
+        // QR Mode tem régua de qualidade própria (enum + JSON schema).
+        // Bypassa Quality Lock dos 15 blocos pedagógicos do Tutor normal.
+        const qrResponse = await ai(qrAiConfig, { retries: 2, skipQualityLock: true });
         qrRaw = qrResponse.choices?.[0]?.message?.content || "{}";
         qrParsed = JSON.parse(qrRaw);
       } catch (e: any) {
