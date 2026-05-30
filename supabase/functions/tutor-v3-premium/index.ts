@@ -4,6 +4,7 @@ import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockId } from "../_shared/tutor/pedagogical-logic.ts";
 import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory, estimateQualityScore } from "../_shared/tutor-memory.ts";
 import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
+import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
 
 // Métrica fire-and-forget — nunca trava o fluxo.
 async function bumpMetric(supabaseAdmin: any, field: string, delta = 1) {
