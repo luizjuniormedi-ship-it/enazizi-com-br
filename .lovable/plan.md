@@ -1,19 +1,65 @@
-## Desativar Freeze v25
+## Fase 1 revisada — Captura de Conhecimento + Validação GO/NO-GO
 
-Encerrar oficialmente o **Operational Governance Freeze v25** e liberar a execução do plano de deprecation controlada do `reinforce-error`.
+Acato integralmente a ressalva. A Fase 1 passa a começar com uma **auditoria pedagógica forense do V1**, antes de qualquer alteração de código. Nenhuma remoção, nenhuma deprecation suave, nenhuma edição em `ai-phase2-helpers.ts` ou no QR Mode acontece enquanto essa captura não estiver concluída e validada por você.
 
-### Ações
+### Sequência da Fase 1 (read-only + 1 atualização de memória)
 
-1. **Atualizar `mem://index.md`** — remover do bloco **Core** a linha do Freeze v25 (`OPERATIONAL GOVERNANCE FREEZE v25 (ACTIVE)...`) e a entrada correspondente na lista **Memories** (`[Operational Governance Freeze v25]`).
-2. **Atualizar `mem://constraint/operational-governance-freeze-v25`** — marcar como `ENCERRADO em 2026-05-30`, preservando histórico (motivo de criação, checkpoints atingidos, decisão de encerramento) mas deixando claro que não está mais ativo.
-3. **Registrar nova memória `mem://operacao/pos-freeze-v25-deprecation-reinforce-error`** — apontar que, com o freeze encerrado, o plano oficial de deprecation controlada do `reinforce-error` (4 fases, 60 dias) está liberado para execução conforme decisão executiva anterior.
+**1.1 — Auditoria de Nuances Exclusivas do V1** (read-only)
+Vou ler em paralelo:
+- `supabase/functions/reinforce-error/index.ts` (prompt completo + parsing).
+- `supabase/functions/_shared/enazizi-prompt.ts` (prompt mestre do Tutor + builders).
+- `supabase/functions/tutor-v2-chat/index.ts` (bloco `QUESTION_REVIEW_MODE` + `QUESTION_REVIEW_INSTRUCTION` + parser de metadados).
 
-### Não incluso (intencional)
+Para cada um dos 5 elementos que você listou, responder com evidência (arquivo:linha):
 
-- Nenhuma alteração de código, schema, edge function, prompt ou rota.
-- Nenhuma execução das fases de deprecation — apenas liberação de governança. A execução das Fases 1–4 será solicitada explicitamente em prompts futuros.
-- Outros guard-rails ativos (Sprint 2.3, Go-Live Structural Freeze, LGPD Hardening, Escopo ProntoMedic, Dashboard Nomenclatura) permanecem **intactos**.
+| Elemento V1 | Pergunta | Resposta esperada |
+|---|---|---|
+| Classificação de erro cognitivo (7 categorias) | Há enum fixo no Tutor? | Citação literal do trecho do Tutor que cobre ou não |
+| Regra de ouro / memory anchor | Garantida explicitamente? | Idem |
+| Formato compacto de correção | Existe modo compacto no Tutor? | Idem |
+| Pergunta de fixação (Active Recall) | Obrigatória no Tutor? | Idem |
+| Estrutura de feedback rápido | Existe contrato curto? | Idem |
 
-### Resultado
+Para cada elemento, classificar:
+- 🟢 **Já garantido** — citar trecho do prompt do Tutor.
+- 🟡 **Implícito / sujeito a drift** — recomendar adição literal ao prompt mestre.
+- 🔴 **Ausente** — bloquear deprecation até migração.
 
-Freeze v25 oficialmente desativado nas memórias. Próximo passo natural: iniciar Fase 1 (Validação) do plano de deprecation quando você autorizar.
+**1.2 — Entrega da Matriz de Captura no chat** (texto/markdown direto, sem arquivos)
+Conforme sua preferência de memória, todo o relatório é colado aqui no chat para você revisar antes de qualquer ação.
+
+**1.3 — Registro do resultado em memória** (uma atualização)
+Atualizar `mem://operacao/pos-freeze-v25-deprecation-reinforce-error` com:
+- Resultado da auditoria de captura (5 elementos classificados).
+- Lista final de trechos a migrar para `enazizi-prompt.ts` (se houver itens 🟡 ou 🔴).
+- Critério GO atualizado para Fase 2: "0 itens 🔴 + 100% dos itens 🟡 migrados".
+
+**1.4 — Reauditoria GO/NO-GO** (read-only)
+Reconfirmar com dados frescos:
+- Telemetria `function_edge_logs` para `reinforce-error` nos últimos 60 d.
+- Ausência de novos consumidores (re-rodar `rg` sobre `reinforce-error`, `StudyLoop*`, `useStudyLoop`).
+- Estabilidade do `tutor-v2-chat` (sem regressão no QR Mode).
+
+**1.5 — Decisão de avanço para Fase 2**
+Eu **não** avanço para Fase 2 automaticamente. Entrego o relatório completo no chat e aguardo sua autorização explícita.
+
+### O que esta Fase 1 NÃO faz
+
+- ❌ Não edita `enazizi-prompt.ts`, `tutor-v2-chat`, `reinforce-error` nem nenhum prompt.
+- ❌ Não remove componentes, hooks ou edge functions.
+- ❌ Não toca em `ai-phase2-helpers.ts`, `k6-load-test.js`, `scripts/check-edge-imports.ts`.
+- ❌ Não cria migrations, RLS, tabelas, rotas ou componentes.
+- ❌ Não desconecta `MissionQuickActions`.
+
+Únicas escritas: 1 atualização em `mem://operacao/pos-freeze-v25-deprecation-reinforce-error` ao final, registrando o resultado da captura.
+
+### Resultado esperado
+
+Relatório forense colado no chat com:
+1. Trecho literal do prompt V1 que define cada elemento.
+2. Trecho literal do prompt do Tutor que cobre (ou não) cada elemento.
+3. Veredito 🟢/🟡/🔴 por elemento.
+4. Lista pronta de patches textuais a aplicar no prompt mestre **na Fase 2**, se houver lacuna.
+5. Confirmação dos critérios GO ainda válidos.
+
+Após sua revisão e autorização explícita, a Fase 2 (deprecation suave) pode ser planejada.
