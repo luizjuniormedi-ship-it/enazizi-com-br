@@ -65,6 +65,60 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     if (!topic) topic = "Medicina Geral";
 
+    // ── 1.5 QR MODE V3 (Question Review) — Fase 1.3 ─────────────────────────────
+    // Detecta intent "question_review" e responde em modo corretor pedagógico.
+    // Curto-circuito: bypassa 9 blocos, memória, RAG e persistência de aula.
+    const qr = detectQuestionReview(body, message || "");
+    if (qr.isQuestionReview) {
+      console.log("[QR_MODE_ACTIVATED]", { reason: qr.reason, signals: qr.signals, partial: qr.partial });
+
+      const qrSystemPrompt = `${PROMPT_COMPLETO}\n\n${buildQRInstruction(qr.context, qr.partial)}`;
+      const qrAiConfig: any = {
+        taskType: "tutor_deep",
+        complexity: "alta",
+        userId,
+        stream: false,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: qrSystemPrompt },
+          ...history,
+          { role: "user", content: message || "Por favor, corrija minha resposta para esta questão." },
+        ],
+      };
+
+      let qrParsed: any = {};
+      let qrRaw = "{}";
+      try {
+        const qrResponse = await ai(qrAiConfig, { retries: 2 });
+        qrRaw = qrResponse.choices?.[0]?.message?.content || "{}";
+        qrParsed = JSON.parse(qrRaw);
+      } catch (e: any) {
+        console.error("[QR_MODE_PARSE_ERROR]", e?.message, qrRaw.slice(0, 200));
+        qrParsed = { content: qrRaw || "Não foi possível gerar a correção agora.", metadata: null };
+      }
+
+      // Sanitização defensiva do enum
+      const meta = qrParsed.metadata || {};
+      if (meta.reasoning_error && !REASONING_ERROR_ENUM.includes(meta.reasoning_error)) {
+        console.warn("[QR_MODE_ENUM_DRIFT]", meta.reasoning_error);
+        meta.reasoning_error = "Conhecimento insuficiente";
+        meta.confidence = "low";
+      }
+      if (qr.partial && meta.confidence !== "low") meta.confidence = "low";
+
+      return corsResponse({
+        success: true,
+        ok: true,
+        mode: "question_review",
+        content: qrParsed.content || "Correção indisponível no momento.",
+        metadata: meta,
+        topic,
+        correlation_id: correlationId,
+        debug: { qrReason: qr.reason, qrSignals: qr.signals, qrPartial: qr.partial },
+      }, 200);
+    }
+
+
     // ── 2. LONGITUDINAL MEMORY SYNC ──────────────────────────────────────────────
     let memoryContext = "";
     let masteryLevel = "INITIAL";
