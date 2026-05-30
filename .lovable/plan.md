@@ -1,20 +1,19 @@
-A execução seguirá a ordem solicitada para garantir a estabilidade e conformidade do projeto ENAZIZI:
+## Desativar Freeze v25
 
-### 1. Smoke Test Visual
-- Verificação automatizada de todas as rotas críticas (Dashboard, Admin, Enaflix, Professor) para garantir que não existam erros 404.
-- Validação visual dos componentes principais em cada rota.
+Encerrar oficialmente o **Operational Governance Freeze v25** e liberar a execução do plano de deprecation controlada do `reinforce-error`.
 
-### 2. Termos e Privacidade (LGPD)
-- Criação das páginas `/terms` e `/privacy` com conteúdo jurídico padrão adaptado para plataformas educacionais médicas.
-- Implementação de um modal ou banner de consentimento de cookies/LGPD no primeiro acesso.
-- Linkagem desses documentos no rodapé do sistema.
+### Ações
 
-### 3. Otimização de Performance
-- Análise de chamadas ao Supabase para identificar gargalos no carregamento inicial.
-- Implementação de carregamento preguiçoso (lazy loading) para rotas e componentes pesados.
-- Otimização de queries e uso de cache local onde aplicável para reduzir o tempo de carregamento de 8-13s para menos de 3s.
+1. **Atualizar `mem://index.md`** — remover do bloco **Core** a linha do Freeze v25 (`OPERATIONAL GOVERNANCE FREEZE v25 (ACTIVE)...`) e a entrada correspondente na lista **Memories** (`[Operational Governance Freeze v25]`).
+2. **Atualizar `mem://constraint/operational-governance-freeze-v25`** — marcar como `ENCERRADO em 2026-05-30`, preservando histórico (motivo de criação, checkpoints atingidos, decisão de encerramento) mas deixando claro que não está mais ativo.
+3. **Registrar nova memória `mem://operacao/pos-freeze-v25-deprecation-reinforce-error`** — apontar que, com o freeze encerrado, o plano oficial de deprecation controlada do `reinforce-error` (4 fases, 60 dias) está liberado para execução conforme decisão executiva anterior.
 
-### Detalhes Técnicos
-- Utilização de `React.lazy` e `Suspense` para divisão de código (code splitting).
-- Verificação de políticas de RLS para garantir que a segurança não impacte a performance.
-- Padronização visual utilizando a biblioteca de componentes já existente (Shadcn + Tailwind).
+### Não incluso (intencional)
+
+- Nenhuma alteração de código, schema, edge function, prompt ou rota.
+- Nenhuma execução das fases de deprecation — apenas liberação de governança. A execução das Fases 1–4 será solicitada explicitamente em prompts futuros.
+- Outros guard-rails ativos (Sprint 2.3, Go-Live Structural Freeze, LGPD Hardening, Escopo ProntoMedic, Dashboard Nomenclatura) permanecem **intactos**.
+
+### Resultado
+
+Freeze v25 oficialmente desativado nas memórias. Próximo passo natural: iniciar Fase 1 (Validação) do plano de deprecation quando você autorizar.
