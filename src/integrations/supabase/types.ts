@@ -19775,6 +19775,7 @@ export type Database = {
           board_similarity_score: number | null
           classification_confidence: number | null
           classification_method: string | null
+          classification_reason: string | null
           classification_reviewed_by_human: boolean
           classified_at: string | null
           clinical_density_score: number | null
@@ -19849,6 +19850,7 @@ export type Database = {
           board_similarity_score?: number | null
           classification_confidence?: number | null
           classification_method?: string | null
+          classification_reason?: string | null
           classification_reviewed_by_human?: boolean
           classified_at?: string | null
           clinical_density_score?: number | null
@@ -19923,6 +19925,7 @@ export type Database = {
           board_similarity_score?: number | null
           classification_confidence?: number | null
           classification_method?: string | null
+          classification_reason?: string | null
           classification_reviewed_by_human?: boolean
           classified_at?: string | null
           clinical_density_score?: number | null
