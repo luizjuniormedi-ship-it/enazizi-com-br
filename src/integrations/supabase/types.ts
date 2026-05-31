@@ -9171,6 +9171,13 @@ export type Database = {
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cognitive_telemetry_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cognitive_window_performance: {
@@ -12557,6 +12564,13 @@ export type Database = {
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "golden_question_reference_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
         ]
       }
       governance_audit_logs: {
@@ -12884,6 +12898,13 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "human_audit_queue_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
             referencedColumns: ["id"]
           },
         ]
@@ -13517,6 +13538,13 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: true
             referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_exposure_control_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "vw_clinica_medica_umbrella"
             referencedColumns: ["id"]
           },
         ]
@@ -18151,6 +18179,13 @@ export type Database = {
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "practice_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
         ]
       }
       predictive_recovery_forecasts: {
@@ -19173,6 +19208,13 @@ export type Database = {
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "question_audit_logs_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
         ]
       }
       question_classification_queue: {
@@ -19646,6 +19688,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "question_topic_map_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "question_topic_map_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
@@ -19968,6 +20017,13 @@ export type Database = {
             columns: ["original_question_id"]
             isOneToOne: false
             referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_original_question_id_fkey"
+            columns: ["original_question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
             referencedColumns: ["id"]
           },
           {
@@ -21205,6 +21261,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "simulado_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "simulado_answers_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -21346,6 +21409,13 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulado_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
             referencedColumns: ["id"]
           },
           {
@@ -27347,6 +27417,326 @@ export type Database = {
           shadow_quality?: never
         }
         Relationships: []
+      }
+      vw_clinica_medica_umbrella: {
+        Row: {
+          approved_for_generation: boolean | null
+          batch_id: string | null
+          board: string | null
+          board_similarity_score: number | null
+          classification_confidence: number | null
+          classification_method: string | null
+          classification_reviewed_by_human: boolean | null
+          classified_at: string | null
+          clinical_density_score: number | null
+          clinical_reasoning_depth: number | null
+          cognitive_complexity_score: number | null
+          cognitive_quality_score: number | null
+          correct_index: number | null
+          cost_tokens: number | null
+          cost_usd: number | null
+          created_at: string | null
+          difficulty: number | null
+          difficulty_level: number | null
+          distractor_quality_score: number | null
+          embedding_hash: string | null
+          exam_bank_id: string | null
+          explanation: string | null
+          fsrs_hooks: Json | null
+          guideline_recency_score: number | null
+          guideline_reference: string | null
+          guideline_relevancy_score: number | null
+          guideline_score: number | null
+          guideline_year: number | null
+          hallucination_risk_score: number | null
+          id: string | null
+          image_url: string | null
+          ingestion_version: string | null
+          institution: string | null
+          is_clinical_case: boolean | null
+          is_global: boolean | null
+          language: string | null
+          latent_ability_theta: number | null
+          lifecycle_state: string | null
+          microtopic_id: string | null
+          official_exam_flag: boolean | null
+          options: Json | null
+          organization_id: string | null
+          original_question_id: string | null
+          permission_type: string | null
+          previous_version: Json | null
+          psychometric_status: string | null
+          quality_tier: string | null
+          question_order: number | null
+          realism_score: number | null
+          reasoning_complexity_score: number | null
+          reasoning_score: number | null
+          retention_value_score: number | null
+          review_status: string | null
+          source: string | null
+          source_map_id: string | null
+          source_pdf: string | null
+          source_type: string | null
+          source_url: string | null
+          specialty_id: string | null
+          statement: string | null
+          subtopic: string | null
+          subtopic_id: string | null
+          tags: string[] | null
+          topic: string | null
+          topic_id: string | null
+          tri_difficulty_score: number | null
+          tri_discrimination: number | null
+          tri_guessing: number | null
+          tutor_context: string | null
+          umbrella_origem: string | null
+          updated_at: string | null
+          user_id: string | null
+          year: number | null
+        }
+        Insert: {
+          approved_for_generation?: boolean | null
+          batch_id?: string | null
+          board?: string | null
+          board_similarity_score?: number | null
+          classification_confidence?: number | null
+          classification_method?: string | null
+          classification_reviewed_by_human?: boolean | null
+          classified_at?: string | null
+          clinical_density_score?: number | null
+          clinical_reasoning_depth?: number | null
+          cognitive_complexity_score?: number | null
+          cognitive_quality_score?: number | null
+          correct_index?: number | null
+          cost_tokens?: number | null
+          cost_usd?: number | null
+          created_at?: string | null
+          difficulty?: number | null
+          difficulty_level?: number | null
+          distractor_quality_score?: number | null
+          embedding_hash?: string | null
+          exam_bank_id?: string | null
+          explanation?: string | null
+          fsrs_hooks?: Json | null
+          guideline_recency_score?: number | null
+          guideline_reference?: string | null
+          guideline_relevancy_score?: number | null
+          guideline_score?: number | null
+          guideline_year?: number | null
+          hallucination_risk_score?: number | null
+          id?: string | null
+          image_url?: string | null
+          ingestion_version?: string | null
+          institution?: string | null
+          is_clinical_case?: boolean | null
+          is_global?: boolean | null
+          language?: string | null
+          latent_ability_theta?: number | null
+          lifecycle_state?: string | null
+          microtopic_id?: string | null
+          official_exam_flag?: boolean | null
+          options?: Json | null
+          organization_id?: string | null
+          original_question_id?: string | null
+          permission_type?: string | null
+          previous_version?: Json | null
+          psychometric_status?: string | null
+          quality_tier?: string | null
+          question_order?: number | null
+          realism_score?: number | null
+          reasoning_complexity_score?: number | null
+          reasoning_score?: number | null
+          retention_value_score?: number | null
+          review_status?: string | null
+          source?: string | null
+          source_map_id?: string | null
+          source_pdf?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          specialty_id?: string | null
+          statement?: string | null
+          subtopic?: string | null
+          subtopic_id?: string | null
+          tags?: string[] | null
+          topic?: string | null
+          topic_id?: string | null
+          tri_difficulty_score?: number | null
+          tri_discrimination?: number | null
+          tri_guessing?: number | null
+          tutor_context?: string | null
+          umbrella_origem?: never
+          updated_at?: string | null
+          user_id?: string | null
+          year?: number | null
+        }
+        Update: {
+          approved_for_generation?: boolean | null
+          batch_id?: string | null
+          board?: string | null
+          board_similarity_score?: number | null
+          classification_confidence?: number | null
+          classification_method?: string | null
+          classification_reviewed_by_human?: boolean | null
+          classified_at?: string | null
+          clinical_density_score?: number | null
+          clinical_reasoning_depth?: number | null
+          cognitive_complexity_score?: number | null
+          cognitive_quality_score?: number | null
+          correct_index?: number | null
+          cost_tokens?: number | null
+          cost_usd?: number | null
+          created_at?: string | null
+          difficulty?: number | null
+          difficulty_level?: number | null
+          distractor_quality_score?: number | null
+          embedding_hash?: string | null
+          exam_bank_id?: string | null
+          explanation?: string | null
+          fsrs_hooks?: Json | null
+          guideline_recency_score?: number | null
+          guideline_reference?: string | null
+          guideline_relevancy_score?: number | null
+          guideline_score?: number | null
+          guideline_year?: number | null
+          hallucination_risk_score?: number | null
+          id?: string | null
+          image_url?: string | null
+          ingestion_version?: string | null
+          institution?: string | null
+          is_clinical_case?: boolean | null
+          is_global?: boolean | null
+          language?: string | null
+          latent_ability_theta?: number | null
+          lifecycle_state?: string | null
+          microtopic_id?: string | null
+          official_exam_flag?: boolean | null
+          options?: Json | null
+          organization_id?: string | null
+          original_question_id?: string | null
+          permission_type?: string | null
+          previous_version?: Json | null
+          psychometric_status?: string | null
+          quality_tier?: string | null
+          question_order?: number | null
+          realism_score?: number | null
+          reasoning_complexity_score?: number | null
+          reasoning_score?: number | null
+          retention_value_score?: number | null
+          review_status?: string | null
+          source?: string | null
+          source_map_id?: string | null
+          source_pdf?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          specialty_id?: string | null
+          statement?: string | null
+          subtopic?: string | null
+          subtopic_id?: string | null
+          tags?: string[] | null
+          topic?: string | null
+          topic_id?: string | null
+          tri_difficulty_score?: number | null
+          tri_discrimination?: number | null
+          tri_guessing?: number | null
+          tutor_context?: string | null
+          umbrella_origem?: never
+          updated_at?: string | null
+          user_id?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_bank_exam_bank_id_fkey"
+            columns: ["exam_bank_id"]
+            isOneToOne: false
+            referencedRelation: "exam_banks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_microtopic_id_fkey"
+            columns: ["microtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_microtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_original_question_id_fkey"
+            columns: ["original_question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_original_question_id_fkey"
+            columns: ["original_question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_source_map_id_fkey"
+            columns: ["source_map_id"]
+            isOneToOne: false
+            referencedRelation: "mental_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
+            foreignKeyName: "questions_bank_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "questions_bank_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "questions_bank_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+        ]
       }
     }
     Functions: {
