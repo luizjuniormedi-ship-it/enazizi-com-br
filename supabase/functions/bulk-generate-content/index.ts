@@ -163,21 +163,15 @@ REGRAS:
     }
   };
 
-  // 3. EXECUTE
-  if (body.background !== false) {
-    waitUntil(processGeneration());
-    return corsResponse({ 
-      status: "processing", 
-      specialty, 
-      correlation_id: correlation.correlationId 
-    }, 200);
-  } else {
-    const result = await processGeneration();
-    return corsResponse({ 
-      status: "completed", 
-      specialty,
-      result,
-      correlation_id: correlation.correlationId 
-    }, 200);
-  }
+  // 3. EXECUTE — SEMPRE em background (geração + forensic + inserts > 150s).
+  // Modo síncrono removido para evitar IDLE_TIMEOUT (504).
+  // O cliente deve fazer polling em `pipeline_governance` ou `questions_bank` pelo correlation_id.
+  waitUntil(processGeneration());
+  return corsResponse({
+    status: "processing",
+    specialty,
+    count,
+    correlation_id: correlation.correlationId,
+    message: "Geração iniciada em background. Consulte pipeline_governance para status."
+  }, 202);
 }));
