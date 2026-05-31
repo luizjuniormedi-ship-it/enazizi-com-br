@@ -51,6 +51,7 @@ const AdminQuestionReviewPanel = () => {
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
   const [qualityFilter, setQualityFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
