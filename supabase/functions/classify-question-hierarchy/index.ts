@@ -471,6 +471,16 @@ Deno.serve(async (req) => {
 
       if (!result.specialty_id || result.confidence < REVIEW_THRESHOLD) {
         // muito baixo: só vai para fila (se houver alguma sugestão), senão skip
+        // FIX STICKY QUEUE: em ambos os casos marcamos a questão como 'skipped'
+        // com classification_reason explícito, para sair do scope do scanner
+        // (que filtra por specialty_id IS NULL).
+        const skipReason: "no_specialty_match" | "low_confidence" | "no_topic" =
+          !result.specialty_id
+            ? "no_specialty_match"
+            : !result.topic_id
+              ? "no_topic"
+              : "low_confidence";
+
         if (result.specialty_id) {
           if (!dryRun) {
             await admin
@@ -501,6 +511,7 @@ Deno.serve(async (req) => {
               topic: row.topic,
               subtopic: row.subtopic,
               suggestion: result,
+              skip_reason: skipReason,
             });
           }
         } else {
@@ -511,11 +522,30 @@ Deno.serve(async (req) => {
               topic: row.topic,
               subtopic: row.subtopic,
               reason: result.reason,
+              skip_reason: skipReason,
             });
+          }
+        }
+
+        // Marca questão como skipped no banco (sai da fila do scanner)
+        if (!dryRun && tableSource === "questions_bank") {
+          const { error: skipErr } = await admin
+            .from(tableSource)
+            .update({
+              classification_method: "skipped",
+              classification_reason: skipReason,
+              classified_at: new Date().toISOString(),
+            })
+            .eq("id", row.id);
+          if (skipErr) {
+            console.error(
+              `[classify-hierarchy] SKIP MARK FAILED qid=${row.id} reason=${skipReason} err=${skipErr.message}`,
+            );
           }
         }
         continue;
       }
+
 
       // confiança média/alta
       breakdown[result.method]++;
