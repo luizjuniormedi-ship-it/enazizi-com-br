@@ -420,7 +420,9 @@ Deno.serve(async (req) => {
     let query = admin
       .from(tableSource)
       .select(selectCols)
-      .is("specialty_id", null);
+      .is("specialty_id", null)
+      .is("classification_method", null);
+
     if (createdAfter) {
       query = query.gte("created_at", createdAfter);
     }
