@@ -191,6 +191,9 @@ const AdminQuestionReviewPanel = () => {
       if (qualityFilter !== "all") {
         query = query.eq("quality_tier", qualityFilter);
       }
+      if (sourceFilter.trim()) {
+        query = query.ilike("source", `%${sourceFilter.trim()}%`);
+      }
 
       const { error, count } = await query;
       
