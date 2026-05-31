@@ -292,6 +292,15 @@ const AdminQuestionReviewPanel = () => {
             <SelectItem value="needs_upgrade">Precisa Enriquecer</SelectItem>
           </SelectContent>
         </Select>
+        <div className="relative">
+          <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            value={sourceFilter}
+            onChange={(e) => { setSourceFilter(e.target.value); setPage(0); }}
+            placeholder="Filtrar por source (ex: ENAZIZI Sepse)"
+            className="h-7 text-xs pl-7 w-64"
+          />
+        </div>
         {isActionableStatus && questions.length > 0 && (
           <Button size="sm" variant="outline" className="text-xs h-7"
             disabled={actionLoading === "bulk"} onClick={handleBulkApprove}>
