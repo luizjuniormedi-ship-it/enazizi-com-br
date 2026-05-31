@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Sparkles } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Sparkles, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,7 @@ const AdminQuestionReviewPanel = () => {
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
   const [qualityFilter, setQualityFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
@@ -86,6 +88,9 @@ const AdminQuestionReviewPanel = () => {
     if (qualityFilter !== "all") {
       query = query.eq("quality_tier", qualityFilter);
     }
+    if (sourceFilter.trim()) {
+      query = query.ilike("source", `%${sourceFilter.trim()}%`);
+    }
 
     const { data, count, error } = await query;
     if (!error && data) {
@@ -111,7 +116,10 @@ const AdminQuestionReviewPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchQuestions(); fetchCounts(); }, [page, statusFilter, qualityFilter]);
+  useEffect(() => {
+    const t = setTimeout(() => { fetchQuestions(); fetchCounts(); }, 250);
+    return () => clearTimeout(t);
+  }, [page, statusFilter, qualityFilter, sourceFilter]);
 
   const handleAction = async (id: string, action: "approved" | "rejected") => {
     setActionLoading(id);
@@ -182,6 +190,9 @@ const AdminQuestionReviewPanel = () => {
       }
       if (qualityFilter !== "all") {
         query = query.eq("quality_tier", qualityFilter);
+      }
+      if (sourceFilter.trim()) {
+        query = query.ilike("source", `%${sourceFilter.trim()}%`);
       }
 
       const { error, count } = await query;
@@ -281,6 +292,15 @@ const AdminQuestionReviewPanel = () => {
             <SelectItem value="needs_upgrade">Precisa Enriquecer</SelectItem>
           </SelectContent>
         </Select>
+        <div className="relative">
+          <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            value={sourceFilter}
+            onChange={(e) => { setSourceFilter(e.target.value); setPage(0); }}
+            placeholder="Filtrar por source (ex: ENAZIZI Sepse)"
+            className="h-7 text-xs pl-7 w-64"
+          />
+        </div>
         {isActionableStatus && questions.length > 0 && (
           <Button size="sm" variant="outline" className="text-xs h-7"
             disabled={actionLoading === "bulk"} onClick={handleBulkApprove}>
