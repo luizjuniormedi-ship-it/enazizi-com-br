@@ -45,16 +45,8 @@ const AGENTS: AgentDef[] = [
     accent: "success",
     category: "ensino",
   },
-  {
-    to: "/dashboard/cronicas",
-    icon: BookOpen,
-    title: "Crônicas Médicas",
-    description:
-      "Aprenda medicina por narrativas clínicas imersivas. Você é o médico no plantão — raciocine, decida e aprenda com casos cinematográficos.",
-    accent: "amber",
-    isNew: true,
-    category: "ensino",
-  },
+  // Crônicas Médicas removido do menu
+
   {
     to: "/dashboard/questoes",
     icon: HelpCircle,
@@ -92,16 +84,8 @@ const AGENTS: AgentDef[] = [
     accent: "info",
     category: "memoria",
   },
-  {
-    to: "/dashboard/mnemonico",
-    icon: Brain,
-    title: "Mnemônico Visual",
-    description:
-      "Mnemônicos com imagem 3D Pixar para memorizar listas médicas. Pipeline com auditoria pedagógica e visual em 8 etapas.",
-    accent: "violet",
-    isNew: true,
-    category: "memoria",
-  },
+  // Mnemônico Visual removido do menu
+
   {
     to: "/dashboard/coach",
     icon: Heart,
@@ -146,24 +130,8 @@ const SPOTLIGHT: SpotlightAgent[] = [
     accent: "success",
     eyebrow: "Agente principal",
   },
-  {
-    to: "/dashboard/cronicas",
-    icon: BookOpen,
-    title: "Crônicas Médicas — você é o médico no plantão",
-    description:
-      "Casos clínicos cinematográficos onde cada decisão importa. Aprenda medicina como quem assiste um filme.",
-    accent: "amber",
-    eyebrow: "Novo agente cinematográfico",
-  },
-  {
-    to: "/dashboard/mnemonico",
-    icon: Brain,
-    title: "Mnemônico Visual — Pixar para memorização",
-    description:
-      "Cenas 3D + associação fonética + quiz visual. O jeito mais rápido de gravar listas médicas para a banca.",
-    accent: "violet",
-    eyebrow: "Memorização avançada",
-  },
+  // Crônicas Médicas e Mnemônico Visual removidos do spotlight
+
 ];
 
 const CATEGORIES = ["ensino", "treino", "memoria", "suporte"] as const;
