@@ -284,7 +284,7 @@ const AdminIngestionPanel = () => {
           if (!startToken) throw new Error("Sessão expirada. Faça login novamente.");
           
           const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`;
-          const payload = { equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50, background: false };
+          const payload = { equalize: true, specialty: spec.name, maxSpecialties: 1, batchSize: 25, importLimit: 50 };
           
           console.log("[equalize] invoking", { functionUrl, payload });
           
@@ -302,38 +302,41 @@ const AdminIngestionPanel = () => {
             throw new Error(`Resposta inválida (${resp.status}): ${raw.slice(0, 100)}`); 
           }
           
-          if (!resp.ok) {
+          if (!resp.ok && resp.status !== 202) {
             console.error("[equalize] response not ok", { status: resp.status, data });
             throw new Error(data?.error || `Falha ao equalizar ${spec.name} (${resp.status})`);
           }
 
-          // Poll for job completion
-          const jobId = data?.job_id;
+          // Polling via pipeline_governance pelo correlation_id
+          const correlationId = data?.correlation_id;
           let jobResult: any = null;
-          if (jobId) {
+          if (correlationId) {
             for (let poll = 0; poll < 120; poll++) {
               await new Promise(r => setTimeout(r, 3000));
               if (pauseRef.current) break;
               try {
-                const pollToken = await getFreshToken();
-                if (!pollToken) throw new Error("Sessão expirada durante polling.");
-                const pollResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content?job_id=${jobId}`, {
-                  method: "GET",
-                  headers: { Authorization: `Bearer ${pollToken}` },
-                });
-                const pollData = await pollResp.json();
-                if (pollData.status === "completed") { jobResult = pollData.result || {}; break; }
-                if (pollData.status === "failed") { throw new Error(pollData.error || "Job falhou"); }
-                // Update progress from background job
-                if (pollData.progress?.specialty) {
-                  setEqProgress(prev => prev ? { ...prev, currentSpecialty: `${spec.name} (processando...)` } : prev);
+                const { data: gov } = await supabase
+                  .from("pipeline_governance")
+                  .select("status, metadata, failure_reason")
+                  .eq("function_name", "bulk-generate-content")
+                  .filter("metadata->>correlation_id", "eq", correlationId)
+                  .order("started_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                if (!gov) continue;
+                if (gov.status === "completed" || gov.status === "success") {
+                  jobResult = (gov.metadata as any)?.result || gov.metadata || {};
+                  break;
                 }
+                if (gov.status === "failed" || gov.status === "error") {
+                  throw new Error(gov.failure_reason || "Job falhou");
+                }
+                setEqProgress(prev => prev ? { ...prev, currentSpecialty: `${spec.name} (processando...)` } : prev);
               } catch (pollErr) {
                 if (pollErr instanceof Error && pollErr.message.includes("Job falhou")) throw pollErr;
               }
             }
           } else {
-            // Legacy direct response
             jobResult = data;
           }
 
