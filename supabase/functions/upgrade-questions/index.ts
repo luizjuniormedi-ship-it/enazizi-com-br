@@ -37,7 +37,7 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
   const fetchByPriority = async (p: Priority) => {
     let q = supabaseAdmin.from("questions_bank").select("*").eq("is_global", true);
     if (p === "rejected") {
-      q = q.eq("quality_tier", "needs_upgrade").or("stem_length.lt.400,stem_length.is.null");
+      q = q.eq("quality_tier", "needs_upgrade");
     } else if (p === "basic") {
       q = q.in("quality_tier", ["needs_upgrade", "basic", "BASIC"]).is("guideline_reference", null);
     } else if (p === "silver") {
@@ -110,8 +110,6 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
           correct_index: result.correct_index,
           explanation: result.explanation,
           quality_tier: result.quality_tier,
-          stem_length: (result.statement || "").length,
-          explanation_length: (result.explanation || "").length,
           guideline_reference: result.guideline_reference || null,
           guideline_year: result.guideline_year || null,
           is_clinical_case: result.is_clinical_case ?? null,
@@ -175,6 +173,7 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
     await supabaseAdmin.from("enrichment_control").upsert({ id: 1, ...updates });
 
     logger.info("BATCH_DONE", `enriched=${enriched} rejected=${rejected} cost=$${costUsd.toFixed(4)}`);
+    return { enriched, rejected, costUsd };
   };
 
   if (body.background) {
@@ -183,8 +182,8 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
       status: "processing", batch: questions.length, priority, correlation
     }), { headers: { "Content-Type": "application/json" } });
   }
-  await processUpgrade();
+  const result = await processUpgrade();
   return new Response(JSON.stringify({
-    status: "completed", batch: questions.length, priority, correlation
+    status: "completed", batch: questions.length, ...result, priority, correlation
   }), { headers: { "Content-Type": "application/json" } });
 }));
