@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Sparkles } from "lucide-react";
+import { CheckCircle2, XCircle, Eye, ChevronLeft, ChevronRight, Loader2, Filter, Sparkles, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
