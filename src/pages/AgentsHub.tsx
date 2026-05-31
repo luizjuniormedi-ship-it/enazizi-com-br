@@ -45,16 +45,8 @@ const AGENTS: AgentDef[] = [
     accent: "success",
     category: "ensino",
   },
-  {
-    to: "/dashboard/cronicas",
-    icon: BookOpen,
-    title: "Crônicas Médicas",
-    description:
-      "Aprenda medicina por narrativas clínicas imersivas. Você é o médico no plantão — raciocine, decida e aprenda com casos cinematográficos.",
-    accent: "amber",
-    isNew: true,
-    category: "ensino",
-  },
+  // Crônicas Médicas removido do menu
+
   {
     to: "/dashboard/questoes",
     icon: HelpCircle,
