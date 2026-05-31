@@ -93,6 +93,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         // Bypassa Quality Lock dos 15 blocos pedagógicos do Tutor normal.
         const qrResponse = await ai(qrAiConfig, { retries: 2, skipQualityLock: true });
         qrRaw = qrResponse.choices?.[0]?.message?.content || "{}";
+        // [TEMP DIAGNOSTIC — REMOVE AFTER FASE 1.4]
+        console.log("[QR_MODE_RAW]", qrRaw?.slice?.(0, 500));
+        console.log("[QR_MODE_RAW_KEYS]", (() => { try { return Object.keys(JSON.parse(qrRaw)); } catch { return "PARSE_FAIL"; } })());
         qrParsed = JSON.parse(qrRaw);
       } catch (e: any) {
         console.error("[QR_MODE_PARSE_ERROR]", e?.message, qrRaw.slice(0, 200));
