@@ -116,7 +116,10 @@ const AdminQuestionReviewPanel = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchQuestions(); fetchCounts(); }, [page, statusFilter, qualityFilter]);
+  useEffect(() => {
+    const t = setTimeout(() => { fetchQuestions(); fetchCounts(); }, 250);
+    return () => clearTimeout(t);
+  }, [page, statusFilter, qualityFilter, sourceFilter]);
 
   const handleAction = async (id: string, action: "approved" | "rejected") => {
     setActionLoading(id);
