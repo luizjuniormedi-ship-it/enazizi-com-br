@@ -419,7 +419,7 @@ Deno.serve(async (req) => {
         batch_size: batchSize,
         dry_run: dryRun,
         status: "running",
-        triggered_by: userData.user.id,
+        triggered_by: isCronCaller ? null : callerId,
       })
       .select()
       .single();
