@@ -84,16 +84,8 @@ const AGENTS: AgentDef[] = [
     accent: "info",
     category: "memoria",
   },
-  {
-    to: "/dashboard/mnemonico",
-    icon: Brain,
-    title: "Mnemônico Visual",
-    description:
-      "Mnemônicos com imagem 3D Pixar para memorizar listas médicas. Pipeline com auditoria pedagógica e visual em 8 etapas.",
-    accent: "violet",
-    isNew: true,
-    category: "memoria",
-  },
+  // Mnemônico Visual removido do menu
+
   {
     to: "/dashboard/coach",
     icon: Heart,
