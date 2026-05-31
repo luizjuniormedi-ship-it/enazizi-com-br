@@ -130,24 +130,8 @@ const SPOTLIGHT: SpotlightAgent[] = [
     accent: "success",
     eyebrow: "Agente principal",
   },
-  {
-    to: "/dashboard/cronicas",
-    icon: BookOpen,
-    title: "Crônicas Médicas — você é o médico no plantão",
-    description:
-      "Casos clínicos cinematográficos onde cada decisão importa. Aprenda medicina como quem assiste um filme.",
-    accent: "amber",
-    eyebrow: "Novo agente cinematográfico",
-  },
-  {
-    to: "/dashboard/mnemonico",
-    icon: Brain,
-    title: "Mnemônico Visual — Pixar para memorização",
-    description:
-      "Cenas 3D + associação fonética + quiz visual. O jeito mais rápido de gravar listas médicas para a banca.",
-    accent: "violet",
-    eyebrow: "Memorização avançada",
-  },
+  // Crônicas Médicas e Mnemônico Visual removidos do spotlight
+
 ];
 
 const CATEGORIES = ["ensino", "treino", "memoria", "suporte"] as const;
