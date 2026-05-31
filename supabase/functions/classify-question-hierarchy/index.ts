@@ -537,8 +537,9 @@ Deno.serve(async (req) => {
         });
       }
 
+      let updateOk = true;
       if (!dryRun) {
-        await admin
+        const { error: updErr } = await admin
           .from(tableSource)
           .update({
             specialty_id: result.specialty_id,
@@ -550,6 +551,15 @@ Deno.serve(async (req) => {
             classified_at: new Date().toISOString(),
           })
           .eq("id", row.id);
+
+        if (updErr) {
+          updateOk = false;
+          console.error(
+            `[classify-hierarchy] UPDATE FAILED qid=${row.id} method=${result.method} reason=${updErr.message}`,
+          );
+          // não conta como aplicado se a escrita falhou
+          continue;
+        }
 
         if (result.confidence < APPLY_THRESHOLD) {
           // 0.7 - 0.9: aplica + envia para revisão
@@ -576,7 +586,7 @@ Deno.serve(async (req) => {
           queuedReview++;
         }
       }
-      applied++;
+      if (updateOk) applied++;
     }
 
     // Persistir alias events em batch (mesmo em dry-run, para análise)
