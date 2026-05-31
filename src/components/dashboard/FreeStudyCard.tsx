@@ -10,7 +10,7 @@ const MODULES = [
   { label: "Flashcards", path: "/dashboard/flashcards", icon: Layers, color: "text-violet-500" },
   { label: "Simulados", path: "/dashboard/simulados", icon: ClipboardList, color: "text-emerald-500" },
   { label: "Resumos", path: "/dashboard/resumos", icon: FileText, color: "text-orange-500" },
-  { label: "Crônicas", path: "/dashboard/cronicas", icon: BookMarked, color: "text-pink-500" },
+  
 ];
 
 export default function FreeStudyCard() {

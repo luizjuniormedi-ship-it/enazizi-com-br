@@ -193,6 +193,7 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     badge: "premium",
     accent: "pink",
     keywords: ["memorização", "associação"],
+    enabled: false,
   },
   {
     id: "mapas-mentais",
@@ -202,6 +203,7 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     category: "treino",
     icon: Network,
     accent: "info",
+    enabled: false,
   },
   {
     id: "questoes",
@@ -243,6 +245,7 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     category: "clinica",
     icon: ScrollText,
     accent: "warning",
+    enabled: false,
   },
   {
     id: "image-quiz",

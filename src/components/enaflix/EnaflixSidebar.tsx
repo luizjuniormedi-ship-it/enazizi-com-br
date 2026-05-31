@@ -62,7 +62,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
       { to: "/dashboard/proficiencia", label: "Proficiência", icon: GraduationCap },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
-      { to: "/dashboard/mnemonico", label: "Mnemônicos", icon: Brain, badge: "Premium" },
+      
       { to: "/dashboard/sessao-estudo", label: "Tutor IA V3", icon: Sparkles, badge: "Premium" },
     ]
   },
@@ -70,7 +70,7 @@ const NAV_SECTIONS = [
     title: "PRÁTICA",
     items: [
       { to: "/dashboard/simulacao-clinica", label: "Simulação Clínica", icon: Stethoscope },
-      { to: "/dashboard/cronicas", label: "Crônicas Médicas", icon: ScrollText },
+      
     ]
   },
   {
