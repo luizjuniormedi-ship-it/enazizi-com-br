@@ -352,7 +352,7 @@ Deno.serve(async (req) => {
       ? body.created_after
       : null;
     console.info("[classify-hierarchy] start", {
-      user: userData.user.id,
+      user: callerId,
       tableSource,
       batchSize,
       dryRun,
