@@ -236,7 +236,10 @@ const AdminQuestionReviewPanel = () => {
           variant: "destructive",
         });
       } else {
-        toast({ title: `Lote processado: ${data?.batch || 0} questões` });
+        toast({
+          title: `Lote processado: ${data?.batch || 0} questões`,
+          description: `${data?.enriched ?? 0} enriquecidas · ${data?.rejected ?? 0} rejeitadas`,
+        });
       }
       fetchQuestions();
       fetchCounts();
