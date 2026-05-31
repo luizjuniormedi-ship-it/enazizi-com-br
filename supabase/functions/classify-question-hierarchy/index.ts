@@ -296,38 +296,48 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validação do chamador: precisa ser admin
-    const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "missing auth" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) {
-      return new Response(JSON.stringify({ error: "invalid user" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Bypass de cron interno via segredo compartilhado (server-only)
+    const cronSecretHeader = req.headers.get("x-cron-secret") ?? "";
+    const CRON_SECRET = Deno.env.get("CLASSIFIER_CRON_SECRET") ?? "";
+    const isCronCaller = CRON_SECRET.length > 0 && cronSecretHeader === CRON_SECRET;
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-    const { data: roleRow } = await admin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userData.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!roleRow) {
-      return new Response(JSON.stringify({ error: "admin only" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let callerId = "cron:classifier";
+
+    if (!isCronCaller) {
+      // Validação do chamador: precisa ser admin
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (!authHeader.startsWith("Bearer ")) {
+        return new Response(JSON.stringify({ error: "missing auth" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
       });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: "invalid user" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: roleRow } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userData.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (!roleRow) {
+        return new Response(JSON.stringify({ error: "admin only" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      callerId = userData.user.id;
     }
 
     const body = await req.json().catch(() => ({}));
@@ -342,7 +352,7 @@ Deno.serve(async (req) => {
       ? body.created_after
       : null;
     console.info("[classify-hierarchy] start", {
-      user: userData.user.id,
+      user: callerId,
       tableSource,
       batchSize,
       dryRun,
@@ -409,7 +419,7 @@ Deno.serve(async (req) => {
         batch_size: batchSize,
         dry_run: dryRun,
         status: "running",
-        triggered_by: userData.user.id,
+        triggered_by: isCronCaller ? null : callerId,
       })
       .select()
       .single();
