@@ -1,21 +1,22 @@
 /**
- * Clínica Médica Umbrella
+ * Clínica Médica Umbrella — Registro de IDs
  * ------------------------------------------------------------
- * Em bancas de residência (REVALIDA, ENARE, ENAMED, etc.) o bloco
- * "Clínica Médica" é um GUARDA-CHUVA que engloba várias subespecialidades.
- * Quando o aluno pedir "Clínica Médica" no motor de simulados/estudo,
- * use `CLINICA_MEDICA_UMBRELLA_IDS` ao invés do specialty_id literal.
+ * Fonte canônica de NOMES: `CLINICA_MEDICA_SPECIALTIES` em
+ * `src/lib/examProfileToCurriculumBanca.ts`.
  *
- * Origem (snapshot 2026-05-31):
- *   - Nativa "Clínica Médica":   103 questões aprovadas
- *   - Sub-especialidades agregadas: 2.690 questões aprovadas
- *   - TOTAL umbrella:             ~2.793 questões disponíveis
+ * Este arquivo mantém a versão por **specialty_id** (UUID), necessária
+ * para queries diretas no banco (filtros `.in("specialty_id", ...)`).
  *
- * Backend equivalente: VIEW `public.vw_clinica_medica_umbrella`
- * (filtra automaticamente review_status='approved').
+ * Snapshot atual (alinhado com a UI de Clínica Médica virtual):
+ *   - Clínica Médica nativa
+ *   - Cardiologia, Pneumologia, Gastroenterologia, Endocrinologia,
+ *     Nefrologia, Hematologia, Reumatologia, Neurologia, Infectologia
  *
- * NÃO inclui: Pediatria, GO, Cirurgia, Preventiva, Psiquiatria, Anestesia,
- * Radiologia — esses blocos são cobrados separadamente nas bancas.
+ * Backend equivalente: VIEW `public.vw_clinica_medica_umbrella`.
+ *
+ * Use `expandSpecialtyToUmbrella()` no motor de simulados/estudo quando
+ * o aluno selecionar "Clínica Médica" — devolve a lista completa de
+ * specialty_ids a consultar.
  */
 
 export const CLINICA_MEDICA_SPECIALTY_ID = "c6323be9-8b39-4e72-b267-2f19e0980abb";
@@ -30,37 +31,24 @@ export const CLINICA_MEDICA_UMBRELLA_IDS: readonly string[] = [
   "d20d5adf-20f9-4789-8a86-0e07109c9192", // Reumatologia
   "0b755bbe-9dde-475f-a2ef-5733d8d97c99", // Infectologia
   "b47c8eb7-94ee-4b63-bf35-d5b6494b8866", // Nefrologia
-  "c835d457-412d-4d22-a7ea-ca33cc5bca1a", // Oncologia
-  "ee8bf227-3be0-43ad-bd3e-e855c71b1d5b", // Medicina de Emergência
-] as const;
-
-export const CLINICA_MEDICA_UMBRELLA_NAMES: readonly string[] = [
-  "Clínica Médica",
-  "Cardiologia",
-  "Endocrinologia",
-  "Gastroenterologia",
-  "Pneumologia",
-  "Hematologia",
-  "Reumatologia",
-  "Infectologia",
-  "Nefrologia",
-  "Oncologia",
-  "Medicina de Emergência",
+  "e6b57f08-6165-4fa3-8ea6-2574ce0078f1", // Neurologia
 ] as const;
 
 /**
- * Expande uma especialidade para o conjunto de IDs reais a consultar.
+ * Expande uma especialidade para os IDs reais a consultar.
  * Se for "Clínica Médica", devolve a lista umbrella; caso contrário,
- * devolve apenas o ID recebido.
+ * devolve o próprio ID recebido.
  */
 export function expandSpecialtyToUmbrella(
   specialtyId: string | null | undefined,
   specialtyName?: string | null
 ): string[] {
+  const n = specialtyName?.toLowerCase().trim();
   if (
     specialtyId === CLINICA_MEDICA_SPECIALTY_ID ||
-    specialtyName?.toLowerCase().trim() === "clínica médica" ||
-    specialtyName?.toLowerCase().trim() === "clinica medica"
+    n === "clínica médica" ||
+    n === "clinica medica" ||
+    n === "medicina interna"
   ) {
     return [...CLINICA_MEDICA_UMBRELLA_IDS];
   }
