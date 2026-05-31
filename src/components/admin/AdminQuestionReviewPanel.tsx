@@ -229,7 +229,15 @@ const AdminQuestionReviewPanel = () => {
       });
 
       if (error) throw error;
-      toast({ title: `${data?.upgraded || 0} questões enriquecidas` });
+      if (data?.skipped) {
+        toast({
+          title: "Enriquecimento pausado",
+          description: `Motivo: ${data.reason}. Despause em enrichment_control.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: `Lote processado: ${data?.batch || 0} questões` });
+      }
       fetchQuestions();
       fetchCounts();
     } catch (e: any) {
