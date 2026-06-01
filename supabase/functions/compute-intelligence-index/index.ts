@@ -403,6 +403,18 @@ Deno.serve(async (req) => {
       invalid_specialty_count: invalidSpec,
       invalid_subspecialty_count: invalidSub,
       duplicate_key_count: duplicateKeyCount,
+      // Diagnóstico de fontes (v0.3.1)
+      diagnostics: {
+        attempts_found: attemptsFound,
+        attempts_joined_to_specialty: attemptsJoinedToSpecialty,
+        attempts_orphan_question: attemptsOrphanQuestion,
+        fsrs_cards_found: fsrsCardsFound,
+        fsrs_with_retrievability: fsrsWithRetrievability,
+        fsrs_joined_to_specialty: fsrsJoinedToSpecialty,
+        fsrs_orphan_question: fsrsOrphanQuestion,
+        questions_indexed: qIndex.size,
+        total_questions_aggregated: totalQuestions,
+      },
       duration_ms: durationMs,
       tables_written: tablesWritten,
       computation_version: COMPUTATION_VERSION,
