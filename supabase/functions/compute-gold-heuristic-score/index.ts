@@ -22,30 +22,38 @@ function scoreQuestion(q: any): { score: number; breakdown: Record<string, numbe
   const breakdown: Record<string, number> = {};
   let score = 0;
 
+  // +20: enunciado clínico >= 400 chars
   const stem = (q.statement ?? "").toString();
   if (stem.trim().length >= 400) { score += 20; breakdown.stem_long = 20; }
 
+  // +20: alternativas A-D ou A-E completas
   const opts = Array.isArray(q.options) ? q.options : [];
   if (opts.length >= 4 && opts.length <= 5 && opts.every((o: any) => o && String(o).trim().length > 0)) {
     score += 20; breakdown.options_complete = 20;
   }
 
+  // +20: resposta correta presente
   if (q.correct_index !== null && q.correct_index !== undefined) {
     score += 20; breakdown.correct_answer = 20;
   }
 
+  // +15: comentário/explicação presente
   const expl = (q.explanation ?? "").toString();
-  if (expl.trim().length >= 50) { score += 20; breakdown.explanation = 20; }
+  if (expl.trim().length >= 50) { score += 15; breakdown.explanation = 15; }
 
+  // +10: specialty_id presente
   if (q.specialty_id) { score += 10; breakdown.specialty = 10; }
 
+  // +10: fonte oficial / prova real
   if (q.source_type && OFFICIAL_SOURCES.test(String(q.source_type))) {
     score += 10; breakdown.official_source = 10;
   }
 
+  // +5: sem english leak / ruído
   const haystack = `${stem} ${expl}`;
-  if (!ENGLISH_LEAK.test(haystack)) { score += 10; breakdown.no_english_leak = 10; }
+  if (!ENGLISH_LEAK.test(haystack)) { score += 5; breakdown.no_english_leak = 5; }
 
+  // Total máximo = 100 (sem cap necessário, mas defensivo)
   return { score: Math.min(100, score), breakdown };
 }
 
