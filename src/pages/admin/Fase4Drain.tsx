@@ -34,17 +34,6 @@ interface RunEntry {
   ms: number;
 }
 
-const STATUS_QUERY = `
-  SELECT
-    COUNT(*) FILTER (WHERE classification_status = 'classified')      AS classificadas,
-    COUNT(*) FILTER (WHERE classification_status = 'out_of_scope')    AS out_of_scope,
-    COUNT(*) FILTER (WHERE classification_status = 'purged')          AS purged,
-    COUNT(*) FILTER (WHERE classification_status = 'manual_review')   AS manual_review,
-    COUNT(*) FILTER (WHERE classification_status = 'low_confidence')  AS low_confidence,
-    COUNT(*) FILTER (WHERE classification_status = 'pending')         AS pendentes,
-    COUNT(*)                                                          AS total
-  FROM questions_pool;
-`;
 
 export default function Fase4Drain() {
   const [runs, setRuns] = useState<RunEntry[]>([]);
