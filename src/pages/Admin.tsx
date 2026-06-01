@@ -76,6 +76,7 @@ const TutorQAPanel = lazy(() => import("@/components/admin/TutorQAPanel"));
 const ExamHarvesterPanel = lazy(() => import("@/components/admin/ExamHarvesterPanel").then(m => ({ default: m.ExamHarvesterPanel })));
 const TutorStabilizationDashboard = lazy(() => import("@/components/admin/cognitive-observatory/TutorStabilizationDashboard").then(m => ({ default: m.TutorStabilizationDashboard })));
 const CognitiveGovernanceDashboard = lazy(() => import("@/components/admin/cognitive-observatory/CognitiveGovernanceDashboard"));
+const GoldCuration = lazy(() => import("@/pages/admin/GoldCuration"));
 
 
 
@@ -112,6 +113,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "knowledge-base", label: "Base RAG", icon: DatabaseIcon },
         { key: "ingestion", label: "Gerar Questões", icon: Wand2 },
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
+        { key: "gold-curation", label: "Curadoria Gold", icon: Sparkles },
         { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
         { key: "scraping", label: "Web Scraping", icon: Search },
         { key: "harvester", label: "Exam Harvester", icon: Database },
