@@ -816,6 +816,72 @@ const Simulados = () => {
             console.error("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaCatch?.message || anaCatch);
           }
 
+          // ── SPRINT LOOP PEDAGÓGICO — captura de massa observada ──
+          // Persiste cada resposta em simulado_answers + practice_attempts e
+          // registra erros em error_bank (que auto-cria fsrs_cards).
+          try {
+            const answerRows = questions.map((q, idx) => ({
+              session_id: sessionId,
+              user_id: user.id,
+              question_id: (q as any).id && !String((q as any).id).startsWith("gen-") ? (q as any).id : null,
+              selected_answer: answers[idx] ?? null,
+              is_correct: answers[idx] === q.correct,
+            }));
+            const { error: ansErr } = await supabase.from("simulado_answers").insert(answerRows as any);
+            if (ansErr) {
+              console.warn("[LOOP_CAPTURE_SIMULADO_ANSWERS_FAIL]", ansErr.message);
+            } else {
+              console.log("[LOOP_CAPTURE_SIMULADO_ANSWERS_OK]", { sessionId, rows: answerRows.length });
+            }
+
+            // practice_attempts (somente questões reais do banco)
+            const attemptRows = questions
+              .map((q, idx) => {
+                const qid = (q as any).id;
+                if (!qid || String(qid).startsWith("gen-")) return null;
+                // questions table is UUID; only insert if it looks like a uuid
+                if (!/^[0-9a-f-]{36}$/i.test(String(qid))) return null;
+                return {
+                  user_id: user.id,
+                  question_id: qid,
+                  correct: answers[idx] === q.correct,
+                };
+              })
+              .filter(Boolean) as any[];
+            if (attemptRows.length > 0) {
+              const { error: paErr } = await supabase.from("practice_attempts").insert(attemptRows);
+              if (paErr) {
+                console.warn("[LOOP_CAPTURE_PRACTICE_ATTEMPTS_FAIL]", paErr.message);
+              } else {
+                console.log("[LOOP_CAPTURE_PRACTICE_ATTEMPTS_OK]", { sessionId, rows: attemptRows.length });
+              }
+            }
+
+            // error_bank + FSRS (auto via logErrorToBank.ensureFsrsCard)
+            let errorsLogged = 0;
+            for (let i = 0; i < questions.length; i++) {
+              const q = questions[i];
+              if (answers[i] === undefined || answers[i] === q.correct) continue;
+              try {
+                await logErrorToBank({
+                  userId: user.id,
+                  tema: q.topic || "Geral",
+                  tipoQuestao: "simulado",
+                  conteudo: (q as any).statement?.slice(0, 500),
+                  motivoErro: `Marcou opção ${answers[i]} — Correta: opção ${q.correct}`,
+                  categoriaErro: "conceito",
+                });
+                errorsLogged++;
+              } catch (e: any) {
+                console.warn("[LOOP_CAPTURE_ERROR_BANK_FAIL]", e?.message);
+              }
+            }
+            console.log("[LOOP_CAPTURE_ERROR_BANK_OK]", { sessionId, errorsLogged });
+          } catch (loopErr: any) {
+            console.error("[LOOP_CAPTURE_FAIL]", loopErr?.message || loopErr);
+          }
+
+
           const { error: updErr } = await supabase
             .from("simulado_sessions")
             .update({
