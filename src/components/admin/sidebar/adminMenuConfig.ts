@@ -184,6 +184,15 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         scopes: ["super_admin", "admin_pedagogico"],
         keywords: ["vídeo", "videoaulas", "biblioteca", "ativos"],
       },
+      {
+        to: "/admin/gold-curation",
+        label: "Curadoria Gold",
+        description: "Promoção de questões ao Gold Dataset (heurística + curadoria humana).",
+        icon: Sparkles,
+        scopes: ["super_admin", "admin_pedagogico"],
+        badge: "Novo",
+        keywords: ["gold", "curadoria", "qualidade", "ouro", "dataset"],
+      },
     ],
   },
   {
