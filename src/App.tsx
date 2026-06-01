@@ -357,6 +357,9 @@ const App = () => (
               <Route path="/teacher/*" element={<Navigate to="/professor" replace />} />
               <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/admin/gold-curation" element={<AdminRoute requiredRoles={["admin", "professor"]}><AdminLayout /></AdminRoute>}>
+                <Route index element={<GoldCuration />} />
+              </Route>
               <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
                 <Route path="users" element={<Admin initialTab="users-all" />} />
@@ -398,7 +401,6 @@ const App = () => (
                 <Route path="classification-runner" element={<ClassificationRunner />} />
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="classification" element={<ClassificationBackfill />} />
-                <Route path="gold-curation" element={<GoldCuration />} />
                 <Route path="semantic-observatory" element={<SemanticObservatory />} />
               </Route>
               {/* Rota separada para SemanticReviewCenter — acesso por admin, semantic_board, platform_admin */}
