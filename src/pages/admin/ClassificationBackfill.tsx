@@ -383,12 +383,39 @@ export default function ClassificationBackfill() {
                   {reviewQueue.data!.map((item: any) => (
                     <li key={item.id} className="border rounded p-3 text-sm">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1">
+                        <div className="space-y-2 flex-1 min-w-0">
                           <div>
                             <Badge variant="outline">{item.table_source}</Badge>{" "}
                             <Badge variant="secondary">{item.classification_method}</Badge>{" "}
                             <Badge>conf: {Number(item.confidence_score).toFixed(2)}</Badge>
                           </div>
+
+                          {/* Enunciado da questão (essencial para revisar) */}
+                          {item._question?.statement ? (
+                            <div className="rounded border bg-muted/30 p-2 text-xs space-y-2">
+                              <div className="whitespace-pre-wrap leading-relaxed">
+                                {item._question.statement}
+                              </div>
+                              {Array.isArray(item._question.options) && item._question.options.length > 0 && (
+                                <ol className="list-[upper-alpha] pl-5 space-y-0.5">
+                                  {item._question.options.map((opt: any, idx: number) => (
+                                    <li
+                                      key={idx}
+                                      className={idx === item._question.correct_index ? "font-semibold text-primary" : ""}
+                                    >
+                                      {typeof opt === "string" ? opt : opt?.text ?? JSON.stringify(opt)}
+                                      {idx === item._question.correct_index && " ✓"}
+                                    </li>
+                                  ))}
+                                </ol>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground italic">
+                              Enunciado não encontrado (question_id: {item.question_id})
+                            </div>
+                          )}
+
                           <div><strong>Original:</strong> {item.original_topic ?? "—"} / {item.original_subtopic ?? "—"}</div>
                           <div>
                             <strong>Sugestão:</strong>{" "}
