@@ -22,30 +22,38 @@ function scoreQuestion(q: any): { score: number; breakdown: Record<string, numbe
   const breakdown: Record<string, number> = {};
   let score = 0;
 
+  // +20: enunciado clínico >= 400 chars
   const stem = (q.statement ?? "").toString();
   if (stem.trim().length >= 400) { score += 20; breakdown.stem_long = 20; }
 
+  // +20: alternativas A-D ou A-E completas
   const opts = Array.isArray(q.options) ? q.options : [];
   if (opts.length >= 4 && opts.length <= 5 && opts.every((o: any) => o && String(o).trim().length > 0)) {
     score += 20; breakdown.options_complete = 20;
   }
 
+  // +20: resposta correta presente
   if (q.correct_index !== null && q.correct_index !== undefined) {
     score += 20; breakdown.correct_answer = 20;
   }
 
+  // +15: comentário/explicação presente
   const expl = (q.explanation ?? "").toString();
-  if (expl.trim().length >= 50) { score += 20; breakdown.explanation = 20; }
+  if (expl.trim().length >= 50) { score += 15; breakdown.explanation = 15; }
 
+  // +10: specialty_id presente
   if (q.specialty_id) { score += 10; breakdown.specialty = 10; }
 
+  // +10: fonte oficial / prova real
   if (q.source_type && OFFICIAL_SOURCES.test(String(q.source_type))) {
     score += 10; breakdown.official_source = 10;
   }
 
+  // +5: sem english leak / ruído
   const haystack = `${stem} ${expl}`;
-  if (!ENGLISH_LEAK.test(haystack)) { score += 10; breakdown.no_english_leak = 10; }
+  if (!ENGLISH_LEAK.test(haystack)) { score += 5; breakdown.no_english_leak = 5; }
 
+  // Total máximo = 100 (sem cap necessário, mas defensivo)
   return { score: Math.min(100, score), breakdown };
 }
 
@@ -79,42 +87,53 @@ Deno.serve(async (req) => {
     }
 
     const qIds = metas.map((m) => m.question_id);
-    const { data: qs, error: qErr } = await supabase
-      .from("questions_bank")
-      .select("id, statement, options, correct_index, explanation, specialty_id, source_type")
-      .in("id", qIds);
-    if (qErr) throw qErr;
-
-    const qMap = new Map((qs ?? []).map((q) => [q.id, q]));
+    // Fragmentar para evitar URL gigante no .in()
+    const FETCH_CHUNK = 100;
+    const qMap = new Map<string, any>();
+    for (let i = 0; i < qIds.length; i += FETCH_CHUNK) {
+      const slice = qIds.slice(i, i + FETCH_CHUNK);
+      const { data: qs, error: qErr } = await supabase
+        .from("questions_bank")
+        .select("id, statement, options, correct_index, explanation, specialty_id, source_type")
+        .in("id", slice);
+      if (qErr) throw qErr;
+      for (const q of qs ?? []) qMap.set(q.id, q);
+    }
     const now = new Date().toISOString();
     const distribution: Record<string, number> = {};
     let processed = 0, failed = 0;
 
-    // Update em batches de 50
-    const updates: any[] = [];
+    // UPDATE individual (paralelo em chunks de 20)
+    type UpdateJob = { id: string; score: number };
+    const jobs: UpdateJob[] = [];
     for (const m of metas) {
       const q = qMap.get(m.question_id);
       if (!q) { failed++; continue; }
       const { score } = scoreQuestion(q);
       const bucket = `${Math.floor(score / 10) * 10}`;
       distribution[bucket] = (distribution[bucket] ?? 0) + 1;
-      updates.push({
-        id: m.id,
-        quality_score: score,
-        quality_score_method: "heuristic",
-        quality_score_computed_at: now,
-      });
+      jobs.push({ id: m.id, score });
     }
 
-    // Upsert em lotes
-    const CHUNK = 100;
-    for (let i = 0; i < updates.length; i += CHUNK) {
-      const slice = updates.slice(i, i + CHUNK);
-      const { error: upErr } = await supabase
-        .from("gold_questions_metadata")
-        .upsert(slice, { onConflict: "id" });
-      if (upErr) { console.error("[gold-heuristic] upsert error", upErr); failed += slice.length; }
-      else processed += slice.length;
+    const CHUNK = 20;
+    for (let i = 0; i < jobs.length; i += CHUNK) {
+      const slice = jobs.slice(i, i + CHUNK);
+      const results = await Promise.all(
+        slice.map((j) =>
+          supabase
+            .from("gold_questions_metadata")
+            .update({
+              quality_score: j.score,
+              quality_score_method: "heuristic",
+              quality_score_computed_at: now,
+            })
+            .eq("id", j.id)
+        )
+      );
+      for (const r of results) {
+        if (r.error) { console.error("[gold-heuristic] update error", r.error); failed++; }
+        else processed++;
+      }
     }
 
     return new Response(
