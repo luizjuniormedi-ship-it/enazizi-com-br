@@ -82,7 +82,35 @@ function useReviewQueue(limit = 20) {
         .order("confidence_score", { ascending: true })
         .limit(limit);
       if (error) throw error;
-      return data ?? [];
+      const items = data ?? [];
+
+      // Enriquecer com enunciado da questão (statement/options) buscando
+      // na tabela correta (questions_bank ou real_exam_questions).
+      const byTable: Record<string, string[]> = {};
+      for (const it of items) {
+        const t = (it as any).table_source as string;
+        if (!byTable[t]) byTable[t] = [];
+        byTable[t].push((it as any).question_id);
+      }
+      const stemMap = new Map<string, { statement: string | null; options: any; correct_index: number | null }>();
+      for (const [table, ids] of Object.entries(byTable)) {
+        if (!ids.length) continue;
+        const { data: qs } = await supabase
+          .from(table as "questions_bank" | "real_exam_questions")
+          .select("id, statement, options, correct_index")
+          .in("id", ids);
+        for (const q of qs ?? []) {
+          stemMap.set(`${table}:${(q as any).id}`, {
+            statement: (q as any).statement ?? null,
+            options: (q as any).options ?? null,
+            correct_index: (q as any).correct_index ?? null,
+          });
+        }
+      }
+      return items.map((it: any) => ({
+        ...it,
+        _question: stemMap.get(`${it.table_source}:${it.question_id}`) ?? null,
+      }));
     },
   });
 }
