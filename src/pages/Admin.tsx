@@ -626,6 +626,7 @@ const Admin = ({ initialTab }: AdminProps) => {
                   {activeSection === "uploads" && <Suspense fallback={<PanelLoader />}><AdminUploadsPanel /></Suspense>}
                   {activeSection === "ingestion" && <Suspense fallback={<PanelLoader />}><AdminIngestionPanel /></Suspense>}
                   {activeSection === "question-review" && <Suspense fallback={<PanelLoader />}><AdminQuestionReviewPanel /></Suspense>}
+                  {activeSection === "gold-curation" && <Suspense fallback={<PanelLoader />}><GoldCuration /></Suspense>}
                   {activeSection === "image-review" && <Suspense fallback={<PanelLoader />}><AdminImageQuestionReviewPanel /></Suspense>}
                   {activeSection === "scraping" && <Suspense fallback={<PanelLoader />}><AdminWebScrapingPanel /></Suspense>}
                    {activeSection === "harvester" && <Suspense fallback={<PanelLoader />}><ExamHarvesterPanel /></Suspense>}
