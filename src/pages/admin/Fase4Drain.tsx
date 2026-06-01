@@ -52,6 +52,20 @@ export default function Fase4Drain() {
       const sb = supabase as any;
       const base = () => sb.from("questions_bank").select("*", { count: "exact", head: true });
 
+      // PENDING alinhado com a edge fase4-ai-drain:
+      //   specialty_id IS NULL
+      //   AND lifecycle_state IN ('generated','queued_for_enrichment')
+      //   AND (classification_method IS NULL OR = 'skipped')
+      //   AND (classification_reason IS NULL OR NOT IN razões finais)
+      const FINAL_REASONS = [
+        "manual_review",
+        "ai_low_confidence",
+        "low_confidence",
+        "out_of_scope",
+        "content_hygiene",
+      ];
+      const notInFinal = `(${FINAL_REASONS.map((r) => `"${r}"`).join(",")})`;
+
       const [
         totalRes,
         classifiedRes,
@@ -66,8 +80,12 @@ export default function Fase4Drain() {
         base().eq("classification_reason", "out_of_scope"),
         base().eq("lifecycle_state", "purged"),
         base().eq("classification_reason", "manual_review"),
-        base().eq("classification_reason", "low_confidence"),
-        base().is("specialty_id", null).eq("lifecycle_state", "active"),
+        base().in("classification_reason", ["low_confidence", "ai_low_confidence"]),
+        base()
+          .is("specialty_id", null)
+          .in("lifecycle_state", ["generated", "queued_for_enrichment"])
+          .or("classification_method.is.null,classification_method.eq.skipped")
+          .not("classification_reason", "in", notInFinal),
       ]);
 
       const total = totalRes.count ?? 0;
@@ -80,12 +98,14 @@ export default function Fase4Drain() {
       const coverage_pct =
         total > 0 ? +(((classified + out_of_scope + purged) / total) * 100).toFixed(2) : 0;
 
-      // Top pending topics — agregação client-side
+      // Top pending topics — mesma definição de pending
       const { data: pendingRows, error: pendErr } = await sb
         .from("questions_bank")
         .select("topic")
         .is("specialty_id", null)
-        .eq("lifecycle_state", "active")
+        .in("lifecycle_state", ["generated", "queued_for_enrichment"])
+        .or("classification_method.is.null,classification_method.eq.skipped")
+        .not("classification_reason", "in", notInFinal)
         .limit(5000);
 
       const counts = new Map<string, number>();
