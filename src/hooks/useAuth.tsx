@@ -41,6 +41,29 @@ const getSessionWithTimeout = () =>
     AUTH_BOOTSTRAP_TIMEOUT_MS
   );
 
+const getUserWithTimeout = () =>
+  withAuthTimeout(
+    supabase.auth.getUser(),
+    "Tempo limite ao validar usuário",
+    AUTH_BOOTSTRAP_TIMEOUT_MS
+  );
+
+const clearLocalAuthCache = async () => {
+  try {
+    await supabase.auth.signOut({ scope: "local" });
+  } catch {
+    // ignore local cleanup errors
+  }
+
+  try {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("sb-") && key.includes("auth-token"))
+      .forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // ignore storage errors
+  }
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -54,6 +77,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       console.info(`[SOAK_USER] Auth event: ${event}`, { userId: nextSession?.user?.id });
       console.debug(`[Auth] event: ${event}`, { userId: nextSession?.user?.id });
+
+      if (event === "INITIAL_SESSION") {
+        // Bootstrap below validates the cached session before trusting it.
+        // Accepting INITIAL_SESSION blindly can redirect the login page using
+        // a stale token when the auth /user endpoint is failing.
+        return;
+      }
       
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
@@ -99,14 +129,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Bootstrap: only hydrate state. Do NOT trigger forceLoginRefresh here.
     // If the auth endpoint stalls/fails, never keep the app on an infinite spinner.
     getSessionWithTimeout()
-      .then(({ data: { session: bootstrapSession } }) => {
+      .then(async ({ data: { session: bootstrapSession } }) => {
         if (!mounted) return;
+        if (bootstrapSession) {
+          const { data: { user: verifiedUser }, error } = await getUserWithTimeout();
+          if (error || !verifiedUser) {
+            throw error ?? new Error("Sessão local inválida");
+          }
+          setSession(bootstrapSession);
+          setUser(verifiedUser);
+          return;
+        }
         setSession(bootstrapSession);
         setUser(bootstrapSession?.user ?? null);
       })
-      .catch((err) => {
+      .catch(async (err) => {
         if (!mounted) return;
         console.warn("[Auth] bootstrap failed; releasing loading state", err);
+        await clearLocalAuthCache();
         setSession(null);
         setUser(null);
       })
