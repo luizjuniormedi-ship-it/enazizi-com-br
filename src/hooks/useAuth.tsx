@@ -24,14 +24,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
+const AUTH_ACTION_TIMEOUT_MS = 12000;
 
-const getSessionWithTimeout = () =>
+const withAuthTimeout = async <T,>(promise: Promise<T>, message: string, timeoutMs = AUTH_ACTION_TIMEOUT_MS) =>
   Promise.race([
-    supabase.auth.getSession(),
+    promise,
     new Promise<never>((_, reject) =>
-      window.setTimeout(() => reject(new Error("Tempo limite ao carregar sessão")), AUTH_BOOTSTRAP_TIMEOUT_MS)
+      window.setTimeout(() => reject(new Error(message)), timeoutMs)
     ),
   ]);
+
+const getSessionWithTimeout = () =>
+  withAuthTimeout(
+    supabase.auth.getSession(),
+    "Tempo limite ao carregar sessão",
+    AUTH_BOOTSTRAP_TIMEOUT_MS
+  );
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -125,14 +133,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (options.phone) metadata.phone = options.phone;
       if (options.periodo) metadata.periodo = options.periodo;
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: metadata,
-          emailRedirectTo: window.location.origin,
-        },
-      });
+      const { data, error } = await withAuthTimeout(
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: metadata,
+            emailRedirectTo: window.location.origin,
+          },
+        }),
+        "Tempo limite ao criar conta. Tente novamente em instantes."
+      );
 
       if (error) console.warn("[Auth] signUp error:", error.message);
       return { data, error: error as Error | null };
@@ -143,8 +154,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    try {
+      const { error } = await withAuthTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        "Tempo limite ao entrar. O backend demorou para responder; tente novamente em instantes."
+      );
+      return { error: error as Error | null };
+    } catch (err) {
+      console.warn("[Auth] signIn timeout/error:", err);
+      return { error: err as Error };
+    }
   };
 
   const signOut = async () => {
@@ -153,10 +172,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    return { error: error as Error | null };
+    try {
+      const { error } = await withAuthTimeout(
+        supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        }),
+        "Tempo limite ao enviar recuperação de senha. Tente novamente em instantes."
+      );
+      return { error: error as Error | null };
+    } catch (err) {
+      console.warn("[Auth] resetPassword timeout/error:", err);
+      return { error: err as Error };
+    }
   };
 
   return (
