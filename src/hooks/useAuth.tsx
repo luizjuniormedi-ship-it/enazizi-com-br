@@ -23,6 +23,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
+
+const getSessionWithTimeout = () =>
+  Promise.race([
+    supabase.auth.getSession(),
+    new Promise<never>((_, reject) =>
+      window.setTimeout(() => reject(new Error("Tempo limite ao carregar sessão")), AUTH_BOOTSTRAP_TIMEOUT_MS)
+    ),
+  ]);
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -76,14 +86,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Bootstrap: only hydrate state. Do NOT trigger forceLoginRefresh here.
-    supabase.auth.getSession().then(({ data: { session: bootstrapSession } }) => {
-      setSession(bootstrapSession);
-      setUser(bootstrapSession?.user ?? null);
-      setLoading(false);
-    });
+    let mounted = true;
 
-    return () => subscription.unsubscribe();
+    // Bootstrap: only hydrate state. Do NOT trigger forceLoginRefresh here.
+    // If the auth endpoint stalls/fails, never keep the app on an infinite spinner.
+    getSessionWithTimeout()
+      .then(({ data: { session: bootstrapSession } }) => {
+        if (!mounted) return;
+        setSession(bootstrapSession);
+        setUser(bootstrapSession?.user ?? null);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        console.warn("[Auth] bootstrap failed; releasing loading state", err);
+        setSession(null);
+        setUser(null);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, options: SignUpOptions) => {
