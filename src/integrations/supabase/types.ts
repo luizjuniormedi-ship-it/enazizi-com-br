@@ -12455,72 +12455,63 @@ export type Database = {
       }
       gold_questions_metadata: {
         Row: {
+          clinical_reasoning_level: string | null
           created_at: string
-          gold_status: Database["public"]["Enums"]["gold_status_enum"]
+          evidence_level: string | null
+          gold_status: string
           id: string
           promoted_to_gold_at: string | null
           quality_score: number | null
           quality_score_computed_at: string | null
-          quality_score_source:
-            | Database["public"]["Enums"]["quality_score_source_enum"]
-            | null
+          quality_score_method: string | null
           question_id: string
+          question_source: string
           rejection_reason: string | null
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          source_type: string | null
           updated_at: string
         }
         Insert: {
+          clinical_reasoning_level?: string | null
           created_at?: string
-          gold_status?: Database["public"]["Enums"]["gold_status_enum"]
+          evidence_level?: string | null
+          gold_status?: string
           id?: string
           promoted_to_gold_at?: string | null
           quality_score?: number | null
           quality_score_computed_at?: string | null
-          quality_score_source?:
-            | Database["public"]["Enums"]["quality_score_source_enum"]
-            | null
+          quality_score_method?: string | null
           question_id: string
+          question_source: string
           rejection_reason?: string | null
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source_type?: string | null
           updated_at?: string
         }
         Update: {
+          clinical_reasoning_level?: string | null
           created_at?: string
-          gold_status?: Database["public"]["Enums"]["gold_status_enum"]
+          evidence_level?: string | null
+          gold_status?: string
           id?: string
           promoted_to_gold_at?: string | null
           quality_score?: number | null
           quality_score_computed_at?: string | null
-          quality_score_source?:
-            | Database["public"]["Enums"]["quality_score_source_enum"]
-            | null
+          quality_score_method?: string | null
           question_id?: string
+          question_source?: string
           rejection_reason?: string | null
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source_type?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "gold_questions_metadata_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: true
-            referencedRelation: "questions_bank"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gold_questions_metadata_question_id_fkey"
-            columns: ["question_id"]
-            isOneToOne: true
-            referencedRelation: "vw_clinica_medica_umbrella"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       golden_exam_dataset: {
         Row: {
@@ -28576,12 +28567,6 @@ export type Database = {
         | "rejected"
         | "failed"
       difficulty_level: "easy" | "medium" | "hard"
-      gold_status_enum:
-        | "pending"
-        | "needs_review"
-        | "approved"
-        | "gold"
-        | "rejected"
       image_question_status:
         | "draft"
         | "validated"
@@ -28660,7 +28645,6 @@ export type Database = {
         | "falha_persistente"
         | "escalado"
       qa_severity: "critico" | "alto" | "medio" | "baixo"
-      quality_score_source_enum: "heuristic" | "ai" | "manual" | "hybrid"
       simulado_status:
         | "draft"
         | "scheduled"
@@ -28906,13 +28890,6 @@ export const Constants = {
         "failed",
       ],
       difficulty_level: ["easy", "medium", "hard"],
-      gold_status_enum: [
-        "pending",
-        "needs_review",
-        "approved",
-        "gold",
-        "rejected",
-      ],
       image_question_status: [
         "draft",
         "validated",
@@ -28999,7 +28976,6 @@ export const Constants = {
         "escalado",
       ],
       qa_severity: ["critico", "alto", "medio", "baixo"],
-      quality_score_source_enum: ["heuristic", "ai", "manual", "hybrid"],
       simulado_status: [
         "draft",
         "scheduled",
