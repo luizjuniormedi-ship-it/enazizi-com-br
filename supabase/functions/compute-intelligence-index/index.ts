@@ -38,7 +38,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const COMPUTATION_VERSION = "v1.0";
+const COMPUTATION_VERSION = "v0.3.1-historical-bootstrap";
 const COMPUTED_BY = "compute-intelligence-index";
 const TABLES_WRITTEN_DRY = [] as const;
 const TABLES_WRITTEN_REAL = ["enamed_intelligence_index"] as const;
