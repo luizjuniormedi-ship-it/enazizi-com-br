@@ -1,0 +1,1 @@
+REVOKE SELECT, INSERT, UPDATE, DELETE ON public.real_exam_questions FROM anon;
