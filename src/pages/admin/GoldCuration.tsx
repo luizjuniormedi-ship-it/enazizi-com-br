@@ -92,22 +92,22 @@ export default function GoldCuration() {
         statusCounts[s] = count ?? 0;
       }
 
-      // Auditoria: nenhuma NULL pode estar em Gold
-      const { data: nullCheck } = await supabase.rpc("count_null_in_gold").maybeSingle().then(
-        async () => ({ data: null }),
-        async () => ({ data: null })
-      ).catch(() => ({ data: null }));
-      // fallback manual via raw select
+      // Auditoria: nenhuma NULL pode estar em Gold (cliente: amostra)
       let null_em_gold = 0;
-      try {
-        const { data: nullRows } = await supabase
-          .from("gold_questions_metadata")
-          .select("question_id, questions_bank!inner(id, classification_method)")
-          .eq("question_source", "questions_bank")
-          .is("questions_bank.classification_method" as any, null)
-          .limit(1);
-        null_em_gold = nullRows?.length ?? 0;
-      } catch { /* ignore */ }
+      const { data: sample } = await supabase
+        .from("gold_questions_metadata")
+        .select("question_id")
+        .eq("question_source", "questions_bank")
+        .limit(1000);
+      if (sample && sample.length > 0) {
+        const ids = sample.map((s: any) => s.question_id);
+        const { count } = await supabase
+          .from("questions_bank")
+          .select("id", { count: "exact", head: true })
+          .in("id", ids)
+          .is("classification_method", null);
+        null_em_gold = count ?? 0;
+      }
 
       setStats({
         total_bank: total_bank ?? 0,
@@ -247,49 +247,60 @@ function QuestionsTable({ mode, onChange }: { mode: "classified" | "orphans"; on
   const load = async () => {
     setLoading(true);
     try {
-      let q = supabase
+      // 1) Pré-filtra question_ids elegíveis (classification_method / reason) em questions_bank
+      const CLASSIFIED_METHODS = ["alias_exact", "exact_text", "heuristic", "ai", "manual"];
+      let qb = supabase.from("questions_bank").select("id").limit(2000);
+      if (mode === "classified") {
+        qb = qb.in("classification_method", CLASSIFIED_METHODS);
+      } else {
+        qb = qb.eq("classification_method", "skipped");
+        if (reasonFilter !== "all") qb = qb.eq("classification_reason", reasonFilter);
+      }
+      const { data: bankIds, error: bankErr } = await qb;
+      if (bankErr) throw bankErr;
+      const idSet = (bankIds ?? []).map((r: any) => r.id);
+      if (idSet.length === 0) { setRows([]); return; }
+
+      // 2) Busca metadados desses IDs
+      let mq: any = supabase
         .from("gold_questions_metadata")
-        .select(`
-          id, question_id, gold_status, quality_score, quality_score_method, review_notes, reviewed_at,
-          questions_bank!inner (
-            classification_method, classification_reason, statement, topic, source, source_type, specialty_id
-          )
-        `)
+        .select("id, question_id, gold_status, quality_score, quality_score_method, review_notes, reviewed_at")
         .eq("question_source", "questions_bank")
+        .in("question_id", idSet)
         .order("quality_score", { ascending: false, nullsFirst: false })
         .range(page * pageSize, page * pageSize + pageSize - 1);
+      if (statusFilter !== "all") mq = mq.eq("gold_status", statusFilter);
+      const { data: metas, error: metaErr } = await mq;
+      if (metaErr) throw metaErr;
 
-      if (mode === "classified") {
-        q = q.in("questions_bank.classification_method" as any, [
-          "alias_exact", "exact_text", "heuristic", "ai", "manual",
-        ]);
-      } else {
-        q = q.eq("questions_bank.classification_method" as any, "skipped");
-        if (reasonFilter !== "all") {
-          q = q.eq("questions_bank.classification_reason" as any, reasonFilter);
-        }
-      }
-      if (statusFilter !== "all") q = q.eq("gold_status", statusFilter);
+      // 3) Busca dados das questões correspondentes
+      const metaIds = (metas ?? []).map((m: any) => m.question_id);
+      const { data: qs, error: qsErr } = await supabase
+        .from("questions_bank")
+        .select("id, statement, topic, source, source_type, specialty_id, classification_method, classification_reason")
+        .in("id", metaIds.length ? metaIds : ["00000000-0000-0000-0000-000000000000"]);
+      if (qsErr) throw qsErr;
+      const qMap = new Map((qs ?? []).map((q: any) => [q.id, q]));
 
-      const { data, error } = await q;
-      if (error) throw error;
-
-      const mapped: GoldRow[] = (data ?? []).map((r: any) => ({
-        meta_id: r.id,
-        question_id: r.question_id,
-        gold_status: r.gold_status,
-        quality_score: r.quality_score,
-        quality_score_method: r.quality_score_method,
-        review_notes: r.review_notes,
-        reviewed_at: r.reviewed_at,
-        classification_method: r.questions_bank?.classification_method ?? null,
-        classification_reason: r.questions_bank?.classification_reason ?? null,
-        statement: r.questions_bank?.statement ?? null,
-        topic: r.questions_bank?.topic ?? null,
-        source: r.questions_bank?.source ?? null,
-        source_type: r.questions_bank?.source_type ?? null,
-        specialty_id: r.questions_bank?.specialty_id ?? null,
-      }));
+      const mapped: GoldRow[] = (metas ?? []).map((m: any) => {
+        const q: any = qMap.get(m.question_id) ?? {};
+        return {
+          meta_id: m.id,
+          question_id: m.question_id,
+          gold_status: m.gold_status,
+          quality_score: m.quality_score,
+          quality_score_method: m.quality_score_method,
+          review_notes: m.review_notes,
+          reviewed_at: m.reviewed_at,
+          classification_method: q.classification_method ?? null,
+          classification_reason: q.classification_reason ?? null,
+          statement: q.statement ?? null,
+          topic: q.topic ?? null,
+          source: q.source ?? null,
+          source_type: q.source_type ?? null,
+          specialty_id: q.specialty_id ?? null,
+        };
+      });
       setRows(mapped);
     } catch (e: any) {
       toast.error("Erro ao carregar questões: " + e.message);
