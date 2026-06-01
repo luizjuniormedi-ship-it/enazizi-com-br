@@ -76,48 +76,51 @@ export default function Fase4Drain() {
 
   const handleCheckpoint = async () => {
     setCheckpoint("...consultando...");
-    // usa RPC genérico se existir, senão tenta SELECT direto via PostgREST agregando
     try {
-      // Strategy: SELECT via PostgREST por status, agrega no cliente
-      const statuses = [
-        "classified",
-        "out_of_scope",
-        "purged",
-        "manual_review",
-        "low_confidence",
-        "pending",
-      ];
-      const counts: Record<string, number> = {};
-      for (const s of statuses) {
-        const { count, error } = await supabase
-          .from("questions_pool")
-          .select("*", { count: "exact", head: true })
-          .eq("classification_status", s);
-        if (error) throw error;
-        counts[s] = count ?? 0;
-      }
-      const { count: total } = await supabase
-        .from("questions_pool")
-        .select("*", { count: "exact", head: true });
+      const sb = supabase as unknown as {
+        from: (t: string) => {
+          select: (cols: string, opts?: { count?: "exact"; head?: boolean }) => any;
+        };
+      };
+      const base = () => sb.from("questions_bank").select("*", { count: "exact", head: true });
 
+      const [
+        { count: total },
+        { count: classificadas },
+        { count: out_of_scope },
+        { count: manual_review },
+        { count: low_confidence },
+        { count: pendentes },
+      ] = await Promise.all([
+        base(),
+        base().not("specialty_id", "is", null),
+        base().eq("classification_method", "manual").eq("classification_reason", "out_of_scope"),
+        base().eq("classification_reason", "manual_review"),
+        base().eq("classification_reason", "low_confidence"),
+        base()
+          .is("specialty_id", null)
+          .eq("classification_method", "skipped")
+          .neq("classification_reason", "out_of_scope"),
+      ]);
+
+      const t = total ?? 0;
+      const c = classificadas ?? 0;
+      const o = out_of_scope ?? 0;
       const payload = {
-        total: total ?? 0,
-        classificadas: counts.classified,
-        out_of_scope: counts.out_of_scope,
-        purged: counts.purged,
-        manual_review: counts.manual_review,
-        low_confidence: counts.low_confidence,
-        pendentes: counts.pending,
-        cobertura_pct:
-          total && total > 0
-            ? +(((counts.classified + counts.out_of_scope) / total) * 100).toFixed(2)
-            : 0,
+        total: t,
+        classificadas: c,
+        out_of_scope: o,
+        manual_review: manual_review ?? 0,
+        low_confidence: low_confidence ?? 0,
+        pendentes: pendentes ?? 0,
+        cobertura_pct: t > 0 ? +(((c + o) / t) * 100).toFixed(2) : 0,
       };
       setCheckpoint(JSON.stringify(payload, null, 2));
     } catch (e) {
       setCheckpoint(`ERRO: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
+
 
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-5xl">
