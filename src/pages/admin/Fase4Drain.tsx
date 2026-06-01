@@ -42,6 +42,96 @@ export default function Fase4Drain() {
   const [chunkSize, setChunkSize] = useState(10);
   const [n, setN] = useState(1);
   const [checkpoint, setCheckpoint] = useState<string>("");
+  const [auditReport, setAuditReport] = useState<string>("");
+  const [auditing, setAuditing] = useState(false);
+
+  const handleAuditoriaFinal = async () => {
+    setAuditing(true);
+    setAuditReport("...executando auditoria final (Intel-1 readiness)...");
+    try {
+      const sb = supabase as any;
+      const base = () => sb.from("questions_bank").select("*", { count: "exact", head: true });
+
+      const [
+        totalRes,
+        classifiedRes,
+        oosRes,
+        purgedRes,
+        manualRes,
+        lowConfRes,
+        pendingRes,
+      ] = await Promise.all([
+        base(),
+        base().not("specialty_id", "is", null),
+        base().eq("classification_reason", "out_of_scope"),
+        base().eq("lifecycle_state", "purged"),
+        base().eq("classification_reason", "manual_review"),
+        base().eq("classification_reason", "low_confidence"),
+        base().is("specialty_id", null).eq("lifecycle_state", "active"),
+      ]);
+
+      const total = totalRes.count ?? 0;
+      const classified = classifiedRes.count ?? 0;
+      const out_of_scope = oosRes.count ?? 0;
+      const purged = purgedRes.count ?? 0;
+      const manual_review = manualRes.count ?? 0;
+      const low_confidence = lowConfRes.count ?? 0;
+      const pending = pendingRes.count ?? 0;
+      const coverage_pct =
+        total > 0 ? +(((classified + out_of_scope + purged) / total) * 100).toFixed(2) : 0;
+
+      // Top pending topics — agregação client-side
+      const { data: pendingRows, error: pendErr } = await sb
+        .from("questions_bank")
+        .select("topic")
+        .is("specialty_id", null)
+        .eq("lifecycle_state", "active")
+        .limit(5000);
+
+      const counts = new Map<string, number>();
+      if (!pendErr && Array.isArray(pendingRows)) {
+        for (const row of pendingRows as Array<{ topic: string | null }>) {
+          const t = (row.topic ?? "(sem topic)").trim() || "(vazio)";
+          counts.set(t, (counts.get(t) ?? 0) + 1);
+        }
+      }
+      const topPending = Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 20);
+
+      let decision: "GO" | "HOLD" | "STOP";
+      if (coverage_pct < 85) decision = "STOP";
+      else if (pending > 50) decision = "HOLD";
+      else if (coverage_pct >= 90 && pending <= 50) decision = "GO";
+      else decision = "HOLD";
+
+      const lines = [
+        `STATUS: ${decision}`,
+        ``,
+        `TOTAL QUESTIONS: ${total}`,
+        `CLASSIFIED: ${classified}`,
+        `OUT OF SCOPE: ${out_of_scope}`,
+        `PURGED: ${purged}`,
+        `MANUAL REVIEW: ${manual_review}`,
+        `LOW CONFIDENCE: ${low_confidence}`,
+        `PENDING: ${pending}`,
+        `COVERAGE %: ${coverage_pct}`,
+        ``,
+        `TOP 20 PENDING TOPICS:`,
+        ...topPending.map(([t, c], i) => `${String(i + 1).padStart(2, "0")}. ${t} — ${c}`),
+        ``,
+        `DECISION: ${decision}`,
+        ``,
+        `Critérios: GO se pending<=50 e coverage>=90 | HOLD se pending>50 | STOP se coverage<85`,
+        `Sprint Intel-1: ${decision === "GO" ? "LIBERADA (requer aprovação humana)" : "BLOQUEADA"}`,
+      ];
+      setAuditReport(lines.join("\n"));
+    } catch (e) {
+      setAuditReport(`ERRO: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setAuditing(false);
+    }
+  };
 
   const runOnce = async (): Promise<RunEntry> => {
     const ts = new Date().toISOString();
@@ -167,6 +257,9 @@ export default function Fase4Drain() {
           <Button variant="outline" onClick={handleCheckpoint} disabled={running}>
             Checkpoint do banco
           </Button>
+          <Button variant="default" onClick={handleAuditoriaFinal} disabled={running || auditing}>
+            {auditing ? "Auditando..." : "Auditoria Final"}
+          </Button>
           <Button
             variant="ghost"
             onClick={() => setRuns([])}
@@ -176,6 +269,15 @@ export default function Fase4Drain() {
           </Button>
         </div>
       </Card>
+
+      {auditReport && (
+        <Card className="p-4">
+          <h2 className="font-semibold mb-2">Auditoria Final — Intel-1 Readiness</h2>
+          <pre className="text-xs bg-muted p-3 rounded overflow-auto whitespace-pre-wrap">
+            {auditReport}
+          </pre>
+        </Card>
+      )}
 
       {checkpoint && (
         <Card className="p-4">
