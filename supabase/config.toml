@@ -93,5 +93,7 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.tutor-v3-premium]
     verify_jwt = false
+  [functions.compute-intelligence-index]
+    verify_jwt = false
 
 
