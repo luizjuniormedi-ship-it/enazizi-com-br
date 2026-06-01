@@ -1,0 +1,1 @@
+DELETE FROM public.curriculum_specialties WHERE nome = 'Medicina Legal';
