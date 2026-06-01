@@ -12453,6 +12453,75 @@ export type Database = {
         }
         Relationships: []
       }
+      gold_questions_metadata: {
+        Row: {
+          created_at: string
+          gold_status: Database["public"]["Enums"]["gold_status_enum"]
+          id: string
+          promoted_to_gold_at: string | null
+          quality_score: number | null
+          quality_score_computed_at: string | null
+          quality_score_source:
+            | Database["public"]["Enums"]["quality_score_source_enum"]
+            | null
+          question_id: string
+          rejection_reason: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          gold_status?: Database["public"]["Enums"]["gold_status_enum"]
+          id?: string
+          promoted_to_gold_at?: string | null
+          quality_score?: number | null
+          quality_score_computed_at?: string | null
+          quality_score_source?:
+            | Database["public"]["Enums"]["quality_score_source_enum"]
+            | null
+          question_id: string
+          rejection_reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          gold_status?: Database["public"]["Enums"]["gold_status_enum"]
+          id?: string
+          promoted_to_gold_at?: string | null
+          quality_score?: number | null
+          quality_score_computed_at?: string | null
+          quality_score_source?:
+            | Database["public"]["Enums"]["quality_score_source_enum"]
+            | null
+          question_id?: string
+          rejection_reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gold_questions_metadata_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gold_questions_metadata_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golden_exam_dataset: {
         Row: {
           banca: string
@@ -28507,6 +28576,12 @@ export type Database = {
         | "rejected"
         | "failed"
       difficulty_level: "easy" | "medium" | "hard"
+      gold_status_enum:
+        | "pending"
+        | "needs_review"
+        | "approved"
+        | "gold"
+        | "rejected"
       image_question_status:
         | "draft"
         | "validated"
@@ -28585,6 +28660,7 @@ export type Database = {
         | "falha_persistente"
         | "escalado"
       qa_severity: "critico" | "alto" | "medio" | "baixo"
+      quality_score_source_enum: "heuristic" | "ai" | "manual" | "hybrid"
       simulado_status:
         | "draft"
         | "scheduled"
@@ -28830,6 +28906,13 @@ export const Constants = {
         "failed",
       ],
       difficulty_level: ["easy", "medium", "hard"],
+      gold_status_enum: [
+        "pending",
+        "needs_review",
+        "approved",
+        "gold",
+        "rejected",
+      ],
       image_question_status: [
         "draft",
         "validated",
@@ -28916,6 +28999,7 @@ export const Constants = {
         "escalado",
       ],
       qa_severity: ["critico", "alto", "medio", "baixo"],
+      quality_score_source_enum: ["heuristic", "ai", "manual", "hybrid"],
       simulado_status: [
         "draft",
         "scheduled",
