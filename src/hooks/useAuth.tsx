@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
-import { clearLoginRefreshSignature, forceLoginRefresh } from "@/lib/force-login-refresh";
+import { clearLoginRefreshSignature } from "@/lib/force-login-refresh";
 
 interface SignUpOptions {
   displayName: string;
@@ -108,8 +108,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .catch(() => {});
         }
 
-        // Single source of refresh — guarded internally by signature + in-flight flag.
-        void forceLoginRefresh(nextSession);
+        // [HOTFIX 2026-06-01] Hard reset on every SIGNED_IN estava causando:
+        // (1) sensação de "login não carrega" — reload imediato após submit
+        // (2) Cronograma e outras páginas pesadas em branco — IndexedDB era
+        //     apagado a cada login, derrubando caches usados na 1ª render.
+        // O refresh só é necessário quando a release muda; main.tsx já cuida
+        // disso comparando RELEASE_KEY. Não precisamos disparar aqui.
+        // void forceLoginRefresh(nextSession);
       }
 
       if (event === "SIGNED_OUT") {
