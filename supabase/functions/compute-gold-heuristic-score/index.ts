@@ -87,13 +87,18 @@ Deno.serve(async (req) => {
     }
 
     const qIds = metas.map((m) => m.question_id);
-    const { data: qs, error: qErr } = await supabase
-      .from("questions_bank")
-      .select("id, statement, options, correct_index, explanation, specialty_id, source_type")
-      .in("id", qIds);
-    if (qErr) throw qErr;
-
-    const qMap = new Map((qs ?? []).map((q) => [q.id, q]));
+    // Fragmentar para evitar URL gigante no .in()
+    const FETCH_CHUNK = 100;
+    const qMap = new Map<string, any>();
+    for (let i = 0; i < qIds.length; i += FETCH_CHUNK) {
+      const slice = qIds.slice(i, i + FETCH_CHUNK);
+      const { data: qs, error: qErr } = await supabase
+        .from("questions_bank")
+        .select("id, statement, options, correct_index, explanation, specialty_id, source_type")
+        .in("id", slice);
+      if (qErr) throw qErr;
+      for (const q of qs ?? []) qMap.set(q.id, q);
+    }
     const now = new Date().toISOString();
     const distribution: Record<string, number> = {};
     let processed = 0, failed = 0;
