@@ -257,6 +257,9 @@ export default function Fase4Drain() {
           <Button variant="outline" onClick={handleCheckpoint} disabled={running}>
             Checkpoint do banco
           </Button>
+          <Button variant="default" onClick={handleAuditoriaFinal} disabled={running || auditing}>
+            {auditing ? "Auditando..." : "Auditoria Final"}
+          </Button>
           <Button
             variant="ghost"
             onClick={() => setRuns([])}
@@ -266,6 +269,15 @@ export default function Fase4Drain() {
           </Button>
         </div>
       </Card>
+
+      {auditReport && (
+        <Card className="p-4">
+          <h2 className="font-semibold mb-2">Auditoria Final — Intel-1 Readiness</h2>
+          <pre className="text-xs bg-muted p-3 rounded overflow-auto whitespace-pre-wrap">
+            {auditReport}
+          </pre>
+        </Card>
+      )}
 
       {checkpoint && (
         <Card className="p-4">
