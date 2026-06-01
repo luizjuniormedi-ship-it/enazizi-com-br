@@ -197,7 +197,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    let attemptsScanned = 0;
+    // attempts_found        = linhas lidas em practice_attempts
+    // attempts_joined_to_specialty = linhas que casaram com questions_bank.specialty_id
+    let attemptsFound = 0;
+    let attemptsJoinedToSpecialty = 0;
+    let attemptsOrphanQuestion = 0;
     {
       let f3 = 0;
       while (true) {
@@ -208,50 +212,59 @@ Deno.serve(async (req) => {
         if (error) throw new Error(`practice_attempts read: ${error.message}`);
         if (!data || data.length === 0) break;
         for (const a of data) {
+          attemptsFound += 1;
           const meta = qIndex.get(a.question_id as string);
-          if (!meta) continue;
+          if (!meta) { attemptsOrphanQuestion += 1; continue; }
           const k = keyOf(meta.s, meta.t);
           const row = agg.get(k);
-          if (!row) continue;
+          if (!row) { attemptsOrphanQuestion += 1; continue; }
           row.attempts += 1;
           if (a.correct === false) row.errors += 1;
-          attemptsScanned += 1;
+          attemptsJoinedToSpecialty += 1;
         }
         if (data.length < PAGE) break;
         f3 += PAGE;
       }
     }
-    log("AGG_ATTEMPTS", { attemptsScanned });
+    log("AGG_ATTEMPTS", { attemptsFound, attemptsJoinedToSpecialty, attemptsOrphanQuestion });
 
     // ---------- READ: fsrs_cards (card_type='question', card_ref_id = question id text) ----------
-    let fsrsScanned = 0;
+    // fsrs_cards_found                = linhas lidas em fsrs_cards (card_type='question')
+    // fsrs_cards_with_retrievability  = subset com retrievability não-nulo
+    // fsrs_joined_to_specialty        = subset que casou com questions_bank.specialty_id
+    let fsrsCardsFound = 0;
+    let fsrsWithRetrievability = 0;
+    let fsrsJoinedToSpecialty = 0;
+    let fsrsOrphanQuestion = 0;
     {
       let f4 = 0;
       while (true) {
         const { data, error } = await svc
           .from("fsrs_cards")
           .select("card_ref_id, retrievability, card_type")
-          .not("retrievability", "is", null)
+          .eq("card_type", "question")
           .range(f4, f4 + PAGE - 1);
         if (error) throw new Error(`fsrs_cards read: ${error.message}`);
         if (!data || data.length === 0) break;
         for (const c of data) {
+          fsrsCardsFound += 1;
+          const r = c.retrievability == null ? null : Number(c.retrievability);
+          if (r === null || !Number.isFinite(r)) continue;
+          fsrsWithRetrievability += 1;
           const meta = qIndex.get(c.card_ref_id as string);
-          if (!meta) continue;
+          if (!meta) { fsrsOrphanQuestion += 1; continue; }
           const k = keyOf(meta.s, meta.t);
           const row = agg.get(k);
-          if (!row) continue;
-          const r = Number(c.retrievability);
-          if (!Number.isFinite(r)) continue;
+          if (!row) { fsrsOrphanQuestion += 1; continue; }
           row.fsrs_risk_sum += Math.max(0, Math.min(1, 1 - r));
           row.fsrs_risk_n += 1;
-          fsrsScanned += 1;
+          fsrsJoinedToSpecialty += 1;
         }
         if (data.length < PAGE) break;
         f4 += PAGE;
       }
     }
-    log("AGG_FSRS", { fsrsScanned });
+    log("AGG_FSRS", { fsrsCardsFound, fsrsWithRetrievability, fsrsJoinedToSpecialty, fsrsOrphanQuestion });
 
     // ---------- VALIDATION ----------
     const { data: specs, error: specErr } = await svc
@@ -390,6 +403,18 @@ Deno.serve(async (req) => {
       invalid_specialty_count: invalidSpec,
       invalid_subspecialty_count: invalidSub,
       duplicate_key_count: duplicateKeyCount,
+      // Diagnóstico de fontes (v0.3.1)
+      diagnostics: {
+        attempts_found: attemptsFound,
+        attempts_joined_to_specialty: attemptsJoinedToSpecialty,
+        attempts_orphan_question: attemptsOrphanQuestion,
+        fsrs_cards_found: fsrsCardsFound,
+        fsrs_with_retrievability: fsrsWithRetrievability,
+        fsrs_joined_to_specialty: fsrsJoinedToSpecialty,
+        fsrs_orphan_question: fsrsOrphanQuestion,
+        questions_indexed: qIndex.size,
+        total_questions_aggregated: totalQuestions,
+      },
       duration_ms: durationMs,
       tables_written: tablesWritten,
       computation_version: COMPUTATION_VERSION,
