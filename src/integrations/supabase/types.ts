@@ -10993,6 +10993,78 @@ export type Database = {
           },
         ]
       }
+      enamed_intelligence_index: {
+        Row: {
+          computation_version: string
+          computed_at: string
+          computed_by: string
+          confidence_level: string
+          created_at: string
+          exam_key: string
+          fsrs_risk: number | null
+          historical_frequency: number
+          id: string
+          priority_score: number
+          question_count: number
+          sample_size: number
+          specialty_id: string
+          student_error_rate: number | null
+          subspecialty_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          computation_version?: string
+          computed_at?: string
+          computed_by?: string
+          confidence_level?: string
+          created_at?: string
+          exam_key: string
+          fsrs_risk?: number | null
+          historical_frequency?: number
+          id?: string
+          priority_score?: number
+          question_count?: number
+          sample_size?: number
+          specialty_id: string
+          student_error_rate?: number | null
+          subspecialty_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          computation_version?: string
+          computed_at?: string
+          computed_by?: string
+          confidence_level?: string
+          created_at?: string
+          exam_key?: string
+          fsrs_risk?: number | null
+          historical_frequency?: number
+          id?: string
+          priority_score?: number
+          question_count?: number
+          sample_size?: number
+          specialty_id?: string
+          student_error_rate?: number | null
+          subspecialty_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enamed_intelligence_index_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enamed_intelligence_index_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+        ]
+      }
       enazizi_progress: {
         Row: {
           created_at: string
