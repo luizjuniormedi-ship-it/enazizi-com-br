@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
-import { clearLoginRefreshSignature, forceLoginRefresh } from "@/lib/force-login-refresh";
+import { clearLoginRefreshSignature } from "@/lib/force-login-refresh";
 
 interface SignUpOptions {
   displayName: string;
