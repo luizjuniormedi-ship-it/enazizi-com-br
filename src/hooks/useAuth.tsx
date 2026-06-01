@@ -155,10 +155,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await withAuthTimeout(
+      const { data, error } = await withAuthTimeout(
         supabase.auth.signInWithPassword({ email, password }),
         "Tempo limite ao entrar. O backend demorou para responder; tente novamente em instantes."
       );
+      if (!error && data.session) {
+        setSession(data.session);
+        setUser(data.session.user ?? null);
+        setLoading(false);
+      }
       return { error: error as Error | null };
     } catch (err) {
       console.warn("[Auth] signIn timeout/error:", err);
