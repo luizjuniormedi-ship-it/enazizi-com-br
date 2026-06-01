@@ -169,6 +169,15 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["questões", "review", "queue"],
       },
       {
+        to: "/admin/classification",
+        label: "Classificação",
+        description: "Fila de questões não processadas e backfill de classificação hierárquica.",
+        icon: GitBranch,
+        scopes: ["super_admin"],
+        badge: "Novo",
+        keywords: ["classification", "classificação", "backfill", "não processadas"],
+      },
+      {
         to: "/admin?tab=system-checklist",
         label: "Simulados",
         description: "Cobertura de bancas, prontidão e telemetria de simulados.",
