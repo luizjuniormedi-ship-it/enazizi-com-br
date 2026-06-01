@@ -401,6 +401,7 @@ const App = () => (
                 <Route path="memory-hallucinations" element={<MemoryHallucinations />} />
                 <Route path="enriquecimento" element={<EnrichmentProgress />} />
                 <Route path="classification-runner" element={<ClassificationRunner />} />
+                <Route path="intelligence-runner" element={<IntelligenceRunner />} />
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="classification" element={<ClassificationBackfill />} />
                 <Route path="semantic-observatory" element={<SemanticObservatory />} />
