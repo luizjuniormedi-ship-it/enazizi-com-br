@@ -82,6 +82,7 @@ const EnrichmentProgress = lazyWithRetry(() => import("./pages/admin/EnrichmentP
 const ClassificationRunner = lazyWithRetry(() => import("./pages/admin/ClassificationRunner"), "ClassificationRunner");
 const ClassificationHealthDashboard = lazyWithRetry(() => import("./pages/admin/ClassificationHealthDashboard"), "ClassificationHealthDashboard");
 const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
+const GoldCuration = lazyWithRetry(() => import("./pages/admin/GoldCuration"), "GoldCuration");
 const SemanticObservatory = lazyWithRetry(() => import("./pages/admin/SemanticObservatory"), "SemanticObservatory");
 const SemanticReviewCenter = lazyWithRetry(() => import("./pages/admin/SemanticReviewCenter"), "SemanticReviewCenter");
 
@@ -397,6 +398,7 @@ const App = () => (
                 <Route path="classification-runner" element={<ClassificationRunner />} />
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="classification" element={<ClassificationBackfill />} />
+                <Route path="gold-curation" element={<GoldCuration />} />
                 <Route path="semantic-observatory" element={<SemanticObservatory />} />
               </Route>
               {/* Rota separada para SemanticReviewCenter — acesso por admin, semantic_board, platform_admin */}
