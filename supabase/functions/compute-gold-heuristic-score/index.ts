@@ -98,31 +98,37 @@ Deno.serve(async (req) => {
     const distribution: Record<string, number> = {};
     let processed = 0, failed = 0;
 
-    // Update em batches de 50
-    const updates: any[] = [];
+    // UPDATE individual (paralelo em chunks de 20)
+    type UpdateJob = { id: string; score: number };
+    const jobs: UpdateJob[] = [];
     for (const m of metas) {
       const q = qMap.get(m.question_id);
       if (!q) { failed++; continue; }
       const { score } = scoreQuestion(q);
       const bucket = `${Math.floor(score / 10) * 10}`;
       distribution[bucket] = (distribution[bucket] ?? 0) + 1;
-      updates.push({
-        id: m.id,
-        quality_score: score,
-        quality_score_method: "heuristic",
-        quality_score_computed_at: now,
-      });
+      jobs.push({ id: m.id, score });
     }
 
-    // Upsert em lotes
-    const CHUNK = 100;
-    for (let i = 0; i < updates.length; i += CHUNK) {
-      const slice = updates.slice(i, i + CHUNK);
-      const { error: upErr } = await supabase
-        .from("gold_questions_metadata")
-        .upsert(slice, { onConflict: "id" });
-      if (upErr) { console.error("[gold-heuristic] upsert error", upErr); failed += slice.length; }
-      else processed += slice.length;
+    const CHUNK = 20;
+    for (let i = 0; i < jobs.length; i += CHUNK) {
+      const slice = jobs.slice(i, i + CHUNK);
+      const results = await Promise.all(
+        slice.map((j) =>
+          supabase
+            .from("gold_questions_metadata")
+            .update({
+              quality_score: j.score,
+              quality_score_method: "heuristic",
+              quality_score_computed_at: now,
+            })
+            .eq("id", j.id)
+        )
+      );
+      for (const r of results) {
+        if (r.error) { console.error("[gold-heuristic] update error", r.error); failed++; }
+        else processed++;
+      }
     }
 
     return new Response(
