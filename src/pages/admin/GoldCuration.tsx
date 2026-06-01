@@ -247,61 +247,66 @@ function QuestionsTable({ mode, onChange }: { mode: "classified" | "orphans"; on
   const load = async () => {
     setLoading(true);
     try {
-      // 1) Pré-filtra question_ids elegíveis (classification_method / reason) em questions_bank
       const CLASSIFIED_METHODS = ["alias_exact", "exact_text", "heuristic", "ai", "manual"];
-      let qb = supabase.from("questions_bank").select("id").limit(2000);
-      if (mode === "classified") {
-        qb = qb.in("classification_method", CLASSIFIED_METHODS);
-      } else {
-        qb = qb.eq("classification_method", "skipped");
-        if (reasonFilter !== "all") qb = qb.eq("classification_reason", reasonFilter);
+      // 1) Busca metadata paginada ordenada por score; depois enriquece e filtra por método.
+      // Faz over-fetch (5x pageSize) para compensar filtragem client-side por classification_method.
+      const fetchSize = pageSize * 5;
+      const collected: GoldRow[] = [];
+      let cursor = page * pageSize;
+      let safety = 0;
+      while (collected.length < pageSize && safety < 20) {
+        safety++;
+        let mq: any = supabase
+          .from("gold_questions_metadata")
+          .select("id, question_id, gold_status, quality_score, quality_score_method, review_notes, reviewed_at")
+          .eq("question_source", "questions_bank")
+          .order("quality_score", { ascending: false, nullsFirst: false })
+          .range(cursor, cursor + fetchSize - 1);
+        if (statusFilter !== "all") mq = mq.eq("gold_status", statusFilter);
+        const { data: metas, error: metaErr } = await mq;
+        if (metaErr) throw metaErr;
+        if (!metas || metas.length === 0) break;
+        cursor += metas.length;
+
+        const ids = metas.map((m: any) => m.question_id);
+        let qq: any = supabase
+          .from("questions_bank")
+          .select("id, statement, topic, source, source_type, specialty_id, classification_method, classification_reason")
+          .in("id", ids);
+        if (mode === "classified") {
+          qq = qq.in("classification_method", CLASSIFIED_METHODS);
+        } else {
+          qq = qq.eq("classification_method", "skipped");
+          if (reasonFilter !== "all") qq = qq.eq("classification_reason", reasonFilter);
+        }
+        const { data: qs, error: qsErr } = await qq;
+        if (qsErr) throw qsErr;
+        const qMap = new Map((qs ?? []).map((q: any) => [q.id, q]));
+
+        for (const m of metas) {
+          const q: any = qMap.get(m.question_id);
+          if (!q) continue; // filtrado por método/motivo
+          collected.push({
+            meta_id: m.id,
+            question_id: m.question_id,
+            gold_status: m.gold_status,
+            quality_score: m.quality_score,
+            quality_score_method: m.quality_score_method,
+            review_notes: m.review_notes,
+            reviewed_at: m.reviewed_at,
+            classification_method: q.classification_method ?? null,
+            classification_reason: q.classification_reason ?? null,
+            statement: q.statement ?? null,
+            topic: q.topic ?? null,
+            source: q.source ?? null,
+            source_type: q.source_type ?? null,
+            specialty_id: q.specialty_id ?? null,
+          });
+          if (collected.length >= pageSize) break;
+        }
+        if (metas.length < fetchSize) break;
       }
-      const { data: bankIds, error: bankErr } = await qb;
-      if (bankErr) throw bankErr;
-      const idSet = (bankIds ?? []).map((r: any) => r.id);
-      if (idSet.length === 0) { setRows([]); return; }
-
-      // 2) Busca metadados desses IDs
-      let mq: any = supabase
-        .from("gold_questions_metadata")
-        .select("id, question_id, gold_status, quality_score, quality_score_method, review_notes, reviewed_at")
-        .eq("question_source", "questions_bank")
-        .in("question_id", idSet)
-        .order("quality_score", { ascending: false, nullsFirst: false })
-        .range(page * pageSize, page * pageSize + pageSize - 1);
-      if (statusFilter !== "all") mq = mq.eq("gold_status", statusFilter);
-      const { data: metas, error: metaErr } = await mq;
-      if (metaErr) throw metaErr;
-
-      // 3) Busca dados das questões correspondentes
-      const metaIds = (metas ?? []).map((m: any) => m.question_id);
-      const { data: qs, error: qsErr } = await supabase
-        .from("questions_bank")
-        .select("id, statement, topic, source, source_type, specialty_id, classification_method, classification_reason")
-        .in("id", metaIds.length ? metaIds : ["00000000-0000-0000-0000-000000000000"]);
-      if (qsErr) throw qsErr;
-      const qMap = new Map((qs ?? []).map((q: any) => [q.id, q]));
-
-      const mapped: GoldRow[] = (metas ?? []).map((m: any) => {
-        const q: any = qMap.get(m.question_id) ?? {};
-        return {
-          meta_id: m.id,
-          question_id: m.question_id,
-          gold_status: m.gold_status,
-          quality_score: m.quality_score,
-          quality_score_method: m.quality_score_method,
-          review_notes: m.review_notes,
-          reviewed_at: m.reviewed_at,
-          classification_method: q.classification_method ?? null,
-          classification_reason: q.classification_reason ?? null,
-          statement: q.statement ?? null,
-          topic: q.topic ?? null,
-          source: q.source ?? null,
-          source_type: q.source_type ?? null,
-          specialty_id: q.specialty_id ?? null,
-        };
-      });
-      setRows(mapped);
+      setRows(collected);
     } catch (e: any) {
       toast.error("Erro ao carregar questões: " + e.message);
     } finally {
