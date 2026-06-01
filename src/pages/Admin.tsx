@@ -77,6 +77,7 @@ const ExamHarvesterPanel = lazy(() => import("@/components/admin/ExamHarvesterPa
 const TutorStabilizationDashboard = lazy(() => import("@/components/admin/cognitive-observatory/TutorStabilizationDashboard").then(m => ({ default: m.TutorStabilizationDashboard })));
 const CognitiveGovernanceDashboard = lazy(() => import("@/components/admin/cognitive-observatory/CognitiveGovernanceDashboard"));
 const GoldCuration = lazy(() => import("@/pages/admin/GoldCuration"));
+const ClassificationBackfill = lazy(() => import("@/pages/admin/ClassificationBackfill"));
 
 
 
@@ -113,6 +114,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "knowledge-base", label: "Base RAG", icon: DatabaseIcon },
         { key: "ingestion", label: "Gerar Questões", icon: Wand2 },
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
+        { key: "classification", label: "Classificação", icon: GitBranch },
         { key: "gold-curation", label: "Curadoria Gold", icon: Sparkles },
         { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
         { key: "scraping", label: "Web Scraping", icon: Search },
@@ -626,6 +628,7 @@ const Admin = ({ initialTab }: AdminProps) => {
                   {activeSection === "uploads" && <Suspense fallback={<PanelLoader />}><AdminUploadsPanel /></Suspense>}
                   {activeSection === "ingestion" && <Suspense fallback={<PanelLoader />}><AdminIngestionPanel /></Suspense>}
                   {activeSection === "question-review" && <Suspense fallback={<PanelLoader />}><AdminQuestionReviewPanel /></Suspense>}
+                  {activeSection === "classification" && <Suspense fallback={<PanelLoader />}><ClassificationBackfill /></Suspense>}
                   {activeSection === "gold-curation" && <Suspense fallback={<PanelLoader />}><GoldCuration /></Suspense>}
                   {activeSection === "image-review" && <Suspense fallback={<PanelLoader />}><AdminImageQuestionReviewPanel /></Suspense>}
                   {activeSection === "scraping" && <Suspense fallback={<PanelLoader />}><AdminWebScrapingPanel /></Suspense>}
