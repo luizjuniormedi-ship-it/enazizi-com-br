@@ -82,7 +82,35 @@ function useReviewQueue(limit = 20) {
         .order("confidence_score", { ascending: true })
         .limit(limit);
       if (error) throw error;
-      return data ?? [];
+      const items = data ?? [];
+
+      // Enriquecer com enunciado da questão (statement/options) buscando
+      // na tabela correta (questions_bank ou real_exam_questions).
+      const byTable: Record<string, string[]> = {};
+      for (const it of items) {
+        const t = (it as any).table_source as string;
+        if (!byTable[t]) byTable[t] = [];
+        byTable[t].push((it as any).question_id);
+      }
+      const stemMap = new Map<string, { statement: string | null; options: any; correct_index: number | null }>();
+      for (const [table, ids] of Object.entries(byTable)) {
+        if (!ids.length) continue;
+        const { data: qs } = await supabase
+          .from(table as "questions_bank" | "real_exam_questions")
+          .select("id, statement, options, correct_index")
+          .in("id", ids);
+        for (const q of qs ?? []) {
+          stemMap.set(`${table}:${(q as any).id}`, {
+            statement: (q as any).statement ?? null,
+            options: (q as any).options ?? null,
+            correct_index: (q as any).correct_index ?? null,
+          });
+        }
+      }
+      return items.map((it: any) => ({
+        ...it,
+        _question: stemMap.get(`${it.table_source}:${it.question_id}`) ?? null,
+      }));
     },
   });
 }
@@ -355,12 +383,39 @@ export default function ClassificationBackfill() {
                   {reviewQueue.data!.map((item: any) => (
                     <li key={item.id} className="border rounded p-3 text-sm">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1">
+                        <div className="space-y-2 flex-1 min-w-0">
                           <div>
                             <Badge variant="outline">{item.table_source}</Badge>{" "}
                             <Badge variant="secondary">{item.classification_method}</Badge>{" "}
                             <Badge>conf: {Number(item.confidence_score).toFixed(2)}</Badge>
                           </div>
+
+                          {/* Enunciado da questão (essencial para revisar) */}
+                          {item._question?.statement ? (
+                            <div className="rounded border bg-muted/30 p-2 text-xs space-y-2">
+                              <div className="whitespace-pre-wrap leading-relaxed">
+                                {item._question.statement}
+                              </div>
+                              {Array.isArray(item._question.options) && item._question.options.length > 0 && (
+                                <ol className="list-[upper-alpha] pl-5 space-y-0.5">
+                                  {item._question.options.map((opt: any, idx: number) => (
+                                    <li
+                                      key={idx}
+                                      className={idx === item._question.correct_index ? "font-semibold text-primary" : ""}
+                                    >
+                                      {typeof opt === "string" ? opt : opt?.text ?? JSON.stringify(opt)}
+                                      {idx === item._question.correct_index && " ✓"}
+                                    </li>
+                                  ))}
+                                </ol>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground italic">
+                              Enunciado não encontrado (question_id: {item.question_id})
+                            </div>
+                          )}
+
                           <div><strong>Original:</strong> {item.original_topic ?? "—"} / {item.original_subtopic ?? "—"}</div>
                           <div>
                             <strong>Sugestão:</strong>{" "}
