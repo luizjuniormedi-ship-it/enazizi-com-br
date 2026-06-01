@@ -126,13 +126,16 @@ Deno.serve(async (req) => {
     );
     const specNames = specs.map((s: any) => s.nome);
 
-    // Fila: questões marcadas como skipped (sem out_of_scope) sem specialty
+    // Fila: questões sem specialty ainda não classificadas (method NULL ou 'skipped'),
+    // em lifecycle ativo (generated | queued_for_enrichment). Estados finais
+    // (out_of_scope, purged) e razões finais (manual_review, low_confidence,
+    // out_of_scope, content_hygiene) ficam fora.
     const { data: rows, error: fetchErr } = await admin
       .from("questions_bank")
       .select("id, topic, subtopic, statement")
       .is("specialty_id", null)
-      .eq("classification_method", "skipped")
-      .neq("classification_reason", "out_of_scope")
+      .in("lifecycle_state", ["generated", "queued_for_enrichment"])
+      .or("classification_method.is.null,classification_method.eq.skipped")
       .order("created_at", { ascending: true })
       .limit(batchSize);
     if (fetchErr) throw new Error(`fetch: ${fetchErr.message}`);
