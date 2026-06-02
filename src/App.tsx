@@ -88,6 +88,7 @@ const GoldCuration = lazyWithRetry(() => import("./pages/admin/GoldCuration"), "
 const Fase4Drain = lazyWithRetry(() => import("./pages/admin/Fase4Drain"), "Fase4Drain");
 const SemanticObservatory = lazyWithRetry(() => import("./pages/admin/SemanticObservatory"), "SemanticObservatory");
 const SemanticReviewCenter = lazyWithRetry(() => import("./pages/admin/SemanticReviewCenter"), "SemanticReviewCenter");
+const DiagnosticTutor = lazyWithRetry(() => import("./pages/admin/DiagnosticTutor"), "DiagnosticTutor");
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
