@@ -91,6 +91,47 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
 
+const AUTH_SESSION_FALLBACK_TIMEOUT_MS = 2000;
+
+type MontarBancoEvent =
+  | "[MONTAR_BANCO_START]"
+  | "[MONTAR_BANCO_REQUEST]"
+  | "[MONTAR_BANCO_RESPONSE]"
+  | "[MONTAR_BANCO_SUCCESS]"
+  | "[MONTAR_BANCO_FAIL]";
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error ?? "Erro desconhecido");
+}
+
+function logMontarBancoEvent(
+  event: MontarBancoEvent,
+  payload: { userId?: string | null; step: string; durationMs: number; error?: unknown; extra?: Record<string, unknown> }
+) {
+  console.log(event, {
+    user_id: payload.userId ?? null,
+    step: payload.step,
+    duration_ms: payload.durationMs,
+    error: payload.error ? getErrorMessage(payload.error) : null,
+    ...(payload.extra ?? {}),
+  });
+}
+
+async function getAccessTokenForSimulado(cachedToken?: string | null): Promise<string | undefined> {
+  if (cachedToken) return cachedToken;
+
+  try {
+    const result = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), AUTH_SESSION_FALLBACK_TIMEOUT_MS)),
+    ]);
+    return result?.data.session?.access_token;
+  } catch (error) {
+    console.warn("[Simulados] Falha ao obter sessão sem bloquear geração:", error);
+    return undefined;
+  }
+}
+
 function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {
   const topicsStr = topics.join(", ");
   const perTopic = Math.ceil(count / topics.length);
@@ -197,7 +238,7 @@ function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
 }
 
 const Simulados = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session: authSession, loading: authLoading } = useAuth();
   
   useEffect(() => {
     console.log("[Simulados] Página montada. User:", user?.id, "AuthLoading:", authLoading);
@@ -353,10 +394,20 @@ const Simulados = () => {
       existingQuestions?: SimQuestion[];
       forceStart?: boolean; // New flag to bypass config step
     }) => {
+    const montarBancoStartedAt = performance.now();
+    const isMontarBancoFlow = (config.mode as any) !== "ai_generation" && config.mode !== "adaptativo";
     console.log("[Simulados] iniciar clicado", config);
     const correlationId = crypto.randomUUID();
     e2eCorrelationIdRef.current = correlationId;
     console.log("[E2E_SIMULADO_START]", { correlation_id: correlationId, config });
+    if (isMontarBancoFlow) {
+      logMontarBancoEvent("[MONTAR_BANCO_START]", {
+        userId: user?.id,
+        step: "handler_start",
+        durationMs: 0,
+        extra: { correlation_id: correlationId, mode: config.mode, count: config.count },
+      });
+    }
     
     // Safety check: ensure topics are loaded from distribution if missing
     const hasManualTopics = Array.isArray(config.topics) && config.topics.length > 0;
@@ -426,7 +477,17 @@ const Simulados = () => {
     setShowConfigStep(false); // Ensure config step is hidden when starting
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = await getAccessTokenForSimulado(authSession?.access_token);
+      if (isMontarBancoFlow) {
+        logMontarBancoEvent("[MONTAR_BANCO_REQUEST]", {
+          userId: user?.id,
+          step: "auth_session_ready",
+          durationMs: Math.round(performance.now() - montarBancoStartedAt),
+          extra: { has_access_token: Boolean(accessToken), next: "question-generator" },
+        });
+        setLoadingProgress("Carregando questões do banco...");
+        setLoadingPercent(10);
+      }
       if (config.mode === "adaptativo") {
         setLoadingProgress("Analisando seu desempenho...");
         setLoadingPercent(20);
@@ -442,7 +503,7 @@ const Simulados = () => {
           const { data, error: fnError } = await supabase.functions.invoke(
             "generate-adaptive-simulado",
             {
-              headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+              headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
               body: {
                 target_question_count: config.count || 20,
                 performance: perf,
@@ -556,8 +617,8 @@ const Simulados = () => {
         const totalBatchesNum = Math.ceil(requestedTotal / BATCH_SIZE_AI);
         
         console.log(`[Simulados] Gerando lote ${batchNum}/${totalBatchesNum} (total acumulado: ${allGenerated.length}/${requestedTotal})`);
-        setLoadingProgress(`Gerando lote ${batchNum} de ${totalBatchesNum}...`);
-        setLoadingPercent(Math.max(5, Math.round((allGenerated.length / requestedTotal) * 100)));
+        setLoadingProgress(`Carregando lote ${batchNum} de ${totalBatchesNum} do banco...`);
+        setLoadingPercent(Math.max(isMontarBancoFlow ? 25 : 5, Math.round((allGenerated.length / requestedTotal) * 100)));
         
         // Add data-testid for E2E progress monitoring
         const progressElement = document.querySelector('[role="progressbar"]');
@@ -573,6 +634,21 @@ const Simulados = () => {
           const avoidIds = allGenerated.map(q => q.id).filter(Boolean) as string[];
           
           console.log(`[Simulados] Chamando question-generator para lote ${batchNum}. Count: ${currentBatchSize}. AvoidIds: ${avoidIds.length}`);
+          if (isMontarBancoFlow) {
+            logMontarBancoEvent("[MONTAR_BANCO_REQUEST]", {
+              userId: user?.id,
+              step: "question_generator_invoke",
+              durationMs: Math.round(performance.now() - montarBancoStartedAt),
+              extra: {
+                function: "question-generator",
+                batch: batchNum,
+                count: currentBatchSize,
+                topics: config.topics,
+                difficulty: config.difficulty || "misto",
+                targetExam: config.realExamProfile || config.examBoard || null,
+              },
+            });
+          }
           
           let batchData: any = null;
           let batchErr: any = null;
@@ -583,7 +659,7 @@ const Simulados = () => {
               config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
               currentBatchSize,
               config.difficulty || "misto",
-              session?.access_token,
+              accessToken,
               config.specificTopic,
               config.realExamProfile || config.examBoard,
               avoid,
@@ -598,6 +674,16 @@ const Simulados = () => {
               avoidIds
             );
             batchData = { success: true, questions: batchQs.questions, session_id: batchQs.sessionId };
+            if (isMontarBancoFlow) {
+              setLoadingProgress("Banco respondeu. Preparando questões...");
+              setLoadingPercent(50);
+              logMontarBancoEvent("[MONTAR_BANCO_RESPONSE]", {
+                userId: user?.id,
+                step: "question_generator_response",
+                durationMs: Math.round(performance.now() - montarBancoStartedAt),
+                extra: { success: true, received_questions: batchQs.questions.length, session_id: batchQs.sessionId },
+              });
+            }
             if (batchQs.sessionId && !simuladoSessionIdRef.current) {
               simuladoSessionIdRef.current = batchQs.sessionId;
               console.log(`[SIMULADO_SESSION_CAPTURED] ${batchQs.sessionId}`);
@@ -608,6 +694,7 @@ const Simulados = () => {
             const { data, error } = await supabase.functions.invoke(
               "question-generator",
               {
+                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
                 body: {
                   count: currentBatchSize,
                   difficulty: config.difficulty || "misto",
@@ -632,6 +719,17 @@ const Simulados = () => {
             );
             batchData = data;
             batchErr = error;
+            if (isMontarBancoFlow) {
+              setLoadingProgress("Banco respondeu. Validando retorno...");
+              setLoadingPercent(50);
+              logMontarBancoEvent("[MONTAR_BANCO_RESPONSE]", {
+                userId: user?.id,
+                step: "question_generator_direct_response",
+                durationMs: Math.round(performance.now() - montarBancoStartedAt),
+                error,
+                extra: { success: Boolean(data?.success), received_questions: data?.questions?.length ?? 0, session_id: data?.session_id ?? null },
+              });
+            }
             if (data?.session_id && !simuladoSessionIdRef.current) {
               simuladoSessionIdRef.current = data.session_id;
               console.log(`[SIMULADO_SESSION_CAPTURED] ${data.session_id}`);
@@ -666,6 +764,16 @@ const Simulados = () => {
           allGenerated = deduplicateQuestions([...allGenerated, ...batchQs]);
           setQuestions(allGenerated);
           setPartialCount(allGenerated.length);
+          if (isMontarBancoFlow) {
+            setLoadingProgress(`${allGenerated.length} questões carregadas do banco.`);
+            setLoadingPercent(allGenerated.length >= requestedTotal ? 75 : Math.max(50, Math.round((allGenerated.length / requestedTotal) * 75)));
+            logMontarBancoEvent("[MONTAR_BANCO_SUCCESS]", {
+              userId: user?.id,
+              step: "batch_loaded",
+              durationMs: Math.round(performance.now() - montarBancoStartedAt),
+              extra: { loaded_questions: allGenerated.length, requested_questions: requestedTotal, batch: batchNum },
+            });
+          }
           currentTry = 0;
 
           // Update job progress
@@ -677,6 +785,15 @@ const Simulados = () => {
           }
         } catch (batchError) {
           console.error(`[Simulados] Erro no lote ${batchNum}:`, batchError);
+          if (isMontarBancoFlow) {
+            logMontarBancoEvent("[MONTAR_BANCO_FAIL]", {
+              userId: user?.id,
+              step: "batch_failed",
+              durationMs: Math.round(performance.now() - montarBancoStartedAt),
+              error: batchError,
+              extra: { batch: batchNum, loaded_questions: allGenerated.length, requested_questions: requestedTotal },
+            });
+          }
           if (currentTry < 1) {
             currentTry++;
             setLoadingProgress(`Re-tentando lote ${batchNum}...`);
@@ -705,8 +822,24 @@ const Simulados = () => {
         }
       }
       
+      if (allGenerated.length === 0) {
+        throw new Error("Nenhuma questão foi carregada do banco de questões.");
+      }
+
+      if (isMontarBancoFlow) {
+        setLoadingPercent(75);
+        setLoadingProgress("Montando ambiente de prova...");
+      }
       setLoadingPercent(100);
       setLoadingProgress("Finalizando simulado...");
+      if (isMontarBancoFlow) {
+        logMontarBancoEvent("[MONTAR_BANCO_SUCCESS]", {
+          userId: user?.id,
+          step: "exam_ready",
+          durationMs: Math.round(performance.now() - montarBancoStartedAt),
+          extra: { loaded_questions: allGenerated.length, requested_questions: requestedTotal, session_id: simuladoSessionIdRef.current },
+        });
+      }
       if (currentJobId && allGenerated.length >= requestedTotal) {
         await supabase.from("simulation_generation_jobs").update({ status: 'completed' }).eq("id", currentJobId);
       }
@@ -715,6 +848,14 @@ const Simulados = () => {
       }, 500);
     } catch (e) {
       console.error("Simulado start error details:", e);
+      if (isMontarBancoFlow) {
+        logMontarBancoEvent("[MONTAR_BANCO_FAIL]", {
+          userId: user?.id,
+          step: "handler_failed",
+          durationMs: Math.round(performance.now() - montarBancoStartedAt),
+          error: e,
+        });
+      }
       toast({ 
         title: "Erro ao iniciar simulado", 
         description: e instanceof Error ? `Erro: ${e.message}` : "Erro desconhecido ao conectar com o gerador de questões.",
