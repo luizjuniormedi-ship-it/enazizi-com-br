@@ -394,10 +394,20 @@ const Simulados = () => {
       existingQuestions?: SimQuestion[];
       forceStart?: boolean; // New flag to bypass config step
     }) => {
+    const montarBancoStartedAt = performance.now();
+    const isMontarBancoFlow = (config.mode as any) !== "ai_generation" && config.mode !== "adaptativo";
     console.log("[Simulados] iniciar clicado", config);
     const correlationId = crypto.randomUUID();
     e2eCorrelationIdRef.current = correlationId;
     console.log("[E2E_SIMULADO_START]", { correlation_id: correlationId, config });
+    if (isMontarBancoFlow) {
+      logMontarBancoEvent("[MONTAR_BANCO_START]", {
+        userId: user?.id,
+        step: "handler_start",
+        durationMs: 0,
+        extra: { correlation_id: correlationId, mode: config.mode, count: config.count },
+      });
+    }
     
     // Safety check: ensure topics are loaded from distribution if missing
     const hasManualTopics = Array.isArray(config.topics) && config.topics.length > 0;
@@ -468,6 +478,16 @@ const Simulados = () => {
 
     try {
       const accessToken = await getAccessTokenForSimulado(authSession?.access_token);
+      if (isMontarBancoFlow) {
+        logMontarBancoEvent("[MONTAR_BANCO_REQUEST]", {
+          userId: user?.id,
+          step: "auth_session_ready",
+          durationMs: Math.round(performance.now() - montarBancoStartedAt),
+          extra: { has_access_token: Boolean(accessToken), next: "question-generator" },
+        });
+        setLoadingProgress("Carregando questões do banco...");
+        setLoadingPercent(10);
+      }
       if (config.mode === "adaptativo") {
         setLoadingProgress("Analisando seu desempenho...");
         setLoadingPercent(20);
