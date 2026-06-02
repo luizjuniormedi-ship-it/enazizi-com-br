@@ -105,71 +105,113 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     }
 
     step = "ai_generation";
+    // P0.1 — Global deadline (38s) to stay under frontend 45s timeout.
+    const DEADLINE_MS = 38_000;
+    const startedAt = Date.now();
+    const deadlineReached = () => (Date.now() - startedAt) >= DEADLINE_MS;
+
+    // P0.2 — Reorder providers: force Gemini-first while OpenAI quota is exhausted.
+    // Ignore caller-supplied openai/* override during the crisis.
+    const requestedModel = body.model && !String(body.model).startsWith("openai/")
+      ? body.model
+      : AI_MODELS.FAST; // gemini-2.5-flash
+
+    // Fire-and-forget forensic log insert (P0.3 — never block generation on telemetry).
+    const logForensicAsync = (payload: Record<string, any>) => {
+      supabaseAdmin.from("forensic_quality_logs").insert(payload).then(
+        () => {},
+        (e: any) => console.warn(`[FORENSIC_LOG_FAIL] ${e?.message || e}`)
+      );
+    };
+
     let attempts = 0;
-    while (finalQuestions.length < requestedCount && attempts < 3) {
+    // P0.4 — accept controlled degradation (<=2 attempts is enough when partial OK).
+    while (finalQuestions.length < requestedCount && attempts < 2 && !deadlineReached()) {
       attempts++;
       const deficit = requestedCount - finalQuestions.length;
-      console.log(`[QUESTION_GEN_COUNT] deficit=${deficit} attempt=${attempts}/3`);
+      const elapsed = Date.now() - startedAt;
+      console.log(`[QUESTION_GEN_COUNT] deficit=${deficit} attempt=${attempts}/2 elapsed_ms=${elapsed} model=${requestedModel}`);
 
       const systemPrompt = QUESTION_MOTOR_PREMIUM + buildBancaBlock(profile);
       const userPrompt = `Gere exatamente ${deficit} questões médicas novas para ${profile.label} sobre ${topics.join(", ")}. Dificuldade: ${difficulty}. Retorne apenas JSON array bruto.`;
 
-      const aiResponse = await ai({
-        model: normalizeModel(body.model || AI_MODELS.FAST),
-        taskType: "simulados",
-        complexity: "alta",
-        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-        userId
-      });
+      let aiResponse: any = null;
+      try {
+        aiResponse = await ai({
+          model: normalizeModel(requestedModel),
+          taskType: "simulados",
+          complexity: "alta",
+          messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+          userId
+        });
+      } catch (e: any) {
+        console.warn(`[AI_CALL_FAIL] attempt=${attempts} err=${e?.message || e}`);
+        continue;
+      }
 
       const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
-      let aiBatch = [];
+      let aiBatch: any[] = [];
       try { aiBatch = parseAiJson(rawContent); } catch { continue; }
 
-      if (Array.isArray(aiBatch)) {
-        for (const q of aiBatch) {
-          if (finalQuestions.length >= requestedCount) break;
-          const cleanQ = {
-            statement: cleanQuestionText(q.statement || ""),
-            options: (q.options || []).slice(0, profile.optionsCount || 5).map(cleanQuestionText),
-            correct: typeof q.correct === 'number' ? q.correct : 0,
-            explanation: cleanQuestionText(q.explanation || ""),
-            topic: q.topic || topics[0],
-            difficulty: typeof q.difficulty === 'number' ? q.difficulty : 3,
-            board: profile.label
-          };
+      if (!Array.isArray(aiBatch)) continue;
 
-          // Forensic Validation v14
-          const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
-          const validation = validateQuestionAgainstBoard(cleanQ, profile);
-          
-          const hash = safeHash(cleanQ.statement, 50);
-          
-          // Log Forensic Analysis
-          await supabaseAdmin.from("forensic_quality_logs").insert({
-            board: profile.label,
-            fidelity_score: forensic.fidelity_score,
-            structural_score: forensic.structural_score,
-            lexical_score: forensic.lexical_score,
-            cognitive_score: forensic.cognitive_score,
-            pedagogical_score: forensic.pedagogical_score,
-            ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
-            flags: forensic.reasons,
-            decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
-            correlation_id: correlationId,
-            raw_response_preview: cleanQ.statement.substring(0, 200)
-          });
+      for (const q of aiBatch) {
+        if (finalQuestions.length >= requestedCount) break;
+        if (deadlineReached()) {
+          console.warn(`[DEADLINE_HIT] elapsed_ms=${Date.now() - startedAt} stopping forensic loop`);
+          break;
+        }
+        const cleanQ = {
+          statement: cleanQuestionText(q.statement || ""),
+          options: (q.options || []).slice(0, profile.optionsCount || 5).map(cleanQuestionText),
+          correct: typeof q.correct === 'number' ? q.correct : 0,
+          explanation: cleanQuestionText(q.explanation || ""),
+          topic: q.topic || topics[0],
+          difficulty: typeof q.difficulty === 'number' ? q.difficulty : 3,
+          board: profile.label
+        };
 
-          if (forensic.isValid && validation.isValid && !seenHashes.has(hash)) {
-            finalQuestions.push({ ...cleanQ, _source: "generated", forensic_score: forensic.fidelity_score });
-            seenHashes.add(hash);
-            console.log(`[FORENSIC_ACCEPT] score=${forensic.fidelity_score} banca=${profile.label}`);
-          } else {
-            console.log(`[FORENSIC_REJECT] score=${forensic.fidelity_score} reasons=${forensic.reasons.join(',')}`);
-          }
+        // Forensic Validation v14 (still serial — but log insert is async).
+        const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
+        const validation = validateQuestionAgainstBoard(cleanQ, profile);
 
+        const hash = safeHash(cleanQ.statement, 50);
+
+        // P0.4 — Controlled degradation: accept if content has >=4 options
+        // and forensic score is reasonable, even if "Wrong options count" was flagged.
+        const hasMinimumOptions = cleanQ.options.length >= 4;
+        const reasonableScore = forensic.fidelity_score >= 60;
+        const strictPass = forensic.isValid && validation.isValid;
+        const softPass = hasMinimumOptions && reasonableScore;
+        const accept = (strictPass || softPass) && !seenHashes.has(hash);
+
+        logForensicAsync({
+          board: profile.label,
+          fidelity_score: forensic.fidelity_score,
+          structural_score: forensic.structural_score,
+          lexical_score: forensic.lexical_score,
+          cognitive_score: forensic.cognitive_score,
+          pedagogical_score: forensic.pedagogical_score,
+          ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
+          flags: forensic.reasons,
+          decision: accept ? (strictPass ? 'ACCEPT' : 'ACCEPT_SOFT') : 'REJECT',
+          correlation_id: correlationId,
+          raw_response_preview: cleanQ.statement.substring(0, 200)
+        });
+
+        if (accept) {
+          finalQuestions.push({ ...cleanQ, _source: "generated", forensic_score: forensic.fidelity_score });
+          seenHashes.add(hash);
+          console.log(`[FORENSIC_${strictPass ? 'ACCEPT' : 'ACCEPT_SOFT'}] score=${forensic.fidelity_score} opts=${cleanQ.options.length} banca=${profile.label}`);
+        } else {
+          console.log(`[FORENSIC_REJECT] score=${forensic.fidelity_score} opts=${cleanQ.options.length} reasons=${forensic.reasons.join(',')}`);
         }
       }
+    }
+
+    const partial = finalQuestions.length < requestedCount;
+    if (partial) {
+      console.warn(`[QUESTION_GEN_PARTIAL] returned=${finalQuestions.length}/${requestedCount} elapsed_ms=${Date.now() - startedAt} deadline_hit=${deadlineReached()}`);
     }
 
     step = "persist";
@@ -209,8 +251,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       }
     }
 
-    console.log(`[QUESTION_GEN_FINAL_OK] total=${finalQuestions.length} sessionId=${sessionId}`);
-    return new Response(JSON.stringify({ success: true, session_id: sessionId, sessionId: sessionId, questions: finalQuestions, total_questions: finalQuestions.length }), {
+    console.log(`[QUESTION_GEN_FINAL_OK] total=${finalQuestions.length}/${requestedCount} partial=${partial} sessionId=${sessionId}`);
+    return new Response(JSON.stringify({
+      success: true,
+      partial,
+      requested: requestedCount,
+      returned: finalQuestions.length,
+      session_id: sessionId,
+      sessionId: sessionId,
+      questions: finalQuestions,
+      total_questions: finalQuestions.length
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (error: any) {
