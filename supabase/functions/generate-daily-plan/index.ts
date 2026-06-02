@@ -5,6 +5,7 @@ import { corsHeaders, corsResponse } from "../_shared/cors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { calculatePremiumPriority, calculateExamProximityScore, calculateFsrsRiskScore } from "../_shared/study-prioritization.ts";
+import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 
 Deno.serve(enterpriseEdgeHandler("generate-daily-plan", async ({ req, logger, supabaseAdmin, ai }) => {
   try {
