@@ -842,14 +842,16 @@ const Simulados = () => {
           }));
           
           if (batchQs.length === 0) {
-            console.warn("[Simulados] Lote retornado vazio.");
-            if (allGenerated.length > 0) {
-              setLoadingProgress(`Lote ${batchNum} falhou. Preparando com o que temos...`);
-              if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'partial' }).eq("id", currentJobId);
-              break;
-            }
-            throw new Error("Não foi possível gerar questões. A IA retornou um resultado vazio.");
+            console.warn("[Simulados] Lote retornado vazio (após mapeamento).");
+            console.warn("[MONTAR_BANCO_BATCH_EMPTY]", {
+              batch: batchNum,
+              loaded_so_far: allGenerated.length,
+              requested: requestedTotal,
+            });
+            // Tratar 200 + [] como falha: deixar o catch externo cuidar (com retry/fallback parcial).
+            throw new Error("BATCH_EMPTY: lote retornou 0 questões válidas.");
           }
+
           
           allGenerated = deduplicateQuestions([...allGenerated, ...batchQs]);
           setQuestions(allGenerated);
