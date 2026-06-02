@@ -617,8 +617,8 @@ const Simulados = () => {
         const totalBatchesNum = Math.ceil(requestedTotal / BATCH_SIZE_AI);
         
         console.log(`[Simulados] Gerando lote ${batchNum}/${totalBatchesNum} (total acumulado: ${allGenerated.length}/${requestedTotal})`);
-        setLoadingProgress(`Gerando lote ${batchNum} de ${totalBatchesNum}...`);
-        setLoadingPercent(Math.max(5, Math.round((allGenerated.length / requestedTotal) * 100)));
+        setLoadingProgress(`Carregando lote ${batchNum} de ${totalBatchesNum} do banco...`);
+        setLoadingPercent(Math.max(isMontarBancoFlow ? 25 : 5, Math.round((allGenerated.length / requestedTotal) * 100)));
         
         // Add data-testid for E2E progress monitoring
         const progressElement = document.querySelector('[role="progressbar"]');
@@ -634,6 +634,21 @@ const Simulados = () => {
           const avoidIds = allGenerated.map(q => q.id).filter(Boolean) as string[];
           
           console.log(`[Simulados] Chamando question-generator para lote ${batchNum}. Count: ${currentBatchSize}. AvoidIds: ${avoidIds.length}`);
+          if (isMontarBancoFlow) {
+            logMontarBancoEvent("[MONTAR_BANCO_REQUEST]", {
+              userId: user?.id,
+              step: "question_generator_invoke",
+              durationMs: Math.round(performance.now() - montarBancoStartedAt),
+              extra: {
+                function: "question-generator",
+                batch: batchNum,
+                count: currentBatchSize,
+                topics: config.topics,
+                difficulty: config.difficulty || "misto",
+                targetExam: config.realExamProfile || config.examBoard || null,
+              },
+            });
+          }
           
           let batchData: any = null;
           let batchErr: any = null;
@@ -659,6 +674,16 @@ const Simulados = () => {
               avoidIds
             );
             batchData = { success: true, questions: batchQs.questions, session_id: batchQs.sessionId };
+            if (isMontarBancoFlow) {
+              setLoadingProgress("Banco respondeu. Preparando questões...");
+              setLoadingPercent(50);
+              logMontarBancoEvent("[MONTAR_BANCO_RESPONSE]", {
+                userId: user?.id,
+                step: "question_generator_response",
+                durationMs: Math.round(performance.now() - montarBancoStartedAt),
+                extra: { success: true, received_questions: batchQs.questions.length, session_id: batchQs.sessionId },
+              });
+            }
             if (batchQs.sessionId && !simuladoSessionIdRef.current) {
               simuladoSessionIdRef.current = batchQs.sessionId;
               console.log(`[SIMULADO_SESSION_CAPTURED] ${batchQs.sessionId}`);
@@ -669,6 +694,7 @@ const Simulados = () => {
             const { data, error } = await supabase.functions.invoke(
               "question-generator",
               {
+                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
                 body: {
                   count: currentBatchSize,
                   difficulty: config.difficulty || "misto",
@@ -693,6 +719,17 @@ const Simulados = () => {
             );
             batchData = data;
             batchErr = error;
+            if (isMontarBancoFlow) {
+              setLoadingProgress("Banco respondeu. Validando retorno...");
+              setLoadingPercent(50);
+              logMontarBancoEvent("[MONTAR_BANCO_RESPONSE]", {
+                userId: user?.id,
+                step: "question_generator_direct_response",
+                durationMs: Math.round(performance.now() - montarBancoStartedAt),
+                error,
+                extra: { success: Boolean(data?.success), received_questions: data?.questions?.length ?? 0, session_id: data?.session_id ?? null },
+              });
+            }
             if (data?.session_id && !simuladoSessionIdRef.current) {
               simuladoSessionIdRef.current = data.session_id;
               console.log(`[SIMULADO_SESSION_CAPTURED] ${data.session_id}`);
