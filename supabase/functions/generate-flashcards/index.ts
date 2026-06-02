@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { parseAiJson } from "../_shared/ai-fetch.ts";
+import { parseAiJson } from "../_shared/contracts/parser.contract.ts";
 import { FLASHCARD_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
