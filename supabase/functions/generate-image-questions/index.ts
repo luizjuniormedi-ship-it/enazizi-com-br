@@ -1,7 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import { aiFetch, parseAiJson, cleanQuestionText } from "../_shared/ai-fetch.ts";
+import { aiFetch } from "../_shared/ai-fetch.ts";
+import { parseAiJson, cleanQuestionText } from "../_shared/contracts/parser.contract.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -417,22 +419,24 @@ serve(async (req) => {
         asset.exam_style = exam_style;
         const prompt = buildPrompt(asset, student_performance);
 
-        // AI call with higher token limit for 3 questions
-        const response = await aiFetch({
+        // LOTE 1 — Migrado para runAI() (orchestrator central com telemetria + cost metrics)
+        const aiResp = await runAI({
+          taskType: "question_generation",
+          complexity: "high",
+          requiresJSON: true,
           messages: [{ role: "user", content: prompt }],
-          model: "google/gemini-2.5-flash",
-          maxTokens: 8192,
-          timeoutMs: 55000,
-          maxRetries: 0,
+          userId: user.id,
+          requestId: asset.id,
+          supabase: sb,
+          emergencyTemplate: JSON.stringify({ invalid: true, reason: "AI indisponível — fallback emergencial." }),
         });
 
-        if (!response.ok) {
-          const errText = await response.text().catch(() => "");
-          throw new Error(`AI ${response.status}: ${errText.slice(0, 200)}`);
+        if (!aiResp?.content) {
+          throw new Error(`AI sem conteúdo (provider=${aiResp?.provider} model=${aiResp?.model} errorCode=${aiResp?.errorCode || "-"})`);
         }
 
-        const aiData = await response.json();
-        const rawContent = aiData.choices?.[0]?.message?.content || "";
+        const rawContent = aiResp.content;
+
 
         // Parse — expect array of 3 questions or single object
         let parsedArr = parseAiJson(rawContent);

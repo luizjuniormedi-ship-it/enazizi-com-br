@@ -1,9 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { parseAiJson } from "../_shared/ai-fetch.ts";
+import { parseAiJson } from "../_shared/contracts/parser.contract.ts";
 import { FLASHCARD_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { AI_MODELS, normalizeModelStrict } from "../_shared/ai-models.ts";
+import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 import {
   clampQuantity,
   applyQualityGate,
@@ -88,9 +89,11 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       correlation_id: correlationId
     });
 
-    const aiResponse = await ai({
-      model,
-      taskType: "flashcards",
+    // LOTE 1 — Migrado para runAI() (orchestrator central com telemetria + cost metrics)
+    const aiResponse = await runAI({
+      taskType: "flashcard",
+      complexity: "high",
+      requiresJSON: true,
       messages: [
         { role: "system", content: FLASHCARD_MOTOR_PREMIUM },
         { role: "user", content: `Gere exatamente ${quantity} flashcards médicos de alta retenção sobre o tema: ${topic || 'Medicina'}. ${contextText ? `Use este contexto: ${contextText.slice(0, 15000)}` : ''}
@@ -101,11 +104,13 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         ]
         IMPORTANTE: NUNCA coloque a resposta dentro do campo 'front' ou 'question_detail'.` }
       ],
-      complexity: "alta",
-      userId
+      userId,
+      requestId: job.id,
+      supabase: supabaseAdmin,
+      emergencyTemplate: "[]",
     });
 
-    const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
+    const rawContent = aiResponse?.content || "[]";
     let cards = [];
     try {
       cards = parseAiJson(rawContent);
