@@ -764,6 +764,16 @@ const Simulados = () => {
           allGenerated = deduplicateQuestions([...allGenerated, ...batchQs]);
           setQuestions(allGenerated);
           setPartialCount(allGenerated.length);
+          if (isMontarBancoFlow) {
+            setLoadingProgress(`${allGenerated.length} questões carregadas do banco.`);
+            setLoadingPercent(allGenerated.length >= requestedTotal ? 75 : Math.max(50, Math.round((allGenerated.length / requestedTotal) * 75)));
+            logMontarBancoEvent("[MONTAR_BANCO_SUCCESS]", {
+              userId: user?.id,
+              step: "batch_loaded",
+              durationMs: Math.round(performance.now() - montarBancoStartedAt),
+              extra: { loaded_questions: allGenerated.length, requested_questions: requestedTotal, batch: batchNum },
+            });
+          }
           currentTry = 0;
 
           // Update job progress
@@ -775,6 +785,15 @@ const Simulados = () => {
           }
         } catch (batchError) {
           console.error(`[Simulados] Erro no lote ${batchNum}:`, batchError);
+          if (isMontarBancoFlow) {
+            logMontarBancoEvent("[MONTAR_BANCO_FAIL]", {
+              userId: user?.id,
+              step: "batch_failed",
+              durationMs: Math.round(performance.now() - montarBancoStartedAt),
+              error: batchError,
+              extra: { batch: batchNum, loaded_questions: allGenerated.length, requested_questions: requestedTotal },
+            });
+          }
           if (currentTry < 1) {
             currentTry++;
             setLoadingProgress(`Re-tentando lote ${batchNum}...`);
