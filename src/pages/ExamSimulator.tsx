@@ -285,11 +285,16 @@ const ExamSimulator = () => {
         const isCorrect = selectedAnswers[i] === q.correct_index;
 
         if (q.id && !q.id.startsWith("gen-")) {
-          await supabase.from("practice_attempts").insert({
+          const { error: paErr } = await supabase.from("practice_attempts").insert({
             user_id: user.id,
             question_id: q.id,
             correct: isCorrect,
           });
+          if (paErr) {
+            console.warn("[LOOP_CAPTURE_PRACTICE_ATTEMPTS_FAIL]", { source: "ExamSimulator", err: paErr.message });
+          } else {
+            console.log("[LOOP_CAPTURE_PRACTICE_ATTEMPTS_OK]", { source: "ExamSimulator", question_id: q.id, correct: isCorrect });
+          }
         }
 
         // Log wrong answers to error_bank

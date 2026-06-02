@@ -260,11 +260,16 @@ const QuestionsBank = () => {
     }));
 
     // Save attempt to DB
-    await supabase.from("practice_attempts").insert({
+    const { error: paErr } = await supabase.from("practice_attempts").insert({
       user_id: user.id,
       question_id: practiceQuestion.id,
       correct: isCorrect,
     });
+    if (paErr) {
+      console.warn("[LOOP_CAPTURE_PRACTICE_ATTEMPTS_FAIL]", { source: "QuestionsBank", err: paErr.message });
+    } else {
+      console.log("[LOOP_CAPTURE_PRACTICE_ATTEMPTS_OK]", { source: "QuestionsBank", question_id: practiceQuestion.id, correct: isCorrect });
+    }
 
     // Award XP
     await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
