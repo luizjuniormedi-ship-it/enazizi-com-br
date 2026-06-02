@@ -409,6 +409,7 @@ const App = () => (
                 <Route path="classification" element={<ClassificationBackfill />} />
                 <Route path="semantic-observatory" element={<SemanticObservatory />} />
                 <Route path="fase4-drain" element={<Fase4Drain />} />
+                <Route path="diagnostic-tutor" element={<DiagnosticTutor />} />
               </Route>
               {/* Rota separada para SemanticReviewCenter — acesso por admin, semantic_board, platform_admin */}
               <Route path="/admin/semantic-review-center" element={<AdminRoute requiredRoles={["admin", "semantic_board", "platform_admin"]}><AdminLayout /></AdminRoute>}>
