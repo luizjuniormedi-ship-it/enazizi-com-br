@@ -2,6 +2,7 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
+import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 
 
 Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, waitUntil, supabaseAdmin, ai }) => {
