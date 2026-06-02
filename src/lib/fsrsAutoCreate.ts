@@ -22,7 +22,7 @@ export function ensureFsrsCard(
   if (!(enabled ?? _fsrsEnabled)) return;
   (async () => {
     try {
-      await supabase.from("fsrs_cards").insert({
+      const { error } = await supabase.from("fsrs_cards").insert({
         user_id: userId,
         card_type: cardType,
         card_ref_id: cardRefId,
@@ -36,9 +36,17 @@ export function ensureFsrsCard(
         due: new Date().toISOString(),
         last_review: null,
       });
-      // ON CONFLICT will silently fail due to unique constraint — that's fine
-    } catch {
-      // Ignore — card already exists or transient error
+      if (error) {
+        // Unique-constraint conflict is expected (card exists) — not a failure
+        if (!/duplicate key|unique constraint/i.test(error.message)) {
+          console.warn("[LOOP_CAPTURE_FSRS_FAIL]", error.message);
+        }
+      } else {
+        console.log("[LOOP_CAPTURE_FSRS_OK]", { userId, cardType, cardRefId });
+      }
+    } catch (e: any) {
+      console.warn("[LOOP_CAPTURE_FSRS_FAIL]", e?.message || String(e));
     }
   })();
+
 }
