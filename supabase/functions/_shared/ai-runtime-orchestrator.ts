@@ -117,6 +117,42 @@ const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "openai/gpt-4o": "medium",
 };
 
+// ---------------------------------------------------------------------------
+// LOTE 0 — Cost catalog (USD por token). Fonte autoritativa do orchestrator.
+// ---------------------------------------------------------------------------
+const COST_RATES: Record<string, { input: number; output: number }> = {
+  "gpt-4o":               { input: 2.50e-6,  output: 10.00e-6 },
+  "gpt-4o-mini":          { input: 0.15e-6,  output: 0.60e-6  },
+  "openai/gpt-4o":        { input: 2.50e-6,  output: 10.00e-6 },
+  "openai/gpt-4o-mini":   { input: 0.15e-6,  output: 0.60e-6  },
+  "google/gemini-2.5-flash":      { input: 0.30e-6, output: 2.50e-6 },
+  "google/gemini-2.5-flash-lite": { input: 0.10e-6, output: 0.40e-6 },
+  "google/gemini-2.5-pro":        { input: 1.25e-6, output: 5.00e-6 },
+};
+
+function calculateCostUsd(model: string, inputTokens: number, outputTokens: number): number {
+  const r = COST_RATES[model] || COST_RATES[model.replace(/^openai\//, "")] || { input: 0, output: 0 };
+  return (inputTokens * r.input) + (outputTokens * r.output);
+}
+
+// ---------------------------------------------------------------------------
+// LOTE 0 — TaskType → feature_name registry (com fallback generic_ai_task)
+// ---------------------------------------------------------------------------
+const TASK_FEATURE_MAP: Record<string, string> = {
+  tutor_chat:          "tutor_chat",
+  clinical_reasoning:  "tutor_chat",
+  lesson_generation:   "lesson_generation",
+  cme_script:          "cme_script",
+  flashcard:           "flashcard_generation",
+  mnemonic:            "mnemonic",
+  question_generation: "question_generation",
+  simulado_review:     "simulado_review",
+  planner:             "study_plan",
+};
+export function featureNameForTask(taskType: string): string {
+  return TASK_FEATURE_MAP[taskType] || "generic_ai_task";
+}
+
 // Perfis de prompt (apenas marcadores nesta fase; o prompt real é montado
 // pelo chamador, isto serve para telemetria + futuro lookup).
 export const PROMPT_PROFILES = {
@@ -523,20 +559,132 @@ async function logRun(
   }
 }
 
+// ---------------------------------------------------------------------------
+// LOTE 0 — Cooldowns / Failures / Cost recorders
+// ---------------------------------------------------------------------------
+
+const COOLDOWN_DEFAULT_MS = 60_000;
+const COOLDOWN_TRIGGER_CODES = new Set<string | undefined>([
+  "AI_RATE_LIMITED", "AI_QUOTA_EXHAUSTED", "AI_PROVIDER_UNAVAILABLE", "TIMEOUT",
+]);
+const COOLDOWN_TRIGGER_STATUSES = new Set<number | undefined>([429, 402, 502, 503, 504]);
+
+async function getActiveCooldowns(supabase: any | undefined): Promise<Set<string>> {
+  if (!supabase) return new Set();
+  try {
+    const { data, error } = await supabase
+      .from("ai_provider_cooldowns")
+      .select("provider, model")
+      .gt("cooldown_until", new Date().toISOString());
+    if (error || !data) return new Set();
+    return new Set(data.map((r: any) => `${r.provider}::${r.model}`));
+  } catch (err) {
+    console.warn("[COOLDOWN_LOOKUP_FAILED]", err instanceof Error ? err.message : String(err));
+    return new Set();
+  }
+}
+
+async function triggerCooldown(
+  supabase: any | undefined,
+  provider: string,
+  model: string,
+  reason: string,
+  ms: number = COOLDOWN_DEFAULT_MS,
+) {
+  if (!supabase) return;
+  try {
+    const cooldown_until = new Date(Date.now() + ms).toISOString();
+    await supabase.from("ai_provider_cooldowns").insert({ provider, model, reason, cooldown_until });
+    console.warn(`[COOLDOWN_TRIGGERED] ${provider}/${model} until=${cooldown_until} reason=${reason}`);
+  } catch (err) {
+    console.warn("[COOLDOWN_INSERT_FAILED]", err instanceof Error ? err.message : String(err));
+  }
+}
+
+async function recordProviderFailure(
+  supabase: any | undefined,
+  attempt: AIAttempt,
+  fallbackModel: string | undefined,
+  retryAttempt: number,
+) {
+  if (!supabase) return;
+  const errorCode = attempt.code || (attempt.status ? `HTTP_${attempt.status}` : "UNKNOWN");
+  try {
+    await supabase.from("ai_provider_failures").insert({
+      provider: attempt.provider,
+      model: attempt.model,
+      error_code: errorCode,
+      error_message: attempt.message || null,
+      retry_attempt: retryAttempt,
+      fallback_model: fallbackModel || null,
+    });
+    console.warn(`[PROVIDER_FAILURE] ${attempt.provider}/${attempt.model} code=${errorCode} status=${attempt.status ?? "-"} retry=${retryAttempt}`);
+  } catch (err) {
+    console.warn("[PROVIDER_FAILURE_INSERT_FAILED]", err instanceof Error ? err.message : String(err));
+  }
+
+  // Cooldown automático em condições de saturação
+  if (
+    COOLDOWN_TRIGGER_CODES.has(attempt.code) ||
+    COOLDOWN_TRIGGER_STATUSES.has(attempt.status)
+  ) {
+    await triggerCooldown(supabase, attempt.provider, attempt.model, errorCode);
+  }
+}
+
+async function recordCostMetric(
+  supabase: any | undefined,
+  input: AIRunInput,
+  provider: string,
+  model: string,
+  usage: { prompt_tokens?: number; completion_tokens?: number } | undefined,
+  latencyMs: number,
+) {
+  if (!supabase) return;
+  const tokens_input = usage?.prompt_tokens ?? 0;
+  const tokens_output = usage?.completion_tokens ?? 0;
+  const cost_usd = calculateCostUsd(model, tokens_input, tokens_output);
+  try {
+    await supabase.from("ai_cost_metrics").insert({
+      feature_name: featureNameForTask(input.taskType),
+      model_name: model,
+      tokens_input,
+      tokens_output,
+      cost_usd,
+      user_id: input.userId || null,
+      metadata: {
+        provider,
+        task_type: input.taskType,
+        specialty: input.specialty || null,
+        topic: input.topic || null,
+        latency_ms: latencyMs,
+        request_id: input.requestId || null,
+        session_id: input.sessionId || null,
+        budget_mode: input.budgetMode || "balanced",
+      },
+    });
+    console.log(`[AI_COST_RECORDED] ${featureNameForTask(input.taskType)}/${model} in=${tokens_input} out=${tokens_output} cost=$${cost_usd.toFixed(6)}`);
+  } catch (err) {
+    console.warn("[AI_COST_INSERT_FAILED]", err instanceof Error ? err.message : String(err));
+  }
+}
+
 export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   const selection = selectAIModel(input);
   const totalStart = Date.now();
   const attempts: AIAttempt[] = [];
+  const reqTag = input.requestId || "-";
+
+  console.log(`[AI_RUNTIME_START] req=${reqTag} task=${input.taskType} model=${selection.model} profile=${selection.promptProfile}`);
 
   const fullChain: ModelRef[] = [
     { provider: selection.provider, model: selection.model },
     ...selection.fallbackChain,
   ];
 
-  // If primary provider is lovable-ai and we have OpenAI key, consider switching or ensuring OpenAI is in fallback
+  // If primary provider is lovable-ai and we have OpenAI key, ensure OpenAI is tried first
   const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
   if (hasOpenAI && selection.provider === "lovable-ai") {
-    // Add OpenAI version of the model to the beginning of the chain to ensure it's tried first as per user request
     const modelClean = selection.model.replace("openai/", "");
     if (!fullChain.some(c => c.provider === "openai" && c.model === modelClean)) {
       fullChain.unshift({ provider: "openai", model: modelClean });
@@ -544,7 +692,24 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   }
 
   // Health-aware filtering: pula modelos com falha recente conhecida.
-  const chain = await filterByHealth(input.supabase, fullChain);
+  const healthChain = await filterByHealth(input.supabase, fullChain);
+
+  // LOTE 0 — Cooldown-aware filtering (circuit breaker leve)
+  const cooldownSet = await getActiveCooldowns(input.supabase);
+  const chain: ModelRef[] = [];
+  for (const ref of healthChain) {
+    const key = `${ref.provider}::${ref.model}`;
+    if (cooldownSet.has(key)) {
+      console.warn(`[CIRCUIT_SKIP] req=${reqTag} provider=${ref.provider} model=${ref.model}`);
+      attempts.push({ ...ref, success: false, code: "CIRCUIT_SKIP", message: "Provider in active cooldown", latency_ms: 0 });
+      continue;
+    }
+    chain.push(ref);
+  }
+  if (chain.length === 0) {
+    console.warn(`[AI_RUNTIME_FAIL] req=${reqTag} reason=ALL_PROVIDERS_IN_COOLDOWN`);
+    chain.push(...healthChain); // fallback: tenta de qualquer forma
+  }
 
   for (let i = 0; i < chain.length; i++) {
     const ref = chain[i];
@@ -553,36 +718,38 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
                       input.taskType === "simulado_review";
     const maxTokens = needsDeep ? AI_MAX_TOKENS_DEEP : AI_MAX_TOKENS;
     const apiKey = getAIKey(ref.provider);
-    
+
     if (!apiKey) {
-      attempts.push({ ...ref, success: false, code: "AI_AUTH_ERROR", message: `Missing key for provider ${ref.provider}`, latency_ms: 0 });
+      const att: AIAttempt = { ...ref, success: false, code: "AI_AUTH_ERROR", message: `Missing key for provider ${ref.provider}`, latency_ms: 0 };
+      attempts.push(att);
+      await recordProviderFailure(input.supabase, att, chain[i + 1]?.model, i);
       continue;
     }
 
     const r = await callOnce(ref, apiKey, input.messages, maxTokens);
     attempts.push(r.attempt);
 
-    // Se o erro for 402 (quota exhausted no gateway Lovable), forçar fallback para OpenAI se disponível
-    if (!r.attempt.success && r.attempt.status === 402 && ref.provider === "lovable-ai" && hasOpenAI) {
-      console.warn("[AI_RUNTIME_ORCHESTRATOR] 402 detected on Lovable Gateway. Falling back to OpenAI.");
-      // We don't return here, the loop will continue to the next candidate (which might be OpenAI)
-    }
-
     if (r.attempt.success && r.content) {
+      const latencyMs = Date.now() - totalStart;
       const result: AIRunResult = {
         content: r.content,
         provider: ref.provider,
         model: ref.model,
         fallbackUsed: i > 0,
         attempts,
-        latencyMs: Date.now() - totalStart,
+        latencyMs,
         selection,
       };
-      // Log fallback if switched from Lovable to OpenAI due to 402 or other failure
       const provider_fallback = i > 0 && ref.provider === "openai" ? "openai" : undefined;
       await logRun(input.supabase, input, selection, { ...result, success: true, metadata: { ...selection, provider_fallback } } as any);
+      // LOTE 0 — cost metric on success
+      await recordCostMetric(input.supabase, input, ref.provider, ref.model, r.usage, latencyMs);
+      console.log(`[AI_RUNTIME_SUCCESS] req=${reqTag} task=${input.taskType} provider=${ref.provider} model=${ref.model} latency=${latencyMs}ms fallback=${i > 0}`);
       return result;
     }
+
+    // failed attempt — record + maybe cooldown
+    await recordProviderFailure(input.supabase, r.attempt, chain[i + 1]?.model, i);
   }
 
   // Todos falharam
@@ -598,5 +765,205 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
     errorCode: lastCode,
   };
   await logRun(input.supabase, input, selection, { ...result, success: false } as any);
+  console.warn(`[AI_RUNTIME_FAIL] req=${reqTag} task=${input.taskType} lastCode=${lastCode} attempts=${attempts.length}`);
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// LOTE 0 — runAIStream
+// ---------------------------------------------------------------------------
+// SSE passthrough com telemetria final (ai_runtime_logs + ai_cost_metrics).
+// Retorna { stream, done }. O caller propaga `stream` para o cliente; `done`
+// resolve com o conteúdo final + telemetria após o término do upstream.
+// ---------------------------------------------------------------------------
+
+export interface AIStreamResult {
+  stream: ReadableStream<Uint8Array>;
+  done: Promise<{
+    content: string;
+    provider: string;
+    model: string;
+    latencyMs: number;
+    fallbackUsed: boolean;
+    attempts: AIAttempt[];
+    success: boolean;
+    errorCode?: string;
+  }>;
+}
+
+async function callOnceStream(
+  ref: ModelRef,
+  apiKey: string,
+  messages: Array<{ role: string; content: string }>,
+  maxTokens: number,
+): Promise<{ ok: true; response: Response; attempt: AIAttempt } | { ok: false; attempt: AIAttempt }> {
+  const start = Date.now();
+  try {
+    const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model) || /^o[13]/.test(ref.model) || ref.model.includes("gpt-5");
+    const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
+    const body: Record<string, unknown> = {
+      model: ref.model,
+      messages,
+      stream: true,
+      stream_options: { include_usage: true },
+      [tokenField]: maxTokens,
+    };
+    const url = ref.provider === "openai" ? "https://api.openai.com/v1/chat/completions" : AI_GATEWAY_URL;
+    const res = await fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      AI_TIMEOUT_MS,
+    );
+    const latency_ms = Date.now() - start;
+    if (!res.ok || !res.body) {
+      const text = res.body ? await res.text() : "";
+      const e = extractProviderError(res.status, text);
+      return { ok: false, attempt: { ...ref, success: false, status: res.status, ...e, latency_ms } };
+    }
+    return { ok: true, response: res, attempt: { ...ref, success: true, status: res.status, latency_ms } };
+  } catch (err) {
+    const latency_ms = Date.now() - start;
+    const e = extractProviderError(undefined, "", err);
+    return { ok: false, attempt: { ...ref, success: false, ...e, latency_ms } };
+  }
+}
+
+export async function runAIStream(input: AIRunInput): Promise<AIStreamResult> {
+  const selection = selectAIModel(input);
+  const totalStart = Date.now();
+  const attempts: AIAttempt[] = [];
+  const reqTag = input.requestId || "-";
+
+  console.log(`[STREAM_START] req=${reqTag} task=${input.taskType} model=${selection.model}`);
+
+  const fullChain: ModelRef[] = [
+    { provider: selection.provider, model: selection.model },
+    ...selection.fallbackChain,
+  ];
+  const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
+  if (hasOpenAI && selection.provider === "lovable-ai") {
+    const modelClean = selection.model.replace("openai/", "");
+    if (!fullChain.some(c => c.provider === "openai" && c.model === modelClean)) {
+      fullChain.unshift({ provider: "openai", model: modelClean });
+    }
+  }
+  const healthChain = await filterByHealth(input.supabase, fullChain);
+  const cooldownSet = await getActiveCooldowns(input.supabase);
+  const chain: ModelRef[] = [];
+  for (const ref of healthChain) {
+    const key = `${ref.provider}::${ref.model}`;
+    if (cooldownSet.has(key)) {
+      console.warn(`[CIRCUIT_SKIP] req=${reqTag} provider=${ref.provider} model=${ref.model}`);
+      attempts.push({ ...ref, success: false, code: "CIRCUIT_SKIP", message: "Provider in active cooldown", latency_ms: 0 });
+      continue;
+    }
+    chain.push(ref);
+  }
+  if (chain.length === 0) chain.push(...healthChain);
+
+  const needsDeep = (input.taskType === "tutor_chat" && input.complexity === "high") ||
+                    input.taskType === "clinical_reasoning";
+  const maxTokens = needsDeep ? AI_MAX_TOKENS_DEEP : AI_MAX_TOKENS;
+
+  // Tenta cada provider até obter um stream válido (apenas a 1ª resposta abre stream)
+  let opened: { response: Response; ref: ModelRef; idx: number } | null = null;
+  for (let i = 0; i < chain.length; i++) {
+    const ref = chain[i];
+    const apiKey = getAIKey(ref.provider);
+    if (!apiKey) {
+      const att: AIAttempt = { ...ref, success: false, code: "AI_AUTH_ERROR", message: `Missing key for provider ${ref.provider}`, latency_ms: 0 };
+      attempts.push(att);
+      await recordProviderFailure(input.supabase, att, chain[i + 1]?.model, i);
+      continue;
+    }
+    const r = await callOnceStream(ref, apiKey, input.messages, maxTokens);
+    attempts.push(r.attempt);
+    if (r.ok) {
+      opened = { response: r.response, ref, idx: i };
+      break;
+    }
+    await recordProviderFailure(input.supabase, r.attempt, chain[i + 1]?.model, i);
+  }
+
+  if (!opened) {
+    const lastCode = attempts.at(-1)?.code || "AI_PROVIDER_UNAVAILABLE";
+    const fallbackContent = input.emergencyTemplate || defaultEmergency(input);
+    const sse = new TextEncoder().encode(
+      `data: ${JSON.stringify({ choices: [{ delta: { content: fallbackContent } }] })}\n\ndata: [DONE]\n\n`,
+    );
+    const stream = new ReadableStream<Uint8Array>({
+      start(c) { c.enqueue(sse); c.close(); },
+    });
+    const done = (async () => {
+      const latencyMs = Date.now() - totalStart;
+      await logRun(input.supabase, input, selection, {
+        content: fallbackContent, provider: "template", model: "emergency_template_response",
+        fallbackUsed: true, attempts, latencyMs, errorCode: lastCode,
+      } as any);
+      console.warn(`[STREAM_END] req=${reqTag} success=false code=${lastCode} latency=${latencyMs}ms`);
+      return { content: fallbackContent, provider: "template", model: "emergency_template_response",
+               latencyMs, fallbackUsed: true, attempts, success: false, errorCode: lastCode };
+    })();
+    return { stream, done };
+  }
+
+  // Tee upstream para capturar tokens enquanto repassa para o cliente
+  const upstream = opened.response.body!;
+  const [toClient, toParser] = upstream.tee();
+
+  const doneResolver = (async () => {
+    let content = "";
+    let usage: { prompt_tokens?: number; completion_tokens?: number } | undefined;
+    const reader = toParser.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      while (true) {
+        const { done: rDone, value } = await reader.read();
+        if (rDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data:")) continue;
+          const payload = trimmed.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          try {
+            const json = JSON.parse(payload);
+            const delta = json?.choices?.[0]?.delta?.content;
+            if (typeof delta === "string") content += delta;
+            if (json?.usage) usage = json.usage;
+          } catch { /* ignore partial */ }
+        }
+      }
+    } catch (err) {
+      console.warn("[STREAM_PARSE_ERROR]", err instanceof Error ? err.message : String(err));
+    }
+
+    const latencyMs = Date.now() - totalStart;
+    const result = {
+      content,
+      provider: opened!.ref.provider,
+      model: opened!.ref.model,
+      latencyMs,
+      fallbackUsed: opened!.idx > 0,
+      attempts,
+      success: true as const,
+    };
+    await logRun(input.supabase, input, selection, {
+      content, provider: result.provider, model: result.model,
+      fallbackUsed: result.fallbackUsed, attempts, latencyMs,
+    } as any);
+    await recordCostMetric(input.supabase, input, result.provider, result.model, usage, latencyMs);
+    console.log(`[STREAM_END] req=${reqTag} success=true provider=${result.provider} model=${result.model} chars=${content.length} latency=${latencyMs}ms`);
+    return result;
+  })();
+
+  return { stream: toClient, done: doneResolver };
+}
+
