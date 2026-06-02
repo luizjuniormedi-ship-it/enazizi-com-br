@@ -228,17 +228,19 @@ SAÍDA ESPERADA (JSON):
       expected_outcome: "Manutenção do ritmo de estudo."
     });
     try {
-      const aiResponse = await ai({
-        taskType: "planner" as any,
+      const aiResult = await runAI({
+        taskType: "planner",
+        complexity: "high",
+        userId: user.id,
+        supabase: supabaseAdmin,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Gere a Missão do Dia adaptativa estruturada com Aquecimento, Teoria/Tutor, Questões, FSRS, Erros, Flashcards, Simulado e Resumo. Use o contexto real do aluno: ${JSON.stringify(context)}` }
         ],
-        complexity: "high" as any
       });
-      const rawContent = aiResponse?.choices?.[0]?.message?.content;
+      const rawContent = aiResult?.content;
       if (!rawContent) {
-        logger.warn("AI_PLANNER_EMPTY", "AI returned non-chat shape (likely static fallback). Using deterministic fallback.", { hasChoices: !!aiResponse?.choices, isFallback: !!aiResponse?.fallback });
+        logger.warn("AI_PLANNER_EMPTY", "runAI returned empty content. Using deterministic fallback.", { provider: aiResult?.provider, model: aiResult?.model });
         planJson = deterministicFallback();
       } else {
         planJson = parseAiJson(rawContent);
@@ -248,7 +250,7 @@ SAÍDA ESPERADA (JSON):
         }
       }
     } catch (aiErr) {
-      logger.error("AI_PLANNER_FAILURE", "AI threw, using fallback", { error: (aiErr as any).message });
+      logger.error("AI_PLANNER_FAILURE", "runAI threw, using fallback", { error: (aiErr as any).message });
       planJson = deterministicFallback();
     }
 
