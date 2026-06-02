@@ -92,6 +92,27 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 const BATCH_SIZE = 10;
 
 const AUTH_SESSION_FALLBACK_TIMEOUT_MS = 2000;
+const QUESTION_GENERATOR_TIMEOUT_MS = 45000;
+
+class TimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TimeoutError";
+  }
+}
+
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = window.setTimeout(() => {
+      reject(new TimeoutError(`[TIMEOUT ${label}] ${ms}ms`));
+    }, ms);
+    Promise.resolve(promise).then(
+      (v) => { window.clearTimeout(t); resolve(v); },
+      (e) => { window.clearTimeout(t); reject(e); },
+    );
+  });
+}
+
 
 type MontarBancoEvent =
   | "[MONTAR_BANCO_START]"
