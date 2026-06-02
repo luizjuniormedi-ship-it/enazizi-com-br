@@ -39,18 +39,22 @@ Ao concluir o bloco, encerre com a pergunta obrigatória:
 ==================================================`;
     }
 
-    // ── 2. AI EXECUTION (Prioritize stability) ──────────────────────────────
-    const response = await ai({
-      taskType: "generation",
-      complexity: "média",
+    // ── 2. AI EXECUTION via runAI orchestrator (LOTE 2) ────────────────────
+    const aiResult = await runAI({
+      taskType: "tutor_chat",
+      complexity: "medium",
+      topic: topic || null,
       userId,
+      requestId,
+      sessionId: conversationId || null,
+      supabase: supabaseAdmin,
       messages: [
         { role: "system", content: enhancedSystemPrompt },
         ...messages
-      ]
-    }, { retries: 2 });
+      ],
+    });
 
-    const content = response.choices?.[0]?.message?.content || "";
+    const content = aiResult.content || "";
 
     // ── 3. RESILIENT PERSISTENCE ───────────────────────────────────────────
     if (conversationId) {
