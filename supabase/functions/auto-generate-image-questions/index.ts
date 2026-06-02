@@ -58,16 +58,19 @@ serve(async (req) => {
       const prompt = `Gere 1 questão médica em pt-BR sobre: ${asset.diagnosis}.
       Retorne APENAS JSON: {"statement":"...","option_a":"...","option_b":"...","option_c":"...","option_d":"...","option_e":"...","correct_index":0,"explanation":"...","rationale_map":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"difficulty":"medium","exam_style":"USP"}`;
 
-      const response = await aiFetch({
+      // LOTE 1B — Migrado para runAI() (orchestrator central com telemetria + cost metrics)
+      const aiResp = await runAI({
+        taskType: "question_generation",
+        complexity: "high",
+        requiresJSON: true,
         messages: [{ role: "user", content: prompt }],
-        model: "google/gemini-2.5-flash",
-        max_completion_tokens: 2000,
-        response_format: { type: "json_object" }
+        requestId: asset.id,
+        supabase: sb,
+        emergencyTemplate: JSON.stringify({ invalid: true, reason: "AI indisponível — fallback emergencial." }),
       });
 
-      if (response.ok) {
-        const aiData = await response.json();
-        const q = parseAiJson(aiData.choices[0].message.content);
+      if (aiResp?.content) {
+        const q = parseAiJson<any>(aiResp.content);
         await sb.from("medical_image_questions").insert({
           asset_id: asset.id,
           statement: q.statement,
