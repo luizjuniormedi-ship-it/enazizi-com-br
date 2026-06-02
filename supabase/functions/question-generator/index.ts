@@ -251,8 +251,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       }
     }
 
-    console.log(`[QUESTION_GEN_FINAL_OK] total=${finalQuestions.length} sessionId=${sessionId}`);
-    return new Response(JSON.stringify({ success: true, session_id: sessionId, sessionId: sessionId, questions: finalQuestions, total_questions: finalQuestions.length }), {
+    console.log(`[QUESTION_GEN_FINAL_OK] total=${finalQuestions.length}/${requestedCount} partial=${partial} sessionId=${sessionId}`);
+    return new Response(JSON.stringify({
+      success: true,
+      partial,
+      requested: requestedCount,
+      returned: finalQuestions.length,
+      session_id: sessionId,
+      sessionId: sessionId,
+      questions: finalQuestions,
+      total_questions: finalQuestions.length
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (error: any) {
