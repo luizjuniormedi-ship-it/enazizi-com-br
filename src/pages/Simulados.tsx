@@ -189,7 +189,8 @@ async function generateBatch(
 ): Promise<{ questions: SimQuestion[]; sessionId: string | null }> {
   // [QUESTION_GEN_START]
   console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
-  
+  const startedAt = performance.now();
+
   try {
     const { data, error } = await withTimeout(
       supabase.functions.invoke("question-generator", {
@@ -214,10 +215,31 @@ async function generateBatch(
       "question-generator"
     );
 
+    const durationMs = Math.round(performance.now() - startedAt);
+    const rawKeys = data && typeof data === "object" ? Object.keys(data) : [];
+    const questionsLength = Array.isArray((data as any)?.questions) ? (data as any).questions.length : 0;
+    console.log("[MONTAR_BANCO_RESPONSE_SHAPE]", {
+      status: error ? "error" : 200,
+      questionsLength,
+      rawKeys,
+      hasError: Boolean(error),
+      success: Boolean((data as any)?.success),
+      duration_ms: durationMs,
+      requested: count,
+      timeout_ms: QUESTION_GENERATOR_TIMEOUT_MS,
+      timeoutTriggered: false,
+    });
+
     if (error) throw error;
     if (!data?.success) {
       console.error("[SIMULADO_GEN] Generator failed:", data);
       throw new Error(data?.error || "Falha na geração");
+    }
+
+    // [BATCH_EMPTY_GUARD] HTTP 200 + success: true com questions: [] NUNCA é sucesso.
+    if (questionsLength === 0) {
+      console.warn("[MONTAR_BANCO_EMPTY_BATCH]", { duration_ms: durationMs, requested: count });
+      throw new Error("BATCH_EMPTY: banco respondeu vazio (0 questões).");
     }
 
     // [QUESTION_GEN_COUNT] check
@@ -227,11 +249,13 @@ async function generateBatch(
     }
 
     // [QUESTION_GEN_FINAL_OK]
-    console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount}`);
+    console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount} (${durationMs}ms)`);
     return { questions: mapQuestions(data.questions || [], topics), sessionId: data.session_id || null };
 
   } catch (e) {
-    console.error("[SIMULADO_GEN] Batch failed:", e);
+    const durationMs = Math.round(performance.now() - startedAt);
+    const isTimeout = e instanceof TimeoutError;
+    console.error("[SIMULADO_GEN] Batch failed:", e, { duration_ms: durationMs, timeoutTriggered: isTimeout });
     throw e;
   }
 }
