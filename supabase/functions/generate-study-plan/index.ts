@@ -2,9 +2,10 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAuth } from "../_shared/enterprise-edge/auth-guard.ts";
 import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
+import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 
 
-Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, waitUntil, supabaseAdmin, ai }) => {
+Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, waitUntil, supabaseAdmin }) => {
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
   const { examDate, hoursPerDay, daysPerWeek, editalText, strictMode, performanceData, existingSubjects, durationDays, plannerType } = body;
@@ -207,17 +208,27 @@ Retorne APENAS um JSON no seguinte formato:
       await supabaseAdmin.from("study_plans").update({ current_step: "Gerando estratégia longitudinal com IA...", progress: 50 }).eq("id", plan.id);
 
 
-      const aiResponse = await ai({
+      // LOTE 1A — Migrado para runAI() (orchestrator central com telemetria + cost metrics)
+      const aiResponse = await runAI({
         taskType: "planner",
+        complexity: "high",
+        requiresJSON: true,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Gere o Plano Longitudinal Completo (${weeksUntilExam} semanas) para: ${JSON.stringify(userContext)}` }
         ],
-        complexity: "high",
-        model: "google/gemini-2.5-flash"
+        userId: user.id,
+        requestId: plan.id,
+        supabase: supabaseAdmin,
+        emergencyTemplate: JSON.stringify({
+          fullSchedule: [],
+          subjects: [],
+          insights: { total_weeks: 0, feasibility: "low", strategy_summary: "Fallback emergencial: planner indisponível no momento." },
+          metadata: { engine: "ENAZIZI Emergency Fallback", version: "3.1" }
+        })
       });
 
-      const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
+      const planJson = parseAiJson(aiResponse.content || "{}");
       
       if (!planJson.fullSchedule) {
         throw new Error("Erro na estrutura do Master Planner: fullSchedule ausente.");
@@ -228,7 +239,7 @@ Retorne APENAS um JSON no seguinte formato:
         await supabaseAdmin.from("ai_governance_logs").insert({
           user_id: user.id,
           task_type: "study_plan_generation",
-          model_name: "google/gemini-2.5-flash", 
+          model_name: `${aiResponse.provider}/${aiResponse.model}`, 
           payload: { context: userContext },
           response_summary: "Longitudinal Master Planner Generated"
         });
