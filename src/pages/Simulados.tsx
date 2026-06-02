@@ -189,7 +189,8 @@ async function generateBatch(
 ): Promise<{ questions: SimQuestion[]; sessionId: string | null }> {
   // [QUESTION_GEN_START]
   console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
-  
+  const startedAt = performance.now();
+
   try {
     const { data, error } = await withTimeout(
       supabase.functions.invoke("question-generator", {
@@ -214,10 +215,31 @@ async function generateBatch(
       "question-generator"
     );
 
+    const durationMs = Math.round(performance.now() - startedAt);
+    const rawKeys = data && typeof data === "object" ? Object.keys(data) : [];
+    const questionsLength = Array.isArray((data as any)?.questions) ? (data as any).questions.length : 0;
+    console.log("[MONTAR_BANCO_RESPONSE_SHAPE]", {
+      status: error ? "error" : 200,
+      questionsLength,
+      rawKeys,
+      hasError: Boolean(error),
+      success: Boolean((data as any)?.success),
+      duration_ms: durationMs,
+      requested: count,
+      timeout_ms: QUESTION_GENERATOR_TIMEOUT_MS,
+      timeoutTriggered: false,
+    });
+
     if (error) throw error;
     if (!data?.success) {
       console.error("[SIMULADO_GEN] Generator failed:", data);
       throw new Error(data?.error || "Falha na geração");
+    }
+
+    // [BATCH_EMPTY_GUARD] HTTP 200 + success: true com questions: [] NUNCA é sucesso.
+    if (questionsLength === 0) {
+      console.warn("[MONTAR_BANCO_EMPTY_BATCH]", { duration_ms: durationMs, requested: count });
+      throw new Error("BATCH_EMPTY: banco respondeu vazio (0 questões).");
     }
 
     // [QUESTION_GEN_COUNT] check
@@ -227,11 +249,13 @@ async function generateBatch(
     }
 
     // [QUESTION_GEN_FINAL_OK]
-    console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount}`);
+    console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount} (${durationMs}ms)`);
     return { questions: mapQuestions(data.questions || [], topics), sessionId: data.session_id || null };
 
   } catch (e) {
-    console.error("[SIMULADO_GEN] Batch failed:", e);
+    const durationMs = Math.round(performance.now() - startedAt);
+    const isTimeout = e instanceof TimeoutError;
+    console.error("[SIMULADO_GEN] Batch failed:", e, { duration_ms: durationMs, timeoutTriggered: isTimeout });
     throw e;
   }
 }
@@ -818,14 +842,16 @@ const Simulados = () => {
           }));
           
           if (batchQs.length === 0) {
-            console.warn("[Simulados] Lote retornado vazio.");
-            if (allGenerated.length > 0) {
-              setLoadingProgress(`Lote ${batchNum} falhou. Preparando com o que temos...`);
-              if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'partial' }).eq("id", currentJobId);
-              break;
-            }
-            throw new Error("Não foi possível gerar questões. A IA retornou um resultado vazio.");
+            console.warn("[Simulados] Lote retornado vazio (após mapeamento).");
+            console.warn("[MONTAR_BANCO_BATCH_EMPTY]", {
+              batch: batchNum,
+              loaded_so_far: allGenerated.length,
+              requested: requestedTotal,
+            });
+            // Tratar 200 + [] como falha: deixar o catch externo cuidar (com retry/fallback parcial).
+            throw new Error("BATCH_EMPTY: lote retornou 0 questões válidas.");
           }
+
           
           allGenerated = deduplicateQuestions([...allGenerated, ...batchQs]);
           setQuestions(allGenerated);
@@ -868,13 +894,21 @@ const Simulados = () => {
           }
           
           if (allGenerated.length > 0) {
+            console.warn("[MONTAR_BANCO_PARTIAL_BATCH]", {
+              loaded: allGenerated.length,
+              requested: requestedTotal,
+              ratio: `${allGenerated.length}/${requestedTotal}`,
+            });
             toast({
-              title: "Algumas questões falharam",
-              description: `Geramos ${allGenerated.length} de ${requestedTotal} questões. Iniciando simulado parcial.`,
+              title: `Simulado parcial: ${allGenerated.length}/${requestedTotal} questões`,
+              description: `O banco não conseguiu entregar todas as questões pedidas. Iniciando com ${allGenerated.length} questões disponíveis. Você pode finalizar e tentar novamente mais tarde para um lote completo.`,
+              variant: "destructive",
+              duration: 8000,
             });
             if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'partial' }).eq("id", currentJobId);
             break;
           }
+
           if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'failed', error_message: String(batchError) }).eq("id", currentJobId);
           throw batchError;
         }
