@@ -92,6 +92,27 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 const BATCH_SIZE = 10;
 
 const AUTH_SESSION_FALLBACK_TIMEOUT_MS = 2000;
+const QUESTION_GENERATOR_TIMEOUT_MS = 45000;
+
+class TimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TimeoutError";
+  }
+}
+
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = window.setTimeout(() => {
+      reject(new TimeoutError(`[TIMEOUT ${label}] ${ms}ms`));
+    }, ms);
+    Promise.resolve(promise).then(
+      (v) => { window.clearTimeout(t); resolve(v); },
+      (e) => { window.clearTimeout(t); reject(e); },
+    );
+  });
+}
+
 
 type MontarBancoEvent =
   | "[MONTAR_BANCO_START]"
@@ -170,24 +191,28 @@ async function generateBatch(
   console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
   
   try {
-    const { data, error } = await supabase.functions.invoke("question-generator", {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      body: {
-        count,
-        difficulty,
-        specialty: topics[0] || "Clínica Médica",
-        topics,
-        targetExam: examBoard,
-        mode,
-        avoidIds,
-        avoidStatements: avoidStatements,
-        generationContext: {
-          subtopic: specificTopic,
-          topicWeights,
-          autoDistribution
+    const { data, error } = await withTimeout(
+      supabase.functions.invoke("question-generator", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: {
+          count,
+          difficulty,
+          specialty: topics[0] || "Clínica Médica",
+          topics,
+          targetExam: examBoard,
+          mode,
+          avoidIds,
+          avoidStatements: avoidStatements,
+          generationContext: {
+            subtopic: specificTopic,
+            topicWeights,
+            autoDistribution
+          }
         }
-      }
-    });
+      }),
+      QUESTION_GENERATOR_TIMEOUT_MS,
+      "question-generator"
+    );
 
     if (error) throw error;
     if (!data?.success) {
@@ -210,6 +235,7 @@ async function generateBatch(
     throw e;
   }
 }
+
 
 function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
@@ -655,6 +681,12 @@ const Simulados = () => {
           
           try {
             console.log(`[Simulados] Lote ${batchNum}: Chamando question-generator. Count: ${currentBatchSize}`);
+            console.log("[MONTAR_BANCO_QUESTION_FETCH_START]", {
+              user_id: user?.id ?? null,
+              batch: batchNum,
+              count: currentBatchSize,
+              timeout_ms: QUESTION_GENERATOR_TIMEOUT_MS,
+            });
             const batchQs = await generateBatch(
               config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
               currentBatchSize,
@@ -674,6 +706,12 @@ const Simulados = () => {
               avoidIds
             );
             batchData = { success: true, questions: batchQs.questions, session_id: batchQs.sessionId };
+            console.log("[MONTAR_BANCO_QUESTION_FETCH_SUCCESS]", {
+              user_id: user?.id ?? null,
+              batch: batchNum,
+              received: batchQs.questions.length,
+              session_id: batchQs.sessionId,
+            });
             if (isMontarBancoFlow) {
               setLoadingProgress("Banco respondeu. Preparando questões...");
               setLoadingPercent(50);
@@ -690,33 +728,61 @@ const Simulados = () => {
             }
             console.log(`[Simulados] Lote ${batchNum} finalizado com sucesso. Recebidas ${batchQs.questions.length} questões.`);
           } catch (e) {
+            const isTimeout = e instanceof TimeoutError || /TIMEOUT/.test(getErrorMessage(e));
             console.error("[Simulados] generateBatch falhou, tentando invoke direto:", e);
-            const { data, error } = await supabase.functions.invoke(
-              "question-generator",
-              {
-                headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-                body: {
-                  count: currentBatchSize,
-                  difficulty: config.difficulty || "misto",
-                  specialty: (config.topics && config.topics[0]) || "Clínica Médica",
-                  topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
-                  targetExam: config.realExamProfile || config.examBoard,
-                  mode: config.mode || "estudo",
-                  generationContext: {
-                    subtopic: config.specificTopic,
-                    topicWeights: config.topicWeights,
-                    autoDistribution: config.autoDistribution,
-                    customDistribution: config.customDistribution,
-                    includeWeakThemes: config.includeWeakThemes,
-                    includePreviousErrors: config.includePreviousErrors,
+            console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL]", {
+              user_id: user?.id ?? null,
+              batch: batchNum,
+              timeout: isTimeout,
+              error: getErrorMessage(e),
+            });
+            if (isMontarBancoFlow) {
+              setLoadingProgress(
+                isTimeout
+                  ? "Banco demorou para responder. Tentando novamente..."
+                  : "Banco falhou. Tentando rota alternativa..."
+              );
+            }
+            const { data, error } = await withTimeout(
+              supabase.functions.invoke(
+                "question-generator",
+                {
+                  headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+                  body: {
+                    count: currentBatchSize,
+                    difficulty: config.difficulty || "misto",
+                    specialty: (config.topics && config.topics[0]) || "Clínica Médica",
+                    topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+                    targetExam: config.realExamProfile || config.examBoard,
+                    mode: config.mode || "estudo",
+                    generationContext: {
+                      subtopic: config.specificTopic,
+                      topicWeights: config.topicWeights,
+                      autoDistribution: config.autoDistribution,
+                      customDistribution: config.customDistribution,
+                      includeWeakThemes: config.includeWeakThemes,
+                      includePreviousErrors: config.includePreviousErrors,
+                    },
+                    avoidStatements: avoid,
+                    avoidIds: avoidIds,
+                    jobId: currentJobId,
+                    batchNumber: batchNum,
                   },
-                  avoidStatements: avoid,
-                  avoidIds: avoidIds,
-                  jobId: currentJobId,
-                  batchNumber: batchNum,
-                },
-              }
-            );
+                }
+              ),
+              QUESTION_GENERATOR_TIMEOUT_MS,
+              "question-generator-fallback"
+            ).catch((timeoutErr) => {
+              console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL]", {
+                user_id: user?.id ?? null,
+                batch: batchNum,
+                stage: "fallback_invoke",
+                timeout: true,
+                error: getErrorMessage(timeoutErr),
+              });
+              return { data: null, error: timeoutErr } as any;
+            });
+
             batchData = data;
             batchErr = error;
             if (isMontarBancoFlow) {
