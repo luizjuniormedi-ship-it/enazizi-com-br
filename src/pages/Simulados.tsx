@@ -822,8 +822,24 @@ const Simulados = () => {
         }
       }
       
+      if (allGenerated.length === 0) {
+        throw new Error("Nenhuma questão foi carregada do banco de questões.");
+      }
+
+      if (isMontarBancoFlow) {
+        setLoadingPercent(75);
+        setLoadingProgress("Montando ambiente de prova...");
+      }
       setLoadingPercent(100);
       setLoadingProgress("Finalizando simulado...");
+      if (isMontarBancoFlow) {
+        logMontarBancoEvent("[MONTAR_BANCO_SUCCESS]", {
+          userId: user?.id,
+          step: "exam_ready",
+          durationMs: Math.round(performance.now() - montarBancoStartedAt),
+          extra: { loaded_questions: allGenerated.length, requested_questions: requestedTotal, session_id: simuladoSessionIdRef.current },
+        });
+      }
       if (currentJobId && allGenerated.length >= requestedTotal) {
         await supabase.from("simulation_generation_jobs").update({ status: 'completed' }).eq("id", currentJobId);
       }
@@ -832,6 +848,14 @@ const Simulados = () => {
       }, 500);
     } catch (e) {
       console.error("Simulado start error details:", e);
+      if (isMontarBancoFlow) {
+        logMontarBancoEvent("[MONTAR_BANCO_FAIL]", {
+          userId: user?.id,
+          step: "handler_failed",
+          durationMs: Math.round(performance.now() - montarBancoStartedAt),
+          error: e,
+        });
+      }
       toast({ 
         title: "Erro ao iniciar simulado", 
         description: e instanceof Error ? `Erro: ${e.message}` : "Erro desconhecido ao conectar com o gerador de questões.",
