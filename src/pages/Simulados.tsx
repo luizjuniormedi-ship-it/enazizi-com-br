@@ -191,24 +191,28 @@ async function generateBatch(
   console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
   
   try {
-    const { data, error } = await supabase.functions.invoke("question-generator", {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      body: {
-        count,
-        difficulty,
-        specialty: topics[0] || "Clínica Médica",
-        topics,
-        targetExam: examBoard,
-        mode,
-        avoidIds,
-        avoidStatements: avoidStatements,
-        generationContext: {
-          subtopic: specificTopic,
-          topicWeights,
-          autoDistribution
+    const { data, error } = await withTimeout(
+      supabase.functions.invoke("question-generator", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        body: {
+          count,
+          difficulty,
+          specialty: topics[0] || "Clínica Médica",
+          topics,
+          targetExam: examBoard,
+          mode,
+          avoidIds,
+          avoidStatements: avoidStatements,
+          generationContext: {
+            subtopic: specificTopic,
+            topicWeights,
+            autoDistribution
+          }
         }
-      }
-    });
+      }),
+      QUESTION_GENERATOR_TIMEOUT_MS,
+      "question-generator"
+    );
 
     if (error) throw error;
     if (!data?.success) {
@@ -231,6 +235,7 @@ async function generateBatch(
     throw e;
   }
 }
+
 
 function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
