@@ -559,6 +559,116 @@ async function logRun(
   }
 }
 
+// ---------------------------------------------------------------------------
+// LOTE 0 — Cooldowns / Failures / Cost recorders
+// ---------------------------------------------------------------------------
+
+const COOLDOWN_DEFAULT_MS = 60_000;
+const COOLDOWN_TRIGGER_CODES = new Set<string | undefined>([
+  "AI_RATE_LIMITED", "AI_QUOTA_EXHAUSTED", "AI_PROVIDER_UNAVAILABLE", "TIMEOUT",
+]);
+const COOLDOWN_TRIGGER_STATUSES = new Set<number | undefined>([429, 402, 502, 503, 504]);
+
+async function getActiveCooldowns(supabase: any | undefined): Promise<Set<string>> {
+  if (!supabase) return new Set();
+  try {
+    const { data, error } = await supabase
+      .from("ai_provider_cooldowns")
+      .select("provider, model")
+      .gt("cooldown_until", new Date().toISOString());
+    if (error || !data) return new Set();
+    return new Set(data.map((r: any) => `${r.provider}::${r.model}`));
+  } catch (err) {
+    console.warn("[COOLDOWN_LOOKUP_FAILED]", err instanceof Error ? err.message : String(err));
+    return new Set();
+  }
+}
+
+async function triggerCooldown(
+  supabase: any | undefined,
+  provider: string,
+  model: string,
+  reason: string,
+  ms: number = COOLDOWN_DEFAULT_MS,
+) {
+  if (!supabase) return;
+  try {
+    const cooldown_until = new Date(Date.now() + ms).toISOString();
+    await supabase.from("ai_provider_cooldowns").insert({ provider, model, reason, cooldown_until });
+    console.warn(`[COOLDOWN_TRIGGERED] ${provider}/${model} until=${cooldown_until} reason=${reason}`);
+  } catch (err) {
+    console.warn("[COOLDOWN_INSERT_FAILED]", err instanceof Error ? err.message : String(err));
+  }
+}
+
+async function recordProviderFailure(
+  supabase: any | undefined,
+  attempt: AIAttempt,
+  fallbackModel: string | undefined,
+  retryAttempt: number,
+) {
+  if (!supabase) return;
+  const errorCode = attempt.code || (attempt.status ? `HTTP_${attempt.status}` : "UNKNOWN");
+  try {
+    await supabase.from("ai_provider_failures").insert({
+      provider: attempt.provider,
+      model: attempt.model,
+      error_code: errorCode,
+      error_message: attempt.message || null,
+      retry_attempt: retryAttempt,
+      fallback_model: fallbackModel || null,
+    });
+    console.warn(`[PROVIDER_FAILURE] ${attempt.provider}/${attempt.model} code=${errorCode} status=${attempt.status ?? "-"} retry=${retryAttempt}`);
+  } catch (err) {
+    console.warn("[PROVIDER_FAILURE_INSERT_FAILED]", err instanceof Error ? err.message : String(err));
+  }
+
+  // Cooldown automático em condições de saturação
+  if (
+    COOLDOWN_TRIGGER_CODES.has(attempt.code) ||
+    COOLDOWN_TRIGGER_STATUSES.has(attempt.status)
+  ) {
+    await triggerCooldown(supabase, attempt.provider, attempt.model, errorCode);
+  }
+}
+
+async function recordCostMetric(
+  supabase: any | undefined,
+  input: AIRunInput,
+  provider: string,
+  model: string,
+  usage: { prompt_tokens?: number; completion_tokens?: number } | undefined,
+  latencyMs: number,
+) {
+  if (!supabase) return;
+  const tokens_input = usage?.prompt_tokens ?? 0;
+  const tokens_output = usage?.completion_tokens ?? 0;
+  const cost_usd = calculateCostUsd(model, tokens_input, tokens_output);
+  try {
+    await supabase.from("ai_cost_metrics").insert({
+      feature_name: featureNameForTask(input.taskType),
+      model_name: model,
+      tokens_input,
+      tokens_output,
+      cost_usd,
+      user_id: input.userId || null,
+      metadata: {
+        provider,
+        task_type: input.taskType,
+        specialty: input.specialty || null,
+        topic: input.topic || null,
+        latency_ms: latencyMs,
+        request_id: input.requestId || null,
+        session_id: input.sessionId || null,
+        budget_mode: input.budgetMode || "balanced",
+      },
+    });
+    console.log(`[AI_COST_RECORDED] ${featureNameForTask(input.taskType)}/${model} in=${tokens_input} out=${tokens_output} cost=$${cost_usd.toFixed(6)}`);
+  } catch (err) {
+    console.warn("[AI_COST_INSERT_FAILED]", err instanceof Error ? err.message : String(err));
+  }
+}
+
 export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   const selection = selectAIModel(input);
   const totalStart = Date.now();
