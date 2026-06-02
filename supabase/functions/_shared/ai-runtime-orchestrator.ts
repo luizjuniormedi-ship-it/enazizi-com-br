@@ -117,6 +117,42 @@ const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "openai/gpt-4o": "medium",
 };
 
+// ---------------------------------------------------------------------------
+// LOTE 0 — Cost catalog (USD por token). Fonte autoritativa do orchestrator.
+// ---------------------------------------------------------------------------
+const COST_RATES: Record<string, { input: number; output: number }> = {
+  "gpt-4o":               { input: 2.50e-6,  output: 10.00e-6 },
+  "gpt-4o-mini":          { input: 0.15e-6,  output: 0.60e-6  },
+  "openai/gpt-4o":        { input: 2.50e-6,  output: 10.00e-6 },
+  "openai/gpt-4o-mini":   { input: 0.15e-6,  output: 0.60e-6  },
+  "google/gemini-2.5-flash":      { input: 0.30e-6, output: 2.50e-6 },
+  "google/gemini-2.5-flash-lite": { input: 0.10e-6, output: 0.40e-6 },
+  "google/gemini-2.5-pro":        { input: 1.25e-6, output: 5.00e-6 },
+};
+
+function calculateCostUsd(model: string, inputTokens: number, outputTokens: number): number {
+  const r = COST_RATES[model] || COST_RATES[model.replace(/^openai\//, "")] || { input: 0, output: 0 };
+  return (inputTokens * r.input) + (outputTokens * r.output);
+}
+
+// ---------------------------------------------------------------------------
+// LOTE 0 — TaskType → feature_name registry (com fallback generic_ai_task)
+// ---------------------------------------------------------------------------
+const TASK_FEATURE_MAP: Record<string, string> = {
+  tutor_chat:          "tutor_chat",
+  clinical_reasoning:  "tutor_chat",
+  lesson_generation:   "lesson_generation",
+  cme_script:          "cme_script",
+  flashcard:           "flashcard_generation",
+  mnemonic:            "mnemonic",
+  question_generation: "question_generation",
+  simulado_review:     "simulado_review",
+  planner:             "study_plan",
+};
+export function featureNameForTask(taskType: string): string {
+  return TASK_FEATURE_MAP[taskType] || "generic_ai_task";
+}
+
 // Perfis de prompt (apenas marcadores nesta fase; o prompt real é montado
 // pelo chamador, isto serve para telemetria + futuro lookup).
 export const PROMPT_PROFILES = {
