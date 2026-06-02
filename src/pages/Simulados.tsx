@@ -91,6 +91,47 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
 
+const AUTH_SESSION_FALLBACK_TIMEOUT_MS = 2000;
+
+type MontarBancoEvent =
+  | "[MONTAR_BANCO_START]"
+  | "[MONTAR_BANCO_REQUEST]"
+  | "[MONTAR_BANCO_RESPONSE]"
+  | "[MONTAR_BANCO_SUCCESS]"
+  | "[MONTAR_BANCO_FAIL]";
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error ?? "Erro desconhecido");
+}
+
+function logMontarBancoEvent(
+  event: MontarBancoEvent,
+  payload: { userId?: string | null; step: string; durationMs: number; error?: unknown; extra?: Record<string, unknown> }
+) {
+  console.log(event, {
+    user_id: payload.userId ?? null,
+    step: payload.step,
+    duration_ms: payload.durationMs,
+    error: payload.error ? getErrorMessage(payload.error) : null,
+    ...(payload.extra ?? {}),
+  });
+}
+
+async function getAccessTokenForSimulado(cachedToken?: string | null): Promise<string | undefined> {
+  if (cachedToken) return cachedToken;
+
+  try {
+    const result = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), AUTH_SESSION_FALLBACK_TIMEOUT_MS)),
+    ]);
+    return result?.data.session?.access_token;
+  } catch (error) {
+    console.warn("[Simulados] Falha ao obter sessão sem bloquear geração:", error);
+    return undefined;
+  }
+}
+
 function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {
   const topicsStr = topics.join(", ");
   const perTopic = Math.ceil(count / topics.length);
