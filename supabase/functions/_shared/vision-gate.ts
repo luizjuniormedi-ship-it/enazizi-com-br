@@ -2,7 +2,8 @@
 // imagem suspeita = rejeitado | visão falhou = rejeitado
 // diagnóstico não bate = rejeitado | retrato detectado = rejeitado
 
-import { aiFetch, parseAiJson } from "./ai-fetch.ts";
+import { aiFetch } from "./ai-fetch.ts";
+import { parseAiJson } from "./enterprise-edge/parse-ai-json.ts";
 import { ALLOWED_MODELS } from "./ai-model-registry.ts";
 
 const BLOCKED_URL_PATTERNS = [
