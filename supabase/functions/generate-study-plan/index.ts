@@ -208,17 +208,27 @@ Retorne APENAS um JSON no seguinte formato:
       await supabaseAdmin.from("study_plans").update({ current_step: "Gerando estratégia longitudinal com IA...", progress: 50 }).eq("id", plan.id);
 
 
-      const aiResponse = await ai({
+      // LOTE 1A — Migrado para runAI() (orchestrator central com telemetria + cost metrics)
+      const aiResponse = await runAI({
         taskType: "planner",
+        complexity: "high",
+        requiresJSON: true,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Gere o Plano Longitudinal Completo (${weeksUntilExam} semanas) para: ${JSON.stringify(userContext)}` }
         ],
-        complexity: "high",
-        model: "google/gemini-2.5-flash"
+        userId: user.id,
+        requestId: plan.id,
+        supabase: supabaseAdmin,
+        emergencyTemplate: JSON.stringify({
+          fullSchedule: [],
+          subjects: [],
+          insights: { total_weeks: 0, feasibility: "low", strategy_summary: "Fallback emergencial: planner indisponível no momento." },
+          metadata: { engine: "ENAZIZI Emergency Fallback", version: "3.1" }
+        })
       });
 
-      const planJson = parseAiJson(aiResponse.choices?.[0]?.message?.content || "{}");
+      const planJson = parseAiJson(aiResponse.content || "{}");
       
       if (!planJson.fullSchedule) {
         throw new Error("Erro na estrutura do Master Planner: fullSchedule ausente.");
