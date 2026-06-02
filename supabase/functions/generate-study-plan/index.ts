@@ -239,7 +239,7 @@ Retorne APENAS um JSON no seguinte formato:
         await supabaseAdmin.from("ai_governance_logs").insert({
           user_id: user.id,
           task_type: "study_plan_generation",
-          model_name: "google/gemini-2.5-flash", 
+          model_name: `${aiResponse.provider}/${aiResponse.model}`, 
           payload: { context: userContext },
           response_summary: "Longitudinal Master Planner Generated"
         });
