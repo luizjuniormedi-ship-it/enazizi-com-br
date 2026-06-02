@@ -238,7 +238,7 @@ function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
 }
 
 const Simulados = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session: authSession, loading: authLoading } = useAuth();
   
   useEffect(() => {
     console.log("[Simulados] Página montada. User:", user?.id, "AuthLoading:", authLoading);
@@ -467,7 +467,7 @@ const Simulados = () => {
     setShowConfigStep(false); // Ensure config step is hidden when starting
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = await getAccessTokenForSimulado(authSession?.access_token);
       if (config.mode === "adaptativo") {
         setLoadingProgress("Analisando seu desempenho...");
         setLoadingPercent(20);
@@ -483,7 +483,7 @@ const Simulados = () => {
           const { data, error: fnError } = await supabase.functions.invoke(
             "generate-adaptive-simulado",
             {
-              headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+              headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
               body: {
                 target_question_count: config.count || 20,
                 performance: perf,
@@ -624,7 +624,7 @@ const Simulados = () => {
               config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
               currentBatchSize,
               config.difficulty || "misto",
-              session?.access_token,
+              accessToken,
               config.specificTopic,
               config.realExamProfile || config.examBoard,
               avoid,
