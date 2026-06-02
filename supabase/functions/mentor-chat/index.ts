@@ -1,6 +1,7 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { corsResponse } from "../_shared/cors.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
+import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 
 /**
  * MENTOR CHAT — ENTERPRISE HARDENING v2
