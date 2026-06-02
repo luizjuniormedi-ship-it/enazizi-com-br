@@ -894,13 +894,21 @@ const Simulados = () => {
           }
           
           if (allGenerated.length > 0) {
+            console.warn("[MONTAR_BANCO_PARTIAL_BATCH]", {
+              loaded: allGenerated.length,
+              requested: requestedTotal,
+              ratio: `${allGenerated.length}/${requestedTotal}`,
+            });
             toast({
-              title: "Algumas questões falharam",
-              description: `Geramos ${allGenerated.length} de ${requestedTotal} questões. Iniciando simulado parcial.`,
+              title: `Simulado parcial: ${allGenerated.length}/${requestedTotal} questões`,
+              description: `O banco não conseguiu entregar todas as questões pedidas. Iniciando com ${allGenerated.length} questões disponíveis. Você pode finalizar e tentar novamente mais tarde para um lote completo.`,
+              variant: "destructive",
+              duration: 8000,
             });
             if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'partial' }).eq("id", currentJobId);
             break;
           }
+
           if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'failed', error_message: String(batchError) }).eq("id", currentJobId);
           throw batchError;
         }
