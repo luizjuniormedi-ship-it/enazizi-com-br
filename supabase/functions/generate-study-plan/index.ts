@@ -5,7 +5,7 @@ import { parseAiJson } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 
 
-Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, waitUntil, supabaseAdmin, ai }) => {
+Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, waitUntil, supabaseAdmin }) => {
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
   const { examDate, hoursPerDay, daysPerWeek, editalText, strictMode, performanceData, existingSubjects, durationDays, plannerType } = body;
