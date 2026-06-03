@@ -14,11 +14,21 @@ Deno.serve(enterpriseEdgeHandler("mentor-chat", async ({ req, logger, supabaseAd
     if (!userId) throw new Error("UNAUTHORIZED: Session required");
 
     const body = await req.json().catch(() => ({}));
-    const { messages, conversationId, topic, currentBlock } = body;
+    let { messages, conversationId, topic, currentBlock } = body;
+    const { message } = body;
 
-    if (!messages || !Array.isArray(messages)) {
+    // ── PAYLOAD NORMALIZATION (HOTFIX P0 — legacy/diagnostic caller compat) ──
+    if ((!messages || !Array.isArray(messages) || messages.length === 0) && typeof message === "string" && message.trim()) {
+      messages = [{ role: "user", content: message }];
+      logger.info("MENTOR_PAYLOAD_NORMALIZED", `legacy { message } → messages[1]`);
+    }
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
       throw new Error("BAD_REQUEST: Messages array expected");
     }
+
+    logger.info("MENTOR_CHAT_REQUEST_VALID", `msgs=${messages.length} conv=${conversationId || "-"}`);
+
 
     // ── 1. PEDAGOGICAL INJECTION (Unified Enterprise logic) ──────────────────
     let enhancedSystemPrompt = PROMPT_COMPLETO;
@@ -40,21 +50,30 @@ Ao concluir o bloco, encerre com a pergunta obrigatória:
     }
 
     // ── 2. AI EXECUTION via runAI orchestrator (LOTE 2) ────────────────────
-    const aiResult = await runAI({
-      taskType: "tutor_chat",
-      complexity: "medium",
-      topic: topic || null,
-      userId,
-      requestId,
-      sessionId: conversationId || null,
-      supabase: supabaseAdmin,
-      messages: [
-        { role: "system", content: enhancedSystemPrompt },
-        ...messages
-      ],
-    });
+    logger.info("MENTOR_CHAT_RUNAI_START", `task=tutor_chat`);
+    let aiResult;
+    try {
+      aiResult = await runAI({
+        taskType: "tutor_chat",
+        complexity: "medium",
+        topic: topic || null,
+        userId,
+        requestId,
+        sessionId: conversationId || null,
+        supabase: supabaseAdmin,
+        messages: [
+          { role: "system", content: enhancedSystemPrompt },
+          ...messages
+        ],
+      });
+      logger.info("MENTOR_CHAT_RUNAI_OK", `provider=${aiResult?.provider || "?"} model=${aiResult?.model || "?"}`);
+    } catch (aiErr) {
+      logger.error("MENTOR_CHAT_RUNAI_FAIL", (aiErr as Error).message);
+      throw aiErr;
+    }
 
     const content = aiResult.content || "";
+
 
     // ── 3. RESILIENT PERSISTENCE ───────────────────────────────────────────
     if (conversationId) {

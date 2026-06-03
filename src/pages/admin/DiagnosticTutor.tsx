@@ -14,8 +14,16 @@ export default function DiagnosticTutor() {
   const runTest = async (testId: string, payload: any) => {
     setLoading(prev => ({ ...prev, [testId]: true }));
     try {
+      // HOTFIX P0: normalize payload to contract { messages: [...] }
+      const normalized: any = { ...payload };
+      if (!normalized.messages && typeof normalized.message === "string") {
+        normalized.messages = [{ role: "user", content: normalized.message }];
+        delete normalized.message;
+        console.log("[MENTOR_PAYLOAD_NORMALIZED]", testId);
+      }
+
       const { data, error } = await supabase.functions.invoke("mentor-chat", {
-        body: payload
+        body: normalized
       });
 
       if (error) throw error;
@@ -29,6 +37,7 @@ export default function DiagnosticTutor() {
       setLoading(prev => ({ ...prev, [testId]: false }));
     }
   };
+
 
   const tests = [
     {
