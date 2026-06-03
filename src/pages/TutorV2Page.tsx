@@ -32,6 +32,15 @@ export default function TutorV2Page() {
     }
   }, [studyCtx?.topic, user, sessionId]);
 
+  // [HOTFIX P0 TUTOR V3] Reset boot state once the URL reflects the new session,
+  // so the cinematic loading screen never gets stuck after navigate().
+  useEffect(() => {
+    if (sessionId && isCreating) {
+      setIsCreating(false);
+      setBootStatus("");
+    }
+  }, [sessionId, isCreating]);
+
 
   const handleStartSession = async (topic?: string) => {
     const finalTopic = topic || newTopic;
