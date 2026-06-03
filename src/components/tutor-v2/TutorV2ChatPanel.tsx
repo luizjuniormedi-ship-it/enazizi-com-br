@@ -28,6 +28,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const initialDispatchedRef = useRef(false);
   const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
 
 
@@ -36,6 +37,22 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
+
+  // [HOTFIX P0 TUTOR V3] Auto-dispatch initial topic so tutor-v3-premium is actually invoked
+  // after session creation. Without this the chat panel mounts but never triggers AI,
+  // leaving the user stuck on the loading state (same failure pattern as Simulado P0).
+  useEffect(() => {
+    if (isLoading) return;
+    if (initialDispatchedRef.current) return;
+    if (!user || !session?.id || !session?.topic) return;
+    if (messages.length > 0) return;
+    if (isTyping) return;
+    initialDispatchedRef.current = true;
+    const kickoff = `Quero estudar: ${session.topic}`;
+    console.log("[TUTOR_INITIAL_MESSAGE_DISPATCH]", { sessionId: session.id, topic: session.topic });
+    handleSendMessage(kickoff);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, messages.length, session?.id, session?.topic, user?.id]);
 
   const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
     if (!text.trim() || isTyping || !user) return;
