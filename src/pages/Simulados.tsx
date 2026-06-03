@@ -967,187 +967,246 @@ const Simulados = () => {
 
   const handleFinish = async (answers: Record<number, number>, flagged: number[]) => {
     clearInterval(elapsedSecondsRef.current);
-    console.log("[SIMULADO_FINALIZE_START]", { sessionId: simuladoSessionIdRef.current, totalQs: questions.length });
+    console.log("[SIM_FINALIZE_START]", { sessionId: simuladoSessionIdRef.current, totalQs: questions.length, hasUser: !!user });
 
-    if (user) {
-      const durationSeconds = startTimeRef.current
-        ? Math.round((new Date().getTime() - startTimeRef.current.getTime()) / 1000)
-        : 0;
-      const elapsed = Math.round(durationSeconds / 60);
-
-      const areaResults: Record<string, { correct: number; total: number }> = {};
-      questions.forEach((q, i) => {
-        if (!areaResults[q.topic]) areaResults[q.topic] = { correct: 0, total: 0 };
-        areaResults[q.topic].total++;
-        if (answers[i] === q.correct) areaResults[q.topic].correct++;
+    if (!user) {
+      console.warn("[SIM_FINALIZE_SKIP] no authenticated user — persistence aborted");
+      toast({
+        title: "Sessão não autenticada",
+        description: "Faça login para que os resultados do simulado sejam salvos.",
+        variant: "destructive",
       });
+      setFinalAnswers(answers);
+      setFlaggedQuestions(flagged);
+      setPhase("finished");
+      refresh("session");
+      return;
+    }
 
-      const correctCount = Object.values(answers).filter((ans, idx) => ans === questions[idx]?.correct).length;
-      const finalScore = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isUuid = (v: any) => typeof v === "string" && UUID_RE.test(v);
 
-          // Create exam_sessions row BEFORE analytics so the FK from analytics is satisfied.
-      const sessionId = simuladoSessionIdRef.current;
-      console.log("[E2E_SIMULADO_FINALIZE_START]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, user_id: user.id, total_questions: questions.length });
+    const durationSeconds = startTimeRef.current
+      ? Math.round((new Date().getTime() - startTimeRef.current.getTime()) / 1000)
+      : 0;
+    const elapsed = Math.round(durationSeconds / 60);
 
-      if (sessionId) {
-        try {
-          try {
-            const { error: examErr } = await supabase.from("exam_sessions").insert({
-              id: sessionId,
-              user_id: user.id,
-              title: `Simulado - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
-              total_questions: questions.length,
-              time_limit_minutes: questions.length * 3,
-              status: "finished",
-              finished_at: new Date().toISOString(),
-              answers_json: answers as any,
-              results_json: areaResults as any,
-              score: finalScore,
-            });
-            if (examErr) {
-              // 23505 = duplicate id (already inserted) — safe to ignore
-              if ((examErr as any).code !== "23505") {
-                console.warn("[SIMULADO_EXAM_SESSION_INSERT_FAIL]", examErr.message);
-              }
-            } else {
-              console.log("[SIMULADO_EXAM_SESSION_INSERT_OK]", sessionId);
-            }
-            try { await addXp(XP_REWARDS.simulado_completed); } catch (xpErr) { console.error("XP error (non-fatal):", xpErr); }
-          } catch (err) {
-            console.error("[SIMULADO_EXAM_SESSION_INSERT_FAIL]", err);
-          }
+    const areaResults: Record<string, { correct: number; total: number }> = {};
+    questions.forEach((q, i) => {
+      if (!areaResults[q.topic]) areaResults[q.topic] = { correct: 0, total: 0 };
+      areaResults[q.topic].total++;
+      if (answers[i] === q.correct) areaResults[q.topic].correct++;
+    });
 
-          // Per-question analytics — triggers the cognitive fan-out pipeline
-          try {
-            console.log("[SIMULADO_ANALYTICS_INSERT_START]", { sessionId, userId: user.id, count: questions.length });
-            const rows = questions.map((q, idx) => {
-              const rawMode = (configRef.current?.mode as string) || "";
-              const hasImg = !!((q as any).image_url || (q as any).has_image || rawMode === "image");
-              const safeMode = hasImg ? "image" : "text"; // CHECK constraint: image|text|fallback_text
-              return {
-                simulado_session_id: sessionId,
-                user_id: user.id,
-                question_id: (q as any).id ?? null,
-                bank_question_id: (q as any).bankId ?? ((q as any).source === "bank" || (q as any)._source === "bank" ? (q as any).id : null),
-                question_index: idx,
-                selected_answer: answers[idx] ?? null,
-                correct_answer: q.correct,
-                is_correct: answers[idx] === q.correct,
-                mode: safeMode,
-                specialty: q.topic ?? null,
-              };
-            });
-            const { error: anaErr } = await supabase
-              .from("simulado_question_analytics")
-              .insert(rows as any);
-            if (anaErr) {
-              console.error("[SIMULADO_ANALYTICS_INSERT_FAIL]", {
-                message: anaErr.message,
-                code: (anaErr as any).code,
-                details: (anaErr as any).details,
-                hint: (anaErr as any).hint,
-                sessionId,
-                userId: user.id,
-              });
-            } else {
-              console.log("[SIMULADO_ANALYTICS_INSERT_OK]", { sessionId, rows: rows.length });
-              console.log("[E2E_SIMULADO_ANALYTICS_OK]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, rows: rows.length });
-            }
-          } catch (anaCatch: any) {
-            console.error("[SIMULADO_ANALYTICS_INSERT_FAIL]", anaCatch?.message || anaCatch);
-          }
+    const correctCount = Object.values(answers).filter((ans, idx) => ans === questions[idx]?.correct).length;
+    const wrongCount = questions.length - correctCount;
+    const finalScore = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
 
-          // ── SPRINT LOOP PEDAGÓGICO — captura de massa observada ──
-          // Persiste cada resposta em simulado_answers + practice_attempts e
-          // registra erros em error_bank (que auto-cria fsrs_cards).
-          try {
-            const answerRows = questions.map((q, idx) => ({
-              session_id: sessionId,
-              user_id: user.id,
-              question_id: (q as any).id && !String((q as any).id).startsWith("gen-") ? (q as any).id : null,
-              selected_answer: answers[idx] ?? null,
-              is_correct: answers[idx] === q.correct,
-            }));
-            const { error: ansErr } = await supabase.from("simulado_answers").insert(answerRows as any);
-            if (ansErr) {
-              console.warn("[LOOP_CAPTURE_SIMULADO_ANSWERS_FAIL]", ansErr.message);
-            } else {
-              console.log("[LOOP_CAPTURE_SIMULADO_ANSWERS_OK]", { sessionId, rows: answerRows.length });
-            }
-
-            // practice_attempts (somente questões reais do banco)
-            const attemptRows = questions
-              .map((q, idx) => {
-                const qid = (q as any).id;
-                if (!qid || String(qid).startsWith("gen-")) return null;
-                // questions table is UUID; only insert if it looks like a uuid
-                if (!/^[0-9a-f-]{36}$/i.test(String(qid))) return null;
-                return {
-                  user_id: user.id,
-                  question_id: qid,
-                  correct: answers[idx] === q.correct,
-                };
-              })
-              .filter(Boolean) as any[];
-            if (attemptRows.length > 0) {
-              const { error: paErr } = await supabase.from("practice_attempts").insert(attemptRows);
-              if (paErr) {
-                console.warn("[LOOP_CAPTURE_PRACTICE_ATTEMPTS_FAIL]", paErr.message);
-              } else {
-                console.log("[LOOP_CAPTURE_PRACTICE_ATTEMPTS_OK]", { sessionId, rows: attemptRows.length });
-              }
-            }
-
-            // error_bank + FSRS (auto via logErrorToBank.ensureFsrsCard)
-            let errorsLogged = 0;
-            for (let i = 0; i < questions.length; i++) {
-              const q = questions[i];
-              if (answers[i] === undefined || answers[i] === q.correct) continue;
-              try {
-                await logErrorToBank({
-                  userId: user.id,
-                  tema: q.topic || "Geral",
-                  tipoQuestao: "simulado",
-                  conteudo: (q as any).statement?.slice(0, 500),
-                  motivoErro: `Marcou opção ${answers[i]} — Correta: opção ${q.correct}`,
-                  categoriaErro: "conceito",
-                });
-                errorsLogged++;
-              } catch (e: any) {
-                console.warn("[LOOP_CAPTURE_ERROR_BANK_FAIL]", e?.message);
-              }
-            }
-            console.log("[LOOP_CAPTURE_ERROR_BANK_OK]", { sessionId, errorsLogged });
-          } catch (loopErr: any) {
-            console.error("[LOOP_CAPTURE_FAIL]", loopErr?.message || loopErr);
-          }
-
-
-          const { error: updErr } = await supabase
-            .from("simulado_sessions")
-            .update({
-              status: "finished",
-              finished_at: new Date().toISOString(),
-              score: finalScore,
-              correct_count: correctCount,
-              total_questions: questions.length,
-              metadata: { duration_seconds: durationSeconds, elapsed_minutes: elapsed, correlation_id: e2eCorrelationIdRef.current } as any,
-            })
-            .eq("id", sessionId);
-          if (updErr) {
-            console.error("[E2E_SIMULADO_FAIL]", { stage: "session_finish", code: (updErr as any).code, details: (updErr as any).details, hint: (updErr as any).hint, session_id: sessionId, correlation_id: e2eCorrelationIdRef.current });
-          } else {
-            console.log("[E2E_SIMULADO_FANOUT_OK]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId });
-            console.log("[E2E_SIMULADO_FINISHED]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, score: finalScore });
-          }
-        } catch (e) {
-          console.error("[SIMULADO_SESSION_UPDATE_FAIL]", e);
+    // ── HOTFIX P0: ensure a simulado_sessions row exists. If the question-generator
+    // didn't return one (or we used a non-session flow), create one now so the
+    // entire downstream pipeline (analytics → fanout → cognitive snapshots) works.
+    let sessionId = simuladoSessionIdRef.current;
+    if (!sessionId || !isUuid(sessionId)) {
+      try {
+        const { data: created, error: createErr } = await supabase
+          .from("simulado_sessions")
+          .insert({
+            user_id: user.id,
+            mode: (configRef.current?.mode as string) || "estudo",
+            total_questions: questions.length,
+            status: "active",
+            source: "bank",
+            discipline: selectedTopics?.[0] ?? null,
+            topic: selectedTopics?.[0] ?? null,
+            started_at: startTimeRef.current?.toISOString() ?? new Date().toISOString(),
+            metadata: { correlation_id: e2eCorrelationIdRef.current, fallback_created: true } as any,
+          })
+          .select("id")
+          .single();
+        if (createErr || !created) {
+          console.error("[SIM_SESSION_FALLBACK_INSERT_FAIL]", createErr?.message);
+        } else {
+          sessionId = created.id;
+          simuladoSessionIdRef.current = sessionId;
+          console.log("[SIM_SESSION_FALLBACK_INSERT_OK]", sessionId);
         }
-      } else {
-        console.warn("[SIMULADO_SESSION_UPDATE_SKIP] no sessionId captured");
+      } catch (e: any) {
+        console.error("[SIM_SESSION_FALLBACK_INSERT_FAIL]", e?.message);
       }
     }
 
+    console.log("[E2E_SIMULADO_FINALIZE_START]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, user_id: user.id, total_questions: questions.length });
+
+    let persistOk = true;
+
+    // exam_sessions (legacy/analytics view) — best-effort
+    if (sessionId) {
+      try {
+        const { error: examErr } = await supabase.from("exam_sessions").insert({
+          id: sessionId,
+          user_id: user.id,
+          title: `Simulado - ${selectedTopics.slice(0, 3).join(", ")}${selectedTopics.length > 3 ? "..." : ""}`,
+          total_questions: questions.length,
+          time_limit_minutes: questions.length * 3,
+          status: "finished",
+          finished_at: new Date().toISOString(),
+          answers_json: answers as any,
+          results_json: areaResults as any,
+          score: finalScore,
+        });
+        if (examErr && (examErr as any).code !== "23505") {
+          console.warn("[SIM_EXAM_SESSION_INSERT_FAIL]", examErr.message);
+        } else if (!examErr) {
+          console.log("[SIM_EXAM_SESSION_INSERT_OK]", sessionId);
+        }
+      } catch (err) {
+        console.error("[SIM_EXAM_SESSION_INSERT_FAIL]", err);
+      }
+      try { await addXp(XP_REWARDS.simulado_completed); } catch (xpErr) { console.error("XP error (non-fatal):", xpErr); }
+    }
+
+    // Per-question analytics — feeds fanout trigger
+    if (sessionId) {
+      try {
+        const rows = questions.map((q, idx) => {
+          const rawMode = (configRef.current?.mode as string) || "";
+          const hasImg = !!((q as any).image_url || (q as any).has_image || rawMode === "image");
+          const safeMode = hasImg ? "image" : "text";
+          return {
+            simulado_session_id: sessionId,
+            user_id: user.id,
+            question_id: isUuid((q as any).id) ? (q as any).id : null,
+            bank_question_id: (q as any).bankId ?? ((q as any).source === "bank" || (q as any)._source === "bank" ? (isUuid((q as any).id) ? (q as any).id : null) : null),
+            question_index: idx,
+            selected_answer: answers[idx] ?? null,
+            correct_answer: q.correct,
+            is_correct: answers[idx] === q.correct,
+            mode: safeMode,
+            specialty: q.topic ?? null,
+          };
+        });
+        const { error: anaErr } = await supabase.from("simulado_question_analytics").insert(rows as any);
+        if (anaErr) {
+          console.error("[SIM_ANALYTICS_INSERT_FAIL]", { message: anaErr.message, code: (anaErr as any).code, details: (anaErr as any).details, hint: (anaErr as any).hint });
+          persistOk = false;
+        } else {
+          console.log("[SIM_ANALYTICS_INSERT_OK]", { sessionId, rows: rows.length });
+        }
+      } catch (anaCatch: any) {
+        console.error("[SIM_ANALYTICS_INSERT_FAIL]", anaCatch?.message || anaCatch);
+        persistOk = false;
+      }
+    }
+
+    // simulado_answers — resilient per-row fallback
+    if (sessionId) {
+      const answerRows = questions.map((q, idx) => ({
+        session_id: sessionId,
+        user_id: user.id,
+        question_id: isUuid((q as any).id) ? (q as any).id : null,
+        selected_answer: answers[idx] ?? null,
+        is_correct: answers[idx] === q.correct,
+      }));
+      const { error: ansErr } = await supabase.from("simulado_answers").insert(answerRows as any);
+      if (ansErr) {
+        console.warn("[SIM_ANSWERS_BATCH_FAIL]", ansErr.message, "→ retrying per row");
+        let ok = 0;
+        for (const r of answerRows) {
+          const { error: oneErr } = await supabase.from("simulado_answers").insert(r as any);
+          if (!oneErr) ok++;
+          else console.warn("[SIM_ANSWERS_ROW_FAIL]", oneErr.message);
+        }
+        console.log("[SIM_ANSWERS_INSERT_PARTIAL]", { sessionId, ok, total: answerRows.length });
+        if (ok === 0) persistOk = false;
+      } else {
+        console.log("[SIM_ANSWERS_INSERT_OK]", { sessionId, rows: answerRows.length });
+      }
+    }
+
+    // practice_attempts — needs valid UUID + existing in questions_bank
+    const attemptRows = questions
+      .map((q, idx) => {
+        const qid = (q as any).id;
+        if (!isUuid(qid)) return null;
+        return { user_id: user.id, question_id: qid, correct: answers[idx] === q.correct };
+      })
+      .filter(Boolean) as any[];
+    if (attemptRows.length > 0) {
+      const { error: paErr } = await supabase.from("practice_attempts").insert(attemptRows);
+      if (paErr) {
+        console.warn("[PRACTICE_ATTEMPTS_BATCH_FAIL]", paErr.message, "→ retrying per row");
+        let ok = 0;
+        for (const r of attemptRows) {
+          const { error: oneErr } = await supabase.from("practice_attempts").insert(r);
+          if (!oneErr) ok++;
+          else console.warn("[PRACTICE_ATTEMPTS_ROW_FAIL]", oneErr.message);
+        }
+        console.log("[PRACTICE_ATTEMPTS_INSERT_PARTIAL]", { ok, total: attemptRows.length });
+      } else {
+        console.log("[PRACTICE_ATTEMPTS_INSERT_OK]", { rows: attemptRows.length });
+      }
+    } else {
+      console.warn("[PRACTICE_ATTEMPTS_SKIP] no valid UUID question ids in batch");
+    }
+
+    // error_bank + auto-FSRS card
+    let errorsLogged = 0;
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (answers[i] === undefined || answers[i] === q.correct) continue;
+      try {
+        await logErrorToBank({
+          userId: user.id,
+          tema: q.topic || "Geral",
+          tipoQuestao: "simulado",
+          conteudo: (q as any).statement?.slice(0, 500),
+          motivoErro: `Marcou opção ${answers[i]} — Correta: opção ${q.correct}`,
+          categoriaErro: "conceito",
+        });
+        errorsLogged++;
+      } catch (e: any) {
+        console.warn("[ERROR_BANK_UPSERT_FAIL]", e?.message);
+      }
+    }
+    console.log("[ERROR_BANK_UPSERT_OK]", { errorsLogged });
+
+    // Final: mark session finished → triggers fanout_simulado_finish
+    if (sessionId) {
+      try {
+        const { error: updErr } = await supabase
+          .from("simulado_sessions")
+          .update({
+            status: "finished",
+            finished_at: new Date().toISOString(),
+            score: finalScore,
+            correct_count: correctCount,
+            total_questions: questions.length,
+            metadata: { duration_seconds: durationSeconds, elapsed_minutes: elapsed, correlation_id: e2eCorrelationIdRef.current } as any,
+          })
+          .eq("id", sessionId);
+        if (updErr) {
+          console.error("[SIM_SESSION_UPDATE_FAIL]", { code: (updErr as any).code, details: (updErr as any).details, hint: (updErr as any).hint, message: updErr.message });
+          persistOk = false;
+        } else {
+          console.log("[SIM_SESSION_FINISHED_OK]", { sessionId, score: finalScore, wrongCount });
+          console.log("[E2E_SIMULADO_FINISHED]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, score: finalScore });
+        }
+      } catch (e: any) {
+        console.error("[SIM_SESSION_UPDATE_FAIL]", e?.message);
+        persistOk = false;
+      }
+    } else {
+      console.error("[SIM_FINALIZE_FAIL] no sessionId after fallback — pipeline incomplete");
+      persistOk = false;
+    }
+
+    if (!persistOk) {
+      toast({
+        title: "Resultado salvo parcialmente",
+        description: "Algumas métricas do simulado falharam ao gravar. Veja o console para detalhes.",
+        variant: "destructive",
+      });
+    }
 
     setFinalAnswers(answers);
     setFlaggedQuestions(flagged);
