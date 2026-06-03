@@ -334,6 +334,7 @@ NÃO inclua texto extra, APENAS o JSON.` }],
         const q = questions[a.questionIdx];
         logErrorToBank({
           userId: user.id,
+          questionId: (q as any).id,
           tema: mapTopicToSpecialty(q.topic || "Geral") || q.topic || "Geral",
           tipoQuestao: "diagnostico",
           conteudo: q.statement,

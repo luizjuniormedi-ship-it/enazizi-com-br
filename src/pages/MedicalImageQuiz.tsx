@@ -321,6 +321,7 @@ const MedicalImageQuiz = () => {
       if (!correct) {
         logErrorToBank({
           userId: user.id,
+          questionId: (currentQuestion as any).id,
           tema: currentQuestion.diagnosis || currentQuestion.image_type || "Imagem Médica",
           subtema: currentQuestion.image_type || undefined,
           tipoQuestao: "objetiva",

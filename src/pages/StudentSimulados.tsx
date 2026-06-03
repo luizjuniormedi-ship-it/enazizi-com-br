@@ -414,6 +414,7 @@ const StudentSimulados = () => {
           const q = questions[d.question_index];
           await logErrorToBank({
             userId: user!.id,
+            questionId: (q as any).id,
             tema: q.topic || "Geral",
             tipoQuestao: "simulado",
             conteudo: q.statement?.slice(0, 500) || "",

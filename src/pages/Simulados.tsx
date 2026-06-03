@@ -1157,6 +1157,7 @@ const Simulados = () => {
       try {
         await logErrorToBank({
           userId: user.id,
+          questionId: (q as any).id,
           tema: q.topic || "Geral",
           tipoQuestao: "simulado",
           conteudo: (q as any).statement?.slice(0, 500),

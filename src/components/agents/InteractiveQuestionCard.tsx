@@ -67,6 +67,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
     if (!correct) {
       await logErrorToBank({
         userId: user.id,
+        questionId: (question as any).id,
         tema: question.topic || "Geral",
         tipoQuestao: "objetiva",
         conteudo: question.statement?.slice(0, 500),
