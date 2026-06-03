@@ -303,6 +303,7 @@ const QuestionsBank = () => {
     if (!isCorrect) {
       await logErrorToBank({
         userId: user.id,
+        questionId: (practiceQuestion as any).id,
         tema: practiceQuestion.topic || "Geral",
         tipoQuestao: "objetiva",
         conteudo: practiceQuestion.statement,
