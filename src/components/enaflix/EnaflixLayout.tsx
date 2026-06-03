@@ -61,16 +61,22 @@ export function EnaflixLayout({ children }: Props) {
 
   // Top Nav for subpages or when sidebar is hidden
   const isEnaflixHome = location.pathname === "/enaflix" || location.pathname === "/dashboard" || location.pathname === "/study-hub" || location.pathname === "/";
-  const showTopNav = !isEnaflixHome;
+  // [HOTFIX P0 UX] Em rotas imersivas (Tutor/Sessão de Estudo/Simulação/Anamnese),
+  // o TopNav fixo (z-50, 64px) somava com pt-16 do <main>, empurrando o footer com
+  // input do Tutor para fora da viewport — aluno via "tela preta" sem CTAs.
+  const showTopNav = !isEnaflixHome && !isImmersive;
 
   return (
-    <div className="min-h-screen bg-[#050508] text-white selection:bg-primary/30 selection:text-white antialiased flex flex-col overflow-x-hidden">
+    <div className={cn(
+      "bg-[#050508] text-white selection:bg-primary/30 selection:text-white antialiased flex flex-col overflow-x-hidden",
+      isImmersive ? "h-screen overflow-hidden" : "min-h-screen"
+    )}>
       {/* Global Cinematic Background */}
       <EnaflixBackgroundFX intensity="medium" />
 
       {/* Navigation Layer */}
       {showSidebar && <EnaflixSidebar />}
-      <EnaflixMobileNav />
+      {!isImmersive && <EnaflixMobileNav />}
 
       {/* Top Navigation */}
       {showTopNav && (
@@ -79,7 +85,8 @@ export function EnaflixLayout({ children }: Props) {
 
       {/* Main Content Area */}
       <main className={cn(
-        "flex-1 min-h-screen transition-all duration-500 ease-in-out relative z-10",
+        "flex-1 transition-all duration-500 ease-in-out relative z-10",
+        isImmersive ? "h-full min-h-0 overflow-hidden" : "min-h-screen",
         showSidebar ? (isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64") : "pl-0",
         showTopNav ? "pt-16" : "",
         isImmersive ? "pb-0" : "pb-20 lg:pb-0"
@@ -95,7 +102,10 @@ export function EnaflixLayout({ children }: Props) {
               ease: [0.22, 1, 0.36, 1],
               opacity: { duration: 0.3 }
             }}
-            className="w-full min-h-full safe-area-bottom"
+            className={cn(
+              "w-full safe-area-bottom",
+              isImmersive ? "h-full" : "min-h-full"
+            )}
           >
             {children}
           </motion.div>
@@ -106,6 +116,7 @@ export function EnaflixLayout({ children }: Props) {
       {!isImmersive && (
         <div className="fixed inset-0 pointer-events-none z-0 shadow-[inset_0_0_150px_rgba(0,0,0,0.4)] opacity-50" />
       )}
+
     </div>
   );
 }
