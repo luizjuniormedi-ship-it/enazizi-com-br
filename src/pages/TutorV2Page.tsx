@@ -290,20 +290,21 @@ export default function TutorV2Page() {
   }
 
   if (!session) return (
-    <div className="flex items-center justify-center h-screen bg-slate-950 text-white">
+    <div className="flex items-center justify-center h-full min-h-screen bg-slate-950 text-white">
       Sessão não encontrada ou acesso negado.
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-slate-950 text-white overflow-hidden font-sans selection:bg-indigo-500/30">
+    <div className="flex h-full min-h-screen bg-slate-950 text-white overflow-hidden font-sans selection:bg-indigo-500/30">
       <TutorV2Sidebar session={session} stats={stats} />
-      <main className="flex-1 relative flex flex-col min-w-0">
+      <main className="flex-1 relative flex flex-col min-w-0 min-h-0">
         <TutorV2ChatPanel session={session} />
       </main>
     </div>
   );
 }
+
 
 function SuggestionChip({ label, onClick }: { label: string; onClick: () => void }) {
   return (
