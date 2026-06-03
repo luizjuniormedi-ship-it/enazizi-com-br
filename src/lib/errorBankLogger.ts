@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ensureFsrsCard } from "@/lib/fsrsAutoCreate";
+import { ensurePersonalFlashcardFsrs } from "@/lib/personalFlashcardFsrs";
 
 interface LogErrorParams {
   userId: string;
@@ -10,11 +11,19 @@ interface LogErrorParams {
   motivoErro?: string;
   categoriaErro?: string;
   dificuldade?: number;
+  /** Recovery Loop Sprint-1: id da questão de origem (quando aplicável). */
+  questionId?: string;
 }
 
 /**
  * Logs a wrong answer to the error_bank table.
- * Invisible mnemonic triggering now happens only inside the central adaptive orchestrator.
+ *
+ * RECOVERY LOOP SPRINT-1:
+ *  - Telemetria [RECOVERY_LOOP_ERROR_LOGGED]
+ *  - Persiste error_bank.question_id quando fornecido
+ *  - Em novo erro: cria FSRS card do erro (existente) + flashcard pessoal de revisão
+ *    + FSRS card do flashcard (novo elo Erro → Flashcard → FSRS)
+ *  - Idempotente: nunca duplica flashcard para o mesmo error_bank.id
  */
 export async function logErrorToBank(params: LogErrorParams): Promise<void> {
   const {
@@ -26,6 +35,7 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
     motivoErro,
     categoriaErro,
     dificuldade,
+    questionId,
   } = params;
 
   try {
@@ -36,7 +46,10 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
       .eq("tema", tema)
       .eq("tipo_questao", tipoQuestao);
 
-    if (conteudo) {
+    if (questionId) {
+      // Dedup mais forte quando temos a questão real
+      query = query.eq("question_id", questionId);
+    } else if (conteudo) {
       query = query.eq("conteudo", conteudo.slice(0, 500));
     }
 
@@ -51,24 +64,195 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
           motivo_erro: motivoErro || undefined,
         })
         .eq("id", existing.id);
-    } else {
-      const { data: inserted } = await supabase.from("error_bank").insert({
-        user_id: userId,
-        tema,
-        subtema: subtema || null,
-        tipo_questao: tipoQuestao,
-        conteudo: conteudo?.slice(0, 500) || null,
-        motivo_erro: motivoErro || null,
-        categoria_erro: categoriaErro || null,
-        dificuldade: dificuldade || 3,
-        vezes_errado: 1,
-      }).select("id").single();
 
-      if (inserted) {
-        ensureFsrsCard(userId, "erro", inserted.id);
+      console.info("[RECOVERY_LOOP_ERROR_LOGGED]", {
+        userId,
+        questionId: questionId ?? null,
+        tema,
+        tipoQuestao,
+        existingError: true,
+        newError: false,
+        errorId: existing.id,
+        vezesErrado: (existing.vezes_errado || 1) + 1,
+      });
+    } else {
+      const { data: inserted, error: insertErr } = await supabase
+        .from("error_bank")
+        .insert({
+          user_id: userId,
+          tema,
+          subtema: subtema || null,
+          tipo_questao: tipoQuestao,
+          conteudo: conteudo?.slice(0, 500) || null,
+          motivo_erro: motivoErro || null,
+          categoria_erro: categoriaErro || null,
+          dificuldade: dificuldade || 3,
+          vezes_errado: 1,
+          question_id: questionId || null,
+        })
+        .select("id")
+        .single();
+
+      if (insertErr || !inserted) {
+        console.warn("[RECOVERY_LOOP_ERROR_INSERT_FAIL]", {
+          userId,
+          tema,
+          error: insertErr?.message,
+        });
+        return;
       }
+
+      console.info("[RECOVERY_LOOP_ERROR_LOGGED]", {
+        userId,
+        questionId: questionId ?? null,
+        tema,
+        tipoQuestao,
+        existingError: false,
+        newError: true,
+        errorId: inserted.id,
+        vezesErrado: 1,
+      });
+
+      // Elo 1: FSRS do erro (mantém comportamento existente)
+      ensureFsrsCard(userId, "erro", inserted.id);
+
+      // Elo 2 (NOVO): Erro → Flashcard pessoal de revisão
+      await createRecoveryFlashcard({
+        userId,
+        errorId: inserted.id,
+        questionId,
+        tema,
+        subtema,
+        conteudo,
+        motivoErro,
+        dificuldade,
+      });
     }
   } catch (err) {
-    console.error("Error logging to error_bank:", err);
+    console.error("[RECOVERY_LOOP_FAIL]", err);
+  }
+}
+
+/**
+ * Cria flashcard pessoal de revisão a partir de um erro.
+ * Idempotente: se já existe flashcard com metadata.from_error_id == errorId,
+ * ou (quando questionId presente) metadata.question_id == questionId, não cria outro.
+ */
+async function createRecoveryFlashcard(args: {
+  userId: string;
+  errorId: string;
+  questionId?: string;
+  tema: string;
+  subtema?: string;
+  conteudo?: string;
+  motivoErro?: string;
+  dificuldade?: number;
+}): Promise<void> {
+  const { userId, errorId, questionId, tema, subtema, conteudo, motivoErro, dificuldade } = args;
+
+  try {
+    // Idempotência 1: já há flashcard para este erro?
+    const { data: byError } = await supabase
+      .from("flashcards")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("is_global", false)
+      .contains("metadata", { from_error_id: errorId })
+      .maybeSingle();
+
+    if (byError?.id) {
+      console.info("[RECOVERY_LOOP_FLASHCARD_SKIP]", {
+        reason: "already_exists_for_error",
+        errorId,
+        flashcardId: byError.id,
+      });
+      return;
+    }
+
+    // Idempotência 2: já há flashcard para esta questão?
+    if (questionId) {
+      const { data: byQuestion } = await supabase
+        .from("flashcards")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("is_global", false)
+        .contains("metadata", { question_id: questionId })
+        .maybeSingle();
+
+      if (byQuestion?.id) {
+        console.info("[RECOVERY_LOOP_FLASHCARD_SKIP]", {
+          reason: "already_exists_for_question",
+          questionId,
+          flashcardId: byQuestion.id,
+        });
+        return;
+      }
+    }
+
+    const front =
+      conteudo && conteudo.trim().length > 0
+        ? `Revisão de erro — ${tema}\n\n${conteudo.slice(0, 480)}`
+        : `Revisão de erro em ${tema}${subtema ? ` / ${subtema}` : ""}`;
+
+    const back = motivoErro?.trim() || `Reveja o conceito de ${tema}.`;
+
+    const { data: inserted, error: insErr } = await supabase
+      .from("flashcards")
+      .insert({
+        user_id: userId,
+        question: front,
+        answer: back,
+        explanation: motivoErro || null,
+        topic: tema,
+        subtopic: subtema || null,
+        difficulty: dificuldade || 3,
+        is_global: false,
+        source: "error_bank",
+        generation_method: "recovery_loop_v1",
+        reviewed_by_human: false,
+        metadata: {
+          from_error_id: errorId,
+          question_id: questionId || null,
+          source: "error_bank",
+          created_by: "recovery_loop_v1",
+        },
+      })
+      .select("id")
+      .single();
+
+    if (insErr || !inserted) {
+      console.warn("[RECOVERY_LOOP_FLASHCARD_INSERT_FAIL]", {
+        errorId,
+        error: insErr?.message,
+      });
+      return;
+    }
+
+    console.info("[RECOVERY_LOOP_FLASHCARD_CREATED]", {
+      userId,
+      flashcardId: inserted.id,
+      errorId,
+      questionId: questionId || null,
+      tema,
+    });
+
+    // Elo 3: FSRS do flashcard recém-criado (bloqueante, com rollback)
+    const fsrsRes = await ensurePersonalFlashcardFsrs({
+      userId,
+      flashcardId: inserted.id,
+      source: "flashcards_bank",
+    });
+
+    if (!fsrsRes.ok) {
+      console.warn("[RECOVERY_LOOP_FLASHCARD_FSRS_FAIL]", {
+        flashcardId: inserted.id,
+        errorId,
+      });
+    }
+  } catch (err: any) {
+    console.error("[RECOVERY_LOOP_FLASHCARD_EXCEPTION]", {
+      errorId,
+      message: err?.message ?? String(err),
+    });
   }
 }
