@@ -50,21 +50,30 @@ Ao concluir o bloco, encerre com a pergunta obrigatória:
     }
 
     // ── 2. AI EXECUTION via runAI orchestrator (LOTE 2) ────────────────────
-    const aiResult = await runAI({
-      taskType: "tutor_chat",
-      complexity: "medium",
-      topic: topic || null,
-      userId,
-      requestId,
-      sessionId: conversationId || null,
-      supabase: supabaseAdmin,
-      messages: [
-        { role: "system", content: enhancedSystemPrompt },
-        ...messages
-      ],
-    });
+    logger.info("MENTOR_CHAT_RUNAI_START", `task=tutor_chat`);
+    let aiResult;
+    try {
+      aiResult = await runAI({
+        taskType: "tutor_chat",
+        complexity: "medium",
+        topic: topic || null,
+        userId,
+        requestId,
+        sessionId: conversationId || null,
+        supabase: supabaseAdmin,
+        messages: [
+          { role: "system", content: enhancedSystemPrompt },
+          ...messages
+        ],
+      });
+      logger.info("MENTOR_CHAT_RUNAI_OK", `provider=${aiResult?.provider || "?"} model=${aiResult?.model || "?"}`);
+    } catch (aiErr) {
+      logger.error("MENTOR_CHAT_RUNAI_FAIL", (aiErr as Error).message);
+      throw aiErr;
+    }
 
     const content = aiResult.content || "";
+
 
     // ── 3. RESILIENT PERSISTENCE ───────────────────────────────────────────
     if (conversationId) {
