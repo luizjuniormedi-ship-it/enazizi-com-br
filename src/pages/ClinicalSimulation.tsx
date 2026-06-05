@@ -663,6 +663,41 @@ const ClinicalSimulation = () => {
       if (res.category_scores) setCategoryScores(res.category_scores);
       if (res.differential_diagnosis) setDifferentialDiagnosis(res.differential_diagnosis);
 
+      // Wave 5.2 - Cognitive Interruption
+      if (res.cognitive_interruption) {
+        setCognitiveEvent(res.cognitive_interruption);
+        playSound("alarm");
+        toast({
+          title: "🚨 INTERRUPÇÃO COGNITIVA",
+          description: res.cognitive_interruption.message,
+          variant: res.cognitive_interruption.priority === 'high' ? "destructive" : "default"
+        });
+      }
+
+      // Wave 5.3 - Prescription Audit
+      if (res.prescription_validation) {
+        setPrescriptionAudit(res.prescription_validation);
+        if (res.prescription_validation.status !== 'correct') {
+          playSound("worsened");
+          toast({
+            title: "⚠️ ERRO DE PRESCRIÇÃO",
+            description: res.prescription_validation.feedback,
+            variant: "destructive"
+          });
+        }
+      }
+
+      // Wave 5.4 - Clinical Scales
+      if (res.scale_audit) {
+        setScaleAudit(res.scale_audit);
+        if (res.scale_audit.missed?.length > 0) {
+          toast({
+            title: "📋 ESCALAS ESQUECIDAS",
+            description: `Você esqueceu: ${res.scale_audit.missed.join(", ")}`,
+            variant: "default"
+          });
+        }
+      }
 
       if (res.structured_data?.summary) {
         const sd = res.structured_data;
@@ -675,6 +710,7 @@ const ClinicalSimulation = () => {
           summary: sd.summary, system: sd.system || undefined, timestamp: Date.now(),
         }]);
       }
+
 
       setConversationHistory([...updatedHistory, { role: "assistant", content: JSON.stringify(res) }]);
     } catch (e) {
