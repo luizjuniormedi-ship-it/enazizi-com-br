@@ -945,6 +945,13 @@ const Simulados = () => {
         throw new Error("Nenhuma questão foi carregada do banco de questões.");
       }
 
+      if (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
+        setQuestions(allGenerated);
+        setPartialMessage(`Encontramos apenas ${allGenerated.length} questões para os filtros selecionados.`);
+        setPhase("partial");
+        return;
+      }
+
       if (isMontarBancoFlow) {
         setLoadingPercent(75);
         setLoadingProgress("Montando ambiente de prova...");
