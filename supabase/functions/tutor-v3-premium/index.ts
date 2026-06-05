@@ -523,7 +523,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           modelUsed: aiResponse?.model || "openai",
           source: "tutor_v3",
           scope: "user",
-          userId,
+          userId: activeUserId,
           teachingMode: activeBlock,
         });
         if (savedId) {
