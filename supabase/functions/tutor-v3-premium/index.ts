@@ -378,8 +378,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           content: `${PROMPT_COMPLETO}
           
           # OBJETIVO OBRIGATÓRIO DO MOMENTO:
-          Você está no ${nextBlock}: ${currentBlockConfig.title}.
-          Sua missão única agora: ${blockObjective}
+          Você está no ${activeBlock}: ${activeBlockConfig.title}.
+          Sua missão única agora: ${activeBlockObjective}
 
           # REGRAS DE SAÍDA JSON:
           Você DEVE retornar um JSON com:
