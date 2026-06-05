@@ -252,7 +252,12 @@ async function generateBatch(
 
     // [QUESTION_GEN_FINAL_OK]
     console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount} (${durationMs}ms)`);
-    return { questions: mapQuestions(data.questions || [], topics), sessionId: data.session_id || null };
+    return { 
+      questions: mapQuestions(data.questions || [], topics), 
+      sessionId: data.session_id || null,
+      insufficientQuestions: data.insufficientQuestions,
+      message: data.message
+    };
 
   } catch (e) {
     const durationMs = Math.round(performance.now() - startedAt);
