@@ -33,6 +33,7 @@ function getSourcePriority(source: string | null | undefined): number {
 }
 
 type Phase = "setup" | "loading" | "exam" | "review" | "result";
+type SimuladoMode = "padrao" | "impacto";
 
 const ExamSimulator = () => {
   const { user } = useAuth();
@@ -47,6 +48,7 @@ const ExamSimulator = () => {
   const [examConfig, setExamConfig] = useState({ questionCount: 50, timeMinutes: 120, areas: ["Clínica Médica", "Cirurgia", "Pediatria", "GO", "Preventiva", "Oncologia"], difficulty: "intermediario" });
   const [cycleFilter, setCycleFilter] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [mode, setMode] = useState<SimuladoMode>("padrao");
   const timerRef = useRef<NodeJS.Timeout>();
 
   // Session persistence
@@ -109,13 +111,34 @@ const ExamSimulator = () => {
         .limit(200);
       const answeredIds = new Set((pastAttempts || []).map(a => a.question_id));
 
-      const { data: bankQuestions, error: bankError } = await supabase
-        .from("questions_bank")
-        .select("id, statement, options, correct_index, topic, explanation, source")
-        .or(`user_id.eq.${user!.id},is_global.eq.true`)
-        .limit(1000);
-
-      if (bankError) throw bankError;
+      let bankQuestions: any[] = [];
+      
+      if (mode === "impacto") {
+        // High Impact Mode: Fetch questions classified for high impact themes
+        const { data: impactQuestions, error: impactError } = await supabase.rpc('get_high_impact_questions', {
+          p_user_id: user!.id,
+          p_limit: examConfig.questionCount * 2 // Fetch more to allow filtering
+        });
+        
+        if (impactError) throw impactError;
+        bankQuestions = impactQuestions || [];
+        
+        // Telemetry: [HIGH_IMPACT_THEME_SELECTED]
+        import("@/lib/safeTelemetry").then(({ emitSafeEvent }) => {
+          emitSafeEvent("HIGH_IMPACT_THEME_SELECTED", {
+            questionCount: bankQuestions.length,
+            mode: "simulado_impacto"
+          });
+        });
+      } else {
+        const { data: standardQuestions, error: bankError } = await supabase
+          .from("questions_bank")
+          .select("id, statement, options, correct_index, topic, explanation, source")
+          .or(`user_id.eq.${user!.id},is_global.eq.true`)
+          .limit(1000);
+        if (bankError) throw bankError;
+        bankQuestions = standardQuestions || [];
+      }
 
       let examQuestions: ExamQuestion[] = (bankQuestions || [])
         .map((q: any) => ({
@@ -352,6 +375,30 @@ const ExamSimulator = () => {
         </div>
 
         <div className="glass-card p-6 space-y-5">
+          {/* Mode Selection */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <button 
+              onClick={() => setMode("padrao")}
+              className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${mode === "padrao" ? 'border-primary bg-primary/10 shadow-lg' : 'border-border bg-card hover:bg-muted'}`}
+            >
+              <FileText className={`h-6 w-6 ${mode === "padrao" ? 'text-primary' : 'text-muted-foreground'}`} />
+              <div className="text-center">
+                <p className="text-sm font-black uppercase">Simulado Padrão</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Distribuição balanceada</p>
+              </div>
+            </button>
+            <button 
+              onClick={() => setMode("impacto")}
+              className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${mode === "impacto" ? 'border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/10' : 'border-border bg-card hover:bg-muted'}`}
+            >
+              <Zap className={`h-6 w-6 ${mode === "impacto" ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
+              <div className="text-center">
+                <p className="text-sm font-black uppercase">Maior Impacto</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Foco total em aprovação</p>
+              </div>
+            </button>
+          </div>
+
           {/* Area/Topic selection */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Selecione as áreas/assuntos</label>
