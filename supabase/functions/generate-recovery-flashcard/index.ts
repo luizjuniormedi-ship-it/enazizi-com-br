@@ -9,7 +9,7 @@ import { applyQualityGate, insertFlashcardsWithFsrs } from "../_shared/flashcard
  * ENAZIZI — GENERATE RECOVERY FLASHCARD
  * Converts a student error into 1-3 high-retention atomic flashcards.
  */
-Deno.serve(enterpriseEdgeHandler("generate-recovery-flashcard", async ({ req, logger, supabaseAdmin, ai, correlation }) => {
+Deno.serve(enterpriseEdgeHandler("generate-recovery-flashcard", async ({ req, logger, supabaseAdmin, correlation }) => {
   const { requestId, correlationId } = correlation;
   const authResult = await requireAuth(req);
   let userId = authResult.userId;
@@ -25,7 +25,6 @@ Deno.serve(enterpriseEdgeHandler("generate-recovery-flashcard", async ({ req, lo
   }
 
   const { errorId, questionId, topic, context, userAnswer, reason } = body;
-
 
   if (!errorId && !questionId) {
     return new Response(JSON.stringify({ error: "errorId or questionId is required" }), { status: 400, headers: corsHeaders });
@@ -57,11 +56,14 @@ Deno.serve(enterpriseEdgeHandler("generate-recovery-flashcard", async ({ req, lo
       Gere 1 a 3 flashcards ATÔMICOS que foquem no CONCEITO FALHO que levou ao erro.
       O card deve ser curto, direto e testar apenas UM ponto.
       NUNCA mencione "o aluno errou", "alternativa correta", "reveja a questão".
-      Foque na regra de ouro ou no sinal clínico que foi ignorado.` }
+      Foque na regra de ouro ou no sinal clínico que foi ignorado.
+      
+      IMPORTANTE: Se você não conseguir gerar o JSON agora por falta de créditos, não responda com texto puro. Retorne um JSON vazio [].` }
     ],
     userId,
     requestId,
     supabase: supabaseAdmin,
+    emergencyTemplate: "[]",
   });
 
   const rawContent = aiResponse?.content || "[]";
