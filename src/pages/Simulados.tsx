@@ -185,10 +185,11 @@ async function generateBatch(
   includeWeakThemes?: boolean,
   includePreviousErrors?: boolean,
   mode: SimuladoMode = "estudo",
-  avoidIds?: string[]
-): Promise<{ questions: SimQuestion[]; sessionId: string | null }> {
-  // [QUESTION_GEN_START]
-  console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
+  avoidIds?: string[],
+  selectedSubtopics: string[] = []
+): Promise<{ questions: SimQuestion[]; sessionId: string | null; insufficientQuestions?: boolean; message?: string }> {
+  // [SIM_UI_FILTERS_SUBMITTED]
+  console.log("[SIM_UI_FILTERS_SUBMITTED] Config:", { topics, count, difficulty, examBoard, mode, selectedSubtopics });
   const startedAt = performance.now();
 
   try {
@@ -200,6 +201,7 @@ async function generateBatch(
           difficulty,
           specialty: topics[0] || "Clínica Médica",
           topics,
+          selectedSubtopics,
           targetExam: examBoard,
           mode,
           avoidIds,
