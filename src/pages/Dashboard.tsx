@@ -415,6 +415,11 @@ const Dashboard = () => {
               <EvidenceValidationDashboard />
             </Suspense>
           </div>
+          <div className="mt-12">
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <EvidenceGovernanceDashboard />
+            </Suspense>
+          </div>
         </div>
 
         <div className="px-4 sm:px-8 lg:px-14 pb-12">
