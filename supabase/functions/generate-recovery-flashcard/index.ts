@@ -30,7 +30,47 @@ Deno.serve(enterpriseEdgeHandler("generate-recovery-flashcard", async ({ req, lo
     return new Response(JSON.stringify({ error: "errorId or questionId is required" }), { status: 400, headers: corsHeaders });
   }
 
-  logger.info("RECOVERY_FLASHCARD_GEN_START", `Generating recovery cards for topic: ${topic}`, { userId, errorId, questionId });
+  // [AI COST REDUCTION] ── RECOVERY LOOP SEM IA ────────────────────────────────
+  const localTemplates: Record<string, any> = {
+    "SEPSE": [
+      { "front": "Qual a primeira conduta na suspeita de Sepse?", "back": "Coletar lactato, hemoculturas e iniciar antibiótico na 1ª hora.", "explanation": "Protocolo 1h reduz drasticamente mortalidade.", "difficulty": 2 }
+    ],
+    "IAM": [
+      { "front": "No IAM com supra de ST, qual o prazo ideal para porta-balão?", "back": "Menos de 90 minutos.", "explanation": "Reperfusão precoce salva miocárdio.", "difficulty": 3 }
+    ],
+    "IC": [
+      { "front": "Qual medicação na IC com FE reduzida NÃO deve ser iniciada na fase aguda descompensada?", "back": "Beta-bloqueadores.", "explanation": "Podem piorar o baixo débito se o paciente não estiver euvolêmico.", "difficulty": 4 }
+    ]
+  };
+
+  const matchedTheme = Object.keys(localTemplates).find(k => topic?.toUpperCase().includes(k));
+  if (matchedTheme && !body.forceAI) {
+    console.log("[LOCAL_KNOWLEDGE_USED] source=recovery_template", { matchedTheme });
+    const cards = localTemplates[matchedTheme];
+    const rows = cards.map((c: any) => ({
+      user_id: userId,
+      question: c.front,
+      answer: c.back,
+      explanation: c.explanation,
+      topic: topic,
+      is_global: false,
+      generation_method: "local_recovery_template_v1",
+      metadata: { from_error_id: errorId, question_id: questionId, source: "error_bank_recovery_local" }
+    }));
+
+    const { flashcards: inserted } = await insertFlashcardsWithFsrs(supabaseAdmin, rows, { userId, topic });
+    console.log("[AI_COST_SAVED] amount=0.01 source=recovery_template");
+
+    return new Response(JSON.stringify({
+      success: true,
+      count: inserted.length,
+      cards: inserted,
+      source: "local_template"
+    }), { headers: corsHeaders });
+  }
+
+  logger.info("RECOVERY_FLASHCARD_GEN_START", `Generating recovery cards via AI for topic: ${topic}`, { userId, errorId, questionId });
+
 
   // 1. Fetch more context if available
   let fullContext = context || "";
