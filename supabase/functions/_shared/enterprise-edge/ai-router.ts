@@ -92,10 +92,13 @@ export async function callAi(
     const modelName = modelString.split('/')[1] || modelString;
     const circuit = CircuitBreaker.getInstance(provider);
 
+    console.log(`[TUTOR_PROVIDER_SELECTED] provider=${provider} model=${modelName}`);
+
     if (circuit.isOpen()) {
-      console.warn(`[CIRCUIT_SKIP] Skipping ${provider} due to OPEN circuit.`);
+      console.warn(`[TUTOR_PROVIDER_FAIL] Skipping ${provider} due to OPEN circuit.`);
       continue;
     }
+
 
     const maxRetries = provider === "openai" ? 2 : 1;
     const timeoutMs = provider === "openai" ? 25000 : 20000;
