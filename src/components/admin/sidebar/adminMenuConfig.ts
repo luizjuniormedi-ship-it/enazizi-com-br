@@ -64,6 +64,16 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["centro de comando", "ceo", "kpi", "executivo"],
       },
       {
+        to: "/admin/effectiveness",
+        label: "Learning Effectiveness",
+        description: "Análise de impacto pedagógico, readiness e eficácia do Tutor.",
+        icon: Target,
+        scopes: ["super_admin", "admin_pedagogico"],
+        badge: "Novo",
+        keywords: ["war room", "effectiveness", "eficácia", "aprendizado", "readiness"],
+      },
+      {
+
         to: "/admin/monitoring",
         label: "Alunos",
         description: "Painel do mentor: alunos em risco, progresso e intervenções.",
