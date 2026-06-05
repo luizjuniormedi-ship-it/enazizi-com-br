@@ -324,18 +324,19 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       ]
     };
 
-    console.log("[MEMORY_MISS_OPENAI]", { topic, qLen: userQuestion.length, action: decision.action });
+    console.log("[TUTOR_RUNAI_START]", { topic, qLen: userQuestion.length, action: decision.action });
     waitUntil(bumpMetric(supabaseAdmin, "openai_calls"));
     
     const aiConfigToRun = {
       ...aiConfig,
-      // REPAIR: Ensure taskType is correct for orchestrator
       taskType: "tutor_chat" as any, 
       topic,
       complexity: "high" as any
     };
 
     const aiResponse = await ai(aiConfigToRun, { retries: 2 });
+    console.log("[TUTOR_RUNAI_OK]");
+
 
 
     // ── 4. STABILITY & PARSING ───────────────────────────────
