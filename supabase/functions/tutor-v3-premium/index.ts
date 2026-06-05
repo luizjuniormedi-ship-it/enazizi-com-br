@@ -539,7 +539,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       source: normalized.source,
       debug: {
         studentIntent,
-        nextBlock
+        nextBlock: activeBlock
       }
     }, 200);
 
