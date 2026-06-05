@@ -703,6 +703,7 @@ const Simulados = () => {
           }
           
           let batchData: any = null;
+          let batchErr: any = null;
           
           try {
             console.log(`[Simulados] Lote ${batchNum}: Chamando question-generator. Count: ${currentBatchSize}`);
