@@ -651,6 +651,8 @@ const ClinicalSimulation = () => {
       }
 
       if (res.category_scores) setCategoryScores(res.category_scores);
+      if (res.differential_diagnosis) setDifferentialDiagnosis(res.differential_diagnosis);
+
 
       if (res.structured_data?.summary) {
         const sd = res.structured_data;
