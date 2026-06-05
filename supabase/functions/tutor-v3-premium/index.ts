@@ -5,7 +5,7 @@ import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockI
 import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory, estimateQualityScore } from "../_shared/tutor-memory.ts";
 import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
-import { normalizeTutorResponse, TutorResponse } from "../_shared/ai-stability-kit.ts";
+import { normalizeTutorResponse, TutorResponse, getStaticFallback } from "../_shared/ai-stability-kit.ts";
 
 
 // Métrica fire-and-forget — nunca trava o fluxo.
