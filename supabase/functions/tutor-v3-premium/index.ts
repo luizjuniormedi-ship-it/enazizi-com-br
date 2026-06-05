@@ -354,6 +354,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       console.log("[MEMORY_AB_REGEN_PROCEED]", { memoryId: decision.memoryId });
     }
 
+    // Determine current block from session or decision
+    const activeBlock = nextBlock;
+    const activeBlockConfig = currentBlockConfig;
+    const activeBlockObjective = blockObjective;
+
 
     // Determine Cost Tier for AI Routing
     let costTier: "LOW_COST" | "NORMAL" | "PREMIUM" = "NORMAL";
@@ -373,8 +378,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           content: `${PROMPT_COMPLETO}
           
           # OBJETIVO OBRIGATÓRIO DO MOMENTO:
-          Você está no ${nextBlock}: ${currentBlockConfig.title}.
-          Sua missão única agora: ${blockObjective}
+          Você está no ${activeBlock}: ${activeBlockConfig.title}.
+          Sua missão única agora: ${activeBlockObjective}
 
           # REGRAS DE SAÍDA JSON:
           Você DEVE retornar um JSON com:
@@ -385,7 +390,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
             "shouldWaitForStudent": true,
             "actionsContext": {
               "topic": "${topic}",
-              "block": "${nextBlock}"
+              "block": "${activeBlock}"
             }
           }
           
@@ -460,14 +465,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         await supabaseAdmin.from("tutor_learning_memory").upsert({
           user_id: userId,
           topic: topic,
-          block_title: nextBlock,
+          block_title: activeBlock,
           mastery_level: (normalized.metadata as any)?.mastery_level || masteryLevel,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id,topic' });
 
         if (sessionId) {
           await supabaseAdmin.from("tutor_sessions").update({
-            current_block: nextBlock,
+            current_block: activeBlock,
             updated_at: new Date().toISOString()
           }).eq("id", sessionId);
         }
@@ -480,8 +485,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           metadata: { 
             request_id: requestId, 
             correlation_id: correlationId,
-            block: nextBlock,
-            blockTitle: currentBlockConfig.title,
+            block: activeBlock,
+            blockTitle: activeBlockConfig.title,
             intent: studentIntent,
             socraticQuestion: normalized.socraticQuestion,
             source: normalized.source
@@ -507,7 +512,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           source: "tutor_v3",
           scope: "user",
           userId,
-          teachingMode: nextBlock,
+          teachingMode: activeBlock,
         });
         if (savedId) {
           console.log("[TUTOR_MEMORY_PRIVATE_SAVE]", { savedId, userId, topic });
@@ -523,18 +528,18 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       success: true,
       ok: true,
       content: normalized.content,
-      currentBlock: nextBlock,
-      blockTitle: currentBlockConfig.title,
+      currentBlock: activeBlock,
+      blockTitle: activeBlockConfig.title,
       teachingPhase: normalized.teachingPhase,
       shouldWaitForStudent: true,
       socraticQuestion: normalized.socraticQuestion,
-      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: nextBlock },
+      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
       topic,
       correlation_id: correlationId,
       source: normalized.source,
       debug: {
         studentIntent,
-        nextBlock
+        nextBlock: activeBlock
       }
     }, 200);
 
