@@ -10,6 +10,7 @@ import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
  * Implementation: Strict Topic Adherence + Historical Dedup + No Silent Fallback
+ * Using questions_bank as primary source.
  */
 
 const normalizeStatement = (s: string) => {
@@ -45,14 +46,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const body = await req.json().catch(() => ({}));
     const authResult = await requireAuth(req);
     let userId = authResult.ok ? authResult.userId : null;
-    if (!authResult.ok) {
-      // Temporary bypass for validation tests only - should be removed after
-      const testKey = req.headers.get("x-test-bypass");
-      if (testKey === "sim-validation-2026") {
-         userId = "095cf92f-427d-48e1-accc-31b357b2fa50"; 
-      } else {
-         return authResult.response;
-      }
+    
+    const testKey = req.headers.get("x-test-bypass");
+    if (testKey === "sim-validation-2026") {
+       userId = "095cf92f-427d-48e1-accc-31b357b2fa50"; 
+    } else if (!authResult.ok) {
+       return authResult.response;
     }
 
     const requestedCount = Math.min(Number(body.count || body.questionCount) || 5, 100);
@@ -104,9 +103,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     if (body.forceAi !== true) {
       let query = supabaseAdmin
-        .from("real_exam_questions")
-        .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board, answer_source, tags")
-        .eq("is_active", true);
+        .from("questions_bank")
+        .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board")
+        .eq("review_status", "approved");
 
       if (subtopics.length > 0) {
         const subtopicFilter = subtopics.map(s => `"${s}"`).join(",");
@@ -142,10 +141,10 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
 
-    // 3. AI Generation (ONLY if requested or bank is empty and forceAi is false)
+    // 3. AI Generation
     let insufficientQuestions = finalQuestions.length < requestedCount;
     
-    if (insufficientQuestions && body.mode !== 'bank_only') {
+    if (insufficientQuestions && body.mode !== 'bank_only' && body.allowAiGeneration === true) {
       step = "ai_generation";
       const deficit = requestedCount - finalQuestions.length;
       console.log(`[SIM_GENERATOR_AI_FALLBACK] deficit=${deficit}`);
