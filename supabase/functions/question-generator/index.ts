@@ -10,7 +10,6 @@ import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
  * Implementation: Strict Topic Adherence + Historical Dedup + No Silent Fallback
- * Using questions_bank as primary source.
  */
 
 const normalizeStatement = (s: string) => {
@@ -45,14 +44,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
   try {
     const body = await req.json().catch(() => ({}));
     const authResult = await requireAuth(req);
-    let userId = authResult.ok ? authResult.userId : null;
-    
-    const testKey = req.headers.get("x-test-bypass");
-    if (testKey === "sim-validation-2026") {
-       userId = "095cf92f-427d-48e1-accc-31b357b2fa50"; 
-    } else if (!authResult.ok) {
-       return authResult.response;
-    }
+    if (!authResult.ok) return authResult.response;
+    const userId = authResult.userId;
 
     const requestedCount = Math.min(Number(body.count || body.questionCount) || 5, 100);
     const topics = Array.isArray(body.topics || body.selectedTopics) ? (body.topics || body.selectedTopics) : [body.specialty || "Clínica Médica"];
@@ -101,7 +94,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const seenHashes = new Set<string>();
     const seenNormalized = new Set<string>();
 
-    if (body.forceAi !== true) {
+    if (body.mode !== 'ai_generation') {
       let query = supabaseAdmin
         .from("questions_bank")
         .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board")
