@@ -1,24 +1,32 @@
 import { motion } from "framer-motion";
-import { TrendingUp, Target, Award, ChevronRight } from "lucide-react";
+import { TrendingUp, Target, Award, ChevronRight, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-
-interface AreaChance {
-  area: string;
-  score: number;
-  color: string;
-}
-
-const areaChances: AreaChance[] = [
-  { area: "Clínica Médica", score: 81, color: "bg-blue-500" },
-  { area: "Cirurgia", score: 69, color: "bg-amber-500" },
-  { area: "Pediatria", score: 72, color: "bg-purple-500" },
-  { area: "GO", score: 70, color: "bg-pink-500" },
-  { area: "Preventiva", score: 88, color: "bg-emerald-500" },
-];
+import { useExamReadiness } from "@/hooks/useExamReadiness";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getLabelText } from "@/lib/examReadiness";
 
 export const ApprovalChanceDashboard = () => {
-  const globalChance = Math.round(areaChances.reduce((acc, curr) => acc + curr.score, 0) / areaChances.length);
+  const { data: readinessData, isLoading } = useExamReadiness();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-48 w-full rounded-[32px]" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  // Filter for ENAMED or the first one available
+  const enamed = readinessData?.find(r => r.examKey.toLowerCase().includes('enamed')) || readinessData?.[0];
+
+  if (!enamed) return null;
+
+  const globalChance = enamed.readinessScore;
 
   return (
     <div className="space-y-6">
