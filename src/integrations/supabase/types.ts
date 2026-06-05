@@ -11068,6 +11068,39 @@ export type Database = {
         }
         Relationships: []
       }
+      enamed_forecast_calibration: {
+        Row: {
+          actual_score: number | null
+          calibration_score: number | null
+          confidence_interval: number | null
+          created_at: string | null
+          forecast_error: number | null
+          forecast_score: number
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          actual_score?: number | null
+          calibration_score?: number | null
+          confidence_interval?: number | null
+          created_at?: string | null
+          forecast_error?: number | null
+          forecast_score: number
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          actual_score?: number | null
+          calibration_score?: number | null
+          confidence_interval?: number | null
+          created_at?: string | null
+          forecast_error?: number | null
+          forecast_score?: number
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       enamed_impact_scores: {
         Row: {
           approval_impact_score: number | null
@@ -11187,6 +11220,53 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["specialty_id"]
+          },
+        ]
+      }
+      enamed_recommendation_tracking: {
+        Row: {
+          created_at: string | null
+          id: string
+          performance_gain: number | null
+          readiness_after: number | null
+          readiness_before: number | null
+          recommendation_type: string | null
+          status: string | null
+          theme_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          performance_gain?: number | null
+          readiness_after?: number | null
+          readiness_before?: number | null
+          recommendation_type?: string | null
+          status?: string | null
+          theme_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          performance_gain?: number | null
+          readiness_after?: number | null
+          readiness_before?: number | null
+          recommendation_type?: string | null
+          status?: string | null
+          theme_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enamed_recommendation_tracking_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_matrix"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -20865,6 +20945,36 @@ export type Database = {
         }
         Relationships: []
       }
+      readiness_drift_logs: {
+        Row: {
+          created_at: string | null
+          drift_type: string | null
+          id: string
+          new_score: number | null
+          old_score: number | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          drift_type?: string | null
+          id?: string
+          new_score?: number | null
+          old_score?: number | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          drift_type?: string | null
+          id?: string
+          new_score?: number | null
+          old_score?: number | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       real_exam_questions: {
         Row: {
           answer_source: string
@@ -28310,6 +28420,10 @@ export type Database = {
           question_id: string
           similarity_score: number
         }[]
+      }
+      detect_readiness_drift: {
+        Args: { p_new_score: number; p_user_id: string }
+        Returns: string
       }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
