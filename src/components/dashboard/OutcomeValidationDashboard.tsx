@@ -3,18 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  LineChart, Line, Legend, AreaChart, Area, Cell, PieChart, PolarAngleAxis, PolarRadiusAxis, RadarChart, PolarGrid, Radar
+  LineChart, Line, Legend, AreaChart, Area, Cell
 } from 'recharts';
 import { 
   Trophy, TrendingUp, Microscope, Award, 
-  Target, BarChart3, CheckCircle2, AlertCircle, 
-  ExternalLink, Users, History, Zap
-} from "lucide-center"; // Note: lucide-react is the correct package, used lucide-center in original prompt by mistake, fixing to lucide-react
+  Target, CheckCircle2, 
+  ExternalLink, Users, Zap, ShieldCheck
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
-// Fixed imports
+// Fixed icons
 import { Microscope as MicroscopeIcon, Target as TargetIcon, Award as AwardIcon, Users as UsersIcon, Trophy as TrophyIcon } from "lucide-react";
 
 export default function OutcomeValidationDashboard() {
