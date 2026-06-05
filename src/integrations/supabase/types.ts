@@ -11032,6 +11032,36 @@ export type Database = {
         }
         Relationships: []
       }
+      enamed_component_evidence: {
+        Row: {
+          accuracy_score: number
+          component_name: string
+          confidence_level: string | null
+          id: string
+          last_validated_at: string | null
+          sample_size: number | null
+          success_rate: number
+        }
+        Insert: {
+          accuracy_score: number
+          component_name: string
+          confidence_level?: string | null
+          id?: string
+          last_validated_at?: string | null
+          sample_size?: number | null
+          success_rate: number
+        }
+        Update: {
+          accuracy_score?: number
+          component_name?: string
+          confidence_level?: string | null
+          id?: string
+          last_validated_at?: string | null
+          sample_size?: number | null
+          success_rate?: number
+        }
+        Relationships: []
+      }
       enamed_curriculum_matrix: {
         Row: {
           active: boolean | null
@@ -11599,6 +11629,36 @@ export type Database = {
           pattern_name?: string | null
           suggested_recovery_actions?: string[] | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      evidence_validation_runs: {
+        Row: {
+          forecast_error: number | null
+          id: string
+          metadata: Json | null
+          overall_recommendation_success: number | null
+          readiness_drift: number | null
+          run_date: string | null
+          validation_status: string | null
+        }
+        Insert: {
+          forecast_error?: number | null
+          id?: string
+          metadata?: Json | null
+          overall_recommendation_success?: number | null
+          readiness_drift?: number | null
+          run_date?: string | null
+          validation_status?: string | null
+        }
+        Update: {
+          forecast_error?: number | null
+          id?: string
+          metadata?: Json | null
+          overall_recommendation_success?: number | null
+          readiness_drift?: number | null
+          run_date?: string | null
+          validation_status?: string | null
         }
         Relationships: []
       }
