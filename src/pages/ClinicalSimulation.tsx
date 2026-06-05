@@ -174,6 +174,8 @@ const ClinicalSimulation = () => {
   const [abcdeChecklist, setAbcdeChecklist] = useState<Record<string, boolean>>({ A: false, B: false, C: false, D: false, E: false });
   const [medicalRecord, setMedicalRecord] = useState<MedicalRecordEntry[]>([]);
   const [categoryScores, setCategoryScores] = useState<CategoryScores>({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
+  const [differentialDiagnosis, setDifferentialDiagnosis] = useState<string[]>([]);
+
 
   // ─── TIMER / DETERIORATION ───
   // Wave 1.2 — countdown agora vive em useCountdownTimer (interval único + logs).
