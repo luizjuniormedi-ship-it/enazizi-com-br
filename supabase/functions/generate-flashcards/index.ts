@@ -13,6 +13,8 @@ import {
   FLASHCARD_MAX_QUANTITY,
   FLASHCARD_GOV_VERSION,
 } from "../_shared/flashcard-governance.ts";
+import { generateSHA256 } from "../_shared/crypto-utils.ts";
+
 
 /**
  * ENAZIZI — GENERATE FLASHCARDS
@@ -83,34 +85,52 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
       AI_MODELS.FAST
     );
 
-    logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Generating ${quantity} flashcards via AI`, { 
-      resolvedModel: model,
-      topic,
-      correlation_id: correlationId
-    });
+    const contentHash = await generateSHA256(`${topic || ''}_${contextText.slice(0, 10000)}_${quantity}`);
+    
+    // 1. Check Flashcard Cache (AI COST REDUCTION PHASE A)
+    const { data: cached } = await supabaseAdmin
+      .from("flashcard_generation_cache")
+      .select("cards")
+      .eq("content_hash", contentHash)
+      .maybeSingle();
 
-    // LOTE 1 — Migrado para runAI() (orchestrator central com telemetria + cost metrics)
-    const aiResponse = await runAI({
-      taskType: "flashcard",
-      complexity: "high",
-      requiresJSON: true,
-      messages: [
-        { role: "system", content: FLASHCARD_MOTOR_PREMIUM },
-        { role: "user", content: `Gere exatamente ${quantity} flashcards médicos de alta retenção sobre o tema: ${topic || 'Medicina'}. ${contextText ? `Use este contexto: ${contextText.slice(0, 15000)}` : ''}
-        
-        RETORNE APENAS UM JSON ARRAY VÁLIDO COM ESTAS CHAVES:
-        [
-          {"type": "concept|cloze|conduct|...", "front": "pergunta curta...", "back": "resposta curta...", "explanation": "justificativa...", "difficulty": 1-5, "atomic": true}
-        ]
-        REGRAS: Máximo 120 chars na frente, 20 palavras no verso. NUNCA use alternativas (A, B, C, D).` }
-      ],
-      userId,
-      requestId: job.id,
-      supabase: supabaseAdmin,
-      emergencyTemplate: "[]",
-    });
+    let rawContent = "";
+    let usedCache = false;
 
-    const rawContent = aiResponse?.content || "[]";
+    if (cached) {
+      console.log(`[FLASHCARD_CACHE_HIT] hash=${contentHash.substring(0, 8)}`);
+      rawContent = JSON.stringify(cached.cards);
+      usedCache = true;
+    } else {
+      logger.info("FINAL_AI_MODEL_BEFORE_GATEWAY", `Generating ${quantity} flashcards via AI`, { 
+        resolvedModel: model,
+        topic,
+        correlation_id: correlationId
+      });
+
+      // LOTE 1 — Migrado para runAI() (orchestrator central com telemetria + cost metrics)
+      const aiResponse = await runAI({
+        taskType: "flashcard",
+        complexity: "high",
+        requiresJSON: true,
+        messages: [
+          { role: "system", content: FLASHCARD_MOTOR_PREMIUM },
+          { role: "user", content: `Gere exatamente ${quantity} flashcards médicos de alta retenção sobre o tema: ${topic || 'Medicina'}. ${contextText ? `Use este contexto: ${contextText.slice(0, 15000)}` : ''}
+          
+          RETORNE APENAS UM JSON ARRAY VÁLIDO COM ESTAS CHAVES:
+          [
+            {"type": "concept|cloze|conduct|...", "front": "pergunta curta...", "back": "resposta curta...", "explanation": "justificativa...", "difficulty": 1-5, "atomic": true}
+          ]
+          REGRAS: Máximo 120 chars na frente, 20 palavras no verso. NUNCA use alternativas (A, B, C, D).` }
+        ],
+        userId,
+        requestId: job.id,
+        supabase: supabaseAdmin,
+        emergencyTemplate: "[]",
+      });
+      rawContent = aiResponse?.content || "[]";
+    }
+
     let cards = [];
     try {
       const parsed = parseAiJson(rawContent);
@@ -155,6 +175,17 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
           rejected_samples: rejected.slice(0, 3),
         }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+
+      // 2. Save to Cache if newly generated
+      if (!usedCache) {
+        await supabaseAdmin.from("flashcard_generation_cache").insert({
+          content_hash: contentHash,
+          cards: accepted,
+          topic: topic
+        });
+        console.log("[AI_COST_SAVED] source=flashcard_cache");
+      }
+
 
       const { data: deck } = await supabaseAdmin.from("flashcard_decks")
         .upsert({
