@@ -83,7 +83,7 @@ const getAudioCtx = () => {
     return _sharedAudioCtx;
   } catch { return null; }
 };
-const playSound = (type: "response" | "worsened" | "positive" | "negative") => {
+const playSound = (type: "response" | "worsened" | "positive" | "negative" | "timeout" | "alarm") => {
   try {
     const ctx = getAudioCtx(); if (!ctx) return;
     const osc = ctx.createOscillator();
@@ -95,9 +95,12 @@ const playSound = (type: "response" | "worsened" | "positive" | "negative") => {
       case "worsened": osc.frequency.value = 220; osc.type = "sawtooth"; osc.start(); osc.stop(ctx.currentTime + 0.3); break;
       case "positive": osc.frequency.value = 660; osc.start(); osc.stop(ctx.currentTime + 0.12); break;
       case "negative": osc.frequency.value = 330; osc.type = "square"; osc.start(); osc.stop(ctx.currentTime + 0.15); break;
+      case "timeout": osc.frequency.value = 110; osc.type = "triangle"; osc.start(); osc.stop(ctx.currentTime + 1.0); break;
+      case "alarm": osc.frequency.value = 880; osc.type = "sine"; osc.start(); osc.stop(ctx.currentTime + 0.5); break;
     }
   } catch {}
 };
+
 
 
 const getTriageEmoji = (color: string) => {
