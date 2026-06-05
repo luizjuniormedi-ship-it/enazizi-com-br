@@ -960,8 +960,8 @@ const ClinicalSimulation = () => {
       {/* ACTIVE SIMULATION */}
       {(phase === "active" || phase === "finishing") && (
         <div className="flex flex-col" style={{ height: isFullscreen ? "calc(100vh - 8px)" : "calc(100vh - 80px)" }}>
-          <div className="shrink-0 flex items-stretch">
-            <div className="flex-1 min-w-0">
+          <div className="shrink-0 flex items-stretch bg-white border-b border-border/50">
+            <div className="flex-1 min-w-0 flex items-center">
               <ShiftHeader
                 patientStatus={patientStatus}
                 statusAlert={statusAlert}
@@ -975,6 +975,9 @@ const ClinicalSimulation = () => {
                 inactivityWarning={inactivityWarning}
                 abcdeChecklist={abcdeChecklist}
               />
+              <div className="hidden md:flex px-4 border-l border-slate-100">
+                <CareerBadge />
+              </div>
             </div>
             <button
               type="button"
