@@ -196,6 +196,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         }
       })());
 
+      // [FIX] Persist fallback message to ensure history consistency
+      waitUntil((async () => {
+        if (sessionId && activeUserId) {
+          await supabaseAdmin.from("tutor_messages").insert({
+            tutor_session_id: sessionId,
+            user_id: activeUserId,
+            role: "assistant",
+            content: normalizedLocal.content,
+            metadata: { 
+              request_id: requestId, 
+              correlation_id: correlationId,
+              block: nextBlock,
+              source: "fallback",
+              topic
+            }
+          });
+        }
+      })());
+
       return corsResponse({
         success: true,
         ok: true,
