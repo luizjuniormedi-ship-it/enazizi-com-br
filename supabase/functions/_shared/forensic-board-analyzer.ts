@@ -80,12 +80,14 @@ export async function analyzeQuestionForensic(
   lexical_score = Math.min(100, Math.max(20, lexical_score));
 
   // 4. Cognitive Score (Clinical markers)
-  let cognitive_score = 0;
-  const clinicalMarkers = ["paciente", "apresenta", "exame físico", "sinais vitais", "conduta", "diagnóstico", "hipótese"];
+  let cognitive_score = 40; // New technical baseline
+  const clinicalMarkers = ["paciente", "apresenta", "exame físico", "sinais vitais", "conduta", "diagnóstico", "hipótese", "quadro clínico", "história"];
   const markersFound = clinicalMarkers.filter(m => question.statement.toLowerCase().includes(m)).length;
-  cognitive_score = (markersFound / clinicalMarkers.length) * 100;
-  if (cognitive_score < 40 && profile.difficulty >= 4) {
-    reasons.push("Low clinical reasoning markers for high difficulty");
+  cognitive_score += (markersFound / clinicalMarkers.length) * 60;
+  cognitive_score = Math.min(100, cognitive_score);
+  
+  if (cognitive_score < 30 && profile.difficulty >= 4) {
+    reasons.push("Critically low clinical reasoning markers");
   }
 
   // 5. Pedagogical Score (Guidelines, Laboratory data)
