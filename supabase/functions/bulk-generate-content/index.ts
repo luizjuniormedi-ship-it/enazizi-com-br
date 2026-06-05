@@ -90,13 +90,13 @@ Retorne APENAS um objeto JSON no formato:
 }`;
 
       const aiResponse = await callAi({
-        model: ALLOWED_MODELS.generation,
+        model: ALLOWED_MODELS.reasoning,
         messages: [
-          { role: "system", content: "Você é um Professor Ph.D. em Medicina. Sua missão é gerar questões indestrutíveis para auditoria forense. Responda APENAS JSON." },
+          { role: "system", content: "Você é um Professor Ph.D. em Medicina, especialista em bancas como ENARE e USP. Sua missão é gerar questões exaustivas, técnicas e densas. Responda APENAS JSON." },
           { role: "user", content: prompt }
         ],
         max_tokens: 4000,
-        temperature: 0.8, // Slightly higher to avoid repetitive patterns flagged by forensic
+        temperature: 0.7,
         taskType: "reasoning"
       }, logger, supabaseAdmin);
 
