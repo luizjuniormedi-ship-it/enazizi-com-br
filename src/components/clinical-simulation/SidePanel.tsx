@@ -99,6 +99,26 @@ const SidePanel = memo(function SidePanel({
             </div>
           ))}
         </div>
+        
+        {/* Hipóteses Diagnósticas */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Target className="h-3.5 w-3.5 text-purple-400" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Hipóteses</span>
+          </div>
+          <div className="space-y-1">
+            {differentialDiagnosis.length === 0 ? (
+              <p className="text-[10px] text-muted-foreground italic px-1">Nenhuma hipótese formulada.</p>
+            ) : (
+              differentialDiagnosis.map((h, i) => (
+                <div key={i} className="px-2 py-1.5 rounded bg-purple-500/5 border border-purple-500/20">
+                  <p className="text-[11px] font-medium leading-tight">{h}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
 
         {/* Prontuário */}
         <Sheet open={medRecordOpen} onOpenChange={onMedRecordOpenChange}>
