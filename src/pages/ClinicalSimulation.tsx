@@ -1070,8 +1070,9 @@ const ClinicalSimulation = () => {
 
             {/* RIGHT */}
             <div className="hidden lg:flex flex-col min-h-0 border-l border-border/30 bg-muted/5 overflow-y-auto overscroll-contain">
-
-              <div className="p-3 space-y-4">
+              <HospitalTeamPanel sessionId={cs.correlationId} />
+              
+              <div className="p-3 space-y-4 border-t border-border/30">
                 <ExamsPanel exams={examResults} />
                 <VitalsChart snapshots={vitalsSnapshots} />
               </div>
