@@ -189,10 +189,10 @@ async function createRecoveryFlashcard(args: {
       }
     }
 
-    const front =
-      conteudo && conteudo.trim().length > 0
-        ? `Revisão de erro — ${tema}\n\n${conteudo.slice(0, 480)}`
-        : `Revisão de erro em ${tema}${subtema ? ` / ${subtema}` : ""}`;
+    const isRichQuestion = conteudo && conteudo.trim().length > 50;
+    const front = isRichQuestion 
+      ? `Conceito falho em ${tema}:\nQual o ponto-chave que explica o erro no caso clínico apresentado?`
+      : `Revisão de erro em ${tema}${subtema ? ` / ${subtema}` : ""}`;
 
     const back = motivoErro?.trim() || `Reveja o conceito de ${tema}.`;
 

@@ -100,9 +100,9 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
         
         RETORNE APENAS UM JSON ARRAY VÁLIDO COM ESTAS CHAVES:
         [
-          {"front": "caso clínico ou contexto...", "question_detail": "pergunta específica sobre o caso...", "back": "resposta curta...", "explanation": "justificativa...", "difficulty": 1-5}
+          {"type": "concept|cloze|conduct|...", "front": "pergunta curta...", "back": "resposta curta...", "explanation": "justificativa...", "difficulty": 1-5, "atomic": true}
         ]
-        IMPORTANTE: NUNCA coloque a resposta dentro do campo 'front' ou 'question_detail'.` }
+        REGRAS: Máximo 120 chars na frente, 20 palavras no verso. NUNCA use alternativas (A, B, C, D).` }
       ],
       userId,
       requestId: job.id,
@@ -113,7 +113,8 @@ Deno.serve(enterpriseEdgeHandler("generate-flashcards", async ({ req, logger, su
     const rawContent = aiResponse?.content || "[]";
     let cards = [];
     try {
-      cards = parseAiJson(rawContent);
+      const parsed = parseAiJson(rawContent);
+      cards = Array.isArray(parsed) ? parsed : (parsed.cards || parsed.flashcards || []);
     } catch (e) {
       logger.error("AI_PARSE_ERROR", `Failed to parse AI response: ${e.message}`, { rawContent });
       const match = rawContent.match(/\[\s*{[\s\S]*}\s*\]/);
