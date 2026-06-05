@@ -1,6 +1,7 @@
 import React, { memo } from "react";
-import { Shield, CheckCircle, Wind, Droplets, Brain, Eye, Target, Clipboard } from "lucide-react";
+import { Shield, CheckCircle, Wind, Droplets, Brain, Eye, Target, Clipboard, Pill } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import VitalsMonitor from "@/components/plantao/VitalsMonitor";
@@ -37,13 +38,17 @@ interface SidePanelProps {
   medicalRecord: MedicalRecordEntry[];
   medRecordOpen: boolean;
   onMedRecordOpenChange: (b: boolean) => void;
+  prescriptionAudit?: any;
+  scaleAudit?: any;
+  cognitiveEvent?: any;
 }
-
 
 const SidePanel = memo(function SidePanel({
   vitalsSnapshots, patientStatus, statusAlert, abcdeChecklist, categoryScores, differentialDiagnosis,
   medicalRecord, medRecordOpen, onMedRecordOpenChange,
+  prescriptionAudit, scaleAudit, cognitiveEvent
 }: SidePanelProps) {
+
 
   const checkedCount = Object.values(abcdeChecklist).filter(Boolean).length;
 
@@ -118,6 +123,46 @@ const SidePanel = memo(function SidePanel({
             )}
           </div>
         </div>
+
+        {/* V5 - Auditoria de Prescrição */}
+        {prescriptionAudit && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Pill className="h-3.5 w-3.5 text-blue-400" />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Audit de Prescrição</span>
+            </div>
+            <div className={`p-2 rounded border ${
+              prescriptionAudit.status === 'correct' 
+                ? "bg-emerald-500/5 border-emerald-500/20" 
+                : "bg-red-500/5 border-red-500/20"
+            }`}>
+              <p className="text-[10px] font-medium leading-tight mb-1">
+                {prescriptionAudit.status === 'correct' ? "✅ Correta" : "❌ Falha Identificada"}
+              </p>
+              <p className="text-[9px] text-muted-foreground leading-tight italic">{prescriptionAudit.feedback}</p>
+            </div>
+          </div>
+        )}
+
+        {/* V5 - Escalas Clínicas */}
+        {scaleAudit && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Clipboard className="h-3.5 w-3.5 text-amber-400" />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Escalas Clínicas</span>
+            </div>
+            <div className="space-y-1">
+              {scaleAudit.recommended?.map((s: string) => (
+                <div key={s} className="flex items-center justify-between px-2 py-1 bg-muted/20 border border-border/20 rounded">
+                  <span className="text-[10px]">{s}</span>
+                  <Badge variant={scaleAudit.missed?.includes(s) ? "destructive" : "outline"} className="text-[8px] h-3 px-1">
+                    {scaleAudit.missed?.includes(s) ? "ESQUECIDA" : "OK"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
 
 

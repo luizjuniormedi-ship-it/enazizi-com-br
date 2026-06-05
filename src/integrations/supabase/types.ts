@@ -13672,6 +13672,85 @@ export type Database = {
           },
         ]
       }
+      hospital_clinical_scales: {
+        Row: {
+          created_at: string | null
+          id: string
+          interpretation: string | null
+          is_mandatory_missed: boolean | null
+          patient_id: string
+          scale_type: Database["public"]["Enums"]["clinical_scale_type"]
+          score_value: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interpretation?: string | null
+          is_mandatory_missed?: boolean | null
+          patient_id: string
+          scale_type: Database["public"]["Enums"]["clinical_scale_type"]
+          score_value?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interpretation?: string | null
+          is_mandatory_missed?: boolean | null
+          patient_id?: string
+          scale_type?: Database["public"]["Enums"]["clinical_scale_type"]
+          score_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_clinical_scales_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospital_cognitive_events: {
+        Row: {
+          action_taken: string | null
+          created_at: string | null
+          duty_session_id: string
+          event_type: string
+          id: string
+          message: string
+          priority: string | null
+          response_time_seconds: number | null
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string | null
+          duty_session_id: string
+          event_type: string
+          id?: string
+          message: string
+          priority?: string | null
+          response_time_seconds?: number | null
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string | null
+          duty_session_id?: string
+          event_type?: string
+          id?: string
+          message?: string
+          priority?: string | null
+          response_time_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_cognitive_events_duty_session_id_fkey"
+            columns: ["duty_session_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_duty_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hospital_duty_sessions: {
         Row: {
           cognitive_state_after: string | null
@@ -13707,6 +13786,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      hospital_errors_v2: {
+        Row: {
+          clinical_consequence: string | null
+          cognitive_level: string | null
+          created_at: string | null
+          duty_session_id: string | null
+          error_type: string
+          fsrs_synced: boolean | null
+          id: string
+          safety_impact: string | null
+          severity: string
+          specialty: string | null
+          theme: string
+          user_id: string
+        }
+        Insert: {
+          clinical_consequence?: string | null
+          cognitive_level?: string | null
+          created_at?: string | null
+          duty_session_id?: string | null
+          error_type: string
+          fsrs_synced?: boolean | null
+          id?: string
+          safety_impact?: string | null
+          severity: string
+          specialty?: string | null
+          theme: string
+          user_id: string
+        }
+        Update: {
+          clinical_consequence?: string | null
+          cognitive_level?: string | null
+          created_at?: string | null
+          duty_session_id?: string | null
+          error_type?: string
+          fsrs_synced?: boolean | null
+          id?: string
+          safety_impact?: string | null
+          severity?: string
+          specialty?: string | null
+          theme?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_errors_v2_duty_session_id_fkey"
+            columns: ["duty_session_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_duty_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hospital_exams_queue: {
         Row: {
@@ -13861,6 +13993,62 @@ export type Database = {
             columns: ["duty_session_id"]
             isOneToOne: false
             referencedRelation: "hospital_duty_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospital_prescriptions: {
+        Row: {
+          clinical_impact: string | null
+          created_at: string | null
+          dosage: string
+          duration: string | null
+          frequency: string
+          id: string
+          medication: string
+          patient_id: string
+          route: string
+          safety_feedback: string | null
+          validation_status:
+            | Database["public"]["Enums"]["prescription_validation_status"]
+            | null
+        }
+        Insert: {
+          clinical_impact?: string | null
+          created_at?: string | null
+          dosage: string
+          duration?: string | null
+          frequency: string
+          id?: string
+          medication: string
+          patient_id: string
+          route: string
+          safety_feedback?: string | null
+          validation_status?:
+            | Database["public"]["Enums"]["prescription_validation_status"]
+            | null
+        }
+        Update: {
+          clinical_impact?: string | null
+          created_at?: string | null
+          dosage?: string
+          duration?: string | null
+          frequency?: string
+          id?: string
+          medication?: string
+          patient_id?: string
+          route?: string
+          safety_feedback?: string | null
+          validation_status?:
+            | Database["public"]["Enums"]["prescription_validation_status"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_prescriptions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
             referencedColumns: ["id"]
           },
         ]
@@ -30049,6 +30237,17 @@ export type Database = {
         | "professor"
         | "coordinator"
         | "institutional_admin"
+      clinical_scale_type:
+        | "heart"
+        | "timi"
+        | "curb65"
+        | "glasgow"
+        | "nihss"
+        | "qsofa"
+        | "news2"
+        | "wells"
+        | "alvarado"
+        | "cha2ds2vasc"
       cme_aggregation_status:
         | "pending"
         | "aggregating"
@@ -30178,6 +30377,14 @@ export type Database = {
         | "ecg_extraction"
         | "embedding_sync"
         | "ocr_process"
+      prescription_validation_status:
+        | "correct"
+        | "incorrect_dose"
+        | "incorrect_route"
+        | "incorrect_frequency"
+        | "contraindicated"
+        | "allergy_risk"
+        | "safety_breach"
       qa_error_type:
         | "IA_QUALIDADE"
         | "IA_JSON_INVALIDO"
@@ -30384,6 +30591,18 @@ export const Constants = {
         "coordinator",
         "institutional_admin",
       ],
+      clinical_scale_type: [
+        "heart",
+        "timi",
+        "curb65",
+        "glasgow",
+        "nihss",
+        "qsofa",
+        "news2",
+        "wells",
+        "alvarado",
+        "cha2ds2vasc",
+      ],
       cme_aggregation_status: [
         "pending",
         "aggregating",
@@ -30525,6 +30744,15 @@ export const Constants = {
         "ecg_extraction",
         "embedding_sync",
         "ocr_process",
+      ],
+      prescription_validation_status: [
+        "correct",
+        "incorrect_dose",
+        "incorrect_route",
+        "incorrect_frequency",
+        "contraindicated",
+        "allergy_risk",
+        "safety_breach",
       ],
       qa_error_type: [
         "IA_QUALIDADE",
