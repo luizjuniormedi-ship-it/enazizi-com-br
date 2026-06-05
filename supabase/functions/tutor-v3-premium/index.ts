@@ -289,7 +289,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         // AI Cost Validation: Log cache savings
         try {
           await supabaseAdmin.from("ai_usage_logs").insert({
-            user_id: userId,
+            user_id: activeUserId,
             model: "tutor_semantic_cache",
             module: "tutor-v3-premium",
             cache_status: "hit",
