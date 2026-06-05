@@ -381,7 +381,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       taskType: "tutor_deep",
       complexity: "alta",
       costTier,
-      userId,
+      userId: activeUserId,
       stream: false, // Force JSON for structured orchestration
       response_format: { type: "json_object" },
       messages: [
