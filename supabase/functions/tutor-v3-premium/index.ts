@@ -136,11 +136,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     let masteryLevel = "INITIAL";
     let recoveryMode = false;
     
-    if (userId && topic) {
+    if (activeUserId && topic) {
       const { data: mem } = await supabaseAdmin
         .from("tutor_learning_memory")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", activeUserId)
         .eq("topic", topic)
         .maybeSingle();
       
