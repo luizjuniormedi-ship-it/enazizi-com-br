@@ -703,7 +703,6 @@ const Simulados = () => {
           }
           
           let batchData: any = null;
-          let batchErr: any = null;
           
           try {
             console.log(`[Simulados] Lote ${batchNum}: Chamando question-generator. Count: ${currentBatchSize}`);
@@ -729,9 +728,25 @@ const Simulados = () => {
               config.includeWeakThemes,
               config.includePreviousErrors,
               config.mode || "estudo",
-              avoidIds
+              avoidIds,
+              (config as any).selectedSubtopics || []
             );
-            batchData = { success: true, questions: batchQs.questions, session_id: batchQs.sessionId };
+            batchData = { 
+              success: true, 
+              questions: batchQs.questions, 
+              session_id: batchQs.sessionId,
+              insufficientQuestions: batchQs.insufficientQuestions,
+              message: batchQs.message
+            };
+
+            if (batchQs.insufficientQuestions) {
+              toast({
+                title: "Banco insuficiente",
+                description: batchQs.message || `Encontramos apenas ${batchQs.questions.length} questões para os filtros selecionados.`,
+                variant: "default"
+              });
+            }
+
             console.log("[MONTAR_BANCO_QUESTION_FETCH_SUCCESS]", {
               user_id: user?.id ?? null,
               batch: batchNum,
