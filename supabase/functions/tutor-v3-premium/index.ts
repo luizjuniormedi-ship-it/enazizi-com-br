@@ -5,6 +5,8 @@ import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockI
 import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory, estimateQualityScore } from "../_shared/tutor-memory.ts";
 import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
+import { normalizeTutorResponse, TutorResponse } from "../_shared/ai-stability-kit.ts";
+
 
 // Métrica fire-and-forget — nunca trava o fluxo.
 async function bumpMetric(supabaseAdmin: any, field: string, delta = 1) {
@@ -251,28 +253,27 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         }
       })());
 
+      const normalized = normalizeTutorResponse(memoryHit, "cache");
+      console.log(`[TUTOR_CACHE_HIT] memoryId=${memoryHit.id}`);
+
       return corsResponse({
         success: true,
         ok: true,
-        content: memoryHit.answer,
+        content: normalized.content,
         currentBlock: nextBlock,
         blockTitle: currentBlockConfig.title,
-        teachingPhase: "ENSINAR",
+        teachingPhase: normalized.teachingPhase,
         shouldWaitForStudent: true,
-        socraticQuestion: "",
+        socraticQuestion: normalized.socraticQuestion,
         actionsContext: { topic, block: nextBlock },
         topic,
         correlation_id: correlationId,
         fromMemory: true,
         memoryId: memoryHit.id,
-        memoryReuseCount: memoryHit.reuseCount + 1,
-        memoryQualityScore: memoryHit.qualityScore,
-        memoryScope: memoryHit.scope,
-        memoryBlocks: memoryHit.blocks,
-        promotionStatus: memoryHit.promotionStatus,
-        orchestratorAction: decision.action,
+        source: "cache",
         debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity, action: decision.action },
       }, 200);
+
     }
 
     // ── 3.6 RAG context para enriquecer prompt quando regeneramos ───────────
@@ -338,31 +339,18 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
 
     // ── 4. STABILITY & PARSING ───────────────────────────────
-    // Flexible content extraction for both OpenAI-style and raw fallback objects
-    const rawAi = aiResponse.choices?.[0]?.message?.content || 
-                  aiResponse.content || 
-                  aiResponse.message || 
-                  (aiResponse.sigla ? JSON.stringify(aiResponse) : "{}");
+    const normalized = normalizeTutorResponse(aiResponse, aiResponse.choices ? "openai" : "fallback");
     
-    let parsed: any = {};
-    try {
-      // If it's already an object (from static fallback), use it
-      if (typeof aiResponse === "object" && !aiResponse.choices) {
-        parsed = aiResponse;
-      } else {
-        parsed = JSON.parse(rawAi);
-      }
-    } catch (e) {
-      console.error("[TUTOR_JSON_PARSE_ERROR]", e, rawAi);
-      parsed = { 
-        content: rawAi, 
-        socraticQuestion: "Ficou clara essa explicação?",
-        teachingPhase: "ENSINAR",
-        shouldWaitForStudent: true
-      };
+    if (normalized.source === "fallback") {
+      console.log("[TUTOR_FALLBACK_ACTIVATED]");
     }
 
-
+    console.log(`[TUTOR_RESPONSE_NORMALIZED] source=${normalized.source} confidence=${normalized.confidence}`);
+    
+    if (!normalized.content || normalized.content.trim().length === 0) {
+      console.error("[TUTOR_EMPTY_RESPONSE_BLOCKED]");
+      throw new Error("Empty AI response detected after normalization");
+    }
 
     // ── 5. IDEMPOTENT PERSISTENCE ──────────────────────────
     waitUntil((async () => {
@@ -371,7 +359,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           user_id: userId,
           topic: topic,
           block_title: nextBlock,
-          mastery_level: parsed.mastery_level || masteryLevel,
+          mastery_level: (normalized.metadata as any)?.mastery_level || masteryLevel,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id,topic' });
 
@@ -386,20 +374,19 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           tutor_session_id: sessionId,
           user_id: userId,
           role: "assistant",
-          content: parsed.content || "Resposta processada.",
+          content: normalized.content,
           metadata: { 
             request_id: requestId, 
             correlation_id: correlationId,
             block: nextBlock,
             blockTitle: currentBlockConfig.title,
             intent: studentIntent,
-            socraticQuestion: parsed.socraticQuestion,
-            actionsContext: parsed.actionsContext
+            socraticQuestion: normalized.socraticQuestion,
+            source: normalized.source
           }
-
         });
-
       }
+
 
       // Save em tutor_knowledge_memory (LGPD-SAFE — Opção C / Hardening v25.1):
       // Toda memória nasce PRIVADA (scope='user'). Promoção para 'global' acontece
@@ -433,15 +420,16 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     return corsResponse({
       success: true,
       ok: true,
-      content: parsed.content || "Tutor V3 respondeu.",
+      content: normalized.content,
       currentBlock: nextBlock,
       blockTitle: currentBlockConfig.title,
-      teachingPhase: parsed.teachingPhase || "ENSINAR",
-      shouldWaitForStudent: parsed.shouldWaitForStudent ?? true,
-      socraticQuestion: parsed.socraticQuestion || "",
-      actionsContext: parsed.actionsContext || { topic, block: nextBlock },
+      teachingPhase: normalized.teachingPhase,
+      shouldWaitForStudent: true,
+      socraticQuestion: normalized.socraticQuestion,
+      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: nextBlock },
       topic,
       correlation_id: correlationId,
+      source: normalized.source,
       debug: {
         studentIntent,
         nextBlock
@@ -449,20 +437,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }, 200);
 
 
+
   } catch (err: any) {
     logger.critical("HARDENED_RUNTIME_CRASH", err.message);
+    console.log("[TUTOR_SAFE_MODE]");
+    const safeResponse = normalizeTutorResponse(null, "safe_mode");
     return corsResponse({
       success: true,
       ok: true,
-      content: "Tutor IA restaurado em modo seguro. Vamos continuar pelo essencial do tema.",
+      content: safeResponse.content,
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
-      teachingPhase: "ENSINAR",
-      socraticQuestion: "Podemos começar?",
+      teachingPhase: safeResponse.teachingPhase,
+      socraticQuestion: safeResponse.socraticQuestion,
       shouldWaitForStudent: true,
-      debug_stage: "safe_mode_no_memory",
+      source: "safe_mode",
+      debug_stage: "safe_mode_emergency",
       error: err.message,
       request_id: requestId
     }, 200);
   }
+
 
 }));
