@@ -5,12 +5,16 @@ export interface WeightData {
   historical_incidence: number;
   statistical_weight: number;
   priority_level: number;
+  frequency_score?: number;
+  recency_score?: number;
+  difficulty_score?: number;
+  approval_impact_score?: number;
 }
 
 export const getThemeWeights = async (themeName: string, examType = 'ENAMED'): Promise<WeightData> => {
   const { data, error } = await supabase
     .from('enamed_theme_weights')
-    .select('historical_incidence, statistical_weight, priority_level, enamed_curriculum_matrix(theme)')
+    .select('historical_incidence, statistical_weight, priority_level, frequency_score, recency_score, difficulty_score, approval_impact_score, enamed_curriculum_matrix(theme)')
     .eq('enamed_curriculum_matrix.theme', themeName)
     .eq('exam_type', examType)
     .maybeSingle();
@@ -22,10 +26,18 @@ export const getThemeWeights = async (themeName: string, examType = 'ENAMED'): P
   return {
     historical_incidence: Number(data.historical_incidence),
     statistical_weight: Number(data.statistical_weight),
-    priority_level: data.priority_level
+    priority_level: data.priority_level,
+    frequency_score: Number(data.frequency_score || 0),
+    recency_score: Number(data.recency_score || 0),
+    difficulty_score: Number(data.difficulty_score || 0),
+    approval_impact_score: Number(data.approval_impact_score || 0)
   };
 };
 
+/**
+ * New Phase 2 Prioritization Motor:
+ * Formula: Priority = (Incidence * 3) + (Errors * 2) + (FSRS Risk * 2) + (Proximity * 2) + (1 - Mastery * 1)
+ */
 export const computeEnamedPriority = (
   historicalIncidence: number, // 0-10
   studentErrorCount: number,
@@ -33,15 +45,23 @@ export const computeEnamedPriority = (
   daysToExam: number,
   currentMastery: number // 0-1
 ): number => {
-  // Formula: Priority = (Incidence * 2) + (Errors * 1.5) + (1 - Stability) * 10 + (1 - Mastery) * 5
-  // Adjust for proximity: if daysToExam < 30, multiply incidence weight
-  const proximityMultiplier = daysToExam < 30 ? 1.5 : 1.0;
+  // Normalize components
+  const normalizedIncidence = historicalIncidence; // Already 0-10
+  const normalizedErrors = Math.min(studentErrorCount, 10);
+  const fsrsRisk = (1 - Math.min(fsrsStability, 1)) * 10;
   
+  // Proximity score: 10 if < 30 days, 5 if < 60 days, else 0
+  const proximityScore = daysToExam < 30 ? 10 : (daysToExam < 60 ? 5 : 0);
+  
+  const lackOfMastery = (1 - currentMastery) * 10;
+
   const score = 
-    (historicalIncidence * 2 * proximityMultiplier) + 
-    (Math.min(studentErrorCount, 10) * 1.5) + 
-    ((1 - Math.min(fsrsStability, 1)) * 10) + 
-    ((1 - currentMastery) * 5);
+    (normalizedIncidence * 3) + 
+    (normalizedErrors * 2) + 
+    (fsrsRisk * 2) + 
+    (proximityScore * 2) + 
+    (lackOfMastery * 1);
     
+  // Cap at 100 for display
   return Math.min(Math.max(score, 0), 100);
 };

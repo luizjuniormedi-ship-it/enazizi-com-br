@@ -10,17 +10,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const LABEL_COLORS: Record<ReadinessLabel, string> = {
-  muito_baixa: "text-destructive bg-destructive/10",
-  em_construcao: "text-yellow-600 bg-yellow-500/10",
-  competitiva: "text-blue-600 bg-blue-500/10",
-  alta: "text-green-600 bg-green-500/10",
+  critico: "text-destructive bg-destructive/10",
+  risco_alto: "text-orange-600 bg-orange-500/10",
+  competitivo: "text-yellow-600 bg-yellow-500/10",
+  forte: "text-blue-600 bg-blue-500/10",
+  elite: "text-green-600 bg-green-500/10",
 };
 
 const PROGRESS_COLORS: Record<ReadinessLabel, string> = {
-  muito_baixa: "[&>div]:bg-destructive",
-  em_construcao: "[&>div]:bg-yellow-500",
-  competitiva: "[&>div]:bg-blue-500",
-  alta: "[&>div]:bg-green-500",
+  critico: "[&>div]:bg-destructive",
+  risco_alto: "[&>div]:bg-orange-500",
+  competitivo: "[&>div]:bg-yellow-500",
+  forte: "[&>div]:bg-blue-500",
+  elite: "[&>div]:bg-green-500",
 };
 
 export default function ExamReadinessCard() {

@@ -15,6 +15,10 @@ export interface ThemeWeight {
   statisticalWeight: number;
   priorityLevel: number;
   yearReference: number;
+  frequencyScore?: number;
+  recencyScore?: number;
+  difficultyScore?: number;
+  approvalImpactScore?: number;
 }
 
 export interface ReadinessStats {

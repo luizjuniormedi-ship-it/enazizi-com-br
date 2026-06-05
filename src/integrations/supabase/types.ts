@@ -11103,33 +11103,45 @@ export type Database = {
       }
       enamed_theme_weights: {
         Row: {
+          approval_impact_score: number | null
           created_at: string | null
+          difficulty_score: number | null
           exam_type: string
+          frequency_score: number | null
           historical_incidence: number | null
           id: string
           priority_level: number | null
+          recency_score: number | null
           statistical_weight: number | null
           theme_id: string | null
           updated_at: string | null
           year_reference: number | null
         }
         Insert: {
+          approval_impact_score?: number | null
           created_at?: string | null
+          difficulty_score?: number | null
           exam_type: string
+          frequency_score?: number | null
           historical_incidence?: number | null
           id?: string
           priority_level?: number | null
+          recency_score?: number | null
           statistical_weight?: number | null
           theme_id?: string | null
           updated_at?: string | null
           year_reference?: number | null
         }
         Update: {
+          approval_impact_score?: number | null
           created_at?: string | null
+          difficulty_score?: number | null
           exam_type?: string
+          frequency_score?: number | null
           historical_incidence?: number | null
           id?: string
           priority_level?: number | null
+          recency_score?: number | null
           statistical_weight?: number | null
           theme_id?: string | null
           updated_at?: string | null
