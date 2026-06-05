@@ -23903,6 +23903,27 @@ export type Database = {
         }
         Relationships: []
       }
+      system_telemetry: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
       teacher_clinical_case_results: {
         Row: {
           case_id: string
