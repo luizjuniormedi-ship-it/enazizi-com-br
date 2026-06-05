@@ -196,6 +196,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         }
       })());
 
+      // [FIX] Persist fallback message to ensure history consistency
+      waitUntil((async () => {
+        if (sessionId && activeUserId) {
+          await supabaseAdmin.from("tutor_messages").insert({
+            tutor_session_id: sessionId,
+            user_id: activeUserId,
+            role: "assistant",
+            content: normalizedLocal.content,
+            metadata: { 
+              request_id: requestId, 
+              correlation_id: correlationId,
+              block: nextBlock,
+              source: "fallback",
+              topic
+            }
+          });
+        }
+      })());
+
       return corsResponse({
         success: true,
         ok: true,
@@ -561,6 +580,31 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     logger.critical("HARDENED_RUNTIME_CRASH", err.message);
     console.log("[TUTOR_SAFE_MODE]");
     const safeResponse = normalizeTutorResponse(null, "safe_mode");
+    
+    // [FIX] Persist safe mode message
+    waitUntil((async () => {
+      try {
+        const body = await req.clone().json().catch(() => ({}));
+        const sId = body.sessionId;
+        const uId = correlation.userId;
+        if (sId && uId) {
+          await supabaseAdmin.from("tutor_messages").insert({
+            tutor_session_id: sId,
+            user_id: uId,
+            role: "assistant",
+            content: safeResponse.content,
+            metadata: { 
+              request_id: requestId, 
+              source: "safe_mode",
+              error: err.message
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("[SAFE_MODE_PERSIST_FAIL]", e.message);
+      }
+    })());
+
     return corsResponse({
       success: true,
       ok: true,
