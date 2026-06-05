@@ -1,6 +1,8 @@
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
 import { reviewAndEnrich } from "../_shared/question-review-engine.ts";
+import { insertFlashcardsWithFsrs, applyQualityGate } from "../_shared/flashcard-governance.ts";
+
 
 Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logger, waitUntil, correlation, supabaseAdmin }) => {
   const { user } = await requireAdmin(req);
@@ -65,20 +67,34 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
 
         // Insert flashcards
         if (result.flashcards && result.flashcards.length > 0 && result.quality_tier === "GOLD") {
-          const flashcardsToInsert = result.flashcards.map(f => ({
+          const normalized = result.flashcards.map(f => ({
             question: f.question,
             answer: f.answer,
-            explanation: f.explanation,
             topic: q.topic,
-            subtopic_id: q.subtopic_id,
-            specialty_id: q.specialty_id,
-            user_id: user.id,
-            is_global: true,
-            generation_method: "question_review_pipeline",
-            source: `Question ID: ${q.id}`
           }));
-          await supabaseAdmin.from("flashcards").insert(flashcardsToInsert);
+
+          const { accepted } = applyQualityGate(normalized);
+
+          if (accepted.length > 0) {
+            const flashcardsToInsert = accepted.map(f => ({
+              question: f.question,
+              answer: f.answer,
+              topic: f.topic,
+              subtopic_id: q.subtopic_id,
+              specialty_id: q.specialty_id,
+              user_id: user.id,
+              is_global: true,
+              generation_method: "question_review_pipeline_v2",
+              source: `Question ID: ${q.id}`
+            }));
+            
+            await insertFlashcardsWithFsrs(supabaseAdmin, flashcardsToInsert, {
+              userId: user.id,
+              topic: q.topic
+            });
+          }
         }
+
 
         // Governance log
         await supabaseAdmin.from("pipeline_governance").insert({
