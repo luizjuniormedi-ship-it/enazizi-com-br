@@ -488,6 +488,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         
         console.log(`[TUTOR_V3_06_INVOKE_START] Message stream started for ${requestId} (Diagnostic: ${isDiagnosticTest})`);
         
+        // Telemetry: [ENAMED_CONTEXT_INJECTED]
+        if (requestPayload.enamedContext) {
+          import("@/lib/safeTelemetry").then(({ emitSafeEvent }) => {
+            emitSafeEvent("ENAMED_CONTEXT_INJECTED", {
+              requestId,
+              topic: requestPayload.topic,
+              enamed: requestPayload.enamedContext
+            });
+          });
+        }
+        
         // Ensure no circular references in payload before sending
         const safePayload = JSON.parse(JSON.stringify(isDiagnosticTest ? { ...requestPayload, stream: false, force_json: true } : requestPayload));
         

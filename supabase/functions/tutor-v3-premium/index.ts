@@ -315,6 +315,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           }
           
           TEMA ATUAL: ${topic}
+          CONTEXTO ENAMED 2026: ${JSON.stringify(body.enamedContext || {})}
           CONTESTO DE MEMÓRIA: ${memoryContext}${ragContext}`
         },
         ...history,

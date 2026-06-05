@@ -9,6 +9,17 @@ interface Props {
 export function CurriculumImpactBlock({ block }: Props) {
   const { theme, incidence, impact_score, mastery_level, priority, potential_gain } = block.payload;
 
+  // Telemetry: [TUTOR_ENAMED_INDICATOR_RENDERED]
+  useEffect(() => {
+    import("@/lib/safeTelemetry").then(({ emitSafeEvent }) => {
+      emitSafeEvent("TUTOR_ENAMED_INDICATOR_RENDERED", {
+        theme,
+        incidence,
+        impact_score
+      });
+    });
+  }, [theme]);
+
   const incidenceLabel = incidence.toUpperCase();
   const incidenceColor = 
     incidence === "alta" ? "bg-red-50 text-red-600 border-red-200" :
