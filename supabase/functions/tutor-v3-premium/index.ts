@@ -472,7 +472,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
         if (sessionId) {
           await supabaseAdmin.from("tutor_sessions").update({
-            current_block: nextBlock,
+            current_block: activeBlock,
             updated_at: new Date().toISOString()
           }).eq("id", sessionId);
         }
