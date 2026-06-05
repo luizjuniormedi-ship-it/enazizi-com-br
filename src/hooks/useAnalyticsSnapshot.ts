@@ -13,6 +13,9 @@ export interface AnalyticsSnapshot {
   recoveryActive: boolean;
   contentLocked: boolean;
   phase: string | null;
+  forecast_30_days?: number;
+  forecast_60_days?: number;
+  forecast_exam_date?: number;
 }
 
 async function fetchSnapshot(userId: string): Promise<AnalyticsSnapshot> {

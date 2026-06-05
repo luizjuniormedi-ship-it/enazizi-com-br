@@ -1,13 +1,13 @@
 import { TutorBlock } from "@/types/tutor";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Target, TrendingUp } from "lucide-react";
+import { Zap, Target, TrendingUp, ArrowUpRight } from "lucide-react";
 
 interface Props {
   block: TutorBlock & { type: "curriculum_impact" };
 }
 
 export function CurriculumImpactBlock({ block }: Props) {
-  const { theme, incidence, impact_score, mastery_level, priority } = block.payload;
+  const { theme, incidence, impact_score, mastery_level, priority, potential_gain } = block.payload;
 
   const incidenceLabel = incidence.toUpperCase();
   const incidenceColor = 
@@ -63,11 +63,23 @@ export function CurriculumImpactBlock({ block }: Props) {
 
           <div className="flex flex-col items-end justify-center">
             <span className="text-[10px] font-black uppercase text-muted-foreground mb-1">Prioridade Geral</span>
-            <span className={`text-4xl font-black tabular-nums tracking-tighter ${priority > 80 ? 'text-red-600' : 'text-primary'}`}>
-              {priority}
-            </span>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-4xl font-black tabular-nums tracking-tighter ${priority > 80 ? 'text-red-600' : 'text-primary'}`}>
+                {priority}
+              </span>
+            </div>
           </div>
         </div>
+
+        {potential_gain && (
+          <div className="mt-4 pt-4 border-t border-primary/10 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+              <span className="text-[11px] font-bold text-muted-foreground uppercase">Ganho estimado no Readiness</span>
+            </div>
+            <span className="text-sm font-black text-emerald-500">+{potential_gain.toFixed(1)}%</span>
+          </div>
+        )}
       </div>
     </div>
   );

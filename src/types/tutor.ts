@@ -182,6 +182,7 @@ export interface CurriculumImpactBlock {
     impact_score: number; // 0-10
     mastery_level: number; // 0-1
     priority: number; // 0-100
+    potential_gain?: number; // % gain in readiness
   };
 }
 
