@@ -473,9 +473,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     // ── 5. IDEMPOTENT PERSISTENCE ──────────────────────────
     waitUntil((async () => {
-      if (userId && topic) {
+      if (activeUserId && topic) {
         await supabaseAdmin.from("tutor_learning_memory").upsert({
-          user_id: userId,
+          user_id: activeUserId,
           topic: topic,
           block_title: activeBlock,
           mastery_level: (normalized.metadata as any)?.mastery_level || masteryLevel,
