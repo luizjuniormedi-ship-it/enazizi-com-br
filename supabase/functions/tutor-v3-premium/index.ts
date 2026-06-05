@@ -328,10 +328,20 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     const aiResponse = await ai(aiConfig, { retries: 2 });
 
     // ── 4. STABILITY & PARSING ───────────────────────────────
-    const rawAi = aiResponse.choices?.[0]?.message?.content || "{}";
+    // Flexible content extraction for both OpenAI-style and raw fallback objects
+    const rawAi = aiResponse.choices?.[0]?.message?.content || 
+                  aiResponse.content || 
+                  aiResponse.message || 
+                  (aiResponse.sigla ? JSON.stringify(aiResponse) : "{}");
+    
     let parsed: any = {};
     try {
-      parsed = JSON.parse(rawAi);
+      // If it's already an object (from static fallback), use it
+      if (typeof aiResponse === "object" && !aiResponse.choices) {
+        parsed = aiResponse;
+      } else {
+        parsed = JSON.parse(rawAi);
+      }
     } catch (e) {
       console.error("[TUTOR_JSON_PARSE_ERROR]", e, rawAi);
       parsed = { 
@@ -341,6 +351,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         shouldWaitForStudent: true
       };
     }
+
 
 
     // ── 5. IDEMPOTENT PERSISTENCE ──────────────────────────
@@ -428,17 +439,20 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }, 200);
 
 
-  } catch (err) {
+  } catch (err: any) {
     logger.critical("HARDENED_RUNTIME_CRASH", err.message);
     return corsResponse({
       success: true,
       ok: true,
       content: "Tutor IA restaurado em modo seguro. Vamos continuar pelo essencial do tema.",
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
+      teachingPhase: "ENSINAR",
+      socraticQuestion: "Podemos começar?",
       shouldWaitForStudent: true,
       debug_stage: "safe_mode_no_memory",
       error: err.message,
       request_id: requestId
     }, 200);
   }
+
 }));
