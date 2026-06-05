@@ -161,8 +161,8 @@ Retorne APENAS um objeto JSON no formato:
 
       logger.info("GENERATION_COMPLETED", `Successfully saved ${savedCount} questions`);
 
-      // Governance
-      await supabaseAdmin.from("pipeline_governance").insert({
+      // Governance & Logging
+      const govRecord = {
         pipeline_name: "bulk-generate",
         function_name: "bulk-generate-content",
         status: savedCount > 0 ? "completed" : "failed",
@@ -173,17 +173,39 @@ Retorne APENAS um objeto JSON no formato:
           specialty,
           count: savedCount,
           correlation_id: correlation.correlationId,
-          equalize
+          equalize,
+          result: { total_imported: 0, total_generated: savedCount, total_questions: savedCount }
         }
-      });
+      };
+
+      const ingestRecord = {
+        source_name: `AI Generation: ${specialty}`,
+        source_type: "ai_generation",
+        status: "completed",
+        questions_found: questions.length,
+        questions_inserted: savedCount,
+        questions_updated: 0,
+        duplicates_skipped: questions.length - savedCount,
+        errors: 0,
+        created_by: user.id,
+        banca: "ENARE",
+        year: 2025
+      };
+
+      console.log(`[governance] Recording success for ${specialty}, saved: ${savedCount}`);
+      
+      const { error: govErr } = await supabaseAdmin.from("pipeline_governance").insert(govRecord);
+      if (govErr) console.error("[governance] Failed to insert pipeline_governance:", govErr);
+      
+      const { error: ingestErr } = await supabaseAdmin.from("ingestion_log").insert(ingestRecord);
+      if (ingestErr) console.error("[governance] Failed to insert ingestion_log:", ingestErr);
 
       return { total_imported: 0, total_generated: savedCount, total_questions: savedCount };
 
     } catch (err: any) {
       logger.error("GENERATION_PROCESS_FAILED", err.message, { stack: err.stack });
       
-      // Ensure governance record is created even on failure
-      await supabaseAdmin.from("pipeline_governance").insert({
+      const failRecord = {
         pipeline_name: "bulk-generate",
         function_name: "bulk-generate-content",
         status: "failed",
@@ -195,7 +217,10 @@ Retorne APENAS um objeto JSON no formato:
           correlation_id: correlation.correlationId,
           error_stack: err.stack
         }
-      });
+      };
+
+      console.log(`[governance] Recording failure for ${specialty}: ${err.message}`);
+      await supabaseAdmin.from("pipeline_governance").insert(failRecord);
       
       throw err;
     }
