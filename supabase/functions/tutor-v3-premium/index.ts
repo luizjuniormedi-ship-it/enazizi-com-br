@@ -315,16 +315,6 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
 
 
-    // ── 3.6 RAG context para enriquecer prompt quando regeneramos ───────────
-    let ragContext = "";
-    if (decision.useRagContext && ragHits.length > 0) {
-      ragContext = "\n\n[CONTEXTO RAG RELEVANTE]\n" +
-        ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
-    }
-    if (decision.action === "regenerate_and_compare") {
-      console.log("[MEMORY_AB_REGEN_PROCEED]", { memoryId: decision.memoryId });
-    }
-
     // Determine Cost Tier for AI Routing
     let costTier: "LOW_COST" | "NORMAL" | "PREMIUM" = "NORMAL";
     if (recoveryMode || masteryLevel === "EXPERT") costTier = "PREMIUM";
