@@ -465,7 +465,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         await supabaseAdmin.from("tutor_learning_memory").upsert({
           user_id: userId,
           topic: topic,
-          block_title: nextBlock,
+          block_title: activeBlock,
           mastery_level: (normalized.metadata as any)?.mastery_level || masteryLevel,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id,topic' });
