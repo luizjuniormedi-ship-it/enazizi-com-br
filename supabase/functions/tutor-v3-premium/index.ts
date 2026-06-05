@@ -325,7 +325,17 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     console.log("[MEMORY_MISS_OPENAI]", { topic, qLen: userQuestion.length, action: decision.action });
     waitUntil(bumpMetric(supabaseAdmin, "openai_calls"));
-    const aiResponse = await ai(aiConfig, { retries: 2 });
+    
+    const aiConfigToRun = {
+      ...aiConfig,
+      // REPAIR: Ensure taskType is correct for orchestrator
+      taskType: "tutor_chat" as any, 
+      topic,
+      complexity: "high" as any
+    };
+
+    const aiResponse = await ai(aiConfigToRun, { retries: 2 });
+
 
     // ── 4. STABILITY & PARSING ───────────────────────────────
     // Flexible content extraction for both OpenAI-style and raw fallback objects
