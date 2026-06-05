@@ -172,6 +172,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       
       const normalizedLocal = normalizeTutorResponse(localFallback, "fallback");
       
+      // AI Cost Validation: Log saved cost for local fallback
+      waitUntil((async () => {
+        try {
+          await supabaseAdmin.from("ai_usage_logs").insert({
+            user_id: userId,
+            model: "local_premium_fallback",
+            module: "tutor-v3-premium",
+            cache_status: "fallback",
+            cache_hit: true,
+            cost_saved: 0.01, // Est. value of a tutor call
+            success: true,
+            latency_ms: 5,
+            prompt_type: "doubt_fallback"
+          });
+        } catch (e) {
+          console.warn("[LOG_SAVINGS_FAIL]", (e as any)?.message);
+        }
+      })());
+
       return corsResponse({
         success: true,
         ok: true,
@@ -188,6 +207,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         debug: { hybrid_hit: true }
       }, 200);
     }
+
 
 
     // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory + RAG em paralelo) ────────
@@ -302,7 +322,29 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity, action: decision.action },
       }, 200);
 
-    }
+
+    } else if (useMemoryDirect && memoryHit) {
+      // Logic for semantic cache hits is already logging to memory_orchestration_traces
+      // We also ensure ai_usage_logs captures the savings
+      waitUntil((async () => {
+        try {
+          await supabaseAdmin.from("ai_usage_logs").insert({
+            user_id: userId,
+            model: "tutor_semantic_cache",
+            module: "tutor-v3-premium",
+            cache_status: "hit",
+            cache_hit: true,
+            cost_saved: 0.015, // Est. value of a deep tutor call
+            success: true,
+            latency_ms: 50,
+            prompt_type: "semantic_hit",
+            request_id: requestId
+          });
+        } catch (e) {
+          console.warn("[LOG_CACHE_SAVINGS_FAIL]", (e as any)?.message);
+        }
+      })());
+
 
     // ── 3.6 RAG context para enriquecer prompt quando regeneramos ───────────
     let ragContext = "";
@@ -370,7 +412,33 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     };
 
     const aiResponse = await ai(aiConfigToRun, { retries: 2 });
+    const latencyEnd = Date.now();
     console.log("[TUTOR_RUNAI_OK]");
+
+    // AI Cost Validation: Log actual usage
+    waitUntil((async () => {
+      try {
+        const usage = aiResponse.usage || { prompt_tokens: 0, completion_tokens: 0 };
+        await supabaseAdmin.from("ai_usage_logs").insert({
+          user_id: userId,
+          model: aiResponse.model || "openai/gpt-4o-mini",
+          module: "tutor-v3-premium",
+          cache_status: "miss",
+          cache_hit: false,
+          input_tokens: usage.prompt_tokens,
+          output_tokens: usage.completion_tokens,
+          tokens_used: usage.prompt_tokens + usage.completion_tokens,
+          cost_estimate: ((usage.prompt_tokens / 1000000) * 0.15) + ((usage.completion_tokens / 1000000) * 0.60),
+          success: true,
+          latency_ms: latencyEnd - (body.startTime || Date.now()),
+          request_id: requestId,
+          prompt_type: "tutor_deep"
+        });
+      } catch (e) {
+        console.warn("[LOG_USAGE_FAIL]", (e as any)?.message);
+      }
+    })());
+
 
 
 

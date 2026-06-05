@@ -996,6 +996,63 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_efficiency_metrics: {
+        Row: {
+          ai_calls: number | null
+          avg_latency_ms: number | null
+          cache_hits: number | null
+          day: string
+          error_count: number | null
+          estimated_cost_usd: number | null
+          estimated_savings_usd: number | null
+          fallback_count: number | null
+          feature_name: string
+          id: string
+          success_count: number | null
+          tokens_input_total: number | null
+          tokens_output_total: number | null
+          total_requests: number | null
+          tutor_success_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_calls?: number | null
+          avg_latency_ms?: number | null
+          cache_hits?: number | null
+          day?: string
+          error_count?: number | null
+          estimated_cost_usd?: number | null
+          estimated_savings_usd?: number | null
+          fallback_count?: number | null
+          feature_name: string
+          id?: string
+          success_count?: number | null
+          tokens_input_total?: number | null
+          tokens_output_total?: number | null
+          total_requests?: number | null
+          tutor_success_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_calls?: number | null
+          avg_latency_ms?: number | null
+          cache_hits?: number | null
+          day?: string
+          error_count?: number | null
+          estimated_cost_usd?: number | null
+          estimated_savings_usd?: number | null
+          fallback_count?: number | null
+          feature_name?: string
+          id?: string
+          success_count?: number | null
+          tokens_input_total?: number | null
+          tokens_output_total?: number | null
+          total_requests?: number | null
+          tutor_success_rate?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_enterprise_usage_logs: {
         Row: {
           actor_key: string | null
@@ -29074,6 +29131,10 @@ export type Database = {
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
       admin_telemetry_v2_ai_quality: { Args: { _days: number }; Returns: Json }
       admin_telemetry_v2_pedagogy: { Args: { _days: number }; Returns: Json }
+      aggregate_ai_efficiency_daily: {
+        Args: { _target_day?: string }
+        Returns: undefined
+      }
       append_questions_to_job: {
         Args: {
           p_job_id: string
