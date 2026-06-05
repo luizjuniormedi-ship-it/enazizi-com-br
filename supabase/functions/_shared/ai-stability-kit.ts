@@ -1,7 +1,17 @@
 /**
- * ENAZIZI — AI Stability Kit v10
+ * ENAZIZI — AI Stability Kit v11 (Resilience Hardening)
  * Circuit Breaker, Safe Parser, and Fallback Orchestration.
  */
+
+export interface TutorResponse {
+  content: string;
+  teachingPhase: string;
+  socraticQuestion: string;
+  source: "openai" | "lovable" | "fallback" | "safe_mode" | "cache";
+  confidence: number;
+  metadata?: any;
+}
+
 
 import { generateSHA256 } from "./crypto-utils.ts";
 
