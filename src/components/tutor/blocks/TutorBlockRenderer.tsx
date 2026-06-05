@@ -5,6 +5,7 @@ import { SummaryBlock } from "./SummaryBlock";
 import { DeepDiveBlock } from "./DeepDiveBlock";
 import { MiniQuizBlock } from "./MiniQuizBlock";
 import { NextStepsBlock } from "./NextStepsBlock";
+import { CurriculumImpactBlock } from "./CurriculumImpactBlock";
 import {
   ClinicalFlowRenderer,
   DifferentialDiagnosisBoard,
@@ -29,6 +30,7 @@ interface Props {
 }
 
 const BLOCK_PRIORITY: Record<string, number> = {
+  curriculum_impact: 0, // Impacto curricular vem primeiro para contextualizar
   summary: 1, // Leigo
   deep_dive: 2, // Técnico
   clinical_flow: 3, // Clínico
@@ -187,6 +189,8 @@ export function TutorBlockRenderer({
                           }}
                         />
                       );
+                    case "curriculum_impact":
+                      return <CurriculumImpactBlock block={block as any} />;
                     default:
                       return null;
                   }
