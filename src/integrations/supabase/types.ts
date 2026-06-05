@@ -12418,6 +12418,30 @@ export type Database = {
         }
         Relationships: []
       }
+      flashcard_generation_cache: {
+        Row: {
+          cards: Json
+          content_hash: string
+          created_at: string | null
+          id: string
+          topic: string | null
+        }
+        Insert: {
+          cards: Json
+          content_hash: string
+          created_at?: string | null
+          id?: string
+          topic?: string | null
+        }
+        Update: {
+          cards?: Json
+          content_hash?: string
+          created_at?: string | null
+          id?: string
+          topic?: string | null
+        }
+        Relationships: []
+      }
       flashcard_generation_jobs: {
         Row: {
           correlation_id: string | null
@@ -20410,6 +20434,44 @@ export type Database = {
           triggered_by?: string | null
         }
         Relationships: []
+      }
+      question_explanations: {
+        Row: {
+          clinical_reasoning: string | null
+          created_at: string | null
+          explanation: string
+          id: string
+          key_points: Json | null
+          question_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          clinical_reasoning?: string | null
+          created_at?: string | null
+          explanation: string
+          id?: string
+          key_points?: Json | null
+          question_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          clinical_reasoning?: string | null
+          created_at?: string | null
+          explanation?: string
+          id?: string
+          key_points?: Json | null
+          question_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_explanations_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "real_exam_questions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       question_generation_run_items: {
         Row: {
