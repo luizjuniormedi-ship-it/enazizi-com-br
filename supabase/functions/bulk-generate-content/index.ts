@@ -61,20 +61,37 @@ Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, 
         }
       }
 
-      const prompt = `Gere ${count} questões de MCQ para residência médica sobre ${specialty}.
-REGRAS:
-- Casos clínicos realistas e densos.
-- EXATAMENTE 5 alternativas (A, B, C, D, E).
-- 1 correta.
-- Retorne APENAS JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "${specialty}", "difficulty": 3}]}`;
+      const prompt = `Você é um professor de medicina especialista preparando questões para a residência médica (padrão ENARE/USP).
+Gere ${count} questões de Múltipla Escolha sobre: ${specialty}.
+
+DIRETRIZES DE ALTA FIDELIDADE:
+1. Caso Clínico: Use linguagem médica técnica. Inclua idade, sexo, queixa principal, tempo de evolução, sinais vitais e achados de exame físico.
+2. Nível de Dificuldade: Avançado (Residência Médica).
+3. Alternativas: Exatamente 5 opções (A, B, C, D, E). Evite "todas acima" ou "nenhuma".
+4. Explicação: Explique detalhadamente POR QUE a correta está certa e POR QUE as outras estão incorretas, citando critérios diagnósticos ou diretrizes brasileiras vigentes.
+
+Retorne APENAS um objeto JSON no formato:
+{
+  "questions": [
+    {
+      "statement": "Enunciado completo com caso clínico técnico...",
+      "options": ["A) Opção 1", "B) Opção 2", "C) Opção 3", "D) Opção 4", "E) Opção 5"],
+      "correct_index": 0,
+      "explanation": "Explicação técnica profunda citando diretrizes...",
+      "topic": "${specialty}",
+      "difficulty": 4
+    }
+  ]
+}`;
 
       const aiResponse = await callAi({
         model: ALLOWED_MODELS.generation,
         messages: [
-          { role: "system", content: "Professor de medicina especialista. Responda APENAS JSON." },
+          { role: "system", content: "Você é um Professor Doutor em Medicina. Responda estritamente em JSON." },
           { role: "user", content: prompt }
         ],
         max_tokens: 4000,
+        temperature: 0.7,
         taskType: "reasoning"
       }, logger, supabaseAdmin);
 
