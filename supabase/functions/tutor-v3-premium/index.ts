@@ -167,7 +167,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     const localFallback = getStaticFallback(searchTerms);
     
     // If we have a premium local summary and the user is asking a basic question
-    if (localFallback && !localFallback.sigla.includes("FIX") && studentIntent === "doubt" && searchTerms.length < 100) {
+    if (localFallback && (studentIntent === "doubt" || studentIntent === "new_topic") && searchTerms.length < 100) {
       console.log("[LOCAL_KNOWLEDGE_USED]", { topic: localFallback.tema });
       
       const normalizedLocal = normalizeTutorResponse(localFallback, "fallback");
