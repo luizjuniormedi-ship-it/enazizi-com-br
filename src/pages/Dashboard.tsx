@@ -359,9 +359,10 @@ const Dashboard = () => {
 
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
           <div className="space-y-6">
-            <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
+            <EnaflixSectionTitle kicker="MATRIZ ENAMED 2026" title="Chance de Aprovação" />
             <Suspense fallback={<LocalSectionSkeleton />}>
-              <ProgressOverview />
+              <import { ApprovalChanceDashboard } from "@/components/dashboard-v2/ApprovalChanceDashboard"; />
+              <ApprovalChanceDashboard />
             </Suspense>
           </div>
           <div className="space-y-6">
