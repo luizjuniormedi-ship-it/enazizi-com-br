@@ -114,22 +114,33 @@ export function useStudySession() {
 
   const recordAction = useCallback((correct: boolean, theme?: string, xp = 0) => {
     setMetrics(prev => {
+      const themesTouched = new Set(prev.themesTouched);
+      const isNewTheme = theme && !themesTouched.has(theme);
+      
+      if (theme) themesTouched.add(theme);
+
       const updated: StudySessionMetrics = {
         ...prev,
         tasksCompleted: prev.tasksCompleted + 1,
         correctAnswers: prev.correctAnswers + (correct ? 1 : 0),
         wrongAnswers: prev.wrongAnswers + (correct ? 0 : 1),
         xpGained: prev.xpGained + xp,
-        themesTouched: new Set(prev.themesTouched),
+        themesTouched,
       };
-      if (theme) updated.themesTouched.add(theme);
       saveSession(updated);
       
+      // Telemetry: [ENAMED_THEME_SELECTED]
+      if (isNewTheme && theme) {
+        import("@/lib/safeTelemetry").then(({ emitSafeEvent }) => {
+          emitSafeEvent("ENAMED_THEME_SELECTED", { theme });
+        });
+      }
+
       // Emit standardized pedagogical event
       dispatchPedagogicalEvent('question_answered', {
         questionId: 'session_task',
         correct,
-        timeMs: 0, // Duration per question not tracked here yet
+        timeMs: 0, 
         topic: theme
       });
       
