@@ -79,7 +79,7 @@ export default function OutcomeScienceDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <ScienceStat label="Approval Rate" value={`${science?.global.approval_rate}%`} icon={<Award className="text-amber-500" />} />
         <ScienceStat label="Avg Gain" value={`+${science?.global.avg_gain} pts`} icon={<TrendingUp className="text-emerald-500" />} />
-        <ScienceStat label="Forecast Accuracy" value={`${science?.global.forecast_accuracy}%`} icon={<Target className="text-indigo-500" />} />
+        <ScienceStat label="Forecast Accuracy" value={`${(science?.global as any).forecast_accuracy || (science?.global as any).avg_forecast_accuracy}%`} icon={<Target className="text-indigo-500" />} />
         <ScienceStat label="Study Sample" value={science?.global.sample_size.toLocaleString()} icon={<Users className="text-blue-500" />} />
       </div>
 
