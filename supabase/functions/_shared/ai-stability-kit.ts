@@ -146,6 +146,8 @@ export function getStaticFallback(tema: string): any {
   
   // Generic fallback
   return {
+    content: `### 🏥 Sistema em Manutenção Cognitiva\n\nIdentificamos uma alta demanda no tema **${tema}**. Nossos provedores de IA estão escalando recursos para garantir a precisão médica.\n\nPor favor, aguarde alguns segundos e tente novamente.`,
+    socraticQuestion: "Gostaria de tentar novamente agora?",
     sigla: "FIX",
     frase_mnemonica: `Focar na Informação X-encial de ${tema}.`,
     explicacao_didatica: "O sistema de IA está em manutenção. Este é um mnemônico de segurança.",
@@ -153,4 +155,5 @@ export function getStaticFallback(tema: string): any {
     tema,
     fallback: true
   };
+
 }
