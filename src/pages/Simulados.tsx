@@ -580,9 +580,6 @@ const Simulados = () => {
           setLoadingPercent(90);
           setLoadingProgress("Finalizando ambiente...");
 
-          // O mapQuestions atual espera o formato SimQuestion do Simulados.tsx
-          // mas as questões do adaptive já vêm estruturadas.
-          // Vamos garantir compatibilidade.
           const adaptiveQs = (data.questions || []).map((q: any) => ({
             statement: q.statement || q.content || "",
             options: q.options || [],
@@ -594,6 +591,13 @@ const Simulados = () => {
 
           if (adaptiveQs.length === 0) {
             throw new Error("Nenhuma questão foi gerada. Tente novamente.");
+          }
+
+          if (data.insufficientQuestions) {
+            setQuestions(adaptiveQs);
+            setPartialMessage(data.message || `Encontramos apenas ${adaptiveQs.length} questões para os filtros selecionados.`);
+            setPhase("partial");
+            return;
           }
 
           setLoadingPercent(100);
