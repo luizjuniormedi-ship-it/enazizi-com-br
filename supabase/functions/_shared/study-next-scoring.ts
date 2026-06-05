@@ -115,6 +115,8 @@ export interface ScoringContext {
   visualWeaknesses?: VisualWeaknessEntry[];
   /** Mnemonic utility data aggregated from feedback */
   mnemonicUtility?: MnemonicUtilityEntry[];
+  /** ENAMED Theme weights for Phase 2 prioritization */
+  enamedWeights?: Record<string, { incidence: number, impact: number }>;
 }
 
 // ─── Mnemonic mode decision ─────────────────────────────────────────
@@ -180,10 +182,19 @@ export function scoreReview(
     prioridade?: number;
     risco_esquecimento?: number;
     data_revisao?: string;
+    temas_estudados?: { tema: string };
   },
   ctx: ScoringContext,
 ): number {
   let s = BASE_SCORES.review;
+
+  // ENAMED Matrix Boost (Phase 2)
+  const theme = rev.temas_estudados?.tema?.toLowerCase();
+  if (theme && ctx.enamedWeights && ctx.enamedWeights[theme]) {
+    const { incidence, impact } = ctx.enamedWeights[theme];
+    s += (incidence * 2); // Boost based on incidence
+    s += (impact * 0.5); // Small boost based on impact
+  }
   s += Math.min(15, ((rev.prioridade ?? 50) / 100) * 15);
   const riskMap: Record<string, number> = { baixo: 0.2, medio: 0.5, alto: 1.0 };
   const riskVal = typeof rev.risco_esquecimento === "number"
@@ -227,6 +238,7 @@ export function scoreFSRS(
 
 export function scoreError(
   err: {
+    tema: string;
     vezes_errado?: number;
     updated_at?: string;
     categoria_erro?: string;
@@ -234,6 +246,14 @@ export function scoreError(
   ctx: ScoringContext,
 ): number {
   let s = BASE_SCORES.error;
+
+  // ENAMED Matrix Boost (Phase 2)
+  const theme = err.tema?.toLowerCase();
+  if (theme && ctx.enamedWeights && ctx.enamedWeights[theme]) {
+    const { incidence, impact } = ctx.enamedWeights[theme];
+    s += (incidence * 3); // High incidence errors are critical
+    s += (impact * 1);    // High impact errors are critical
+  }
   s += Math.min(25, (err.vezes_errado ?? 1) * 4);
   if (err.updated_at) {
     const daysSince = (Date.now() - new Date(err.updated_at).getTime()) / 86_400_000;
@@ -248,6 +268,7 @@ export function scoreError(
 
 export function scoreDailyTask(
   task: {
+    topic?: string;
     priority?: string;
     estimated_minutes?: number;
     task_type?: string;
@@ -255,6 +276,14 @@ export function scoreDailyTask(
   ctx: ScoringContext,
 ): number {
   let s = BASE_SCORES.daily_task;
+
+  // ENAMED Matrix Boost (Phase 2)
+  const theme = task.topic?.toLowerCase();
+  if (theme && ctx.enamedWeights && ctx.enamedWeights[theme]) {
+    const { incidence, impact } = ctx.enamedWeights[theme];
+    s += (incidence * 1.5); 
+    s += (impact * 0.5);
+  }
   if (task.priority === "high") s += 20;
   else if (task.priority === "medium") s += 10;
   if (ctx.missionActive) s *= MULTIPLIERS.missionActiveBoost;
