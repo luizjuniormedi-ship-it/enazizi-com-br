@@ -262,7 +262,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       waitUntil((async () => {
         try {
           await supabaseAdmin.from("memory_orchestration_traces").insert({
-            user_id: userId,
+            user_id: activeUserId,
             function_name: "tutor-v3-premium",
             question_preview: userQuestion.slice(0, 200),
             exact_hit: !!memoryHit && (memoryHit as any).matchType === "exact",
