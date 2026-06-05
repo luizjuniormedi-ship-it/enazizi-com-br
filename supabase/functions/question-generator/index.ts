@@ -1,6 +1,6 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { cleanQuestionText, parseAiJson } from "../_shared/contracts/parser.contract.ts";
-import { QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
+import { SIMULADO_MOTOR_PREMIUM, QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
@@ -62,13 +62,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     step = "historical_dedup";
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    const { data: recentSessions, error: sessErr } = await supabaseAdmin
+    const { data: recentSessions } = await supabaseAdmin
       .from("simulado_sessions")
       .select("id")
       .eq("user_id", userId)
       .gt("started_at", sevenDaysAgo);
       
-    if (sessErr) console.warn(`[SIM_GENERATOR_SESS_ERR] ${sessErr.message}`);
     const sessionIds = (recentSessions || []).map(s => s.id);
 
     const { data: practiceHistory } = await supabaseAdmin
@@ -134,63 +133,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
 
-    // 3. AI Generation
     let insufficientQuestions = finalQuestions.length < requestedCount;
     
-    if (insufficientQuestions && body.mode !== 'bank_only' && body.allowAiGeneration === true) {
-      step = "ai_generation";
-      const deficit = requestedCount - finalQuestions.length;
-      console.log(`[SIM_GENERATOR_AI_FALLBACK] deficit=${deficit}`);
-
-      const systemPrompt = QUESTION_MOTOR_PREMIUM + buildBancaBlock(profile);
-      const userPrompt = `Gere exatamente ${deficit} questões médicas novas para ${profile.label} sobre ${topics.join(", ")}. NÃO saia destes temas. Dificuldade: ${difficulty}. Retorne apenas JSON array bruto.`;
-
-      try {
-        const aiResponse = await ai({
-          model: normalizeModel(body.model || AI_MODELS.FAST),
-          taskType: "simulados",
-          complexity: "alta",
-          messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
-          userId
-        });
-
-        const rawContent = aiResponse?.choices?.[0]?.message?.content || "[]";
-        let aiBatch: any[] = [];
-        try { aiBatch = parseAiJson(rawContent); } catch { aiBatch = []; }
-
-        for (const q of aiBatch) {
-          if (finalQuestions.length >= requestedCount) break;
-          const cleanQ = {
-            statement: cleanQuestionText(q.statement || ""),
-            options: (q.options || []).slice(0, profile.optionsCount || 5).map(cleanQuestionText),
-            correct: typeof q.correct === 'number' ? q.correct : 0,
-            explanation: cleanQuestionText(q.explanation || ""),
-            topic: q.topic || topics[0],
-            difficulty: typeof q.difficulty === 'number' ? q.difficulty : 3,
-            board: profile.label
-          };
-
-          const hash = makeHash(cleanQ.statement);
-          const norm = normalizeStatement(cleanQ.statement);
-          
-          if (!seenHashes.has(hash) && !seenNormalized.has(norm) && cleanQ.options.length >= 4) {
-            finalQuestions.push({ ...cleanQ, _source: "generated" });
-            seenHashes.add(hash);
-            seenNormalized.add(norm);
-          }
-        }
-      } catch (e) {
-        console.warn(`[SIM_GENERATOR_AI_ERROR] ${e.message}`);
-      }
+    // AI Fallback removed to ensure strict topic adherence from verified bank
+    if (finalQuestions.length < requestedCount) {
+      console.log(`[SIM_GENERATOR_INSUFFICIENT_QUESTIONS] requested=${requestedCount} final=${finalQuestions.length}`);
     }
-
-    insufficientQuestions = finalQuestions.length < requestedCount;
 
     // 4. Persistence
     step = "persist";
     let sessionId = null;
     
-    const { data: sess, error: sessInsertErr } = await supabaseAdmin.from("simulado_sessions").insert({
+    const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'study',
       total_questions: finalQuestions.length,
@@ -207,23 +161,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       }
     }).select().single();
 
-    if (sessInsertErr) console.error(`[SIM_GENERATOR_SESS_INSERT_ERR] ${sessInsertErr.message}`);
-
     if (sess) {
       sessionId = sess.id;
-      const { error: qInsertErr } = await supabaseAdmin.from("simulado_questions").insert(
+      await supabaseAdmin.from("simulado_questions").insert(
         finalQuestions.map((q, idx) => ({
           session_id: sessionId,
-          question_id: q.id || null,
+          question_id: q.id,
           order_index: idx,
-          question_snapshot: q.id ? null : q,
           is_ai_generated: q._source === "generated"
         }))
       );
-      if (qInsertErr) console.error(`[SIM_GENERATOR_QS_INSERT_ERR] ${qInsertErr.message}`);
     }
-
-    console.log(`[SIM_GENERATOR_FINAL_SELECTION] count=${finalQuestions.length} sessionId=${sessionId}`);
 
     return new Response(JSON.stringify({
       success: true,
