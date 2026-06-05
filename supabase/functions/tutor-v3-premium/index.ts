@@ -512,7 +512,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           source: "tutor_v3",
           scope: "user",
           userId,
-          teachingMode: nextBlock,
+          teachingMode: activeBlock,
         });
         if (savedId) {
           console.log("[TUTOR_MEMORY_PRIVATE_SAVE]", { savedId, userId, topic });
