@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { TutorBlock } from "@/types/tutor";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Target, TrendingUp, ArrowUpRight } from "lucide-react";
@@ -8,6 +9,17 @@ interface Props {
 
 export function CurriculumImpactBlock({ block }: Props) {
   const { theme, incidence, impact_score, mastery_level, priority, potential_gain } = block.payload;
+
+  // Telemetry: [TUTOR_ENAMED_INDICATOR_RENDERED]
+  useEffect(() => {
+    import("@/lib/safeTelemetry").then(({ emitSafeEvent }) => {
+      emitSafeEvent("TUTOR_ENAMED_INDICATOR_RENDERED", {
+        theme,
+        incidence,
+        impact_score
+      });
+    });
+  }, [theme]);
 
   const incidenceLabel = incidence.toUpperCase();
   const incidenceColor = 
