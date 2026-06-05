@@ -14474,6 +14474,39 @@ export type Database = {
         }
         Relationships: []
       }
+      longitudinal_study_cohorts: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          start_date: string | null
+          target_date: string | null
+          total_participants: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_date?: string | null
+          target_date?: string | null
+          total_participants?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_date?: string | null
+          target_date?: string | null
+          total_participants?: number | null
+        }
+        Relationships: []
+      }
       mascot_interactions: {
         Row: {
           created_at: string
@@ -14688,6 +14721,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mechanism_attribution_scores: {
+        Row: {
+          attribution_weight: number
+          confidence_score: number | null
+          id: string
+          last_recalculated_at: string | null
+          mechanism_name: string
+          user_id: string | null
+          validated_gain: number | null
+        }
+        Insert: {
+          attribution_weight: number
+          confidence_score?: number | null
+          id?: string
+          last_recalculated_at?: string | null
+          mechanism_name: string
+          user_id?: string | null
+          validated_gain?: number | null
+        }
+        Update: {
+          attribution_weight?: number
+          confidence_score?: number | null
+          id?: string
+          last_recalculated_at?: string | null
+          mechanism_name?: string
+          user_id?: string | null
+          validated_gain?: number | null
+        }
+        Relationships: []
       }
       medical_ai_prompts: {
         Row: {
@@ -17212,6 +17275,7 @@ export type Database = {
       official_exam_results: {
         Row: {
           approval_status: string | null
+          cohort_id: string | null
           created_at: string | null
           exam_name: string
           exam_year: number
@@ -17224,6 +17288,7 @@ export type Database = {
         }
         Insert: {
           approval_status?: string | null
+          cohort_id?: string | null
           created_at?: string | null
           exam_name: string
           exam_year: number
@@ -17236,6 +17301,7 @@ export type Database = {
         }
         Update: {
           approval_status?: string | null
+          cohort_id?: string | null
           created_at?: string | null
           exam_name?: string
           exam_year?: number
@@ -17246,7 +17312,15 @@ export type Database = {
           specialty_choice?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "official_exam_results_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "longitudinal_study_cohorts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       official_exam_sources: {
         Row: {
@@ -21802,6 +21876,47 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      scientific_report_logs: {
+        Row: {
+          cohort_id: string | null
+          created_at: string | null
+          file_url: string | null
+          generated_by: string | null
+          id: string
+          report_type: string
+          summary_json: Json
+          title: string
+        }
+        Insert: {
+          cohort_id?: string | null
+          created_at?: string | null
+          file_url?: string | null
+          generated_by?: string | null
+          id?: string
+          report_type: string
+          summary_json: Json
+          title: string
+        }
+        Update: {
+          cohort_id?: string | null
+          created_at?: string | null
+          file_url?: string | null
+          generated_by?: string | null
+          id?: string
+          report_type?: string
+          summary_json?: Json
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scientific_report_logs_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "longitudinal_study_cohorts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scraping_runs: {
         Row: {
