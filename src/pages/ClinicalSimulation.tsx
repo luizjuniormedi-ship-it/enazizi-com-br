@@ -1010,11 +1010,14 @@ const ClinicalSimulation = () => {
                 categoryScores={categoryScores}
                 differentialDiagnosis={differentialDiagnosis}
                 medicalRecord={medicalRecord}
-
                 medRecordOpen={medRecordOpen}
                 onMedRecordOpenChange={setMedRecordOpen}
+                prescriptionAudit={prescriptionAudit}
+                scaleAudit={scaleAudit}
+                cognitiveEvent={cognitiveEvent}
               />
             </div>
+
 
             {/* CENTER: Chat */}
             <Card className="overflow-hidden flex flex-col min-h-0 min-w-0 border-0 rounded-none lg:border lg:rounded-xl">
