@@ -439,7 +439,9 @@ const Simulados = () => {
     timePerQuestion?: number; 
     mode: SimuladoMode; 
       specificTopic?: string; 
+      selectedSubtopics?: string[];
       examBoard?: string; 
+
       realExamProfile?: string; 
       imagePercent?: number; 
       dynamicDistribution?: ExamDistributionTree; 
