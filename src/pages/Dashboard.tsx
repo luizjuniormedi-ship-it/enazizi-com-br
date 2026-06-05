@@ -33,6 +33,7 @@ const ErrorReviewCard = lazy(() => import("@/components/dashboard/ErrorReviewCar
 const DailyPlanWidget = lazy(() => import("@/components/dashboard/DailyPlanWidget"));
 const DashboardMetricsGrid = lazy(() => import("@/components/dashboard/DashboardMetricsGrid"));
 const CognitiveValidation = lazy(() => import("@/components/admin/CognitiveValidation").then(m => ({ default: m.CognitiveValidation })));
+const HighImpactThemesCard = lazy(() => import("@/components/dashboard/HighImpactThemesCard"));
 
 import { ApprovalChanceDashboard } from "@/components/dashboard-v2/ApprovalChanceDashboard";
 
@@ -364,6 +365,11 @@ const Dashboard = () => {
             <EnaflixSectionTitle kicker="MATRIZ ENAMED 2026" title="Chance de Aprovação" />
             <Suspense fallback={<LocalSectionSkeleton />}>
               <ApprovalChanceDashboard />
+            </Suspense>
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <div className="mt-6">
+                <HighImpactThemesCard />
+              </div>
             </Suspense>
           </div>
           <div className="space-y-6">
