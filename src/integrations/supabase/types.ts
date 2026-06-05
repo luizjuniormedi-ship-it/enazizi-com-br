@@ -10820,6 +10820,63 @@ export type Database = {
         }
         Relationships: []
       }
+      effect_size_metrics: {
+        Row: {
+          absolute_gain: number | null
+          calculated_at: string | null
+          cohens_d: number | null
+          cohort_a_id: string | null
+          cohort_b_id: string | null
+          confidence_interval_high: number | null
+          confidence_interval_low: number | null
+          id: string
+          odds_ratio: number | null
+          p_value: number | null
+          relative_gain: number | null
+        }
+        Insert: {
+          absolute_gain?: number | null
+          calculated_at?: string | null
+          cohens_d?: number | null
+          cohort_a_id?: string | null
+          cohort_b_id?: string | null
+          confidence_interval_high?: number | null
+          confidence_interval_low?: number | null
+          id?: string
+          odds_ratio?: number | null
+          p_value?: number | null
+          relative_gain?: number | null
+        }
+        Update: {
+          absolute_gain?: number | null
+          calculated_at?: string | null
+          cohens_d?: number | null
+          cohort_a_id?: string | null
+          cohort_b_id?: string | null
+          confidence_interval_high?: number | null
+          confidence_interval_low?: number | null
+          id?: string
+          odds_ratio?: number | null
+          p_value?: number | null
+          relative_gain?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "effect_size_metrics_cohort_a_id_fkey"
+            columns: ["cohort_a_id"]
+            isOneToOne: false
+            referencedRelation: "institution_cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "effect_size_metrics_cohort_b_id_fkey"
+            columns: ["cohort_b_id"]
+            isOneToOne: false
+            referencedRelation: "institution_cohorts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -11352,6 +11409,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["specialty_id"]
+          },
+        ]
+      }
+      enamed_outcome_database: {
+        Row: {
+          created_at: string | null
+          exam_year: number | null
+          id: string
+          institution_id: string | null
+          is_anonymized: boolean | null
+          official_score: number | null
+          specialty_intended: string | null
+          status: string | null
+          student_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exam_year?: number | null
+          id?: string
+          institution_id?: string | null
+          is_anonymized?: boolean | null
+          official_score?: number | null
+          specialty_intended?: string | null
+          status?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exam_year?: number | null
+          id?: string
+          institution_id?: string | null
+          is_anonymized?: boolean | null
+          official_score?: number | null
+          specialty_intended?: string | null
+          status?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enamed_outcome_database_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -13877,6 +13978,53 @@ export type Database = {
           },
         ]
       }
+      institution_cohorts: {
+        Row: {
+          category: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          institution_id: string | null
+          metadata: Json | null
+          name: string
+          start_date: string | null
+          status: string | null
+          student_count: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          institution_id?: string | null
+          metadata?: Json | null
+          name: string
+          start_date?: string | null
+          status?: string | null
+          student_count?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          institution_id?: string | null
+          metadata?: Json | null
+          name?: string
+          start_date?: string | null
+          status?: string | null
+          student_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_cohorts_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       institution_members: {
         Row: {
           id: string
@@ -13912,6 +14060,33 @@ export type Database = {
           },
         ]
       }
+      institutional_governance: {
+        Row: {
+          current_value: number | null
+          id: string
+          last_check: string | null
+          metric_name: string
+          status: string | null
+          threshold: number | null
+        }
+        Insert: {
+          current_value?: number | null
+          id?: string
+          last_check?: string | null
+          metric_name: string
+          status?: string | null
+          threshold?: number | null
+        }
+        Update: {
+          current_value?: number | null
+          id?: string
+          last_check?: string | null
+          metric_name?: string
+          status?: string | null
+          threshold?: number | null
+        }
+        Relationships: []
+      }
       institutions: {
         Row: {
           created_at: string
@@ -13923,6 +14098,7 @@ export type Database = {
           settings_json: Json | null
           type: string
           updated_at: string
+          validation_score: number | null
         }
         Insert: {
           created_at?: string
@@ -13934,6 +14110,7 @@ export type Database = {
           settings_json?: Json | null
           type?: string
           updated_at?: string
+          validation_score?: number | null
         }
         Update: {
           created_at?: string
@@ -13945,6 +14122,7 @@ export type Database = {
           settings_json?: Json | null
           type?: string
           updated_at?: string
+          validation_score?: number | null
         }
         Relationships: []
       }
@@ -16650,6 +16828,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      national_benchmarks: {
+        Row: {
+          approval_rate: number | null
+          avg_official_score: number | null
+          avg_readiness: number | null
+          avg_study_time_hours: number | null
+          id: string
+          last_updated: string | null
+          sample_size: number | null
+          segment: string
+        }
+        Insert: {
+          approval_rate?: number | null
+          avg_official_score?: number | null
+          avg_readiness?: number | null
+          avg_study_time_hours?: number | null
+          id?: string
+          last_updated?: string | null
+          sample_size?: number | null
+          segment: string
+        }
+        Update: {
+          approval_rate?: number | null
+          avg_official_score?: number | null
+          avg_readiness?: number | null
+          avg_study_time_hours?: number | null
+          id?: string
+          last_updated?: string | null
+          sample_size?: number | null
+          segment?: string
+        }
+        Relationships: []
       }
       notebooklm_export_logs: {
         Row: {
@@ -21914,6 +22125,44 @@ export type Database = {
             columns: ["cohort_id"]
             isOneToOne: false
             referencedRelation: "longitudinal_study_cohorts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scientific_reports: {
+        Row: {
+          created_at: string | null
+          file_url: string | null
+          id: string
+          institution_id: string | null
+          metadata: Json | null
+          period: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          institution_id?: string | null
+          metadata?: Json | null
+          period: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          institution_id?: string | null
+          metadata?: Json | null
+          period?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scientific_reports_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
             referencedColumns: ["id"]
           },
         ]
