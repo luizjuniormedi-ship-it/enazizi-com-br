@@ -12,8 +12,9 @@ import { generateSHA256 } from "../crypto-utils.ts";
 
 export interface AiRequest {
   model?: string;
-  taskType?: "generation" | "reasoning" | "vision";
+  taskType?: "generation" | "reasoning" | "vision" | "tutor_chat" | "tutor_deep";
   complexity?: "baixa" | "média" | "alta";
+  costTier?: "LOW_COST" | "NORMAL" | "PREMIUM";
   messages: any[];
   max_tokens?: number;
   temperature?: number;
@@ -22,6 +23,7 @@ export interface AiRequest {
   userId?: string;
   skipCache?: boolean;
 }
+
 
 // OpenAI-only chains (per user directive: "USE O OPENAI PARA O TUTOR").
 // Multiple OpenAI model variants maximize hit chance if a specific model is rate-limited.
@@ -57,10 +59,21 @@ export async function callAi(
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
   // 1. Determine Tier and Chain
-  const tier = (payload.complexity === "alta" || payload.taskType === "reasoning") ? 'REASONING' : 'FAST';
+  const tier = (payload.costTier === "PREMIUM" || payload.complexity === "alta" || payload.taskType === "reasoning" || payload.taskType === "tutor_deep") ? 'REASONING' : 'FAST';
+  
+  // If LOW_COST is requested, we strictly prefer fast/cheap models
+  const isLowCost = payload.costTier === "LOW_COST";
+  
   const requestedModel = payload.model;
-  const baseChain = requestedModel ? [requestedModel, ...FALLBACK_CHAINS[tier]] : FALLBACK_CHAINS[tier];
+  let baseChain = requestedModel ? [requestedModel, ...FALLBACK_CHAINS[tier]] : FALLBACK_CHAINS[tier];
+  
+  if (isLowCost) {
+    // Re-order chain to prioritize cheapest models
+    baseChain = ["openai/gpt-4o-mini", "google/gemini-2.5-flash-lite", ...baseChain];
+  }
+
   const uniqueChain = [...new Set(baseChain)];
+
 
   // 2. Global Cache Check (SHA256)
   const promptText = JSON.stringify(payload.messages);

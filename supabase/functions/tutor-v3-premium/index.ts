@@ -287,9 +287,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
 
 
+    // ── 3.6 RAG context para enriquecer prompt quando regeneramos ───────────
+    let ragContext = "";
+    if (decision.useRagContext && ragHits.length > 0) {
+      ragContext = "\n\n[CONTEXTO RAG RELEVANTE]\n" +
+        ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
+    }
+    if (decision.action === "regenerate_and_compare") {
+      console.log("[MEMORY_AB_REGEN_PROCEED]", { memoryId: decision.memoryId });
+    }
+
+    // Determine Cost Tier for AI Routing
+    let costTier: "LOW_COST" | "NORMAL" | "PREMIUM" = "NORMAL";
+    if (recoveryMode || masteryLevel === "EXPERT") costTier = "PREMIUM";
+    if (studentIntent === "doubt" && userQuestion.length < 50) costTier = "LOW_COST";
+
     const aiConfig: any = {
       taskType: "tutor_deep",
       complexity: "alta",
+      costTier,
       userId,
       stream: false, // Force JSON for structured orchestration
       response_format: { type: "json_object" },
@@ -323,6 +339,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula") }
       ]
     };
+
 
     console.log("[TUTOR_RUNAI_START]", { topic, qLen: userQuestion.length, action: decision.action });
     waitUntil(bumpMetric(supabaseAdmin, "openai_calls"));
