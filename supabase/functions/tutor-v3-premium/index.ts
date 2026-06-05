@@ -162,6 +162,34 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
 
+    // [AI COST REDUCTION] ── HYBRID TUTOR: CHECK LOCAL KNOWLEDGE ──────────────────
+    const searchTerms = [message || "", topic || ""].join(" ");
+    const localFallback = getStaticFallback(searchTerms);
+    
+    // If we have a premium local summary and the user is asking a basic question
+    if (localFallback && !localFallback.sigla.includes("FIX") && studentIntent === "doubt" && searchTerms.length < 100) {
+      console.log("[LOCAL_KNOWLEDGE_USED]", { topic: localFallback.tema });
+      
+      const normalizedLocal = normalizeTutorResponse(localFallback, "fallback");
+      
+      return corsResponse({
+        success: true,
+        ok: true,
+        content: normalizedLocal.content,
+        currentBlock: nextBlock,
+        blockTitle: currentBlockConfig.title,
+        teachingPhase: normalizedLocal.teachingPhase,
+        shouldWaitForStudent: true,
+        socraticQuestion: normalizedLocal.socraticQuestion,
+        actionsContext: { topic, block: nextBlock },
+        topic,
+        correlation_id: correlationId,
+        source: "fallback",
+        debug: { hybrid_hit: true }
+      }, 200);
+    }
+
+
     // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory + RAG em paralelo) ────────
     // 🚨 P0 EMERGENCY BYPASS — DISABLE_TUTOR_MEMORY flag (v29 incident response)
     const MEMORY_DISABLED = (Deno.env.get("DISABLE_TUTOR_MEMORY") || "").toLowerCase() === "true";
