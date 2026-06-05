@@ -324,6 +324,7 @@ const CurriculumImpactPayloadSchema = z.object({
   impact_score: z.number().min(0).max(10),
   mastery_level: z.number().min(0).max(1),
   priority: z.number().min(0).max(100),
+  potential_gain: z.number().optional(),
 });
 
 function sanitizeCurriculumImpact(rawPayload: unknown): CurriculumImpactBlock | null {

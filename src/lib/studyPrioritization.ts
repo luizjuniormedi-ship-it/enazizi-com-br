@@ -25,7 +25,7 @@ export function calculatePremiumPriority(metrics: PrioritizationMetrics, themeId
 
   const rawScore = 
     (metrics.fallProbability * 10 * C_INCIDENCE) +
-    (metrics.errorRate * 10 * C_ERROR) +
+    (metrics.errorRate * 10 * C_ERROR * (metrics.fallProbability > 0.7 ? 1.5 : 1.0)) + // V2 Recovery Logic
     (metrics.fsrsRisk * 10 * C_FSRS) +
     (metrics.examProximity * 10 * C_PROXIMITY) +
     ((1 - metrics.currentMastery) * 10 * C_MASTERY);

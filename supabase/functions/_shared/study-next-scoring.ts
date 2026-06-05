@@ -247,13 +247,22 @@ export function scoreError(
 ): number {
   let s = BASE_SCORES.error;
 
-  // ENAMED Matrix Boost (Phase 2)
+  // ENAMED Impact Engine V2: (Erro × Impacto Curricular × Incidência)
   const theme = err.tema?.toLowerCase();
   if (theme && ctx.enamedWeights && ctx.enamedWeights[theme]) {
     const { incidence, impact } = ctx.enamedWeights[theme];
-    s += (incidence * 3); // High incidence errors are critical
-    s += (impact * 1);    // High impact errors are critical
+    
+    // Incidence * 3 + Impact * 1 (as established in Sprint 2.1 base)
+    // For V2 Recovery: we multiply to amplify critical gaps
+    const impactFactor = (incidence * 1.5) * (impact * 0.5);
+    s += Math.min(40, impactFactor);
+    
+    // Maximize priority for high incidence/impact themes
+    if (incidence > 8 && impact > 8) {
+      s += 20; // Maximum Priority Boost
+    }
   }
+
   s += Math.min(25, (err.vezes_errado ?? 1) * 4);
   if (err.updated_at) {
     const daysSince = (Date.now() - new Date(err.updated_at).getTime()) / 86_400_000;

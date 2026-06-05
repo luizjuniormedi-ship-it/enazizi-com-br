@@ -37,6 +37,7 @@ const HighImpactThemesCard = lazy(() => import("@/components/dashboard/HighImpac
 const EnamedMatrixHealth = lazy(() => import("@/components/dashboard/EnamedMatrixHealth"));
 
 import { ApprovalChanceDashboard } from "@/components/dashboard-v2/ApprovalChanceDashboard";
+const EnamedImpactDashboard = lazy(() => import("@/components/dashboard/EnamedImpactDashboard"));
 
 const Dashboard = () => {
   const mountTimeRef = useRef(Date.now());
@@ -370,6 +371,7 @@ const Dashboard = () => {
             <Suspense fallback={<LocalSectionSkeleton />}>
               <div className="mt-6">
                 <HighImpactThemesCard />
+                <EnamedImpactDashboard />
               </div>
             </Suspense>
             <Suspense fallback={<LocalSectionSkeleton />}>

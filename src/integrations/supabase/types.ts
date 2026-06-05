@@ -10999,6 +10999,39 @@ export type Database = {
           },
         ]
       }
+      enamed_approval_forecasts: {
+        Row: {
+          created_at: string | null
+          current_probability: number | null
+          forecast_30_days: number | null
+          forecast_60_days: number | null
+          forecast_exam_date: number | null
+          id: string
+          readiness_score: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_probability?: number | null
+          forecast_30_days?: number | null
+          forecast_60_days?: number | null
+          forecast_exam_date?: number | null
+          id?: string
+          readiness_score?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_probability?: number | null
+          forecast_30_days?: number | null
+          forecast_60_days?: number | null
+          forecast_exam_date?: number | null
+          id?: string
+          readiness_score?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       enamed_curriculum_matrix: {
         Row: {
           active: boolean | null
@@ -11034,6 +11067,56 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      enamed_impact_scores: {
+        Row: {
+          approval_impact_score: number | null
+          created_at: string | null
+          difficulty_score: number | null
+          frequency_score: number | null
+          global_priority: number | null
+          historical_occurrences: number | null
+          id: string
+          last_occurrence_year: number | null
+          mastery_threshold: number | null
+          theme_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approval_impact_score?: number | null
+          created_at?: string | null
+          difficulty_score?: number | null
+          frequency_score?: number | null
+          global_priority?: number | null
+          historical_occurrences?: number | null
+          id?: string
+          last_occurrence_year?: number | null
+          mastery_threshold?: number | null
+          theme_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approval_impact_score?: number | null
+          created_at?: string | null
+          difficulty_score?: number | null
+          frequency_score?: number | null
+          global_priority?: number | null
+          historical_occurrences?: number | null
+          id?: string
+          last_occurrence_year?: number | null
+          mastery_threshold?: number | null
+          theme_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enamed_impact_scores_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: true
+            referencedRelation: "curriculum_matrix"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       enamed_intelligence_index: {
         Row: {
@@ -28168,6 +28251,16 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      calculate_readiness_gap: {
+        Args: { p_user_id: string }
+        Returns: {
+          current_mastery: number
+          potential_gain: number
+          priority: number
+          theme_id: string
+          theme_name: string
+        }[]
+      }
       calculate_readiness_score_v2: {
         Args: { p_user_id: string }
         Returns: number
@@ -28308,6 +28401,19 @@ export type Database = {
           level: number
           user_id: string
           xp: number
+        }[]
+      }
+      get_high_impact_questions: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          correct_index: number
+          explanation: string
+          id: string
+          options: Json
+          potential_gain: number
+          source: string
+          statement: string
+          topic: string
         }[]
       }
       get_image_integrity_summary: {
