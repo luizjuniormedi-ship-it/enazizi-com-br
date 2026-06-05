@@ -62,6 +62,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     step = "historical_dedup";
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
+    const { data: recentSessions } = await supabaseAdmin.from("simulado_sessions").select("id").eq("user_id", userId).gt("created_at", sevenDaysAgo);
+    const sessionIds = (recentSessions || []).map(s => s.id);
+    
     // Using a simpler approach to get IDs to avoid complexity
     const { data: practiceHistory } = await supabaseAdmin
       .from("practice_attempts")
@@ -69,7 +72,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       .eq("user_id", userId)
       .gt("created_at", sevenDaysAgo);
 
-    const excludedIds = Array.from(new Set((practiceHistory || []).map(p => p.question_id).filter(Boolean))).slice(0, 500);
+    const { data: simuladoHistory } = sessionIds.length > 0 
+      ? await supabaseAdmin.from("simulado_questions").select("question_id").in("session_id", sessionIds)
+      : { data: [] };
+
+    const excludedIds = Array.from(new Set([
+      ...(practiceHistory || []).map(p => p.question_id),
+      ...(simuladoHistory || []).map(s => s.question_id)
+    ].filter(Boolean))).slice(0, 500);
 
     console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] count=${excludedIds.length}`);
 
