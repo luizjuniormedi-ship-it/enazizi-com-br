@@ -41,6 +41,7 @@ import { ApprovalChanceDashboard } from "@/components/dashboard-v2/ApprovalChanc
 const EnamedImpactDashboard = lazy(() => import("@/components/dashboard/EnamedImpactDashboard"));
 const EnamedEvidenceDashboard = lazy(() => import("@/components/dashboard/EnamedEvidenceDashboard"));
 const EvidenceValidationDashboard = lazy(() => import("@/components/dashboard/EvidenceValidationDashboard"));
+const EvidenceGovernanceDashboard = lazy(() => import("@/components/dashboard/EvidenceGovernanceDashboard"));
 
 const Dashboard = () => {
   const mountTimeRef = useRef(Date.now());
