@@ -9,7 +9,7 @@ import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
- * Implementation: Strict Topic Adherence + Historical Dedup + No Silent Fallback
+ * Final Version: Fixed Foreign Key, Strict Filtering, Historical Dedup.
  */
 
 const normalizeStatement = (s: string) => {
@@ -55,13 +55,12 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     step = "historical_dedup";
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    const { data: recentSessions, error: sessErr } = await supabaseAdmin
+    const { data: recentSessions } = await supabaseAdmin
       .from("simulado_sessions")
       .select("id")
       .eq("user_id", userId)
       .gt("started_at", sevenDaysAgo);
       
-    if (sessErr) console.warn(`[SIM_GENERATOR_SESS_ERR] ${sessErr.message}`);
     const sessionIds = (recentSessions || []).map(s => s.id);
     
     const [practiceHistory, simuladoHistory] = await Promise.all([
@@ -102,21 +101,15 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
         query = query.not("id", "in", `(${excludedIds.join(",")})`);
       }
 
-      const { data: bankQs, error: bankErr } = await query.limit(requestedCount * 2);
-      
-      if (bankErr) console.warn(`[SIM_GENERATOR_BANK_ERROR] ${bankErr.message}`);
-      
+      const { data: bankQs } = await query.limit(requestedCount * 2);
       const candidates = bankQs || [];
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
 
       for (const q of candidates) {
         if (finalQuestions.length >= requestedCount) break;
-        
         const hash = makeHash(q.statement);
         const norm = normalizeStatement(q.statement);
-        
         if (seenHashes.has(hash) || seenNormalized.has(norm)) continue;
-        
         finalQuestions.push({ ...q, correct: q.correct_index, _source: "bank" });
         seenHashes.add(hash);
         seenNormalized.add(norm);
@@ -126,19 +119,13 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
 
     let insufficientQuestions = finalQuestions.length < requestedCount;
-    
-    if (insufficientQuestions && body.allowAiGeneration === true) {
-      step = "ai_generation";
-      console.log(`[SIM_GENERATOR_AI_FALLBACK] deficit=${requestedCount - finalQuestions.length}`);
-    }
-
-    if (finalQuestions.length < requestedCount) {
+    if (insufficientQuestions) {
       console.log(`[SIM_GENERATOR_INSUFFICIENT_QUESTIONS] requested=${requestedCount} final=${finalQuestions.length}`);
     }
 
     // 4. Persistence
     step = "persistence";
-    const { data: sess, error: sessInsertErr } = await supabaseAdmin.from("simulado_sessions").insert({
+    const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'adaptativo',
       total_questions: finalQuestions.length,
@@ -146,31 +133,19 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       discipline: body.discipline || body.specialty || topics[0],
       topic: topics[0],
       started_at: new Date().toISOString(),
-      metadata: { 
-        board: profile.label, 
-        requested: requestedCount, 
-        partial: insufficientQuestions,
-        insufficientQuestions: insufficientQuestions,
-        correlation_id: correlationId
-      }
+      metadata: { board: profile.label, requested: requestedCount, insufficientQuestions, correlation_id: correlationId }
     }).select().single();
 
-    if (sessInsertErr) console.error(`[SIM_GENERATOR_SESS_INSERT_ERR] ${sessInsertErr.message}`);
-
     if (sess) {
-      const { error: qInsertErr } = await supabaseAdmin.from("simulado_questions").insert(
+      await supabaseAdmin.from("simulado_questions").insert(
         finalQuestions.map((q, idx) => ({
           session_id: sess.id,
-          question_id: q.id || null,
+          question_id: q.id,
           order_index: idx,
-          question_snapshot: q.id ? null : q,
           is_ai_generated: q._source === "generated"
         }))
       );
-      if (qInsertErr) console.error(`[SIM_GENERATOR_QS_INSERT_ERR] ${qInsertErr.message}`);
     }
-
-    console.log(`[SIM_GENERATOR_FINAL_SELECTION] count=${finalQuestions.length} sessionId=${sess?.id}`);
 
     return new Response(JSON.stringify({ 
       success: true, 
