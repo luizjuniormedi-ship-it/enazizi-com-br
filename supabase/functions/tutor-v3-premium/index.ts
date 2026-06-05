@@ -354,6 +354,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       console.log("[MEMORY_AB_REGEN_PROCEED]", { memoryId: decision.memoryId });
     }
 
+    // Determine current block from session or decision
+    const activeBlock = nextBlock;
+    const activeBlockConfig = currentBlockConfig;
+    const activeBlockObjective = blockObjective;
+
 
     // Determine Cost Tier for AI Routing
     let costTier: "LOW_COST" | "NORMAL" | "PREMIUM" = "NORMAL";
