@@ -190,58 +190,63 @@ async function createRecoveryFlashcard(args: {
     }
 
     const isRichQuestion = conteudo && conteudo.trim().length > 50;
-    const front = isRichQuestion 
-      ? `Conceito falho em ${tema}:\nQual o ponto-chave que explica o erro no caso clínico apresentado?`
-      : `Revisão de erro em ${tema}${subtema ? ` / ${subtema}` : ""}`;
-
-    const back = motivoErro?.trim() || `Reveja o conceito de ${tema}.`;
-
-    const { data: inserted, error: insErr } = await supabase
-      .from("flashcards")
-      .insert({
-        user_id: userId,
-        question: front,
-        answer: back,
-        explanation: motivoErro || null,
-        topic: tema,
-        subtopic: subtema || null,
-        difficulty: dificuldade || 3,
-        is_global: false,
-        source: "error_bank",
-        generation_method: "recovery_loop_v1",
-        reviewed_by_human: false,
-        metadata: {
-          from_error_id: errorId,
-          question_id: questionId || null,
-          source: "error_bank",
-          created_by: "recovery_loop_v1",
-        },
-      })
-      .select("id")
-      .single();
-
-    if (insErr || !inserted) {
-      console.warn("[RECOVERY_LOOP_FLASHCARD_INSERT_FAIL]", {
-        errorId,
-        error: insErr?.message,
+    
+    // RECOVERY LOOP P0 — Chamar Edge Function para geração Premium
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-recovery-flashcard", {
+        body: {
+          errorId,
+          questionId,
+          topic: tema,
+          context: conteudo,
+          userAnswer: motivoErro, // Se o motivoErro for o que o aluno marcou
+          reason: motivoErro,
+        }
       });
-      return;
+
+      if (error || !data?.success) {
+        console.warn("[RECOVERY_LOOP_PREMIUM_FAIL] Falling back to legacy generation", error);
+        // Legacy Fallback (para não perder o card se a IA falhar)
+        const front = isRichQuestion 
+          ? `Conceito falho em ${tema}:\nQual o ponto-chave que explica o erro no caso clínico apresentado?`
+          : `Revisão de erro em ${tema}${subtema ? ` / ${subtema}` : ""}`;
+        const back = motivoErro?.trim() || `Reveja o conceito de ${tema}.`;
+
+        const { data: inserted, error: insErr } = await supabase
+          .from("flashcards")
+          .insert({
+            user_id: userId,
+            question: front,
+            answer: back,
+            explanation: motivoErro || null,
+            topic: tema,
+            subtopic: subtema || null,
+            difficulty: dificuldade || 3,
+            is_global: false,
+            source: "error_bank",
+            generation_method: "recovery_loop_v1_fallback",
+            metadata: {
+              from_error_id: errorId,
+              question_id: questionId || null,
+              source: "error_bank",
+              created_by: "recovery_loop_v1_fallback",
+            },
+          })
+          .select("id")
+          .single();
+
+        if (inserted) {
+          await ensurePersonalFlashcardFsrs({
+            userId,
+            flashcardId: inserted.id,
+            source: "flashcards_bank",
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[RECOVERY_LOOP_INVOKE_EXCEPTION]", err);
     }
 
-    console.info("[RECOVERY_LOOP_FLASHCARD_CREATED]", {
-      userId,
-      flashcardId: inserted.id,
-      errorId,
-      questionId: questionId || null,
-      tema,
-    });
-
-    // Elo 3: FSRS do flashcard recém-criado (bloqueante, com rollback)
-    const fsrsRes = await ensurePersonalFlashcardFsrs({
-      userId,
-      flashcardId: inserted.id,
-      source: "flashcards_bank",
-    });
 
     if (!fsrsRes.ok) {
       console.warn("[RECOVERY_LOOP_FLASHCARD_FSRS_FAIL]", {
