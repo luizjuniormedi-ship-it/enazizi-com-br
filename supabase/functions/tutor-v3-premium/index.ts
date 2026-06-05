@@ -280,6 +280,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       waitUntil(bumpMetric(supabaseAdmin, decision.action === "use_as_is" ? "exact_hits" : "semantic_hits"));
       waitUntil((async () => {
         await markMemoryReused(supabaseAdmin, memoryHit!.id);
+        
+        // AI Cost Validation: Log cache savings
+        try {
+          await supabaseAdmin.from("ai_usage_logs").insert({
+            user_id: userId,
+            model: "tutor_semantic_cache",
+            module: "tutor-v3-premium",
+            cache_status: "hit",
+            cache_hit: true,
+            cost_saved: 0.015,
+            success: true,
+            latency_ms: 50,
+            prompt_type: "semantic_hit",
+            request_id: requestId
+          });
+        } catch (e) {
+          console.warn("[LOG_CACHE_SAVINGS_FAIL]", (e as any)?.message);
+        }
+
         if (sessionId && userId) {
           await supabaseAdmin.from("tutor_messages").insert({
             tutor_session_id: sessionId,
@@ -321,29 +340,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         source: "cache",
         debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity, action: decision.action },
       }, 200);
+    }
 
-
-    } else if (useMemoryDirect && memoryHit) {
-      // Logic for semantic cache hits is already logging to memory_orchestration_traces
-      // We also ensure ai_usage_logs captures the savings
-      waitUntil((async () => {
-        try {
-          await supabaseAdmin.from("ai_usage_logs").insert({
-            user_id: userId,
-            model: "tutor_semantic_cache",
-            module: "tutor-v3-premium",
-            cache_status: "hit",
-            cache_hit: true,
-            cost_saved: 0.015, // Est. value of a deep tutor call
-            success: true,
-            latency_ms: 50,
-            prompt_type: "semantic_hit",
-            request_id: requestId
-          });
-        } catch (e) {
-          console.warn("[LOG_CACHE_SAVINGS_FAIL]", (e as any)?.message);
-        }
-      })());
 
 
     // ── 3.6 RAG context para enriquecer prompt quando regeneramos ───────────
