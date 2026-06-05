@@ -485,8 +485,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           metadata: { 
             request_id: requestId, 
             correlation_id: correlationId,
-            block: nextBlock,
-            blockTitle: currentBlockConfig.title,
+            block: activeBlock,
+            blockTitle: activeBlockConfig.title,
             intent: studentIntent,
             socraticQuestion: normalized.socraticQuestion,
             source: normalized.source
