@@ -41,9 +41,10 @@ interface SidePanelProps {
 
 
 const SidePanel = memo(function SidePanel({
-  vitalsSnapshots, patientStatus, statusAlert, abcdeChecklist, categoryScores,
+  vitalsSnapshots, patientStatus, statusAlert, abcdeChecklist, categoryScores, differentialDiagnosis,
   medicalRecord, medRecordOpen, onMedRecordOpenChange,
 }: SidePanelProps) {
+
   const checkedCount = Object.values(abcdeChecklist).filter(Boolean).length;
 
   return (
