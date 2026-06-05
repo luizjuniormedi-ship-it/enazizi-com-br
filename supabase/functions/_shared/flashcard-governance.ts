@@ -11,24 +11,28 @@
  *    com rollback do insert se a etapa FSRS falhar.
  */
 
-export const FLASHCARD_GOV_VERSION = "P0-2026-05-28";
+export const FLASHCARD_GOV_VERSION = "P1-2026-06-05-PREMIUM";
 export const FLASHCARD_MAX_QUANTITY = 15;
 export const FLASHCARD_DAILY_LIMIT_DEFAULT = 50;
-export const FLASHCARD_MIN_QUESTION_LEN = 80;
-export const FLASHCARD_MIN_ANSWER_LEN = 20;
+
+// REGRAS PREMIUM - ATOMICIDADE
+export const FLASHCARD_IDEAL_QUESTION_LEN = 120;
+export const FLASHCARD_MAX_QUESTION_LEN = 180;
+export const FLASHCARD_IDEAL_ANSWER_WORDS = 20;
+export const FLASHCARD_MAX_ANSWER_WORDS = 40;
+export const FLASHCARD_MIN_QUESTION_LEN = 20; // Reduzido para permitir Cloze curtos
+export const FLASHCARD_MIN_ANSWER_LEN = 3;    // Reduzido para permitir respostas atômicas como "Sim", "Não", "1 hora"
+
 
 // Respostas genéricas / triviais rejeitadas automaticamente.
-const BANNED_ANSWER_PATTERNS: RegExp[] = [
+const BANNED_PATTERNS: RegExp[] = [
+  /(A\)|B\)|C\)|D\)|alternativa|opção|assinale|marque|correta|incorreta|letra [a-d]|caso clínico)/i,
   /^\s*(sim|n[aã]o|talvez|verdadeiro|falso)\s*\.?\s*$/i,
   /^\s*todas?\s+as?\s+(alternativas|op[cç][õo]es|anteriores)\s*\.?\s*$/i,
   /^\s*nenhuma?\s+das?\s+(alternativas|op[cç][õo]es|anteriores)\s*\.?\s*$/i,
-  /^\s*correto\s*\.?\s*$/i,
-  /^\s*incorreto\s*\.?\s*$/i,
-  /^\s*n\/?a\s*\.?\s*$/i,
 ];
 
 const GENERIC_QUESTION_PATTERNS: RegExp[] = [
-  /^o que [ée]\s+\w+\s*\??$/i,
   /^defina\s+\w+\s*\.?$/i,
   /^conceito de\s+\w+\s*\.?$/i,
 ];
@@ -58,24 +62,45 @@ function normalize(s: string): string {
 export function validateFlashcardQuality(card: FlashcardCandidate): QualityResult {
   const question = (card.question ?? "").toString().trim();
   const answer = (card.answer ?? "").toString().trim();
+  const answerWords = answer.split(/\s+/).length;
 
+  // 1. Duração/Tamanho
   if (question.length < FLASHCARD_MIN_QUESTION_LEN) {
-    return { ok: false, reason: `question_too_short(${question.length}<${FLASHCARD_MIN_QUESTION_LEN})` };
+    return { ok: false, reason: `question_too_short(${question.length})` };
   }
-  if (answer.length < FLASHCARD_MIN_ANSWER_LEN) {
-    return { ok: false, reason: `answer_too_short(${answer.length}<${FLASHCARD_MIN_ANSWER_LEN})` };
+  if (question.length > FLASHCARD_MAX_QUESTION_LEN) {
+    return { ok: false, reason: `question_too_long(${question.length})` };
   }
-  for (const re of BANNED_ANSWER_PATTERNS) {
-    if (re.test(answer)) return { ok: false, reason: "banned_generic_answer" };
+  if (answerWords > FLASHCARD_MAX_ANSWER_WORDS) {
+    return { ok: false, reason: `answer_too_long(${answerWords} words)` };
   }
+
+  // 2. Proibições (Questão disfarçada)
+  for (const re of BANNED_PATTERNS) {
+    if (re.test(question) || re.test(answer)) {
+      return { ok: false, reason: "banned_pattern_question_detected" };
+    }
+  }
+
   for (const re of GENERIC_QUESTION_PATTERNS) {
     if (re.test(question)) return { ok: false, reason: "trivial_question_pattern" };
   }
-  // active recall: pergunta sem nenhum verbo de raciocínio é suspeita
-  const hasClinicalSignal = /(paciente|caso|conduta|diagn[oó]stico|tratamento|exame|sintoma|sinal|s[ií]ndrome|conduta|prescrev|indica|contraindica|complica|fisiopatolog|diferencial|manejo|prognost)/i.test(question + " " + answer);
+
+  // 3. Score de Qualidade (Heurística)
+  const atomicityScore = question.length <= FLASHCARD_IDEAL_QUESTION_LEN ? 1.0 : 0.6;
+  const answerScore = answerWords <= FLASHCARD_IDEAL_ANSWER_WORDS ? 1.0 : 0.7;
+  const overallScore = (atomicityScore + answerScore) / 2;
+
+  if (overallScore < 0.75) {
+    return { ok: false, reason: `low_quality_score(${overallScore.toFixed(2)})` };
+  }
+
+  // 4. Contexto Clínico (Sinal)
+  const hasClinicalSignal = /(paciente|choque|sepse|ic|dor|sinal|sintoma|diagn[oó]stico|tratamento|exame|conduta|prescrev|indica|contraindica|complica|fisiopatolog|manejo|prognost|est[áa]|dose|via|droga|medica)/i.test(question + " " + answer);
   if (!hasClinicalSignal) {
     return { ok: false, reason: "missing_clinical_context" };
   }
+
   return { ok: true };
 }
 
