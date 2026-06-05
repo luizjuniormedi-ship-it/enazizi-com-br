@@ -63,11 +63,14 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     step = "historical_dedup";
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
+    const { data: recentSessions } = await supabaseAdmin.from("simulado_sessions").select("id").eq("user_id", userId).gt("created_at", sevenDaysAgo);
+    const sessionIds = (recentSessions || []).map(s => s.id);
+    
     const [practiceHistory, simuladoHistory] = await Promise.all([
       supabaseAdmin.from("practice_attempts").select("question_id").eq("user_id", userId).gt("created_at", sevenDaysAgo),
-      supabaseAdmin.from("simulado_questions")
-        .select("question_id")
-        .eq("session_id", (await supabaseAdmin.from("simulado_sessions").select("id").eq("user_id", userId).gt("created_at", sevenDaysAgo)).data?.map(s => s.id) || [])
+      sessionIds.length > 0 
+        ? supabaseAdmin.from("simulado_questions").select("question_id").in("session_id", sessionIds)
+        : Promise.resolve({ data: [] })
     ]);
 
     const excludedIds = Array.from(new Set([
