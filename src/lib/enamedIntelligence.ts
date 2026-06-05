@@ -5,12 +5,16 @@ export interface WeightData {
   historical_incidence: number;
   statistical_weight: number;
   priority_level: number;
+  frequency_score?: number;
+  recency_score?: number;
+  difficulty_score?: number;
+  approval_impact_score?: number;
 }
 
 export const getThemeWeights = async (themeName: string, examType = 'ENAMED'): Promise<WeightData> => {
   const { data, error } = await supabase
     .from('enamed_theme_weights')
-    .select('historical_incidence, statistical_weight, priority_level, enamed_curriculum_matrix(theme)')
+    .select('historical_incidence, statistical_weight, priority_level, frequency_score, recency_score, difficulty_score, approval_impact_score, enamed_curriculum_matrix(theme)')
     .eq('enamed_curriculum_matrix.theme', themeName)
     .eq('exam_type', examType)
     .maybeSingle();
@@ -22,7 +26,11 @@ export const getThemeWeights = async (themeName: string, examType = 'ENAMED'): P
   return {
     historical_incidence: Number(data.historical_incidence),
     statistical_weight: Number(data.statistical_weight),
-    priority_level: data.priority_level
+    priority_level: data.priority_level,
+    frequency_score: Number(data.frequency_score || 0),
+    recency_score: Number(data.recency_score || 0),
+    difficulty_score: Number(data.difficulty_score || 0),
+    approval_impact_score: Number(data.approval_impact_score || 0)
   };
 };
 
