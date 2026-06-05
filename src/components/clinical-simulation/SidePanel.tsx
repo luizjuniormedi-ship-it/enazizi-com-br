@@ -37,13 +37,17 @@ interface SidePanelProps {
   medicalRecord: MedicalRecordEntry[];
   medRecordOpen: boolean;
   onMedRecordOpenChange: (b: boolean) => void;
+  prescriptionAudit?: any;
+  scaleAudit?: any;
+  cognitiveEvent?: any;
 }
-
 
 const SidePanel = memo(function SidePanel({
   vitalsSnapshots, patientStatus, statusAlert, abcdeChecklist, categoryScores, differentialDiagnosis,
   medicalRecord, medRecordOpen, onMedRecordOpenChange,
+  prescriptionAudit, scaleAudit, cognitiveEvent
 }: SidePanelProps) {
+
 
   const checkedCount = Object.values(abcdeChecklist).filter(Boolean).length;
 
