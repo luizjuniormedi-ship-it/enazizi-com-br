@@ -28403,6 +28403,19 @@ export type Database = {
           xp: number
         }[]
       }
+      get_high_impact_questions: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          correct_index: number
+          explanation: string
+          id: string
+          options: Json
+          potential_gain: number
+          source: string
+          statement: string
+          topic: string
+        }[]
+      }
       get_image_integrity_summary: {
         Args: never
         Returns: {

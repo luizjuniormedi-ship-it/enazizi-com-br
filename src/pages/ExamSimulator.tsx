@@ -7,7 +7,7 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
 import { isMedicalQuestion } from "@/lib/medicalValidation";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
-import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3, GraduationCap } from "lucide-react";
+import { FileText, Clock, Play, CheckCircle2, Loader2, ArrowRight, Award, AlertTriangle, BarChart3, GraduationCap, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -114,16 +114,14 @@ const ExamSimulator = () => {
       let bankQuestions: any[] = [];
       
       if (mode === "impacto") {
-        // High Impact Mode: Fetch questions classified for high impact themes
-        const { data: impactQuestions, error: impactError } = await supabase.rpc('get_high_impact_questions', {
+        const { data: impactQuestions, error: impactError } = await supabase.rpc('get_high_impact_questions' as any, {
           p_user_id: user!.id,
-          p_limit: examConfig.questionCount * 2 // Fetch more to allow filtering
+          p_limit: examConfig.questionCount * 2
         });
         
         if (impactError) throw impactError;
-        bankQuestions = impactQuestions || [];
+        bankQuestions = (impactQuestions as any[]) || [];
         
-        // Telemetry: [HIGH_IMPACT_THEME_SELECTED]
         import("@/lib/safeTelemetry").then(({ emitSafeEvent }) => {
           emitSafeEvent("HIGH_IMPACT_THEME_SELECTED", {
             questionCount: bankQuestions.length,
@@ -137,7 +135,7 @@ const ExamSimulator = () => {
           .or(`user_id.eq.${user!.id},is_global.eq.true`)
           .limit(1000);
         if (bankError) throw bankError;
-        bankQuestions = standardQuestions || [];
+        bankQuestions = (standardQuestions as any[]) || [];
       }
 
       let examQuestions: ExamQuestion[] = (bankQuestions || [])
