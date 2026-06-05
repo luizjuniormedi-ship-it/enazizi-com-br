@@ -274,14 +274,26 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
 
 
 export function getStaticFallback(tema: string): any {
-  const key = Object.keys(MEDICAL_STATIC_FALLBACKS).find(k => tema.toUpperCase().includes(k.toLowerCase()));
+  // Normalize search term
+  const search = (tema || "").toUpperCase();
+  
+  // High-precision medical matching
+  const key = Object.keys(MEDICAL_STATIC_FALLBACKS).find(k => {
+    const kUpper = k.toUpperCase();
+    return search.includes(kUpper) || 
+           kUpper.includes(search) ||
+           (kUpper === "IC" && (search.includes("INSUFICIÊNCIA CARDÍACA") || search.includes("CORAÇÃO"))) ||
+           (kUpper === "IAM" && (search.includes("INFARTO") || search.includes("REPERFUSÃO") || search.includes("MIOCÁRDIO"))) ||
+           (kUpper === "SEPSE" && (search.includes("CHOQUE SÉPTICO") || search.includes("INFECÇÃO GENERALIZADA")));
+  });
+
   if (key) {
-    console.log(`[TUTOR_FALLBACK_MATCH] Found local summary for ${key}`);
-    return { ...MEDICAL_STATIC_FALLBACKS[key], tema };
+    console.log(`[TUTOR_FALLBACK_MATCH] Found local summary for ${key} (requested: ${tema})`);
+    return { ...MEDICAL_STATIC_FALLBACKS[key], tema: key };
   }
   
   // Generic fallback with better messaging
-  console.log(`[TUTOR_FALLBACK_GENERIC] No local summary for ${tema}`);
+  console.log(`[TUTOR_FALLBACK_GENERIC] No local summary for "${tema}"`);
   return {
     content: `### 🏥 Sistema em Manutenção Cognitiva\n\nIdentificamos uma alta demanda no tema **${tema}**. Estamos utilizando nosso motor de resiliência local para garantir que seu estudo não seja interrompido.\n\nEm instantes, o Tutor V3 voltará com profundidade total de IA.`,
     socraticQuestion: "Podemos revisar os conceitos base deste tema enquanto os servidores escalam?",
@@ -291,3 +303,4 @@ export function getStaticFallback(tema: string): any {
     tema
   };
 }
+
