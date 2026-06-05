@@ -178,6 +178,11 @@ const ClinicalSimulation = () => {
   const [medicalRecord, setMedicalRecord] = useState<MedicalRecordEntry[]>([]);
   const [categoryScores, setCategoryScores] = useState<CategoryScores>({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
   const [differentialDiagnosis, setDifferentialDiagnosis] = useState<string[]>([]);
+  const [activePatients, setActivePatients] = useState<any[]>([]); // V5 Multi-patients
+  const [cognitiveEvent, setCognitiveEvent] = useState<any>(null); // V5 Cognitive Interruption
+  const [prescriptionAudit, setPrescriptionAudit] = useState<any>(null); // V5 Prescription Validation
+  const [scaleAudit, setScaleAudit] = useState<any>(null); // V5 Clinical Scale Audit
+
 
 
   // ─── TIMER / DETERIORATION ───
