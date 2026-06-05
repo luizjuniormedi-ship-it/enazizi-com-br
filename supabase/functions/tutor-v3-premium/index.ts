@@ -435,7 +435,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       try {
         const usage = aiResponse.usage || { prompt_tokens: 0, completion_tokens: 0 };
         await supabaseAdmin.from("ai_usage_logs").insert({
-          user_id: userId,
+          user_id: activeUserId,
           model: aiResponse.model || "openai/gpt-4o-mini",
           module: "tutor-v3-premium",
           cache_status: "miss",
