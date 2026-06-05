@@ -35,6 +35,7 @@ const DashboardMetricsGrid = lazy(() => import("@/components/dashboard/Dashboard
 const CognitiveValidation = lazy(() => import("@/components/admin/CognitiveValidation").then(m => ({ default: m.CognitiveValidation })));
 const HighImpactThemesCard = lazy(() => import("@/components/dashboard/HighImpactThemesCard"));
 const EnamedMatrixHealth = lazy(() => import("@/components/dashboard/EnamedMatrixHealth"));
+const ApprovalIntelligenceDashboard = lazy(() => import("@/components/dashboard/ApprovalIntelligenceDashboard"));
 
 import { ApprovalChanceDashboard } from "@/components/dashboard-v2/ApprovalChanceDashboard";
 const EnamedImpactDashboard = lazy(() => import("@/components/dashboard/EnamedImpactDashboard"));
@@ -364,7 +365,12 @@ const Dashboard = () => {
 
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
           <div className="space-y-6">
-            <EnaflixSectionTitle kicker="MATRIZ ENAMED 2026" title="Chance de Aprovação" />
+            <EnaflixSectionTitle kicker="MATRIZ ENAMED 2026" title="Motor de Aprovação" />
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <ApprovalIntelligenceDashboard />
+            </Suspense>
+            
+            <EnaflixSectionTitle kicker="INTELIGÊNCIA PREDITIVA" title="Chance de Aprovação" className="mt-12" />
             <Suspense fallback={<LocalSectionSkeleton />}>
               <ApprovalChanceDashboard />
             </Suspense>
