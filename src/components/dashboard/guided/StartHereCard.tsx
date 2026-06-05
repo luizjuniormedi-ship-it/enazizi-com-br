@@ -51,7 +51,7 @@ export default function StartHereCard() {
           .from("chat_conversations")
           .select("id, title, updated_at")
           .eq("user_id", user.id)
-          .eq("agent_type", "chatgpt-agent")
+          .in("agent_type", ["chatgpt-agent", "tutor-v3-premium"])
           .gte("updated_at", sinceIso)
           .order("updated_at", { ascending: false })
           .limit(1)

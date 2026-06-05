@@ -23,7 +23,7 @@ export function TutorDiagnosticPanel() {
         bypassRAG: true,
         conversationId: "debug-test-" + Date.now()
       }, { 
-        functionName: "mentor-chat",
+        functionName: "tutor-v3-premium",
         stream: false 
       });
 
@@ -49,7 +49,7 @@ export function TutorDiagnosticPanel() {
         debugOnlyRAG: true,
         conversationId: "debug-rag-" + Date.now()
       }, { 
-        functionName: "mentor-chat",
+        functionName: "tutor-v3-premium",
         stream: false 
       });
 
