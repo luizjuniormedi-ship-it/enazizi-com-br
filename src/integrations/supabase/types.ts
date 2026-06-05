@@ -10993,6 +10993,42 @@ export type Database = {
           },
         ]
       }
+      enamed_curriculum_matrix: {
+        Row: {
+          active: boolean | null
+          competence: string | null
+          created_at: string | null
+          great_area: string
+          id: string
+          specialty: string
+          subtheme: string | null
+          theme: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          competence?: string | null
+          created_at?: string | null
+          great_area: string
+          id?: string
+          specialty: string
+          subtheme?: string | null
+          theme: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          competence?: string | null
+          created_at?: string | null
+          great_area?: string
+          id?: string
+          specialty?: string
+          subtheme?: string | null
+          theme?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       enamed_intelligence_index: {
         Row: {
           computation_version: string
@@ -11062,6 +11098,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["specialty_id"]
+          },
+        ]
+      }
+      enamed_theme_weights: {
+        Row: {
+          created_at: string | null
+          exam_type: string
+          historical_incidence: number | null
+          id: string
+          priority_level: number | null
+          statistical_weight: number | null
+          theme_id: string | null
+          updated_at: string | null
+          year_reference: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          exam_type: string
+          historical_incidence?: number | null
+          id?: string
+          priority_level?: number | null
+          statistical_weight?: number | null
+          theme_id?: string | null
+          updated_at?: string | null
+          year_reference?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          exam_type?: string
+          historical_incidence?: number | null
+          id?: string
+          priority_level?: number | null
+          statistical_weight?: number | null
+          theme_id?: string | null
+          updated_at?: string | null
+          year_reference?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enamed_theme_weights_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "enamed_curriculum_matrix"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -21856,6 +21936,39 @@ export type Database = {
           },
         ]
       }
+      student_exam_readiness: {
+        Row: {
+          current_score: number | null
+          great_area: string
+          id: string
+          last_computed_at: string | null
+          mastery_level: string | null
+          readiness_index: number | null
+          target_score: number | null
+          user_id: string
+        }
+        Insert: {
+          current_score?: number | null
+          great_area: string
+          id?: string
+          last_computed_at?: string | null
+          mastery_level?: string | null
+          readiness_index?: number | null
+          target_score?: number | null
+          user_id: string
+        }
+        Update: {
+          current_score?: number | null
+          great_area?: string
+          id?: string
+          last_computed_at?: string | null
+          mastery_level?: string | null
+          readiness_index?: number | null
+          target_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_mastery_metrics: {
         Row: {
           clinical_score: number | null
@@ -21911,6 +22024,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      student_target_exams: {
+        Row: {
+          created_at: string | null
+          exam_date: string | null
+          exam_id: string
+          id: string
+          priority: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          exam_date?: string | null
+          exam_id: string
+          id?: string
+          priority?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          exam_date?: string | null
+          exam_id?: string
+          id?: string
+          priority?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       study_action_events: {
         Row: {
