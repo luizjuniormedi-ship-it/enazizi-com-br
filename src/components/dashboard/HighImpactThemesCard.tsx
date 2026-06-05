@@ -31,6 +31,7 @@ export default function HighImpactThemesCard() {
           approval_impact_score,
           global_weight,
           enamed_curriculum_matrix (
+            id,
             theme,
             specialty
           )
@@ -41,15 +42,19 @@ export default function HighImpactThemesCard() {
 
       if (error) throw error;
 
-      const studiedThemesMap = new Map(
-        coreData?.temasEstudados.map(t => [t.tema.toLowerCase(), t.progresso || 0]) || []
-      );
+      // Fetch mastery for these themes
+      const { data: masteryData } = await supabase
+        .from('student_mastery_metrics')
+        .select('node_id, theoretical_score')
+        .eq('user_id', user!.id);
+
+      const masteryMap = new Map(masteryData?.map(m => [m.node_id, m.theoretical_score * 100]) || []);
 
       return data.map((item: any) => {
         const themeName = item.enamed_curriculum_matrix?.theme || "Desconhecido";
-        const mastery = studiedThemesMap.get(themeName.toLowerCase()) || 0;
+        const themeId = item.enamed_curriculum_matrix?.id;
+        const mastery = masteryMap.get(themeId) || 0;
         
-        // Use global_weight if available, otherwise fallback to impact_score
         const priority = item.global_weight || (item.approval_impact_score * 10);
 
         return {
@@ -57,8 +62,8 @@ export default function HighImpactThemesCard() {
           specialty: item.enamed_curriculum_matrix?.specialty || "Geral",
           impact: Number(item.approval_impact_score || 0),
           incidence: Number(item.historical_incidence || 0),
-          studied: studiedThemesMap.has(themeName.toLowerCase()),
-          mastery,
+          studied: mastery > 0,
+          mastery: Math.round(mastery),
           priority: Number(priority)
         };
       }) as ImpactfulTheme[];
