@@ -365,6 +365,13 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     if (recoveryMode || masteryLevel === "EXPERT") costTier = "PREMIUM";
     if (studentIntent === "doubt" && userQuestion.length < 50) costTier = "LOW_COST";
 
+    // [EMERGENCY RECOVERY] If AI Routing indicates critical instability, force local fallback
+    const CIRCUIT_BREAKER_FORCED = (Deno.env.get("FORCE_TUTOR_FALLBACK") || "").toLowerCase() === "true";
+    if (CIRCUIT_BREAKER_FORCED) {
+      console.warn("[TUTOR_CIRCUIT_BREAKER] Forced fallback active via environment");
+      throw new Error("CIRCUIT_BREAKER: Forced local fallback mode");
+    }
+
     const aiConfig: any = {
       taskType: "tutor_deep",
       complexity: "alta",
