@@ -161,21 +161,37 @@ Retorne APENAS um objeto JSON no formato:
 
       logger.info("GENERATION_COMPLETED", `Successfully saved ${savedCount} questions`);
 
-      // Governance
-      await supabaseAdmin.from("pipeline_governance").insert({
-        pipeline_name: "bulk-generate",
-        function_name: "bulk-generate-content",
-        status: savedCount > 0 ? "completed" : "failed",
-        model_used: ALLOWED_MODELS.generation,
-        completed_at: new Date().toISOString(),
-        user_id: user.id,
-        metadata: {
-          specialty,
-          count: savedCount,
-          correlation_id: correlation.correlationId,
-          equalize
-        }
-      });
+      // Governance & Logging
+      await Promise.all([
+        supabaseAdmin.from("pipeline_governance").insert({
+          pipeline_name: "bulk-generate",
+          function_name: "bulk-generate-content",
+          status: savedCount > 0 ? "completed" : "failed",
+          model_used: ALLOWED_MODELS.generation,
+          completed_at: new Date().toISOString(),
+          user_id: user.id,
+          metadata: {
+            specialty,
+            count: savedCount,
+            correlation_id: correlation.correlationId,
+            equalize,
+            result: { total_imported: 0, total_generated: savedCount, total_questions: savedCount }
+          }
+        }),
+        supabaseAdmin.from("ingestion_log").insert({
+          source_name: `AI Generation: ${specialty}`,
+          source_type: "ai_generation",
+          status: "completed",
+          questions_found: questions.length,
+          questions_inserted: savedCount,
+          questions_updated: 0,
+          duplicates_skipped: questions.length - savedCount,
+          errors: 0,
+          created_by: user.id,
+          banca: "ENARE",
+          year: 2025
+        })
+      ]);
 
       return { total_imported: 0, total_generated: savedCount, total_questions: savedCount };
 
