@@ -405,6 +405,8 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         }
       }
 
+      const subtopicsArray = specificTopic ? specificTopic.split(",").map(s => s.trim()).filter(Boolean) : [];
+
       onStart({
         topics: finalTopics,
         count,
@@ -412,6 +414,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         timePerQuestion,
         mode: forceAi ? ("ai_generation" as any) : mode,
         specificTopic: specificTopic.trim() || undefined,
+        selectedSubtopics: subtopicsArray,
         examBoard: resolvedExamBoard,
         imagePercent,
         topicWeights: resolvedWeights,
