@@ -41,7 +41,8 @@ serve(async (req) => {
       sysFlags,
       visualStats,
       mnemonicStats,
-      imageQuizCount
+      imageQuizCount,
+      enamedWeights
     ] = await Promise.all([
       // Pending reviews
       supabase.from("revisoes").select("id, temas_estudados(tema), prioridade, risco_esquecimento, data_revisao").eq("user_id", userId).eq("status", "pendente").lte("data_revisao", today).limit(5),
@@ -55,13 +56,29 @@ serve(async (req) => {
       supabase.from("approval_predictions").select("approval_probability").eq("user_id", userId).maybeSingle(),
       // System flags
       supabase.from("system_flags").select("flag_key, enabled"),
-      // Visual weakness (real data from performance_metrics or analytics)
+      // Visual weakness
       supabase.from("performance_metrics").select("topic, accuracy_rate, questions_answered").eq("user_id", userId).eq("discipline", "Visual").limit(10),
       // Mnemonic utility
       supabase.from("mnemonic_feedback").select("topic, utility").eq("user_id", userId).limit(20),
       // Available image quiz questions
-      supabase.from("questions").select("id", { count: 'exact', head: true }).eq("mode", "image")
+      supabase.from("questions").select("id", { count: 'exact', head: true }).eq("mode", "image"),
+      // ENAMED Weights
+      supabase.from("enamed_theme_weights").select("historical_incidence, approval_impact_score, enamed_curriculum_matrix(theme)").eq("exam_type", "ENAMED")
     ]);
+
+    // Create a weight map for faster access
+    const weightMap: Record<string, { incidence: number, impact: number }> = {};
+    if (enamedWeights.data) {
+      for (const w of enamedWeights.data as any[]) {
+        const theme = w.enamed_curriculum_matrix?.theme?.toLowerCase();
+        if (theme) {
+          weightMap[theme] = {
+            incidence: Number(w.historical_incidence || 5),
+            impact: Number(w.approval_impact_score || 0)
+          };
+        }
+      }
+    }
 
     const approvalScore = Math.round((predRes.data?.approval_probability || 0.65) * 100);
     const recoveryActive = sysFlags.data?.find(f => f.flag_key === "adaptive_recovery_mode")?.enabled || false;
@@ -72,7 +89,7 @@ serve(async (req) => {
       approvalZone: getApprovalZone(approvalScore),
       recoveryActive,
       contentLocked,
-      missionActive: true, // Assuming active for now
+      missionActive: true, 
       sessionMinutes: null,
       examProximityDays: null,
       now,
@@ -84,7 +101,7 @@ serve(async (req) => {
         attemptsCount: v.questions_answered,
         trend: "stable"
       })) || [],
-      mnemonicUtility: [], // Would need more complex aggregation
+      mnemonicUtility: [],
       enamedWeights: weightMap
     };
 
@@ -133,7 +150,7 @@ serve(async (req) => {
           contextPayload: { subtema: err.subtema }
         });
 
-        // Add Mnemonic candidate if it's a memorization topic
+        // Add Mnemonic candidate
         const mScore = scoreMnemonic([err as any], ctx);
         if (mScore.score > 0) {
           const mDecision = decideMnemonicMode(err.tema);
@@ -183,7 +200,7 @@ serve(async (req) => {
       });
     }
 
-    // --- FREE STUDY (Last resort) ---
+    // --- FREE STUDY ---
     candidates.push({
       type: "free_study",
       title: "Explorar temas",
