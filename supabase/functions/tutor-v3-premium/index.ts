@@ -533,7 +533,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       teachingPhase: normalized.teachingPhase,
       shouldWaitForStudent: true,
       socraticQuestion: normalized.socraticQuestion,
-      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: nextBlock },
+      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
       topic,
       correlation_id: correlationId,
       source: normalized.source,
