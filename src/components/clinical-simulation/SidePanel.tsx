@@ -1,6 +1,7 @@
 import React, { memo } from "react";
-import { Shield, CheckCircle, Wind, Droplets, Brain, Eye, Target, Clipboard } from "lucide-react";
+import { Shield, CheckCircle, Wind, Droplets, Brain, Eye, Target, Clipboard, Pill } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import VitalsMonitor from "@/components/plantao/VitalsMonitor";
