@@ -83,7 +83,7 @@ const getAudioCtx = () => {
     return _sharedAudioCtx;
   } catch { return null; }
 };
-const playSound = (type: "response" | "worsened" | "positive" | "negative") => {
+const playSound = (type: "response" | "worsened" | "positive" | "negative" | "timeout" | "alarm") => {
   try {
     const ctx = getAudioCtx(); if (!ctx) return;
     const osc = ctx.createOscillator();
@@ -95,9 +95,12 @@ const playSound = (type: "response" | "worsened" | "positive" | "negative") => {
       case "worsened": osc.frequency.value = 220; osc.type = "sawtooth"; osc.start(); osc.stop(ctx.currentTime + 0.3); break;
       case "positive": osc.frequency.value = 660; osc.start(); osc.stop(ctx.currentTime + 0.12); break;
       case "negative": osc.frequency.value = 330; osc.type = "square"; osc.start(); osc.stop(ctx.currentTime + 0.15); break;
+      case "timeout": osc.frequency.value = 110; osc.type = "triangle"; osc.start(); osc.stop(ctx.currentTime + 1.0); break;
+      case "alarm": osc.frequency.value = 880; osc.type = "sine"; osc.start(); osc.stop(ctx.currentTime + 0.5); break;
     }
   } catch {}
 };
+
 
 
 const getTriageEmoji = (color: string) => {
@@ -174,6 +177,8 @@ const ClinicalSimulation = () => {
   const [abcdeChecklist, setAbcdeChecklist] = useState<Record<string, boolean>>({ A: false, B: false, C: false, D: false, E: false });
   const [medicalRecord, setMedicalRecord] = useState<MedicalRecordEntry[]>([]);
   const [categoryScores, setCategoryScores] = useState<CategoryScores>({ anamnesis: 0, physical_exam: 0, complementary_exams: 0, management: 0 });
+  const [differentialDiagnosis, setDifferentialDiagnosis] = useState<string[]>([]);
+
 
   // ─── TIMER / DETERIORATION ───
   // Wave 1.2 — countdown agora vive em useCountdownTimer (interval único + logs).
@@ -619,9 +624,11 @@ const ClinicalSimulation = () => {
       if (res.vitals) {
         setVitals(res.vitals);
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(res.vitals, newTimeElapsed)]);
+        if (res.is_deteriorating) playSound("alarm");
       } else if (vitals && res.patient_status && res.patient_status !== patientStatus) {
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(vitals as any, newTimeElapsed)]);
       }
+
 
       if (res.treatment_outcome) {
         const outcomeMap: Record<string, { title: string; desc: string; variant: "default" | "destructive" }> = {
@@ -649,6 +656,8 @@ const ClinicalSimulation = () => {
       }
 
       if (res.category_scores) setCategoryScores(res.category_scores);
+      if (res.differential_diagnosis) setDifferentialDiagnosis(res.differential_diagnosis);
+
 
       if (res.structured_data?.summary) {
         const sd = res.structured_data;
@@ -832,7 +841,7 @@ const ClinicalSimulation = () => {
 
   // Stable callbacks for QuickActions
   const handleSendAction = useCallback((prompt: string, label: string) => sendMessage(prompt, label), [sendMessage]);
-  const handleSendDiagnosis = useCallback(() => sendMessage("Com base nos achados clínicos e exames, meu diagnóstico é:", "Diagnóstico"), [sendMessage]);
+  const handleSendDiagnosis = useCallback(() => sendMessage("Solicito que o sistema avalie minhas hipóteses diagnósticas e me permita fechar o diagnóstico final.", "Diagnóstico"), [sendMessage]);
   const handleOpenMobileVitals = useCallback(() => setMobileVitalsOpen(true), []);
   const handleOpenPrescription = useCallback(() => setPrescriptionDialogOpen(true), []);
   const handleOpenSpecialist = useCallback(() => setSpecialistDialogOpen(true), []);
@@ -840,6 +849,7 @@ const ClinicalSimulation = () => {
     try { cs.track("plantao_prescription_submitted", csExtras({ length: text?.length || 0 })); } catch {}
     return sendMessage(text, "Prescrição");
   }, [sendMessage, cs, csExtras]);
+
 
   // Memoized derived values for stable Active region
   const recentTimeline = useMemo(() => actionTimeline.slice(-8), [actionTimeline]);
@@ -957,7 +967,9 @@ const ClinicalSimulation = () => {
                 statusAlert={statusAlert}
                 abcdeChecklist={abcdeChecklist}
                 categoryScores={categoryScores}
+                differentialDiagnosis={differentialDiagnosis}
                 medicalRecord={medicalRecord}
+
                 medRecordOpen={medRecordOpen}
                 onMedRecordOpenChange={setMedRecordOpen}
               />
