@@ -43,6 +43,7 @@ const EnamedEvidenceDashboard = lazy(() => import("@/components/dashboard/Enamed
 const EvidenceValidationDashboard = lazy(() => import("@/components/dashboard/EvidenceValidationDashboard"));
 const EvidenceGovernanceDashboard = lazy(() => import("@/components/dashboard/EvidenceGovernanceDashboard"));
 const OutcomeValidationDashboard = lazy(() => import("@/components/dashboard/OutcomeValidationDashboard"));
+const OutcomeScienceDashboard = lazy(() => import("@/components/dashboard/OutcomeScienceDashboard"));
 
 const Dashboard = () => {
   const mountTimeRef = useRef(Date.now());
@@ -424,6 +425,11 @@ const Dashboard = () => {
           <div className="mt-24">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <OutcomeValidationDashboard />
+            </Suspense>
+          </div>
+          <div className="mt-24">
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <OutcomeScienceDashboard />
             </Suspense>
           </div>
         </div>
