@@ -84,7 +84,8 @@ serve(async (req) => {
         attemptsCount: v.questions_answered,
         trend: "stable"
       })) || [],
-      mnemonicUtility: [] // Would need more complex aggregation
+      mnemonicUtility: [], // Would need more complex aggregation
+      enamedWeights: weightMap
     };
 
     const candidates: any[] = [];
