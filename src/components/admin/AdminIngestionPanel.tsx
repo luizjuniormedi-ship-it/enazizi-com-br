@@ -85,7 +85,7 @@ const AdminIngestionPanel = () => {
     try {
       // Optimized query using SQL aggregation
       const { data, error } = await supabase
-        .rpc('get_questions_topic_counts');
+        .rpc('get_questions_topic_counts' as any);
       
       let counts: Record<string, number> = {};
       let totalQ = 0;
