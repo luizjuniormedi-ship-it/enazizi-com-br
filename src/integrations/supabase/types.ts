@@ -13631,6 +13631,240 @@ export type Database = {
           },
         ]
       }
+      hospital_clinical_clocks: {
+        Row: {
+          clinical_consequence: string | null
+          completed_at: string | null
+          event_type: string
+          id: string
+          outcome: string | null
+          patient_id: string
+          started_at: string | null
+          target_minutes: number
+        }
+        Insert: {
+          clinical_consequence?: string | null
+          completed_at?: string | null
+          event_type: string
+          id?: string
+          outcome?: string | null
+          patient_id: string
+          started_at?: string | null
+          target_minutes: number
+        }
+        Update: {
+          clinical_consequence?: string | null
+          completed_at?: string | null
+          event_type?: string
+          id?: string
+          outcome?: string | null
+          patient_id?: string
+          started_at?: string | null
+          target_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_clinical_clocks_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospital_duty_sessions: {
+        Row: {
+          cognitive_state_after: string | null
+          cognitive_state_before: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json | null
+          overall_grade: string | null
+          started_at: string | null
+          total_xp: number | null
+          user_id: string
+        }
+        Insert: {
+          cognitive_state_after?: string | null
+          cognitive_state_before?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          overall_grade?: string | null
+          started_at?: string | null
+          total_xp?: number | null
+          user_id: string
+        }
+        Update: {
+          cognitive_state_after?: string | null
+          cognitive_state_before?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          overall_grade?: string | null
+          started_at?: string | null
+          total_xp?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hospital_exams_queue: {
+        Row: {
+          eta_minutes: number
+          exam_name: string
+          id: string
+          patient_id: string
+          priority: string | null
+          ready_at: string | null
+          requested_at: string | null
+          results_json: Json | null
+        }
+        Insert: {
+          eta_minutes: number
+          exam_name: string
+          id?: string
+          patient_id: string
+          priority?: string | null
+          ready_at?: string | null
+          requested_at?: string | null
+          results_json?: Json | null
+        }
+        Update: {
+          eta_minutes?: number
+          exam_name?: string
+          id?: string
+          patient_id?: string
+          priority?: string | null
+          ready_at?: string | null
+          requested_at?: string | null
+          results_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_exams_queue_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospital_incidents: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          duty_session_id: string
+          id: string
+          incident_type: string
+          patient_id: string | null
+          related_theme: string | null
+          severity: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          duty_session_id: string
+          id?: string
+          incident_type: string
+          patient_id?: string | null
+          related_theme?: string | null
+          severity: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          duty_session_id?: string
+          id?: string
+          incident_type?: string
+          patient_id?: string | null
+          related_theme?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_incidents_duty_session_id_fkey"
+            columns: ["duty_session_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_duty_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hospital_incidents_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospital_patients: {
+        Row: {
+          age: number | null
+          created_at: string | null
+          current_status:
+            | Database["public"]["Enums"]["patient_clinical_status"]
+            | null
+          duty_session_id: string
+          gender: string | null
+          hidden_diagnosis: string | null
+          history_json: Json | null
+          id: string
+          is_active: boolean | null
+          main_complaint: string | null
+          metadata: Json | null
+          name: string
+          sector: Database["public"]["Enums"]["hospital_sector_type"]
+          updated_at: string | null
+          vitals: Json | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string | null
+          current_status?:
+            | Database["public"]["Enums"]["patient_clinical_status"]
+            | null
+          duty_session_id: string
+          gender?: string | null
+          hidden_diagnosis?: string | null
+          history_json?: Json | null
+          id?: string
+          is_active?: boolean | null
+          main_complaint?: string | null
+          metadata?: Json | null
+          name: string
+          sector: Database["public"]["Enums"]["hospital_sector_type"]
+          updated_at?: string | null
+          vitals?: Json | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string | null
+          current_status?:
+            | Database["public"]["Enums"]["patient_clinical_status"]
+            | null
+          duty_session_id?: string
+          gender?: string | null
+          hidden_diagnosis?: string | null
+          history_json?: Json | null
+          id?: string
+          is_active?: boolean | null
+          main_complaint?: string | null
+          metadata?: Json | null
+          name?: string
+          sector?: Database["public"]["Enums"]["hospital_sector_type"]
+          updated_at?: string | null
+          vitals?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_patients_duty_session_id_fkey"
+            columns: ["duty_session_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_duty_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       human_audit_queue: {
         Row: {
           audit_notes: string | null
@@ -29878,6 +30112,15 @@ export type Database = {
         | "rejected"
         | "failed"
       difficulty_level: "easy" | "medium" | "hard"
+      hospital_sector_type:
+        | "sala_vermelha"
+        | "sala_laranja"
+        | "sala_amarela"
+        | "sala_verde"
+        | "observacao"
+        | "uti"
+        | "enfermaria"
+        | "ambulatorio"
       image_question_status:
         | "draft"
         | "validated"
@@ -29914,6 +30157,14 @@ export type Database = {
         | "endoscopy"
         | "obstetric_trace"
       notification_channel: "in_app" | "email"
+      patient_clinical_status:
+        | "estavel"
+        | "instavel"
+        | "grave"
+        | "critico"
+        | "pcr"
+        | "obito"
+        | "alta"
       pipeline_job_status:
         | "pending"
         | "running"
@@ -30201,6 +30452,16 @@ export const Constants = {
         "failed",
       ],
       difficulty_level: ["easy", "medium", "hard"],
+      hospital_sector_type: [
+        "sala_vermelha",
+        "sala_laranja",
+        "sala_amarela",
+        "sala_verde",
+        "observacao",
+        "uti",
+        "enfermaria",
+        "ambulatorio",
+      ],
       image_question_status: [
         "draft",
         "validated",
@@ -30241,6 +30502,15 @@ export const Constants = {
         "obstetric_trace",
       ],
       notification_channel: ["in_app", "email"],
+      patient_clinical_status: [
+        "estavel",
+        "instavel",
+        "grave",
+        "critico",
+        "pcr",
+        "obito",
+        "alta",
+      ],
       pipeline_job_status: [
         "pending",
         "running",
