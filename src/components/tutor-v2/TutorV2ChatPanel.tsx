@@ -13,6 +13,7 @@ import { MascotBubble } from "../mascot/MascotBubble";
 import { useMascotState } from "../mascot/useMascotState";
 import { motion } from "framer-motion";
 import { BLOCK_SEQUENCE as BLOCK_SEQUENCE_FRONTEND } from "@/lib/tutor/pedagogicalSequence";
+import { TutorEnamedIndicator } from "./TutorEnamedIndicator";
 
 
 
