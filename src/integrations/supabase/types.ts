@@ -11068,6 +11068,42 @@ export type Database = {
         }
         Relationships: []
       }
+      enamed_evidence_snapshots: {
+        Row: {
+          accuracy_rate: number | null
+          approval_probability: number | null
+          created_at: string | null
+          day_offset: number
+          id: string
+          readiness_score: number | null
+          retention_score: number | null
+          topics_covered: number | null
+          user_id: string | null
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          approval_probability?: number | null
+          created_at?: string | null
+          day_offset: number
+          id?: string
+          readiness_score?: number | null
+          retention_score?: number | null
+          topics_covered?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          accuracy_rate?: number | null
+          approval_probability?: number | null
+          created_at?: string | null
+          day_offset?: number
+          id?: string
+          readiness_score?: number | null
+          retention_score?: number | null
+          topics_covered?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       enamed_forecast_calibration: {
         Row: {
           actual_score: number | null
@@ -28374,6 +28410,10 @@ export type Database = {
       calculate_readiness_score_v2: {
         Args: { p_user_id: string }
         Returns: number
+      }
+      capture_enamed_evidence_snapshot: {
+        Args: { p_day_offset: number; p_user_id: string }
+        Returns: undefined
       }
       check_duplicate_tutor_sessions: {
         Args: never
