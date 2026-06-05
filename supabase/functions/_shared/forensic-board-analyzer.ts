@@ -62,7 +62,10 @@ export async function analyzeQuestionForensic(
     const stmtRatio = Math.min(stmtLen, avgGoldenStmt) / Math.max(stmtLen, avgGoldenStmt);
     const optRatio = Math.min(avgOptLen, avgGoldenOpt) / Math.max(avgOptLen, avgGoldenOpt);
     
-    structural_score = (stmtRatio * 0.7 + optRatio * 0.3) * 100;
+    // Improved ratio: if statement is at least 60% of average golden, don't penalize as much
+    const normalizedStmtRatio = stmtRatio < 0.6 ? stmtRatio : 0.8 + (stmtRatio - 0.6) * 0.5;
+    
+    structural_score = (normalizedStmtRatio * 0.7 + optRatio * 0.3) * 100;
   }
   
   const expectedOptions = profile.optionsCount || 5;
