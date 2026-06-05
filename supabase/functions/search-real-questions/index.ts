@@ -18,7 +18,12 @@ serve(async (req) => {
     );
 
     const body = await req.json().catch(() => ({}));
-    const { mode, specialty, banca, url: hubUrl, user_id } = body;
+    const url = new URL(req.url);
+    const specialty = body.specialty || url.searchParams.get("specialty");
+    const mode = body.mode || url.searchParams.get("mode");
+    const banca = body.banca || url.searchParams.get("banca");
+    const hubUrl = body.url || url.searchParams.get("url");
+    const user_id = body.user_id || url.searchParams.get("user_id");
 
     console.log(`[SEARCH] Mode: ${mode}, Specialty: ${specialty}, Banca: ${banca}, URL: ${hubUrl}`);
 

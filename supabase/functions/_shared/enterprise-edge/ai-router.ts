@@ -114,7 +114,7 @@ export async function callAi(
 
 
     const maxRetries = provider === "openai" ? 2 : 1;
-    const timeoutMs = provider === "openai" ? 25000 : 20000;
+    const timeoutMs = (payload.taskType === "generation" || payload.taskType === "reasoning") ? 60000 : 25000;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) {

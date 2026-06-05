@@ -83,31 +83,40 @@ const AdminIngestionPanel = () => {
   const loadDistribution = async () => {
     setLoadingDistribution(true);
     try {
-      const PAGE = 1000;
-      let from = 0;
-      const allTopics: string[] = [];
-      while (true) {
-        const { data, error } = await supabase.from("questions_bank" as any)
-          .select("topic")
+      // Optimized query using SQL aggregation
+      const { data, error } = await supabase
+        .rpc('get_questions_topic_counts' as any);
+      
+      let counts: Record<string, number> = {};
+      let totalQ = 0;
+      
+      if (!error && data) {
+        (data as any[]).forEach(row => {
+          counts[row.topic] = row.count;
+          totalQ += row.count;
+        });
+      } else {
+        // Fallback if RPC doesn't exist
+        const { data: fallbackData } = await supabase
+          .from("questions_bank" as any)
+          .select("topic, count()")
           .eq("is_global", true)
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        if (!data || (data as any[]).length === 0) break;
-        allTopics.push(...(data as any[]).map((r: any) => r.topic || "Outros"));
-        if ((data as any[]).length < PAGE) break;
-        from += PAGE;
+          // @ts-ignore
+          .group("topic");
+        
+        if (fallbackData) {
+          (fallbackData as any[]).forEach(row => {
+            counts[row.topic] = row.count;
+            totalQ += row.count;
+          });
+        }
       }
-      const counts: Record<string, number> = {};
-      const statementsSet = new Set<string>();
-      allTopics.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
 
-      const totalQ = allTopics.length;
       const specialtiesWithQ = Object.keys(counts).length;
 
-      // Update stats cards with real data
       setStats({
         totalQuestions: totalQ,
-        uniqueQuestions: totalQ, // after dedup migration, all are unique
+        uniqueQuestions: totalQ,
         duplicates: 0,
         specialtiesCount: specialtiesWithQ,
       });
@@ -120,6 +129,8 @@ const AdminIngestionPanel = () => {
         return { name, count, target, deficit, pct };
       }).sort((a, b) => a.pct - b.pct);
       setDistribution(dist);
+    } catch (err) {
+      console.error("Failed to load distribution:", err);
     } finally {
       setLoadingDistribution(false);
     }

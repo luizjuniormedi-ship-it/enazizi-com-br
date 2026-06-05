@@ -61,23 +61,28 @@ Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, 
         }
       }
 
-      const prompt = `Você é um professor de medicina especialista preparando questões para a residência médica (padrão ENARE/USP).
+      const prompt = `Você é um professor de medicina especialista preparando questões de ALTA FIDELIDADE para a residência médica brasileira (Padrão ENARE/USP/UNICAMP).
 Gere ${count} questões de Múltipla Escolha sobre: ${specialty}.
 
-DIRETRIZES DE ALTA FIDELIDADE:
-1. Caso Clínico: Use linguagem médica técnica. Inclua idade, sexo, queixa principal, tempo de evolução, sinais vitais e achados de exame físico.
-2. Nível de Dificuldade: Avançado (Residência Médica).
-3. Alternativas: Exatamente 5 opções (A, B, C, D, E). Evite "todas acima" ou "nenhuma".
-4. Explicação: Explique detalhadamente POR QUE a correta está certa e POR QUE as outras estão incorretas, citando critérios diagnósticos ou diretrizes brasileiras vigentes.
+CRITÉRIOS DE ACEITAÇÃO OBRIGATÓRIOS (SPRINT 3):
+1. CASO CLÍNICO DENSO: O enunciado deve ser longo (~600-1000 caracteres), descrevendo um cenário clínico real.
+2. DADOS TÉCNICOS: Inclua obrigatoriamente:
+   - Dados demográficos (idade, sexo).
+   - Sinais Vitais completos (PA, FC, FR, Temp, SpO2).
+   - Achados detalhados de Exame Físico.
+   - Pelo menos um dado laboratorial com unidades (ex: mg/dL, mEq/L, Leucócitos/mm³).
+3. ESTRUTURA: Exatamente 5 alternativas (A, B, C, D, E).
+4. EXPLICAÇÃO PROFUNDA: Mínimo de 300 caracteres, justificando a alternativa correta e refutando as incorretas com base em diretrizes brasileiras vigentes.
+5. TEMA: ${specialty}.
 
 Retorne APENAS um objeto JSON no formato:
 {
   "questions": [
     {
-      "statement": "Enunciado completo com caso clínico técnico...",
+      "statement": "Caso clínico longo e técnico...",
       "options": ["A) Opção 1", "B) Opção 2", "C) Opção 3", "D) Opção 4", "E) Opção 5"],
       "correct_index": 0,
-      "explanation": "Explicação técnica profunda citando diretrizes...",
+      "explanation": "Explicação técnica exaustiva...",
       "topic": "${specialty}",
       "difficulty": 4
     }
@@ -85,9 +90,9 @@ Retorne APENAS um objeto JSON no formato:
 }`;
 
       const aiResponse = await callAi({
-        model: ALLOWED_MODELS.generation,
+        model: ALLOWED_MODELS.reasoning,
         messages: [
-          { role: "system", content: "Você é um Professor Doutor em Medicina. Responda estritamente em JSON." },
+          { role: "system", content: "Você é um Professor Ph.D. em Medicina, especialista em bancas como ENARE e USP. Sua missão é gerar questões exaustivas, técnicas e densas. Responda APENAS JSON." },
           { role: "user", content: prompt }
         ],
         max_tokens: 4000,
@@ -176,6 +181,22 @@ Retorne APENAS um objeto JSON no formato:
 
     } catch (err: any) {
       logger.error("GENERATION_PROCESS_FAILED", err.message, { stack: err.stack });
+      
+      // Ensure governance record is created even on failure
+      await supabaseAdmin.from("pipeline_governance").insert({
+        pipeline_name: "bulk-generate",
+        function_name: "bulk-generate-content",
+        status: "failed",
+        failure_reason: err.message,
+        completed_at: new Date().toISOString(),
+        user_id: user.id,
+        metadata: {
+          specialty,
+          correlation_id: correlation.correlationId,
+          error_stack: err.stack
+        }
+      });
+      
       throw err;
     }
   };
