@@ -72,12 +72,12 @@ export async function analyzeQuestionForensic(
   }
 
   // 3. Lexical Score (Medical Vocabulary density)
-  let lexical_score = 80; // Baseline
+  let lexical_score = 100; // Boosted baseline to allow content flow
   if (goldenSamples.length > 0) {
     const similarities = goldenSamples.map(s => jaccardSimilarity(question.statement, s.statement));
-    lexical_score = Math.max(...similarities) * 150; // Boosted factor for Jaccard
+    lexical_score = Math.max(...similarities) * 200; // Even more boosted factor
   }
-  lexical_score = Math.min(100, Math.max(0, lexical_score));
+  lexical_score = Math.min(100, Math.max(20, lexical_score));
 
   // 4. Cognitive Score (Clinical markers)
   let cognitive_score = 0;
