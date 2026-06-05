@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import TutorV2History from "./TutorV2History";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 interface TutorV2SidebarProps {
   session: any;
@@ -28,6 +29,8 @@ interface TutorV2SidebarProps {
 }
 
 export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) {
+  const navigate = useNavigate();
+
   return (
     <aside className="w-80 border-r border-white/5 bg-slate-950 flex flex-col hidden lg:flex relative overflow-hidden">
       {/* Sidebar background glow */}
@@ -61,12 +64,36 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
           <div>
             <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-4 px-2">Módulos de Elite</p>
             <nav className="space-y-1.5">
-              <SidebarItem icon={Target} label="Mission Control" active count="12" />
-              <SidebarItem icon={BookOpen} label="Quality Map" />
-              <SidebarItem icon={AlertTriangle} label="Error Bank" count={stats?.errors.toString() || "0"} />
-              <SidebarItem icon={Zap} label="Smart Planner" />
-              <SidebarItem icon={ClipboardCheck} label="FSRS Dashboard" />
+              <SidebarItem 
+                icon={Target} 
+                label="Mission Control" 
+                active 
+                count="12" 
+                onClick={() => navigate('/dashboard')}
+              />
+              <SidebarItem 
+                icon={BookOpen} 
+                label="Quality Map" 
+                onClick={() => navigate('/dashboard/mapa-dominio')}
+              />
+              <SidebarItem 
+                icon={AlertTriangle} 
+                label="Error Bank" 
+                count={stats?.errors.toString() || "0"} 
+                onClick={() => navigate('/dashboard/banco-erros')}
+              />
+              <SidebarItem 
+                icon={Zap} 
+                label="Smart Planner" 
+                onClick={() => navigate('/dashboard/planner')}
+              />
+              <SidebarItem 
+                icon={ClipboardCheck} 
+                label="FSRS Dashboard" 
+                onClick={() => navigate('/dashboard/flashcards')}
+              />
             </nav>
+
           </div>
 
           <div>
@@ -89,7 +116,7 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
 
         <div className="pt-6 mt-6 border-t border-white/5 space-y-3">
           <button 
-            onClick={() => window.location.href = '/dashboard/sessao-estudo'}
+            onClick={() => navigate('/dashboard')}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all group mb-1"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
@@ -100,7 +127,7 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
             onClick={() => {
               const newTopic = prompt("Para qual assunto médico deseja mudar?");
               if (newTopic && newTopic.trim()) {
-                window.location.href = `/dashboard/sessao-estudo?topic=${encodeURIComponent(newTopic)}`;
+                navigate(`/dashboard/sessao-estudo?topic=${encodeURIComponent(newTopic)}`);
               }
             }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-all group"
@@ -108,6 +135,7 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
             <RefreshCw className="h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
             <span className="text-[10px] font-black uppercase tracking-widest">Mudar de Tema</span>
           </button>
+
 
           <div className="p-4 rounded-2xl bg-slate-900/50 border border-white/5 group hover:border-indigo-500/30 transition-all cursor-pointer relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -147,12 +175,15 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any, label: strin
   );
 }
 
-function SidebarItem({ icon: Icon, label, active = false, count }: { icon: any; label: string; active?: boolean; count?: string }) {
+function SidebarItem({ icon: Icon, label, active = false, count, onClick }: { icon: any; label: string; active?: boolean; count?: string; onClick?: () => void }) {
   return (
-    <button className={cn(
-      "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
-      active ? "bg-white/5 text-white shadow-lg border border-white/10 ring-1 ring-white/5" : "text-slate-500 hover:text-white hover:bg-white/5"
-    )}>
+    <button 
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
+        active ? "bg-white/5 text-white shadow-lg border border-white/10 ring-1 ring-white/5" : "text-slate-500 hover:text-white hover:bg-white/5"
+      )}>
+
       {active && <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-full" />}
       <div className="flex items-center gap-3">
         <Icon className={cn("h-4 w-4", active ? "text-indigo-400" : "text-slate-600 group-hover:text-indigo-400")} />
