@@ -174,6 +174,17 @@ export interface SemiologyInsightBlock {
   };
 }
 
+export interface CurriculumImpactBlock {
+  type: "curriculum_impact";
+  payload: {
+    theme: string;
+    incidence: "baixa" | "media" | "alta";
+    impact_score: number; // 0-10
+    mastery_level: number; // 0-1
+    priority: number; // 0-100
+  };
+}
+
 export type TutorBlock =
   | SummaryBlock
   | LayExplanationBlock
@@ -186,7 +197,8 @@ export type TutorBlock =
   | ReferenceBlock
   | DifferentialDiagnosisBlock
   | PharmacologyCompareBlock
-  | SemiologyInsightBlock;
+  | SemiologyInsightBlock
+  | CurriculumImpactBlock;
 
 export type TutorBlockType = TutorBlock["type"];
 
@@ -238,6 +250,7 @@ export function isTutorBlock(value: unknown): value is TutorBlock {
     "differential_diagnosis",
     "pharmacology_compare",
     "semiology_insight",
+    "curriculum_impact",
   ];
   return (known as string[]).includes(v.type);
 }
