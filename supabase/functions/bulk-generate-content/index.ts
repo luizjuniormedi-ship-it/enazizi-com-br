@@ -64,9 +64,9 @@ Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, 
       const prompt = `Gere ${count} questões de MCQ para residência médica sobre ${specialty}.
 REGRAS:
 - Casos clínicos realistas e densos.
-- EXATAMENTE 4 alternativas (A, B, C, D). NUNCA gere alternativa E.
+- EXATAMENTE 5 alternativas (A, B, C, D, E).
 - 1 correta.
-- Retorne APENAS JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct_index": 0, "explanation": "...", "topic": "${specialty}", "difficulty": 3}]}`;
+- Retorne APENAS JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "${specialty}", "difficulty": 3}]}`;
 
       const aiResponse = await callAi({
         model: ALLOWED_MODELS.generation,
