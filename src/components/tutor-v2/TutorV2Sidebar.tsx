@@ -127,8 +127,14 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
             onClick={() => {
               const newTopic = prompt("Para qual assunto médico deseja mudar?");
               if (newTopic && newTopic.trim()) {
+                const kickoff = `Quero mudar de assunto para ${newTopic}`;
+                // Using internal handleSendMessage of the parent isn't direct here, 
+                // but we can trigger a location change that TutorV2Page handles as a new session
+                // OR we can invoke a "new topic" event.
+                // Best P0 fix: Navigate to the study session with the topic param
                 navigate(`/dashboard/sessao-estudo?topic=${encodeURIComponent(newTopic)}`);
               }
+
             }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-all group"
           >

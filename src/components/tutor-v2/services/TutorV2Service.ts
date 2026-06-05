@@ -9,11 +9,12 @@ export const TutorV2Service = {
       message, 
       pedagogicalInteraction, 
       newTopic,
-      topic: null,
+      topic: newTopic || null, // Ensure topic is passed if it's a new subject
       fsrsContext: {},
       masteryState: "initial",
       history: []
     };
+
     
     try {
       const response = await callTutorV3(payload, { 

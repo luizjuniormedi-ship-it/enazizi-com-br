@@ -101,7 +101,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       await addMessage(user.id, "user", text);
 
       // Call AI
-      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction);
+      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction, pedagogicalInteraction === 'new_topic' ? text : undefined);
 
       if (!response?.ok && response?.success !== true) throw new Error(response?.error || "Erro na resposta da IA");
       if (response?.fallback) {
