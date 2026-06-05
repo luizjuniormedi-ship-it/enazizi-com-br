@@ -327,6 +327,7 @@ const Simulados = () => {
   const e2eCorrelationIdRef = useRef<string | null>(null);
   const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
   const triParamsRef = useRef<TRIParams[]>([]);
+  const [partialMessage, setPartialMessage] = useState<string | null>(null);
   
   // New state for Configuration Step
   const [showConfigStep, setShowConfigStep] = useState(false);
