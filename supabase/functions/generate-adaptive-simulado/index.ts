@@ -43,7 +43,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       // Temporary bypass for validation tests only - should be removed after
       const testKey = req.headers.get("x-test-bypass");
       if (testKey === "sim-validation-2026") {
-         userId = "095cf92f-427d-48e1-accc-31b357b2fa50"; // Use the real user id found earlier
+         userId = "095cf92f-427d-48e1-accc-31b357b2fa50"; 
       } else {
          return authResult.response;
       }
@@ -63,7 +63,13 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     step = "historical_dedup";
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    const { data: recentSessions } = await supabaseAdmin.from("simulado_sessions").select("id").eq("user_id", userId).gt("created_at", sevenDaysAgo);
+    const { data: recentSessions, error: sessErr } = await supabaseAdmin
+      .from("simulado_sessions")
+      .select("id")
+      .eq("user_id", userId)
+      .gt("started_at", sevenDaysAgo);
+      
+    if (sessErr) console.warn(`[SIM_GENERATOR_SESS_ERR] ${sessErr.message}`);
     const sessionIds = (recentSessions || []).map(s => s.id);
     
     const [practiceHistory, simuladoHistory] = await Promise.all([
@@ -76,7 +82,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     const excludedIds = Array.from(new Set([
       ...(practiceHistory.data || []).map(p => p.question_id),
       ...(simuladoHistory.data || []).map(s => s.question_id)
-    ].filter(Boolean))).slice(0, 500); // Limit to 500 to avoid query size issues
+    ].filter(Boolean))).slice(0, 500); 
 
     console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] count=${excludedIds.length}`);
 
@@ -128,15 +134,11 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
 
     console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
 
-    // 3. AI Fallback (If enabled and still missing questions)
-    // IMPORTANT: Even with AI, we must be strict about topics.
     let insufficientQuestions = finalQuestions.length < requestedCount;
     
     if (insufficientQuestions && body.allowAiGeneration === true) {
       step = "ai_generation";
       console.log(`[SIM_GENERATOR_AI_FALLBACK] deficit=${requestedCount - finalQuestions.length}`);
-      // AI generation logic would go here, but per rules: return partial if bank insufficient.
-      // If the user explicitly wants AI, we can call it.
     }
 
     if (finalQuestions.length < requestedCount) {
@@ -145,7 +147,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
 
     // 4. Persistence
     step = "persistence";
-    const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
+    const { data: sess, error: sessInsertErr } = await supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'adaptativo',
       total_questions: finalQuestions.length,
@@ -162,8 +164,10 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       }
     }).select().single();
 
+    if (sessInsertErr) console.error(`[SIM_GENERATOR_SESS_INSERT_ERR] ${sessInsertErr.message}`);
+
     if (sess) {
-      await supabaseAdmin.from("simulado_questions").insert(
+      const { error: qInsertErr } = await supabaseAdmin.from("simulado_questions").insert(
         finalQuestions.map((q, idx) => ({
           session_id: sess.id,
           question_id: q.id || null,
@@ -172,6 +176,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
           is_ai_generated: q._source === "generated"
         }))
       );
+      if (qInsertErr) console.error(`[SIM_GENERATOR_QS_INSERT_ERR] ${qInsertErr.message}`);
     }
 
     console.log(`[SIM_GENERATOR_FINAL_SELECTION] count=${finalQuestions.length} sessionId=${sess?.id}`);
