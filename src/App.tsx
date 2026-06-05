@@ -89,6 +89,8 @@ const Fase4Drain = lazyWithRetry(() => import("./pages/admin/Fase4Drain"), "Fase
 const SemanticObservatory = lazyWithRetry(() => import("./pages/admin/SemanticObservatory"), "SemanticObservatory");
 const SemanticReviewCenter = lazyWithRetry(() => import("./pages/admin/SemanticReviewCenter"), "SemanticReviewCenter");
 const DiagnosticTutor = lazyWithRetry(() => import("./pages/admin/DiagnosticTutor"), "DiagnosticTutor");
+const LearningEffectiveness = lazyWithRetry(() => import("./pages/admin/LearningEffectiveness"), "LearningEffectiveness");
+
 
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
@@ -410,6 +412,8 @@ const App = () => (
                 <Route path="semantic-observatory" element={<SemanticObservatory />} />
                 <Route path="fase4-drain" element={<Fase4Drain />} />
                 <Route path="diagnostic-tutor" element={<DiagnosticTutor />} />
+                <Route path="effectiveness" element={<LearningEffectiveness />} />
+
               </Route>
               {/* Rota separada para SemanticReviewCenter — acesso por admin, semantic_board, platform_admin */}
               <Route path="/admin/semantic-review-center" element={<AdminRoute requiredRoles={["admin", "semantic_board", "platform_admin"]}><AdminLayout /></AdminRoute>}>
