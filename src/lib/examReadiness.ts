@@ -234,39 +234,35 @@ function generateInsight(
   coverageScore: number,
 ): string {
   if (input.totalQuestionsAnswered < 30) {
-    return `Continue praticando para termos dados suficientes sobre sua preparação para ${profile.label}.`;
+    return `Continue praticando para consolidar sua Readiness Score para ${profile.label}.`;
   }
 
-  if (coverageScore < 40 && input.totalQuestionsAnswered >= 50) {
-    return `Sua cobertura de temas para ${profile.label} ainda está baixa (${coverageScore}%). Amplie os assuntos estudados.`;
+  if (score <= 40) {
+    return `Status Crítico. É urgente aumentar o volume de temas de alta incidência.`;
   }
 
-  if (score >= 75 && strongAreas.length >= 2) {
-    const top = strongAreas[0];
-    return `Seu desempenho em ${top} fortalece sua chance na ${profile.label}.`;
+  if (score <= 60) {
+    return `Risco Alto. Foque nos temas que mais aumentam sua nota para sair da zona de perigo.`;
   }
 
-  if (input.overdueReviews > 10) {
-    return `Revisões pendentes estão reduzindo sua projeção para ${profile.label}.`;
+  if (coverageScore < 50) {
+    return `Sua cobertura para ${profile.label} ainda é um gargalo (${coverageScore}%). Amplie o cronograma.`;
   }
 
-  if (weakAreas.length >= 2) {
-    return `Foque em ${weakAreas.slice(0, 2).join(" e ")} para melhorar na ${profile.label}.`;
+  if (score >= 76) {
+    return `Você está no nível ${score >= 91 ? 'Elite' : 'Forte'}. Mantenha a consistência para garantir a vaga.`;
   }
 
-  if (coverageScore >= 70 && score < 60) {
-    return `Boa cobertura de temas (${coverageScore}%), mas o desempenho precisa melhorar para ${profile.label}.`;
+  if (input.overdueReviews > 20) {
+    return `O acúmulo de revisões FSRS está penalizando sua chance de aprovação.`;
   }
 
-  if (input.simuladoScores.length === 0) {
-    return `Faça simulados para refinar sua projeção na ${profile.label}.`;
+  if (weakAreas.length > 0) {
+    const top = weakAreas[0];
+    return `Reforce ${top} para elevar sua probabilidade global em ${profile.label}.`;
   }
 
-  if (profile.osceEmphasis && input.practicalScores.length === 0) {
-    return `A ${profile.label} cobra prova prática — pratique OSCE e anamnese.`;
-  }
-
-  return `Você já cobriu ${coverageScore}% dos temas da ${profile.label}. Continue assim!`;
+  return `Preparação Competitiva. Foque no refino de temas específicos para subir de nível.`;
 }
 
 /**
