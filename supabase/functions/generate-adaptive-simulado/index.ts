@@ -10,7 +10,6 @@ import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
  * Implementation: Strict Topic Adherence + Historical Dedup + No Silent Fallback
- * Using questions_bank as primary source to satisfy FK constraints.
  */
 
 const normalizeStatement = (s: string) => {
@@ -39,15 +38,8 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
   try {
     const body = await req.json().catch(() => ({}));
     const authResult = await requireAuth(req);
-    let userId = authResult.ok ? authResult.userId : null;
-    
-    // Test bypass logic
-    const testKey = req.headers.get("x-test-bypass");
-    if (testKey === "sim-validation-2026") {
-       userId = "095cf92f-427d-48e1-accc-31b357b2fa50"; 
-    } else if (!authResult.ok) {
-       return authResult.response;
-    }
+    if (!authResult.ok) return authResult.response;
+    const userId = authResult.userId;
 
     const requestedCount = Math.min(Number(body.target_question_count || body.count || body.questionCount) || 10, 100);
     const topics = Array.isArray(body.topics || body.selectedTopics) ? (body.topics || body.selectedTopics) : [body.topic || body.specialty || "Clínica Médica"];
@@ -98,7 +90,6 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
         .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board")
         .eq("review_status", "approved");
 
-      // Apply strict filtering
       if (subtopics.length > 0) {
         const subtopicFilter = subtopics.map(s => `"${s}"`).join(",");
         query = query.or(`subtopic.in.(${subtopicFilter}),curriculum_subtheme.in.(${subtopicFilter})`);
