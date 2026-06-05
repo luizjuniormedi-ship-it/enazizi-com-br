@@ -624,9 +624,11 @@ const ClinicalSimulation = () => {
       if (res.vitals) {
         setVitals(res.vitals);
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(res.vitals, newTimeElapsed)]);
+        if (res.is_deteriorating) playSound("alarm");
       } else if (vitals && res.patient_status && res.patient_status !== patientStatus) {
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(vitals as any, newTimeElapsed)]);
       }
+
 
       if (res.treatment_outcome) {
         const outcomeMap: Record<string, { title: string; desc: string; variant: "default" | "destructive" }> = {
