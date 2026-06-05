@@ -9,12 +9,24 @@ export interface WeightData {
   recency_score?: number;
   difficulty_score?: number;
   approval_impact_score?: number;
+  global_priority?: number;
+  potential_gain?: number;
 }
 
 export const getThemeWeights = async (themeName: string, examType = 'ENAMED'): Promise<WeightData> => {
   const { data, error } = await supabase
     .from('enamed_theme_weights')
-    .select('historical_incidence, statistical_weight, priority_level, frequency_score, recency_score, difficulty_score, approval_impact_score, enamed_curriculum_matrix(theme)')
+    .select(`
+      historical_incidence, 
+      statistical_weight, 
+      priority_level, 
+      frequency_score, 
+      recency_score, 
+      difficulty_score, 
+      approval_impact_score, 
+      global_weight,
+      enamed_curriculum_matrix!inner(theme, id)
+    `)
     .eq('enamed_curriculum_matrix.theme', themeName)
     .eq('exam_type', examType)
     .maybeSingle();
@@ -23,6 +35,12 @@ export const getThemeWeights = async (themeName: string, examType = 'ENAMED'): P
     return { historical_incidence: 5, statistical_weight: 1, priority_level: 5 };
   }
 
+  const impactRes = await supabase
+    .from('enamed_impact_scores')
+    .select('global_priority')
+    .eq('theme_id', (data.enamed_curriculum_matrix as any).id)
+    .maybeSingle();
+
   return {
     historical_incidence: Number(data.historical_incidence),
     statistical_weight: Number(data.statistical_weight),
@@ -30,7 +48,8 @@ export const getThemeWeights = async (themeName: string, examType = 'ENAMED'): P
     frequency_score: Number(data.frequency_score || 0),
     recency_score: Number(data.recency_score || 0),
     difficulty_score: Number(data.difficulty_score || 0),
-    approval_impact_score: Number(data.approval_impact_score || 0)
+    approval_impact_score: Number(data.approval_impact_score || 0),
+    global_priority: Number(impactRes.data?.global_priority || data.global_weight || 0)
   };
 };
 

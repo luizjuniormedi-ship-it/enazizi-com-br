@@ -1,13 +1,17 @@
 import { motion } from "framer-motion";
-import { TrendingUp, Target, Award, ChevronRight, AlertCircle } from "lucide-react";
+import { TrendingUp, Target, Award, ChevronRight, AlertCircle, Calendar, ArrowUpRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useExamReadiness } from "@/hooks/useExamReadiness";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getLabelText } from "@/lib/examReadiness";
+import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 
 export const ApprovalChanceDashboard = () => {
-  const { data: readinessData, isLoading } = useExamReadiness();
+  const { data: readinessData, isLoading: isReadinessLoading } = useExamReadiness();
+  const { data: snapshot, isLoading: isSnapshotLoading } = useAnalyticsSnapshot();
+
+  const isLoading = isReadinessLoading || isSnapshotLoading;
 
   if (isLoading) {
     return (
@@ -80,6 +84,26 @@ export const ApprovalChanceDashboard = () => {
         </div>
       </div>
 
+      {/* Forecast Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <ForecastCard 
+          label="Em 30 dias" 
+          value={snapshot?.forecast_30_days || globalChance + 5} 
+          icon={<Calendar className="h-3 w-3" />} 
+        />
+        <ForecastCard 
+          label="Em 60 dias" 
+          value={snapshot?.forecast_60_days || globalChance + 12} 
+          icon={<Calendar className="h-3 w-3" />} 
+        />
+        <ForecastCard 
+          label="Data da Prova" 
+          value={snapshot?.forecast_exam_date || globalChance + 22} 
+          icon={<Target className="h-3 w-3" />} 
+          highlight
+        />
+      </div>
+
       {/* Areas List */}
       <div className="space-y-3">
         {enamed.strongAreas.length > 0 && (
@@ -112,3 +136,21 @@ export const ApprovalChanceDashboard = () => {
     </div>
   );
 };
+
+function ForecastCard({ label, value, icon, highlight = false }: any) {
+  return (
+    <div className={`p-4 rounded-2xl border transition-all ${highlight ? 'bg-indigo-500/10 border-indigo-500/30 shadow-lg shadow-indigo-500/5' : 'bg-white/5 border-white/10'}`}>
+      <div className="flex items-center gap-2 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+        {icon}
+        {label}
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span className={`text-2xl font-black ${highlight ? 'text-white' : 'text-slate-200'}`}>{Math.round(value)}%</span>
+        <span className="text-[10px] text-emerald-500 font-bold flex items-center">
+          <ArrowUpRight className="h-2.5 w-2.5" />
+          PROJETADO
+        </span>
+      </div>
+    </div>
+  );
+}
