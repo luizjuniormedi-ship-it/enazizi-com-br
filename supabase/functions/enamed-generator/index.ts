@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
+import { insertFlashcardsWithFsrs, applyQualityGate } from "../_shared/flashcard-governance.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -234,16 +236,33 @@ FORMATO JSON PURO (sem markdown):
     const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer);
     let fCount = 0;
     if (flashcards.length > 0) {
-      const fRows = flashcards.map((f: any) => ({
-        user_id: userId,
+      const normalizedCards = flashcards.map((f: any) => ({
         question: String(f.question).trim(),
         answer: String(f.answer).trim(),
         topic: String(f.topic || specialty).trim(),
-        is_global: true,
       }));
-      const { error } = await supabaseAdmin.from("flashcards").insert(fRows);
-      if (!error) fCount = fRows.length;
+
+      const { accepted } = applyQualityGate(normalizedCards);
+      
+      if (accepted.length > 0) {
+        const fRows = accepted.map((f: any) => ({
+          user_id: userId,
+          question: f.question,
+          answer: f.answer,
+          topic: f.topic,
+          is_global: true,
+          generation_method: "enamed_generator_v2"
+        }));
+        
+        const { flashcards: inserted } = await insertFlashcardsWithFsrs(supabaseAdmin, fRows, { 
+          userId, 
+          topic: specialty,
+          discipline: specialty 
+        });
+        fCount = inserted.length;
+      }
     }
+
 
     const clinicalCases = (parsed.clinical_cases || []).filter((c: any) => c.title && c.clinical_history && c.correct_diagnosis);
     let cCount = 0;

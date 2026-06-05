@@ -5,6 +5,8 @@ import { aiFetch, sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts"
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 import { logPipelineAlert } from "../_shared/pipeline-logger.ts";
+import { insertFlashcardsWithFsrs, applyQualityGate } from "../_shared/flashcard-governance.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -134,45 +136,33 @@ async function processTextToContent(
       if (parsed.flashcards && Array.isArray(parsed.flashcards)) {
         const flashcards = parsed.flashcards.filter((f: any) => 
           f.question && f.answer
-        ).map((f: any) => sanitizeForPostgres({
-          user_id: userId,
+        ).map((f: any) => ({
           question: String(f.question).trim(),
           answer: String(f.answer).trim(),
-          explanation: String(f.explanation || "").trim(),
           topic: String(f.topic || topic).trim(),
-          source,
-          is_global: true,
-          generation_method: "upload_extraction"
         }));
 
-        if (flashcards.length > 0) {
-          const { data: inserted, error } = await supabaseAdmin.from("flashcards").insert(flashcards).select();
-          if (!error && inserted) {
-            fCount = flashcards.length;
-            
-            // Also insert into fsrs_cards for scheduling
-            await supabaseAdmin.from("fsrs_cards").insert(
-              inserted.map((f: any) => ({
-                user_id: userId,
-                card_ref_id: f.id,
-                card_type: 'flashcard',
-                front: f.question,
-                back: f.answer,
-                explanation: f.explanation,
-                topic: f.topic,
-                due: new Date().toISOString(),
-                stability: 0,
-                difficulty: 3,
-                elapsed_days: 0,
-                scheduled_days: 0,
-                reps: 0,
-                lapses: 0,
-                state: 0
-              }))
-            );
-          }
+        const { accepted } = applyQualityGate(flashcards);
+
+        if (accepted.length > 0) {
+          const rows = accepted.map(f => ({
+            user_id: userId,
+            question: f.question,
+            answer: f.answer,
+            topic: f.topic,
+            source,
+            is_global: true,
+            generation_method: "upload_extraction_v2"
+          }));
+
+          const { flashcards: inserted } = await insertFlashcardsWithFsrs(supabaseAdmin, rows, {
+            userId,
+            topic: topic
+          });
+          fCount = inserted.length;
         }
       }
+
 
       return { q: qCount, f: fCount };
     } catch (err) {
