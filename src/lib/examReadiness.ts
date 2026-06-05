@@ -6,7 +6,7 @@
 import { EXAM_PROFILES, type ExamProfile, type ReadinessWeights, getExamProfile } from "./examProfiles";
 import { BASE_CURRICULUM, type CurriculumTopic } from "@/constants/baseCurriculum";
 
-export type ReadinessLabel = "muito_baixa" | "em_construcao" | "competitiva" | "alta";
+export type ReadinessLabel = "critico" | "risco_alto" | "competitivo" | "forte" | "elite";
 
 export interface ExamReadiness {
   examKey: string;
@@ -42,17 +42,19 @@ export interface ReadinessInput {
 }
 
 function getLabel(score: number): ReadinessLabel {
-  if (score < 35) return "muito_baixa";
-  if (score < 55) return "em_construcao";
-  if (score < 75) return "competitiva";
-  return "alta";
+  if (score <= 40) return "critico";
+  if (score <= 60) return "risco_alto";
+  if (score <= 75) return "competitivo";
+  if (score <= 90) return "forte";
+  return "elite";
 }
 
 const LABEL_PT: Record<ReadinessLabel, string> = {
-  muito_baixa: "Muito baixa",
-  em_construcao: "Em construção",
-  competitiva: "Competitiva",
-  alta: "Alta",
+  critico: "Crítico",
+  risco_alto: "Risco Alto",
+  competitivo: "Competitivo",
+  forte: "Forte",
+  elite: "Elite",
 };
 
 export function getLabelText(label: ReadinessLabel): string {
