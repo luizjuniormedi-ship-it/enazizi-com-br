@@ -68,7 +68,7 @@ ${questionsList}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-4o-mini", // REPAIR: Trocando Gemini 2.5 (402) por GPT-4o-mini (Estável)
         messages: [
           { role: "system", content: "Você é um especialista em educação médica e classificação de questões de residência." },
           { role: "user", content: prompt }
