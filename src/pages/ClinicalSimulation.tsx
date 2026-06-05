@@ -45,6 +45,9 @@ import { exportToPdf } from "@/lib/exportPdf";
 import { useClinicalSimulation as useClinicalSimulationModule } from "@/modules/clinical-simulation/hooks/useClinicalSimulation";
 import { usePhaseMachine } from "@/modules/clinical-simulation/state/usePhaseMachine";
 import { useCountdownTimer } from "@/modules/clinical-simulation/state/useCountdownTimer";
+import CareerBadge from "@/components/clinical-simulation/CareerBadge";
+import HospitalTeamPanel from "@/components/clinical-simulation/HospitalTeamPanel";
+import HospitalManagementDashboard from "@/components/clinical-simulation/HospitalManagementDashboard";
 
 const EVAL_LABELS: Record<string, string> = {
   anamnesis: "Anamnese", physical_exam: "Exame Físico", complementary_exams: "Exames Complementares",
@@ -957,8 +960,8 @@ const ClinicalSimulation = () => {
       {/* ACTIVE SIMULATION */}
       {(phase === "active" || phase === "finishing") && (
         <div className="flex flex-col" style={{ height: isFullscreen ? "calc(100vh - 8px)" : "calc(100vh - 80px)" }}>
-          <div className="shrink-0 flex items-stretch">
-            <div className="flex-1 min-w-0">
+          <div className="shrink-0 flex items-stretch bg-white border-b border-border/50">
+            <div className="flex-1 min-w-0 flex items-center">
               <ShiftHeader
                 patientStatus={patientStatus}
                 statusAlert={statusAlert}
@@ -972,6 +975,9 @@ const ClinicalSimulation = () => {
                 inactivityWarning={inactivityWarning}
                 abcdeChecklist={abcdeChecklist}
               />
+              <div className="hidden md:flex px-4 border-l border-slate-100">
+                <CareerBadge />
+              </div>
             </div>
             <button
               type="button"
@@ -998,10 +1004,14 @@ const ClinicalSimulation = () => {
             </div>
           )}
 
+          <div className="shrink-0">
+            <HospitalManagementDashboard sessionId={cs.correlationId} />
+          </div>
+
           {/* 3-column layout */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-0 min-h-0 overflow-hidden shrink">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0 min-h-0 overflow-hidden shrink">
             {/* SidePanel: hidden on mobile (vitals available via QuickActions → Sheet) to keep chat the primary surface */}
-            <div className="hidden lg:block min-h-0">
+            <div className="hidden lg:block min-h-0 border-r border-border/30">
               <SidePanel
                 vitalsSnapshots={vitalsSnapshots}
                 patientStatus={patientStatus}
@@ -1060,8 +1070,9 @@ const ClinicalSimulation = () => {
 
             {/* RIGHT */}
             <div className="hidden lg:flex flex-col min-h-0 border-l border-border/30 bg-muted/5 overflow-y-auto overscroll-contain">
-
-              <div className="p-3 space-y-4">
+              <HospitalTeamPanel sessionId={cs.correlationId} />
+              
+              <div className="p-3 space-y-4 border-t border-border/30">
                 <ExamsPanel exams={examResults} />
                 <VitalsChart snapshots={vitalsSnapshots} />
               </div>

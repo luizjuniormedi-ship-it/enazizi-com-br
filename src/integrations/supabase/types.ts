@@ -13631,6 +13631,84 @@ export type Database = {
           },
         ]
       }
+      hospital_adverse_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_type: string
+          hospital_session_id: string | null
+          id: string
+          patient_id: string | null
+          severity: string
+          was_preventable: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          hospital_session_id?: string | null
+          id?: string
+          patient_id?: string | null
+          severity: string
+          was_preventable?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          hospital_session_id?: string | null
+          id?: string
+          patient_id?: string | null
+          severity?: string
+          was_preventable?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_adverse_events_hospital_session_id_fkey"
+            columns: ["hospital_session_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_duty_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hospital_adverse_events_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospital_career_path: {
+        Row: {
+          completed_scenarios: number | null
+          current_title: string | null
+          leadership_score: number | null
+          skills_matrix: Json | null
+          updated_at: string | null
+          user_id: string
+          xp_points: number | null
+        }
+        Insert: {
+          completed_scenarios?: number | null
+          current_title?: string | null
+          leadership_score?: number | null
+          skills_matrix?: Json | null
+          updated_at?: string | null
+          user_id: string
+          xp_points?: number | null
+        }
+        Update: {
+          completed_scenarios?: number | null
+          current_title?: string | null
+          leadership_score?: number | null
+          skills_matrix?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          xp_points?: number | null
+        }
+        Relationships: []
+      }
       hospital_clinical_clocks: {
         Row: {
           clinical_consequence: string | null
@@ -13786,6 +13864,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      hospital_economic_metrics: {
+        Row: {
+          hospital_session_id: string | null
+          id: string
+          overuse_score: number | null
+          total_cost: number | null
+          updated_at: string | null
+          waste_details: Json | null
+        }
+        Insert: {
+          hospital_session_id?: string | null
+          id?: string
+          overuse_score?: number | null
+          total_cost?: number | null
+          updated_at?: string | null
+          waste_details?: Json | null
+        }
+        Update: {
+          hospital_session_id?: string | null
+          id?: string
+          overuse_score?: number | null
+          total_cost?: number | null
+          updated_at?: string | null
+          waste_details?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_economic_metrics_hospital_session_id_fkey"
+            columns: ["hospital_session_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_duty_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hospital_errors_v2: {
         Row: {
@@ -14049,6 +14162,145 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hospital_resources: {
+        Row: {
+          created_at: string | null
+          current_occupancy: number | null
+          id: string
+          resource_type: string
+          total_capacity: number
+          unit_cost_estimate: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_occupancy?: number | null
+          id?: string
+          resource_type: string
+          total_capacity: number
+          unit_cost_estimate?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_occupancy?: number | null
+          id?: string
+          resource_type?: string
+          total_capacity?: number
+          unit_cost_estimate?: number | null
+        }
+        Relationships: []
+      }
+      hospital_sectors: {
+        Row: {
+          capacity: number | null
+          complexity_level: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          capacity?: number | null
+          complexity_level?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          capacity?: number | null
+          complexity_level?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      hospital_staff: {
+        Row: {
+          competence_level: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          personality_traits: string[] | null
+          role: string
+        }
+        Insert: {
+          competence_level?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          personality_traits?: string[] | null
+          role: string
+        }
+        Update: {
+          competence_level?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          personality_traits?: string[] | null
+          role?: string
+        }
+        Relationships: []
+      }
+      hospital_staff_interactions: {
+        Row: {
+          created_at: string | null
+          hospital_session_id: string | null
+          id: string
+          interaction_type: string
+          message: string
+          metadata: Json | null
+          patient_id: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          hospital_session_id?: string | null
+          id?: string
+          interaction_type: string
+          message: string
+          metadata?: Json | null
+          patient_id?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          hospital_session_id?: string | null
+          id?: string
+          interaction_type?: string
+          message?: string
+          metadata?: Json | null
+          patient_id?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_staff_interactions_hospital_session_id_fkey"
+            columns: ["hospital_session_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_duty_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hospital_staff_interactions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hospital_staff_interactions_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_staff"
             referencedColumns: ["id"]
           },
         ]
