@@ -39,6 +39,7 @@ const ApprovalIntelligenceDashboard = lazy(() => import("@/components/dashboard/
 
 import { ApprovalChanceDashboard } from "@/components/dashboard-v2/ApprovalChanceDashboard";
 const EnamedImpactDashboard = lazy(() => import("@/components/dashboard/EnamedImpactDashboard"));
+const EnamedEvidenceDashboard = lazy(() => import("@/components/dashboard/EnamedEvidenceDashboard"));
 
 const Dashboard = () => {
   const mountTimeRef = useRef(Date.now());
@@ -393,6 +394,15 @@ const Dashboard = () => {
                 <MedicalMasteryDashboard />
               </Suspense>
             )}
+          </div>
+        </div>
+
+        <div className="px-4 sm:px-8 lg:px-14 pb-12">
+          <EnaflixSectionTitle kicker="ENAMED EVIDENCE ENGINE" title="Evidência de Performance" />
+          <div className="mt-6">
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <EnamedEvidenceDashboard />
+            </Suspense>
           </div>
         </div>
 
