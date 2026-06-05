@@ -33,10 +33,12 @@ interface SidePanelProps {
   statusAlert: boolean;
   abcdeChecklist: Record<string, boolean>;
   categoryScores: CategoryScores;
+  differentialDiagnosis: string[];
   medicalRecord: MedicalRecordEntry[];
   medRecordOpen: boolean;
   onMedRecordOpenChange: (b: boolean) => void;
 }
+
 
 const SidePanel = memo(function SidePanel({
   vitalsSnapshots, patientStatus, statusAlert, abcdeChecklist, categoryScores,
