@@ -181,6 +181,22 @@ Retorne APENAS um objeto JSON no formato:
 
     } catch (err: any) {
       logger.error("GENERATION_PROCESS_FAILED", err.message, { stack: err.stack });
+      
+      // Ensure governance record is created even on failure
+      await supabaseAdmin.from("pipeline_governance").insert({
+        pipeline_name: "bulk-generate",
+        function_name: "bulk-generate-content",
+        status: "failed",
+        failure_reason: err.message,
+        completed_at: new Date().toISOString(),
+        user_id: user.id,
+        metadata: {
+          specialty,
+          correlation_id: correlation.correlationId,
+          error_stack: err.stack
+        }
+      });
+      
       throw err;
     }
   };
