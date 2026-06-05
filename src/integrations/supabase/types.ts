@@ -9553,11 +9553,13 @@ export type Database = {
       curriculum_matrix: {
         Row: {
           ativo: boolean
+          competencia: string | null
           created_at: string
           descricao_curta: string | null
           dificuldade_base: number
           especialidade: string
           gatilhos_clinicos: string[]
+          grande_area: string | null
           id: string
           incidencia_geral: string
           integra_com_osce: boolean
@@ -9578,11 +9580,13 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          competencia?: string | null
           created_at?: string
           descricao_curta?: string | null
           dificuldade_base?: number
           especialidade: string
           gatilhos_clinicos?: string[]
+          grande_area?: string | null
           id?: string
           incidencia_geral?: string
           integra_com_osce?: boolean
@@ -9603,11 +9607,13 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          competencia?: string | null
           created_at?: string
           descricao_curta?: string | null
           dificuldade_base?: number
           especialidade?: string
           gatilhos_clinicos?: string[]
+          grande_area?: string | null
           id?: string
           incidencia_geral?: string
           integra_com_osce?: boolean
@@ -11108,6 +11114,7 @@ export type Database = {
           difficulty_score: number | null
           exam_type: string
           frequency_score: number | null
+          global_weight: number | null
           historical_incidence: number | null
           id: string
           priority_level: number | null
@@ -11123,6 +11130,7 @@ export type Database = {
           difficulty_score?: number | null
           exam_type: string
           frequency_score?: number | null
+          global_weight?: number | null
           historical_incidence?: number | null
           id?: string
           priority_level?: number | null
@@ -11138,6 +11146,7 @@ export type Database = {
           difficulty_score?: number | null
           exam_type?: string
           frequency_score?: number | null
+          global_weight?: number | null
           historical_incidence?: number | null
           id?: string
           priority_level?: number | null
@@ -14839,10 +14848,16 @@ export type Database = {
           batch_id: string | null
           correct_index: number
           created_at: string
+          curriculum_area: string | null
+          curriculum_competency: string | null
+          curriculum_discipline: string | null
+          curriculum_subtheme: string | null
+          curriculum_theme: string | null
           difficulty: Database["public"]["Enums"]["difficulty_level"]
           discussion: Json | null
           editorial_grade: string | null
           editorial_score: number | null
+          enamed_weight: number | null
           exam_style: string
           exam_tips: string[] | null
           explanation: string
@@ -14875,10 +14890,16 @@ export type Database = {
           batch_id?: string | null
           correct_index: number
           created_at?: string
+          curriculum_area?: string | null
+          curriculum_competency?: string | null
+          curriculum_discipline?: string | null
+          curriculum_subtheme?: string | null
+          curriculum_theme?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           discussion?: Json | null
           editorial_grade?: string | null
           editorial_score?: number | null
+          enamed_weight?: number | null
           exam_style?: string
           exam_tips?: string[] | null
           explanation: string
@@ -14911,10 +14932,16 @@ export type Database = {
           batch_id?: string | null
           correct_index?: number
           created_at?: string
+          curriculum_area?: string | null
+          curriculum_competency?: string | null
+          curriculum_discipline?: string | null
+          curriculum_subtheme?: string | null
+          curriculum_theme?: string | null
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
           discussion?: Json | null
           editorial_grade?: string | null
           editorial_score?: number | null
+          enamed_weight?: number | null
           exam_style?: string
           exam_tips?: string[] | null
           explanation?: string
@@ -20010,10 +20037,16 @@ export type Database = {
           cost_tokens: number | null
           cost_usd: number | null
           created_at: string
+          curriculum_area: string | null
+          curriculum_competency: string | null
+          curriculum_discipline: string | null
+          curriculum_subtheme: string | null
+          curriculum_theme: string | null
           difficulty: number
           difficulty_level: number | null
           distractor_quality_score: number | null
           embedding_hash: string | null
+          enamed_weight: number | null
           exam_bank_id: string | null
           explanation: string
           fsrs_hooks: Json | null
@@ -20085,10 +20118,16 @@ export type Database = {
           cost_tokens?: number | null
           cost_usd?: number | null
           created_at?: string
+          curriculum_area?: string | null
+          curriculum_competency?: string | null
+          curriculum_discipline?: string | null
+          curriculum_subtheme?: string | null
+          curriculum_theme?: string | null
           difficulty?: number
           difficulty_level?: number | null
           distractor_quality_score?: number | null
           embedding_hash?: string | null
+          enamed_weight?: number | null
           exam_bank_id?: string | null
           explanation: string
           fsrs_hooks?: Json | null
@@ -20160,10 +20199,16 @@ export type Database = {
           cost_tokens?: number | null
           cost_usd?: number | null
           created_at?: string
+          curriculum_area?: string | null
+          curriculum_competency?: string | null
+          curriculum_discipline?: string | null
+          curriculum_subtheme?: string | null
+          curriculum_theme?: string | null
           difficulty?: number
           difficulty_level?: number | null
           distractor_quality_score?: number | null
           embedding_hash?: string | null
+          enamed_weight?: number | null
           exam_bank_id?: string | null
           explanation?: string
           fsrs_hooks?: Json | null
@@ -20748,8 +20793,14 @@ export type Database = {
           confidence_score: number
           correct_index: number | null
           created_at: string
+          curriculum_area: string | null
+          curriculum_competency: string | null
+          curriculum_discipline: string | null
+          curriculum_subtheme: string | null
+          curriculum_theme: string | null
           difficulty: number
           difficulty_level: number | null
+          enamed_weight: number | null
           exam_info: string | null
           explanation: string | null
           id: string
@@ -20784,8 +20835,14 @@ export type Database = {
           confidence_score?: number
           correct_index?: number | null
           created_at?: string
+          curriculum_area?: string | null
+          curriculum_competency?: string | null
+          curriculum_discipline?: string | null
+          curriculum_subtheme?: string | null
+          curriculum_theme?: string | null
           difficulty?: number
           difficulty_level?: number | null
+          enamed_weight?: number | null
           exam_info?: string | null
           explanation?: string | null
           id?: string
@@ -20820,8 +20877,14 @@ export type Database = {
           confidence_score?: number
           correct_index?: number | null
           created_at?: string
+          curriculum_area?: string | null
+          curriculum_competency?: string | null
+          curriculum_discipline?: string | null
+          curriculum_subtheme?: string | null
+          curriculum_theme?: string | null
           difficulty?: number
           difficulty_level?: number | null
+          enamed_weight?: number | null
           exam_info?: string | null
           explanation?: string | null
           id?: string
@@ -28103,6 +28166,10 @@ export type Database = {
       }
       calculate_plan_viability: {
         Args: { target_user_id: string }
+        Returns: number
+      }
+      calculate_readiness_score_v2: {
+        Args: { p_user_id: string }
         Returns: number
       }
       check_duplicate_tutor_sessions: {

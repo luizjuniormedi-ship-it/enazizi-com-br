@@ -36,32 +36,33 @@ export const getThemeWeights = async (themeName: string, examType = 'ENAMED'): P
 
 /**
  * New Phase 2 Prioritization Motor:
- * Formula: Priority = (Incidence * 3) + (Errors * 2) + (FSRS Risk * 2) + (Proximity * 2) + (1 - Mastery * 1)
+ * Formula: Priority = (Incidência × 3) + (Erros × 2) + (Risco FSRS × 2) + (Proximidade × 2) + (1 - Domínio × 1)
  */
 export const computeEnamedPriority = (
   historicalIncidence: number, // 0-10
   studentErrorCount: number,
-  fsrsStability: number, // 0-1 (low is higher priority)
+  fsrsStability: number, // 0-1 (low stability is higher risk/priority)
   daysToExam: number,
   currentMastery: number // 0-1
 ): number => {
-  // Normalize components
-  const normalizedIncidence = historicalIncidence; // Already 0-10
-  const normalizedErrors = Math.min(studentErrorCount, 10);
-  const fsrsRisk = (1 - Math.min(fsrsStability, 1)) * 10;
+  // Normalize components to 0-10
+  const incidenceScore = historicalIncidence; // Already 0-10
+  const errorsScore = Math.min(studentErrorCount, 10);
+  const fsrsRiskScore = (1 - Math.min(fsrsStability, 1)) * 10;
   
-  // Proximity score: 10 if < 30 days, 5 if < 60 days, else 0
-  const proximityScore = daysToExam < 30 ? 10 : (daysToExam < 60 ? 5 : 0);
+  // Proximity score: 10 if < 30 days, 5 if < 60 days, 2 if < 90, else 0
+  const proximityScore = daysToExam < 30 ? 10 : (daysToExam < 60 ? 5 : (daysToExam < 90 ? 2 : 0));
   
-  const lackOfMastery = (1 - currentMastery) * 10;
+  const lackOfMasteryScore = (1 - currentMastery) * 10;
 
   const score = 
-    (normalizedIncidence * 3) + 
-    (normalizedErrors * 2) + 
-    (fsrsRisk * 2) + 
+    (incidenceScore * 3) + 
+    (errorsScore * 2) + 
+    (fsrsRiskScore * 2) + 
     (proximityScore * 2) + 
-    (lackOfMastery * 1);
+    (lackOfMasteryScore * 1);
     
-  // Cap at 100 for display
+  // Normalize result to 0-100 range
+  // Max possible: (10*3) + (10*2) + (10*2) + (10*2) + (10*1) = 30 + 20 + 20 + 20 + 10 = 100
   return Math.min(Math.max(score, 0), 100);
 };

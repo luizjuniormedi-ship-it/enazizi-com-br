@@ -16,7 +16,7 @@ export interface PrioritizationMetrics {
 /**
  * Calculates the priority score (0-100) based on the premium formula.
  */
-export function calculatePremiumPriority(metrics: PrioritizationMetrics): number {
+export function calculatePremiumPriority(metrics: PrioritizationMetrics, themeId?: string): number {
   const C_INCIDENCE = 3;
   const C_ERROR = 2;
   const C_FSRS = 2;
@@ -24,16 +24,25 @@ export function calculatePremiumPriority(metrics: PrioritizationMetrics): number
   const C_MASTERY = 1;
 
   const rawScore = 
-    (metrics.fallProbability * C_INCIDENCE) +
-    (metrics.errorRate * C_ERROR) +
-    (metrics.fsrsRisk * C_FSRS) +
-    (metrics.examProximity * C_PROXIMITY) +
-    ((1 - metrics.currentMastery) * C_MASTERY);
+    (metrics.fallProbability * 10 * C_INCIDENCE) +
+    (metrics.errorRate * 10 * C_ERROR) +
+    (metrics.fsrsRisk * 10 * C_FSRS) +
+    (metrics.examProximity * 10 * C_PROXIMITY) +
+    ((1 - metrics.currentMastery) * 10 * C_MASTERY);
 
-  // Normalization: Max 10 (3+2+2+2+1), Min 0.
-  const normalized = (rawScore / 10) * 100;
+  // Normalization: Max 100 ((10*3) + (10*2) + (10*2) + (10*2) + (10*1))
+  const priority = Math.min(Math.max(Math.round(rawScore), 0), 100);
   
-  return Math.min(Math.max(Math.round(normalized), 0), 100);
+  // Telemetry: [ENAMED_PRIORITY_CALCULATED]
+  import("@/lib/safeTelemetry").then(({ emitSafeEvent }) => {
+    emitSafeEvent("ENAMED_PRIORITY_CALCULATED", {
+      priority,
+      themeId,
+      metrics
+    });
+  });
+
+  return priority;
 }
 
 /**

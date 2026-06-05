@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useCoreData, CoreDataResult } from "./useCoreData";
 import { calculateAllExamReadiness, type ExamReadiness, type ReadinessInput } from "@/lib/examReadiness";
+import { calculateReadinessScoreV2 } from "@/lib/examReadinessV2";
+import { emitSafeEvent } from "@/lib/safeTelemetry";
 
 function buildReadinessFromCoreData(cd: CoreDataResult, practicalScoresExtra: number[]): ExamReadiness[] {
   const targetExams = cd.profile.target_exams;
@@ -49,7 +51,28 @@ function buildReadinessFromCoreData(cd: CoreDataResult, practicalScoresExtra: nu
     studiedTopics,
   };
 
-  return calculateAllExamReadiness(input, targetExams);
+  const readinessList = calculateAllExamReadiness(input, targetExams);
+  
+  // Calculate V2 Readiness for ENAMED specifically
+  const enamedProfile = readinessList.find(r => r.examKey.toUpperCase() === "ENAMED" || r.examName.toUpperCase() === "ENAMED");
+  
+  if (enamedProfile) {
+    const v2Score = calculateReadinessScoreV2({
+      masteryScore: input.recentAccuracy, // Domain (simplified as recent accuracy)
+      incidenceMastery: input.approvalScore, // Incidence mastery (simplified using existing approval score)
+      fsrsRetention: 85, // Retention FSRS (mock or query if available)
+      simuladoPerformance: input.simuladoScores.length > 0 ? (input.simuladoScores.reduce((a, b) => a + b, 0) / input.simuladoScores.length) : 0
+    });
+    
+    // Telemetry: [READINESS_SCORE_UPDATED]
+    emitSafeEvent("READINESS_SCORE_UPDATED", {
+      score: v2Score,
+      examKey: enamedProfile.examKey,
+      label: enamedProfile.readinessLabel
+    });
+  }
+
+  return readinessList;
 }
 
 export const useExamReadiness = () => {
