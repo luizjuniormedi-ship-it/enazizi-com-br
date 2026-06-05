@@ -83,9 +83,11 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
 
       // Apply strict filtering
       if (subtopics.length > 0) {
-        query = query.or(`subtopic.in.(${subtopics.join(",")}),curriculum_subtheme.in.(${subtopics.join(",")})`);
+        const subtopicFilter = subtopics.map(s => `"${s}"`).join(",");
+        query = query.or(`subtopic.in.(${subtopicFilter}),curriculum_subtheme.in.(${subtopicFilter})`);
       } else if (topics.length > 0) {
-        query = query.or(`topic.in.(${topics.join(",")}),curriculum_theme.in.(${topics.join(",")}),curriculum_discipline.in.(${topics.join(",")})`);
+        const topicFilter = topics.map(t => `"${t}"`).join(",");
+        query = query.or(`topic.in.(${topicFilter}),curriculum_theme.in.(${topicFilter}),curriculum_discipline.in.(${topicFilter})`);
       }
 
       if (excludedIds.length > 0) {
