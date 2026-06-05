@@ -330,8 +330,8 @@ const AdminIngestionPanel = () => {
                   .from("pipeline_governance")
                   .select("status, metadata, failure_reason")
                   .eq("function_name", "bulk-generate-content")
-                  .filter("metadata->>correlation_id", "eq", correlationId)
-                  .order("started_at", { ascending: false })
+                  .eq("metadata->>correlation_id", correlationId)
+                  .order("updated_at", { ascending: false })
                   .limit(1)
                   .maybeSingle();
                 if (!gov) continue;
