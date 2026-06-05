@@ -491,7 +491,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         
         await supabaseAdmin.from("tutor_messages").insert({
           tutor_session_id: sessionId,
-          user_id: userId,
+          user_id: activeUserId,
           role: "assistant",
           content: normalized.content,
           metadata: { 
