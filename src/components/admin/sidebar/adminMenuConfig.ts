@@ -23,8 +23,9 @@ import {
   Settings2, Flag, KeyRound, Plug, Cpu,
   Workflow, Server, Activity, Wrench, Network, BrainCircuit,
   ClipboardList, Sparkles, DollarSign, ShieldCheck, Database,
-  GitBranch, Target
+  GitBranch, Target, Building2
 } from "lucide-react";
+
 
 import type { AdminScope } from "@/hooks/useAdminScope";
 
@@ -74,6 +75,16 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["war room", "effectiveness", "eficácia", "aprendizado", "readiness"],
       },
       {
+        to: "/admin/hospital-v5",
+        label: "Hospital Virtual V5",
+        description: "Simulador multicasos de alta fidelidade e gestão hospitalar inteligente.",
+        icon: Building2,
+        scopes: ["super_admin", "admin_pedagogico"],
+        badge: "Novo",
+        keywords: ["hospital", "v5", "plantão", "emergência", "multi-paciente"],
+      },
+      {
+
 
         to: "/admin/monitoring",
         label: "Alunos",
