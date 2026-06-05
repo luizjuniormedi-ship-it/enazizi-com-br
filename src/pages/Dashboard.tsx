@@ -34,6 +34,8 @@ const DailyPlanWidget = lazy(() => import("@/components/dashboard/DailyPlanWidge
 const DashboardMetricsGrid = lazy(() => import("@/components/dashboard/DashboardMetricsGrid"));
 const CognitiveValidation = lazy(() => import("@/components/admin/CognitiveValidation").then(m => ({ default: m.CognitiveValidation })));
 
+import { ApprovalChanceDashboard } from "@/components/dashboard-v2/ApprovalChanceDashboard";
+
 const Dashboard = () => {
   const mountTimeRef = useRef(Date.now());
   const telemetryFiredRef = useRef(false);
@@ -359,9 +361,9 @@ const Dashboard = () => {
 
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
           <div className="space-y-6">
-            <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
+            <EnaflixSectionTitle kicker="MATRIZ ENAMED 2026" title="Chance de Aprovação" />
             <Suspense fallback={<LocalSectionSkeleton />}>
-              <ProgressOverview />
+              <ApprovalChanceDashboard />
             </Suspense>
           </div>
           <div className="space-y-6">
