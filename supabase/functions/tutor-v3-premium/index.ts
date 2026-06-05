@@ -228,7 +228,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       // Lookup paralelo defensivo: memória + RAG nunca devem travar o Tutor
       try {
         const [m, r] = await Promise.all([
-          lookupTutorMemory(supabaseAdmin, userQuestion, { userId, topic, specialty: null }),
+          lookupTutorMemory(supabaseAdmin, userQuestion, { userId: activeUserId, topic, specialty: null }),
           lookupRagSemantic(supabaseAdmin, userQuestion, 3),
         ]);
         memoryHit = m;
