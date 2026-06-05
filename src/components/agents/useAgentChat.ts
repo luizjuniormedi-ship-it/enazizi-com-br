@@ -450,6 +450,23 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         const requestPayload = {
           message: text,
           history: messages.map(m => ({ role: m.role, content: m.content })),
+          topic,
+          subtopic,
+          specialty,
+          adaptive_context: adaptiveContext,
+          pedagogical_state: pedSession.session ? {
+            mode: pedSession.session.tutorMode,
+            cognitive_state: pedSession.session.cognitiveState,
+            current_block: pedSession.session.currentBlock,
+            comprehension: pedSession.session.comprehensionScore
+          } : undefined,
+          enamed_context: adaptiveStatus === "ok" && (adaptiveContext as any)?.enamed_impact ? {
+            readiness: (adaptiveContext as any).enamed_impact.readiness_score,
+            forecast: (adaptiveContext as any).enamed_impact.approval_forecast,
+            impact: (adaptiveContext as any).enamed_impact.theme_impact,
+            weight: (adaptiveContext as any).enamed_impact.curriculum_weight
+          } : undefined
+        };
           messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
           userContext: contextToSend || undefined,
           adaptiveContext: adaptiveContext,

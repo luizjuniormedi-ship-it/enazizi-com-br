@@ -30,6 +30,19 @@ export interface AdaptiveContext {
     chance_score: number | null;
     accuracy: number;
   } | null;
+  enamed_impact?: {
+    readiness_score: number;
+    approval_forecast: {
+      current: number;
+      forecast_30d: number;
+      forecast_60d: number;
+      forecast_exam: number;
+    } | null;
+    theme_impact: number; // 0-10
+    frequency_score: number; // 0-10
+    curriculum_weight: number; // global priority
+    potential_gain: number; // % gain
+  } | null;
   target_banca: string | null;
   last_orchestrator_decision: Record<string, unknown> | null;
   session_context: { topic: string | null; subtopic: string | null } | null;
