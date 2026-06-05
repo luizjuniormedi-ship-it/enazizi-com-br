@@ -1004,10 +1004,14 @@ const ClinicalSimulation = () => {
             </div>
           )}
 
+          <div className="shrink-0">
+            <HospitalManagementDashboard sessionId={cs.correlationId} />
+          </div>
+
           {/* 3-column layout */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-0 min-h-0 overflow-hidden shrink">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0 min-h-0 overflow-hidden shrink">
             {/* SidePanel: hidden on mobile (vitals available via QuickActions → Sheet) to keep chat the primary surface */}
-            <div className="hidden lg:block min-h-0">
+            <div className="hidden lg:block min-h-0 border-r border-border/30">
               <SidePanel
                 vitalsSnapshots={vitalsSnapshots}
                 patientStatus={patientStatus}
