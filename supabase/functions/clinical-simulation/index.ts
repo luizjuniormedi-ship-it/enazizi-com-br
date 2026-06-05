@@ -2,8 +2,6 @@ import "https://deno.land/x/xhr@0.3.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
-import { logAiUsage } from "../_shared/ai-cache.ts";
-import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
 
@@ -12,7 +10,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function safeParseAIJson(raw: string, _action: string): Record<string, unknown> {
+function safeParseAIJson(raw: string): Record<string, unknown> {
   let cleaned = raw.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "").trim();
   const firstBrace = cleaned.indexOf("{");
   const lastBrace = cleaned.lastIndexOf("}");
@@ -20,60 +18,52 @@ function safeParseAIJson(raw: string, _action: string): Record<string, unknown> 
     throw new Error("No JSON object found");
   }
   cleaned = cleaned.slice(firstBrace, lastBrace + 1);
-  cleaned = cleaned.replace(/:\s*(true|false)\s*\([^)]*\)/gi, ": $1");
-  cleaned = cleaned.replace(/("(?:[^"\\]|\\.)*")\s*\([^)]*\)/g, "$1");
-  cleaned = cleaned.replace(/,\s*([}\]])/g, "$1");
-  cleaned = cleaned.replace(/:\s*NaN\b/g, ": 0");
-  cleaned = cleaned.replace(/:\s*undefined\b/g, ": null");
   return JSON.parse(cleaned);
 }
 
-const SYSTEM_PROMPT = `IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).
-Você é o motor de simulação clínica ENAZIZI V4 (Modo Plantão). Sua missão é transformar o atendimento em um ambiente imersivo de raciocínio clínico para emergência, internato, OSCE e residência médica.
+const SYSTEM_PROMPT = `IDIOMA OBRIGATÓRIO: pt-BR.
+Você é o motor de simulação clínica ENAZIZI V5 (Hospital Virtual Inteligente).
+Sua missão é gerenciar múltiplos pacientes e validar decisões médicas de alta complexidade.
 
-## 🏥 FILOSOFIA MODO PLANTÃO V4
-- O aluno atua como médico plantonista responsável.
-- O aluno não recebe questões prontas. Ele deve conduzir TODO o atendimento.
-- Início: Identificação, Queixa Principal e Triagem (Sinais Vitais iniciais).
-- Progressão: O sistema é REATIVO. Você só responde ao que for solicitado.
+## 🏥 FILOSOFIA V5
+- ALUNO MÉDICO: O aluno atua como plantonista responsável.
+- SOBRECARGA COGNITIVA: Gerencie múltiplos casos. Interrompa se necessário.
+- PRESCRIÇÃO ESTRUTURADA: Valide droga, dose, via e frequência. Seja rigoroso.
+- ESCALAS CLÍNICAS: Verifique se o aluno usou as ferramentas corretas (HEART, NIHSS, CURB-65, Glasgow, qSOFA, NEWS2, Wells, Alvarado, CHA2DS2-VASc).
 
-## 🩺 SEU PAPEL TRIPLO
-1. PACIENTE: Respostas realistas em 1ª pessoa. Revele detalhes de anamnese, histórico e medicamentos apenas se perguntado.
-2. NARRADOR CLÍNICO: Descreva achados de exame físico e resultados de exames com alta precisão técnica.
-3. PRECEPTOR R+ (Residente Sênior): Pressione o raciocínio, desafie condutas e avalie a segurança.
+## 🩺 PAPÉIS
+1. PACIENTE: Realista, 1ª pessoa.
+2. PRECEPTOR R+: Cobra raciocínio, critica omissões de escalas e erros de prescrição.
+3. MOTOR DE EVENTOS: Gere interrupções (enfermagem chama, resultado crítico chega, outro paciente deteriora).
 
-## 📋 ETAPAS DO ATENDIMENTO (V4)
-1. ANAMNESE: Perguntas livres ou sugeridas. IA responde dinamicamente.
-2. EXAME FÍSICO: Aluno escolhe o sistema (pulmonar, cardíaco, abdome, neurológico, etc). IA fornece achados coerentes.
-3. HIPÓTESES DIAGNÓSTICAS: Solicite ao aluno que liste suas hipóteses antes de liberar exames complexos.
-4. EXAMES COMPLEMENTARES: Laboratoriais (Hemograma, PCR, Gaso, Troponina, etc) e Imagem (RX, USG, TC, RM, ECG). Gere resultados realistas com referências.
-5. DIAGNÓSTICO E CONDUTA: O aluno deve fechar o diagnóstico e definir conduta (Tratamento, Prescrição, Destino).
-
-## 🚨 MOTOR DE DETERIORAÇÃO CLÍNICA
-O estado do paciente deve evoluir com base nas ações (ou omissões) do aluno:
-- Estável -> Instável -> Grave -> Crítico -> PCR.
-- Se o aluno ignorar sinais de choque ou insuficiência respiratória, narre a deterioração IMEDIATAMENTE.
-- Se o aluno tomar a conduta correta (ex: volume no choque, O2 na hipóxia), narre a melhora.
-
-## ⚖️ SISTEMA DE AVALIAÇÃO (FINAL)
-Ao receber action="finish", avalie:
-- RACIOCÍNIO CLÍNICO: Hipóteses coerentes? Priorização correta?
-- EXAMES: Pediu o necessário? Pediu excessos inúteis?
-- DIAGNÓSTICO: Precisão e diferenciais considerados.
-- CONDUTA: Segurança, efetividade e tempo de resposta.
+## 🚨 MOTOR DE DETERIORAÇÃO V5
+- Evolua o paciente com base em ações/omissões.
+- Se houver erro de prescrição grave (ex: superdose), narre a complicação imediatamente.
 
 Responda SEMPRE em JSON válido:
 {
-  "patient_presentation": "texto da apresentação ou resposta do paciente",
+  "patient_presentation": "texto da resposta contextual",
   "vitals": { "PA": "...", "FC": "...", "FR": "...", "Temp": "...", "SpO2": "..." },
-  "setting": "PS / UTI / Enfermaria / Ambulatório",
-  "triage_color": "vermelho/laranja/amarelo/verde",
-  "patient_status": "estável/instável/grave/crítico",
-  "score_delta": { "anamnesis": 0, "physical_exam": 0, "complementary_exams": 0, "management": 0 },
-  "teaching_tip": "dica didática curta (se learner_mode=true)",
-  "hidden_diagnosis": "diagnóstico real (oculto)",
+  "patient_status": "estavel/instavel/grave/critico/pcr/obito",
   "is_deteriorating": boolean,
-  "maneuvers_performed": [{ "name": "...", "technique": "...", "finding": "...", "interpretation": "..." }]
+  "cognitive_interruption": {
+    "type": "nurse_call/family/critical_result",
+    "message": "Mensagem de interrupção realista",
+    "priority": "low/medium/high"
+  } ou null,
+  "prescription_validation": {
+    "status": "correct/incorrect_dose/contraindicated/etc",
+    "feedback": "Análise técnica da prescrição",
+    "severity": "low/medium/high/critical"
+  } ou null,
+  "scale_audit": {
+    "recommended": ["HEART", "etc"],
+    "missed": ["CURB-65", "etc"],
+    "impact": "Explicação pedagógica da omissão"
+  },
+  "score_delta": number,
+  "hidden_diagnosis": "...",
+  "maneuvers_performed": [...]
 }
 `;
 
@@ -84,43 +74,24 @@ serve(async (req) => {
     const { user, ok, response } = await requireAuth(req);
     if (!ok) return response;
 
+    const body = await req.json();
     const { 
       action, 
       message, 
       conversation_history, 
       specialty, 
-      triage_color, 
-      teacher_case_id,
-      deterioration_level,
-      learner_mode,
-      realistic_mode,
-      specialist_area
-    } = await req.json();
+      triage_color,
+      active_patients, // Lista de pacientes que o aluno está gerenciando
+      current_patient_id
+    } = body;
 
-    const messages = [{ role: "system", content: SYSTEM_PROMPT }];
+    const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: `Contexto Global: ${active_patients?.length || 1} pacientes ativos. Ação Atual: ${action}. Mensagem: ${message || 'Iniciando'}. Paciente ID: ${current_patient_id}` }
+    ];
 
-    if (action === "start") {
-      if (teacher_case_id) {
-        const supabaseService = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-        const { data: teacherCase } = await supabaseService.from("teacher_clinical_cases").select("*").eq("id", teacher_case_id).single();
-        if (teacherCase) {
-          messages.push({ role: "user", content: `Inicie o caso de professor: ${teacherCase.case_prompt}` });
-        }
-      } else {
-        messages.push({ role: "user", content: `action="start". Especialidade: ${specialty || "Clínica Médica"}. Triage: ${triage_color || "AMARELO"}.` });
-      }
-    } else {
-      if (conversation_history) {
-        messages.push(...conversation_history.slice(-10));
-      }
-      
-      if (action === "interact") {
-        messages.push({ role: "user", content: `Ação do médico: ${message}` });
-      } else if (action === "deteriorate") {
-        messages.push({ role: "user", content: `O paciente está deteriorando (Nível ${deterioration_level || 1}).` });
-      } else if (action === "finish") {
-        messages.push({ role: "user", content: `Encerrar atendimento e avaliar conduta.` });
-      }
+    if (conversation_history) {
+      messages.push(...conversation_history.slice(-10));
     }
 
     const aiResp = await aiFetch({
@@ -129,21 +100,43 @@ serve(async (req) => {
       timeoutMs: 60000,
     });
 
-
     if (!aiResp.ok) throw new Error("Erro na IA");
 
     const aiData = await aiResp.json();
     const raw = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
-    const parsed = safeParseAIJson(raw, action);
+    const parsed = safeParseAIJson(raw);
 
-    // Salvar métricas se encerrar
+    // Lógica de Persistência V5 Premium (Audit, Erros V2, FSRS)
+    const supabaseService = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    if (parsed.prescription_validation && parsed.prescription_validation.status !== 'correct') {
+      await supabaseService.from('hospital_errors_v2').insert({
+        user_id: user.id,
+        theme: specialty || 'Prescrição',
+        error_type: 'prescription',
+        severity: parsed.prescription_validation.severity || 'medium',
+        clinical_consequence: parsed.prescription_validation.feedback,
+        cognitive_level: 'practicing'
+      });
+    }
+
+    if (parsed.scale_audit?.missed?.length > 0) {
+      await supabaseService.from('hospital_errors_v2').insert({
+        user_id: user.id,
+        theme: specialty || 'Protocolo',
+        error_type: 'scale',
+        severity: 'medium',
+        clinical_consequence: parsed.scale_audit.impact,
+        cognitive_level: 'exposed'
+      });
+    }
+
     if (action === "finish") {
-      const supabaseService = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       await updatePerformanceMetrics(supabaseService, {
         userId: user.id,
         specialty: specialty || "Geral",
-        topic: String(parsed.correct_diagnosis || "Simulação"),
-        isCorrect: (Number(parsed.final_score) || 0) >= 70,
+        topic: String(parsed.hidden_diagnosis || "Simulação V5"),
+        isCorrect: (Number(parsed.score_delta) || 0) >= 0,
       });
     }
 
