@@ -30031,6 +30031,13 @@ export type Database = {
           feedback_text: string
         }[]
       }
+      get_questions_topic_counts: {
+        Args: never
+        Returns: {
+          count: number
+          topic: string
+        }[]
+      }
       get_rag_health_stats: { Args: never; Returns: Json }
       get_ranking_leaderboard: {
         Args: { _limit?: number }
