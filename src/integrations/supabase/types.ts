@@ -12951,6 +12951,36 @@ export type Database = {
         }
         Relationships: []
       }
+      global_outcome_stats: {
+        Row: {
+          approval_rate: number | null
+          avg_forecast_accuracy: number | null
+          avg_gain: number | null
+          cohort_name: string
+          id: string
+          sample_size: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approval_rate?: number | null
+          avg_forecast_accuracy?: number | null
+          avg_gain?: number | null
+          cohort_name: string
+          id?: string
+          sample_size?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approval_rate?: number | null
+          avg_forecast_accuracy?: number | null
+          avg_gain?: number | null
+          cohort_name?: string
+          id?: string
+          sample_size?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       gold_questions_metadata: {
         Row: {
           clinical_reasoning_level: string | null
@@ -17179,6 +17209,45 @@ export type Database = {
           },
         ]
       }
+      official_exam_results: {
+        Row: {
+          approval_status: string | null
+          created_at: string | null
+          exam_name: string
+          exam_year: number
+          id: string
+          institution: string | null
+          max_grade: number | null
+          official_grade: number
+          specialty_choice: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approval_status?: string | null
+          created_at?: string | null
+          exam_name: string
+          exam_year: number
+          id?: string
+          institution?: string | null
+          max_grade?: number | null
+          official_grade: number
+          specialty_choice?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approval_status?: string | null
+          created_at?: string | null
+          exam_name?: string
+          exam_year?: number
+          id?: string
+          institution?: string | null
+          max_grade?: number | null
+          official_grade?: number
+          specialty_choice?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       official_exam_sources: {
         Row: {
           created_at: string | null
@@ -17471,6 +17540,62 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      outcome_correlation_study: {
+        Row: {
+          accuracy_rate: number | null
+          actual_grade: number | null
+          correlation_error: number | null
+          created_at: string | null
+          exam_result_id: string | null
+          final_readiness: number | null
+          forecasted_grade: number | null
+          gain_observed: number | null
+          id: string
+          initial_readiness: number | null
+          questions_answered: number | null
+          total_study_hours: number | null
+          user_id: string | null
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          actual_grade?: number | null
+          correlation_error?: number | null
+          created_at?: string | null
+          exam_result_id?: string | null
+          final_readiness?: number | null
+          forecasted_grade?: number | null
+          gain_observed?: number | null
+          id?: string
+          initial_readiness?: number | null
+          questions_answered?: number | null
+          total_study_hours?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          accuracy_rate?: number | null
+          actual_grade?: number | null
+          correlation_error?: number | null
+          created_at?: string | null
+          exam_result_id?: string | null
+          final_readiness?: number | null
+          forecasted_grade?: number | null
+          gain_observed?: number | null
+          id?: string
+          initial_readiness?: number | null
+          questions_answered?: number | null
+          total_study_hours?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outcome_correlation_study_exam_result_id_fkey"
+            columns: ["exam_result_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_results"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pedagogical_event_versions: {
         Row: {
