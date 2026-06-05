@@ -90,6 +90,8 @@ const SemanticObservatory = lazyWithRetry(() => import("./pages/admin/SemanticOb
 const SemanticReviewCenter = lazyWithRetry(() => import("./pages/admin/SemanticReviewCenter"), "SemanticReviewCenter");
 const DiagnosticTutor = lazyWithRetry(() => import("./pages/admin/DiagnosticTutor"), "DiagnosticTutor");
 const LearningEffectiveness = lazyWithRetry(() => import("./pages/admin/LearningEffectiveness"), "LearningEffectiveness");
+const HospitalVirtualPage = lazyWithRetry(() => import("./pages/admin/HospitalVirtualPage"), "HospitalVirtualPage");
+
 
 
 
@@ -413,6 +415,8 @@ const App = () => (
                 <Route path="fase4-drain" element={<Fase4Drain />} />
                 <Route path="diagnostic-tutor" element={<DiagnosticTutor />} />
                 <Route path="effectiveness" element={<LearningEffectiveness />} />
+                <Route path="hospital-v5" element={<HospitalVirtualPage />} />
+
 
               </Route>
               {/* Rota separada para SemanticReviewCenter — acesso por admin, semantic_board, platform_admin */}
