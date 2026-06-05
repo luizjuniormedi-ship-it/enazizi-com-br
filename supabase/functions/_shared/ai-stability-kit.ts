@@ -1,5 +1,5 @@
 /**
- * ENAZIZI — AI Stability Kit v11 (Resilience Hardening)
+ * ENAZIZI — AI Stability Kit v11 (Resilience Hardening & AI Cost Reduction)
  * Circuit Breaker, Safe Parser, and Fallback Orchestration.
  */
 
@@ -141,6 +141,20 @@ export const MEDICAL_STATIC_FALLBACKS: Record<string, any> = {
     sigla: "LUZ",
     fallback: true
   },
+  "Insuficiência Cardíaca": {
+    content: "### 🫀 Insuficiência Cardíaca (Premium Fallback)\n\nO tratamento da IC com fração de ejeção reduzida (ICFEr) baseia-se nos **4 Pilares (The Fantastic Four)**:\n\n1. **Beta-bloqueadores**: Bisoprolol, Carvedilol ou Metoprolol.\n2. **iSGLT2**: Dapagliflozina ou Empagliflozina.\n3. **Sacubitril-Valsartana (INRA)** ou IECA/BRA.\n4. **Antagonistas de Mineralocorticoide**: Espironolactona.\n\nTodos esses grupos demonstraram redução de mortalidade.",
+    socraticQuestion: "Qual o papel da espironolactona na insuficiência cardíaca crônica?",
+    teachingPhase: "ENSINAR",
+    sigla: "IC",
+    fallback: true
+  },
+  "Infarto": {
+    content: "### 🫀 Infarto Agudo do Miocárdio (Premium Fallback)\n\nO manejo do IAM com supra de ST (IAMCSST) foca na **reperfusão imediata**.\n\n**Prazos Críticos:**\n- **Porta-ECG**: < 10 minutos.\n- **Porta-Balão (Angioplastia)**: < 90 minutos (em hospital com hemodinâmica).\n- **Porta-Agulha (Trombólise)**: < 30 minutos (se angioplastia não disponível em 120 min).\n\n**Mnemônico MONA (Clássico):**\n- **M**orfina (se dor refratária)\n- **O**xigênio (se SatO2 < 90%)\n- **N**itrato (vasodilatação, exceto em VD)\n- **A**spirina (300mg mastigados)",
+    socraticQuestion: "Por que o nitrato é contraindicado no infarto de ventrículo direito?",
+    teachingPhase: "ENSINAR",
+    sigla: "IAM",
+    fallback: true
+  },
   "SEPSE": {
     content: "### 🚨 Protocolo de Sepse (Premium Fallback)\n\n**Sintomas Estão Piorando: Socorro Emergencial!**\n\nA sepse é uma emergência médica tempo-dependente. Os pilares do tratamento na primeira hora (Protocolo 1h) são:\n\n1. **Lactato sérico**: Coletar e repetir se > 2 mmol/L.\n2. **Culturas**: Coletar hemoculturas antes do antibiótico.\n3. **Antibióticos**: Iniciar espectro amplo imediatamente.\n4. **Cristaloides**: 30 mL/kg se hipotensão ou lactato ≥ 4.\n5. **Vasopressores**: Se mantiver PAM < 65 mmHg após volume.",
     socraticQuestion: "Qual o valor do lactato que indica necessidade de ressuscitação volêmica imediata?",
@@ -148,60 +162,18 @@ export const MEDICAL_STATIC_FALLBACKS: Record<string, any> = {
     sigla: "SEPSE",
     fallback: true
   },
-  "IAM": {
-    content: "### 🫀 Infarto Agudo do Miocárdio (Premium Fallback)\n\nO manejo do IAM com supra de ST (IAMCSST) foca na **reperfusão imediata**.\n\n**Prazos Críticos:**\n- **Porta-ECG**: < 10 minutos.\n- **Porta-Balão (Angioplastia)**: < 90 minutos (em hospital com hemodinâmica).\n- **Porta-Agulha (Trombólise)**: < 30 minutos (se angioplastia não disponível em 120 min).\n\n**Mnemônico MONA (Clássico):**\n- **M**orfina (se dor refratária)\n- **O**xigênio (se SatO2 < 90%)\n- **N**itrato (vasodilatação, exceto em VD)\n- **A**spirina (300mg mastigados)",
-    socraticQuestion: "Por que o nitrato é contraindicado no infarto de ventrículo direito?",
+  "CURB-65": {
+    content: "### 🫁 CURB-65 (Escore de Gravidade na Pneumonia)\n\n- **C**onfusão mental\n- **U**reia > 50 mg/dL\n- **R**espiração (FR >= 30 irpm)\n- **B**lood Pressure (PAS < 90 ou PAD <= 60)\n- **65** anos ou mais\n\n**Pontuação:**\n- 0-1: Ambulatorial\n- 2: Hospitalar\n- 3+: UTI",
+    socraticQuestion: "Qual a conduta para um paciente com CURB-65 de 2 pontos?",
     teachingPhase: "ENSINAR",
-    sigla: "IAM",
+    sigla: "CURB65",
     fallback: true
   },
-  "AVC": {
-    content: "### 🧠 Acidente Vascular Cerebral (Premium Fallback)\n\nNo AVC Isquêmico agudo, \"Tempo é Cérebro\".\n\n**Escala de NIHSS**: Usada para quantificar o déficit neurológico.\n**Tomografia de Crânio**: Obrigatória para excluir hemorragia antes de qualquer conduta.\n\n**Janela Terapêutica:**\n- **Trombólise IV (rtPA)**: Até 4,5 horas do início dos sintomas.\n- **Trombectomia Mecânica**: Até 24 horas em casos selecionados (grandes vasos).",
-    socraticQuestion: "Qual o primeiro exame de imagem obrigatório na suspeita de AVC?",
+  "Wells": {
+    content: "### 🫁 Escore de Wells (TEP)\n\n- Sinais clínicos de TVP (+3)\n- Diagnóstico alternativo menos provável (+3)\n- FC > 100 bpm (+1,5)\n- Imobilização/Cirurgia recente (+1,5)\n- TVP/TEP prévio (+1,5)\n- Hemoptise (+1)\n- Malignidade (+1)\n\n**Probabilidade:**\n- <= 4: Baixa (pedir D-dímero)\n- > 4: Alta (pedir Angio-TC)",
+    socraticQuestion: "Se o Wells for de 2 pontos, qual o próximo passo?",
     teachingPhase: "ENSINAR",
-    sigla: "AVC",
-    fallback: true
-  },
-  "IC": {
-    content: "### 🫀 Insuficiência Cardíaca (Premium Fallback)\n\nO tratamento da IC com fração de ejeção reduzida (ICFEr) baseia-se nos **4 Pilares (The Fantastic Four)**:\n\n1. **Beta-bloqueadores**: Bisoprolol, Carvedilol ou Metoprolol.\n2. **iSGLT2**: Dapagliflozina ou Empagliflozina.\n3. **Sacubitril-Valsartana (INRA)** ou IECA/BRA.\n4. **Antagonistas de Mineralocorticoide**: Espironolactona.\n\nTodos esses grupos demonstraram redução de mortalidade.",
-    socraticQuestion: "Qual o papel da espironolactona na insuficiência cardíaca crônica?",
-    teachingPhase: "ENSINAR",
-    sigla: "IC",
-    fallback: true
-  },
-  "HAS": {
-    content: "### 🩸 Hipertensão Arterial Sistêmica (Premium Fallback)\n\nDefinição: PA sistólica ≥ 140 mmHg e/ou diastólica ≥ 90 mmHg em duas ou mais ocasiões.\n\n**Metas de Tratamento:**\n- Geral: < 140/90 mmHg.\n- Alto Risco CV / DM / Doença Renal: < 130/80 mmHg.\n\n**Classes de Medicamentos:**\n- IECA/BRA (especialmente se DM ou doença renal)\n- Tiazídicos (Clortalidona, Hidroclorotiazida)\n- Bloqueadores de Canais de Cálcio (Anlodipino)\n- Beta-bloqueadores (não são primeira linha na HAS pura)",
-    socraticQuestion: "Qual a meta de PA para um paciente diabético com HAS?",
-    teachingPhase: "ENSINAR",
-    sigla: "HAS",
-    fallback: true
-  },
-  "DM": {
-    content: "### 🍬 Diabetes Mellitus (Premium Fallback)\n\nDiagnóstico (pelo menos 2 exames alterados):\n- Glicemia de jejum ≥ 126 mg/dL\n- Hemoglobina Glicada (HbA1c) ≥ 6,5%\n- TOTG (2h após 75g glicose) ≥ 200 mg/dL\n- Glicemia casual ≥ 200 mg/dL com sintomas inequívocos\n\n**Tratamento Inicial (Tipo 2):**\n- Metformina é o padrão-ouro.\n- Se doença cardiovascular ou renal: iSGLT2 ou análogos de GLP-1.",
-    socraticQuestion: "Qual o valor da HbA1c que define o diagnóstico de Diabetes?",
-    teachingPhase: "ENSINAR",
-    sigla: "DM",
-    fallback: true
-  },
-  "Pneumonia": {
-    content: "### 🫁 Pneumonia Adquirida na Comunidade (Premium Fallback)\n\nCritérios de Gravidade (**CURB-65**):\n- **C**onfusão mental\n- **U**reia > 50 mg/dL\n- **R**espiração (FR ≥ 30 irpm)\n- **B**lood Pressure (PAS < 90 ou PAD ≤ 60)\n- **65** anos ou mais\n\n**Escore:**\n- 0-1: Tratamento ambulatorial.\n- 2: Considerar internação.\n- 3-5: Internação (provável UTI se 4-5).",
-    socraticQuestion: "No CURB-65, qual valor de FR indica gravidade?",
-    teachingPhase: "ENSINAR",
-    sigla: "Pneumonia",
-    fallback: true
-  },
-  "TEP": {
-    content: "### 🫁 Tromboembolismo Pulmonar (Premium Fallback)\n\nInvestigação inicial baseada no **Escore de Wells**.\n\n**Wells Baixa Probabilidade**: Solicitar D-dímero.\n- Se D-dímero normal: TEP excluído.\n- Se D-dímero alterado: Solicitar Angio-TC de tórax.\n\n**Wells Alta Probabilidade**: Solicitar Angio-TC direto (não perde tempo com D-dímero).\n\n**Tratamento**: Anticoagulação (Heparina, Varfarina, DOACs). Se instabilidade hemodinâmica: Trombólise.",
-    socraticQuestion: "Quando devemos solicitar o D-dímero na suspeita de TEP?",
-    teachingPhase: "ENSINAR",
-    sigla: "TEP",
-    fallback: true
-  },
-  "DPOC": {
-    content: "### 🫁 Doença Pulmonar Obstrutiva Crônica (Premium Fallback)\n\nDefinição Espirométrica: VEF1/CVF < 0,7 após broncodilatador.\n\n**Tratamento Crônico (GOLD):**\n- Grupo A: Broncodilatador (curta ou longa).\n- Grupo B: LAMA ou LABA.\n- Grupo E: LAMA + LABA (considerar corticoide inalatório se eosinófilos > 300).\n\n**Exacerbação**: Aumento de tosse, escarro ou dispneia. Tratar com Broncodilatadores, Corticoide Sistêmico e Antibióticos (se aumento de secreção/purulência).",
-    socraticQuestion: "Qual o achado na espirometria que confirma o diagnóstico de DPOC?",
-    teachingPhase: "ENSINAR",
-    sigla: "DPOC",
+    sigla: "WELLS",
     fallback: true
   }
 };
@@ -252,21 +224,21 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
   if (raw && raw.fallback) {
     console.log("[TUTOR_NORMALIZED_OK] Fallback format detected");
     return {
-      content: raw.content || "Conteúdo de segurança carregado.",
+      content: raw.content || "### 💡 Resumo de Segurança\nConteúdo técnico carregado da biblioteca local.",
       teachingPhase: raw.teachingPhase || "ENSINAR",
-      socraticQuestion: raw.socraticQuestion || "Podemos continuar?",
+      socraticQuestion: raw.socraticQuestion || "Ficou clara essa explicação base?",
       source: "fallback",
       confidence: 1.0,
       metadata: raw
     };
   }
 
-  // 4. Emergency Last Resort
+  // 4. Emergency Last Resort (Safe Mode Premium)
   console.error("[TUTOR_NORMALIZED_FAIL] Using Emergency Safe Mode");
   return {
-    content: "### 🏥 Atendimento de Emergência Cognitiva\n\nO sistema está em manutenção, mas seu aprendizado não para. Vamos revisar os fundamentos clínicos enquanto restauramos a conexão total.\n\n⚠️ **Nota**: Estamos utilizando conteúdo validado localmente enquanto nossos servidores de IA escalam.",
+    content: "### 🏥 Atendimento de Emergência Cognitiva\n\n⚠ **Estamos utilizando conteúdo validado localmente.**\n\nEnquanto os provedores de IA escalam, preparamos uma revisão essencial dos fundamentos clínicos para você não perder o ritmo.\n\n**Pontos Críticos:**\n- Priorize a estabilização hemodinâmica.\n- Siga os protocolos de 1ª hora (Sepse/IAM/AVC).\n- Reavalie o paciente a cada intervenção.",
     teachingPhase: "ENSINAR",
-    socraticQuestion: "Gostaria de revisar um tema específico enquanto aguarda?",
+    socraticQuestion: "Gostaria de revisar um mnemônico específico enquanto aguardamos a conexão?",
     source: "safe_mode",
     confidence: 0.5
   };
@@ -303,4 +275,3 @@ export function getStaticFallback(tema: string): any {
     tema
   };
 }
-

@@ -162,6 +162,34 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
 
+    // [AI COST REDUCTION] ── HYBRID TUTOR: CHECK LOCAL KNOWLEDGE ──────────────────
+    const searchTerms = [message || "", topic || ""].join(" ");
+    const localFallback = getStaticFallback(searchTerms);
+    
+    // If we have a premium local summary and the user is asking a basic question
+    if (localFallback && !localFallback.sigla.includes("FIX") && studentIntent === "doubt" && searchTerms.length < 100) {
+      console.log("[LOCAL_KNOWLEDGE_USED]", { topic: localFallback.tema });
+      
+      const normalizedLocal = normalizeTutorResponse(localFallback, "fallback");
+      
+      return corsResponse({
+        success: true,
+        ok: true,
+        content: normalizedLocal.content,
+        currentBlock: nextBlock,
+        blockTitle: currentBlockConfig.title,
+        teachingPhase: normalizedLocal.teachingPhase,
+        shouldWaitForStudent: true,
+        socraticQuestion: normalizedLocal.socraticQuestion,
+        actionsContext: { topic, block: nextBlock },
+        topic,
+        correlation_id: correlationId,
+        source: "fallback",
+        debug: { hybrid_hit: true }
+      }, 200);
+    }
+
+
     // ── 3.5 MEMORY LOOKUP (Tutor knowledge memory + RAG em paralelo) ────────
     // 🚨 P0 EMERGENCY BYPASS — DISABLE_TUTOR_MEMORY flag (v29 incident response)
     const MEMORY_DISABLED = (Deno.env.get("DISABLE_TUTOR_MEMORY") || "").toLowerCase() === "true";
@@ -287,9 +315,25 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
 
 
+    // ── 3.6 RAG context para enriquecer prompt quando regeneramos ───────────
+    let ragContext = "";
+    if (decision.useRagContext && ragHits.length > 0) {
+      ragContext = "\n\n[CONTEXTO RAG RELEVANTE]\n" +
+        ragHits.map((h, i) => `(${i + 1}) ${h.content.slice(0, 600)}`).join("\n---\n");
+    }
+    if (decision.action === "regenerate_and_compare") {
+      console.log("[MEMORY_AB_REGEN_PROCEED]", { memoryId: decision.memoryId });
+    }
+
+    // Determine Cost Tier for AI Routing
+    let costTier: "LOW_COST" | "NORMAL" | "PREMIUM" = "NORMAL";
+    if (recoveryMode || masteryLevel === "EXPERT") costTier = "PREMIUM";
+    if (studentIntent === "doubt" && userQuestion.length < 50) costTier = "LOW_COST";
+
     const aiConfig: any = {
       taskType: "tutor_deep",
       complexity: "alta",
+      costTier,
       userId,
       stream: false, // Force JSON for structured orchestration
       response_format: { type: "json_object" },
@@ -323,6 +367,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula") }
       ]
     };
+
 
     console.log("[TUTOR_RUNAI_START]", { topic, qLen: userQuestion.length, action: decision.action });
     waitUntil(bumpMetric(supabaseAdmin, "openai_calls"));
