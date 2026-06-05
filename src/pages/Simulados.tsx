@@ -185,10 +185,11 @@ async function generateBatch(
   includeWeakThemes?: boolean,
   includePreviousErrors?: boolean,
   mode: SimuladoMode = "estudo",
-  avoidIds?: string[]
-): Promise<{ questions: SimQuestion[]; sessionId: string | null }> {
-  // [QUESTION_GEN_START]
-  console.log("[QUESTION_GEN_START] Config:", { topics, count, difficulty, examBoard, mode });
+  avoidIds?: string[],
+  selectedSubtopics: string[] = []
+): Promise<{ questions: SimQuestion[]; sessionId: string | null; insufficientQuestions?: boolean; message?: string }> {
+  // [SIM_UI_FILTERS_SUBMITTED]
+  console.log("[SIM_UI_FILTERS_SUBMITTED] Config:", { topics, count, difficulty, examBoard, mode, selectedSubtopics });
   const startedAt = performance.now();
 
   try {
@@ -200,6 +201,7 @@ async function generateBatch(
           difficulty,
           specialty: topics[0] || "Clínica Médica",
           topics,
+          selectedSubtopics,
           targetExam: examBoard,
           mode,
           avoidIds,
@@ -250,7 +252,12 @@ async function generateBatch(
 
     // [QUESTION_GEN_FINAL_OK]
     console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount} (${durationMs}ms)`);
-    return { questions: mapQuestions(data.questions || [], topics), sessionId: data.session_id || null };
+    return { 
+      questions: mapQuestions(data.questions || [], topics), 
+      sessionId: data.session_id || null,
+      insufficientQuestions: data.insufficientQuestions,
+      message: data.message
+    };
 
   } catch (e) {
     const durationMs = Math.round(performance.now() - startedAt);
@@ -325,6 +332,7 @@ const Simulados = () => {
   const e2eCorrelationIdRef = useRef<string | null>(null);
   const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
   const triParamsRef = useRef<TRIParams[]>([]);
+  const [partialMessage, setPartialMessage] = useState<string | null>(null);
   
   // New state for Configuration Step
   const [showConfigStep, setShowConfigStep] = useState(false);
@@ -431,7 +439,9 @@ const Simulados = () => {
     timePerQuestion?: number; 
     mode: SimuladoMode; 
       specificTopic?: string; 
+      selectedSubtopics?: string[];
       examBoard?: string; 
+
       realExamProfile?: string; 
       imagePercent?: number; 
       dynamicDistribution?: ExamDistributionTree; 
@@ -577,9 +587,6 @@ const Simulados = () => {
           setLoadingPercent(90);
           setLoadingProgress("Finalizando ambiente...");
 
-          // O mapQuestions atual espera o formato SimQuestion do Simulados.tsx
-          // mas as questões do adaptive já vêm estruturadas.
-          // Vamos garantir compatibilidade.
           const adaptiveQs = (data.questions || []).map((q: any) => ({
             statement: q.statement || q.content || "",
             options: q.options || [],
@@ -591,6 +598,13 @@ const Simulados = () => {
 
           if (adaptiveQs.length === 0) {
             throw new Error("Nenhuma questão foi gerada. Tente novamente.");
+          }
+
+          if (data.insufficientQuestions) {
+            setQuestions(adaptiveQs);
+            setPartialMessage(data.message || `Encontramos apenas ${adaptiveQs.length} questões para os filtros selecionados.`);
+            setPhase("partial");
+            return;
           }
 
           setLoadingPercent(100);
@@ -727,9 +741,25 @@ const Simulados = () => {
               config.includeWeakThemes,
               config.includePreviousErrors,
               config.mode || "estudo",
-              avoidIds
+              avoidIds,
+              (config as any).selectedSubtopics || []
             );
-            batchData = { success: true, questions: batchQs.questions, session_id: batchQs.sessionId };
+            batchData = { 
+              success: true, 
+              questions: batchQs.questions, 
+              session_id: batchQs.sessionId,
+              insufficientQuestions: batchQs.insufficientQuestions,
+              message: batchQs.message
+            };
+
+            if (batchQs.insufficientQuestions) {
+              toast({
+                title: "Banco insuficiente",
+                description: batchQs.message || `Encontramos apenas ${batchQs.questions.length} questões para os filtros selecionados.`,
+                variant: "default"
+              });
+            }
+
             console.log("[MONTAR_BANCO_QUESTION_FETCH_SUCCESS]", {
               user_id: user?.id ?? null,
               batch: batchNum,
@@ -924,6 +954,13 @@ const Simulados = () => {
       
       if (allGenerated.length === 0) {
         throw new Error("Nenhuma questão foi carregada do banco de questões.");
+      }
+
+      if (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
+        setQuestions(allGenerated);
+        setPartialMessage(`Encontramos apenas ${allGenerated.length} questões para os filtros selecionados.`);
+        setPhase("partial");
+        return;
       }
 
       if (isMontarBancoFlow) {
@@ -1465,6 +1502,47 @@ const Simulados = () => {
                 Cancelar e Voltar
               </Button>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === "partial") {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative z-10 p-4">
+        <EnaflixBackgroundFX intensity="intense" />
+        <div className="glass-card w-full max-w-md p-8 text-center space-y-6 animate-in zoom-in-95 duration-300">
+          <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-500/50">
+            <Info className="h-8 w-8 text-amber-500" />
+          </div>
+          <h2 className="text-xl font-black uppercase tracking-widest text-white">Banco Insuficiente</h2>
+          <p className="text-muted-foreground text-sm">
+            {partialMessage || "Não encontramos questões suficientes para os filtros selecionados."}
+            <br />
+            Nenhuma questão fora do tema foi adicionada para garantir a integridade do seu estudo.
+          </p>
+          
+          <div className="flex flex-col gap-3 pt-4">
+            <Button 
+              onClick={() => {
+                startExamWithQuestions(questions, configRef.current);
+              }}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[11px] h-12"
+            >
+              <Play className="h-4 w-4 mr-2" /> Iniciar com {questions.length} questões
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setPhase("setup");
+                setShowConfigStep(false);
+              }}
+              className="bg-white/5 border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[11px] h-12"
+            >
+              Escolher outros tópicos
+            </Button>
           </div>
         </div>
       </div>

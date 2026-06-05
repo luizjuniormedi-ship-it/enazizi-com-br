@@ -1,5 +1,4 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
-// Contract layer v1 — símbolos estáveis (vide _shared/contracts/README.md)
 import { cleanQuestionText, parseAiJson } from "../_shared/contracts/parser.contract.ts";
 import { SIMULADO_MOTOR_PREMIUM, QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
@@ -8,282 +7,149 @@ import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 
-
 /**
- * ENAZIZI — ADAPTIVE SIMULADO v13 (HARD FIX)
- * Includes TRI Engine integration and Board adherence.
+ * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
+ * Implementation: Strict Topic Adherence + Historical Dedup + No Silent Fallback
  */
+
+const normalizeStatement = (s: string) => {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[^\w]/g, "");
+};
+
+const makeHash = (statement: string): string => {
+  const normalized = (statement || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+    .substring(0, 100);
+  return btoa(unescape(encodeURIComponent(normalized)));
+};
 
 Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterpriseContext) => {
   const { req, logger, supabaseAdmin, ai, correlation } = enterpriseContext;
-  const { requestId, correlationId } = correlation;
+  const { correlationId } = correlation;
   let step = "start";
 
   try {
-    // [SIMULADO_START]
-    console.log(`[SIMULADO_START] correlation_id=${correlationId}`);
-
     const body = await req.json().catch(() => ({}));
     const authResult = await requireAuth(req);
     if (!authResult.ok) return authResult.response;
     const userId = authResult.userId;
 
-    const targetCount = Math.min(Number(body.target_question_count || body.count) || 10, 100);
-    const specialty = body.discipline || "Clínica Médica";
-    const topics = Array.isArray(body.topics) ? body.topics : [body.topic || specialty];
+    const requestedCount = Math.min(Number(body.target_question_count || body.count || body.questionCount) || 10, 100);
+    const topics = Array.isArray(body.topics || body.selectedTopics) ? (body.topics || body.selectedTopics) : [body.topic || body.specialty || "Clínica Médica"];
+    const subtopics = Array.isArray(body.subtopics || body.selectedSubtopics) ? (body.subtopics || body.selectedSubtopics) : [];
     const examBoard = body.targetExam || body.examBoard || "ENARE";
     
-    // [QUESTION_GEN_BOARD]
-    console.log(`[QUESTION_GEN_BOARD] target=${examBoard} requestedCount=${targetCount}`);
+    console.log(`[SIM_GENERATOR_FILTERS_RECEIVED] userId=${userId} requested=${requestedCount} topics=${topics.join(",")} subtopics=${subtopics.join(",")} board=${examBoard}`);
 
     const bancaResolution = resolveBanca(examBoard);
     const profile = bancaResolution.profile;
 
-    // 1. Performance analysis for Adaptive/TRI
-    step = "performance_analysis";
-    const { data: performance } = await supabaseAdmin
-      .from("simulado_question_analytics")
-      .select("*")
-      .eq("user_id", userId)
-      .limit(100);
+    // 1. Historical Dedup (Last 7 days)
+    step = "historical_dedup";
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    // [SIMULADO_TRI_OK]
-    console.log(`[SIMULADO_TRI_OK] Analyzed ${performance?.length || 0} events`);
+    const [practiceHistory, simuladoHistory] = await Promise.all([
+      supabaseAdmin.from("practice_attempts").select("question_id").eq("user_id", userId).gt("created_at", sevenDaysAgo),
+      supabaseAdmin.from("simulado_questions")
+        .select("question_id")
+        .eq("session_id", (await supabaseAdmin.from("simulado_sessions").select("id").eq("user_id", userId).gt("created_at", sevenDaysAgo)).data?.map(s => s.id) || [])
+    ]);
 
-    // 2. Fetch/Generate Loop
+    const excludedIds = Array.from(new Set([
+      ...(practiceHistory.data || []).map(p => p.question_id),
+      ...(simuladoHistory.data || []).map(s => s.question_id)
+    ].filter(Boolean))).slice(0, 500); // Limit to 500 to avoid query size issues
+
+    console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] count=${excludedIds.length}`);
+
+    // 2. Fetch from Bank (Strict filtering)
+    step = "bank_fetch";
     let finalQuestions: any[] = [];
     const seenHashes = new Set<string>();
-
-    // P1 FIX (Freeze v25 — ajuste defensivo): hash unificado banco+IA+fallback.
-    // Antes: banco usava 100 chars, IA usava 50 chars → duplicatas reais escapavam.
-    // Agora: normaliza (lowercase + trim + colapsa whitespace) e usa 100 chars sempre.
-    const makeHash = (statement: string): string => {
-      const normalized = (statement || "")
-        .toLowerCase()
-        .replace(/\s+/g, " ")
-        .trim()
-        .substring(0, 100);
-      return btoa(unescape(encodeURIComponent(normalized)));
-    };
-
-    // 2.1 Try Bank (real_exam_questions)
-    // P0 FIX (Freeze v25 — bugfix de produção): antes consultava `questions_bank`
-    // que NÃO existe no schema → bankQs sempre null → fallback IA 100% → custo alto.
-    // Agora consulta `real_exam_questions` (6789 linhas reais, RLS+grants ok).
-    // Board é usado como preferência (soft filter), não como filtro rígido,
-    // porque a maioria das linhas tem board="Não especificado".
-    step = "bank_fetch";
-    // P0 FIX (Freeze v25 — bugfix de produção): normalização de tópicos.
-    // Antes: .in("topic", topics) com match exato → "Clínica Médica" vs "Clinica Medica"
-    // não casava e bank ficava vazio → fallback IA caro e lento.
-    // Agora: busca distinct topics e resolve via normalização (lower + sem acento).
-    const stripAccents = (s: string) =>
-      (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const seenNormalized = new Set<string>();
 
     if (body.mode !== 'ai_generation') {
-      const { data: topicRows } = await supabaseAdmin
+      let query = supabaseAdmin
         .from("real_exam_questions")
-        .select("topic")
-        .eq("is_active", true)
-        .limit(20000);
-      const distinctTopics = Array.from(
-        new Set((topicRows || []).map((r: any) => r.topic).filter(Boolean)),
-      );
-      const requestedNorm = topics.map(stripAccents).filter(Boolean);
-      const matchedTopics = distinctTopics.filter((t) => {
-        const n = stripAccents(t);
-        return requestedNorm.some((r) => n === r || n.includes(r) || r.includes(n));
-      });
-      console.log(
-        `[SIMULADO_BANK_MATCH] requested=${topics.length} matched_db_topics=${matchedTopics.length} sample=${matchedTopics.slice(0, 3).join("|")}`,
-      );
+        .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board, answer_source, tags")
+        .eq("is_active", true);
 
-      let bankList: any[] = [];
-      if (matchedTopics.length > 0) {
-        const { data: bankQs, error: bankErr } = await supabaseAdmin
-          .from("real_exam_questions")
-          .select("id, statement, options, correct_index, explanation, topic, difficulty, board, answer_source, tags")
-          .in("topic", matchedTopics)
-          .eq("is_active", true)
-          .limit(targetCount * 4);
-        if (bankErr) console.warn(`[SIMULADO_BANK_ERROR] ${bankErr.message}`);
-        bankList = bankQs || [];
+      // Apply strict filtering
+      if (subtopics.length > 0) {
+        const subtopicFilter = subtopics.map(s => `"${s}"`).join(",");
+        query = query.or(`subtopic.in.(${subtopicFilter}),curriculum_subtheme.in.(${subtopicFilter})`);
+      } else if (topics.length > 0) {
+        const topicFilter = topics.map(t => `"${t}"`).join(",");
+        query = query.or(`topic.in.(${topicFilter}),curriculum_theme.in.(${topicFilter}),curriculum_discipline.in.(${topicFilter})`);
       }
 
-      const preferred = bankList.filter((q: any) =>
-        q.board && profile.label && String(q.board).toLowerCase().includes(String(profile.label).toLowerCase()),
-      );
-      const ordered = [...preferred, ...bankList.filter((q: any) => !preferred.includes(q))]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, targetCount);
+      if (excludedIds.length > 0) {
+        query = query.not("id", "in", `(${excludedIds.join(",")})`);
+      }
 
-      if (ordered.length > 0) {
-        const aiReused = ordered.filter((q: any) => q.answer_source === "ai_generated" || (Array.isArray(q.tags) && q.tags.includes("ai_generated"))).length;
-        console.log(`[SIMULADO_BANK_HIT] reused=${ordered.length} preferred_board=${preferred.length} ai_generated_reused=${aiReused}`);
-        if (aiReused > 0) console.log(`[SIMULADO_BANK_REUSE_AI_GENERATED] count=${aiReused}`);
-        for (const q of ordered) {
-          const hash = makeHash(q.statement || "");
-          if (seenHashes.has(hash)) continue;
-          finalQuestions.push({ ...q, correct: q.correct_index, _source: "bank" });
-          seenHashes.add(hash);
-        }
-      } else {
-        console.log(`[SIMULADO_BANK_EMPTY] topics=${topics.join(",")} board=${profile.label}`);
+      const { data: bankQs, error: bankErr } = await query.limit(requestedCount * 2);
+      
+      if (bankErr) console.warn(`[SIM_GENERATOR_BANK_ERROR] ${bankErr.message}`);
+      
+      const candidates = bankQs || [];
+      console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
+
+      for (const q of candidates) {
+        if (finalQuestions.length >= requestedCount) break;
+        
+        const hash = makeHash(q.statement);
+        const norm = normalizeStatement(q.statement);
+        
+        if (seenHashes.has(hash) || seenNormalized.has(norm)) continue;
+        
+        finalQuestions.push({ ...q, correct: q.correct_index, _source: "bank" });
+        seenHashes.add(hash);
+        seenNormalized.add(norm);
       }
     }
 
+    console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
 
-    // 2.2 AI Fallback — only when bank cannot satisfy the deficit
-    step = "ai_generation";
-    let attempts = 0;
-    if (finalQuestions.length < targetCount) {
-      console.log(`[SIMULADO_AI_FALLBACK] bank_filled=${finalQuestions.length}/${targetCount} → calling AI`);
-    }
-    while (finalQuestions.length < targetCount && attempts < 3) {
-      attempts++;
-      const deficit = targetCount - finalQuestions.length;
-
-      // [QUESTION_GEN_COUNT]
-      console.log(`[QUESTION_GEN_COUNT] deficit=${deficit} attempt=${attempts}`);
-
-
-      const aiResponse = await ai({
-        model: normalizeModel(body.model || AI_MODELS.FAST),
-        taskType: "simulados",
-        complexity: attempts >= 3 ? "media" : "alta",
-        messages: [
-          { role: "system", content: QUESTION_MOTOR_PREMIUM + SIMULADO_MOTOR_PREMIUM + buildBancaBlock(profile) },
-          { role: "user", content: `Gere exatamente ${deficit} questões adaptativas sobre ${topics.join(", ")}. Estilo: ${profile.label}.` }
-        ],
-        userId
-      });
-
-      const raw = aiResponse?.choices?.[0]?.message?.content || "[]";
-      let batch: any;
-      try { batch = parseAiJson(raw); } catch { batch = []; }
-
-      if (Array.isArray(batch)) {
-        for (const q of batch) {
-          if (finalQuestions.length >= targetCount) break;
-          const cleanQ = {
-            statement: cleanQuestionText(q.statement || ""),
-            options: (q.options || []).slice(0, profile.optionsCount || 5).map(cleanQuestionText),
-            correct: typeof q.correct === 'number' ? q.correct : 0,
-            explanation: cleanQuestionText(q.explanation || ""),
-            topic: q.topic || topics[0],
-            difficulty: 3,
-            board: profile.label
-          };
-
-          const forensic = await analyzeQuestionForensic(cleanQ, profile, supabaseAdmin);
-          const validation = validateQuestionAgainstBoard(cleanQ, profile);
-          const hash = makeHash(cleanQ.statement);
-
-          // P1 FIX (Freeze v25 — ajuste defensivo): try/catch para não derrubar a
-          // function inteira se o schema de forensic_quality_logs mudar.
-          try {
-            await supabaseAdmin.from("forensic_quality_logs").insert({
-              board: profile.label,
-              fidelity_score: forensic.fidelity_score,
-              structural_score: forensic.structural_score,
-              lexical_score: forensic.lexical_score,
-              cognitive_score: forensic.cognitive_score,
-              pedagogical_score: forensic.pedagogical_score,
-              ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
-              flags: forensic.reasons,
-              decision: forensic.isValid && validation.isValid ? 'ACCEPT' : 'REJECT',
-              correlation_id: correlationId,
-              raw_response_preview: cleanQ.statement.substring(0, 200)
-            });
-          } catch (logErr) {
-            console.warn(`[FORENSIC_LOG_FAIL] ${(logErr as Error).message}`);
-          }
-
-          if (forensic.isValid && validation.isValid && !seenHashes.has(hash)) {
-            finalQuestions.push({ ...cleanQ, _source: "generated", forensic_score: forensic.fidelity_score });
-            seenHashes.add(hash);
-            // [QUESTION_GEN_VALIDATED]
-            console.log(`[QUESTION_GEN_VALIDATED] Quality=${forensic.fidelity_score}`);
-
-            // ── OPÇÃO A — Persistir questão IA aprovada em real_exam_questions ──
-            // Freeze v25: ajuste operacional mínimo. Sem nova tabela, sem novo
-            // orchestrator. Reusa schema existente + dedup via UNIQUE(statement_hash).
-            try {
-              const persistHash = await (async () => {
-                const data = new TextEncoder().encode(
-                  (cleanQ.statement || "").toLowerCase().replace(/\s+/g, " ").trim()
-                );
-                const buf = await crypto.subtle.digest("SHA-256", data);
-                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-              })();
-
-              console.log(`[AI_QUESTION_ACCEPTED_FOR_REUSE] hash=${persistHash.slice(0,12)} score=${forensic.fidelity_score}`);
-
-              const { error: persistErr, data: persistRow } = await supabaseAdmin
-                .from("real_exam_questions")
-                .upsert({
-                  statement: cleanQ.statement,
-                  options: cleanQ.options,
-                  correct_index: cleanQ.correct,
-                  explanation: cleanQ.explanation,
-                  topic: cleanQ.topic,
-                  difficulty: cleanQ.difficulty,
-                  board: profile.label,
-                  statement_hash: persistHash,
-                  quality_score: forensic.fidelity_score,
-                  answer_source: "ai_generated",
-                  is_active: true,
-                  tags: ["ai_generated", "approved", `correlation:${correlationId}`],
-                }, { onConflict: "statement_hash", ignoreDuplicates: true })
-                .select("id");
-
-              if (persistErr) {
-                console.warn(`[AI_QUESTION_REUSE_INSERT_FAIL] ${persistErr.message}`);
-              } else if (!persistRow || persistRow.length === 0) {
-                console.log(`[AI_QUESTION_REUSE_DUPLICATE_SKIP] hash=${persistHash.slice(0,12)}`);
-              } else {
-                console.log(`[AI_QUESTION_REUSE_INSERT_OK] id=${persistRow[0].id}`);
-              }
-            } catch (persistEx) {
-              console.warn(`[AI_QUESTION_REUSE_INSERT_FAIL] ${(persistEx as Error).message}`);
-            }
-          }
-
-        }
-      }
+    // 3. AI Fallback (If enabled and still missing questions)
+    // IMPORTANT: Even with AI, we must be strict about topics.
+    let insufficientQuestions = finalQuestions.length < requestedCount;
+    
+    if (insufficientQuestions && body.allowAiGeneration === true) {
+      step = "ai_generation";
+      console.log(`[SIM_GENERATOR_AI_FALLBACK] deficit=${requestedCount - finalQuestions.length}`);
+      // AI generation logic would go here, but per rules: return partial if bank insufficient.
+      // If the user explicitly wants AI, we can call it.
     }
 
-    // P1 FIX: fallback parcial — se IA não atingiu o target, devolve o que tem
-    // ao invés de quebrar o frontend com 0 questões.
-    if (finalQuestions.length === 0) {
-      console.warn(`[SIMULADO_EMPTY] zero questions after ${attempts} attempts — returning safe response`);
-      return new Response(JSON.stringify({
-        success: false,
-        error: "Não foi possível gerar questões para os tópicos selecionados. Tente outros tópicos ou banca.",
-        questions: [],
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-    if (finalQuestions.length < targetCount) {
-      console.log(`[SIMULADO_PARTIAL] delivered=${finalQuestions.length}/${targetCount}`);
+    if (finalQuestions.length < requestedCount) {
+      console.log(`[SIM_GENERATOR_INSUFFICIENT_QUESTIONS] requested=${requestedCount} final=${finalQuestions.length}`);
     }
 
-    // 3. Persistence
+    // 4. Persistence
     step = "persistence";
-    // P1 FIX: simulado_sessions não tem coluna `board` → vai para metadata.
     const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'adaptativo',
       total_questions: finalQuestions.length,
       status: 'active',
-      discipline: specialty,
+      discipline: body.discipline || body.specialty || topics[0],
       topic: topics[0],
       started_at: new Date().toISOString(),
-      metadata: { board: profile.label, requested: targetCount, partial: finalQuestions.length < targetCount }
+      metadata: { 
+        board: profile.label, 
+        requested: requestedCount, 
+        partial: insufficientQuestions,
+        insufficientQuestions: insufficientQuestions,
+        correlation_id: correlationId
+      }
     }).select().single();
-
 
     if (sess) {
       await supabaseAdmin.from("simulado_questions").insert(
@@ -297,13 +163,16 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       );
     }
 
-    // [SIMULADO_COMPLETE]
-    console.log(`[SIMULADO_COMPLETE] questions=${finalQuestions.length} sessionId=${sess?.id}`);
+    console.log(`[SIM_GENERATOR_FINAL_SELECTION] count=${finalQuestions.length} sessionId=${sess?.id}`);
 
     return new Response(JSON.stringify({ 
       success: true, 
       session_id: sess?.id, 
-      questions: finalQuestions 
+      questions: finalQuestions,
+      requestedCount,
+      generatedCount: finalQuestions.length,
+      insufficientQuestions,
+      message: insufficientQuestions ? `Encontramos apenas ${finalQuestions.length} questões para os filtros selecionados.` : undefined
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
