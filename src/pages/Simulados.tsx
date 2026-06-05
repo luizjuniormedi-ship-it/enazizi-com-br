@@ -1493,7 +1493,7 @@ const Simulados = () => {
   if (phase === "partial") {
     return (
       <div className="min-h-screen flex items-center justify-center relative z-10 p-4">
-        <EnaflixBackgroundFX intensity="high" />
+        <EnaflixBackgroundFX intensity="intense" />
         <div className="glass-card w-full max-w-md p-8 text-center space-y-6 animate-in zoom-in-95 duration-300">
           <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-500/50">
             <Info className="h-8 w-8 text-amber-500" />
