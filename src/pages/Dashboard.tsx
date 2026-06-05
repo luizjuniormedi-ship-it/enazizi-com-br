@@ -34,6 +34,7 @@ const DailyPlanWidget = lazy(() => import("@/components/dashboard/DailyPlanWidge
 const DashboardMetricsGrid = lazy(() => import("@/components/dashboard/DashboardMetricsGrid"));
 const CognitiveValidation = lazy(() => import("@/components/admin/CognitiveValidation").then(m => ({ default: m.CognitiveValidation })));
 const HighImpactThemesCard = lazy(() => import("@/components/dashboard/HighImpactThemesCard"));
+const EnamedMatrixHealth = lazy(() => import("@/components/dashboard/EnamedMatrixHealth"));
 
 import { ApprovalChanceDashboard } from "@/components/dashboard-v2/ApprovalChanceDashboard";
 
@@ -369,6 +370,11 @@ const Dashboard = () => {
             <Suspense fallback={<LocalSectionSkeleton />}>
               <div className="mt-6">
                 <HighImpactThemesCard />
+              </div>
+            </Suspense>
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              <div className="mt-6">
+                <EnamedMatrixHealth />
               </div>
             </Suspense>
           </div>
