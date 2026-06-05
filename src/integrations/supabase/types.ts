@@ -11098,6 +11098,39 @@ export type Database = {
         }
         Relationships: []
       }
+      enamed_evidence_governance: {
+        Row: {
+          confidence_interval: number | null
+          current_value: number
+          drift_rate: number | null
+          id: string
+          last_audit_at: string | null
+          metric_name: string
+          sample_size: number
+          status: string | null
+        }
+        Insert: {
+          confidence_interval?: number | null
+          current_value: number
+          drift_rate?: number | null
+          id?: string
+          last_audit_at?: string | null
+          metric_name: string
+          sample_size?: number
+          status?: string | null
+        }
+        Update: {
+          confidence_interval?: number | null
+          current_value?: number
+          drift_rate?: number | null
+          id?: string
+          last_audit_at?: string | null
+          metric_name?: string
+          sample_size?: number
+          status?: string | null
+        }
+        Relationships: []
+      }
       enamed_evidence_snapshots: {
         Row: {
           accuracy_rate: number | null
@@ -11164,6 +11197,39 @@ export type Database = {
           forecast_score?: number
           id?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      enamed_governance_alerts: {
+        Row: {
+          actual_value: number | null
+          created_at: string | null
+          id: string
+          message: string
+          metric_impacted: string | null
+          resolved: boolean | null
+          severity: string
+          threshold_violated: number | null
+        }
+        Insert: {
+          actual_value?: number | null
+          created_at?: string | null
+          id?: string
+          message: string
+          metric_impacted?: string | null
+          resolved?: boolean | null
+          severity: string
+          threshold_violated?: number | null
+        }
+        Update: {
+          actual_value?: number | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          metric_impacted?: string | null
+          resolved?: boolean | null
+          severity?: string
+          threshold_violated?: number | null
         }
         Relationships: []
       }
@@ -28992,6 +29058,7 @@ export type Database = {
         Returns: string
       }
       reset_enrichment_daily_counter: { Args: never; Returns: undefined }
+      run_evidence_governance_audit: { Args: never; Returns: undefined }
       sample_enriched_questions: {
         Args: { _n?: number }
         Returns: {
