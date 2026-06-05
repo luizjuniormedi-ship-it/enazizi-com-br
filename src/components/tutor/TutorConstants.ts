@@ -63,7 +63,7 @@ export const QUICK_TOPICS = [
   { label: "Meningite", emoji: "🧬", color: "from-violet-500/20 to-violet-600/10 border-violet-500/30" },
 ];
 
-export const FUNCTION_NAME = "chatgpt-agent";
+export const FUNCTION_NAME = "tutor-v3-premium";
 
 export const MEDSTUDY_SEQUENTIAL_APPENDIX = "IMPORTANTE: para não cortar a explicação, divida em tópicos e entregue em blocos atômicos sequenciais (2 a 3 seções por resposta), finalize cada bloco sem truncar frases e pergunte se pode continuar antes do próximo bloco.";
 

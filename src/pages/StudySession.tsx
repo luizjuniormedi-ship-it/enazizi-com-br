@@ -98,7 +98,7 @@ const StudySessionContent = () => {
         topic,
         phase
       }, { 
-        functionName: "mentor-chat",
+        functionName: "tutor-v3-premium",
         stream: false 
       });
       
