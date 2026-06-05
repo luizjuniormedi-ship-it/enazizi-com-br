@@ -133,9 +133,11 @@ export function useAdaptiveSimulado(): UseAdaptiveSimuladoReturn {
     return perf;
   }, []);
 
-  const generateAdaptive = useCallback(async (targetCount = 20) => {
+  const generateAdaptive = useCallback(async (targetCount = 20, topics: string[] = [], subtopics: string[] = []) => {
     setIsLoading(true);
     setError(null);
+
+    console.log("[SIM_UI_FILTERS_SUBMITTED] generateAdaptive", { targetCount, topics, subtopics });
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke(
@@ -144,6 +146,8 @@ export function useAdaptiveSimulado(): UseAdaptiveSimuladoReturn {
           body: {
             target_question_count: targetCount,
             performance: performance || undefined,
+            selectedTopics: topics,
+            selectedSubtopics: subtopics,
           },
         }
       );
@@ -156,7 +160,12 @@ export function useAdaptiveSimulado(): UseAdaptiveSimuladoReturn {
 
       const total = data.questions?.length || 0;
       const generated = data.questions?.filter((q: any) => q._source === "generated").length || 0;
-      toast.success(`${total} questões adaptativas carregadas (${generated} novas via IA)`);
+      
+      if (data.insufficientQuestions) {
+        toast.warning(data.message || `Encontramos apenas ${total} questões para os filtros selecionados.`);
+      } else {
+        toast.success(`${total} questões adaptativas carregadas (${generated} novas via IA)`);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erro desconhecido";
       setError(msg);
