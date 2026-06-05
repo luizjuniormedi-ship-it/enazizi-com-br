@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { TutorBlock } from "@/types/tutor";
 import { Badge } from "@/components/ui/badge";
 import { Zap, Target, TrendingUp, ArrowUpRight } from "lucide-react";
