@@ -247,13 +247,6 @@ async function createRecoveryFlashcard(args: {
       console.error("[RECOVERY_LOOP_INVOKE_EXCEPTION]", err);
     }
 
-
-    if (!fsrsRes.ok) {
-      console.warn("[RECOVERY_LOOP_FLASHCARD_FSRS_FAIL]", {
-        flashcardId: inserted.id,
-        errorId,
-      });
-    }
   } catch (err: any) {
     console.error("[RECOVERY_LOOP_FLASHCARD_EXCEPTION]", {
       errorId,
