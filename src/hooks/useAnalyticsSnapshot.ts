@@ -22,7 +22,7 @@ async function fetchSnapshot(userId: string): Promise<AnalyticsSnapshot> {
   // Parallel fetch from real tables
   const today = new Date().toISOString().slice(0, 10);
 
-  const [approvalRes, planRes, gamRes, revRes] = await Promise.all([
+  const [approvalRes, planRes, gamRes, revRes, forecastRes] = await Promise.all([
     supabase
       .from("approval_scores")
       .select("score, prep_index, chance_score, phase")
@@ -47,6 +47,11 @@ async function fetchSnapshot(userId: string): Promise<AnalyticsSnapshot> {
       .eq("user_id", userId)
       .eq("status", "pendente")
       .lte("data_revisao", today),
+    supabase
+      .from("enamed_approval_forecasts")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle(),
   ]);
 
   return {
@@ -60,6 +65,9 @@ async function fetchSnapshot(userId: string): Promise<AnalyticsSnapshot> {
     recoveryActive: planRes.data?.recovery_mode ?? false,
     contentLocked: planRes.data?.content_lock ?? false,
     phase: approvalRes.data?.phase ?? null,
+    forecast_30_days: forecastRes.data?.forecast_30_days,
+    forecast_60_days: forecastRes.data?.forecast_60_days,
+    forecast_exam_date: forecastRes.data?.forecast_exam_date,
   };
 }
 
