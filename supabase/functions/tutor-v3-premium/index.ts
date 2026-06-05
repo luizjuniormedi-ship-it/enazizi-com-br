@@ -304,10 +304,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           console.warn("[LOG_CACHE_SAVINGS_FAIL]", (e as any)?.message);
         }
 
-        if (sessionId && userId) {
+        if (sessionId && activeUserId) {
           await supabaseAdmin.from("tutor_messages").insert({
             tutor_session_id: sessionId,
-            user_id: userId,
+            user_id: activeUserId,
             role: "assistant",
             content: memoryHit!.answer,
             metadata: {
