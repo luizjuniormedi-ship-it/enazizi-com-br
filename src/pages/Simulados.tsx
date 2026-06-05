@@ -1490,6 +1490,47 @@ const Simulados = () => {
     );
   }
 
+  if (phase === "partial") {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative z-10 p-4">
+        <EnaflixBackgroundFX intensity="high" />
+        <div className="glass-card w-full max-w-md p-8 text-center space-y-6 animate-in zoom-in-95 duration-300">
+          <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-500/50">
+            <Info className="h-8 w-8 text-amber-500" />
+          </div>
+          <h2 className="text-xl font-black uppercase tracking-widest text-white">Banco Insuficiente</h2>
+          <p className="text-muted-foreground text-sm">
+            {partialMessage || "Não encontramos questões suficientes para os filtros selecionados."}
+            <br />
+            Nenhuma questão fora do tema foi adicionada para garantir a integridade do seu estudo.
+          </p>
+          
+          <div className="flex flex-col gap-3 pt-4">
+            <Button 
+              onClick={() => {
+                startExamWithQuestions(questions, configRef.current);
+              }}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest text-[11px] h-12"
+            >
+              <Play className="h-4 w-4 mr-2" /> Iniciar com {questions.length} questões
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setPhase("setup");
+                setShowConfigStep(false);
+              }}
+              className="bg-white/5 border-white/10 hover:bg-white/10 text-white font-black uppercase tracking-widest text-[11px] h-12"
+            >
+              Escolher outros tópicos
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === "finished") {
     return (
       <div className="min-h-screen relative z-10 animate-fade-in pb-24">
