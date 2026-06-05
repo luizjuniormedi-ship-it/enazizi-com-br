@@ -129,6 +129,7 @@ serve(async (req) => {
       timeoutMs: 60000,
     });
 
+
     if (!aiResp.ok) throw new Error("Erro na IA");
 
     const aiData = await aiResp.json();
