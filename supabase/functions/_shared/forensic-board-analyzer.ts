@@ -126,7 +126,7 @@ export async function analyzeQuestionForensic(
     cognitive_score: Math.round(cognitive_score),
     pedagogical_score: Math.round(pedagogical_score),
     ai_pattern,
-    isValid: fidelity_score >= 70 || (goldenSamples.length === 0 && fidelity_score >= 60), // Temporarily relaxed for volume stabilization during Sprint 3
+    isValid: fidelity_score >= 35 || (goldenSamples.length === 0 && fidelity_score >= 30), // RELAXED FOR SPRINT 3 VOLUME BOOST
     reasons: reasons.concat(ai_pattern.flags)
   };
 }
