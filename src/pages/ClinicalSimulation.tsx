@@ -961,7 +961,9 @@ const ClinicalSimulation = () => {
                 statusAlert={statusAlert}
                 abcdeChecklist={abcdeChecklist}
                 categoryScores={categoryScores}
+                differentialDiagnosis={differentialDiagnosis}
                 medicalRecord={medicalRecord}
+
                 medRecordOpen={medRecordOpen}
                 onMedRecordOpenChange={setMedRecordOpen}
               />
