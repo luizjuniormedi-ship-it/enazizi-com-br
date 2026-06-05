@@ -331,7 +331,7 @@ function sanitizeCurriculumImpact(rawPayload: unknown): CurriculumImpactBlock | 
   if (!parsed.success) return null;
   return {
     type: "curriculum_impact",
-    payload: parsed.data,
+    payload: parsed.data as any,
   };
 }
 
