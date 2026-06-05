@@ -134,7 +134,7 @@ export async function callAi(
         // Direct OpenAI if key exists and provider is openai
         if (OPENAI_API_KEY && provider === "openai") {
           // REPAIR: OpenAI doesn't recognize internal ENAZIZI metadata
-          const { taskType, complexity, userId, skipCache, ...standardPayload } = payload;
+          const { taskType, complexity, userId, skipCache, costTier, topic, ...standardPayload } = payload as any;
           
           res = await fetch(OPENAI_API, {
             method: "POST",
@@ -144,7 +144,7 @@ export async function callAi(
           });
         } else {
           // Use Lovable Gateway — strip internal ENAZIZI metadata to avoid 400 from downstream provider
-          const { taskType: _tt, complexity: _cx, userId: _uid, skipCache: _sc, ...gatewayPayload } = payload;
+          const { taskType: _tt, complexity: _cx, userId: _uid, skipCache: _sc, costTier: _ct, topic: _tp, ...gatewayPayload } = payload as any;
           res = await fetch(LOVABLE_GATEWAY, {
             method: "POST",
             headers: { 
