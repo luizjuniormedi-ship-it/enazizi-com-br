@@ -65,9 +65,10 @@ export async function analyzeQuestionForensic(
     structural_score = (stmtRatio * 0.7 + optRatio * 0.3) * 100;
   }
   
-  if (question.options?.length !== (profile.optionsCount || 5)) {
-    structural_score -= 30;
-    reasons.push("Wrong options count");
+  const expectedOptions = profile.optionsCount || 5;
+  if (question.options?.length !== expectedOptions) {
+    structural_score -= 50; // Increased penalty to enforce strict compliance
+    reasons.push(`Wrong options count (expected ${expectedOptions}, got ${question.options?.length})`);
   }
 
   // 3. Lexical Score (Medical Vocabulary density)

@@ -101,7 +101,7 @@ const DEFAULT_PROFILE: BancaProfile = {
   specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 12, "Medicina de Emergência": 8, "Terapia Intensiva": 4, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 1 },
   style: "Questões MCQ com caso clínico padrão residência médica.",
   tutorGuidance: "Explicações completas no padrão de residência médica brasileira.",
-  optionsCount: 4,
+  optionsCount: 5,
   mode: "mcq"
 };
 
