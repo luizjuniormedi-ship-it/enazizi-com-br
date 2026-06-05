@@ -17,6 +17,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    // REPAIR: Fallback automatico para PRO de outro modelo se Gemini 2.5 falhar/402
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY not configured");
     }
@@ -67,7 +68,7 @@ ${questionsList}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-4o-mini", // REPAIR: Trocando Gemini 2.5 (402) por GPT-4o-mini (Estável)
         messages: [
           { role: "system", content: "Você é um especialista em educação médica e classificação de questões de residência." },
           { role: "user", content: prompt }
