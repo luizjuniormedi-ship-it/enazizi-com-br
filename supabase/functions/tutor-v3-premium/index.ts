@@ -390,7 +390,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
             "shouldWaitForStudent": true,
             "actionsContext": {
               "topic": "${topic}",
-              "block": "${nextBlock}"
+              "block": "${activeBlock}"
             }
           }
           
