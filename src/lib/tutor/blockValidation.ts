@@ -27,6 +27,7 @@ import type {
   SemiologyInsightBlock,
   SemiologyManeuver,
   TutorBlock,
+  CurriculumImpactBlock,
 } from "@/types/tutor";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -315,6 +316,25 @@ function sanitizeSemiologyInsight(
   };
 }
 
+// ─── curriculum_impact ───────────────────────────────────────────────────
+
+const CurriculumImpactPayloadSchema = z.object({
+  theme: z.string().max(200),
+  incidence: z.enum(["baixa", "media", "alta"]),
+  impact_score: z.number().min(0).max(10),
+  mastery_level: z.number().min(0).max(1),
+  priority: z.number().min(0).max(100),
+});
+
+function sanitizeCurriculumImpact(rawPayload: unknown): CurriculumImpactBlock | null {
+  const parsed = CurriculumImpactPayloadSchema.safeParse(rawPayload);
+  if (!parsed.success) return null;
+  return {
+    type: "curriculum_impact",
+    payload: parsed.data,
+  };
+}
+
 // ─── public API ─────────────────────────────────────────────────────────────
 
 export type ValidationOutcome =
@@ -382,6 +402,15 @@ export function validateCognitiveBlock(block: unknown): ValidationOutcome {
           ok: false,
           reason: "semiology_insight sem manobras válidas.",
         };
+      return {
+        ok: true,
+        block: out,
+        sanitized: JSON.stringify(out.payload) !== beforeKey,
+      };
+    }
+    case "curriculum_impact": {
+      const out = sanitizeCurriculumImpact(b.payload);
+      if (!out) return { ok: false, reason: "curriculum_impact inválido." };
       return {
         ok: true,
         block: out,
