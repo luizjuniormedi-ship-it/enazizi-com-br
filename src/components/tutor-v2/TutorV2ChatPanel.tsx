@@ -43,17 +43,22 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   // after session creation. Without this the chat panel mounts but never triggers AI,
   // leaving the user stuck on the loading state (same failure pattern as Simulado P0).
   useEffect(() => {
-    if (isLoading) return;
-    if (initialDispatchedRef.current) return;
-    if (!user || !session?.id || !session?.topic) return;
-    if (messages.length > 0) return;
-    if (isTyping) return;
-    initialDispatchedRef.current = true;
-    const kickoff = `Quero estudar: ${session.topic}`;
-    console.log("[TUTOR_INITIAL_MESSAGE_DISPATCH]", { sessionId: session.id, topic: session.topic });
-    handleSendMessage(kickoff);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, messages.length, session?.id, session?.topic, user?.id]);
+    const shouldDispatch = 
+      !isLoading && 
+      !initialDispatchedRef.current && 
+      user && 
+      session?.id && 
+      session?.topic && 
+      messages.length === 0 && 
+      !isTyping;
+
+    if (shouldDispatch) {
+      initialDispatchedRef.current = true;
+      const kickoff = `Quero estudar: ${session.topic}`;
+      console.log("[TUTOR_INITIAL_MESSAGE_DISPATCH] Triggering first message:", { sessionId: session.id, topic: session.topic });
+      handleSendMessage(kickoff);
+    }
+  }, [isLoading, messages.length, session?.id, session?.topic, user?.id, isTyping]);
 
   const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
     if (!text.trim() || isTyping || !user) return;
