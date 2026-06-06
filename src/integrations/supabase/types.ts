@@ -30748,13 +30748,15 @@ export type Database = {
           with_topic_id: number
         }[]
       }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | { Args: { target_role: string }; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_analytics_excluded: { Args: { _user_id: string }; Returns: boolean }
       is_lesson_staff: { Args: { _user_id: string }; Returns: boolean }
@@ -31033,6 +31035,14 @@ export type Database = {
       }
       reset_enrichment_daily_counter: { Args: never; Returns: undefined }
       run_evidence_governance_audit: { Args: never; Returns: undefined }
+      run_security_audit: {
+        Args: never
+        Returns: {
+          description: string
+          issue_type: string
+          location: string
+        }[]
+      }
       sample_enriched_questions: {
         Args: { _n?: number }
         Returns: {
