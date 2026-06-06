@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useExperimentGroup } from "./useExperimentGroup";
+
 
 // All available module keys matching sidebar routes
 export const ALL_MODULES = [
@@ -47,6 +49,8 @@ export const useModuleAccess = () => {
   const { user } = useAuth();
   const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const { isControl, isLoading: experimentLoading } = useExperimentGroup();
+
 
   useEffect(() => {
     if (!user) {
@@ -84,13 +88,22 @@ export const useModuleAccess = () => {
       setLoading(false);
     };
 
-    load();
-  }, [user]);
+    if (!experimentLoading) {
+      load();
+    }
+  }, [user, experimentLoading]);
 
   const isModuleEnabled = (key: string) => {
     if (!user) return false;
+    
+    // Bloqueio do Hospital Virtual para o Grupo Controle do experimento V6.1
+    if ((key === "plantao" || key === "simulacao-clinica") && isControl) {
+      return false;
+    }
+
     return enabledModules.has(key);
   };
+
 
   return { enabledModules, isModuleEnabled, loading };
 };

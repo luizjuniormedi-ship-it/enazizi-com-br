@@ -142,8 +142,10 @@ class TelemetryService {
   private isProcessing = false;
   private processingStartedAt = 0;
   private cachedUserId: string | null = null;
+  private experimentGroup: string | null = null;
   private userPromise: Promise<string | null> | null = null;
   private navStart: number = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
 
   private constructor() {
     this.sessionId = genUUID();
@@ -182,14 +184,27 @@ class TelemetryService {
     try {
       const { data } = await supabase.auth.getUser();
       this.cachedUserId = data.user?.id ?? null;
+      if (this.cachedUserId) {
+        const { data: group } = await supabase.rpc('assign_user_to_v6_experiment', {
+          target_user_id: this.cachedUserId
+        });
+        this.experimentGroup = group as string;
+      }
     } catch {
       this.cachedUserId = null;
     }
-    supabase.auth.onAuthStateChange((_evt, session) => {
+    supabase.auth.onAuthStateChange(async (_evt, session) => {
       this.cachedUserId = session?.user?.id ?? null;
-      if (this.cachedUserId) this.flush();
+      if (this.cachedUserId) {
+        const { data: group } = await supabase.rpc('assign_user_to_v6_experiment', {
+          target_user_id: this.cachedUserId
+        });
+        this.experimentGroup = group as string;
+        this.flush();
+      }
     });
   }
+
 
   private async ensureUser(): Promise<string | null> {
     if (this.cachedUserId) return this.cachedUserId;
@@ -324,7 +339,9 @@ class TelemetryService {
           ...properties,
           time_to_first_action: properties.time_to_first_action ?? Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - this.navStart),
           time_to_first_block: properties.time_to_first_block ?? null,
+          experiment_group: this.experimentGroup || 'none',
         },
+
         route: properties.route ?? (typeof window !== 'undefined' ? window.location.pathname : null),
         device_type: this.getDeviceType(),
         screen_size: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : null,

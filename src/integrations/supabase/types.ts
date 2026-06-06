@@ -30014,6 +30014,10 @@ export type Database = {
         Returns: undefined
       }
       archive_telemetry_events: { Args: never; Returns: undefined }
+      assign_user_to_v6_experiment: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
       calculate_blueprint_health: {
         Args: { p_exam_key: string }
         Returns: number
