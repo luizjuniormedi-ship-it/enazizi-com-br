@@ -1,9 +1,11 @@
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useCoreData } from "./useCoreData";
 import { useApprovalPrediction } from "./useApprovalPrediction";
 import { calculateLearningScienceSnapshot } from "@/engines/learningScienceEngine";
 import { LearningScienceSnapshot } from "@/types/learningScience";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
+
 
 export function useLearningScience(): LearningScienceSnapshot | null {
   const { data: core } = useCoreData();
