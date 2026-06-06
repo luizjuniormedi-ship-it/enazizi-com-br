@@ -305,11 +305,22 @@ const Analytics = () => {
         subtitle="Seu desempenho real, traduzido em mapas mentais, tendências e radares — para decisões cirúrgicas no seu estudo."
         actions={
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="hidden md:flex gap-2 border-primary/20 hover:bg-primary/5 text-primary"
+              onClick={() => window.location.href = "/dashboard/learning-science"}
+            >
+              <Beaker className="h-4 w-4" />
+              Learning Science Center
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-9 w-9"><MoreVertical className="h-4 w-4" /></Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => window.location.href = "/dashboard/learning-science"}>
+                  <Beaker className="h-4 w-4 mr-2" /> Learning Science Center
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild><div><PerformanceReport /></div></DropdownMenuItem>
                 <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => window.open("https://docs.enazizi.com", "_blank")}>
@@ -319,6 +330,7 @@ const Analytics = () => {
             </DropdownMenu>
           </div>
         }
+
         media={
           <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
             <BarChart3 className="h-10 w-10 text-module" />
