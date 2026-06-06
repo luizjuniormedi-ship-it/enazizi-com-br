@@ -165,6 +165,9 @@ export const ScientificAuditDashboard: React.FC = () => {
           <TabsTrigger value="pedagogical" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Comparativo Pedagógico
           </TabsTrigger>
+          <TabsTrigger value="outcome-science" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
+            Outcome Science
+          </TabsTrigger>
           <TabsTrigger value="protocol" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Protocolo V6.1
           </TabsTrigger>
