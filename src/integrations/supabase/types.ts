@@ -29069,6 +29069,18 @@ export type Database = {
       }
     }
     Views: {
+      audit_domain_consistency: {
+        Row: {
+          actual_correct: number | null
+          actual_total: number | null
+          diff_total: number | null
+          especialidade: string | null
+          mapped_correct: number | null
+          mapped_total: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       cme_session_aggregation_summary: {
         Row: {
           aggregation_status:
@@ -30097,6 +30109,10 @@ export type Database = {
       detect_readiness_drift: {
         Args: { p_new_score: number; p_user_id: string }
         Returns: string
+      }
+      diagnose_pedagogical_integrity: {
+        Args: { p_user_id: string }
+        Returns: Json
       }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
