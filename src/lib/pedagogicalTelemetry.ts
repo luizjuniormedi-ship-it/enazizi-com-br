@@ -135,7 +135,14 @@ export type TelemetryEventName =
   | 'ls_knowledge_decay_calculated'
   | 'ls_risk_index_updated'
   | 'ls_tutor_impact_updated'
-  | 'ls_feature_attribution_updated';
+  | 'ls_feature_attribution_updated'
+  | 'ls_real_result_imported'
+  | 'ls_real_result_validated'
+  | 'ls_outcome_confirmed'
+  | 'ls_readiness_correlation_updated'
+  | 'ls_forecast_calibrated'
+  | 'ls_approval_validated'
+  | 'ls_evidence_health_updated';
 
 
 
