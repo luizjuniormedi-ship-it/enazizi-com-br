@@ -85,13 +85,19 @@ export const HospitalVirtualV5: React.FC = () => {
         ];
       }
 
-      return clocks.map(c => ({
-        label: `${c.clock_type} (Meta: ${c.target_minutes}min)`,
-        value: c.current_minutes,
-        target: c.target_minutes,
-        unit: 'min',
-        success: c.current_minutes <= c.target_minutes
-      }));
+      return clocks.map(c => {
+        const started = c.started_at ? new Date(c.started_at).getTime() : Date.now();
+        const now = Date.now();
+        const elapsedMinutes = Math.floor((now - started) / (1000 * 60));
+        
+        return {
+          label: `${c.event_type} (Meta: ${c.target_minutes}min)`,
+          value: elapsedMinutes,
+          target: c.target_minutes,
+          unit: 'min',
+          success: elapsedMinutes <= c.target_minutes
+        };
+      });
     }
   });
 
