@@ -861,6 +861,21 @@ const ClinicalSimulation = () => {
           dificuldade: difficulty === "avançado" ? 5 : difficulty === "intermediário" ? 3 : 1,
         });
       }
+      
+      // Shadow Examiner V6 Trigger
+      try {
+        await supabase.functions.invoke('shadow-examiner', {
+          body: {
+            simulation_id: cs.correlationId,
+            simulation_history: conversationHistory,
+            action_timeline: actionTimeline,
+            scores_snapshot: categoryScores
+          }
+        });
+      } catch (err) {
+        console.error("Shadow Examiner error:", err);
+      }
+
     } catch (e) {
       try { cs.track("plantao_error", csExtras({ where: "finish", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
