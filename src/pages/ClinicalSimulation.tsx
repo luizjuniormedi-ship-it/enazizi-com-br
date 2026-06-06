@@ -38,6 +38,8 @@ import LobbyPanel from "@/components/clinical-simulation/LobbyPanel";
 import HistoryDetailDialog from "@/components/clinical-simulation/HistoryDetailDialog";
 import ResultPanel, { type FinalEval } from "@/components/clinical-simulation/ResultPanel";
 import SidePanel, { ABCDE_STEPS, type CategoryScores } from "@/components/clinical-simulation/SidePanel";
+import ShadowExaminerPanel from "@/components/clinical-simulation/ShadowExaminerPanel";
+
 import QuickActionsBar from "@/components/clinical-simulation/QuickActionsBar";
 import MessageList from "@/components/clinical-simulation/MessageList";
 import type { ChatMessage, ManeuverPerformed } from "@/components/clinical-simulation/MessageBubble";
