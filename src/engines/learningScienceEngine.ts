@@ -145,8 +145,28 @@ export function calculateLearningScienceSnapshot(
       "[RECOVERY_IMPACT_VALIDATED]",
       "[FEATURE_ATTRIBUTION_UPDATED]",
       "[EVIDENCE_HEALTH_UPDATED]",
-      "[OUTCOME_CONFIRMED]"
-    ]
+      "[OUTCOME_CONFIRMED]",
+      "[PUBLICATION_DATASET_CREATED]",
+      "[CAUSALITY_CONFIDENCE_UPDATED]",
+      "[INSTITUTIONAL_DASHBOARD_REFRESHED]"
+    ],
+    causality: {
+      confidence: 0.92,
+      tier: 'Validated Impact',
+      stabilityIndex: 0.88,
+      effectSize: 0.58
+    },
+    institutional: {
+      institutionName: "Universidade Federal de Medicina",
+      totalStudents: 450,
+      avgReadiness: 68,
+      approvalRate: 72,
+      evidenceScore: 91,
+      cohorts: [
+        { name: "ALPHA_2026", readiness: 72, velocity: 4.2, approvalRate: 78, retention: 88, dropoutRisk: 5 },
+        { name: "ENAMED_2026", readiness: 65, velocity: 3.8, approvalRate: 68, retention: 92, dropoutRisk: 8 }
+      ]
+    }
   };
 }
 
