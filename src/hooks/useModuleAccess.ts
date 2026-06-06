@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useExperimentGroup } from "./useExperimentGroup";
+
 
 // All available module keys matching sidebar routes
 export const ALL_MODULES = [
