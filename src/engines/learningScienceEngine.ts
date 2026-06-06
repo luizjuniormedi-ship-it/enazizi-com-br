@@ -122,7 +122,7 @@ export function calculateLearningScienceSnapshot(
     },
     tutorImpact: {
       userTutorReadiness: currentScore,
-      nonUserTutorReadiness: historicalData.nonUserTutorReadiness,
+      nonUserTutorReadiness: historicalData.nonTutorGroupAvgReadiness,
       improvementDelta,
       recoverySuccessRate: historicalData.recoverySuccessRate,
       masteryTimeReduction: hasEnoughData ? 18 : 0
