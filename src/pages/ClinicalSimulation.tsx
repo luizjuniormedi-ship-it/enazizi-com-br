@@ -1030,6 +1030,32 @@ const ClinicalSimulation = () => {
             <HospitalManagementDashboard sessionId={cs.correlationId} />
           </div>
 
+          {/* Multi-Patient Overload View (V5.9+) */}
+          {showMultiPatientView && (
+            <div className="px-4 py-2 bg-black/20 border-b border-white/5">
+              <MultiPatientGrid 
+                patients={activePatients} 
+                activePatientId={null} 
+                onSelectPatient={(id) => {
+                  const p = activePatients.find(ap => ap.id === id);
+                  if (p) {
+                    setVitals(p.vitals);
+                    setPatientStatus(p.current_status);
+                    setTriageColor(p.sector === 'sala_vermelha' ? 'vermelho' : p.sector === 'sala_amarela' ? 'amarelo' : 'verde');
+                    setMessages(prev => [...prev, { role: "doctor", content: `[SISTEMA: Iniciando atendimento do ${p.name}]`, timestamp: Date.now() }]);
+                  }
+                }} 
+              />
+            </div>
+          )}
+
+          {/* Stress Test War Room */}
+          {stressTestMode && (
+            <div className="px-4 py-4 bg-black/60 backdrop-blur-3xl border-b border-yellow-500/20">
+              <StressTestDashboard />
+            </div>
+          )}
+
           {/* 3-column layout */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0 min-h-0 overflow-hidden shrink">
             {/* SidePanel: hidden on mobile (vitals available via QuickActions → Sheet) to keep chat the primary surface */}
