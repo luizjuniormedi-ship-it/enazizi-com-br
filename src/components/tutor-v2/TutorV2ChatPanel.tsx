@@ -213,7 +213,7 @@ export default function TutorV2ChatPanel({
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
                 <p className="text-[10px] text-indigo-400 font-black uppercase tracking-tighter mt-0.5">
-                  {session.specialty || "Sessão Premium Ativa"} • Protocolo Feynman V2
+                  {session.specialty || "Sessão Premium Ativa"} • Protocolo Feynman V3
                 </p>
               </div>
             </div>
