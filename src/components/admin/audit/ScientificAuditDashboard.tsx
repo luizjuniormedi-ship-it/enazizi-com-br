@@ -26,8 +26,10 @@ import {
   BarChart3,
   Dna,
   Scale,
-  Megaphone
+  Megaphone,
+  FlaskConical
 } from 'lucide-react';
+import { OutcomeScienceCenter } from './OutcomeScienceCenter';
 
 import { 
   ResponsiveContainer, 
