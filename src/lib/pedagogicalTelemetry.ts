@@ -184,14 +184,27 @@ class TelemetryService {
     try {
       const { data } = await supabase.auth.getUser();
       this.cachedUserId = data.user?.id ?? null;
+      if (this.cachedUserId) {
+        const { data: group } = await supabase.rpc('assign_user_to_v6_experiment', {
+          target_user_id: this.cachedUserId
+        });
+        this.experimentGroup = group as string;
+      }
     } catch {
       this.cachedUserId = null;
     }
-    supabase.auth.onAuthStateChange((_evt, session) => {
+    supabase.auth.onAuthStateChange(async (_evt, session) => {
       this.cachedUserId = session?.user?.id ?? null;
-      if (this.cachedUserId) this.flush();
+      if (this.cachedUserId) {
+        const { data: group } = await supabase.rpc('assign_user_to_v6_experiment', {
+          target_user_id: this.cachedUserId
+        });
+        this.experimentGroup = group as string;
+        this.flush();
+      }
     });
   }
+
 
   private async ensureUser(): Promise<string | null> {
     if (this.cachedUserId) return this.cachedUserId;
