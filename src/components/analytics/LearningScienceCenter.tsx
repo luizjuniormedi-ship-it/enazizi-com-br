@@ -50,7 +50,7 @@ export const LearningScienceCenter: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1">
-              <Beaker className="w-3 h-3 mr-1" /> PHASE LS-1
+              <Beaker className="w-3 h-3 mr-1" /> PHASE LS-4 PUBLICATION READY
             </Badge>
             <span className="text-xs text-muted-foreground font-mono">
               VALIDATED_AT: {new Date(snapshot.validatedAt).toLocaleTimeString()}
