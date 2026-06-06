@@ -101,7 +101,7 @@ export const useDashboardData = () => {
           gamificationStreak: Number(uni.metrics?.streak || 0),
           gamificationXp: cd.gamification?.xp || 0,
           gamificationLevel: cd.gamification?.level || 1,
-          globalFlashcards: Number(uni.metrics?.global_flashcards || 0),
+          globalFlashcards: Number(uni.metrics?.global_flashcards || uni.fsrs_cards_count || 0),
           globalQuestions: Number(uni.metrics?.global_questions || 0),
           questionsCreated: 0,
           clinicalSimulations: cd.simulationSessionsCount || 0,
@@ -169,7 +169,7 @@ export const useDashboardData = () => {
         const completedToday = todayTasks.filter((t: any) => t.completed);
 
         const stats: DashboardStats = {
-          flashcards: Number(uni.flashcards_count || 0),
+          flashcards: Number(uni.fsrs_cards_count || uni.flashcards_count || 0),
           uploads: Number(uni.uploads_count || 0),
           completedTasks,
           totalTasks: tasks.length,

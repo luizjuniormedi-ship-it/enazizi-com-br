@@ -1,7 +1,8 @@
 import { memo, useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+5: import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePreparationIndex, type PreparationZone } from "@/hooks/usePreparationIndex";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
