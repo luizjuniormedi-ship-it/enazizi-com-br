@@ -107,6 +107,31 @@ serve(async (req) => {
     const raw = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
     const parsed = safeParseAIJson(raw);
 
+    // P4: Deterministic Deterioration Overlay
+    // The engine overrides the LLM's vitals based on physiological rules
+    if (parsed.vitals && specialty) {
+      const currentPatientState: PatientState = {
+        heartRate: parseInt(String(parsed.vitals.FC || 80)),
+        sysBP: parseInt(String(parsed.vitals.PA?.split('/')[0] || 120)),
+        diaBP: parseInt(String(parsed.vitals.PA?.split('/')[1] || 80)),
+        temp: parseFloat(String(parsed.vitals.Temp || 36.5)),
+        spO2: parseInt(String(parsed.vitals.SpO2 || 98)),
+        status: (parsed.patient_status as any) || 'estavel'
+      };
+
+      const deterministicState = calculatePhysiologicalResponse(
+        specialty as ClinicalCondition,
+        currentPatientState,
+        parsed.maneuvers_performed || []
+      );
+
+      // Apply deterministic changes back to the response
+      parsed.vitals.FC = Math.round(deterministicState.heartRate).toString();
+      parsed.vitals.PA = `${Math.round(deterministicState.sysBP)}/${Math.round(deterministicState.diaBP)}`;
+      parsed.patient_status = deterministicState.status;
+      parsed.is_deteriorating = deterministicState.status !== 'estavel';
+    }
+
     // Lógica de Persistência V5 Premium (Audit, Erros V2, FSRS)
     const supabaseService = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
