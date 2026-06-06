@@ -1,236 +1,173 @@
 
-# WAR ROOM — LOOP PEDAGÓGICO (P0)
+# Plano — Evolução do BI (Aluno + Professor)
 
-## Objetivo único
+Objetivo: transformar os painéis atuais (hoje muito densos, com métricas frias e alguns mocks) em **BI acionável**, com linguagem em pt-BR, tooltips explicativos, hierarquia clara e KPIs que realmente movem decisão pedagógica.
 
-Provar, com evidência SQL + logs reais de produção, que o fluxo abaixo funciona ponta a ponta para um aluno real:
-
-```text
-Simulado
-  → simulado_answers
-  → practice_attempts
-  → error_bank
-  → fsrs_cards
-  → Planner enxerga
-```
-
-Critério de encerramento: **PASSOU** (todos os 5 elos confirmados) ou **FALHOU** (com elo defeituoso identificado e issue aberta).
-
-Prazo alvo: **24–48h**. Congelamento: Intel-1.5, Planner V4, Intel-2 e qualquer nova feature ficam bloqueados até veredito.
+Sem mudar contratos do core (FSRS, Planner, Tutor) — apenas camada de apresentação + 2 RPCs novas de leitura.
 
 ---
 
-## Suspeita inicial (a confirmar)
-
-Snapshot atual:
+## 1. Princípios
 
 ```text
-simulado_sessions = 3.305
-simulado_answers  = 0
-practice_attempts = 0
-error_bank        = 3
-fsrs_cards        = 117
-```
-
-Hipóteses prováveis, em ordem de risco:
-
-1. Frontend nunca chamou `insert` em `simulado_answers` / `practice_attempts` (caminho de escrita ausente ou desligado por flag).
-2. Chamava, mas batia em 403 silencioso (GRANTs faltando — já corrigido) e o erro nunca foi exibido/loggado.
-3. Existe escrita, mas em outra tabela legada (ex.: só `simulado_sessions.answers` JSON) e nada propaga para `error_bank` / `fsrs_cards`.
-4. Escrita ocorre apenas via edge function com `service_role`, e a função não está sendo invocada no submit do simulado.
-
-A sprint precisa **distinguir entre essas 4** antes de qualquer correção.
-
----
-
-## Fases
-
-### FASE 0 — Baseline congelado (30 min, sem código)
-
-```text
-- Snapshot SQL das 5 tabelas (count + max(created_at))
-- Snapshot por user_id dos últimos 7 dias
-- Salvar em /mnt/documents/war-room-loop/baseline.md
-- Tag de release atual (commit hash) registrada no relatório
-```
-
-Sem isso, nenhum delta posterior é confiável.
-
-### FASE 1 — Auditoria de código do caminho de escrita (2–4h, read-only)
-
-Mapear, com `rg`, **todos** os pontos do frontend e edge que tocam:
-
-```text
-simulado_sessions   (insert/update)
-simulado_answers    (insert)
-practice_attempts   (insert)
-error_bank          (insert/update)  → já existe errorBankLogger.ts
-fsrs_cards          (insert)         → já existe fsrsAutoCreate.ts
-```
-
-Para cada ponto, registrar em tabela:
-
-```text
-Arquivo | Função | Tabela | Tipo | Cliente (anon/auth/service) | Flag de feature | Log LOOP_CAPTURE?
-```
-
-Saída: `war-room-loop/audit-write-paths.md`. Identifica se a escrita **existe no código**.
-
-### FASE 2 — Instrumentação LOOP_CAPTURE_* completa (2–3h, código)
-
-Onde já existe escrita mas **não** há log padronizado, adicionar:
-
-```text
-[LOOP_CAPTURE_SIMULADO_ANSWERS_OK]    { sessionId, questionId, isCorrect }
-[LOOP_CAPTURE_SIMULADO_ANSWERS_FAIL]  { error }
-[LOOP_CAPTURE_PRACTICE_ATTEMPTS_OK]   { topicId, isCorrect }
-[LOOP_CAPTURE_PRACTICE_ATTEMPTS_FAIL] { error }
-[LOOP_CAPTURE_ERROR_BANK_OK]          { tema, vezesErrado }
-[LOOP_CAPTURE_ERROR_BANK_FAIL]        { error }
-[LOOP_CAPTURE_FSRS_OK]                { cardType, refId }   ← já existe
-[LOOP_CAPTURE_FSRS_FAIL]              { error }             ← já existe
-```
-
-Regras:
-- Logar **sempre** OK e FAIL (não silenciar `error` do supabase-js).
-- Nunca usar `try/catch` que engole erro sem logar.
-- Manter o mesmo prefixo `[LOOP_CAPTURE_*]` para facilitar grep nos logs do browser e em `function_edge_logs`.
-
-Risco controlado: mudança apenas em logs e em pontos de escrita já existentes — não cria lógica nova, não altera Planner/Tutor/Missão/FSRS algorítmico.
-
-### FASE 3 — Correção mínima do elo quebrado (condicional)
-
-Acionada **apenas se** a Fase 1 mostrar que a escrita está ausente.
-
-Política:
-- Corrigir 1 tabela por vez, na ordem `simulado_answers` → `practice_attempts` → `error_bank` (FSRS já é alimentado por trigger via `errorBankLogger`).
-- Sem refactor. Sem extrair hook. Patch cirúrgico no submit do simulado.
-- Cada PR carrega: diff, log esperado, query de verificação.
-
-### FASE 4 — Deploy controlado em produção (1h)
-
-```text
-- Build local OK
-- Deploy
-- Confirmar bundle: grep "LOOP_CAPTURE_SIMULADO_ANSWERS_OK" no JS publicado
-- Confirmar versão (commit hash) no /healthz ou meta tag
-```
-
-Sem essa confirmação, o teste humano não é válido (já caímos nisso antes).
-
-### FASE 5 — Teste real com aluno (humano, 30 min)
-
-Protocolo:
-
-```text
-1. Login como aluno comum (não admin, não service_role)
-2. Abrir DevTools → Console → filtro: LOOP_CAPTURE
-3. Iniciar 1 simulado de 10 questões
-4. Errar intencionalmente 3 questões
-5. Finalizar simulado
-6. Salvar HAR + screenshot do console
-7. Anotar user_id e session_id
-```
-
-Esse passo **só** pode ser executado pelo humano (o agente não tem credencial de aluno e usar service_role invalidaria o teste).
-
-### FASE 6 — Verificação SQL (15 min)
-
-Para o `user_id` testado, rodar:
-
-```sql
-SELECT 'sessions'  AS t, count(*) FROM simulado_sessions  WHERE user_id=$1 AND created_at > now()-interval '1 hour'
-UNION ALL SELECT 'answers',   count(*) FROM simulado_answers   WHERE user_id=$1 AND created_at > now()-interval '1 hour'
-UNION ALL SELECT 'attempts',  count(*) FROM practice_attempts  WHERE user_id=$1 AND created_at > now()-interval '1 hour'
-UNION ALL SELECT 'errors',    count(*) FROM error_bank         WHERE user_id=$1 AND updated_at > now()-interval '1 hour'
-UNION ALL SELECT 'fsrs',      count(*) FROM fsrs_cards         WHERE user_id=$1 AND created_at > now()-interval '1 hour';
-```
-
-Critérios de aprovação:
-
-```text
-sessions  ≥ 1
-answers   = nº de questões respondidas (10)
-attempts  ≥ nº de questões respondidas
-errors    ≥ nº de erros intencionais (3)
-fsrs      ≥ nº de erros novos
-```
-
-### FASE 7 — Verificação do Planner (15 min)
-
-Confirmar que o Planner **lê** os dados novos:
-
-```text
-- daily_plan_tasks gerados após o teste referenciam:
-  - error_bank.id criados na Fase 5  OU
-  - fsrs_cards.due ≤ hoje criados na Fase 5
-- study-next/orquestrador prioriza esses itens (log de decisão)
-```
-
-Sem isso, o loop está aberto na saída.
-
-### FASE 8 — Veredito e relatório (30 min)
-
-`/mnt/documents/war-room-loop/RELATORIO.md`:
-
-```text
-WAR ROOM — LOOP PEDAGÓGICO
-
-BASELINE     (Fase 0)
-AUDIT        (Fase 1)
-PATCHES      (Fase 3, se houve)
-DEPLOY HASH  (Fase 4)
-EVIDÊNCIA HUMANA   (Fase 5: console + HAR)
-EVIDÊNCIA SQL      (Fase 6)
-EVIDÊNCIA PLANNER  (Fase 7)
-
-ELO 1 sessions   ✅ / ❌
-ELO 2 answers    ✅ / ❌
-ELO 3 attempts   ✅ / ❌
-ELO 4 errors     ✅ / ❌
-ELO 5 fsrs       ✅ / ❌
-ELO 6 planner    ✅ / ❌
-
-DECISION: PASSOU / FALHOU
+1. Toda métrica responde a 3 perguntas:
+   • O que é?         → label pt-BR
+   • Como é calculada? → tooltip
+   • O que eu faço?    → CTA contextual
+2. Nada de número solto: sempre tendência (↑ ↓ →) + comparativo (vs 7d / vs turma).
+3. Zero mocks. Se o dado não existe, mostrar estado vazio honesto ("ainda sem dados, responda X questões").
+4. Mobile-first (430px): hero curto, KPIs em 2 colunas, scroll vertical natural.
 ```
 
 ---
 
-## Detalhes técnicos
+## 2. BI do ALUNO — reorganização
 
-- **Não** mexer em: algoritmo do Planner, Tutor IA, Missão do Dia, FSRS scheduler, Banco de Erros (lógica), RLS, policies.
-- **Pode** mexer em: pontos de chamada `supabase.from(...).insert(...)` do submit do simulado, e apenas para garantir que existem + estão logados.
-- Migrations: nenhuma esperada nesta sprint (GRANTs já aplicados). Se Fase 1 revelar coluna NOT NULL faltando no insert, abrir migration isolada e revisada.
-- Edge functions: `study-complete` e `pedagogical-event-consumer` já existem e têm teste (`loop-validation.test.ts`, `run-alos-validation_test.ts`). Rodar esses testes na Fase 2 como sanity check antes do humano testar.
-- Feature flags: verificar `new_fsrs_flow_enabled` em produção (afeta `fsrsAutoCreate`). Documentar valor atual no relatório.
-
-## Riscos e mitigação
+### 2.1 Topo (acima da dobra, mobile)
+Substituir hero cinemático de 500px por **Cockpit Resumido (180px)**:
 
 ```text
-Risco                                      Mitigação
-─────────────────────────────────────────  ───────────────────────────────────────
-Logs LOOP_CAPTURE não chegam ao bundle     Grep no JS publicado antes do teste humano
-Teste humano com cache antigo              Hard reload + verificação de versão
-service_role mascarando erro real          Teste obrigatório com usuário comum
-Escrita assíncrona perdida                 await em todos inserts críticos do submit
-Trigger DB silenciado                      Verificar pg_trigger e logs do postgres
+┌──────────────────────────────────────────┐
+│ Olá, Luiz  •  Streak 12🔥  •  Nível 7    │
+│ Prontidão ENARE: 62% ↑3   [Ver detalhes]│
+│ Próxima ação: Revisar 8 cards de Cardio │
+│ [▶ Começar agora]                        │
+└──────────────────────────────────────────┘
 ```
 
-## Bloqueios mantidos até PASSOU
+### 2.2 Bloco "Minha Performance" (KPIs com tooltip)
+| Card | Label pt-BR | Tooltip |
+|---|---|---|
+| Prontidão | "Índice de Prontidão" | "0–100. Combina acerto recente, cobertura curricular, FSRS e simulados." |
+| Chance Aprovação | "Chance estimada — ENARE/ENAMED" | "Projeção bayesiana a partir do seu histórico vs aprovados anteriores." |
+| Acerto 7d | "Acerto últimos 7 dias" | "Questões corretas / respondidas nos últimos 7 dias." |
+| Retenção FSRS | "Retenção de memória" | "% de cards revisados no prazo com acerto." |
+| Tempo médio/questão | "Ritmo" | "Segundos médios para responder. Comparado ao tempo de prova real." |
+| Lapses | "Esquecimentos" | "Cards já dominados que voltaram a errar — sinal de revisão urgente." |
+
+### 2.3 Bloco "Meus Temas" (substitui cards hardcoded)
+- Top 3 **fortes** (verde, ≥80%) — "manter com revisão espaçada"
+- Top 3 **fracos** (vermelho, <50%) — CTA "Treinar 10 questões"
+- Top 3 **em evolução** (amarelo, delta ±8%) — "Continuar reforçando"
+
+Fonte: `performance_by_topic` + `medical_domain_map` (fallback) + `user_topic_profiles`.
+
+### 2.4 Bloco "Minha Trajetória"
+- Gráfico semanal: acerto, tempo de estudo, revisões executadas (linhas sobrepostas)
+- Marcadores de eventos: simulados, mudança de plano, recuperação ativada
+- Tooltip por dia: "Terça 03/06: 47 questões, 71%, 38min"
+
+### 2.5 Bloco "O que fazer agora" (CTAs reais, fim do dashboard)
+Lista priorizada do `study-orchestrator`:
+1. 🔴 8 cards FSRS atrasados (Cardiologia) → [Revisar]
+2. 🟡 Simulado semanal pendente → [Iniciar]
+3. 🟢 Mentoria do professor: "Sepse pediátrica" → [Estudar]
+
+---
+
+## 3. BI do PROFESSOR — reorganização
+
+### 3.1 Topo: Saúde da Turma (1 linha)
+```text
+Turma A • 34 alunos • Prontidão média 58% ↑2 • 5 em risco 🔴 • 8 atenção 🟡
+```
+
+### 3.2 Bloco "Alunos por Status" (segmentação acionável)
+Quatro colunas clicáveis:
+| 🟢 Ativos (21) | 🟡 Atenção (8) | 🔴 Risco (4) | ⚫ Crítico (1) |
+
+Clique abre lista filtrada com:
+- Nome • Prontidão • Acerto 7d • Última atividade • **Motivo do status** • CTA "Enviar mentoria"
+
+Tooltip no header: explica fórmula (risk_score, engagement_score).
+
+### 3.3 Bloco "Heatmap Curricular da Turma"
+Matriz Especialidade × Domínio:
+- Verde: turma ≥75%
+- Amarelo: 50–75%
+- Vermelho: <50% **e** está no blueprint da prova alvo (peso alto destacado)
+
+CTA por célula vermelha: "Criar simulado focado" / "Atribuir estudo".
+
+### 3.4 Bloco "Intervenções e Impacto"
+Tabela das últimas mentorias/simulados atribuídos:
+| Intervenção | Alunos | Conclusão | Δ Acerto | Status |
+|---|---|---|---|---|
+| Simulado Cardio 03/06 | 28 | 22/28 | +9% | ✅ |
+| Mentoria Sepse | 34 | 12/34 | — | 🟡 baixa adesão |
+
+Mostra **impacto real** (antes/depois) — vincula ao Impact Engine já existente.
+
+### 3.5 Bloco "Alertas Inteligentes" (top 5)
+Substitui os 5 sistemas paralelos por um único feed priorizado:
+- 🔴 João Silva: 0 atividade há 9 dias + 3 simulados não feitos
+- 🟡 Maria: queda de 18% em Pediatria nas últimas 2 semanas
+- 🟢 Pedro: subiu para tier "Pronto" — parabenizar
+
+---
+
+## 4. Padrão de tooltips (componente único)
+
+Criar `<MetricCard>` com props:
+```ts
+{ label: string;          // pt-BR
+  value: string|number;
+  delta?: number;         // ↑↓→
+  tooltip: string;        // "O que é + como é calculado"
+  cta?: { label, onClick };
+  emptyState?: string;    // quando data=null
+}
+```
+Todos os cards do dashboard aluno e professor passam a usar esse componente — garante consistência e elimina divergências de label.
+
+---
+
+## 5. Backend / dados (mínimo necessário)
+
+Apenas leitura, sem alterar schema crítico:
+
+1. **RPC `get_student_bi_summary(p_user_id)`** — retorna em 1 chamada: KPIs, top temas, trajetória 14d, próximas ações. Hoje o dashboard faz 6–8 queries paralelas.
+2. **RPC `get_class_bi_summary(p_turma_id)`** — agrega status, heatmap, intervenções com impacto.
+3. **Job diário** já existente (`approval_scores`, `ranking_snapshots`) precisa ser **reativado** — sem isso 30%+ dos KPIs ficam zerados (constatado em `.lovable/bi-aluno-audit.md`).
+4. Remover `Math.random()` em `Dashboard.tsx:289` e cards hardcoded 297–355.
+
+---
+
+## 6. Faseamento sugerido
 
 ```text
-🔒 Intel-1.5
-🔒 Planner V4
-🔒 Intel-2
-🔒 Qualquer nova feature ou dashboard
+Fase 1 (2–3 dias) — Fundação
+  • Componente <MetricCard> + tooltips pt-BR
+  • Remoção de mocks
+  • Reativar pipelines approval_scores / ranking_snapshots
+
+Fase 2 (3–4 dias) — Aluno
+  • Cockpit resumido + blocos 2.2 a 2.5
+  • RPC get_student_bi_summary
+
+Fase 3 (3–4 dias) — Professor
+  • Status segmentado + heatmap curricular
+  • Bloco de impacto de intervenções
+  • Feed único de alertas (consolidar 5 sistemas)
+
+Fase 4 (2 dias) — Mobile + polimento
+  • Hero 500→180px, grids 2-col, scroll natural
+  • QA visual em 430×667
 ```
 
-## Resultado esperado
+---
 
-```text
-LOOP PEDAGÓGICO
-Estrutural .... ✅
-Operacional ... ✅  (com evidência humana + SQL + planner)
-```
+## 7. Fora do escopo (intencional)
 
-Aprovar este plano para eu iniciar pela **Fase 0 (baseline)** e **Fase 1 (auditoria read-only dos caminhos de escrita)** — ambas sem alterar código nem banco.
+- Não mexe em FSRS, Tutor, Planner, Orchestrator (Go-Live Freeze).
+- Não cria novas métricas psicométricas (Sprint 2.3 guard-rail).
+- Não altera nomes de módulos/sidebar (constraint).
+- Sem PDFs/planilhas — tudo no chat/UI conforme preferência.
+
+---
+
+## Perguntas antes de implementar
+
+1. Começo pela **Fase 1 + Fase 2 (aluno)** ou prioriza **professor** primeiro?
+2. Os 4 status (Ativo/Atenção/Risco/Crítico) seguem as fórmulas já existentes em `MonitoringTypes.ts` ou quer revisar os limiares?
+3. Reativar os jobs `approval_scores` e `ranking_snapshots` faz parte deste plano ou já será tratado em paralelo?
