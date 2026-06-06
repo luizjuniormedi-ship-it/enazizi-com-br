@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ScienceCenterLS3 } from './ScienceCenterLS3';
+import { InstitutionalDashboard } from './InstitutionalDashboard';
+import { PublicationCenter } from './PublicationCenter';
 
 export const LearningScienceCenter: React.FC = () => {
   const snapshot = useLearningScience();
@@ -48,14 +50,17 @@ export const LearningScienceCenter: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1">
-              <Beaker className="w-3 h-3 mr-1" /> PHASE LS-1
+              <Beaker className="w-3 h-3 mr-1" /> PHASE LS-4 PUBLICATION READY
             </Badge>
             <span className="text-xs text-muted-foreground font-mono">
               VALIDATED_AT: {new Date(snapshot.validatedAt).toLocaleTimeString()}
             </span>
+            <Badge className="bg-purple-600 text-white border-none ml-2 text-[10px]">
+              SCIENTIFIC TIER A
+            </Badge>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Learning Science Center</h1>
-          <p className="text-muted-foreground">Sistema de Evidência Científica e Validação Cognitiva</p>
+          <h1 className="text-3xl font-bold tracking-tight">ENAZIZI National Validation Center</h1>
+          <p className="text-muted-foreground">Scientific Evidence, Causality Attribution & Institutional Intelligence</p>
         </div>
         
         <div className="flex gap-2">
@@ -352,6 +357,10 @@ export const LearningScienceCenter: React.FC = () => {
       </div>
 
       <ScienceCenterLS3 snapshot={snapshot} />
+
+      <InstitutionalDashboard snapshot={snapshot} />
+
+      <PublicationCenter snapshot={snapshot} />
 
       <footer className="flex items-center justify-between border-t pt-4 text-[10px] text-muted-foreground font-mono">
         <div className="flex items-center gap-4">
