@@ -1,5 +1,6 @@
-import { Heart, Clock, Star, AlertTriangle, Shield, Activity } from "lucide-react";
+import { Heart, Clock, Star, AlertTriangle, Shield, Activity, Zap, Monitor } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 interface ShiftHeaderProps {
   patientStatus: string;
@@ -14,6 +15,10 @@ interface ShiftHeaderProps {
   setting: string;
   inactivityWarning: boolean;
   abcdeChecklist: Record<string, boolean>;
+  onToggleMultiView?: () => void;
+  onToggleStressTest?: () => void;
+  showMultiView?: boolean;
+  showStressTest?: boolean;
 }
 
 const TRIAGE_CONFIG: Record<string, { bg: string; border: string; text: string; label: string }> = {
@@ -34,6 +39,7 @@ export default function ShiftHeader({
   patientStatus, statusAlert, countdown, initialCountdown, timerExpired,
   score, scoreFlash, triageColor, setting, inactivityWarning,
   abcdeChecklist,
+  onToggleMultiView, onToggleStressTest, showMultiView, showStressTest
 }: ShiftHeaderProps) {
   const formatCountdown = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -72,6 +78,26 @@ export default function ShiftHeader({
               {triage.label}
             </div>
             <span className="text-[10px] text-muted-foreground hidden sm:inline">📍 {setting}</span>
+            <div className="flex gap-1 ml-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onToggleMultiView}
+                className={`h-7 w-7 ${showMultiView ? 'bg-primary/20 text-primary' : 'text-white/20'}`}
+                title="Hospital View (12 Pacientes)"
+              >
+                <Monitor className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onToggleStressTest}
+                className={`h-7 w-7 ${showStressTest ? 'bg-yellow-500/20 text-yellow-500' : 'text-white/20'}`}
+                title="Chaos Mode (Stress Test)"
+              >
+                <Zap className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Right: Status indicators */}
