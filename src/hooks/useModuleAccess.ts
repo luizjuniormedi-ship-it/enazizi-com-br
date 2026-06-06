@@ -49,6 +49,8 @@ export const useModuleAccess = () => {
   const { user } = useAuth();
   const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const { isControl, isLoading: experimentLoading } = useExperimentGroup();
+
 
   useEffect(() => {
     if (!user) {
