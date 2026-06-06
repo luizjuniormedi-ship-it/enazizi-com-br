@@ -48,6 +48,8 @@ import { useCountdownTimer } from "@/modules/clinical-simulation/state/useCountd
 import CareerBadge from "@/components/clinical-simulation/CareerBadge";
 import HospitalTeamPanel from "@/components/clinical-simulation/HospitalTeamPanel";
 import HospitalManagementDashboard from "@/components/clinical-simulation/HospitalManagementDashboard";
+import { MultiPatientGrid } from "@/components/clinical-simulation/MultiPatientGrid";
+import { StressTestDashboard } from "@/components/clinical-simulation/StressTestDashboard";
 
 const EVAL_LABELS: Record<string, string> = {
   anamnesis: "Anamnese", physical_exam: "Exame Físico", complementary_exams: "Exames Complementares",
@@ -226,6 +228,8 @@ const ClinicalSimulation = () => {
   const [prescriptionDialogOpen, setPrescriptionDialogOpen] = useState(false);
   const [mobileVitalsOpen, setMobileVitalsOpen] = useState(false);
   const [medRecordOpen, setMedRecordOpen] = useState(false);
+  const [showMultiPatientView, setShowMultiPatientView] = useState(true);
+  const [stressTestMode, setStressTestMode] = useState(false);
 
   // ─── RESULT STATE ───
   const [finalEval, setFinalEval] = useState<FinalEval | null>(null);
@@ -345,6 +349,20 @@ const ClinicalSimulation = () => {
       setPrevPatientStatus(patientStatus);
     }
   }, [patientStatus]);
+
+  const fetchActivePatients = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("hospital_patients")
+      .select("*")
+      .eq("is_active", true)
+      .order("sector", { ascending: true });
+    if (data) setActivePatients(data);
+  }, [user]);
+
+  useEffect(() => {
+    if (phase === "active") fetchActivePatients();
+  }, [phase, fetchActivePatients]);
 
   // Wave 1.2 — countdown loop migrado para useCountdownTimer (acima).
   // Mantido apenas o hook de logs/cleanup; nenhum setInterval local aqui.
@@ -602,6 +620,37 @@ const ClinicalSimulation = () => {
         maneuversPerformed: res.maneuvers_performed || undefined,
       };
       setMessages((prev) => [...prev, simMsg]);
+
+      if (res.cognitive_interruption) {
+        setCognitiveEvent(res.cognitive_interruption);
+        toast({
+          title: "🚨 Interrupção Clínica",
+          description: res.cognitive_interruption.message,
+          variant: res.cognitive_interruption.priority === 'high' ? "destructive" : "default"
+        });
+        setMessages((prev) => [...prev, { 
+          role: "simulation", 
+          content: `⚠️ [INTERRUPÇÃO] ${res.cognitive_interruption.message}`,
+          type: "system",
+          timestamp: Date.now() 
+        }]);
+      }
+
+      if (res.prescription_validation) {
+        setPrescriptionAudit(res.prescription_validation);
+        if (res.prescription_validation.status !== 'correct') {
+          playSound("negative");
+          toast({
+            title: "💊 Alerta de Prescrição",
+            description: res.prescription_validation.feedback,
+            variant: "destructive"
+          });
+        }
+      }
+
+      if (res.scale_audit) {
+        setScaleAudit(res.scale_audit);
+      }
 
       if (res.score_delta && res.score_delta !== 0) {
         setScoreFlash(res.score_delta > 0 ? "green" : "red");
@@ -974,6 +1023,10 @@ const ClinicalSimulation = () => {
                 setting={setting}
                 inactivityWarning={inactivityWarning}
                 abcdeChecklist={abcdeChecklist}
+                showMultiView={showMultiPatientView}
+                showStressTest={stressTestMode}
+                onToggleMultiView={() => setShowMultiPatientView(!showMultiPatientView)}
+                onToggleStressTest={() => setStressTestMode(!stressTestMode)}
               />
               <div className="hidden md:flex px-4 border-l border-slate-100">
                 <CareerBadge />
@@ -1007,6 +1060,32 @@ const ClinicalSimulation = () => {
           <div className="shrink-0">
             <HospitalManagementDashboard sessionId={cs.correlationId} />
           </div>
+
+          {/* Multi-Patient Overload View (V5.9+) */}
+          {showMultiPatientView && (
+            <div className="px-4 py-2 bg-black/20 border-b border-white/5">
+              <MultiPatientGrid 
+                patients={activePatients} 
+                activePatientId={null} 
+                onSelectPatient={(id) => {
+                  const p = activePatients.find(ap => ap.id === id);
+                  if (p) {
+                    setVitals(p.vitals);
+                    setPatientStatus(p.current_status);
+                    setTriageColor(p.sector === 'sala_vermelha' ? 'vermelho' : p.sector === 'sala_amarela' ? 'amarelo' : 'verde');
+                    setMessages(prev => [...prev, { role: "doctor", content: `[SISTEMA: Iniciando atendimento do ${p.name}]`, timestamp: Date.now() }]);
+                  }
+                }} 
+              />
+            </div>
+          )}
+
+          {/* Stress Test War Room */}
+          {stressTestMode && (
+            <div className="px-4 py-4 bg-black/60 backdrop-blur-3xl border-b border-yellow-500/20">
+              <StressTestDashboard />
+            </div>
+          )}
 
           {/* 3-column layout */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-0 min-h-0 overflow-hidden shrink">

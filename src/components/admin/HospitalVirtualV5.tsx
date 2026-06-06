@@ -34,6 +34,8 @@ import {
   Pie
 } from 'recharts';
 
+import { StressTestDashboard } from '../clinical-simulation/StressTestDashboard';
+
 export const HospitalVirtualV5: React.FC = () => {
   // Q1: Ocupação por Setor
   const { data: sectorStats, isLoading: loadingSectors } = useQuery({
@@ -212,6 +214,13 @@ export const HospitalVirtualV5: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Stress Test Control Center - ENAZIZI V5.9+ */}
+      <Card className="bg-white/5 border-white/10 backdrop-blur-2xl border-t-4 border-t-yellow-500/50">
+        <CardContent className="p-8">
+          <StressTestDashboard />
+        </CardContent>
+      </Card>
 
       {/* Grid Central: Setores e Clocks */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
