@@ -1221,17 +1221,21 @@ const ClinicalSimulation = () => {
 
       {/* RESULT */}
       {phase === "result" && finalEval && (
-        <ResultPanel
-          finalEval={finalEval}
-          specialty={specialty}
-          difficulty={difficulty}
-          onReset={reset}
-          onRetry={retryWithSameConfig}
-          onExportPdf={exportCasePdf}
-          onShare={shareResult}
-          onOpenTutor={openTutorReview}
-        />
+        <div className="space-y-6">
+          <ResultPanel
+            finalEval={finalEval}
+            specialty={specialty}
+            difficulty={difficulty}
+            onReset={reset}
+            onRetry={retryWithSameConfig}
+            onExportPdf={exportCasePdf}
+            onShare={shareResult}
+            onOpenTutor={openTutorReview}
+          />
+          <ShadowExaminerPanel simulationId={cs.correlationId} />
+        </div>
       )}
+
       </div>
     </div>
   );
