@@ -14264,6 +14264,36 @@ export type Database = {
         }
         Relationships: []
       }
+      hospital_shadow_audits: {
+        Row: {
+          created_at: string
+          id: string
+          recovery_data: Json
+          report: Json
+          scores: Json
+          simulation_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recovery_data: Json
+          report: Json
+          scores: Json
+          simulation_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recovery_data?: Json
+          report?: Json
+          scores?: Json
+          simulation_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       hospital_simulation_events: {
         Row: {
           created_at: string | null

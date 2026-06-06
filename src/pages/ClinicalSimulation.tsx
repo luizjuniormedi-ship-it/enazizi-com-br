@@ -38,6 +38,8 @@ import LobbyPanel from "@/components/clinical-simulation/LobbyPanel";
 import HistoryDetailDialog from "@/components/clinical-simulation/HistoryDetailDialog";
 import ResultPanel, { type FinalEval } from "@/components/clinical-simulation/ResultPanel";
 import SidePanel, { ABCDE_STEPS, type CategoryScores } from "@/components/clinical-simulation/SidePanel";
+import ShadowExaminerPanel from "@/components/clinical-simulation/ShadowExaminerPanel";
+
 import QuickActionsBar from "@/components/clinical-simulation/QuickActionsBar";
 import MessageList from "@/components/clinical-simulation/MessageList";
 import type { ChatMessage, ManeuverPerformed } from "@/components/clinical-simulation/MessageBubble";
@@ -859,6 +861,21 @@ const ClinicalSimulation = () => {
           dificuldade: difficulty === "avançado" ? 5 : difficulty === "intermediário" ? 3 : 1,
         });
       }
+      
+      // Shadow Examiner V6 Trigger
+      try {
+        await supabase.functions.invoke('shadow-examiner', {
+          body: {
+            simulation_id: cs.correlationId,
+            simulation_history: conversationHistory,
+            action_timeline: actionTimeline,
+            scores_snapshot: categoryScores
+          }
+        });
+      } catch (err) {
+        console.error("Shadow Examiner error:", err);
+      }
+
     } catch (e) {
       try { cs.track("plantao_error", csExtras({ where: "finish", message: e instanceof Error ? e.message : String(e) })); } catch {}
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
@@ -1219,17 +1236,21 @@ const ClinicalSimulation = () => {
 
       {/* RESULT */}
       {phase === "result" && finalEval && (
-        <ResultPanel
-          finalEval={finalEval}
-          specialty={specialty}
-          difficulty={difficulty}
-          onReset={reset}
-          onRetry={retryWithSameConfig}
-          onExportPdf={exportCasePdf}
-          onShare={shareResult}
-          onOpenTutor={openTutorReview}
-        />
+        <div className="space-y-6">
+          <ResultPanel
+            finalEval={finalEval}
+            specialty={specialty}
+            difficulty={difficulty}
+            onReset={reset}
+            onRetry={retryWithSameConfig}
+            onExportPdf={exportCasePdf}
+            onShare={shareResult}
+            onOpenTutor={openTutorReview}
+          />
+          <ShadowExaminerPanel simulationId={cs.correlationId} />
+        </div>
       )}
+
       </div>
     </div>
   );
