@@ -93,6 +93,16 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["audit", "científica", "caixa-preta", "v6", "pedagogia"],
       },
       {
+        to: "/admin/national-campaign",
+        label: "Campanha Nacional",
+        description: "Dashboard de marketing, storyboards e ativos para lançamento nacional.",
+        icon: Megaphone,
+        scopes: ["super_admin", "admin_operacional"],
+        badge: "Novo",
+        keywords: ["marketing", "campanha", "lançamento", "ads", "storyboard"],
+      },
+
+      {
         to: "/admin/monitoring",
         label: "Alunos",
 
