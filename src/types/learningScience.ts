@@ -51,6 +51,25 @@ export interface FeatureAttribution {
   contributionPercentage: number;
 }
 
+export interface EvidenceHealthScore {
+  score: number; // 0-100
+  label: 'Fraco' | 'Emergente' | 'Forte' | 'Cientificamente Validado';
+  sampleSize: number;
+  confidenceInterval: number;
+  effectSize: number;
+  drift: number;
+}
+
+export interface ValidationMetrics {
+  pearsonCorrelation: number;
+  spearmanCorrelation: number;
+  rSquared: number;
+  forecastAccuracy: number;
+  forecastError: number;
+  forecastBias: number;
+  approvalCalibrationIndex: number;
+}
+
 export interface LearningScienceSnapshot {
   readiness: number;
   forecastAccuracy: number;
@@ -62,6 +81,8 @@ export interface LearningScienceSnapshot {
   riskIndex: RiskIndex;
   tutorImpact: TutorImpact;
   featureAttributions: FeatureAttribution[];
+  evidenceHealth: EvidenceHealthScore;
+  validation: ValidationMetrics;
   validatedAt: string;
   telemetryTags: string[];
 }
