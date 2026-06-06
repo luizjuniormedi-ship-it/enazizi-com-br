@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect } from "react";
 import { useCoreData } from "./useCoreData";
 import { useApprovalPrediction } from "./useApprovalPrediction";
@@ -6,12 +5,11 @@ import { calculateLearningScienceSnapshot } from "@/engines/learningScienceEngin
 import { LearningScienceSnapshot } from "@/types/learningScience";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
 
-
 export function useLearningScience(): LearningScienceSnapshot | null {
   const { data: core } = useCoreData();
   const prediction = useApprovalPrediction();
 
-  return useMemo(() => {
+  const snapshot = useMemo(() => {
     if (!core || !prediction) return null;
 
     // Calculamos retenção proxy baseada no FSRS
@@ -40,4 +38,15 @@ export function useLearningScience(): LearningScienceSnapshot | null {
       streakDays: core.gamification?.current_streak ?? 0
     });
   }, [core, prediction]);
+
+  // LS-10: Feature Attribution & Telemetry
+  useEffect(() => {
+    if (snapshot) {
+      telemetry.track('ls_readiness_validated', { score: snapshot.readiness });
+      telemetry.track('ls_learning_yield_updated', { score: snapshot.learningYield.score });
+      telemetry.track('ls_risk_index_updated', { level: snapshot.riskIndex.level });
+    }
+  }, [snapshot?.validatedAt]);
+
+  return snapshot;
 }
