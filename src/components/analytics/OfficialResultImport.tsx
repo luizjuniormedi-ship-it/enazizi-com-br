@@ -41,6 +41,7 @@ export const OfficialResultImport: React.FC = () => {
         exam_year: formData.exam_year,
         institution: formData.institution,
         specialty_choice: formData.specialty,
+        official_grade: parseFloat(formData.score), // Map to existing field
         score: parseFloat(formData.score),
         approved: formData.approved,
         ranking: parseInt(formData.ranking) || null,
