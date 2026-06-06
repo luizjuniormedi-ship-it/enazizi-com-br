@@ -6,13 +6,14 @@ import { Progress } from "@/components/ui/progress";
 import { LearningScienceSnapshot } from "@/types/learningScience";
 import { 
   ShieldCheck, Microscope, Database, BarChart4, 
-  ArrowUpRight, Users, Activity, FileCheck,
+  Users, Activity, FileCheck,
   Target, Zap, FlaskConical, Binary
 } from 'lucide-react';
 import { 
-  ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, 
+  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Cell, ReferenceLine
 } from 'recharts';
+import { OfficialResultImport } from './OfficialResultImport';
 
 interface ScienceCenterLS3Props {
   snapshot: LearningScienceSnapshot;
