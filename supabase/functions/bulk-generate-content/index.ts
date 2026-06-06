@@ -189,7 +189,7 @@ GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
         pipeline_name: "bulk-generate",
         function_name: "bulk-generate-content",
         status: (savedCount > 0) ? "completed" : (rejectedCount > 0 ? "quality_rejected" : "failed"),
-        model_used: ALLOWED_MODELS.generation,
+        model_used: ALLOWED_MODELS.reasoning,
         completed_at: new Date().toISOString(),
         user_id: user.id,
         metadata: {
