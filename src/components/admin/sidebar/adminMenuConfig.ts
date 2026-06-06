@@ -84,6 +84,16 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["hospital", "v5", "plantão", "emergência", "multi-paciente"],
       },
       {
+        to: "/admin/scientific-audit",
+        label: "Auditoria Científica",
+        description: "Operação Caixa-Preta: validação pedagógica e eficácia do sistema V6.",
+        icon: ShieldCheck,
+        scopes: ["super_admin", "admin_pedagogico"],
+        badge: "Novo",
+        keywords: ["audit", "científica", "caixa-preta", "v6", "pedagogia"],
+      },
+
+      {
 
 
         to: "/admin/monitoring",
