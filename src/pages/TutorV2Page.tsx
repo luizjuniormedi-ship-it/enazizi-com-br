@@ -21,6 +21,7 @@ export default function TutorV2Page() {
   const studyCtx = useStudyContext();
   const { session, isLoading, stats } = useTutorV2Session(sessionId);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [newTopic, setNewTopic] = useState(studyCtx?.topic || "");
   const [isCreating, setIsCreating] = useState(false);
   const [bootStatus, setBootStatus] = useState("");
@@ -299,7 +300,7 @@ export default function TutorV2Page() {
   return (
     <div className="flex h-full min-h-screen bg-slate-950 text-white overflow-hidden font-sans selection:bg-indigo-500/30">
       <AnimatePresence mode="wait">
-        {!isExpanded && (
+        {!isExpanded && !isSidebarMinimized && (
           <motion.div
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: "auto", opacity: 1 }}
@@ -317,6 +318,8 @@ export default function TutorV2Page() {
           session={session} 
           isExpanded={isExpanded}
           onToggleExpand={() => setIsExpanded(!isExpanded)}
+          isSidebarMinimized={isSidebarMinimized}
+          onToggleSidebar={() => setIsSidebarMinimized(!isSidebarMinimized)}
         />
       </main>
     </div>

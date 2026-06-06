@@ -6,7 +6,7 @@ import { TutorV2Service } from "./services/TutorV2Service";
 import TutorV2MessageList from "./TutorV2MessageList";
 import TutorV2Input from "./TutorV2Input";
 import TutorV2Actions from "./TutorV2Actions";
-import { AlertCircle, Maximize2, Minimize2 } from "lucide-react";
+import { AlertCircle, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { toast } from "sonner";
 import { MascotAvatar } from "../mascot/MascotAvatar";
 import { MascotBubble } from "../mascot/MascotBubble";
@@ -22,9 +22,17 @@ interface TutorV2ChatPanelProps {
   session: any;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
+  isSidebarMinimized?: boolean;
+  onToggleSidebar?: () => void;
 }
 
-export default function TutorV2ChatPanel({ session, isExpanded, onToggleExpand }: TutorV2ChatPanelProps) {
+export default function TutorV2ChatPanel({ 
+  session, 
+  isExpanded, 
+  onToggleExpand, 
+  isSidebarMinimized, 
+  onToggleSidebar 
+}: TutorV2ChatPanelProps) {
   const { user } = useAuth();
   const { messages, isLoading, addMessage, setMessages } = useTutorV2Messages(session.id);
   const [isTyping, setIsTyping] = useState(false);
@@ -210,6 +218,19 @@ export default function TutorV2ChatPanel({ session, isExpanded, onToggleExpand }
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {onToggleSidebar && (
+                <button
+                  onClick={onToggleSidebar}
+                  className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all group"
+                  title={isSidebarMinimized ? "Mostrar barra lateral" : "Minimizar barra lateral"}
+                >
+                  {isSidebarMinimized ? (
+                    <PanelLeftOpen className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  ) : (
+                    <PanelLeftClose className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  )}
+                </button>
+              )}
               {onToggleExpand && (
                 <button
                   onClick={onToggleExpand}
