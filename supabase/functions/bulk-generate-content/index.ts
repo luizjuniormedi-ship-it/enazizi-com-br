@@ -61,30 +61,33 @@ Deno.serve(enterpriseEdgeHandler("bulk-generate-content", async ({ req, logger, 
         }
       }
 
-      const prompt = `Você é um professor de medicina especialista preparando questões de ALTA FIDELIDADE para a residência médica brasileira (Padrão ENARE/USP/UNICAMP).
-Gere ${count} questões de Múltipla Escolha sobre: ${specialty}.
+      const prompt = `Você NÃO é um gerador de questões. Você é uma BANCA EXAMINADORA DO ENARE (Padrão USP/UNICAMP/SES-SP).
+Sua missão é produzir uma questão de nível ELITE, indistinguível de provas reais oficiais.
 
-CRITÉRIOS DE ACEITAÇÃO OBRIGATÓRIOS (SPRINT 3):
-1. CASO CLÍNICO DENSO: O enunciado deve ser longo (~600-1000 caracteres), descrevendo um cenário clínico real.
-2. DADOS TÉCNICOS: Inclua obrigatoriamente:
-   - Dados demográficos (idade, sexo).
-   - Sinais Vitais completos (PA, FC, FR, Temp, SpO2).
-   - Achados detalhados de Exame Físico.
-   - Pelo menos um dado laboratorial com unidades (ex: mg/dL, mEq/L, Leucócitos/mm³).
-3. ESTRUTURA: Exatamente 5 alternativas (A, B, C, D, E).
-4. EXPLICAÇÃO PROFUNDA: Mínimo de 300 caracteres, justificando a alternativa correta e refutando as incorretas com base em diretrizes brasileiras vigentes.
-5. TEMA: ${specialty}.
+GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
 
-Retorne APENAS um objeto JSON no formato:
+## 🩺 ESPECIFICAÇÕES TÉCNICAS (SPRINT 3.1):
+1. CASO CLÍNICO DENSO: Enunciado entre 180-300 palavras. Deve descrever um cenário clínico real, complexo e com camadas de informações.
+2. DADOS OBRIGATÓRIOS: Idade, Sexo, Tempo de Evolução, Sinais Vitais completos (PA, FC, FR, Temp, SpO2) e achados detalhados de exame físico e laboratorial.
+3. TAXONOMIA DE BLOOM: 
+   - Analisar (40%), Avaliar (25%), Decidir (5%). Proibido questões de memorização pura (Lembrar/Compreender).
+4. DISTRATORES ELITE: Todas as 5 alternativas (A, B, C, D, E) devem ser plausíveis. Evite alternativas obviamente erradas. O candidato deve precisar priorizar a conduta ou comparar diagnósticos diferenciais.
+5. TEMA: ${specialty}. Integre conceitos multidisciplinares se possível.
+
+## 📝 FORMATO DE SAÍDA (JSON):
 {
   "questions": [
     {
-      "statement": "Caso clínico longo e técnico...",
-      "options": ["A) Opção 1", "B) Opção 2", "C) Opção 3", "D) Opção 4", "E) Opção 5"],
+      "statement": "Caso clínico longo, técnico e denso...",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "correct_index": 0,
-      "explanation": "Explicação técnica exaustiva...",
+      "explanation": "Explicação técnica exaustiva (mínimo 400 caracteres), justificando a correta e refutando detalhadamente cada distrator com base em diretrizes brasileiras 2024/2025.",
       "topic": "${specialty}",
-      "difficulty": 4
+      "difficulty": 5,
+      "enare_metadata": {
+        "bloom_level": "Analisar/Avaliar",
+        "key_differential": "Explique o ponto central que diferencia a correta das outras"
+      }
     }
   ]
 }`;
@@ -113,6 +116,9 @@ Retorne APENAS um objeto JSON no formato:
         try {
           const forensic = await analyzeQuestionForensic(q, profile, supabaseAdmin);
           
+          const isElite = forensic.fidelity_score >= 90 && forensic.cognitive_score >= 85;
+          const isGold = forensic.fidelity_score >= 85 && forensic.cognitive_score >= 80;
+
           await supabaseAdmin.from("forensic_quality_logs").insert({
             board: profile.label,
             fidelity_score: forensic.fidelity_score,
@@ -122,13 +128,20 @@ Retorne APENAS um objeto JSON no formato:
             pedagogical_score: forensic.pedagogical_score,
             ai_pattern_score: forensic.ai_pattern.aiLikelihoodScore,
             flags: forensic.reasons,
-            decision: forensic.isValid ? 'ACCEPT' : 'REJECT',
+            decision: (isElite || isGold) ? 'ACCEPT' : 'REJECT',
             correlation_id: correlation.correlationId,
-            raw_response_preview: q.statement.substring(0, 200)
+            raw_response_preview: q.statement.substring(0, 200),
+            metadata: {
+              enare_lexical_score: forensic.lexical_score,
+              enare_cognitive_score: forensic.cognitive_score,
+              enare_difficulty_score: forensic.fidelity_score,
+              is_elite: isElite,
+              is_gold: isGold
+            }
           });
 
-          if (!forensic.isValid) {
-             logger.warn("FORENSIC_REJECT", `Question rejected with score ${forensic.fidelity_score}`);
+          if (!isElite && !isGold) {
+             logger.warn("QUALITY_LOCK_REJECT", `Question rejected: Fidelity ${forensic.fidelity_score}, Cognitive ${forensic.cognitive_score}`);
              continue;
           }
 
@@ -149,7 +162,8 @@ Retorne APENAS um objeto JSON no formato:
             specialty_id: specData?.id,
             difficulty: q.difficulty || 3,
             is_global: true,
-            quality_tier: forensic.fidelity_score >= 90 ? 'GOLD' : 'SILVER',
+            quality_tier: isElite ? 'ELITE' : 'GOLD',
+            difficulty_level: isElite ? 5 : 4,
             source: "bulk-ai-generator",
             review_status: "approved",
             board: "ENARE",
