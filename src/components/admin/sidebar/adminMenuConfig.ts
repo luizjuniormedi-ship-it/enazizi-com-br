@@ -23,8 +23,9 @@ import {
   Settings2, Flag, KeyRound, Plug, Cpu,
   Workflow, Server, Activity, Wrench, Network, BrainCircuit,
   ClipboardList, Sparkles, DollarSign, ShieldCheck, Database,
-  GitBranch, Target, Building2
+  GitBranch, Target, Building2, Megaphone
 } from "lucide-react";
+
 
 
 import type { AdminScope } from "@/hooks/useAdminScope";
