@@ -992,6 +992,10 @@ const ClinicalSimulation = () => {
                 setting={setting}
                 inactivityWarning={inactivityWarning}
                 abcdeChecklist={abcdeChecklist}
+                showMultiView={showMultiPatientView}
+                showStressTest={stressTestMode}
+                onToggleMultiView={() => setShowMultiPatientView(!showMultiPatientView)}
+                onToggleStressTest={() => setStressTestMode(!stressTestMode)}
               />
               <div className="hidden md:flex px-4 border-l border-slate-100">
                 <CareerBadge />
