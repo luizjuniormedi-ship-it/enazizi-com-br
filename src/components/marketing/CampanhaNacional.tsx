@@ -19,9 +19,9 @@ import {
   Stethoscope,
   ShieldCheck,
   TrendingUp,
-  Award,
-  LucideIcon
+  Award
 } from 'lucide-react';
+
 
 
 const STORYBOARDS = [
