@@ -17090,6 +17090,42 @@ export type Database = {
         }
         Relationships: []
       }
+      metric_registry: {
+        Row: {
+          created_at: string
+          formula: string | null
+          id: string
+          metric_name: string
+          owner_module: string | null
+          source_tables: string[] | null
+          update_frequency: string | null
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          formula?: string | null
+          id?: string
+          metric_name: string
+          owner_module?: string | null
+          source_tables?: string[] | null
+          update_frequency?: string | null
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          formula?: string | null
+          id?: string
+          metric_name?: string
+          owner_module?: string | null
+          source_tables?: string[] | null
+          update_frequency?: string | null
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       mnemonic_agent_logs: {
         Row: {
           agent_name: string
@@ -22752,6 +22788,48 @@ export type Database = {
         }
         Relationships: []
       }
+      recovery_audit_log: {
+        Row: {
+          attempt_id: string | null
+          created_at: string
+          error_detected: string | null
+          error_message: string | null
+          flashcard_created: boolean | null
+          fsrs_created: boolean | null
+          id: string
+          planner_updated: boolean | null
+          status: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          attempt_id?: string | null
+          created_at?: string
+          error_detected?: string | null
+          error_message?: string | null
+          flashcard_created?: boolean | null
+          fsrs_created?: boolean | null
+          id?: string
+          planner_updated?: boolean | null
+          status?: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          attempt_id?: string | null
+          created_at?: string
+          error_detected?: string | null
+          error_message?: string | null
+          flashcard_created?: boolean | null
+          fsrs_created?: boolean | null
+          id?: string
+          planner_updated?: boolean | null
+          status?: string
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recovery_events: {
         Row: {
           created_at: string
@@ -24910,6 +24988,30 @@ export type Database = {
           event_type?: string
           id?: string
           metadata?: Json | null
+        }
+        Relationships: []
+      }
+      system_trace_log: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
         }
         Relationships: []
       }
