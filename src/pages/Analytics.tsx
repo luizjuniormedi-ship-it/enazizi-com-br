@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical, Brain, Heart, PenLine, MessageCircle, ImageIcon, Activity } from "lucide-react";
+import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical, Brain, Heart, PenLine, MessageCircle, ImageIcon, Activity, Beaker } from "lucide-react";
 import { CinematicHero } from "@/components/cinematic";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
 import { useQuery } from "@tanstack/react-query";
