@@ -225,6 +225,7 @@ export default function TutorV2ChatPanel({ session, isExpanded, onToggleExpand }
               )}
               <TutorV2Actions session={session} onSendMessage={handleSendMessage} />
             </div>
+          </div>
 
           {/* Cognitive Progress Bar */}
           <div className="space-y-1.5">
