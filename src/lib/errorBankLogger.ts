@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ensureFsrsCard } from "@/lib/fsrsAutoCreate";
 import { ensurePersonalFlashcardFsrs } from "@/lib/personalFlashcardFsrs";
-4: import { auditRecoveryAttempt } from "./recoveryAudit";
+import { auditRecoveryAttempt } from "./recoveryAudit";
 
 interface LogErrorParams {
   userId: string;

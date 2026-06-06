@@ -15,6 +15,36 @@ export async function auditRecoveryAttempt(params: {
   attemptId?: string;
 }) {
   try {
+    if (params.attemptId) {
+      // Update existing attempt
+      const { error } = await supabase
+        .from('recovery_audit_log')
+        .update({
+          flashcard_created: params.flashcardCreated,
+          fsrs_created: params.fsrsCreated,
+          planner_updated: params.plannerUpdated,
+          status: params.status,
+          error_message: params.errorMessage
+        })
+        .eq('attempt_id', params.attemptId);
+
+      if (error) throw error;
+      
+      // Log traceability event (P0.9)
+      await supabase.from('system_trace_log').insert({
+        event_type: params.status === 'success' ? 'RECOVERY_CREATED' : 'RECOVERY_FAILED',
+        user_id: params.userId,
+        metadata: { 
+          topic: params.topic, 
+          attempt_id: params.attemptId,
+          error: params.errorMessage 
+        }
+      });
+
+      return params.attemptId;
+    }
+
+    // Create new attempt
     const { data, error } = await supabase
       .from('recovery_audit_log')
       .insert({
@@ -25,25 +55,12 @@ export async function auditRecoveryAttempt(params: {
         fsrs_created: params.fsrsCreated,
         planner_updated: params.plannerUpdated,
         status: params.status,
-        error_message: params.errorMessage,
-        attempt_id: params.attemptId
+        error_message: params.errorMessage
       })
       .select('attempt_id')
       .single();
 
     if (error) throw error;
-    
-    // Log traceability event (P0.9)
-    await supabase.from('system_trace_log').insert({
-      event_type: params.status === 'success' ? 'RECOVERY_CREATED' : 'RECOVERY_FAILED',
-      user_id: params.userId,
-      metadata: { 
-        topic: params.topic, 
-        attempt_id: data?.attempt_id,
-        error: params.errorMessage 
-      }
-    });
-
     return data?.attempt_id;
   } catch (err) {
     console.error("[AUDIT_RECOVERY_FAIL]", err);
