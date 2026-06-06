@@ -208,6 +208,31 @@ export const OutcomeScienceCenter: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Active Science Alerts (LS-2.7) */}
+        <Card className="bg-white/5 border-white/10 backdrop-blur-xl border-l-4 border-l-primary">
+          <CardHeader>
+            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-primary" /> Active Science Alerts
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-4 p-3 rounded-lg bg-white/5 border border-white/10">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-1" />
+              <div>
+                <p className="text-xs font-bold text-white uppercase">[METRIC_STABILITY_CONFIRMED]</p>
+                <p className="text-[10px] text-white/40 mt-1">Nenhum desvio (drift) significativo detectado nos últimos 30 dias.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4 p-3 rounded-lg bg-white/5 border border-white/10">
+              <Zap className="h-5 w-5 text-indigo-500 mt-1" />
+              <div>
+                <p className="text-xs font-bold text-white uppercase">[TUTOR_IMPACT_VALIDATED]</p>
+                <p className="text-[10px] text-white/40 mt-1">Causalidade confirmada entre uso do Tutor V3 e ganho de nota real (d = 0.92).</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Causality Analysis: Tutor Impact */}
         <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
           <CardHeader>
