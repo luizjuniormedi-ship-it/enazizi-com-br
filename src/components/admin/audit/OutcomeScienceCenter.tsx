@@ -41,6 +41,7 @@ import {
 } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { telemetry } from '@/lib/pedagogicalTelemetry';
 
 const SCATTER_DATA = [
   { readiness: 65, real_score: 62 },
