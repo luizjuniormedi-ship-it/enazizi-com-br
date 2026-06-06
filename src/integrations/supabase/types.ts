@@ -3311,6 +3311,39 @@ export type Database = {
         }
         Relationships: []
       }
+      causality_analysis_logs: {
+        Row: {
+          analyzed_at: string | null
+          causality_tier: string
+          confidence_score: number
+          effect_size_d: number | null
+          feature_name: string
+          id: string
+          longitudinal_stability: number | null
+          matching_method: string | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          causality_tier: string
+          confidence_score: number
+          effect_size_d?: number | null
+          feature_name: string
+          id?: string
+          longitudinal_stability?: number | null
+          matching_method?: string | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          causality_tier?: string
+          confidence_score?: number
+          effect_size_d?: number | null
+          feature_name?: string
+          id?: string
+          longitudinal_stability?: number | null
+          matching_method?: string | null
+        }
+        Relationships: []
+      }
       chance_by_exam: {
         Row: {
           banca: string
@@ -15073,6 +15106,48 @@ export type Database = {
           },
         ]
       }
+      institutional_dashboard_metrics: {
+        Row: {
+          approval_rate: number | null
+          avg_readiness: number | null
+          evidence_health_score: number | null
+          forecast_accuracy: number | null
+          fsrs_impact_score: number | null
+          id: string
+          institution_id: string
+          institution_name: string
+          last_refresh: string | null
+          total_students: number | null
+          tutor_impact_score: number | null
+        }
+        Insert: {
+          approval_rate?: number | null
+          avg_readiness?: number | null
+          evidence_health_score?: number | null
+          forecast_accuracy?: number | null
+          fsrs_impact_score?: number | null
+          id?: string
+          institution_id: string
+          institution_name: string
+          last_refresh?: string | null
+          total_students?: number | null
+          tutor_impact_score?: number | null
+        }
+        Update: {
+          approval_rate?: number | null
+          avg_readiness?: number | null
+          evidence_health_score?: number | null
+          forecast_accuracy?: number | null
+          fsrs_impact_score?: number | null
+          id?: string
+          institution_id?: string
+          institution_name?: string
+          last_refresh?: string | null
+          total_students?: number | null
+          tutor_impact_score?: number | null
+        }
+        Relationships: []
+      }
       institutional_governance: {
         Row: {
           current_value: number | null
@@ -20905,6 +20980,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      publication_datasets: {
+        Row: {
+          approval_rate: number
+          cohort_tag: string
+          confidence_interval: number
+          created_at: string | null
+          dataset_name: string
+          dataset_payload: Json | null
+          effect_size: number
+          evidence_score: number
+          forecast_accuracy: number
+          id: string
+          readiness_correlation: number
+          sample_size: number
+          validation_tier: string
+        }
+        Insert: {
+          approval_rate: number
+          cohort_tag: string
+          confidence_interval: number
+          created_at?: string | null
+          dataset_name: string
+          dataset_payload?: Json | null
+          effect_size: number
+          evidence_score: number
+          forecast_accuracy: number
+          id?: string
+          readiness_correlation: number
+          sample_size: number
+          validation_tier?: string
+        }
+        Update: {
+          approval_rate?: number
+          cohort_tag?: string
+          confidence_interval?: number
+          created_at?: string | null
+          dataset_name?: string
+          dataset_payload?: Json | null
+          effect_size?: number
+          evidence_score?: number
+          forecast_accuracy?: number
+          id?: string
+          readiness_correlation?: number
+          sample_size?: number
+          validation_tier?: string
+        }
+        Relationships: []
       }
       qa_auto_fixes: {
         Row: {
