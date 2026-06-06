@@ -154,7 +154,19 @@ serve(async (req) => {
 
     if (mode === "pdf_url" && url) {
       sourceName = `URL: ${url}`;
-      const resp = await fetch(url);
+      console.log(`[INGEST] Downloading PDF from: ${url}`);
+      
+      let resp;
+      try {
+        // Tenta o fetch padrão primeiro
+        resp = await fetch(url);
+      } catch (fetchErr) {
+        console.warn("[INGEST] Standard fetch failed, retrying with unsafe certificate allowance:", fetchErr.message);
+        // Fallback para sites com certificados inválidos/antigos (comum em portais de concursos)
+        const client = Deno.createHttpClient({ unsafeAllowAnyCertificate: true });
+        resp = await fetch(url, { client });
+      }
+
       if (!resp.ok) throw new Error(`Failed to download PDF: ${resp.status}`);
       const pdfBytes = new Uint8Array(await resp.arrayBuffer());
       fullText = await extractPdfTextFromBytes(pdfBytes);
