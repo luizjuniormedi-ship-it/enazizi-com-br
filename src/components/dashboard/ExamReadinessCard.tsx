@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Trophy, TrendingUp, TrendingDown, ChevronRight, AlertTriangle, CheckCircle2, Info, BookOpen, HelpCircle } from "lucide-react";
-3: import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
