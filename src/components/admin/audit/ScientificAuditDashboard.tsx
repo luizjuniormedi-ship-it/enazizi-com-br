@@ -275,7 +275,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             </Card>
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Dias Decorridos</CardInside>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Dias Decorridos</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-black">12/90</div>
@@ -283,6 +283,7 @@ export const ScientificAuditDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="bg-white/5 border-white/10">
