@@ -93,6 +93,8 @@ const LearningEffectiveness = lazyWithRetry(() => import("./pages/admin/Learning
 const HospitalVirtualPage = lazyWithRetry(() => import("./pages/admin/HospitalVirtualPage"), "HospitalVirtualPage");
 const ScientificAuditPage = lazyWithRetry(() => import("./pages/admin/ScientificAuditPage"), "ScientificAuditPage");
 const CampaignDashboardPage = lazyWithRetry(() => import("./pages/admin/CampaignDashboardPage"), "CampaignDashboardPage");
+const LearningScienceCenterPage = lazyWithRetry(() => import("./pages/LearningScienceCenterPage"), "LearningScienceCenterPage");
+
 
 
 
