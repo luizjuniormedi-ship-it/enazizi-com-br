@@ -41,6 +41,8 @@ import {
   Pie
 } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
 
 const MOCK_HISTORICAL_DATA = [
   { day: 'D-30', score: 65, control: 60 },
