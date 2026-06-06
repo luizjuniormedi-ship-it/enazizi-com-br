@@ -125,7 +125,18 @@ export type TelemetryEventName =
   | 'progress_opened'
   | 'library_opened'
   | 'navigation_error'
-  | 'route_load_failed';
+  | 'route_load_failed'
+  | 'ls_readiness_validated'
+  | 'ls_forecast_validated'
+  | 'ls_learning_yield_updated'
+  | 'ls_transfer_score_updated'
+  | 'ls_approval_gap_updated'
+  | 'ls_learning_velocity_updated'
+  | 'ls_knowledge_decay_calculated'
+  | 'ls_risk_index_updated'
+  | 'ls_tutor_impact_updated'
+  | 'ls_feature_attribution_updated';
+
 
 
 interface TelemetryProperties {
