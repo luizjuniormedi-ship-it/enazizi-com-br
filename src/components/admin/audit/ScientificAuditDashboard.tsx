@@ -17,7 +17,6 @@ import {
   AlertCircle,
   TrendingUp,
   Target,
-  FlaskConical,
   Activity,
   Zap,
   CheckCircle2,
@@ -26,8 +25,10 @@ import {
   BarChart3,
   Dna,
   Scale,
-  Megaphone
+  Megaphone,
+  FlaskConical
 } from 'lucide-react';
+import { OutcomeScienceCenter } from './OutcomeScienceCenter';
 
 import { 
   ResponsiveContainer, 
@@ -164,6 +165,9 @@ export const ScientificAuditDashboard: React.FC = () => {
           <TabsTrigger value="pedagogical" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Comparativo Pedagógico
           </TabsTrigger>
+          <TabsTrigger value="outcome-science" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
+            Outcome Science
+          </TabsTrigger>
           <TabsTrigger value="protocol" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Protocolo V6.1
           </TabsTrigger>
@@ -252,6 +256,10 @@ export const ScientificAuditDashboard: React.FC = () => {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="outcome-science" className="space-y-6">
+          <OutcomeScienceCenter />
         </TabsContent>
 
         <TabsContent value="protocol" className="space-y-6">

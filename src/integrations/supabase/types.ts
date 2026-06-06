@@ -14,6 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_cohort_members: {
+        Row: {
+          cohort_id: string
+          id: string
+          joined_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cohort_id: string
+          id?: string
+          joined_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cohort_id?: string
+          id?: string
+          joined_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_cohort_members_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "academic_cohorts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academic_cohorts: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          start_date: string | null
+          target_exam: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          start_date?: string | null
+          target_exam?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          start_date?: string | null
+          target_exam?: string | null
+        }
+        Relationships: []
+      }
       adaptive_experiment_efficacy: {
         Row: {
           avg_improvement_score: number | null
@@ -12412,6 +12474,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_attribution_scores: {
+        Row: {
+          calculation_method: string | null
+          confidence_level: number | null
+          created_at: string | null
+          feature_name: string
+          id: string
+          impact_weight: number
+          sample_size: number | null
+        }
+        Insert: {
+          calculation_method?: string | null
+          confidence_level?: number | null
+          created_at?: string | null
+          feature_name: string
+          id?: string
+          impact_weight: number
+          sample_size?: number | null
+        }
+        Update: {
+          calculation_method?: string | null
+          confidence_level?: number | null
+          created_at?: string | null
+          feature_name?: string
+          id?: string
+          impact_weight?: number
+          sample_size?: number | null
+        }
+        Relationships: []
+      }
       feature_flags: {
         Row: {
           created_at: string | null
@@ -18732,6 +18824,54 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      outcome_correlation_metrics: {
+        Row: {
+          approved: boolean | null
+          correlation_batch: string | null
+          created_at: string | null
+          exam_name: string | null
+          forecast_final: number | null
+          id: string
+          metadata: Json | null
+          readiness_final: number | null
+          real_exam_score: number | null
+          transfer_score: number | null
+          updated_at: string | null
+          user_id: string
+          yield_final: number | null
+        }
+        Insert: {
+          approved?: boolean | null
+          correlation_batch?: string | null
+          created_at?: string | null
+          exam_name?: string | null
+          forecast_final?: number | null
+          id?: string
+          metadata?: Json | null
+          readiness_final?: number | null
+          real_exam_score?: number | null
+          transfer_score?: number | null
+          updated_at?: string | null
+          user_id: string
+          yield_final?: number | null
+        }
+        Update: {
+          approved?: boolean | null
+          correlation_batch?: string | null
+          created_at?: string | null
+          exam_name?: string | null
+          forecast_final?: number | null
+          id?: string
+          metadata?: Json | null
+          readiness_final?: number | null
+          real_exam_score?: number | null
+          transfer_score?: number | null
+          updated_at?: string | null
+          user_id?: string
+          yield_final?: number | null
         }
         Relationships: []
       }
