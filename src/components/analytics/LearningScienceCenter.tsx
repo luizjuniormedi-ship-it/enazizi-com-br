@@ -55,6 +55,9 @@ export const LearningScienceCenter: React.FC = () => {
             <span className="text-xs text-muted-foreground font-mono">
               VALIDATED_AT: {new Date(snapshot.validatedAt).toLocaleTimeString()}
             </span>
+            <Badge className="bg-purple-600 text-white border-none ml-2 text-[10px]">
+              SCIENTIFIC TIER A
+            </Badge>
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Learning Science Center</h1>
           <p className="text-muted-foreground">Sistema de Evidência Científica e Validação Cognitiva</p>
