@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { 
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Cell, ReferenceLine
+  Tooltip, ResponsiveContainer, Cell, ReferenceLine, ZAxis
 } from 'recharts';
 import { OfficialResultImport } from './OfficialResultImport';
 
