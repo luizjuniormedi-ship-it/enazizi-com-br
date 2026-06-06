@@ -116,6 +116,7 @@ GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
       const profile = bancaInfo.profile;
 
 
+
       for (const q of questions) {
         try {
           const forensic = await analyzeQuestionForensic(q, profile, supabaseAdmin);
