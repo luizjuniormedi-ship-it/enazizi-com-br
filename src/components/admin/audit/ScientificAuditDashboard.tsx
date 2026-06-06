@@ -108,13 +108,21 @@ export const ScientificAuditDashboard: React.FC = () => {
         </div>
         <div className="flex gap-3">
           <Button 
-            onClick={startAudit} 
+            onClick={async () => {
+              startAudit();
+              try {
+                await supabase.functions.invoke('evidence-engine');
+              } catch (err) {
+                console.error("Evidence Engine trigger failed", err);
+              }
+            }} 
             disabled={isAuditing}
             variant="outline" 
             className="border-primary/30 text-primary hover:bg-primary/10 font-bold uppercase tracking-widest text-[10px]"
           >
             {isAuditing ? `Auditando ${auditProgress}%` : "Iniciar Auditoria Científica"}
           </Button>
+
           <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 uppercase tracking-widest text-[10px] px-3 py-1 flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
             V6 Ready Status
