@@ -159,12 +159,16 @@ serve(async (req) => {
       let resp;
       try {
         // Tenta o fetch padrão primeiro
-        resp = await fetch(url);
+        resp = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
       } catch (fetchErr) {
-        console.warn("[INGEST] Standard fetch failed, retrying with unsafe certificate allowance:", fetchErr.message);
-        // Fallback para sites com certificados inválidos/antigos (comum em portais de concursos)
-        const client = Deno.createHttpClient({ unsafeAllowAnyCertificate: true });
-        resp = await fetch(url, { client });
+        console.warn("[INGEST] Standard fetch failed, retrying with certificate allowance:", fetchErr.message);
+        try {
+          // Fallback para sites com certificados inválidos/antigos
+          const client = Deno.createHttpClient({ unsafeAllowAnyCertificate: true });
+          resp = await fetch(url, { client, headers: { "User-Agent": "Mozilla/5.0" } });
+        } catch (retryErr) {
+          throw new Error(`Critical download failure: ${retryErr.message}`);
+        }
       }
 
       if (!resp.ok) throw new Error(`Failed to download PDF: ${resp.status}`);

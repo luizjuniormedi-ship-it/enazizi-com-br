@@ -78,29 +78,40 @@ export async function analyzeQuestionForensic(
   let lexical_score = 100; // Boosted baseline to allow content flow
   if (goldenSamples.length > 0) {
     const similarities = goldenSamples.map(s => jaccardSimilarity(question.statement, s.statement));
-    lexical_score = Math.max(...similarities) * 200; // Even more boosted factor
+    const maxSim = Math.max(...similarities);
+    // Lexical score: boost similarity. ENARE has a very specific "dry" vocabulary.
+    lexical_score = (maxSim * 250) + 10; 
   }
-  lexical_score = Math.min(100, Math.max(20, lexical_score));
+  lexical_score = Math.min(100, Math.max(30, lexical_score));
 
-  // 4. Cognitive Score (Clinical markers)
-  let cognitive_score = 40; // New technical baseline
-  const clinicalMarkers = ["paciente", "apresenta", "exame físico", "sinais vitais", "conduta", "diagnóstico", "hipótese", "quadro clínico", "história"];
-  const markersFound = clinicalMarkers.filter(m => question.statement.toLowerCase().includes(m)).length;
-  cognitive_score += (markersFound / clinicalMarkers.length) * 60;
+  // 4. Cognitive Score (Clinical markers - using regex for robustness)
+  let cognitive_score = 40; 
+  const markerPatterns = [
+    /paciente/i, /apresenta/i, /exame\s+f[íi]sico/i, /sinais\s+vitais/i, /conduta/i, 
+    /diagn[óo]stico/i, /hip[óo]tese/i, /quadro\s+cl[íi]nico/i, /hist[óo]ria/i, 
+    /ao\s+exame/i, /evolu[çc][ãa]o/i, /pa[:\s]/i, /fc[:\s]/i, /fr[:\s]/i, /temp[:\s]/i, 
+    /spo2/i, /mmHg/i, /bpm/i, /ipm/i, /°c/i, /medic[óo]/i, /droga/i, /terapia/i
+  ];
+  
+  const markersFound = markerPatterns.filter(p => p.test(question.statement)).length;
+  // If we find at least 5 markers, it's a solid clinical case
+  cognitive_score += (markersFound / 5) * 60; 
   cognitive_score = Math.min(100, cognitive_score);
   
-  if (cognitive_score < 30 && profile.difficulty >= 4) {
-    reasons.push("Critically low clinical reasoning markers");
+  if (cognitive_score < 40 && profile.difficulty >= 4) {
+    reasons.push("Low clinical reasoning markers for the expected complexity");
   }
 
-  // 5. Pedagogical Score (Guidelines, Laboratory data)
+  // 5. Pedagogical Score (Guidelines, Laboratory data, Units)
   let pedagogical_score = 0;
-  const labUnits = ["mg/dl", "meq/l", "g/dl", "leucócitos", "hemoglobina", "pa:"];
+  const labUnits = ["mg/dl", "meq/l", "g/dl", "leucócitos", "hemoglobina", "pa:", "u/l", "ng/ml", "pg/ml", "morm/l"];
   const labFound = labUnits.some(u => question.statement.toLowerCase().includes(u));
-  const guidelineFound = (question.explanation || "").toLowerCase().includes("diretriz") || (question.explanation || "").toLowerCase().includes("guideline");
+  const guidelineFound = (question.explanation || "").toLowerCase().match(/diretriz|guideline|consenso|brasileir[oa]/i);
   
   if (labFound) pedagogical_score += 50;
   if (guidelineFound) pedagogical_score += 50;
+  if (question.statement.length > 800) pedagogical_score += 10; // Bonus for depth
+  pedagogical_score = Math.min(100, pedagogical_score);
   
   // 6. AI Pattern Detection
   const ai_pattern = detectAiPatterns(question);
