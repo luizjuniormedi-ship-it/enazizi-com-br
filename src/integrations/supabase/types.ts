@@ -13900,6 +13900,50 @@ export type Database = {
           },
         ]
       }
+      hospital_economics_logs: {
+        Row: {
+          cost: number | null
+          created_at: string | null
+          id: string
+          impact_description: string | null
+          is_indicated: boolean | null
+          patient_id: string | null
+          resource_name: string
+          resource_type: string
+          user_id: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string | null
+          id?: string
+          impact_description?: string | null
+          is_indicated?: boolean | null
+          patient_id?: string | null
+          resource_name: string
+          resource_type: string
+          user_id?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string | null
+          id?: string
+          impact_description?: string | null
+          is_indicated?: boolean | null
+          patient_id?: string | null
+          resource_name?: string
+          resource_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_economics_logs_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hospital_errors_v2: {
         Row: {
           clinical_consequence: string | null
@@ -14219,6 +14263,50 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      hospital_simulation_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          message: string
+          patient_id: string | null
+          priority: string | null
+          resolved_at: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          message: string
+          patient_id?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          message?: string
+          patient_id?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hospital_simulation_events_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_patients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hospital_staff: {
         Row: {
