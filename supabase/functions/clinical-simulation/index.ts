@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
+import { calculatePhysiologicalResponse, PatientState, ClinicalCondition } from "../_shared/clinical-deterministic-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
