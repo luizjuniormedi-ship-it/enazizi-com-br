@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { 
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Cell, ReferenceLine
+  Tooltip, ResponsiveContainer, Cell, ReferenceLine, ZAxis
 } from 'recharts';
 import { OfficialResultImport } from './OfficialResultImport';
 
@@ -34,8 +34,9 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
     return "TIER C: Observed Trend";
   };
 
-  // Mock data for calibration curve
-  const calibrationData = [
+  // Mock data only if no data present
+  const isMocked = snapshot.evidenceHealth.score === 0;
+  const calibrationData = isMocked ? [] : [
     { x: 10, y: 12 }, { x: 20, y: 22 }, { x: 30, y: 28 }, { x: 40, y: 42 },
     { x: 50, y: 48 }, { x: 60, y: 62 }, { x: 70, y: 68 }, { x: 80, y: 79 },
     { x: 90, y: 92 }, { x: 100, y: 98 }
@@ -103,12 +104,17 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
                   <XAxis type="number" dataKey="x" name="Readiness" unit="%" fontSize={10} />
                   <YAxis type="number" dataKey="y" name="Nota Real" unit="%" fontSize={10} />
                   <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                  <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]} stroke="red" strokeDasharray="3 3" />
+                  {!isMocked && <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]} stroke="red" strokeDasharray="3 3" />}
                   <Scatter name="Correlação" data={calibrationData} fill="#10b981">
                     {calibrationData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill="#10b981" />
                     ))}
                   </Scatter>
+                  {isMocked && (
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-[10px] italic">
+                      Aguardando amostra mínima (N=100) para calibração
+                    </text>
+                  )}
                 </ScatterChart>
               </ResponsiveContainer>
             </div>

@@ -25,7 +25,10 @@ export function useLearningScience(): LearningScienceSnapshot | null {
     const mappedHistory = core.approvalScores.map(s => ({
       score: s.score,
       date: s.created_at
-    })).reverse(); // Garantir ordem cronológica
+    })).reverse();
+
+    // LS-4: Requirement P3 - Logic to detect sufficient real data
+    const isReadyForScience = mappedHistory.length >= 100;
 
     return calculateLearningScienceSnapshot(prediction, {
       approvalScores: mappedHistory,
