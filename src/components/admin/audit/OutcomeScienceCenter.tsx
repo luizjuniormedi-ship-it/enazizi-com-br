@@ -113,9 +113,10 @@ export const OutcomeScienceCenter: React.FC = () => {
               toast({ title: "Gerando Relatório de Evidência", description: "Compilando dados para investidores e instituições..." });
               
               // Telemetry
-              supabase.from('audit_logs').insert({
-                action: 'INVESTOR_REPORT_GENERATED',
-                details: { type: 'outcome_science', tier: 'platinum' }
+              telemetry.track('ls_feature_attribution_updated', { 
+                type: 'outcome_science', 
+                tier: 'platinum',
+                action: 'INVESTOR_REPORT_GENERATED'
               });
 
               setTimeout(() => {
