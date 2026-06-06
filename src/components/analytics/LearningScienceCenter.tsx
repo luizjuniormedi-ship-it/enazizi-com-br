@@ -14,6 +14,7 @@ import {
   Activity, Info
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ScienceCenterLS3 } from './ScienceCenterLS3';
 
 export const LearningScienceCenter: React.FC = () => {
   const snapshot = useLearningScience();
@@ -349,6 +350,8 @@ export const LearningScienceCenter: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <ScienceCenterLS3 snapshot={snapshot} />
 
       <footer className="flex items-center justify-between border-t pt-4 text-[10px] text-muted-foreground font-mono">
         <div className="flex items-center gap-4">

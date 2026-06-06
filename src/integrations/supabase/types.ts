@@ -11918,6 +11918,54 @@ export type Database = {
         }
         Relationships: []
       }
+      evidence_health_metrics: {
+        Row: {
+          confidence_interval: number | null
+          correlation_pearson: number | null
+          correlation_spearman: number | null
+          effect_size: number | null
+          forecast_accuracy: number | null
+          forecast_error: number | null
+          id: string
+          last_updated: string | null
+          metric_name: string
+          r_squared: number | null
+          sample_size: number | null
+          score: number
+          tier: string | null
+        }
+        Insert: {
+          confidence_interval?: number | null
+          correlation_pearson?: number | null
+          correlation_spearman?: number | null
+          effect_size?: number | null
+          forecast_accuracy?: number | null
+          forecast_error?: number | null
+          id?: string
+          last_updated?: string | null
+          metric_name: string
+          r_squared?: number | null
+          sample_size?: number | null
+          score: number
+          tier?: string | null
+        }
+        Update: {
+          confidence_interval?: number | null
+          correlation_pearson?: number | null
+          correlation_spearman?: number | null
+          effect_size?: number | null
+          forecast_accuracy?: number | null
+          forecast_error?: number | null
+          id?: string
+          last_updated?: string | null
+          metric_name?: string
+          r_squared?: number | null
+          sample_size?: number | null
+          score?: number
+          tier?: string | null
+        }
+        Relationships: []
+      }
       evidence_validation_runs: {
         Row: {
           forecast_error: number | null
@@ -18487,42 +18535,63 @@ export type Database = {
       official_exam_results: {
         Row: {
           approval_status: string | null
+          approved: boolean | null
           cohort_id: string | null
           created_at: string | null
           exam_name: string
           exam_year: number
           id: string
+          import_method: string | null
           institution: string | null
           max_grade: number | null
+          official_document: string | null
           official_grade: number
+          ranking: number | null
+          score: number | null
           specialty_choice: string | null
           user_id: string | null
+          vacancies: number | null
+          validated: boolean | null
         }
         Insert: {
           approval_status?: string | null
+          approved?: boolean | null
           cohort_id?: string | null
           created_at?: string | null
           exam_name: string
           exam_year: number
           id?: string
+          import_method?: string | null
           institution?: string | null
           max_grade?: number | null
+          official_document?: string | null
           official_grade: number
+          ranking?: number | null
+          score?: number | null
           specialty_choice?: string | null
           user_id?: string | null
+          vacancies?: number | null
+          validated?: boolean | null
         }
         Update: {
           approval_status?: string | null
+          approved?: boolean | null
           cohort_id?: string | null
           created_at?: string | null
           exam_name?: string
           exam_year?: number
           id?: string
+          import_method?: string | null
           institution?: string | null
           max_grade?: number | null
+          official_document?: string | null
           official_grade?: number
+          ranking?: number | null
+          score?: number | null
           specialty_choice?: string | null
           user_id?: string | null
+          vacancies?: number | null
+          validated?: boolean | null
         }
         Relationships: [
           {
@@ -30279,6 +30348,15 @@ export type Database = {
       calculate_cme_media_health_score: {
         Args: { lesson_id: string }
         Returns: number
+      }
+      calculate_correlation: {
+        Args: { metric_type: string }
+        Returns: {
+          pearson: number
+          r2: number
+          sample: number
+          spearman: number
+        }[]
       }
       calculate_plan_viability: {
         Args: { target_user_id: string }
