@@ -57,8 +57,11 @@ const AUDIT_PHASES = [
   { id: 'cognitive', name: 'Cognitive Audit', icon: Brain, color: 'text-purple-500', meta: '85', current: '88.2' },
   { id: 'recovery', name: 'Recovery Audit', icon: Activity, color: 'text-emerald-500', meta: '100', current: '100' },
   { id: 'enare', name: 'ENARE Fidelity', icon: Dna, color: 'text-yellow-500', meta: '90', current: '92.1' },
+  { id: 'yield', name: 'Learning Yield', icon: GraduationCap, color: 'text-primary', meta: '80', current: '82.5' },
+  { id: 'transfer', name: 'Transfer Score', icon: Target, color: 'text-orange-500', meta: '75', current: '78.1' },
   { id: 'safety', name: 'Security Audit', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8' },
 ];
+
 
 export const ScientificAuditDashboard: React.FC = () => {
   const { toast } = useToast();
