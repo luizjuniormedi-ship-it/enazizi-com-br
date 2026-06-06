@@ -333,9 +333,10 @@ export const ScientificAuditDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-
+        </TabsContent>
 
         <TabsContent value="cognitive" className="space-y-6">
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
