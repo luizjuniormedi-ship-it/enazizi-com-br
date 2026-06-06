@@ -241,9 +241,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
                 </div>
               </div>
               <div className="pt-2">
-                <Badge variant="secondary" className="w-full justify-center text-[9px] py-1 cursor-pointer">
-                  IMPORTAR RESULTADO OFICIAL
-                </Badge>
+                <OfficialResultImport />
               </div>
             </div>
           </CardContent>
