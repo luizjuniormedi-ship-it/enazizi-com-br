@@ -140,7 +140,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
               </div>
             </div>
             <div className="text-[9px] text-muted-foreground italic text-center">
-              "Forecast Accuracy > 92% validada por auditoria externa LS-3."
+              "Forecast Accuracy &gt; 92% validada por auditoria externa LS-3."
             </div>
           </CardContent>
         </Card>
