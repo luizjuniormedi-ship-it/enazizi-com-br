@@ -17,7 +17,6 @@ import {
   AlertCircle,
   TrendingUp,
   Target,
-  FlaskConical,
   Activity,
   Zap,
   CheckCircle2,
