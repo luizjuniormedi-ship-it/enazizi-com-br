@@ -133,21 +133,27 @@ Retorne APENAS um objeto JSON no formato:
           }
 
 
+          // Tenta encontrar o specialty_id correto baseado no nome
+          const { data: specData } = await supabaseAdmin
+            .from("curriculum_specialties")
+            .select("id")
+            .ilike("nome", specialty.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))
+            .maybeSingle();
+
           const { error: insertError } = await supabaseAdmin.from("questions_bank").insert({
             statement: sanitizeAiContent(q.statement),
             options: q.options,
             correct_index: q.correct_index,
             explanation: sanitizeAiContent(q.explanation),
             topic: q.topic || specialty,
+            specialty_id: specData?.id,
             difficulty: q.difficulty || 3,
             is_global: true,
-            quality_tier: "exam_standard",
+            quality_tier: forensic.fidelity_score >= 90 ? 'GOLD' : 'SILVER',
             source: "bulk-ai-generator",
             review_status: "approved",
             board: "ENARE",
             board_similarity_score: forensic.fidelity_score,
-            quality_tier: forensic.fidelity_score >= 90 ? 'GOLD' : 'SILVER',
-
             year: 2025,
             user_id: user.id
           });
