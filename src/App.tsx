@@ -334,6 +334,8 @@ const App = () => (
                   <Route path="configuracoes" element={<Settings />} />
                   <Route path="favoritos" element={<Favoritos />} />
                   <Route path="historico" element={<Historico />} />
+                  <Route path="learning-science" element={<LearningScienceCenterPage />} />
+
 
                   {/* Redirecionamentos de conveniência / Legados */}
                   <Route path="home" element={<Navigate to="/dashboard" replace />} />
