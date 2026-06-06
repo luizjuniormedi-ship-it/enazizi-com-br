@@ -36,18 +36,35 @@ import {
 
 export const HospitalVirtualV5: React.FC = () => {
   // Q1: Ocupação por Setor
-  const { data: sectorStats } = useQuery({
+  const { data: sectorStats, isLoading: loadingSectors } = useQuery({
     queryKey: ['hospital-v5-sectors'],
     queryFn: async () => {
-      // Mocked realistic hospital data for V5
-      return [
-        { name: 'SALA VERMELHA', count: 2, capacity: 4, status: 'critical', color: '#ef4444' },
-        { name: 'SALA LARANJA', count: 5, capacity: 8, status: 'warning', color: '#f97316' },
-        { name: 'SALA AMARELA', count: 12, capacity: 15, status: 'stable', color: '#eab308' },
-        { name: 'SALA VERDE', count: 18, capacity: 25, status: 'stable', color: '#10b981' },
-        { name: 'UTI', count: 6, capacity: 10, status: 'critical', color: '#ef4444' },
-        { name: 'ENFERMARIA', count: 32, capacity: 40, status: 'stable', color: '#3b82f6' },
+      const { data: patients, error } = await supabase
+        .from('hospital_patients')
+        .select('sector, current_status');
+      
+      if (error) throw error;
+
+      const sectors = [
+        { name: 'SALA VERMELHA', id: 'sala_vermelha', count: 0, capacity: 4, status: 'stable', color: '#ef4444' },
+        { name: 'SALA LARANJA', id: 'sala_laranja', count: 0, capacity: 8, status: 'stable', color: '#f97316' },
+        { name: 'SALA AMARELA', id: 'sala_amarela', count: 0, capacity: 15, status: 'stable', color: '#eab308' },
+        { name: 'SALA VERDE', id: 'sala_verde', count: 0, capacity: 25, status: 'stable', color: '#10b981' },
+        { name: 'UTI', id: 'uti', count: 0, capacity: 10, status: 'stable', color: '#ef4444' },
+        { name: 'ENFERMARIA', id: 'enfermaria', count: 0, capacity: 40, status: 'stable', color: '#3b82f6' },
       ];
+
+      patients?.forEach(p => {
+        const sector = sectors.find(s => s.id === p.sector);
+        if (sector) {
+          sector.count++;
+          if (p.current_status === 'critico' || p.current_status === 'grave') {
+            sector.status = 'critical';
+          }
+        }
+      });
+
+      return sectors;
     }
   });
 
@@ -55,14 +72,44 @@ export const HospitalVirtualV5: React.FC = () => {
   const { data: clinicalClocks } = useQuery({
     queryKey: ['hospital-v5-clocks'],
     queryFn: async () => {
-      return [
-        { label: 'Porta-ECG (Meta: 10min)', value: 8, target: 10, unit: 'min', success: true },
-        { label: 'Porta-Trombolítico (Meta: 60min)', value: 52, target: 60, unit: 'min', success: true },
-        { label: 'Porta-Antibiótico (Meta: 60min)', value: 78, target: 60, unit: 'min', success: false },
-        { label: 'Tempo Porta-TC (Meta: 25min)', value: 34, target: 25, unit: 'min', success: false },
-      ];
+      const { data: clocks } = await supabase
+        .from('hospital_clinical_clocks')
+        .select('*');
+      
+      if (!clocks || clocks.length === 0) {
+        return [
+          { label: 'Porta-ECG (Meta: 10min)', value: 8, target: 10, unit: 'min', success: true },
+          { label: 'Porta-Trombolítico (Meta: 60min)', value: 52, target: 60, unit: 'min', success: true },
+          { label: 'Porta-Antibiótico (Meta: 60min)', value: 78, target: 60, unit: 'min', success: false },
+          { label: 'Tempo Porta-TC (Meta: 25min)', value: 34, target: 25, unit: 'min', success: false },
+        ];
+      }
+
+      return clocks.map(c => ({
+        label: `${c.clock_type} (Meta: ${c.target_minutes}min)`,
+        value: c.current_minutes,
+        target: c.target_minutes,
+        unit: 'min',
+        success: c.current_minutes <= c.target_minutes
+      }));
     }
   });
+
+  // Q3: Feed de Pacientes Reais
+  const { data: realPatients } = useQuery({
+    queryKey: ['hospital-v5-real-patients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hospital_patients')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const totalPatients = realPatients?.length || 0;
+  const criticalCount = realPatients?.filter(p => p.current_status === 'critico').length || 0;
 
   return (
     <div className="space-y-8 p-6 bg-[#050508] text-white min-h-screen">
@@ -97,9 +144,9 @@ export const HospitalVirtualV5: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black text-white">75</div>
+            <div className="text-4xl font-black text-white">{totalPatients}</div>
             <p className="text-[9px] text-white/30 font-mono mt-2 uppercase tracking-tighter">
-              Sob seus cuidados em 8 setores
+              Pacientes reais sob monitoramento V5.9+
             </p>
             <div className="mt-4 flex gap-1">
               {Array.from({ length: 12 }).map((_, i) => (
@@ -116,9 +163,9 @@ export const HospitalVirtualV5: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black text-red-500">03</div>
+            <div className="text-4xl font-black text-red-500">{criticalCount.toString().padStart(2, '0')}</div>
             <p className="text-[9px] text-white/30 font-mono mt-2 uppercase tracking-tighter italic">
-              "Enfermeiro no ramal 402: Choque na Sala 2"
+              "Priorize Sala Vermelha: {criticalCount} pacientes em estado crítico"
             </p>
             <Badge variant="outline" className="mt-4 border-red-500/30 text-red-500 text-[8px] animate-pulse">
               Ação Requerida Imediata
@@ -227,21 +274,17 @@ export const HospitalVirtualV5: React.FC = () => {
         </CardHeader>
         <CardContent className="py-2">
           <div className="space-y-2">
-            {[
-              { id: '102', patient: 'L.S. (67a)', sector: 'Sala Vermelha', status: 'Deteriorando', alert: 'Troponina (+) / PA 80/40' },
-              { id: '204', patient: 'M.A. (42a)', sector: 'Sala Amarela', status: 'Estável', alert: 'Aguardando RX Tórax (ETA 12m)' },
-              { id: '301', patient: 'J.C. (19a)', sector: 'Observação', status: 'Alta Pendente', alert: 'Revisar prescrição de saída' },
-              { id: '105', patient: 'R.T. (75a)', sector: 'UTI', status: 'Grave', alert: 'Gaso: Acidose Metabólica Severa' },
-            ].map((p, i) => (
+            {realPatients?.slice(0, 10).map((p, i) => (
               <div key={i} className="flex flex-col sm:flex-row gap-4 py-2 px-3 rounded-lg hover:bg-white/5 transition-colors border border-white/5">
                 <div className="flex items-center gap-3 w-48 shrink-0">
-                   <div className={`h-2 w-2 rounded-full ${p.status === 'Deteriorando' ? 'bg-red-500 animate-ping' : 'bg-emerald-500'}`} />
-                   <span className="text-[11px] font-black uppercase">{p.patient}</span>
-                   <Badge variant="outline" className="text-[8px] font-mono h-4">{p.id}</Badge>
+                   <div className={`h-2 w-2 rounded-full ${p.current_status === 'critico' || p.current_status === 'grave' ? 'bg-red-500 animate-ping' : 'bg-emerald-500'}`} />
+                   <span className="text-[11px] font-black uppercase">{p.name} ({p.age}a)</span>
                 </div>
-                <div className="w-32 text-[10px] font-bold text-white/40 uppercase shrink-0">{p.sector}</div>
-                <div className="flex-1 text-[10px] text-amber-500 italic font-medium">{p.alert}</div>
-                <ChevronRight className="h-3 w-3 text-white/10 hidden sm:block self-center" />
+                <div className="w-32 text-[10px] font-bold text-white/40 uppercase shrink-0">{p.sector.replace('_', ' ')}</div>
+                <div className="flex-1 text-[10px] text-amber-500 italic font-medium">{p.main_complaint}</div>
+                <Badge variant="outline" className={`text-[8px] font-mono h-4 ${p.current_status === 'critico' ? 'text-red-500 border-red-500' : 'text-emerald-500'}`}>
+                  {p.current_status}
+                </Badge>
               </div>
             ))}
           </div>
