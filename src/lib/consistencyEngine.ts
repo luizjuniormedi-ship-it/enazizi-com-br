@@ -11,7 +11,8 @@ export async function runMetricConsistencyAudit(userId: string) {
   // 1. Fetch Student Metrics (aggregated)
   const { data: studentStats } = await supabase.rpc('get_unified_dashboard_data', {
     p_user_id: userId,
-    p_today_iso: new Date().toISOString()
+    p_today_iso: new Date().toISOString(),
+    p_reset_at: '1900-01-01T00:00:00Z'
   });
 
   // 2. Fetch Professor BI data for same user
@@ -22,8 +23,9 @@ export async function runMetricConsistencyAudit(userId: string) {
   if (!studentStats || !profData) return { status: 'INCOMPLETE', divergence: 0 };
 
   // 3. Compare critical values
-  const studentAccuracy = studentStats.metrics?.accuracy || 0;
-  const profAccuracy = profData.accuracy || 0;
+  const stats = studentStats as any;
+  const studentAccuracy = stats.metrics?.accuracy || 0;
+  const profAccuracy = (profData as any).accuracy || 0;
   const divergence = Math.abs(studentAccuracy - profAccuracy);
 
   const report = {
