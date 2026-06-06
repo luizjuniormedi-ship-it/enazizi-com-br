@@ -59,8 +59,8 @@ export const LearningScienceCenter: React.FC = () => {
               SCIENTIFIC TIER A
             </Badge>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Learning Science Center</h1>
-          <p className="text-muted-foreground">Sistema de Evidência Científica e Validação Cognitiva</p>
+          <h1 className="text-3xl font-bold tracking-tight">ENAZIZI National Validation Center</h1>
+          <p className="text-muted-foreground">Scientific Evidence, Causality Attribution & Institutional Intelligence</p>
         </div>
         
         <div className="flex gap-2">
