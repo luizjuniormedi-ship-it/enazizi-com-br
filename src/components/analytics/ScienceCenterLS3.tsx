@@ -104,12 +104,17 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
                   <XAxis type="number" dataKey="x" name="Readiness" unit="%" fontSize={10} />
                   <YAxis type="number" dataKey="y" name="Nota Real" unit="%" fontSize={10} />
                   <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                  <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]} stroke="red" strokeDasharray="3 3" />
+                  {!isMocked && <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]} stroke="red" strokeDasharray="3 3" />}
                   <Scatter name="Correlação" data={calibrationData} fill="#10b981">
                     {calibrationData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill="#10b981" />
                     ))}
                   </Scatter>
+                  {isMocked && (
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-[10px] italic">
+                      Aguardando amostra mínima (N=100) para calibração
+                    </text>
+                  )}
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
