@@ -142,8 +142,10 @@ class TelemetryService {
   private isProcessing = false;
   private processingStartedAt = 0;
   private cachedUserId: string | null = null;
+  private experimentGroup: string | null = null;
   private userPromise: Promise<string | null> | null = null;
   private navStart: number = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
 
   private constructor() {
     this.sessionId = genUUID();
