@@ -31,8 +31,10 @@ import {
   Upload,
   Brain,
   Stethoscope,
-  ScrollText
+  ScrollText,
+  Beaker
 } from "lucide-react";
+
 
 import { motion, AnimatePresence } from "framer-motion";
 import enazizi from "@/assets/enazizi-mascot.png";
