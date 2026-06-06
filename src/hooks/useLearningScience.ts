@@ -43,6 +43,10 @@ export function useLearningScience(): LearningScienceSnapshot | null {
   useEffect(() => {
     if (snapshot) {
       telemetry.track('ls_readiness_validated', { score: snapshot.readiness });
+      telemetry.track('ls_readiness_correlation_updated', { correlation: snapshot.validation.pearsonCorrelation });
+      telemetry.track('ls_forecast_calibrated', { accuracy: snapshot.validation.forecastAccuracy });
+      telemetry.track('ls_approval_validated', { index: snapshot.validation.approvalCalibrationIndex });
+      telemetry.track('ls_evidence_health_updated', { score: snapshot.evidenceHealth.score });
       telemetry.track('ls_learning_yield_updated', { score: snapshot.learningYield.score });
       telemetry.track('ls_risk_index_updated', { level: snapshot.riskIndex.level });
     }

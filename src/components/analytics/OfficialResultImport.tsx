@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUp, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { telemetry } from '@/lib/pedagogicalTelemetry';
 
 export const OfficialResultImport: React.FC = () => {
   const { user } = useAuth();
@@ -59,7 +60,8 @@ export const OfficialResultImport: React.FC = () => {
       
       setOpen(false);
       // Telemetry LS-3.1
-      console.log('[REAL_RESULT_IMPORTED]', { exam: formData.exam_name });
+      telemetry.track('ls_real_result_imported', { exam: formData.exam_name });
+      telemetry.track('ls_outcome_confirmed', { exam: formData.exam_name, approved: formData.approved });
     } catch (error: any) {
       toast({
         title: "Erro na importação",
