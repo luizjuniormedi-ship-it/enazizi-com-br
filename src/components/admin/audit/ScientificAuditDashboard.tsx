@@ -244,6 +244,96 @@ export const ScientificAuditDashboard: React.FC = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="protocol" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Amostra Total</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-black">412</div>
+                <p className="text-[9px] text-emerald-500 uppercase mt-1">Meta: 500 (82.4%)</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Grupo Controle</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-black">204</div>
+                <p className="text-[9px] text-white/30 uppercase mt-1">Usuários Ativos</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Grupo Experimental</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-black">208</div>
+                <p className="text-[9px] text-white/30 uppercase mt-1">Usuários Ativos</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Dias Decorridos</CardInside>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-black">12/90</div>
+                <p className="text-[9px] text-white/30 uppercase mt-1">Sessão: D12</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader>
+                <CardTitle className="text-xs font-black uppercase tracking-widest">Evolução de Acertos (Normalizado)</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={MOCK_HISTORICAL_DATA}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                    <XAxis dataKey="day" stroke="#ffffff40" fontSize={10} />
+                    <YAxis stroke="#ffffff40" fontSize={10} />
+                    <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
+                    <Line type="monotone" dataKey="score" stroke="#3b82f6" name="Experimental" strokeWidth={3} dot={false} />
+                    <Line type="monotone" dataKey="control" stroke="#ffffff40" name="Controle" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader>
+                <CardTitle className="text-xs font-black uppercase tracking-widest">Effect Size (Cohen's d)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold">
+                    <span>Retenção D30</span>
+                    <span className="text-emerald-500">d = 0.85 (Grande)</span>
+                  </div>
+                  <Progress value={85} className="h-1 bg-white/5" indicatorClassName="bg-emerald-500" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold">
+                    <span>Transfer Score</span>
+                    <span className="text-emerald-500">d = 0.62 (Médio)</span>
+                  </div>
+                  <Progress value={62} className="h-1 bg-white/5" indicatorClassName="bg-emerald-500" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold">
+                    <span>Learning Yield</span>
+                    <span className="text-emerald-500">d = 0.74 (Médio-Grande)</span>
+                  </div>
+                  <Progress value={74} className="h-1 bg-white/5" indicatorClassName="bg-emerald-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+
         <TabsContent value="cognitive" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="bg-white/5 border-white/10">
