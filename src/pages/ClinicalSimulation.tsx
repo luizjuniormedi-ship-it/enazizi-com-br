@@ -48,6 +48,8 @@ import { useCountdownTimer } from "@/modules/clinical-simulation/state/useCountd
 import CareerBadge from "@/components/clinical-simulation/CareerBadge";
 import HospitalTeamPanel from "@/components/clinical-simulation/HospitalTeamPanel";
 import HospitalManagementDashboard from "@/components/clinical-simulation/HospitalManagementDashboard";
+import { MultiPatientGrid } from "@/components/clinical-simulation/MultiPatientGrid";
+import { StressTestDashboard } from "@/components/clinical-simulation/StressTestDashboard";
 
 const EVAL_LABELS: Record<string, string> = {
   anamnesis: "Anamnese", physical_exam: "Exame Físico", complementary_exams: "Exames Complementares",
@@ -226,6 +228,8 @@ const ClinicalSimulation = () => {
   const [prescriptionDialogOpen, setPrescriptionDialogOpen] = useState(false);
   const [mobileVitalsOpen, setMobileVitalsOpen] = useState(false);
   const [medRecordOpen, setMedRecordOpen] = useState(false);
+  const [showMultiPatientView, setShowMultiPatientView] = useState(true);
+  const [stressTestMode, setStressTestMode] = useState(false);
 
   // ─── RESULT STATE ───
   const [finalEval, setFinalEval] = useState<FinalEval | null>(null);
@@ -345,6 +349,20 @@ const ClinicalSimulation = () => {
       setPrevPatientStatus(patientStatus);
     }
   }, [patientStatus]);
+
+  const fetchActivePatients = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("hospital_patients")
+      .select("*")
+      .eq("is_active", true)
+      .order("sector", { ascending: true });
+    if (data) setActivePatients(data);
+  }, [user]);
+
+  useEffect(() => {
+    if (phase === "active") fetchActivePatients();
+  }, [phase, fetchActivePatients]);
 
   // Wave 1.2 — countdown loop migrado para useCountdownTimer (acima).
   // Mantido apenas o hook de logs/cleanup; nenhum setInterval local aqui.
