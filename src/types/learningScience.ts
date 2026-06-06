@@ -83,6 +83,33 @@ export interface LearningScienceSnapshot {
   featureAttributions: FeatureAttribution[];
   evidenceHealth: EvidenceHealthScore;
   validation: ValidationMetrics;
+  institutional?: InstitutionalSnapshot;
+  causality: CausalitySnapshot;
   validatedAt: string;
   telemetryTags: string[];
+}
+
+export interface InstitutionalSnapshot {
+  institutionName: string;
+  totalStudents: number;
+  avgReadiness: number;
+  approvalRate: number;
+  evidenceScore: number;
+  cohorts: CohortAnalysis[];
+}
+
+export interface CohortAnalysis {
+  name: string;
+  readiness: number;
+  velocity: number;
+  approvalRate: number;
+  retention: number;
+  dropoutRisk: number;
+}
+
+export interface CausalitySnapshot {
+  confidence: number; // 0-1
+  tier: 'Observed Trend' | 'Strong Correlation' | 'Probable Causality' | 'Validated Impact';
+  stabilityIndex: number;
+  effectSize: number;
 }
