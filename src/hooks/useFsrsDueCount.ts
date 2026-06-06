@@ -8,12 +8,6 @@
  *   const dueAqui = dueByTopic(topic ?? "") || 0;
  *
  * NÃO escreve no backend. Apenas leitura agregada para alimentar CTAs.
- *
- * Observações:
- *  - `card_ref_id` é o vínculo com a entidade original (flashcard / mnemônico).
- *    Para mapear card_ref_id → topic, fazemos um join de leitura em
- *    flashcards.tema quando o card_type = 'flashcard'. Mnemônicos e outros
- *    tipos contribuem apenas para o total global (sem map por tema).
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,9 +34,9 @@ export function useFsrsDueCount(): FsrsDueResult {
     queryFn: async () => {
       const nowIso = new Date().toISOString();
 
-      // 1) Cards vencidos do usuário (usa bridge para legados)
+      // 1) Cards vencidos do usuário (P0.1 Source of Truth: fsrs_cards)
       const { data: dueCards } = await supabase
-        .from("legacy_fsrs_bridge")
+        .from("fsrs_cards")
         .select("id, card_ref_id, card_type")
         .eq("user_id", user!.id)
         .lte("due", nowIso);

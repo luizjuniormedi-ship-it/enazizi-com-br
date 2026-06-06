@@ -1,7 +1,8 @@
 import { memo, useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePreparationIndex, type PreparationZone } from "@/hooks/usePreparationIndex";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -102,7 +103,23 @@ const PreparationIndexCard = memo(() => {
       <CardContent className="p-4 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-muted-foreground">Índice de Preparação</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium text-muted-foreground">Índice de Preparação</p>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/50 hover:text-primary cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-bold text-xs mb-1">Learning Yield</p>
+                  <p className="text-[10px] leading-relaxed">
+                    Mede a eficácia real do seu estudo. 
+                    Combina retenção, acurácia, volume e consistência para projetar seu sucesso.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <div className={cn("flex items-center gap-1 text-xs font-medium", deltaColor)}>
             <DeltaIcon className="h-3.5 w-3.5" />
             <span>{deltaText} esta semana</span>

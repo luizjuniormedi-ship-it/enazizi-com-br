@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ensureFsrsCard } from "@/lib/fsrsAutoCreate";
 import { ensurePersonalFlashcardFsrs } from "@/lib/personalFlashcardFsrs";
+import { auditRecoveryAttempt } from "./recoveryAudit";
 
 interface LogErrorParams {
   userId: string;
@@ -116,6 +117,14 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
       // Elo 1: FSRS do erro (mantém comportamento existente)
       ensureFsrsCard(userId, "erro", inserted.id);
 
+      // P0.2 Recovery Audit Start
+      const auditId = await auditRecoveryAttempt({
+        userId,
+        topic: tema,
+        errorDetected: conteudo?.slice(0, 500) || tipoQuestao,
+        status: 'pending'
+      });
+
       // Elo 2 (NOVO): Erro → Flashcard pessoal de revisão
       await createRecoveryFlashcard({
         userId,
@@ -126,6 +135,7 @@ export async function logErrorToBank(params: LogErrorParams): Promise<void> {
         conteudo,
         motivoErro,
         dificuldade,
+        auditId: auditId || undefined
       });
     }
   } catch (err) {
@@ -147,8 +157,9 @@ async function createRecoveryFlashcard(args: {
   conteudo?: string;
   motivoErro?: string;
   dificuldade?: number;
+  auditId?: string;
 }): Promise<void> {
-  const { userId, errorId, questionId, tema, subtema, conteudo, motivoErro, dificuldade } = args;
+  const { userId, errorId, questionId, tema, subtema, conteudo, motivoErro, dificuldade, auditId } = args;
 
   try {
     // Idempotência 1: já há flashcard para este erro?
@@ -206,6 +217,18 @@ async function createRecoveryFlashcard(args: {
 
       if (error || !data?.success) {
         console.warn("[RECOVERY_LOOP_PREMIUM_FAIL] Falling back to legacy generation", error);
+        
+        // Update audit with failure
+        if (auditId) {
+          await auditRecoveryAttempt({
+            userId,
+            topic: tema,
+            attemptId: auditId,
+            status: 'failed',
+            errorMessage: error?.message || 'Premium generation failed'
+          });
+        }
+
         // Legacy Fallback (para não perder o card se a IA falhar)
         const front = isRichQuestion 
           ? `Conceito falho em ${tema}:\nQual o ponto-chave que explica o erro no caso clínico apresentado?`
@@ -230,6 +253,7 @@ async function createRecoveryFlashcard(args: {
               question_id: questionId || null,
               source: "error_bank",
               created_by: "recovery_loop_v1_fallback",
+              audit_id: auditId || null
             },
           })
           .select("id")
@@ -241,10 +265,43 @@ async function createRecoveryFlashcard(args: {
             flashcardId: inserted.id,
             source: "flashcards_bank",
           });
+          
+          // Update audit with success on fallback
+          if (auditId) {
+            await auditRecoveryAttempt({
+              userId,
+              topic: tema,
+              attemptId: auditId,
+              status: 'success',
+              flashcardCreated: true,
+              fsrsCreated: true
+            });
+          }
+        }
+      } else {
+        // Update audit with success for premium
+        if (auditId) {
+          await auditRecoveryAttempt({
+            userId,
+            topic: tema,
+            attemptId: auditId,
+            status: 'success',
+            flashcardCreated: true,
+            fsrsCreated: true
+          });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("[RECOVERY_LOOP_INVOKE_EXCEPTION]", err);
+      if (auditId) {
+        await auditRecoveryAttempt({
+          userId,
+          topic: tema,
+          attemptId: auditId,
+          status: 'failed',
+          errorMessage: err?.message || String(err)
+        });
+      }
     }
 
   } catch (err: any) {
