@@ -109,7 +109,7 @@ export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) 
             <div className="space-y-2.5">
               <ContextBadge label="Harrison 21ed" color="bg-blue-500" />
               <ContextBadge label="SBC 2024" color="bg-emerald-500" />
-              <ContextBadge label="Protocolo Feynman" color="bg-purple-500" />
+              <ContextBadge label="Protocolo Feynman V3" color="bg-purple-500" />
             </div>
           </div>
         </div>
