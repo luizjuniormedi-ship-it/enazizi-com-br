@@ -30312,6 +30312,7 @@ export type Database = {
         Returns: number
       }
       normalize_medical_topic: { Args: { t: string }; Returns: string }
+      normalize_text: { Args: { txt: string }; Returns: string }
       ontology_observatory_snapshot: { Args: never; Returns: Json }
       ontology_review_action: {
         Args: { p_kind: string; p_meta?: Json; p_target: string }
