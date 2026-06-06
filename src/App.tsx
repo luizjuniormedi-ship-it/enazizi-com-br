@@ -91,6 +91,8 @@ const SemanticReviewCenter = lazyWithRetry(() => import("./pages/admin/SemanticR
 const DiagnosticTutor = lazyWithRetry(() => import("./pages/admin/DiagnosticTutor"), "DiagnosticTutor");
 const LearningEffectiveness = lazyWithRetry(() => import("./pages/admin/LearningEffectiveness"), "LearningEffectiveness");
 const HospitalVirtualPage = lazyWithRetry(() => import("./pages/admin/HospitalVirtualPage"), "HospitalVirtualPage");
+const ScientificAuditPage = lazyWithRetry(() => import("./pages/admin/ScientificAuditPage"), "ScientificAuditPage");
+
 
 
 
