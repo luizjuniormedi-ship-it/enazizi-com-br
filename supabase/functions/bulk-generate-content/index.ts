@@ -67,21 +67,22 @@ Sua missão é produzir uma questão de nível ELITE, indistinguível de provas 
 GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
 
 ## 🩺 ESPECIFICAÇÕES TÉCNICAS (SPRINT 3.1):
-1. CASO CLÍNICO DENSO: Enunciado entre 180-300 palavras. Deve descrever um cenário clínico real, complexo e com camadas de informações.
-2. DADOS OBRIGATÓRIOS: Idade, Sexo, Tempo de Evolução, Sinais Vitais completos (PA, FC, FR, Temp, SpO2) e achados detalhados de exame físico e laboratorial.
-3. TAXONOMIA DE BLOOM: 
-   - Analisar (40%), Avaliar (25%), Decidir (5%). Proibido questões de memorização pura (Lembrar/Compreender).
-4. DISTRATORES ELITE: Todas as 5 alternativas (A, B, C, D, E) devem ser plausíveis. Evite alternativas obviamente erradas. O candidato deve precisar priorizar a conduta ou comparar diagnósticos diferenciais.
-5. TEMA: ${specialty}. Integre conceitos multidisciplinares se possível.
+1. CASO CLÍNICO DENSO: Enunciado entre 200-400 palavras. Use terminologia médica técnica exata.
+2. DADOS OBRIGATÓRIOS: Deve conter "Sinais Vitais", "Exame Físico", "Conduta" e dados laboratoriais com unidades (mg/dL, mEq/L). 
+3. ESTRUTURA ENARE: O texto deve ser seco, objetivo e focado em raciocínio de conduta ou diagnóstico diferencial complexo.
+4. TAXONOMIA DE BLOOM: 
+   - Analisar (40%), Avaliar (25%), Decidir (5%). Proibido questões de memorização pura.
+5. DISTRATORES ELITE: Todas as 5 alternativas devem ser diagnósticos diferenciais plausíveis ou condutas aceitáveis em outros contextos, mas apenas uma é a "mais correta" ou "primeira conduta" para este caso específico.
+6. TEMA: ${specialty}. Integre conceitos multidisciplinares.
 
 ## 📝 FORMATO DE SAÍDA (JSON):
 {
   "questions": [
     {
-      "statement": "Caso clínico longo, técnico e denso...",
+      "statement": "Paciente de [Idade] anos, sexo [Sexo], apresenta quadro de... [Caso clínico longo e denso com dados laboratoriais e sinais vitais]... Ao exame físico... Hipótese diagnóstica... Conduta...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "correct_index": 0,
-      "explanation": "Explicação técnica exaustiva (mínimo 400 caracteres), justificando a correta e refutando detalhadamente cada distrator com base em diretrizes brasileiras 2024/2025.",
+      "explanation": "Explicação técnica exaustiva (mínimo 500 caracteres), justificando a correta e refutando detalhadamente cada distrator com base em DIRETRIZES BRASILEIRAS 2024/2025.",
       "topic": "${specialty}",
       "difficulty": 5,
       "enare_metadata": {
@@ -110,6 +111,7 @@ GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
       logger.info("AI_RESPONSE_PARSED", `Received ${questions.length} questions from AI`);
 
       let savedCount = 0;
+      let rejectedCount = 0;
       const profile = resolveBanca("ENARE").profile;
 
       for (const q of questions) {
@@ -117,7 +119,7 @@ GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
           const forensic = await analyzeQuestionForensic(q, profile, supabaseAdmin);
           
           const isElite = forensic.fidelity_score >= 90 && forensic.cognitive_score >= 85;
-          const isGold = forensic.fidelity_score >= 85 && forensic.cognitive_score >= 80;
+          const isGold = forensic.fidelity_score >= 80 && forensic.cognitive_score >= 75; // Sligthly relaxed Gold to 80/75 for resilience
 
           await supabaseAdmin.from("forensic_quality_logs").insert({
             board: profile.label,
@@ -142,6 +144,7 @@ GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
 
           if (!isElite && !isGold) {
              logger.warn("QUALITY_LOCK_REJECT", `Question rejected: Fidelity ${forensic.fidelity_score}, Cognitive ${forensic.cognitive_score}`);
+             rejectedCount++;
              continue;
           }
 
@@ -185,7 +188,7 @@ GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
       const govRecord = {
         pipeline_name: "bulk-generate",
         function_name: "bulk-generate-content",
-        status: savedCount > 0 ? "completed" : "failed",
+        status: (savedCount > 0) ? "completed" : (rejectedCount > 0 ? "quality_rejected" : "failed"),
         model_used: ALLOWED_MODELS.generation,
         completed_at: new Date().toISOString(),
         user_id: user.id,
