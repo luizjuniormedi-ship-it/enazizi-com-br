@@ -6,7 +6,7 @@ import { TutorV2Service } from "./services/TutorV2Service";
 import TutorV2MessageList from "./TutorV2MessageList";
 import TutorV2Input from "./TutorV2Input";
 import TutorV2Actions from "./TutorV2Actions";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Maximize2, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
 import { MascotAvatar } from "../mascot/MascotAvatar";
 import { MascotBubble } from "../mascot/MascotBubble";
@@ -20,9 +20,11 @@ import { TutorEnamedIndicator } from "./TutorEnamedIndicator";
 
 interface TutorV2ChatPanelProps {
   session: any;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
+export default function TutorV2ChatPanel({ session, isExpanded, onToggleExpand }: TutorV2ChatPanelProps) {
   const { user } = useAuth();
   const { messages, isLoading, addMessage, setMessages } = useTutorV2Messages(session.id);
   const [isTyping, setIsTyping] = useState(false);
@@ -207,8 +209,22 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
                 </p>
               </div>
             </div>
-            <TutorV2Actions session={session} onSendMessage={handleSendMessage} />
-          </div>
+            <div className="flex items-center gap-2">
+              {onToggleExpand && (
+                <button
+                  onClick={onToggleExpand}
+                  className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all group"
+                  title={isExpanded ? "Recolher" : "Expandir"}
+                >
+                  {isExpanded ? (
+                    <Minimize2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                  )}
+                </button>
+              )}
+              <TutorV2Actions session={session} onSendMessage={handleSendMessage} />
+            </div>
 
           {/* Cognitive Progress Bar */}
           <div className="space-y-1.5">

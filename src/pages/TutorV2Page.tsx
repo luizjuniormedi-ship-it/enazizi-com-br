@@ -20,6 +20,7 @@ export default function TutorV2Page() {
   const { user } = useAuth();
   const studyCtx = useStudyContext();
   const { session, isLoading, stats } = useTutorV2Session(sessionId);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [newTopic, setNewTopic] = useState(studyCtx?.topic || "");
   const [isCreating, setIsCreating] = useState(false);
   const [bootStatus, setBootStatus] = useState("");
@@ -297,9 +298,26 @@ export default function TutorV2Page() {
 
   return (
     <div className="flex h-full min-h-screen bg-slate-950 text-white overflow-hidden font-sans selection:bg-indigo-500/30">
-      <TutorV2Sidebar session={session} stats={stats} />
+      <AnimatePresence mode="wait">
+        {!isExpanded && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: "auto", opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="flex-shrink-0 overflow-hidden"
+          >
+            <TutorV2Sidebar session={session} stats={stats} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <main className="flex-1 relative flex flex-col min-w-0 min-h-0">
-        <TutorV2ChatPanel key={session?.id} session={session} />
+        <TutorV2ChatPanel 
+          key={session?.id} 
+          session={session} 
+          isExpanded={isExpanded}
+          onToggleExpand={() => setIsExpanded(!isExpanded)}
+        />
       </main>
     </div>
   );
