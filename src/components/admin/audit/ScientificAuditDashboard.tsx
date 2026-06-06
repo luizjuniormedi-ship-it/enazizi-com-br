@@ -41,6 +41,8 @@ import {
   Pie
 } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
 
 const MOCK_HISTORICAL_DATA = [
   { day: 'D-30', score: 65, control: 60 },
@@ -57,8 +59,11 @@ const AUDIT_PHASES = [
   { id: 'cognitive', name: 'Cognitive Audit', icon: Brain, color: 'text-purple-500', meta: '85', current: '88.2' },
   { id: 'recovery', name: 'Recovery Audit', icon: Activity, color: 'text-emerald-500', meta: '100', current: '100' },
   { id: 'enare', name: 'ENARE Fidelity', icon: Dna, color: 'text-yellow-500', meta: '90', current: '92.1' },
+  { id: 'yield', name: 'Learning Yield', icon: GraduationCap, color: 'text-primary', meta: '80', current: '82.5' },
+  { id: 'transfer', name: 'Transfer Score', icon: Target, color: 'text-orange-500', meta: '75', current: '78.1' },
   { id: 'safety', name: 'Security Audit', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8' },
 ];
+
 
 export const ScientificAuditDashboard: React.FC = () => {
   const { toast } = useToast();
@@ -105,13 +110,21 @@ export const ScientificAuditDashboard: React.FC = () => {
         </div>
         <div className="flex gap-3">
           <Button 
-            onClick={startAudit} 
+            onClick={async () => {
+              startAudit();
+              try {
+                await supabase.functions.invoke('evidence-engine');
+              } catch (err) {
+                console.error("Evidence Engine trigger failed", err);
+              }
+            }} 
             disabled={isAuditing}
             variant="outline" 
             className="border-primary/30 text-primary hover:bg-primary/10 font-bold uppercase tracking-widest text-[10px]"
           >
             {isAuditing ? `Auditando ${auditProgress}%` : "Iniciar Auditoria Científica"}
           </Button>
+
           <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 uppercase tracking-widest text-[10px] px-3 py-1 flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
             V6 Ready Status

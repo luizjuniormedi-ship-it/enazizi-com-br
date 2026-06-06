@@ -18893,6 +18893,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pedagogical_evidence_metrics: {
+        Row: {
+          audit_log: Json | null
+          created_at: string
+          false_negative_rate: number | null
+          false_positive_rate: number | null
+          id: string
+          learning_yield_score: number | null
+          retention_d30: number | null
+          retention_d90: number | null
+          transfer_score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audit_log?: Json | null
+          created_at?: string
+          false_negative_rate?: number | null
+          false_positive_rate?: number | null
+          id?: string
+          learning_yield_score?: number | null
+          retention_d30?: number | null
+          retention_d90?: number | null
+          transfer_score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audit_log?: Json | null
+          created_at?: string
+          false_negative_rate?: number | null
+          false_positive_rate?: number | null
+          id?: string
+          learning_yield_score?: number | null
+          retention_d30?: number | null
+          retention_d90?: number | null
+          transfer_score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pedagogical_health_indices: {
         Row: {
           cognitive_load: number | null
@@ -19037,6 +19079,42 @@ export type Database = {
           medical_coherence_passed?: boolean | null
           quality_score?: number | null
           safety_check_passed?: boolean | null
+        }
+        Relationships: []
+      }
+      pedagogical_recovery_tracking: {
+        Row: {
+          created_at: string
+          final_score: number | null
+          id: string
+          initial_score: number | null
+          metadata: Json | null
+          original_error_id: string | null
+          recovery_action_type: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          final_score?: number | null
+          id?: string
+          initial_score?: number | null
+          metadata?: Json | null
+          original_error_id?: string | null
+          recovery_action_type?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          final_score?: number | null
+          id?: string
+          initial_score?: number | null
+          metadata?: Json | null
+          original_error_id?: string | null
+          recovery_action_type?: string | null
+          status?: string | null
+          user_id?: string
         }
         Relationships: []
       }
