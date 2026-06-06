@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -24,8 +25,10 @@ import {
   ClipboardCheck,
   BarChart3,
   Dna,
-  Scale
+  Scale,
+  Megaphone
 } from 'lucide-react';
+
 import { 
   ResponsiveContainer, 
   AreaChart, 
