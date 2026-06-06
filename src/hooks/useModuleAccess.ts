@@ -88,13 +88,22 @@ export const useModuleAccess = () => {
       setLoading(false);
     };
 
-    load();
-  }, [user]);
+    if (!experimentLoading) {
+      load();
+    }
+  }, [user, experimentLoading]);
 
   const isModuleEnabled = (key: string) => {
     if (!user) return false;
+    
+    // Bloqueio do Hospital Virtual para o Grupo Controle do experimento V6.1
+    if ((key === "plantao" || key === "simulacao-clinica") && isControl) {
+      return false;
+    }
+
     return enabledModules.has(key);
   };
+
 
   return { enabledModules, isModuleEnabled, loading };
 };
