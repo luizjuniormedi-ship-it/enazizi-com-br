@@ -120,6 +120,7 @@ GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
 
 
 
+
       for (const q of questions) {
         try {
           const forensic = await analyzeQuestionForensic(q, profile, supabaseAdmin);
