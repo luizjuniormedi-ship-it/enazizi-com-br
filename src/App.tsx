@@ -418,6 +418,8 @@ const App = () => (
                 <Route path="diagnostic-tutor" element={<DiagnosticTutor />} />
                 <Route path="effectiveness" element={<LearningEffectiveness />} />
                 <Route path="hospital-v5" element={<HospitalVirtualPage />} />
+                <Route path="scientific-audit" element={<ScientificAuditPage />} />
+
 
 
               </Route>
