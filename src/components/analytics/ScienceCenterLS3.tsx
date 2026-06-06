@@ -34,8 +34,9 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
     return "TIER C: Observed Trend";
   };
 
-  // Mock data for calibration curve
-  const calibrationData = [
+  // Mock data only if no data present
+  const isMocked = snapshot.evidenceHealth.score === 0;
+  const calibrationData = isMocked ? [] : [
     { x: 10, y: 12 }, { x: 20, y: 22 }, { x: 30, y: 28 }, { x: 40, y: 42 },
     { x: 50, y: 48 }, { x: 60, y: 62 }, { x: 70, y: 68 }, { x: 80, y: 79 },
     { x: 90, y: 92 }, { x: 100, y: 98 }
