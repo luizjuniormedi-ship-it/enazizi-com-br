@@ -92,12 +92,10 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         badge: "Novo",
         keywords: ["audit", "científica", "caixa-preta", "v6", "pedagogia"],
       },
-
       {
-
-
         to: "/admin/monitoring",
         label: "Alunos",
+
         description: "Painel do mentor: alunos em risco, progresso e intervenções.",
         icon: Users,
         scopes: ["super_admin", "admin_pedagogico", "admin_operacional"],
