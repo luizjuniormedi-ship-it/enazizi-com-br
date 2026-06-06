@@ -84,17 +84,18 @@ export async function analyzeQuestionForensic(
   }
   lexical_score = Math.min(100, Math.max(30, lexical_score));
 
-  // 4. Cognitive Score (Clinical markers)
+  // 4. Cognitive Score (Clinical markers - using regex for robustness)
   let cognitive_score = 40; 
-  const clinicalMarkers = [
-    "paciente", "apresenta", "exame físico", "sinais vitais", "conduta", "diagnóstico", 
-    "hipótese", "quadro clínico", "história", "ao exame", "sobressai", "evolução",
-    "pa:", "fc:", "fr:", "temp:", "spo2", "mmHg", "bpm", "ipm", "°c"
+  const markerPatterns = [
+    /paciente/i, /apresenta/i, /exame\s+f[íi]sico/i, /sinais\s+vitais/i, /conduta/i, 
+    /diagn[óo]stico/i, /hip[óo]tese/i, /quadro\s+cl[íi]nico/i, /hist[óo]ria/i, 
+    /ao\s+exame/i, /evolu[çc][ãa]o/i, /pa[:\s]/i, /fc[:\s]/i, /fr[:\s]/i, /temp[:\s]/i, 
+    /spo2/i, /mmHg/i, /bpm/i, /ipm/i, /°c/i, /medic[óo]/i, /droga/i, /terapia/i
   ];
   
-  const markersFound = clinicalMarkers.filter(m => question.statement.toLowerCase().includes(m)).length;
-  // If we find at least 6 markers, it's likely a high-quality clinical case
-  cognitive_score += (markersFound / 6) * 60; 
+  const markersFound = markerPatterns.filter(p => p.test(question.statement)).length;
+  // If we find at least 5 markers, it's a solid clinical case
+  cognitive_score += (markersFound / 5) * 60; 
   cognitive_score = Math.min(100, cognitive_score);
   
   if (cognitive_score < 40 && profile.difficulty >= 4) {
