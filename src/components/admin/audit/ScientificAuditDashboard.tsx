@@ -177,6 +177,10 @@ export const ScientificAuditDashboard: React.FC = () => {
           <TabsTrigger value="shadow" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Shadow Examiner
           </TabsTrigger>
+          <TabsTrigger value="marketing" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
+            Marketing Ready
+          </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="pedagogical" className="space-y-6">
