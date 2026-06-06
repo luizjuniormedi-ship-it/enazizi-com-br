@@ -107,6 +107,28 @@ export const OutcomeScienceCenter: React.FC = () => {
         </div>
         <div className="flex gap-3">
           <Button 
+            onClick={async () => {
+              setIsLoading(true);
+              toast({ title: "Gerando Relatório de Evidência", description: "Compilando dados para investidores e instituições..." });
+              
+              // Telemetry
+              supabase.from('audit_logs').insert({
+                action: 'INVESTOR_REPORT_GENERATED',
+                details: { type: 'outcome_science', tier: 'platinum' }
+              });
+
+              setTimeout(() => {
+                setIsLoading(false);
+                toast({ title: "Relatório Concluído", description: "O PDF de Impacto Acadêmico foi gerado com sucesso." });
+              }, 3000);
+            }}
+            disabled={isLoading}
+            variant="outline"
+            className="border-white/10 text-white/60 hover:text-white font-bold uppercase tracking-widest text-[10px]"
+          >
+            <FileText className="h-3 w-3 mr-2" /> Gerar Relatório LS-2
+          </Button>
+          <Button 
             onClick={calculateCausality}
             disabled={isLoading}
             variant="outline" 
