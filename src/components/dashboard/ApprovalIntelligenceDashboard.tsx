@@ -2,15 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
   BarChart, Bar, Legend
 } from 'recharts';
 import { 
-  ShieldCheck, TrendingUp, AlertTriangle, CheckCircle2, 
-  Target, BarChart3, Activity, Zap
+  TrendingUp, Target, BarChart3, Activity, Zap
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function ApprovalIntelligenceDashboard() {
   const { data: stats, isLoading } = useQuery({
@@ -81,83 +81,108 @@ export default function ApprovalIntelligenceDashboard() {
   if (isLoading) return <Skeleton className="h-[600px] w-full" />;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard 
-          title="Precisão do Forecast" 
-          value={`${stats?.forecastAccuracy.toFixed(1)}%`} 
-          icon={<Target className="h-5 w-5 text-indigo-500" />}
-          trend="+2.4%"
-        />
-        <StatCard 
-          title="Sucesso de Recomendação" 
-          value={`${stats?.recommendationSuccess.toFixed(0)}%`} 
-          icon={<Zap className="h-5 w-5 text-amber-500" />}
-          trend="+5.1%"
-        />
-        <StatCard 
-          title="Readiness Drift" 
-          value={stats?.readinessDrift.length === 0 ? "Estável" : "Detectado"} 
-          icon={<Activity className="h-5 w-5 text-emerald-500" />}
-          color={stats?.readinessDrift.length === 0 ? "text-emerald-500" : "text-amber-500"}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-          <CardHeader>
-            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              Calibração: Previsto vs Real
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats?.chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="name" stroke="#888888" fontSize={10} />
-                <YAxis stroke="#888888" fontSize={10} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }}
-                  itemStyle={{ fontSize: '10px' }}
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="cursor-help">
+                <StatCard 
+                  title="Precisão do Forecast" 
+                  value={`${stats?.forecastAccuracy.toFixed(1)}%`} 
+                  icon={<Target className="h-5 w-5 text-indigo-500" />}
+                  trend="+2.4%"
                 />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '20px' }} />
-                <Line type="monotone" dataKey="forecast" name="Forecast" stroke="#6366f1" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="actual" name="Resultado Real" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Qual o nível de acerto da IA ao prever sua nota real em provas oficiais.</TooltipContent>
+          </Tooltip>
 
-        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-          <CardHeader>
-            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-amber-500" />
-              Top Temas de Maior Ganho Real
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats?.topThemes} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" stroke="#888888" fontSize={10} width={100} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="cursor-help">
+                <StatCard 
+                  title="Sucesso de Recomendação" 
+                  value={`${stats?.recommendationSuccess.toFixed(0)}%`} 
+                  icon={<Zap className="h-5 w-5 text-amber-500" />}
+                  trend="+5.1%"
                 />
-                <Bar dataKey="impact" name="Impacto na Nota" fill="url(#barGradient)" radius={[0, 4, 4, 0]} />
-                <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#6366f1" />
-                    <stop offset="100%" stopColor="#8b5cf6" />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Porcentagem de vezes que seguir a recomendação do Tutor resultou em ganho acadêmico comprovado.</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="cursor-help">
+                <StatCard 
+                  title="Estabilidade de Prontidão" 
+                  value={stats?.readinessDrift.length === 0 ? "Estável" : "Detectado"} 
+                  icon={<Activity className="h-5 w-5 text-emerald-500" />}
+                  color={stats?.readinessDrift.length === 0 ? "text-emerald-500" : "text-amber-500"}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Mede se seu conhecimento está se mantendo estável ou se há "esquecimento" (drift) em temas críticos.</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="bg-card/50 backdrop-blur-sm border-white/10">
+            <CardHeader>
+              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Calibração: Previsto vs Real
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats?.chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                  <XAxis dataKey="name" stroke="#888888" fontSize={10} />
+                  <YAxis stroke="#888888" fontSize={10} />
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }}
+                    itemStyle={{ fontSize: '10px' }}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '20px' }} />
+                  <Line type="monotone" dataKey="forecast" name="Previsto pela IA" stroke="#6366f1" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="actual" name="Resultado Real" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/50 backdrop-blur-sm border-white/10">
+            <CardHeader>
+              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-amber-500" />
+                Top Temas de Maior Ganho Real
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats?.topThemes} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" stroke="#888888" fontSize={10} width={100} />
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b' }}
+                  />
+                  <Bar dataKey="impact" name="Impacto na Nota" fill="url(#barGradient)" radius={[0, 4, 4, 0]} />
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
