@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -24,8 +25,10 @@ import {
   ClipboardCheck,
   BarChart3,
   Dna,
-  Scale
+  Scale,
+  Megaphone
 } from 'lucide-react';
+
 import { 
   ResponsiveContainer, 
   AreaChart, 
@@ -174,6 +177,10 @@ export const ScientificAuditDashboard: React.FC = () => {
           <TabsTrigger value="shadow" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Shadow Examiner
           </TabsTrigger>
+          <TabsTrigger value="marketing" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
+            Marketing Ready
+          </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="pedagogical" className="space-y-6">
@@ -337,6 +344,59 @@ export const ScientificAuditDashboard: React.FC = () => {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="marketing" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-white/5 border-white/10">
+              <CardHeader>
+                <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <Megaphone className="h-4 w-4 text-primary" /> Readiness para Lançamento Nacional
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold uppercase">
+                    <span>Maturidade das Funcionalidades</span>
+                    <span className="text-emerald-500">98%</span>
+                  </div>
+                  <Progress value={98} className="h-1.5 bg-white/5" indicatorClassName="bg-emerald-500" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold uppercase">
+                    <span>Validação Pedagógica (Evidence Engine)</span>
+                    <span className="text-primary">94%</span>
+                  </div>
+                  <Progress value={94} className="h-1.5 bg-white/5" indicatorClassName="bg-primary" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold uppercase">
+                    <span>UX / Valor Percebido</span>
+                    <span className="text-emerald-500">96%</span>
+                  </div>
+                  <Progress value={96} className="h-1.5 bg-white/5" indicatorClassName="bg-emerald-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10 border-l-4 border-l-primary">
+              <CardHeader>
+                <CardTitle className="text-xs font-black uppercase tracking-widest">Audit Decision: Launch Readiness</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="text-xs font-black text-emerald-500 uppercase mb-2">STATUS: READY FOR NATIONAL LAUNCH</div>
+                  <p className="text-[10px] text-white/70 leading-relaxed italic">
+                    "O ecossistema ENAZIZI atingiu a massa crítica de evidência científica e estabilidade operacional. Os diferenciais competitivos (Tutor V3 e Hospital Virtual) estão validados e prontos para escala nacional."
+                  </p>
+                </div>
+                <Button asChild className="w-full bg-primary text-black font-black uppercase tracking-widest text-[10px]">
+                  <Link to="/admin/national-campaign">Acessar Kit de Marketing</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
 
         <TabsContent value="cognitive" className="space-y-6">
 

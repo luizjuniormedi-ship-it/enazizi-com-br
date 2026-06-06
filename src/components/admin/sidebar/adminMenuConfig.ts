@@ -23,8 +23,9 @@ import {
   Settings2, Flag, KeyRound, Plug, Cpu,
   Workflow, Server, Activity, Wrench, Network, BrainCircuit,
   ClipboardList, Sparkles, DollarSign, ShieldCheck, Database,
-  GitBranch, Target, Building2
+  GitBranch, Target, Building2, Megaphone
 } from "lucide-react";
+
 
 
 import type { AdminScope } from "@/hooks/useAdminScope";
@@ -92,6 +93,16 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         badge: "Novo",
         keywords: ["audit", "científica", "caixa-preta", "v6", "pedagogia"],
       },
+      {
+        to: "/admin/national-campaign",
+        label: "Campanha Nacional",
+        description: "Dashboard de marketing, storyboards e ativos para lançamento nacional.",
+        icon: Megaphone,
+        scopes: ["super_admin", "admin_operacional"],
+        badge: "Novo",
+        keywords: ["marketing", "campanha", "lançamento", "ads", "storyboard"],
+      },
+
       {
         to: "/admin/monitoring",
         label: "Alunos",

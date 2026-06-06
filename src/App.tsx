@@ -92,6 +92,8 @@ const DiagnosticTutor = lazyWithRetry(() => import("./pages/admin/DiagnosticTuto
 const LearningEffectiveness = lazyWithRetry(() => import("./pages/admin/LearningEffectiveness"), "LearningEffectiveness");
 const HospitalVirtualPage = lazyWithRetry(() => import("./pages/admin/HospitalVirtualPage"), "HospitalVirtualPage");
 const ScientificAuditPage = lazyWithRetry(() => import("./pages/admin/ScientificAuditPage"), "ScientificAuditPage");
+const CampaignDashboardPage = lazyWithRetry(() => import("./pages/admin/CampaignDashboardPage"), "CampaignDashboardPage");
+
 
 
 
@@ -419,6 +421,8 @@ const App = () => (
                 <Route path="effectiveness" element={<LearningEffectiveness />} />
                 <Route path="hospital-v5" element={<HospitalVirtualPage />} />
                 <Route path="scientific-audit" element={<ScientificAuditPage />} />
+                <Route path="national-campaign" element={<CampaignDashboardPage />} />
+
 
 
 

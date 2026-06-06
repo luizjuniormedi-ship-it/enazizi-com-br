@@ -1,31 +1,32 @@
-import { Brain, BarChart3, Bot, Target } from "lucide-react";
+import { Brain, BarChart3, Bot, Target, ShieldCheck, Microscope } from "lucide-react";
 
 const solutions = [
   {
     icon: Brain,
-    title: "Missão Inteligente",
-    desc: "Você recebe exatamente o que estudar todos os dias, com base no seu estado real.",
+    title: "Tutor V3 Premium",
+    desc: "Criação de sessões clínicas reais com missões, mapas de aula e explicações Feynman personalizadas.",
     color: "from-primary/20 to-primary/5",
   },
   {
-    icon: BarChart3,
-    title: "Diagnóstico real",
-    desc: "O sistema identifica seus pontos fracos automaticamente e ajusta as prioridades.",
+    icon: Microscope,
+    title: "Evidence Engine",
+    desc: "Validação científica de cada recomendação baseada em eficácia pedagógica e retenção de longo prazo.",
+    color: "from-blue-500/20 to-blue-500/5",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Impact Engine",
+    desc: "Identifica seu gap de conhecimento e foca no que realmente aumenta sua chance real de aprovação.",
     color: "from-emerald-500/20 to-emerald-500/5",
   },
   {
-    icon: Bot,
-    title: "Tutor IA",
-    desc: "Explicações focadas no seu erro, não genéricas. Direto ao ponto da prova.",
-    color: "from-violet-500/20 to-violet-500/5",
-  },
-  {
     icon: Target,
-    title: "Foco em prova",
-    desc: "Tudo direcionado para a sua banca: ENARE, USP, UNIFESP, SUS-SP, Unicamp.",
+    title: "Banco de Erros Inteligente",
+    desc: "Cada erro vira um loop de recuperação com flashcards FSRS e sessões específicas com o Tutor.",
     color: "from-amber-500/20 to-amber-500/5",
   },
 ];
+
 
 const SolutionSection = () => (
   <section className="py-16 sm:py-24 relative overflow-hidden">
