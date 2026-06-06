@@ -2,7 +2,12 @@ import { Navigate } from "react-router-dom";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Loader2 } from "lucide-react";
+import { useExperimentGroup } from "@/hooks/useExperimentGroup";
+import { Loader2, Lock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+
 
 interface Props {
   moduleKey: string;
