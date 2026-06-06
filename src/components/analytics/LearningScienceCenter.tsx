@@ -49,8 +49,8 @@ export const LearningScienceCenter: React.FC = () => {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1">
-              <Beaker className="w-3 h-3 mr-1" /> PHASE LS-4 PUBLICATION READY
+            <Badge variant="outline" className={`px-3 py-1 ${snapshot.telemetryTags.includes('[SECURITY_AUDIT_PASSED]') ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/5 text-primary border-primary/20'}`}>
+              <Beaker className="w-3 h-3 mr-1" /> {snapshot.telemetryTags.includes('[SECURITY_AUDIT_PASSED]') ? 'SECURITY VERIFIED' : 'PHASE LS-4 PUBLICATION READY'}
             </Badge>
             <span className="text-xs text-muted-foreground font-mono">
               VALIDATED_AT: {new Date(snapshot.validatedAt).toLocaleTimeString()}
