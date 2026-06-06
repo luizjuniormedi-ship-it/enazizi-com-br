@@ -339,7 +339,9 @@ class TelemetryService {
           ...properties,
           time_to_first_action: properties.time_to_first_action ?? Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - this.navStart),
           time_to_first_block: properties.time_to_first_block ?? null,
+          experiment_group: this.experimentGroup || 'none',
         },
+
         route: properties.route ?? (typeof window !== 'undefined' ? window.location.pathname : null),
         device_type: this.getDeviceType(),
         screen_size: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : null,
