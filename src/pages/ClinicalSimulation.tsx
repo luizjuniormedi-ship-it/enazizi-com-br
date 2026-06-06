@@ -621,6 +621,37 @@ const ClinicalSimulation = () => {
       };
       setMessages((prev) => [...prev, simMsg]);
 
+      if (res.cognitive_interruption) {
+        setCognitiveEvent(res.cognitive_interruption);
+        toast({
+          title: "🚨 Interrupção Clínica",
+          description: res.cognitive_interruption.message,
+          variant: res.cognitive_interruption.priority === 'high' ? "destructive" : "default"
+        });
+        setMessages((prev) => [...prev, { 
+          role: "simulation", 
+          content: `⚠️ [INTERRUPÇÃO] ${res.cognitive_interruption.message}`,
+          type: "system",
+          timestamp: Date.now() 
+        }]);
+      }
+
+      if (res.prescription_validation) {
+        setPrescriptionAudit(res.prescription_validation);
+        if (res.prescription_validation.status !== 'correct') {
+          playSound("negative");
+          toast({
+            title: "💊 Alerta de Prescrição",
+            description: res.prescription_validation.feedback,
+            variant: "destructive"
+          });
+        }
+      }
+
+      if (res.scale_audit) {
+        setScaleAudit(res.scale_audit);
+      }
+
       if (res.score_delta && res.score_delta !== 0) {
         setScoreFlash(res.score_delta > 0 ? "green" : "red");
         playSound(res.score_delta > 0 ? "positive" : "negative");
