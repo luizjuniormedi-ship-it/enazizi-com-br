@@ -142,7 +142,12 @@ export type TelemetryEventName =
   | 'ls_readiness_correlation_updated'
   | 'ls_forecast_calibrated'
   | 'ls_approval_validated'
-  | 'ls_evidence_health_updated';
+  | 'ls_evidence_health_updated'
+  | 'ls_publication_dataset_created'
+  | 'ls_scientific_report_generated'
+  | 'ls_institutional_dashboard_refreshed'
+  | 'ls_causality_confidence_updated'
+  | 'ls_investor_pack_generated';
 
 
 
