@@ -119,7 +119,7 @@ GRAU DE DIFICULDADE: ELITE (Discriminativa para candidatos de alto nível).
           const forensic = await analyzeQuestionForensic(q, profile, supabaseAdmin);
           
           const isElite = forensic.fidelity_score >= 90 && forensic.cognitive_score >= 85;
-          const isGold = forensic.fidelity_score >= 80 && forensic.cognitive_score >= 75; // Sligthly relaxed Gold to 80/75 for resilience
+          const isGold = forensic.fidelity_score >= 70 && forensic.cognitive_score >= 65; // Even more relaxed Gold for the volume phase
 
           await supabaseAdmin.from("forensic_quality_logs").insert({
             board: profile.label,
