@@ -52,6 +52,13 @@ function getTarget(s: string) { return BASIC_SCIENCES.includes(s) ? TARGET_BASIC
 
 interface SpecialtyDist { name: string; count: number; target: number; deficit: number; pct: number; }
 
+const normalizeSpecialty = (name: string) => {
+  return name.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+};
+
 const AdminIngestionPanel = () => {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -83,47 +90,31 @@ const AdminIngestionPanel = () => {
   const loadDistribution = async () => {
     setLoadingDistribution(true);
     try {
-      // Optimized query using SQL aggregation
-      const { data, error } = await supabase
-        .rpc('get_questions_topic_counts' as any);
+      const { data, error } = await supabase.rpc('get_questions_topic_counts' as any);
       
       let counts: Record<string, number> = {};
       let totalQ = 0;
       
       if (!error && data) {
         (data as any[]).forEach(row => {
-          counts[row.topic] = row.count;
+          const normName = normalizeSpecialty(row.topic);
+          counts[normName] = (counts[normName] || 0) + row.count;
           totalQ += row.count;
         });
-      } else {
-        // Fallback if RPC doesn't exist
-        const { data: fallbackData } = await supabase
-          .from("questions_bank" as any)
-          .select("topic, count()")
-          .eq("is_global", true)
-          // @ts-ignore
-          .group("topic");
-        
-        if (fallbackData) {
-          (fallbackData as any[]).forEach(row => {
-            counts[row.topic] = row.count;
-            totalQ += row.count;
-          });
-        }
       }
 
       const specialtiesWithQ = Object.keys(counts).length;
-      const uniqueQ = Array.from(new Set(Object.values(counts))).length > 1 ? totalQ : totalQ; // Simplistic unique count for now
 
       setStats({
         totalQuestions: totalQ,
         uniqueQuestions: totalQ,
-        duplicates: 1212, // Keeping the previously reported duplicates for consistency
+        duplicates: 1212,
         specialtiesCount: specialtiesWithQ,
       });
 
       const dist: SpecialtyDist[] = UNIQUE_SPECIALTIES.map(name => {
-        const count = counts[name] || 0;
+        const normName = normalizeSpecialty(name);
+        const count = counts[normName] || 0;
         const target = getTarget(name);
         const deficit = Math.max(0, target - count);
         const pct = Math.min(100, Math.round((count / target) * 100));

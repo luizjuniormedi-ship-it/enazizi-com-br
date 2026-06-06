@@ -204,17 +204,26 @@ serve(async (req) => {
 
     const validQuestions = questions.filter(isValidQuestion);
     for (const q of validQuestions) {
+      const topicName = q.topic || banca || "Geral";
+      
+      // Lookup specialty_id
+      const { data: specData } = await supabase.from("curriculum_specialties")
+        .select("id")
+        .ilike("nome", topicName.normalize("NFD").replace(/[\u0300-\u036f]/g, ""))
+        .maybeSingle();
+
       const { data: question, error: insertError } = await supabase.from("questions_bank").insert({
         statement: sanitizeForPostgres(q.statement),
         options: q.options,
         correct_index: q.correct_index ?? q.correctIndex ?? 0,
         explanation: q.explanation || "",
-        topic: q.topic || banca || "Geral",
+        topic: topicName,
+        specialty_id: specData?.id,
         subtopic: q.subtopic || "Geral",
         year: year || new Date().getFullYear(),
-        board: banca || "Geral", // Map banca to board for consistency in questions_bank
+        board: banca || "Geral", 
         institution: banca || "Geral",
-        difficulty: 3, // medium/integer
+        difficulty: 3,
         is_global: true,
         source_url: url || "",
         user_id: userId,
