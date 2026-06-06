@@ -93,6 +93,8 @@ const LearningEffectiveness = lazyWithRetry(() => import("./pages/admin/Learning
 const HospitalVirtualPage = lazyWithRetry(() => import("./pages/admin/HospitalVirtualPage"), "HospitalVirtualPage");
 const ScientificAuditPage = lazyWithRetry(() => import("./pages/admin/ScientificAuditPage"), "ScientificAuditPage");
 const CampaignDashboardPage = lazyWithRetry(() => import("./pages/admin/CampaignDashboardPage"), "CampaignDashboardPage");
+const LearningScienceCenterPage = lazyWithRetry(() => import("./pages/LearningScienceCenterPage"), "LearningScienceCenterPage");
+
 
 
 
@@ -332,6 +334,8 @@ const App = () => (
                   <Route path="configuracoes" element={<Settings />} />
                   <Route path="favoritos" element={<Favoritos />} />
                   <Route path="historico" element={<Historico />} />
+                  <Route path="learning-science" element={<LearningScienceCenterPage />} />
+
 
                   {/* Redirecionamentos de conveniência / Legados */}
                   <Route path="home" element={<Navigate to="/dashboard" replace />} />

@@ -31,8 +31,10 @@ import {
   Upload,
   Brain,
   Stethoscope,
-  ScrollText
+  ScrollText,
+  Beaker
 } from "lucide-react";
+
 
 import { motion, AnimatePresence } from "framer-motion";
 import enazizi from "@/assets/enazizi-mascot.png";
@@ -51,6 +53,8 @@ const NAV_SECTIONS = [
       { to: "/dashboard/planner", label: "Hoje (Planner)", icon: Calendar },
       { to: "/dashboard/progress", label: "Meu Progresso", icon: BrainCircuit },
       { to: "/dashboard/enaflix", label: "Biblioteca ENAFLIX", icon: MonitorPlay },
+      { to: "/dashboard/learning-science", label: "Learning Science", icon: Beaker },
+
     ]
   },
   {
