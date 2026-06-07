@@ -928,7 +928,9 @@ const ClinicalSimulation = () => {
             completion_time_seconds: timeElapsed * 60
           });
 
-          if (studyNext?.recommendation?.targetId === specialty) {
+          const isContextMatch = studyCtx?.specialty === specialty || studyCtx?.topic === specialty;
+          
+          if (isContextMatch) {
             console.debug(CLINICAL_TELEMETRY.TRANSFER);
             await supabase.from('clinical_far_transfer').insert({
               user_id: user.id,
@@ -938,6 +940,7 @@ const ClinicalSimulation = () => {
               transfer_score: (res.final_score / 100) * 80
             });
           }
+
           
           console.debug(CLINICAL_TELEMETRY.EVIDENCE);
         } catch (err) {
