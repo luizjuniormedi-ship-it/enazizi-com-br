@@ -52,7 +52,7 @@ const DogfoodMonitor = () => {
 
   return (
     <div className="min-h-screen relative z-10 animate-fade-in pb-24">
-      <EnaflixBackgroundFX intensity="high" />
+      <EnaflixBackgroundFX intensity="intense" />
       
       <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
         <CinematicHero
