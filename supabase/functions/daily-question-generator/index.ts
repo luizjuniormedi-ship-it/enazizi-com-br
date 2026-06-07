@@ -258,7 +258,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
       !isDuplicate(q.statement, existingStatements) &&
       !ENGLISH_PATTERN.test(q.statement) &&
-      !IMAGE_REF_PATTERN.test(q.statement)
+      !IMAGE_REF_PATTERN.test(q.statement) &&
+      validateFinalQuestionTopic(q, specialty).allowed
     );
 
     if (questions.length === 0) return 0;
