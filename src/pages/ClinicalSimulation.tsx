@@ -312,6 +312,7 @@ const ClinicalSimulation = () => {
     if (data.messages) setMessages(data.messages);
     if (data.vitals) setVitals(data.vitals);
     if (data.setting) setSetting(data.setting);
+    if (data.currentTopic) setCurrentTopic(data.currentTopic);
     if (data.triageColor) setTriageColor(data.triageColor);
     if (data.patientStatus) { setPatientStatus(data.patientStatus); setPrevPatientStatus(data.patientStatus); }
     if (typeof data.score === "number") { setScore(data.score); setPrevScore(data.score); }
