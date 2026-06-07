@@ -41,11 +41,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 const radarData = [
-  { subject: 'Diagnostic Accuracy', A: 85, fullMark: 100 },
-  { subject: 'Therapeutic Choice', A: 78, fullMark: 100 },
-  { subject: 'Time Efficiency', A: 92, fullMark: 100 },
-  { subject: 'Patient Safety', A: 88, fullMark: 100 },
-  { subject: 'Clinical Gain', A: 65, fullMark: 100 },
+  { subject: 'Precisão Diagnóstica', A: 85, fullMark: 100 },
+  { subject: 'Escolha Terapêutica', A: 78, fullMark: 100 },
+  { subject: 'Eficiência de Tempo', A: 92, fullMark: 100 },
+  { subject: 'Segurança do Paciente', A: 88, fullMark: 100 },
+  { subject: 'Ganho Clínico', A: 65, fullMark: 100 },
 ];
 
 const gainData = [
@@ -107,11 +107,11 @@ export default function ClinicalEvidenceCenter() {
             </Badge>
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
               <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[8px] font-black uppercase text-emerald-500 tracking-tighter">Live Evidence</span>
+              <span className="text-[8px] font-black uppercase text-emerald-500 tracking-tighter">Evidência em Tempo Real</span>
             </div>
           </div>
           <h1 className="text-3xl font-black tracking-tighter uppercase italic">
-            Clinical <span className="text-primary">Evidence</span> Center
+            Centro de <span className="text-primary">Evidências</span> Clínicas
           </h1>
           <p className="text-white/40 text-xs font-medium max-w-2xl uppercase tracking-wider">
             Validação científica de raciocínio clínico e impacto educacional longitudinal.
@@ -133,7 +133,7 @@ export default function ClinicalEvidenceCenter() {
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Decision Quality Index (DQI)</p>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Índice de Qualidade de Decisão (DQI)</p>
                 <div className="flex items-baseline gap-2">
                   <h3 className={`text-3xl font-black italic tracking-tighter ${getDqiColor(stats.dqi)}`}>{stats.dqi}</h3>
                   <Badge className="bg-white/10 text-white/60 text-[8px] uppercase">{getDqiLabel(stats.dqi)}</Badge>
@@ -157,7 +157,7 @@ export default function ClinicalEvidenceCenter() {
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Clinical Learning Gain</p>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Ganho de Aprendizado Clínico</p>
                 <div className="flex items-baseline gap-2">
                   <h3 className="text-3xl font-black italic tracking-tighter text-emerald-400">{stats.gain}%</h3>
                   <TrendingUp className="h-4 w-4 text-emerald-400" />
@@ -181,7 +181,7 @@ export default function ClinicalEvidenceCenter() {
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Far Transfer Score</p>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Score de Transferência</p>
                 <div className="flex items-baseline gap-2">
                   <h3 className="text-3xl font-black italic tracking-tighter text-blue-400">{stats.transfer}%</h3>
                 </div>
@@ -200,7 +200,7 @@ export default function ClinicalEvidenceCenter() {
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Error Density</p>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Densidade de Erros</p>
                 <div className="flex items-baseline gap-2">
                   <h3 className="text-3xl font-black italic tracking-tighter text-rose-400">{stats.errors}</h3>
                   <span className="text-[10px] font-bold text-white/20 uppercase">por caso</span>
@@ -223,7 +223,7 @@ export default function ClinicalEvidenceCenter() {
           <CardHeader>
             <CardTitle className="text-lg font-black uppercase tracking-tighter flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Clinical Gain Velocity
+              Velocidade de Ganho Clínico
             </CardTitle>
             <CardDescription className="text-[10px] uppercase font-bold text-white/30">
               Evolução do raciocínio clínico por unidade de simulação.
@@ -269,7 +269,7 @@ export default function ClinicalEvidenceCenter() {
           <CardHeader>
             <CardTitle className="text-lg font-black uppercase tracking-tighter flex items-center gap-2">
               <Microscope className="h-5 w-5 text-primary" />
-              Skill Radar
+              Radar de Competências
             </CardTitle>
             <CardDescription className="text-[10px] uppercase font-bold text-white/30">
               Proficiência clínica por domínio.
@@ -284,7 +284,7 @@ export default function ClinicalEvidenceCenter() {
                   tick={{ fill: '#ffffff40', fontSize: 8, fontWeight: 'bold' }} 
                 />
                 <Radar
-                  name="Proficiency"
+                  name="Proficiência"
                   dataKey="A"
                   stroke="#8B5CF6"
                   fill="#8B5CF6"
@@ -300,7 +300,7 @@ export default function ClinicalEvidenceCenter() {
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-lg font-black uppercase tracking-tighter">Clinical Action Tracking</CardTitle>
+              <CardTitle className="text-lg font-black uppercase tracking-tighter">Rastreamento de Ações Clínicas</CardTitle>
               <CardDescription className="text-[10px] uppercase font-bold text-white/30">
                 Log em tempo real de decisões médicas.
               </CardDescription>
@@ -342,7 +342,7 @@ export default function ClinicalEvidenceCenter() {
 
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
-            <CardTitle className="text-lg font-black uppercase tracking-tighter">Patient Outcome Science</CardTitle>
+            <CardTitle className="text-lg font-black uppercase tracking-tighter">Ciência de Desfecho do Paciente</CardTitle>
             <CardDescription className="text-[10px] uppercase font-bold text-white/30">
               Correlação entre decisões e desfechos reais.
             </CardDescription>
@@ -367,7 +367,7 @@ export default function ClinicalEvidenceCenter() {
               <div className="p-4 rounded-3xl bg-primary/5 border border-primary/10 relative overflow-hidden group">
                 <div className="relative z-10 flex justify-between items-center">
                   <div className="space-y-1">
-                    <Badge className="bg-primary/20 text-primary border-none text-[8px] uppercase">Scientific Insight</Badge>
+                    <Badge className="bg-primary/20 text-primary border-none text-[8px] uppercase">Insight Científico</Badge>
                     <h4 className="text-xs font-black uppercase tracking-tight text-white/80">Otimização de Janela no AVC</h4>
                     <p className="text-[9px] font-medium text-white/40 max-w-[200px]">Alunos que estudaram "Janela Terapêutica" em Flashcards tiveram DQI 22% maior em simulações.</p>
                   </div>
@@ -387,7 +387,7 @@ export default function ClinicalEvidenceCenter() {
         <CardHeader>
           <CardTitle className="text-lg font-black uppercase tracking-tighter flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-primary" />
-            Clinical Evidence Audit
+            Auditoria de Evidência Clínica
           </CardTitle>
           <CardDescription className="text-[10px] uppercase font-bold text-white/30">
             Monitoramento de robustez e blindagem das evidências clínicas.

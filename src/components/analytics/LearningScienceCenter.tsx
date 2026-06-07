@@ -59,8 +59,8 @@ export const LearningScienceCenter: React.FC = () => {
               SCIENTIFIC TIER A
             </Badge>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">ENAZIZI National Validation Center</h1>
-          <p className="text-muted-foreground">Scientific Evidence, Causality Attribution & Institutional Intelligence</p>
+          <h1 className="text-3xl font-bold tracking-tight">Centro de Validação Nacional ENAZIZI</h1>
+          <p className="text-muted-foreground">Evidência Científica, Atribuição de Causalidade & Inteligência Institucional</p>
         </div>
         
         <div className="flex gap-2">
@@ -81,7 +81,7 @@ export const LearningScienceCenter: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
-              Readiness & Approval Science
+              Ciência de Prontidão & Aprovação
             </CardTitle>
             <CardDescription>Correlação atual com desempenho real: {Math.round(snapshot.forecastAccuracy * 100)}%</CardDescription>
           </CardHeader>
@@ -104,14 +104,14 @@ export const LearningScienceCenter: React.FC = () => {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-4xl font-bold">{Math.round(snapshot.readiness)}%</span>
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Readiness</span>
+                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Prontidão</span>
                 </div>
               </div>
               
               <div className="flex-1 space-y-6 w-full">
                 <div>
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-sm font-medium">Approval Gap (Target: 78%)</span>
+                    <span className="text-sm font-medium">Gap de Aprovação (Meta: 78%)</span>
                     <span className="text-2xl font-bold text-primary">-{snapshot.approvalGap}pts</span>
                   </div>
                   <Progress value={snapshot.readiness} className="h-3" />
@@ -122,12 +122,12 @@ export const LearningScienceCenter: React.FC = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <span className="text-[10px] uppercase text-muted-foreground block mb-1">Learning Velocity</span>
+                    <span className="text-[10px] uppercase text-muted-foreground block mb-1">Velocidade de Aprendizado</span>
                     <span className="text-xl font-bold text-emerald-500">+{snapshot.learningVelocity.currentVelocity}</span>
                     <span className="text-[10px] ml-1 opacity-70">pts/mês</span>
                   </div>
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <span className="text-[10px] uppercase text-muted-foreground block mb-1">Transfer Score</span>
+                    <span className="text-[10px] uppercase text-muted-foreground block mb-1">Score de Transferência</span>
                     <span className="text-xl font-bold">{snapshot.transferScore}%</span>
                     <span className="text-[10px] ml-1 opacity-70">fidelity</span>
                   </div>
@@ -143,7 +143,7 @@ export const LearningScienceCenter: React.FC = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className={`w-5 h-5 ${riskColor}`} />
-                Risk Index
+                Índice de Risco
               </CardTitle>
               <Badge variant="outline" className={`${riskColor} border-current uppercase text-[10px]`}>
                 {snapshot.riskIndex.level}
@@ -193,7 +193,7 @@ export const LearningScienceCenter: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-purple-500" />
-              Learning Yield Engine
+              Motor de Rendimento de Aprendizado
             </CardTitle>
             <CardDescription>{snapshot.learningYield.formula}</CardDescription>
           </CardHeader>
@@ -233,7 +233,7 @@ export const LearningScienceCenter: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-amber-500" />
-              Feature Attribution Score
+              Score de Atribuição de Funcionalidade
             </CardTitle>
             <CardDescription>Impacto de cada ferramenta na aprovação</CardDescription>
           </CardHeader>
@@ -266,7 +266,7 @@ export const LearningScienceCenter: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
               <History className="w-4 h-4 text-primary" />
-              Knowledge Decay Forecast (FSRS Logic)
+              Previsão de Declínio de Conhecimento (Lógica FSRS)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -310,7 +310,7 @@ export const LearningScienceCenter: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
               <Brain className="w-4 h-4 text-primary" />
-              Tutor Impact Science
+              Ciência de Impacto do Tutor
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">

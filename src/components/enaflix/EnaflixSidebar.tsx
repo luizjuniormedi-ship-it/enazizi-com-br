@@ -53,7 +53,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/planner", label: "Hoje (Planner)", icon: Calendar },
       { to: "/dashboard/progress", label: "Meu Progresso", icon: BrainCircuit },
       { to: "/dashboard/enaflix", label: "Biblioteca ENAFLIX", icon: MonitorPlay },
-      { to: "/dashboard/learning-science", label: "Learning Science", icon: Beaker },
+      { to: "/dashboard/learning-science", label: "Ciência de Aprendizado", icon: Beaker },
       { to: "/dashboard/clinical-evidence", label: "Evidência Clínica", icon: Activity },
 
 
