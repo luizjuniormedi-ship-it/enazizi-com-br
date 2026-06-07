@@ -188,15 +188,17 @@ export function enterpriseEdgeHandler(functionName: string, handler: EnterpriseH
       return new Response(
         JSON.stringify({
           success: false,
-          error: err.message,
+          error: "INTERNAL_ERROR",
+          message: "Erro interno no servidor.",
           correlation_id: correlation.correlationId,
           request_id: correlation.requestId,
         }),
-        { 
-          status, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        {
+          status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       );
+
     }
   };
 }
