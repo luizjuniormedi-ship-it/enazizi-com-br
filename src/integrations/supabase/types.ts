@@ -3594,6 +3594,48 @@ export type Database = {
           },
         ]
       }
+      classification_batches: {
+        Row: {
+          batch_size: number
+          completed_at: string | null
+          error_rate_sample: number | null
+          id: string
+          metadata: Json | null
+          model_used: string
+          prompt_version: string
+          quality_report: Json | null
+          started_at: string | null
+          status: string
+          total_cost: number | null
+        }
+        Insert: {
+          batch_size: number
+          completed_at?: string | null
+          error_rate_sample?: number | null
+          id?: string
+          metadata?: Json | null
+          model_used: string
+          prompt_version: string
+          quality_report?: Json | null
+          started_at?: string | null
+          status?: string
+          total_cost?: number | null
+        }
+        Update: {
+          batch_size?: number
+          completed_at?: string | null
+          error_rate_sample?: number | null
+          id?: string
+          metadata?: Json | null
+          model_used?: string
+          prompt_version?: string
+          quality_report?: Json | null
+          started_at?: string | null
+          status?: string
+          total_cost?: number | null
+        }
+        Relationships: []
+      }
       classification_health_snapshots: {
         Row: {
           created_at: string
@@ -21857,48 +21899,82 @@ export type Database = {
       }
       question_classification_staging: {
         Row: {
+          batch_id: string | null
+          batch_index: number | null
           classification_source: string | null
           classification_status: string | null
           competency_id: string | null
           confidence_score: number | null
+          cost: number | null
           created_at: string | null
+          cross_validated: boolean | null
           embedding: string | null
           id: string
+          model_used: string | null
+          predicted_area: string | null
           predicted_competency: string | null
           predicted_subtheme: string | null
           predicted_theme: string | null
+          prompt_version: string | null
           question_id: string | null
+          reasoning_summary: string | null
           updated_at: string | null
+          validation_divergence: string | null
         }
         Insert: {
+          batch_id?: string | null
+          batch_index?: number | null
           classification_source?: string | null
           classification_status?: string | null
           competency_id?: string | null
           confidence_score?: number | null
+          cost?: number | null
           created_at?: string | null
+          cross_validated?: boolean | null
           embedding?: string | null
           id?: string
+          model_used?: string | null
+          predicted_area?: string | null
           predicted_competency?: string | null
           predicted_subtheme?: string | null
           predicted_theme?: string | null
+          prompt_version?: string | null
           question_id?: string | null
+          reasoning_summary?: string | null
           updated_at?: string | null
+          validation_divergence?: string | null
         }
         Update: {
+          batch_id?: string | null
+          batch_index?: number | null
           classification_source?: string | null
           classification_status?: string | null
           competency_id?: string | null
           confidence_score?: number | null
+          cost?: number | null
           created_at?: string | null
+          cross_validated?: boolean | null
           embedding?: string | null
           id?: string
+          model_used?: string | null
+          predicted_area?: string | null
           predicted_competency?: string | null
           predicted_subtheme?: string | null
           predicted_theme?: string | null
+          prompt_version?: string | null
           question_id?: string | null
+          reasoning_summary?: string | null
           updated_at?: string | null
+          validation_divergence?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "question_classification_staging_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "classification_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "question_classification_staging_question_id_fkey"
             columns: ["question_id"]
