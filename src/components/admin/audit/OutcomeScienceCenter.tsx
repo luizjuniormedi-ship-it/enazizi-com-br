@@ -21,7 +21,8 @@ import {
   LineChart as LineChartIcon,
   Search,
   Dna,
-  Binary
+  Binary,
+  Info
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -31,7 +32,7 @@ import {
   YAxis, 
   ZAxis,
   CartesianGrid, 
-  Tooltip,
+  Tooltip as RechartsTooltip,
   BarChart,
   Bar,
   Cell,
@@ -42,6 +43,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { telemetry } from '@/lib/pedagogicalTelemetry';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 const SCATTER_DATA = [
   { readiness: 65, real_score: 62 },
