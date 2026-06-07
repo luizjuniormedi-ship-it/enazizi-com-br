@@ -22,6 +22,7 @@ import { EnaflixRecommendationCard } from "@/components/enaflix/EnaflixRecommend
 import AchievementToast from "@/components/gamification/AchievementToast";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import { UnifiedMissionHero } from "@/components/dashboard/UnifiedMissionHero";
+import TargetExamBanner from "@/components/dashboard/TargetExamBanner";
 import { MascotAvatar } from "@/components/mascot/MascotAvatar";
 import { MascotBubble } from "@/components/mascot/MascotBubble";
 import { useMascotState } from "@/components/mascot/useMascotState";
@@ -260,6 +261,8 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      <TargetExamBanner />
 
       <UnifiedMissionHero
         firstName={firstName}
