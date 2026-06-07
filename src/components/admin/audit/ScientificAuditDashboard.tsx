@@ -201,7 +201,7 @@ export const ScientificAuditDashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                     <XAxis dataKey="day" stroke="#ffffff40" fontSize={10} />
                     <YAxis stroke="#ffffff40" fontSize={10} />
-                    <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
                     <Bar dataKey="efficiency" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -279,7 +279,7 @@ export const ScientificAuditDashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                     <XAxis dataKey="day" stroke="#ffffff40" fontSize={10} />
                     <YAxis stroke="#ffffff40" fontSize={10} domain={[0, 100]} />
-                    <Tooltip 
+                    <RechartsTooltip 
                       contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20', borderRadius: '8px', fontSize: '10px' }}
                       itemStyle={{ color: '#fff' }}
                     />
@@ -385,7 +385,7 @@ export const ScientificAuditDashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                     <XAxis dataKey="day" stroke="#ffffff40" fontSize={10} />
                     <YAxis stroke="#ffffff40" fontSize={10} />
-                    <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
                     <Line type="monotone" dataKey="score" stroke="#3b82f6" name="Experimental" strokeWidth={3} dot={false} />
                     <Line type="monotone" dataKey="control" stroke="#ffffff40" name="Controle" strokeWidth={2} dot={false} />
                   </LineChart>
