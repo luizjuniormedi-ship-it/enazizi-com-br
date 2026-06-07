@@ -116,9 +116,7 @@ export const HospitalTeamPanel = ({ sessionId, patientId }: HospitalTeamPanelPro
         <div className="p-4 border-b bg-white/50">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Membros Ativos</h4>
-            <div title="Esta é a sua equipe de suporte. Eles executam suas ordens, monitoram o paciente e trazem alertas críticos do hospital." className="cursor-help">
-              <Badge variant="outline" className="text-[8px] h-4 opacity-50">?</Badge>
-            </div>
+            <InfoTooltip content="Esta é a sua equipe de suporte. Eles executam suas ordens, monitoram o paciente e trazem alertas críticos do hospital." />
           </div>
           <div className="flex flex-wrap gap-1">
             {staff.length > 0 ? staff.map((s) => (
@@ -172,22 +170,30 @@ export const HospitalTeamPanel = ({ sessionId, patientId }: HospitalTeamPanelPro
         <div className="p-4 border-t bg-white">
           <p className="text-[9px] font-bold text-slate-400 uppercase mb-2 tracking-widest text-center">Protocolos de Comunicação</p>
           <div className="grid grid-cols-2 gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-[10px] h-8 gap-1"
-              title="SBAR: Situation, Background, Assessment, Recommendation. Use para passar o caso para outro médico ou preceptor."
-            >
-              <MessageSquare className="w-3 h-3" /> SBAR
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-[10px] h-8 gap-1"
-              title="SPIKES: Protocolo para comunicação de más notícias."
-            >
-              <ShieldCheck className="w-3 h-3" /> SPIKES
-            </Button>
+            <div className="relative group">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-8 gap-1 w-full"
+              >
+                <MessageSquare className="w-3 h-3" /> SBAR
+              </Button>
+              <div className="absolute top-0 right-0 -mt-1 -mr-1">
+                <InfoTooltip content="SBAR: Situation, Background, Assessment, Recommendation. Use para passar o caso para outro médico ou preceptor." />
+              </div>
+            </div>
+            <div className="relative group">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-[10px] h-8 gap-1 w-full"
+              >
+                <ShieldCheck className="w-3 h-3" /> SPIKES
+              </Button>
+              <div className="absolute top-0 right-0 -mt-1 -mr-1">
+                <InfoTooltip content="SPIKES: Protocolo para comunicação de más notícias." />
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>
