@@ -43,8 +43,8 @@ export const CurriculumEvidenceDashboard = () => {
       const { data, error } = await supabase
         .from('curriculum_topics')
         .select('*')
-        .order('ips_score', { ascending: false })
-        .limit(20);
+        .order('ecs_score', { ascending: false })
+        .limit(30);
 
       if (error) throw error;
       setTopics(data || []);
