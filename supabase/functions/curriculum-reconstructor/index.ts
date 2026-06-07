@@ -119,9 +119,10 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
 
           if (isCritical) {
             const auditPrompt = `VALIDE ESTA CLASSIFICAÇÃO CRÍTICA.
-            Questão ID: ${res.question_id}
+            Statement da Questão: ${chunk.find(q => q.id === res.question_id)?.statement?.substring(0, 1000)}
             Classificação Proposta: ${res.predicted_theme} > ${res.predicted_subtheme}
-            Confirma que esta questão trata de ${CRITICAL_TOPICS.join(", ")}?
+            
+            Pergunta: Esta questão trata especificamente do tema ${res.predicted_theme} / ${res.predicted_subtheme}?
             Responda APENAS JSON: {"confirmed": boolean, "alternative_competency_id": "string", "reason": "string"}`;
 
             const auditResponse = await ai({
