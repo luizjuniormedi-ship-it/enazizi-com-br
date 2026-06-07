@@ -21730,6 +21730,54 @@ export type Database = {
         }
         Relationships: []
       }
+      question_drift_monitor: {
+        Row: {
+          board_name: string
+          cognitive_drift: number | null
+          drift_score: number | null
+          id: string
+          last_checked_at: string | null
+          lexical_drift: number | null
+          question_id: string
+          structural_drift: number | null
+        }
+        Insert: {
+          board_name: string
+          cognitive_drift?: number | null
+          drift_score?: number | null
+          id?: string
+          last_checked_at?: string | null
+          lexical_drift?: number | null
+          question_id: string
+          structural_drift?: number | null
+        }
+        Update: {
+          board_name?: string
+          cognitive_drift?: number | null
+          drift_score?: number | null
+          id?: string
+          last_checked_at?: string | null
+          lexical_drift?: number | null
+          question_id?: string
+          structural_drift?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_drift_monitor_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_drift_monitor_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_explanations: {
         Row: {
           clinical_reasoning: string | null
@@ -21928,6 +21976,66 @@ export type Database = {
           target_assets?: number
         }
         Relationships: []
+      }
+      question_impact_metrics: {
+        Row: {
+          approval_correlation_score: number | null
+          clinical_reasoning_impact: number | null
+          id: string
+          last_recalculated_at: string | null
+          metadata: Json | null
+          qis_score: number | null
+          question_id: string
+          recovery_success_rate: number | null
+          retention_contribution_score: number | null
+          sample_size: number | null
+          tier: string | null
+          transfer_contribution_score: number | null
+        }
+        Insert: {
+          approval_correlation_score?: number | null
+          clinical_reasoning_impact?: number | null
+          id?: string
+          last_recalculated_at?: string | null
+          metadata?: Json | null
+          qis_score?: number | null
+          question_id: string
+          recovery_success_rate?: number | null
+          retention_contribution_score?: number | null
+          sample_size?: number | null
+          tier?: string | null
+          transfer_contribution_score?: number | null
+        }
+        Update: {
+          approval_correlation_score?: number | null
+          clinical_reasoning_impact?: number | null
+          id?: string
+          last_recalculated_at?: string | null
+          metadata?: Json | null
+          qis_score?: number | null
+          question_id?: string
+          recovery_success_rate?: number | null
+          retention_contribution_score?: number | null
+          sample_size?: number | null
+          tier?: string | null
+          transfer_contribution_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_impact_metrics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_impact_metrics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       question_quality_flags: {
         Row: {
