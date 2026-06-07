@@ -148,6 +148,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
                 <phase.icon className={`h-4 w-4 ${phase.color}`} /> {phase.name}
+                <InfoTooltip content={phase.description} />
               </CardTitle>
             </CardHeader>
             <CardContent>
