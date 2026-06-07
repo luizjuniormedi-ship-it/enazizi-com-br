@@ -178,7 +178,7 @@ export const OutcomeScienceCenter: React.FC = () => {
                 <XAxis type="number" dataKey="readiness" name="Readiness" unit="%" stroke="#ffffff40" fontSize={10} domain={[0, 100]} />
                 <YAxis type="number" dataKey="real_score" name="Nota Real" unit="%" stroke="#ffffff40" fontSize={10} domain={[0, 100]} />
                 <ZAxis type="number" range={[60, 400]} />
-                <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
+                <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
                 <Scatter name="Estudantes" data={SCATTER_DATA} fill="#3b82f6" fillOpacity={0.6} />
               </ScatterChart>
             </ResponsiveContainer>
@@ -249,7 +249,7 @@ export const OutcomeScienceCenter: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                 <XAxis dataKey="group" stroke="#ffffff40" fontSize={10} />
                 <YAxis stroke="#ffffff40" fontSize={10} />
-                <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
+                <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '20px' }} />
                 <Bar dataKey="readiness_growth" name="Ganho de Readiness (%)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="approved" name="Taxa de Aprovação (%)" fill="#10b981" radius={[4, 4, 0, 0]} />
