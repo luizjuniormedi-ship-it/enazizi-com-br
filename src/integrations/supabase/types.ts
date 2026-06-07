@@ -13284,6 +13284,239 @@ export type Database = {
         }
         Relationships: []
       }
+      fccp_competency_audit: {
+        Row: {
+          competency_id: string | null
+          coverage_status: string | null
+          eligible_count: number | null
+          gold_count: number | null
+          gold_verified_count: number | null
+          id: string
+          last_audit_at: string | null
+          mapped_count: number | null
+          physical_count: number | null
+          published_count: number | null
+          topic_success_rate: number | null
+          uis_score: number | null
+          unique_count: number | null
+        }
+        Insert: {
+          competency_id?: string | null
+          coverage_status?: string | null
+          eligible_count?: number | null
+          gold_count?: number | null
+          gold_verified_count?: number | null
+          id?: string
+          last_audit_at?: string | null
+          mapped_count?: number | null
+          physical_count?: number | null
+          published_count?: number | null
+          topic_success_rate?: number | null
+          uis_score?: number | null
+          unique_count?: number | null
+        }
+        Update: {
+          competency_id?: string | null
+          coverage_status?: string | null
+          eligible_count?: number | null
+          gold_count?: number | null
+          gold_verified_count?: number | null
+          id?: string
+          last_audit_at?: string | null
+          mapped_count?: number | null
+          physical_count?: number | null
+          published_count?: number | null
+          topic_success_rate?: number | null
+          uis_score?: number | null
+          unique_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_competency_audit_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "fccp_curriculum_inventory"
+            referencedColumns: ["competency_id"]
+          },
+        ]
+      }
+      fccp_coverage_gap_registry: {
+        Row: {
+          competency_id: string | null
+          detected_at: string | null
+          gap_severity: string | null
+          id: string
+          priority_rank: number | null
+          remediation_status: string | null
+          source_priority: string | null
+        }
+        Insert: {
+          competency_id?: string | null
+          detected_at?: string | null
+          gap_severity?: string | null
+          id?: string
+          priority_rank?: number | null
+          remediation_status?: string | null
+          source_priority?: string | null
+        }
+        Update: {
+          competency_id?: string | null
+          detected_at?: string | null
+          gap_severity?: string | null
+          id?: string
+          priority_rank?: number | null
+          remediation_status?: string | null
+          source_priority?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_coverage_gap_registry_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "fccp_curriculum_inventory"
+            referencedColumns: ["competency_id"]
+          },
+        ]
+      }
+      fccp_curriculum_inventory: {
+        Row: {
+          competency: string
+          competency_id: string
+          created_at: string | null
+          id: string
+          specialty: string
+          subtheme: string | null
+          theme: string
+        }
+        Insert: {
+          competency: string
+          competency_id: string
+          created_at?: string | null
+          id?: string
+          specialty: string
+          subtheme?: string | null
+          theme: string
+        }
+        Update: {
+          competency?: string
+          competency_id?: string
+          created_at?: string | null
+          id?: string
+          specialty?: string
+          subtheme?: string | null
+          theme?: string
+        }
+        Relationships: []
+      }
+      fccp_learning_coverage: {
+        Row: {
+          competency_id: string | null
+          fsrs_ready: boolean | null
+          hospital_virtual_ready: boolean | null
+          id: string
+          recovery_mode_ready: boolean | null
+          tutor_v3_ready: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          competency_id?: string | null
+          fsrs_ready?: boolean | null
+          hospital_virtual_ready?: boolean | null
+          id?: string
+          recovery_mode_ready?: boolean | null
+          tutor_v3_ready?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          competency_id?: string | null
+          fsrs_ready?: boolean | null
+          hospital_virtual_ready?: boolean | null
+          id?: string
+          recovery_mode_ready?: boolean | null
+          tutor_v3_ready?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_learning_coverage_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "fccp_curriculum_inventory"
+            referencedColumns: ["competency_id"]
+          },
+        ]
+      }
+      fccp_specialty_certification: {
+        Row: {
+          certified_at: string | null
+          certified_count: number | null
+          competencies_count: number | null
+          id: string
+          is_certified: boolean | null
+          specialty: string
+          updated_at: string | null
+        }
+        Insert: {
+          certified_at?: string | null
+          certified_count?: number | null
+          competencies_count?: number | null
+          id?: string
+          is_certified?: boolean | null
+          specialty: string
+          updated_at?: string | null
+        }
+        Update: {
+          certified_at?: string | null
+          certified_count?: number | null
+          competencies_count?: number | null
+          id?: string
+          is_certified?: boolean | null
+          specialty?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      fccp_user_impact_validation: {
+        Row: {
+          competency_id: string | null
+          id: string
+          questions_requested: number | null
+          questions_returned: number | null
+          success: boolean | null
+          test_run_id: string | null
+          uis_result: number | null
+          validated_at: string | null
+        }
+        Insert: {
+          competency_id?: string | null
+          id?: string
+          questions_requested?: number | null
+          questions_returned?: number | null
+          success?: boolean | null
+          test_run_id?: string | null
+          uis_result?: number | null
+          validated_at?: string | null
+        }
+        Update: {
+          competency_id?: string | null
+          id?: string
+          questions_requested?: number | null
+          questions_returned?: number | null
+          success?: boolean | null
+          test_run_id?: string | null
+          uis_result?: number | null
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_user_impact_validation_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "fccp_curriculum_inventory"
+            referencedColumns: ["competency_id"]
+          },
+        ]
+      }
       feature_attribution_scores: {
         Row: {
           calculation_method: string | null
@@ -32005,6 +32238,13 @@ export type Database = {
           registry_id: string | null
           root_cause: string | null
           user_impact_status: string | null
+        }
+        Relationships: []
+      }
+      v_fccp_curriculum_completeness_score: {
+        Row: {
+          ccs_score: number | null
+          total_competencies: number | null
         }
         Relationships: []
       }
