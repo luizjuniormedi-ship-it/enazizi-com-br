@@ -4,6 +4,7 @@ import { aiFetch } from "../_shared/ai-fetch.ts";
 import { sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { cleanQuestionText } from "../_shared/contracts/parser.contract.ts";
 import { IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
+import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -660,6 +661,11 @@ REGRAS INVIOLÁVEIS:
         }
         allCached = allCached.filter((q: any) => {
           const stmt = String(q.statement || "");
+          const guard = validateFinalQuestionTopic(q, topics[0]);
+          if (!guard.allowed) {
+            console.log(`[Bank_Guard] Rejeitada topic=${topics[0]} reason=${guard.reason} id=${q.id}`);
+            return false;
+          }
           return !IMAGE_REF_PATTERN.test(stmt) && !ENGLISH_PATTERN.test(stmt);
         });
         // Shuffle global para variar conteúdo entre simulados.
@@ -738,8 +744,15 @@ REGRAS INVIOLÁVEIS:
                   else continue;
                 }
 
-                // Strict filter: language, length, structure
-                const valid = strictFilter(parsed, level);
+                // Strict filter: language, length, structure + Topic Guard
+                const valid = strictFilter(parsed, level).filter((q: any) => {
+                  const guard = validateFinalQuestionTopic(q, topics[0]);
+                  if (!guard.allowed) {
+                    console.log(`[AI_Guard] Rejeitada topic=${topics[0]} reason=${guard.reason}`);
+                    return false;
+                  }
+                  return true;
+                });
 
                 // Dedup
                 const prevKeys = new Set(globalPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
@@ -813,13 +826,17 @@ REGRAS INVIOLÁVEIS:
 
         const generatedCount = allQuestions.length;
         const missingCount = requestedCount - generatedCount;
+        const insufficientQuestions = generatedCount < requestedCount;
 
         return ok({
+          success: true,
           questions: allQuestions,
           source,
           requested_count: requestedCount,
           generated_count: generatedCount,
           missing_count: missingCount,
+          insufficientQuestions,
+          message: insufficientQuestions ? `Encontramos apenas ${generatedCount} questões para os filtros selecionados.` : undefined,
           exact_count: missingCount === 0,
           difficulty_distribution: finalDistribution,
           slot_metrics: slotMetrics,

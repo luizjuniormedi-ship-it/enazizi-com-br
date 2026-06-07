@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
+import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -257,7 +258,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
       !INVALID_CONTENT_REGEX.test(q.explanation || "") &&
       !isDuplicate(q.statement, existingStatements) &&
       !ENGLISH_PATTERN.test(q.statement) &&
-      !IMAGE_REF_PATTERN.test(q.statement)
+      !IMAGE_REF_PATTERN.test(q.statement) &&
+      validateFinalQuestionTopic(q, specialty).allowed
     );
 
     if (questions.length === 0) return 0;

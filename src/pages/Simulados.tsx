@@ -187,7 +187,14 @@ async function generateBatch(
   mode: SimuladoMode = "estudo",
   avoidIds?: string[],
   selectedSubtopics: string[] = []
-): Promise<{ questions: SimQuestion[]; sessionId: string | null; insufficientQuestions?: boolean; message?: string }> {
+): Promise<{ 
+  questions: SimQuestion[]; 
+  sessionId: string | null; 
+  insufficientQuestions?: boolean; 
+  message?: string;
+  requestedCount?: number;
+  generatedCount?: number;
+}> {
   // [SIM_UI_FILTERS_SUBMITTED]
   console.log("[SIM_UI_FILTERS_SUBMITTED] Config:", { topics, count, difficulty, examBoard, mode, selectedSubtopics });
   const startedAt = performance.now();
@@ -256,9 +263,10 @@ async function generateBatch(
       questions: mapQuestions(data.questions || [], topics), 
       sessionId: data.session_id || null,
       insufficientQuestions: data.insufficientQuestions,
-      message: data.message
+      message: data.message,
+      requestedCount: data.requestedCount,
+      generatedCount: data.generatedCount
     };
-
   } catch (e) {
     const durationMs = Math.round(performance.now() - startedAt);
     const isTimeout = e instanceof TimeoutError;
@@ -537,6 +545,8 @@ const Simulados = () => {
     setShowConfigStep(false); // Ensure config step is hidden when starting
 
     try {
+      setLoadingPercent(0);
+      setLoadingProgress("Iniciando geração...");
       const accessToken = await getAccessTokenForSimulado(authSession?.access_token);
       if (isMontarBancoFlow) {
         logMontarBancoEvent("[MONTAR_BANCO_REQUEST]", {
@@ -602,7 +612,7 @@ const Simulados = () => {
 
           if (data.insufficientQuestions) {
             setQuestions(adaptiveQs);
-            setPartialMessage(data.message || `Encontramos apenas ${adaptiveQs.length} questões para os filtros selecionados.`);
+            setPartialMessage(data.message || `Aviso: Banco insuficiente para o tema solicitado. Geradas ${adaptiveQs.length} de ${config.count || 20} questões.`);
             setPhase("partial");
             return;
           }
@@ -958,7 +968,7 @@ const Simulados = () => {
 
       if (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
         setQuestions(allGenerated);
-        setPartialMessage(`Encontramos apenas ${allGenerated.length} questões para os filtros selecionados.`);
+        setPartialMessage(`Aviso: Banco insuficiente para o tema solicitado. Geradas ${allGenerated.length} de ${requestedTotal} questões.`);
         setPhase("partial");
         return;
       }
