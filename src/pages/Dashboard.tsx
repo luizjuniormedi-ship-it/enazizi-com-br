@@ -262,6 +262,8 @@ const Dashboard = () => {
         </div>
       )}
 
+      <TargetExamBanner />
+
       <UnifiedMissionHero
         firstName={firstName}
         recommendationTitle={activeRec?.title}
