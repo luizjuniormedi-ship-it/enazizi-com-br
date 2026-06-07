@@ -1,6 +1,5 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Using standard environment variables injected by Lovable
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
@@ -10,25 +9,50 @@ async function recoverTaxonomicBridge() {
   console.log('🚀 Starting P0 Taxonomic Bridge Recovery...');
 
   const criticalMappings = [
-    { legacy: 'ClinicaMedica_Cardiologia_Infarto', competency: 'IAM com Supra', aliases: ['IAM', 'IAMCSST', 'STEMI', 'Infarto', 'Infarto com Supra'] },
-    { legacy: 'Infectologia_Sepse', competency: 'Sepse', aliases: ['Sepse', 'Choque Séptico', 'Sepse Grave'] },
-    { legacy: 'Neurologia_AVC', competency: 'AVC', aliases: ['AVC', 'AVEi', 'AVEh', 'Stroke'] },
-    { legacy: 'ClinicaMedica_Cardiologia_IC', competency: 'IC', aliases: ['IC', 'Insuficiência Cardíaca', 'ICC'] },
-    { legacy: 'ClinicaMedica_Pneumologia_TEP', competency: 'TEP', aliases: ['TEP', 'Tromboembolismo Pulmonar', 'Embolia'] }
+    { 
+      target: 'Síndrome Coronariana Aguda', 
+      aliases: ['IAM', 'IAMCSST', 'IAMSSST', 'STEMI', 'Infarto', 'Infarto com Supra', 'SCA com Supra', 'SCA'],
+      patterns: ['%Infarto%', '%Coronariana%', '%SCA%'],
+      legacy: 'ClinicaMedica_Cardiologia_Infarto'
+    },
+    { 
+      target: 'Sepse', 
+      aliases: ['Sepse', 'Choque Séptico', 'Sepse Grave', 'SIRS'],
+      patterns: ['%Sepse%'],
+      legacy: 'Infectologia_Sepse'
+    },
+    { 
+      target: 'AVC', 
+      aliases: ['AVC', 'AVEi', 'AVEh', 'Stroke', 'Acidente Vascular'],
+      patterns: ['%AVC%', '%AVE%', '%Acidente Vascular%'],
+      legacy: 'Neurologia_AVC'
+    },
+    { 
+      target: 'Insuficiência Cardíaca', 
+      aliases: ['IC', 'Insuficiência Cardíaca', 'ICC', 'ICFEP', 'ICFER'],
+      patterns: ['%Insuficiência Cardíaca%', '%ICC%'],
+      legacy: 'ClinicaMedica_Cardiologia_IC'
+    },
+    { 
+      target: 'TEP', 
+      aliases: ['TEP', 'Tromboembolismo Pulmonar', 'Embolia', 'TVP'],
+      patterns: ['%TEP%', '%Tromboembolismo%'],
+      legacy: 'ClinicaMedica_Pneumologia_TEP'
+    }
   ];
 
   for (const map of criticalMappings) {
-    console.log('Processing: ' + map.competency);
+    console.log('Processing: ' + map.target);
     
-    // Find competency ID using the correct column name
     const { data: comp } = await supabase
       .from('curriculum_registry')
       .select('id')
-      .eq('curriculum_competency', map.competency)
+      .eq('curriculum_competency', map.target)
       .maybeSingle();
 
     if (comp) {
-      // Create aliases for fuzzy search discovery
+      console.log('Found ID: ' + comp.id);
+      
       for (const alias of map.aliases) {
         await supabase.from('competency_aliases').upsert({
           competency_id: comp.id,
@@ -37,7 +61,11 @@ async function recoverTaxonomicBridge() {
         });
       }
 
-      // Link physical questions to the curriculum
+      let orFilter = 'topic.eq.' + map.legacy;
+      for (const p of map.patterns) {
+        orFilter += ',topic.ilike.' + p + ',subtopic.ilike.' + p;
+      }
+
       const { count, error } = await supabase
         .from('questions_bank')
         .update({ 
@@ -45,23 +73,25 @@ async function recoverTaxonomicBridge() {
           reconciliation_data: {
             source: 'P0_BRIDGE_RECOVERY',
             timestamp: new Date().toISOString(),
-            confidence: 1.0
+            confidence: 0.95,
+            target: map.target
           }
         })
-        .or('topic.ilike.%' + map.competency + '%,subtopic.ilike.%' + map.competency + '%,topic.eq.' + map.legacy);
+        .or(orFilter);
       
       if (error) {
-        console.error('Error updating ' + map.competency + ':', error);
+        console.error('Error updating ' + map.target + ':', error);
       } else {
-        console.log('✅ Linked questions to ' + map.competency);
+        console.log('✅ Linked ' + (count || 0) + ' questions to ' + map.target);
       }
     } else {
-        console.warn('⚠️ Competency not found in registry: ' + map.competency);
+        console.warn('⚠️ Competency not found in registry: ' + map.target);
     }
   }
 
-  const { data: ocrData } = await supabase.rpc('calculate_ocr');
-  console.log('📊 Operational Coverage Rate (OCR): ' + (ocrData ? ocrData : 'N/A') + '%');
+  const { data: ocrData, error: ocrError } = await supabase.rpc('calculate_ocr');
+  if (ocrError) console.error('OCR Error:', ocrError);
+  console.log('📊 Operational Coverage Rate (OCR): ' + (ocrData ? JSON.stringify(ocrData) : 'N/A') + '%');
 }
 
 recoverTaxonomicBridge().catch(console.error);
