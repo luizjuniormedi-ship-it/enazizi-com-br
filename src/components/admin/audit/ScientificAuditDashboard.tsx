@@ -92,7 +92,7 @@ export const ScientificAuditDashboard: React.FC = () => {
           setIsAuditing(false);
           toast({
             title: "Auditoria Concluída",
-            description: "Certificação V6 READY emitida com sucesso.",
+            description: "Certificação LEC (Learning Effectiveness Certification) emitida com sucesso.",
             variant: "default",
           });
           return 100;
