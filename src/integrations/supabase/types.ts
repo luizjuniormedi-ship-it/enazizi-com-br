@@ -9377,6 +9377,35 @@ export type Database = {
         }
         Relationships: []
       }
+      competency_aliases: {
+        Row: {
+          alias: string
+          competency_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          alias: string
+          competency_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          alias?: string
+          competency_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competency_aliases_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_registry"
+            referencedColumns: ["competency_id"]
+          },
+        ]
+      }
       content_coverage_audit: {
         Row: {
           banca_coverage_count: number
@@ -9910,6 +9939,45 @@ export type Database = {
             referencedColumns: ["subtopic_id"]
           },
         ]
+      }
+      curriculum_registry: {
+        Row: {
+          cognitive_level: string | null
+          competency_id: string
+          created_at: string | null
+          curriculum_area: string
+          curriculum_competency: string
+          curriculum_subtheme: string
+          curriculum_theme: string
+          id: string
+          specialty: string
+          updated_at: string | null
+        }
+        Insert: {
+          cognitive_level?: string | null
+          competency_id: string
+          created_at?: string | null
+          curriculum_area: string
+          curriculum_competency: string
+          curriculum_subtheme: string
+          curriculum_theme: string
+          id?: string
+          specialty: string
+          updated_at?: string | null
+        }
+        Update: {
+          cognitive_level?: string | null
+          competency_id?: string
+          created_at?: string | null
+          curriculum_area?: string
+          curriculum_competency?: string
+          curriculum_subtheme?: string
+          curriculum_theme?: string
+          id?: string
+          specialty?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       curriculum_specialties: {
         Row: {
@@ -21787,6 +21855,102 @@ export type Database = {
         }
         Relationships: []
       }
+      question_classification_staging: {
+        Row: {
+          classification_source: string | null
+          classification_status: string | null
+          competency_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          embedding: string | null
+          id: string
+          predicted_competency: string | null
+          predicted_subtheme: string | null
+          predicted_theme: string | null
+          question_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          classification_source?: string | null
+          classification_status?: string | null
+          competency_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          predicted_competency?: string | null
+          predicted_subtheme?: string | null
+          predicted_theme?: string | null
+          question_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          classification_source?: string | null
+          classification_status?: string | null
+          competency_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          predicted_competency?: string | null
+          predicted_subtheme?: string | null
+          predicted_theme?: string | null
+          question_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_classification_staging_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_staging_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_clusters: {
+        Row: {
+          cluster_representative_id: string | null
+          created_at: string | null
+          id: string
+          similarity_threshold: number | null
+        }
+        Insert: {
+          cluster_representative_id?: string | null
+          created_at?: string | null
+          id?: string
+          similarity_threshold?: number | null
+        }
+        Update: {
+          cluster_representative_id?: string | null
+          created_at?: string | null
+          id?: string
+          similarity_threshold?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_clusters_cluster_representative_id_fkey"
+            columns: ["cluster_representative_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_clusters_cluster_representative_id_fkey"
+            columns: ["cluster_representative_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_drift_monitor: {
         Row: {
           board_name: string
@@ -22425,6 +22589,7 @@ export type Database = {
           clinical_reasoning_depth: number | null
           cognitive_complexity_score: number | null
           cognitive_quality_score: number | null
+          competency_id: string | null
           correct_index: number
           cost_tokens: number | null
           cost_usd: number | null
@@ -22506,6 +22671,7 @@ export type Database = {
           clinical_reasoning_depth?: number | null
           cognitive_complexity_score?: number | null
           cognitive_quality_score?: number | null
+          competency_id?: string | null
           correct_index?: number
           cost_tokens?: number | null
           cost_usd?: number | null
@@ -22587,6 +22753,7 @@ export type Database = {
           clinical_reasoning_depth?: number | null
           cognitive_complexity_score?: number | null
           cognitive_quality_score?: number | null
+          competency_id?: string | null
           correct_index?: number
           cost_tokens?: number | null
           cost_usd?: number | null
