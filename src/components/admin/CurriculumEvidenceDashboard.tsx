@@ -60,10 +60,18 @@ export const CurriculumEvidenceDashboard = () => {
     fetchOutcomeData();
   }, []);
 
-  if (isLoading) return <div className="p-8 animate-pulse text-white">Carregando COVE Metrics...</div>;
-
+  if (isLoading) return <div className="p-8 animate-pulse text-white">Carregando Evidence Confidence Engine...</div>;
+  
   const avgCoi = topics.reduce((acc, t) => acc + (Number(t.coi_score) || 0), 0) / (topics.length || 1);
   const avgIps = topics.reduce((acc, t) => acc + (Number(t.ips_score) || 0), 0) / (topics.length || 1);
+  const avgEcs = topics.reduce((acc, t) => acc + (Number(t.ecs_score) || 0), 0) / (topics.length || 1);
+  const goldVerifiedCount = topics.filter(t => 
+    (Number(t.coi_score) >= 80 && 
+     (Number(t.ips_score) || 0) >= 80 && 
+     (Number(t.ecs_score) || 0) >= 80 && 
+     (Number(t.sample_size) || 0) >= 500 &&
+     t.drift_status !== 'DRIFT CRÍTICO')
+  ).length;
 
   return (
     <div className="space-y-6 p-6 bg-black/40 rounded-3xl border border-white/5 backdrop-blur-sm">
