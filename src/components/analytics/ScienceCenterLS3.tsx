@@ -178,6 +178,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Binary className="w-4 h-4 text-purple-500" /> Matriz de Atribuição de Funcionalidade
+              <Tooltip>
+                <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Detalhamento de como cada funcionalidade impacta sua aprovação final.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
             <CardDescription className="text-[10px]">Contribuição de cada funcionalidade para a aprovação</CardDescription>
           </CardHeader>
