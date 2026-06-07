@@ -143,11 +143,14 @@ export const CurriculumEvidenceDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 bg-white/5 border-white/10">
           <CardHeader>
-            <CardTitle className="text-sm font-bold text-white/80">Top 10 Competências por IPS (Impact Priority Score)</CardTitle>
+            <CardTitle className="text-sm font-bold text-white/80 flex items-center justify-between">
+              <span>Robustez de Evidência por Competência (ECS)</span>
+              <Badge variant="outline" className="text-[10px] text-pink-400 border-pink-500/30">N ≥ 500 para Certificação</Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topics.slice(0, 10)}>
+              <BarChart data={topics.slice(0, 15)}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                 <XAxis 
                   dataKey="nome" 
@@ -165,10 +168,11 @@ export const CurriculumEvidenceDashboard = () => {
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '12px' }}
+                  labelStyle={{ color: '#fff', marginBottom: '4px' }}
                 />
-                <Bar dataKey="ips_score" radius={[4, 4, 0, 0]}>
-                  {topics.slice(0, 10).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index < 3 ? '#fbbf24' : '#6366f1'} />
+                <Bar dataKey="ecs_score" radius={[4, 4, 0, 0]}>
+                  {topics.slice(0, 15).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={Number(entry.ecs_score) >= 80 ? '#ec4899' : '#6366f1'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -176,29 +180,41 @@ export const CurriculumEvidenceDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10">
+        <Card className="bg-white/5 border-white/10 overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-sm font-bold text-white/80">Outcome Evidence Table</CardTitle>
+            <CardTitle className="text-sm font-bold text-white/80">Evidence Audit Table</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topics.slice(0, 5).map((topic) => (
-                <div key={topic.id} className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2">
+          <CardContent className="px-2">
+            <div className="space-y-3">
+              {topics.slice(0, 6).map((topic) => (
+                <div key={topic.id} className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2 relative overflow-hidden group">
+                  {topic.drift_status === 'DRIFT CRÍTICO' && (
+                    <div className="absolute top-0 left-0 w-1 h-full bg-red-500 animate-pulse" />
+                  )}
                   <div className="flex justify-between items-start">
-                    <span className="text-xs font-bold text-white/90 truncate max-w-[150px]">{topic.nome}</span>
-                    <Badge className="bg-indigo-500/20 text-indigo-300 border-none text-[10px]">IPS: {topic.ips_score}</Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="flex flex-col">
-                      <span className="text-white/40">COI (Outcome)</span>
-                      <span className="text-white/80">{topic.coi_score}</span>
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-white/90 block truncate max-w-[140px]">{topic.nome}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Badge className={`text-[9px] px-1 py-0 h-4 border-none ${
+                          topic.evidence_maturity_level >= 4 ? 'bg-amber-500/20 text-amber-300' : 'bg-white/10 text-white/50'
+                        }`}>
+                          Nível {topic.evidence_maturity_level}
+                        </Badge>
+                        <span className="text-[10px] text-white/30 italic">N={topic.sample_size}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-white/40">CRI (ROI)</span>
-                      <span className="text-white/80">{topic.cri_score}</span>
+                    <div className="text-right">
+                      <div className="text-[11px] font-black text-pink-400">ECS {topic.ecs_score}</div>
+                      <div className="text-[9px] text-white/40">CI: [{topic.ci_low}-{topic.ci_high}]</div>
                     </div>
                   </div>
-                  <Progress value={topic.learning_yield} className="h-1 bg-white/5" />
+                  
+                  <div className="flex items-center gap-2">
+                    <Progress value={topic.ecs_score} className="h-1 flex-1 bg-white/5" />
+                    {topic.drift_status !== 'SEM DRIFT' && (
+                      <AlertCircle className={`h-3 w-3 ${topic.drift_status === 'DRIFT CRÍTICO' ? 'text-red-500' : 'text-amber-500'}`} />
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
