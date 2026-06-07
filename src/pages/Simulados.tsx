@@ -793,13 +793,26 @@ const Simulados = () => {
             console.log(`[Simulados] Lote ${batchNum} finalizado com sucesso. Recebidas ${batchQs.questions.length} questões.`);
           } catch (e) {
             const isTimeout = e instanceof TimeoutError || /TIMEOUT/.test(getErrorMessage(e));
-            console.error("[Simulados] generateBatch falhou, tentando invoke direto:", e);
-            console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL]", {
+            const isBatchEmpty = getErrorMessage(e).includes("BATCH_EMPTY");
+
+            console.error("[Simulados] generateBatch falhou:", e);
+            
+            if (isBatchEmpty) {
+              console.warn("[MONTAR_BANCO_STOP] Banco insuficiente para os filtros solicitados.");
+              if (allGenerated.length > 0) {
+                break; // Use what we have
+              } else {
+                throw new Error("Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
+              }
+            }
+
+            console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL] Tentando rota alternativa...", {
               user_id: user?.id ?? null,
               batch: batchNum,
               timeout: isTimeout,
               error: getErrorMessage(e),
             });
+
             if (isMontarBancoFlow) {
               setLoadingProgress(
                 isTimeout
@@ -807,6 +820,7 @@ const Simulados = () => {
                   : "Banco falhou. Tentando rota alternativa..."
               );
             }
+            
             const { data, error } = await withTimeout(
               supabase.functions.invoke(
                 "question-generator",
@@ -817,6 +831,7 @@ const Simulados = () => {
                     difficulty: config.difficulty || "misto",
                     specialty: (config.topics && config.topics[0]) || "Clínica Médica",
                     topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+                    selectedSubtopics: (config as any).selectedSubtopics || [], // FIX: Ensure subtopics are passed
                     targetExam: config.realExamProfile || config.examBoard,
                     mode: config.mode || "estudo",
                     generationContext: {
