@@ -19075,6 +19075,63 @@ export type Database = {
           },
         ]
       }
+      outcome_registry: {
+        Row: {
+          approval_status: boolean | null
+          confidence_level: string | null
+          created_at: string | null
+          exam_date: string | null
+          exam_score: number | null
+          exam_type: string | null
+          id: string
+          metadata: Json | null
+          question_id: string | null
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approval_status?: boolean | null
+          confidence_level?: string | null
+          created_at?: string | null
+          exam_date?: string | null
+          exam_score?: number | null
+          exam_type?: string | null
+          id?: string
+          metadata?: Json | null
+          question_id?: string | null
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approval_status?: boolean | null
+          confidence_level?: string | null
+          created_at?: string | null
+          exam_date?: string | null
+          exam_score?: number | null
+          exam_type?: string | null
+          id?: string
+          metadata?: Json | null
+          question_id?: string | null
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outcome_registry_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outcome_registry_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedagogical_event_versions: {
         Row: {
           cognitive_state_after: Json | null
@@ -22037,12 +22094,16 @@ export type Database = {
           clinical_reasoning_impact: number | null
           id: string
           last_recalculated_at: string | null
+          last_reevaluated_at: string | null
           metadata: Json | null
+          observation_count: number | null
+          ois_score: number | null
           qis_score: number | null
           question_id: string
           recovery_success_rate: number | null
           retention_contribution_score: number | null
           sample_size: number | null
+          survival_score: number | null
           tier: string | null
           transfer_contribution_score: number | null
         }
@@ -22051,12 +22112,16 @@ export type Database = {
           clinical_reasoning_impact?: number | null
           id?: string
           last_recalculated_at?: string | null
+          last_reevaluated_at?: string | null
           metadata?: Json | null
+          observation_count?: number | null
+          ois_score?: number | null
           qis_score?: number | null
           question_id: string
           recovery_success_rate?: number | null
           retention_contribution_score?: number | null
           sample_size?: number | null
+          survival_score?: number | null
           tier?: string | null
           transfer_contribution_score?: number | null
         }
@@ -22065,12 +22130,16 @@ export type Database = {
           clinical_reasoning_impact?: number | null
           id?: string
           last_recalculated_at?: string | null
+          last_reevaluated_at?: string | null
           metadata?: Json | null
+          observation_count?: number | null
+          ois_score?: number | null
           qis_score?: number | null
           question_id?: string
           recovery_success_rate?: number | null
           retention_contribution_score?: number | null
           sample_size?: number | null
+          survival_score?: number | null
           tier?: string | null
           transfer_contribution_score?: number | null
         }
