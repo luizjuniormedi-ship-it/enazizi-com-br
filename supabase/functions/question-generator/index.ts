@@ -6,6 +6,7 @@ import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
+import { TopicEngine } from "../_shared/topic-engine.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
