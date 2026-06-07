@@ -41,19 +41,20 @@ export function validateFinalQuestionTopic(
   if (score < 100) {
     if ([qTopic, qTheme].some(val => val === reqTopicLower)) {
       matchedFields.push("topic");
-      score = 100;
+      // Se houver uma competência solicitada e NÃO batemos nela, o score do tópico pai deve ser baixo
+      // para evitar "Parent Fallback" (ex: pedir IAM e vir Cardiologia genérica)
+      score = reqCompLower ? 70 : 100;
     } else if ([qSubtopic, qSubtheme].some(val => val === reqTopicLower)) {
       matchedFields.push("subtopic");
-      score = 95;
+      score = reqCompLower ? 60 : 95;
     }
   }
 
-  // 3. Partial/Alias Match (Internal check via score if provided from TopicEngine, but Guard is autonomous)
-  // If score wasn't set by exact matches, check inclusion
+  // 3. Partial/Alias Match
   if (score === 0) {
     if ([qTopic, qTheme, qSubtopic, qSubtheme, qCompetency].some(val => val.includes(reqTopicLower))) {
       matchedFields.push("partial_inclusion");
-      score = 80; // Lower than default minScore 90 for strict adherence
+      score = 50; 
     }
   }
 
