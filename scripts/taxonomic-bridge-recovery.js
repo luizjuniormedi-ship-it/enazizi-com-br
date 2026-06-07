@@ -1,24 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// Explicitly use the Service Role Key for writing if available, otherwise Anon
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
 );
 
 async function recoverTaxonomicBridge() {
-  console.log('🚀 Starting P0 Taxonomic Bridge Recovery (Direct Query Mode)...');
-
-  // 1. First, get all competencies to avoid string matching issues
-  const { data: registry, error: regError } = await supabase
-    .from('curriculum_registry')
-    .select('id, curriculum_competency');
-
-  if (regError) {
-    console.error('Failed to fetch registry:', regError);
-    return;
-  }
-
-  console.log('Registry loaded: ' + registry.length + ' competencies.');
+  console.log('🚀 Starting P0 Taxonomic Bridge Recovery...');
 
   const criticalMappings = [
     { 
@@ -54,27 +43,39 @@ async function recoverTaxonomicBridge() {
   ];
 
   for (const map of criticalMappings) {
-    const comp = registry.find(r => r.curriculum_competency.trim() === map.target);
+    console.log('Searching for target: ' + map.target);
+    
+    const { data: comp, error: compError } = await supabase
+      .from('curriculum_registry')
+      .select('id, curriculum_competency')
+      .eq('curriculum_competency', map.target)
+      .maybeSingle();
+
+    if (compError) {
+      console.error('Error finding competency:', compError);
+      continue;
+    }
 
     if (comp) {
-      console.log('Processing: ' + map.target + ' (ID: ' + comp.id + ')');
+      console.log('✅ Found Competency: ' + comp.curriculum_competency + ' (ID: ' + comp.id + ')');
       
       // Upsert Aliases
       for (const alias of map.aliases) {
-        await supabase.from('competency_aliases').upsert({
+        const { error: aliasError } = await supabase.from('competency_aliases').upsert({
           competency_id: comp.id,
           alias: alias,
           source: 'bridge_recovery'
         });
+        if (aliasError) console.error('Alias Error:', aliasError);
       }
 
-      // Bulk Link Questions
+      // Link Questions
       let orFilter = 'topic.eq.' + map.legacy;
       for (const p of map.patterns) {
         orFilter += ',topic.ilike.' + p + ',subtopic.ilike.' + p;
       }
 
-      const { count, error } = await supabase
+      const { count, error: updateError } = await supabase
         .from('questions_bank')
         .update({ 
           competency_id: comp.id,
@@ -86,13 +87,13 @@ async function recoverTaxonomicBridge() {
         })
         .or(orFilter);
       
-      if (error) {
-        console.error('Error updating ' + map.target + ':', error);
+      if (updateError) {
+        console.error('Update Error:', updateError);
       } else {
-        console.log('✅ Linked ' + (count || 0) + ' questions to ' + map.target);
+        console.log('✅ Successfully linked ' + (count || 0) + ' questions to ' + map.target);
       }
     } else {
-        console.warn('⚠️ Competency not found in registry (Exact Match Failed): ' + map.target);
+      console.warn('❌ COMPETENCY NOT FOUND: ' + map.target);
     }
   }
 
