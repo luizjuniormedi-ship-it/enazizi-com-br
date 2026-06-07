@@ -7,13 +7,19 @@ import { LearningScienceSnapshot } from "@/types/learningScience";
 import { 
   ShieldCheck, Microscope, Database, BarChart4, 
   Users, Activity, FileCheck,
-  Target, Zap, FlaskConical, Binary
+  Target, Zap, FlaskConical, Binary, Info
 } from 'lucide-react';
 import { 
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Cell, ReferenceLine, ZAxis
+  Tooltip as RechartsTooltip, ResponsiveContainer, Cell, ReferenceLine, ZAxis
 } from 'recharts';
 import { OfficialResultImport } from './OfficialResultImport';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 interface ScienceCenterLS3Props {
   snapshot: LearningScienceSnapshot;
@@ -43,6 +49,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
   ];
 
   return (
+    <TooltipProvider>
     <div className="space-y-6 mt-6 border-t pt-8">
       <div className="flex items-center gap-2 mb-4">
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-3 py-1">
@@ -57,6 +64,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Microscope className="w-4 h-4" /> Score de Saúde da Evidência
+              <Tooltip>
+                <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Qualidade e confiabilidade estatística das evidências coletadas.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -89,6 +100,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
             <div className="flex justify-between items-center">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Target className="w-4 h-4 text-emerald-500" /> Curva de Calibração de Prontidão
+                <Tooltip>
+                  <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                  <TooltipContent><p>Relação entre sua prontidão na plataforma e as notas reais em exames oficiais.</p></TooltipContent>
+                </Tooltip>
               </CardTitle>
               <Badge variant="outline" className="text-[10px] font-mono">
                 Pearson: {validation.pearsonCorrelation}
@@ -103,7 +118,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
                   <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                   <XAxis type="number" dataKey="x" name="Readiness" unit="%" fontSize={10} />
                   <YAxis type="number" dataKey="y" name="Nota Real" unit="%" fontSize={10} />
-                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                  <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} />
                   {!isMocked && <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]} stroke="red" strokeDasharray="3 3" />}
                   <Scatter name="Correlação" data={calibrationData} fill="#10b981">
                     {calibrationData.map((entry, index) => (
@@ -126,6 +141,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <BarChart4 className="w-4 h-4 text-blue-500" /> Validação de Previsão
+              <Tooltip>
+                <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Acurácia do algoritmo em prever seu desempenho futuro.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -159,6 +178,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Binary className="w-4 h-4 text-purple-500" /> Matriz de Atribuição de Funcionalidade
+              <Tooltip>
+                <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Detalhamento de como cada funcionalidade impacta sua aprovação final.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
             <CardDescription className="text-[10px]">Contribuição de cada funcionalidade para a aprovação</CardDescription>
           </CardHeader>
@@ -185,6 +208,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-500" /> Análise de ROI de Impacto
+              <Tooltip>
+                <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Retorno sobre Investimento (ROI) de tempo e esforço em cada módulo de aprendizado.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -270,5 +297,6 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };

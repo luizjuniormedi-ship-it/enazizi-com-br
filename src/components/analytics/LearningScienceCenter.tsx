@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLearningScience } from "@/hooks/useLearningScience";
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
   BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
 import { 
@@ -17,6 +17,12 @@ import { motion } from 'framer-motion';
 import { ScienceCenterLS3 } from './ScienceCenterLS3';
 import { InstitutionalDashboard } from './InstitutionalDashboard';
 import { PublicationCenter } from './PublicationCenter';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 export const LearningScienceCenter: React.FC = () => {
   const snapshot = useLearningScience();
@@ -45,7 +51,8 @@ export const LearningScienceCenter: React.FC = () => {
   }[snapshot.riskIndex.level];
 
   return (
-    <div className="space-y-6 p-6 bg-background min-h-screen">
+    <TooltipProvider>
+      <div className="space-y-6 p-6 bg-background min-h-screen">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -82,6 +89,14 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
               Ciência de Prontidão & Aprovação
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="w-4 h-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">Métrica que combina seu desempenho atual com a probabilidade estatística de aprovação em provas reais.</p>
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
             <CardDescription>Correlação atual com desempenho real: {Math.round(snapshot.forecastAccuracy * 100)}%</CardDescription>
           </CardHeader>
@@ -111,7 +126,17 @@ export const LearningScienceCenter: React.FC = () => {
               <div className="flex-1 space-y-6 w-full">
                 <div>
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-sm font-medium">Gap de Aprovação (Meta: 78%)</span>
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      Gap de Aprovação (Meta: 78%)
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="w-3 h-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>A distância estatística que separa seu conhecimento atual da nota de corte projetada para aprovação.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
                     <span className="text-2xl font-bold text-primary">-{snapshot.approvalGap}pts</span>
                   </div>
                   <Progress value={snapshot.readiness} className="h-3" />
@@ -122,12 +147,24 @@ export const LearningScienceCenter: React.FC = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <span className="text-[10px] uppercase text-muted-foreground block mb-1">Velocidade de Aprendizado</span>
+                    <span className="text-[10px] uppercase text-muted-foreground flex items-center gap-1 mb-1">
+                      Velocidade de Aprendizado
+                      <Tooltip>
+                        <TooltipTrigger><Info className="w-2 h-2" /></TooltipTrigger>
+                        <TooltipContent><p>O ritmo médio de aquisição de novos conhecimentos por mês.</p></TooltipContent>
+                      </Tooltip>
+                    </span>
                     <span className="text-xl font-bold text-emerald-500">+{snapshot.learningVelocity.currentVelocity}</span>
                     <span className="text-[10px] ml-1 opacity-70">pts/mês</span>
                   </div>
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <span className="text-[10px] uppercase text-muted-foreground block mb-1">Score de Transferência</span>
+                    <span className="text-[10px] uppercase text-muted-foreground flex items-center gap-1 mb-1">
+                      Score de Transferência
+                      <Tooltip>
+                        <TooltipTrigger><Info className="w-2 h-2" /></TooltipTrigger>
+                        <TooltipContent><p>Capacidade de aplicar o conhecimento teórico em cenários clínicos reais.</p></TooltipContent>
+                      </Tooltip>
+                    </span>
                     <span className="text-xl font-bold">{snapshot.transferScore}%</span>
                     <span className="text-[10px] ml-1 opacity-70">fidelidade</span>
                   </div>
@@ -144,6 +181,10 @@ export const LearningScienceCenter: React.FC = () => {
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className={`w-5 h-5 ${riskColor}`} />
                 Índice de Risco
+                <Tooltip>
+                  <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                  <TooltipContent><p>Probabilidade de perda de conhecimento ou queda de desempenho baseada em padrões de estudo.</p></TooltipContent>
+                </Tooltip>
               </CardTitle>
               <Badge variant="outline" className={`${riskColor} border-current uppercase text-[10px]`}>
                 {snapshot.riskIndex.level}
@@ -194,6 +235,10 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-purple-500" />
               Motor de Rendimento de Aprendizado
+              <Tooltip>
+                <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Cálculo da eficiência global do seu aprendizado, considerando retenção, acurácia e velocidade.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
             <CardDescription>{snapshot.learningYield.formula}</CardDescription>
           </CardHeader>
@@ -234,6 +279,10 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-amber-500" />
               Score de Atribuição de Funcionalidade
+              <Tooltip>
+                <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Quanto cada recurso da plataforma contribui para o seu ganho de desempenho total.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
             <CardDescription>Impacto de cada ferramenta na aprovação</CardDescription>
           </CardHeader>
@@ -267,6 +316,10 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2 text-sm">
               <History className="w-4 h-4 text-primary" />
               Previsão de Declínio de Conhecimento (Lógica FSRS)
+              <Tooltip>
+                <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Previsão baseada no algoritmo FSRS de como seu conhecimento irá decair nos próximos 9 dias se não houver revisão.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -311,6 +364,10 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2 text-sm">
               <Brain className="w-4 h-4 text-primary" />
               Ciência de Impacto do Tutor
+              <Tooltip>
+                <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>O diferencial de desempenho conquistado através das orientações personalizadas da IA.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -373,6 +430,7 @@ export const LearningScienceCenter: React.FC = () => {
         </div>
       </footer>
     </div>
+    </TooltipProvider>
   );
 };
 
