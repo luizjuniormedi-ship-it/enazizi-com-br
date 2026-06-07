@@ -73,8 +73,9 @@ serve(async (req) => {
 
   try {
     const traceId = crypto.randomUUID();
-    const { user, ok, response } = await requireAuth(req);
-    if (!ok) return response;
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+    const userId = auth.userId;
 
     const body = await req.json();
     const { 
@@ -87,7 +88,7 @@ serve(async (req) => {
       current_patient_id
     } = body;
 
-    console.log(`[HDA_REQUEST] traceId=${traceId} action=${action} userId=${user.id}`);
+    console.log(`[HDA_REQUEST] traceId=${traceId} action=${action} userId=${userId}`);
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
