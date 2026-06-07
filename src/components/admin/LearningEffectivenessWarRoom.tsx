@@ -167,6 +167,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
               <Award className="h-3 w-3 text-emerald-400" /> Redução de Erros
+              <InfoTooltip content="Percentual de redução de erros em temas revisados nas últimas 48 horas." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -193,6 +194,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
               <History className="h-3 w-3 text-amber-400" /> Recovery Efficiency
+              <InfoTooltip content="Eficácia do loop de recuperação em consolidar temas que foram previamente errados." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -216,6 +218,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
               <Brain className="h-3 w-3 text-blue-400" /> Retention Ceiling
+              <InfoTooltip content="Teto estimado de retenção de longo prazo utilizando o algoritmo FSRS otimizado." />
             </CardTitle>
           </CardHeader>
           <CardContent>
