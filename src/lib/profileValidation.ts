@@ -75,6 +75,18 @@ export function isValidName(name: string): { valid: boolean; message?: string } 
   return { valid: true };
 }
 
+/**
+ * Gate Stage A — minimum required to enter the platform.
+ *
+ * Decisão de produto (post-mortem onboarding: 217/336 usuários travados,
+ * 100% por falta de target_exams): reduzimos o gate de bloqueio para os 2
+ * campos verdadeiramente essenciais — nome + tipo de usuário.
+ *
+ * Os demais campos (telefone, faculdade, período, banca) passam a ser
+ * coletados de forma contextual dentro do app (Stage B), sem bloquear
+ * o acesso inicial. CTAs no Dashboard pedirão cada campo quando virar
+ * relevante (ex.: banca antes do primeiro simulado).
+ */
 export function isProfileComplete(data: {
   phone?: string | null;
   display_name?: string | null;
@@ -83,28 +95,27 @@ export function isProfileComplete(data: {
   user_type?: string;
   target_exams?: string[] | null;
 }): boolean {
-  const userType = data.user_type || "estudante";
-  const isStudent = userType === "estudante" || userType === "medico";
-  const isProfessor = userType === "professor";
-
   const nameCheck = isValidName(data.display_name || "");
   if (!nameCheck.valid) return false;
 
-  // Telefone agora é obrigatório para todos
-  const phoneCheck = isValidPhone(data.phone || "");
-  if (!phoneCheck.valid) return false;
-
-  // Universidade obrigatória para todos os perfis
-  if (!data.faculdade) return false;
-  if (!FACULDADES.includes(data.faculdade)) return false;
-
-  if (isStudent && !data.periodo) return false;
-
-  // Banca de estudo obrigatória (estudante e médico). Professor opcional.
-  if (isStudent) {
-    const exams = data.target_exams ?? [];
-    if (!Array.isArray(exams) || exams.length === 0) return false;
-  }
+  const userType = data.user_type || "";
+  if (!["estudante", "medico", "professor"].includes(userType)) return false;
 
   return true;
+}
+
+/**
+ * Stage B helpers — usados por CTAs contextuais no app para saber
+ * quais campos ainda faltam. Não bloqueiam acesso.
+ */
+export function isPhoneFilled(phone?: string | null): boolean {
+  return isValidPhone(phone || "").valid;
+}
+
+export function isFaculdadeFilled(faculdade?: string | null): boolean {
+  return !!faculdade && FACULDADES.includes(faculdade);
+}
+
+export function isTargetExamsFilled(target_exams?: string[] | null): boolean {
+  return Array.isArray(target_exams) && target_exams.length > 0;
 }
