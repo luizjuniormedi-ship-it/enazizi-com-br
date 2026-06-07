@@ -10610,10 +10610,17 @@ export type Database = {
       curriculum_topics: {
         Row: {
           ativo: boolean
+          ccs_gain_potential: number | null
+          ccs_score: number | null
           created_at: string
+          cri_score: number | null
+          demand_score: number | null
+          effort_level: string | null
+          exam_incidence: number | null
           id: string
           nome: string
           ordem: number
+          recommended_action: string | null
           recoverable_questions: number | null
           recovery_priority: string | null
           rps: number | null
@@ -10621,14 +10628,22 @@ export type Database = {
           rvs_score: number | null
           specialty_id: string
           status: string | null
+          uis_score: number | null
           visible_questions: number | null
         }
         Insert: {
           ativo?: boolean
+          ccs_gain_potential?: number | null
+          ccs_score?: number | null
           created_at?: string
+          cri_score?: number | null
+          demand_score?: number | null
+          effort_level?: string | null
+          exam_incidence?: number | null
           id?: string
           nome: string
           ordem?: number
+          recommended_action?: string | null
           recoverable_questions?: number | null
           recovery_priority?: string | null
           rps?: number | null
@@ -10636,14 +10651,22 @@ export type Database = {
           rvs_score?: number | null
           specialty_id: string
           status?: string | null
+          uis_score?: number | null
           visible_questions?: number | null
         }
         Update: {
           ativo?: boolean
+          ccs_gain_potential?: number | null
+          ccs_score?: number | null
           created_at?: string
+          cri_score?: number | null
+          demand_score?: number | null
+          effort_level?: string | null
+          exam_incidence?: number | null
           id?: string
           nome?: string
           ordem?: number
+          recommended_action?: string | null
           recoverable_questions?: number | null
           recovery_priority?: string | null
           rps?: number | null
@@ -10651,6 +10674,7 @@ export type Database = {
           rvs_score?: number | null
           specialty_id?: string
           status?: string | null
+          uis_score?: number | null
           visible_questions?: number | null
         }
         Relationships: [
@@ -13537,6 +13561,67 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fccp_curriculum_inventory"
             referencedColumns: ["competency_id"]
+          },
+        ]
+      }
+      fccp_cri_audit_log: {
+        Row: {
+          action_taken: string | null
+          ccs_gain_realized: number | null
+          created_at: string | null
+          executed_by: string | null
+          final_ccs: number | null
+          final_cri: number | null
+          id: string
+          initial_ccs: number | null
+          initial_cri: number | null
+          topic_id: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          ccs_gain_realized?: number | null
+          created_at?: string | null
+          executed_by?: string | null
+          final_ccs?: number | null
+          final_cri?: number | null
+          id?: string
+          initial_ccs?: number | null
+          initial_cri?: number | null
+          topic_id?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          ccs_gain_realized?: number | null
+          created_at?: string | null
+          executed_by?: string | null
+          final_ccs?: number | null
+          final_cri?: number | null
+          id?: string
+          initial_ccs?: number | null
+          initial_cri?: number | null
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_cri_audit_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fccp_cri_audit_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "fccp_cri_audit_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -33484,6 +33569,7 @@ export type Database = {
           spearman: number
         }[]
       }
+      calculate_cri_metrics: { Args: never; Returns: undefined }
       calculate_fccp_ccs: { Args: never; Returns: number }
       calculate_ocr: {
         Args: never
@@ -34114,6 +34200,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      simulate_ccs_acceleration: {
+        Args: { limit_count: number }
+        Returns: {
+          new_projected_ccs: number
+          simulated_ccs_gain: number
+          target_competencies: string[]
+        }[]
       }
       student_has_clinical_case_result: {
         Args: { _case_id: string; _user_id: string }
