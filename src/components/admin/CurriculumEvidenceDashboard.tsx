@@ -78,10 +78,10 @@ export const CurriculumEvidenceDashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black text-white flex items-center gap-2">
-            <ShieldCheck className="h-6 w-6 text-indigo-500" />
-            Curriculum Outcome Validation Engine (COVE)
+            <FlaskConical className="h-6 w-6 text-pink-500" />
+            Evidence Confidence Engine (ECE)
           </h2>
-          <p className="text-white/50 text-sm">FCCP Phase 6.4 - Curriculum Outcome & Impact Analytics</p>
+          <p className="text-white/50 text-sm">FCCP Phase 6.5 - Statistical Validation & Bias Detection</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchOutcomeData} className="bg-white/5">
           <Activity className="h-4 w-4 mr-2" /> Recalcular Impacto
