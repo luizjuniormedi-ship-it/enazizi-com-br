@@ -831,6 +831,62 @@ export type Database = {
         }
         Relationships: []
       }
+      adversarial_sampling_log: {
+        Row: {
+          created_at: string | null
+          id: string
+          question_id: string
+          selection_reason: string
+          semantic_risk_score: number | null
+          wave_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          question_id: string
+          selection_reason: string
+          semantic_risk_score?: number | null
+          wave_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          question_id?: string
+          selection_reason?: string
+          semantic_risk_score?: number | null
+          wave_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adversarial_sampling_log_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adversarial_sampling_log_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adversarial_sampling_log_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_waves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adversarial_sampling_log_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "v_wave_2_stress_report"
+            referencedColumns: ["wave_id"]
+          },
+        ]
+      }
       ai_agents_logs: {
         Row: {
           action: string
@@ -2486,6 +2542,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ambiguity_clusters: {
+        Row: {
+          cluster_name: string
+          created_at: string | null
+          expected_primary_resolution: string | null
+          id: string
+          term_a: string
+          term_b: string
+        }
+        Insert: {
+          cluster_name: string
+          created_at?: string | null
+          expected_primary_resolution?: string | null
+          id?: string
+          term_a: string
+          term_b: string
+        }
+        Update: {
+          cluster_name?: string
+          created_at?: string | null
+          expected_primary_resolution?: string | null
+          id?: string
+          term_a?: string
+          term_b?: string
+        }
+        Relationships: []
+      }
       analytics_excluded_users: {
         Row: {
           excluded_at: string
@@ -3052,10 +3135,14 @@ export type Database = {
           confidence_calibration_error: number | null
           created_at: string | null
           drift_score: number | null
+          dual_classifier_divergence: number | null
+          effective_coverage_ratio: number | null
           false_negative_rate: number | null
           false_positive_rate: number | null
           id: string
           is_rare_competency_audit: boolean | null
+          production_readiness_score: number | null
+          rare_competency_accuracy: number | null
           specialty: string
           total_samples: number
           wave_id: string | null
@@ -3068,10 +3155,14 @@ export type Database = {
           confidence_calibration_error?: number | null
           created_at?: string | null
           drift_score?: number | null
+          dual_classifier_divergence?: number | null
+          effective_coverage_ratio?: number | null
           false_negative_rate?: number | null
           false_positive_rate?: number | null
           id?: string
           is_rare_competency_audit?: boolean | null
+          production_readiness_score?: number | null
+          rare_competency_accuracy?: number | null
           specialty: string
           total_samples: number
           wave_id?: string | null
@@ -3084,10 +3175,14 @@ export type Database = {
           confidence_calibration_error?: number | null
           created_at?: string | null
           drift_score?: number | null
+          dual_classifier_divergence?: number | null
+          effective_coverage_ratio?: number | null
           false_negative_rate?: number | null
           false_positive_rate?: number | null
           id?: string
           is_rare_competency_audit?: boolean | null
+          production_readiness_score?: number | null
+          rare_competency_accuracy?: number | null
           specialty?: string
           total_samples?: number
           wave_id?: string | null
@@ -3099,6 +3194,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "promotion_waves"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_reports_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "v_wave_2_stress_report"
+            referencedColumns: ["wave_id"]
           },
         ]
       }
@@ -3666,6 +3768,7 @@ export type Database = {
           started_at: string | null
           status: string
           total_cost: number | null
+          wave_id: string | null
         }
         Insert: {
           batch_size: number
@@ -3679,6 +3782,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           total_cost?: number | null
+          wave_id?: string | null
         }
         Update: {
           batch_size?: number
@@ -3692,8 +3796,24 @@ export type Database = {
           started_at?: string | null
           status?: string
           total_cost?: number | null
+          wave_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "classification_batches_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_waves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_batches_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "v_wave_2_stress_report"
+            referencedColumns: ["wave_id"]
+          },
+        ]
       }
       classification_health_snapshots: {
         Row: {
@@ -22158,6 +22278,7 @@ export type Database = {
           similarity_score: number | null
           updated_at: string | null
           validation_divergence: string | null
+          wave_id: string | null
         }
         Insert: {
           audit_status?: string | null
@@ -22189,6 +22310,7 @@ export type Database = {
           similarity_score?: number | null
           updated_at?: string | null
           validation_divergence?: string | null
+          wave_id?: string | null
         }
         Update: {
           audit_status?: string | null
@@ -22220,6 +22342,7 @@ export type Database = {
           similarity_score?: number | null
           updated_at?: string | null
           validation_divergence?: string | null
+          wave_id?: string | null
         }
         Relationships: [
           {
@@ -22242,6 +22365,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_clinica_medica_umbrella"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_staging_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_waves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_staging_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "v_wave_2_stress_report"
+            referencedColumns: ["wave_id"]
           },
         ]
       }
@@ -30921,6 +31058,22 @@ export type Database = {
           recoveries_triggered: number | null
           total_loops_detected: number | null
           total_sessions: number | null
+        }
+        Relationships: []
+      }
+      v_wave_2_stress_report: {
+        Row: {
+          certification_status: string | null
+          confidence_calibration_error: number | null
+          drift_score: number | null
+          dual_classifier_divergence: number | null
+          false_negative_rate: number | null
+          false_positive_rate: number | null
+          primary_competency_accuracy: number | null
+          production_readiness_score: number | null
+          rare_competency_accuracy: number | null
+          wave_id: string | null
+          wave_number: number | null
         }
         Relationships: []
       }
