@@ -10087,6 +10087,13 @@ export type Database = {
             referencedColumns: ["specialty_id"]
           },
           {
+            foreignKeyName: "curriculum_aliases_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "curriculum_aliases_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
@@ -10624,6 +10631,13 @@ export type Database = {
             columns: ["specialty_id"]
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
+            foreignKeyName: "curriculum_topics_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
             referencedColumns: ["specialty_id"]
           },
         ]
@@ -12291,6 +12305,13 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["specialty_id"]
           },
+          {
+            foreignKeyName: "enamed_intelligence_index_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
+            referencedColumns: ["specialty_id"]
+          },
         ]
       }
       enamed_outcome_database: {
@@ -13284,6 +13305,39 @@ export type Database = {
         }
         Relationships: []
       }
+      fccp_ccs_history: {
+        Row: {
+          ccs_global: number
+          created_at: string | null
+          critical_topics: number | null
+          id: string
+          limited_topics: number | null
+          operational_topics: number | null
+          snapshot_date: string | null
+          total_topics: number | null
+        }
+        Insert: {
+          ccs_global: number
+          created_at?: string | null
+          critical_topics?: number | null
+          id?: string
+          limited_topics?: number | null
+          operational_topics?: number | null
+          snapshot_date?: string | null
+          total_topics?: number | null
+        }
+        Update: {
+          ccs_global?: number
+          created_at?: string | null
+          critical_topics?: number | null
+          id?: string
+          limited_topics?: number | null
+          operational_topics?: number | null
+          snapshot_date?: string | null
+          total_topics?: number | null
+        }
+        Relationships: []
+      }
       fccp_competency_audit: {
         Row: {
           competency_id: string | null
@@ -13446,6 +13500,54 @@ export type Database = {
           },
         ]
       }
+      fccp_maturity_ranking: {
+        Row: {
+          enamed_incidence_score: number | null
+          enare_incidence_score: number | null
+          id: string
+          last_updated: string | null
+          priority_index: number | null
+          search_frequency_score: number | null
+          topic_id: string | null
+          tutor_usage_score: number | null
+        }
+        Insert: {
+          enamed_incidence_score?: number | null
+          enare_incidence_score?: number | null
+          id?: string
+          last_updated?: string | null
+          priority_index?: number | null
+          search_frequency_score?: number | null
+          topic_id?: string | null
+          tutor_usage_score?: number | null
+        }
+        Update: {
+          enamed_incidence_score?: number | null
+          enare_incidence_score?: number | null
+          id?: string
+          last_updated?: string | null
+          priority_index?: number | null
+          search_frequency_score?: number | null
+          topic_id?: string | null
+          tutor_usage_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_maturity_ranking_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fccp_maturity_ranking_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+        ]
+      }
       fccp_specialty_certification: {
         Row: {
           certified_at: string | null
@@ -13475,6 +13577,51 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      fccp_targeted_recovery_queue: {
+        Row: {
+          created_at: string | null
+          gap_count: number | null
+          id: string
+          recovery_source: string | null
+          status: string | null
+          topic_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          gap_count?: number | null
+          id?: string
+          recovery_source?: string | null
+          status?: string | null
+          topic_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          gap_count?: number | null
+          id?: string
+          recovery_source?: string | null
+          status?: string | null
+          topic_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_targeted_recovery_queue_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fccp_targeted_recovery_queue_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+        ]
       }
       fccp_user_impact_validation: {
         Row: {
@@ -13849,6 +13996,13 @@ export type Database = {
             columns: ["specialty_id"]
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
+            foreignKeyName: "flashcards_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
             referencedColumns: ["specialty_id"]
           },
           {
@@ -22849,6 +23003,13 @@ export type Database = {
             referencedColumns: ["specialty_id"]
           },
           {
+            foreignKeyName: "question_classification_queue_suggested_specialty_id_fkey"
+            columns: ["suggested_specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "question_classification_queue_suggested_subtopic_id_fkey"
             columns: ["suggested_subtopic_id"]
             isOneToOne: false
@@ -23787,6 +23948,7 @@ export type Database = {
           distractor_quality_score: number | null
           embedding_hash: string | null
           enamed_weight: number | null
+          enare_fidelity_score: number | null
           exam_bank_id: string | null
           explanation: string
           fsrs_hooks: Json | null
@@ -23833,6 +23995,7 @@ export type Database = {
           tags: string[] | null
           topic: string | null
           topic_id: string | null
+          topic_integrity_score: number | null
           tri_difficulty_score: number | null
           tri_discrimination: number | null
           tri_guessing: number | null
@@ -23870,6 +24033,7 @@ export type Database = {
           distractor_quality_score?: number | null
           embedding_hash?: string | null
           enamed_weight?: number | null
+          enare_fidelity_score?: number | null
           exam_bank_id?: string | null
           explanation: string
           fsrs_hooks?: Json | null
@@ -23916,6 +24080,7 @@ export type Database = {
           tags?: string[] | null
           topic?: string | null
           topic_id?: string | null
+          topic_integrity_score?: number | null
           tri_difficulty_score?: number | null
           tri_discrimination?: number | null
           tri_guessing?: number | null
@@ -23953,6 +24118,7 @@ export type Database = {
           distractor_quality_score?: number | null
           embedding_hash?: string | null
           enamed_weight?: number | null
+          enare_fidelity_score?: number | null
           exam_bank_id?: string | null
           explanation?: string
           fsrs_hooks?: Json | null
@@ -23999,6 +24165,7 @@ export type Database = {
           tags?: string[] | null
           topic?: string | null
           topic_id?: string | null
+          topic_integrity_score?: number | null
           tri_difficulty_score?: number | null
           tri_discrimination?: number | null
           tri_guessing?: number | null
@@ -24097,6 +24264,13 @@ export type Database = {
             columns: ["specialty_id"]
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
+            foreignKeyName: "questions_bank_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
             referencedColumns: ["specialty_id"]
           },
           {
@@ -24739,6 +24913,13 @@ export type Database = {
             columns: ["specialty_id"]
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
+            foreignKeyName: "real_exam_questions_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
             referencedColumns: ["specialty_id"]
           },
           {
@@ -26337,6 +26518,13 @@ export type Database = {
             referencedColumns: ["specialty_id"]
           },
           {
+            foreignKeyName: "study_materials_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "study_materials_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
@@ -27900,6 +28088,13 @@ export type Database = {
             columns: ["specialty_id"]
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
+            foreignKeyName: "temas_estudados_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
             referencedColumns: ["specialty_id"]
           },
           {
@@ -32248,6 +32443,18 @@ export type Database = {
         }
         Relationships: []
       }
+      v_fccp_specialty_certification: {
+        Row: {
+          certification_status: string | null
+          critical_count: number | null
+          limited_count: number | null
+          operational_count: number | null
+          specialty_id: string | null
+          specialty_name: string | null
+          total_topics: number | null
+        }
+        Relationships: []
+      }
       v_generator_telemetry_summary: {
         Row: {
           ab_bucket: string | null
@@ -32817,6 +33024,13 @@ export type Database = {
             referencedColumns: ["specialty_id"]
           },
           {
+            foreignKeyName: "questions_bank_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_specialty_certification"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "questions_bank_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
@@ -32950,6 +33164,7 @@ export type Database = {
           spearman: number
         }[]
       }
+      calculate_fccp_ccs: { Args: never; Returns: number }
       calculate_ocr: {
         Args: never
         Returns: {
@@ -33517,6 +33732,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      refresh_fccp_ccs_snapshot: { Args: never; Returns: undefined }
       refresh_video_cognitive_heatmap: {
         Args: { p_video_lesson_id: string }
         Returns: undefined
