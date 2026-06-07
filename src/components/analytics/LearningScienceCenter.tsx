@@ -147,7 +147,13 @@ export const LearningScienceCenter: React.FC = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <span className="text-[10px] uppercase text-muted-foreground block mb-1">Velocidade de Aprendizado</span>
+                    <span className="text-[10px] uppercase text-muted-foreground flex items-center gap-1 mb-1">
+                      Velocidade de Aprendizado
+                      <Tooltip>
+                        <TooltipTrigger><Info className="w-2 h-2" /></TooltipTrigger>
+                        <TooltipContent><p>O ritmo médio de aquisição de novos conhecimentos por mês.</p></TooltipContent>
+                      </Tooltip>
+                    </span>
                     <span className="text-xl font-bold text-emerald-500">+{snapshot.learningVelocity.currentVelocity}</span>
                     <span className="text-[10px] ml-1 opacity-70">pts/mês</span>
                   </div>
