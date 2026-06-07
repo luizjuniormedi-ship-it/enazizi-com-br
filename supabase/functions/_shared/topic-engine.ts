@@ -14,6 +14,7 @@ export class TopicEngine {
   private supabase: SupabaseClient;
   private aliases: Map<string, string[]> = new Map();
   private siblingBlocks: Map<string, string[]> = new Map();
+  private competencies: Map<string, string> = new Map(); // subtopic -> canonical_topic
 
   constructor(supabase: SupabaseClient) {
     this.supabase = supabase;
