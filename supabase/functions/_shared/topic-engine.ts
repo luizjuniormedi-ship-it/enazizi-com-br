@@ -40,6 +40,9 @@ export class TopicEngine {
         const list = this.aliases.get(item.canonical_topic) || [];
         list.push(item.alias.toLowerCase());
         this.aliases.set(item.canonical_topic, list);
+        
+        // Map subtopics (aliases) back to canonical for competency matching
+        this.competencies.set(item.alias.toLowerCase(), item.canonical_topic);
       }
     }
   }
