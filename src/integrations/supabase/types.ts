@@ -3505,6 +3505,141 @@ export type Database = {
         }
         Relationships: []
       }
+      ccpv_performance_metrics: {
+        Row: {
+          alias_resolution_ms: number | null
+          created_at: string | null
+          id: string
+          selector_ms: number | null
+          test_run_id: string | null
+          topic_engine_ms: number | null
+          total_ms: number | null
+        }
+        Insert: {
+          alias_resolution_ms?: number | null
+          created_at?: string | null
+          id?: string
+          selector_ms?: number | null
+          test_run_id?: string | null
+          topic_engine_ms?: number | null
+          total_ms?: number | null
+        }
+        Update: {
+          alias_resolution_ms?: number | null
+          created_at?: string | null
+          id?: string
+          selector_ms?: number | null
+          test_run_id?: string | null
+          topic_engine_ms?: number | null
+          total_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ccpv_performance_metrics_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "ccpv_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ccpv_test_runs: {
+        Row: {
+          competency_id: string | null
+          created_at: string | null
+          execution_time_ms: number | null
+          failure_reason: string | null
+          id: string
+          questions_found: number | null
+          questions_requested: number
+          questions_returned: number | null
+          requested_competency: string
+          resolved_alias: string | null
+          success: boolean | null
+          trace_id: string | null
+        }
+        Insert: {
+          competency_id?: string | null
+          created_at?: string | null
+          execution_time_ms?: number | null
+          failure_reason?: string | null
+          id?: string
+          questions_found?: number | null
+          questions_requested: number
+          questions_returned?: number | null
+          requested_competency: string
+          resolved_alias?: string | null
+          success?: boolean | null
+          trace_id?: string | null
+        }
+        Update: {
+          competency_id?: string | null
+          created_at?: string | null
+          execution_time_ms?: number | null
+          failure_reason?: string | null
+          id?: string
+          questions_found?: number | null
+          questions_requested?: number
+          questions_returned?: number | null
+          requested_competency?: string
+          resolved_alias?: string | null
+          success?: boolean | null
+          trace_id?: string | null
+        }
+        Relationships: []
+      }
+      ccpv_topic_integrity_audit: {
+        Row: {
+          created_at: string | null
+          detected_topic_mismatch: string | null
+          id: string
+          is_valid_topic: boolean | null
+          leakage_detected: boolean | null
+          question_id: string | null
+          test_run_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detected_topic_mismatch?: string | null
+          id?: string
+          is_valid_topic?: boolean | null
+          leakage_detected?: boolean | null
+          question_id?: string | null
+          test_run_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detected_topic_mismatch?: string | null
+          id?: string
+          is_valid_topic?: boolean | null
+          leakage_detected?: boolean | null
+          question_id?: string | null
+          test_run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ccpv_topic_integrity_audit_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ccpv_topic_integrity_audit_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ccpv_topic_integrity_audit_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "ccpv_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chance_by_exam: {
         Row: {
           banca: string
@@ -31767,6 +31902,18 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ccpv_production_readiness: {
+        Row: {
+          max_uis: number | null
+          q10: string | null
+          q100: string | null
+          q20: string | null
+          q50: string | null
+          requested_competency: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
       v_classification_health: {
         Row: {
           generated_at: string | null
@@ -32599,6 +32746,10 @@ export type Database = {
       capture_enamed_evidence_snapshot: {
         Args: { p_day_offset: number; p_user_id: string }
         Returns: undefined
+      }
+      ccpv_run_test_suite: {
+        Args: { p_competency_name: string }
+        Returns: Json
       }
       check_duplicate_tutor_sessions: {
         Args: never
