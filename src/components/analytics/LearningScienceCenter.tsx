@@ -181,6 +181,10 @@ export const LearningScienceCenter: React.FC = () => {
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className={`w-5 h-5 ${riskColor}`} />
                 Índice de Risco
+                <Tooltip>
+                  <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                  <TooltipContent><p>Probabilidade de perda de conhecimento ou queda de desempenho baseada em padrões de estudo.</p></TooltipContent>
+                </Tooltip>
               </CardTitle>
               <Badge variant="outline" className={`${riskColor} border-current uppercase text-[10px]`}>
                 {snapshot.riskIndex.level}
