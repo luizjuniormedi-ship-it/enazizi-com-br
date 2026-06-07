@@ -94,30 +94,40 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const seenNormalized = new Set<string>();
 
     if (body.mode !== 'ai_generation') {
-      let query = supabaseAdmin
+      const buildBaseQuery = () => supabaseAdmin
         .from("questions_bank")
         .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board")
         .eq("review_status", "approved");
 
-      if (subtopics.length > 0) {
-        const subtopicFilter = subtopics.map(s => `"${s}"`).join(",");
-        query = query.or(`subtopic.in.(${subtopicFilter}),curriculum_subtheme.in.(${subtopicFilter})`);
-      } else if (topics.length > 0) {
-        const topicFilter = topics.map(t => `"${t}"`).join(",");
-        query = query.or(`topic.in.(${topicFilter}),curriculum_theme.in.(${topicFilter}),curriculum_discipline.in.(${topicFilter})`);
+      const applyExclusion = (q: any) =>
+        excludedIds.length > 0 ? q.not("id", "in", `(${excludedIds.join(",")})`) : q;
+
+      // ── Strict topic filter (curriculum_theme/discipline are 100% NULL no banco, então só topic) ──
+      let candidates: any[] = [];
+
+      // Tentativa 1: subtopic via ilike (fuzzy) + topic, se houver subtopic
+      if (subtopics.length > 0 && topics.length > 0) {
+        const subOr = subtopics
+          .flatMap((s: string) => [`subtopic.ilike.%${s}%`, `curriculum_subtheme.ilike.%${s}%`])
+          .join(",");
+        let q = buildBaseQuery().in("topic", topics).or(subOr);
+        q = applyExclusion(q);
+        const { data } = await q.limit(requestedCount * 3);
+        candidates = data || [];
+        console.log(`[SIM_GENERATOR_SUBTOPIC_MATCH] count=${candidates.length}`);
       }
 
-      if (examBoard && examBoard !== 'all') {
-        query = query.eq("board", profile.label);
+      // Tentativa 2 (fallback): só topic estrito
+      if (candidates.length === 0 && topics.length > 0) {
+        let q = buildBaseQuery().in("topic", topics);
+        q = applyExclusion(q);
+        const { data } = await q.limit(requestedCount * 3);
+        candidates = data || [];
+        console.log(`[SIM_GENERATOR_TOPIC_MATCH] count=${candidates.length}`);
       }
 
-      if (excludedIds.length > 0) {
-        query = query.not("id", "in", `(${excludedIds.join(",")})`);
-      }
-
-      const { data: bankQs } = await query.limit(requestedCount * 2);
-      const candidates = bankQs || [];
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
+
 
       for (const q of candidates) {
         if (finalQuestions.length >= requestedCount) break;
