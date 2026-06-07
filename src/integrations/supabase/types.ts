@@ -29710,6 +29710,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ugrp_eligibility_loss_log: {
+        Row: {
+          id: string
+          impact_count: number | null
+          phase: string
+          reason: string
+          timestamp: string | null
+          topic_id: string | null
+        }
+        Insert: {
+          id?: string
+          impact_count?: number | null
+          phase: string
+          reason: string
+          timestamp?: string | null
+          topic_id?: string | null
+        }
+        Update: {
+          id?: string
+          impact_count?: number | null
+          phase?: string
+          reason?: string
+          timestamp?: string | null
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ugrp_eligibility_loss_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ugrp_eligibility_loss_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+        ]
+      }
       ugrp_generation_tests: {
         Row: {
           competency_id: string
@@ -29803,6 +29845,60 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ugrp_uis_dashboard"
             referencedColumns: ["competency"]
+          },
+        ]
+      }
+      ugrp_question_funnel: {
+        Row: {
+          eligible_count: number | null
+          id: string
+          mapped_count: number | null
+          physical_count: number | null
+          published_count: number | null
+          selectable_count: number | null
+          timestamp: string | null
+          topic_id: string | null
+          topic_name: string
+          unique_count: number | null
+        }
+        Insert: {
+          eligible_count?: number | null
+          id?: string
+          mapped_count?: number | null
+          physical_count?: number | null
+          published_count?: number | null
+          selectable_count?: number | null
+          timestamp?: string | null
+          topic_id?: string | null
+          topic_name: string
+          unique_count?: number | null
+        }
+        Update: {
+          eligible_count?: number | null
+          id?: string
+          mapped_count?: number | null
+          physical_count?: number | null
+          published_count?: number | null
+          selectable_count?: number | null
+          timestamp?: string | null
+          topic_id?: string | null
+          topic_name?: string
+          unique_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ugrp_question_funnel_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ugrp_question_funnel_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
           },
         ]
       }
@@ -31431,6 +31527,15 @@ export type Database = {
         }
         Relationships: []
       }
+      ugrp_moc_report: {
+        Row: {
+          max_simulado: number | null
+          selectable: number | null
+          status: string | null
+          topic_name: string | null
+        }
+        Relationships: []
+      }
       ugrp_uis_dashboard: {
         Row: {
           alias_resolution_rate: number | null
@@ -32262,6 +32367,10 @@ export type Database = {
       assign_user_to_v6_experiment: {
         Args: { target_user_id: string }
         Returns: string
+      }
+      audit_question_funnel: {
+        Args: { target_topic_name: string }
+        Returns: Json
       }
       calculate_blueprint_health: {
         Args: { p_exam_key: string }
