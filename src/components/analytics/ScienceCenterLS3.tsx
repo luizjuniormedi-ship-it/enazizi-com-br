@@ -109,7 +109,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
                   <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                   <XAxis type="number" dataKey="x" name="Readiness" unit="%" fontSize={10} />
                   <YAxis type="number" dataKey="y" name="Nota Real" unit="%" fontSize={10} />
-                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                  <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} />
                   {!isMocked && <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]} stroke="red" strokeDasharray="3 3" />}
                   <Scatter name="Correlação" data={calibrationData} fill="#10b981">
                     {calibrationData.map((entry, index) => (
