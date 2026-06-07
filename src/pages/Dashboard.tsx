@@ -35,6 +35,7 @@ const DailyPlanWidget = lazy(() => import("@/components/dashboard/DailyPlanWidge
 const DashboardMetricsGrid = lazy(() => import("@/components/dashboard/DashboardMetricsGrid"));
 const CognitiveValidation = lazy(() => import("@/components/admin/CognitiveValidation").then(m => ({ default: m.CognitiveValidation })));
 const HighImpactThemesCard = lazy(() => import("@/components/dashboard/HighImpactThemesCard"));
+const CurriculumReconstructionDashboard = lazy(() => import("@/components/admin/CurriculumReconstructionDashboard").then(m => ({ default: m.CurriculumReconstructionDashboard })));
 const EnamedMatrixHealth = lazy(() => import("@/components/dashboard/EnamedMatrixHealth"));
 const ApprovalIntelligenceDashboard = lazy(() => import("@/components/dashboard/ApprovalIntelligenceDashboard"));
 
@@ -222,7 +223,10 @@ const Dashboard = () => {
       {debugPanel}
 
       {isDebug && (
-        <div className="mx-4 sm:mx-8 lg:mx-14 relative z-10">
+        <div className="mx-4 sm:mx-8 lg:mx-14 relative z-10 space-y-8">
+          <Suspense fallback={null}>
+            <CurriculumReconstructionDashboard />
+          </Suspense>
           <Suspense fallback={null}>
             <CognitiveValidation />
           </Suspense>
