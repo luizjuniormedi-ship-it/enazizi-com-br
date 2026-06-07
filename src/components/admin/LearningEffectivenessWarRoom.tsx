@@ -256,7 +256,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
                     tick={{ fill: '#ffffff60', fontSize: 10, fontWeight: 'bold' }}
                     width={100}
                   />
-                  <Tooltip 
+                  <RechartsTooltip 
                     cursor={{ fill: '#ffffff05' }}
                     contentStyle={{ backgroundColor: '#050508', border: '1px solid #ffffff10', fontSize: 10 }}
                   />
