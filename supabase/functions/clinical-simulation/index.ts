@@ -72,6 +72,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const traceId = crypto.randomUUID();
     const { user, ok, response } = await requireAuth(req);
     if (!ok) return response;
 
@@ -82,9 +83,11 @@ serve(async (req) => {
       conversation_history, 
       specialty, 
       triage_color,
-      active_patients, // Lista de pacientes que o aluno está gerenciando
+      active_patients,
       current_patient_id
     } = body;
+
+    console.log(`[HDA_REQUEST] traceId=${traceId} action=${action} userId=${user.id}`);
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
@@ -101,11 +104,16 @@ serve(async (req) => {
       timeoutMs: 60000,
     });
 
-    if (!aiResp.ok) throw new Error("Erro na IA");
+    if (!aiResp.ok) {
+      console.error(`[HDA_ERROR] AI fetch failed traceId=${traceId}`);
+      throw new Error("Erro na IA");
+    }
 
     const aiData = await aiResp.json();
     const raw = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
+    console.log(`[HDA_RESPONSE] traceId=${traceId} raw_length=${raw.length}`);
     const parsed = safeParseAIJson(raw);
+
 
     // P4: Deterministic Deterioration Overlay
     // The engine overrides the LLM's vitals based on physiological rules
