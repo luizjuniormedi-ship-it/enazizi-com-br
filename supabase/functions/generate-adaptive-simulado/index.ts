@@ -94,11 +94,16 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
 
       let candidates: any[] = [];
 
+      // Filtro tolerante: ILIKE em topic + curriculum_theme cobre variações de grafia/acento
+      const topicOr = topics
+        .flatMap((t: string) => [`topic.ilike.%${t}%`, `curriculum_theme.ilike.%${t}%`])
+        .join(",");
+
       if (subtopics.length > 0 && topics.length > 0) {
         const subOr = subtopics
           .flatMap((s: string) => [`subtopic.ilike.%${s}%`, `curriculum_subtheme.ilike.%${s}%`])
           .join(",");
-        let q = buildBaseQuery().in("topic", topics).or(subOr);
+        let q = buildBaseQuery().or(topicOr).or(subOr);
         q = applyExclusion(q);
         const { data } = await q.limit(requestedCount * 3);
         candidates = data || [];
@@ -106,7 +111,7 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
       }
 
       if (candidates.length === 0 && topics.length > 0) {
-        let q = buildBaseQuery().in("topic", topics);
+        let q = buildBaseQuery().or(topicOr);
         q = applyExclusion(q);
         const { data } = await q.limit(requestedCount * 3);
         candidates = data || [];
