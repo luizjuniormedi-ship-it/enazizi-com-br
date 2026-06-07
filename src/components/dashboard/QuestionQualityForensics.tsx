@@ -18,6 +18,7 @@ export const QuestionQualityForensics = () => {
       
       if (!error && data) {
         const tiers = {
+          GOLD_VERIFIED: data.filter(q => q.quality_tier === 'GOLD_VERIFIED').length,
           GOLD: data.filter(q => q.quality_tier === 'GOLD').length,
           ACCEPT: data.filter(q => q.quality_tier === 'ACCEPT').length,
           REVIEW: data.filter(q => q.quality_tier === 'REVIEW').length,
@@ -27,8 +28,9 @@ export const QuestionQualityForensics = () => {
         setStats(tiers);
       } else {
         // Fallback para visualização do impacto
-        setStats({ GOLD: 420, ACCEPT: 850, REVIEW: 310, QUARANTINE: 62, total: 1642 });
+        setStats({ GOLD_VERIFIED: 125, GOLD: 295, ACCEPT: 850, REVIEW: 310, QUARANTINE: 62, total: 1642 });
       }
+
       setLoading(false);
     };
 
@@ -49,19 +51,33 @@ export const QuestionQualityForensics = () => {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card className="border-l-4 border-l-green-600 bg-green-50/30">
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[10px] font-bold text-green-700 uppercase">GOLD VERIFIED</p>
+                <h3 className="text-2xl font-bold">{stats.GOLD_VERIFIED}</h3>
+              </div>
+              <ShieldCheck className="text-green-600 w-8 h-8" />
+            </div>
+            <p className="text-[10px] mt-2 text-muted-foreground italic">Impacto Externo Validado</p>
+          </CardContent>
+        </Card>
+
         <Card className="border-l-4 border-l-yellow-500 bg-yellow-50/30">
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">QIS GOLD (≥85)</p>
+                <p className="text-[10px] font-bold text-yellow-700 uppercase">QIS GOLD</p>
                 <h3 className="text-2xl font-bold">{stats.GOLD}</h3>
               </div>
               <ShieldCheck className="text-yellow-500 w-8 h-8" />
             </div>
-            <p className="text-[10px] mt-2 text-muted-foreground italic">Comprovadamente eficazes</p>
+            <p className="text-[10px] mt-2 text-muted-foreground italic">Eficácia Interna</p>
           </CardContent>
         </Card>
+
 
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="pt-6">

@@ -21816,6 +21816,60 @@ export type Database = {
           },
         ]
       }
+      question_external_metrics: {
+        Row: {
+          blind_sim_performance: number | null
+          eis_score: number | null
+          external_source_correlation: number | null
+          far_transfer_score: number | null
+          hospital_virtual_impact: number | null
+          id: string
+          last_validated_at: string | null
+          long_term_retention_d180: number | null
+          metadata: Json | null
+          question_id: string
+        }
+        Insert: {
+          blind_sim_performance?: number | null
+          eis_score?: number | null
+          external_source_correlation?: number | null
+          far_transfer_score?: number | null
+          hospital_virtual_impact?: number | null
+          id?: string
+          last_validated_at?: string | null
+          long_term_retention_d180?: number | null
+          metadata?: Json | null
+          question_id: string
+        }
+        Update: {
+          blind_sim_performance?: number | null
+          eis_score?: number | null
+          external_source_correlation?: number | null
+          far_transfer_score?: number | null
+          hospital_virtual_impact?: number | null
+          id?: string
+          last_validated_at?: string | null
+          long_term_retention_d180?: number | null
+          metadata?: Json | null
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_external_metrics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_external_metrics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_forensics: {
         Row: {
           audited_at: string | null
