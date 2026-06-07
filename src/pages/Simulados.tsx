@@ -256,7 +256,12 @@ async function generateBatch(
       questions: mapQuestions(data.questions || [], topics), 
       sessionId: data.session_id || null,
       insufficientQuestions: data.insufficientQuestions,
-      message: data.message
+      message: data.message,
+      insufficientQuestionsData: {
+        requested: data.requestedCount,
+        generated: data.generatedCount,
+        isInsufficient: data.insufficientQuestions
+      }
     };
 
   } catch (e) {
