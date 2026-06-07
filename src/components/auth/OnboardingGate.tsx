@@ -19,30 +19,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   LogOut,
   Clock,
   Save,
   Loader2,
   GraduationCap,
   Building,
-  Phone,
   User,
   Stethoscope,
-  Target,
 } from "lucide-react";
-import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfileStatus } from "@/hooks/useProfileStatus";
-import { isValidPhone, isValidName } from "@/lib/profileValidation";
-import { EXAM_PROFILES } from "@/lib/examProfiles";
+import { isValidName } from "@/lib/profileValidation";
 import WelcomeBackScreen from "@/components/onboarding/WelcomeBackScreen";
 import OnboardingV2Flow from "@/components/onboarding/OnboardingV2Flow";
 
