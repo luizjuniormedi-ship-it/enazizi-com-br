@@ -10128,6 +10128,13 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
           },
+          {
+            foreignKeyName: "curriculum_aliases_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       curriculum_audit_logs: {
@@ -10591,6 +10598,13 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
           },
+          {
+            foreignKeyName: "curriculum_subtopics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       curriculum_topics: {
@@ -10600,7 +10614,14 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          recoverable_questions: number | null
+          recovery_priority: string | null
+          rps: number | null
+          rvp_metadata: Json | null
+          rvs_score: number | null
           specialty_id: string
+          status: string | null
+          visible_questions: number | null
         }
         Insert: {
           ativo?: boolean
@@ -10608,7 +10629,14 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          recoverable_questions?: number | null
+          recovery_priority?: string | null
+          rps?: number | null
+          rvp_metadata?: Json | null
+          rvs_score?: number | null
           specialty_id: string
+          status?: string | null
+          visible_questions?: number | null
         }
         Update: {
           ativo?: boolean
@@ -10616,7 +10644,14 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          recoverable_questions?: number | null
+          recovery_priority?: string | null
+          rps?: number | null
+          rvp_metadata?: Json | null
+          rvs_score?: number | null
           specialty_id?: string
+          status?: string | null
+          visible_questions?: number | null
         }
         Relationships: [
           {
@@ -13458,6 +13493,13 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
           },
+          {
+            foreignKeyName: "fccp_content_recovery_audit_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: true
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fccp_coverage_gap_registry: {
@@ -13612,6 +13654,74 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
           },
+          {
+            foreignKeyName: "fccp_maturity_ranking_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fccp_recovery_audit_log: {
+        Row: {
+          auditor_id: string | null
+          ccs_gain: number | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          quality_score: number | null
+          questions_recovered: number | null
+          recovery_source: string | null
+          rvs_score_at_recovery: number | null
+          topic_id: string | null
+        }
+        Insert: {
+          auditor_id?: string | null
+          ccs_gain?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          quality_score?: number | null
+          questions_recovered?: number | null
+          recovery_source?: string | null
+          rvs_score_at_recovery?: number | null
+          topic_id?: string | null
+        }
+        Update: {
+          auditor_id?: string | null
+          ccs_gain?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          quality_score?: number | null
+          questions_recovered?: number | null
+          recovery_source?: string | null
+          rvs_score_at_recovery?: number | null
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_recovery_audit_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fccp_recovery_audit_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "fccp_recovery_audit_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fccp_specialty_certification: {
@@ -13686,6 +13796,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "fccp_targeted_recovery_queue_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -23110,6 +23227,13 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
           },
+          {
+            foreignKeyName: "question_classification_queue_suggested_topic_id_fkey"
+            columns: ["suggested_topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       question_classification_runs: {
@@ -23946,6 +24070,13 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
           },
+          {
+            foreignKeyName: "question_topic_map_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       question_usage_logs: {
@@ -24277,6 +24408,13 @@ export type Database = {
             referencedColumns: ["topic_id"]
           },
           {
+            foreignKeyName: "fk_questions_bank_curriculum_topic"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "questions_bank_exam_bank_id_fkey"
             columns: ["exam_bank_id"]
             isOneToOne: false
@@ -24373,6 +24511,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "questions_bank_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -25022,6 +25167,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "real_exam_questions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -26625,6 +26777,13 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
           },
+          {
+            foreignKeyName: "study_materials_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       study_performance: {
@@ -28197,6 +28356,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "temas_estudados_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -30519,6 +30685,13 @@ export type Database = {
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
           },
+          {
+            foreignKeyName: "ugrp_eligibility_loss_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ugrp_generation_tests: {
@@ -30668,6 +30841,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "ugrp_question_funnel_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -32509,6 +32689,39 @@ export type Database = {
         }
         Relationships: []
       }
+      v_fccp_recovery_ranking: {
+        Row: {
+          current_operational_status: string | null
+          id: string | null
+          nome: string | null
+          recoverable_questions: number | null
+          recovery_priority: string | null
+          rps: number | null
+          rvs_score: number | null
+          visible_questions: number | null
+        }
+        Insert: {
+          current_operational_status?: string | null
+          id?: string | null
+          nome?: string | null
+          recoverable_questions?: number | null
+          recovery_priority?: string | null
+          rps?: number | null
+          rvs_score?: number | null
+          visible_questions?: number | null
+        }
+        Update: {
+          current_operational_status?: string | null
+          id?: string | null
+          nome?: string | null
+          recoverable_questions?: number | null
+          recovery_priority?: string | null
+          rps?: number | null
+          rvs_score?: number | null
+          visible_questions?: number | null
+        }
+        Relationships: []
+      }
       v_fccp_recovery_report: {
         Row: {
           Competência: string | null
@@ -33061,6 +33274,13 @@ export type Database = {
             referencedColumns: ["topic_id"]
           },
           {
+            foreignKeyName: "fk_questions_bank_curriculum_topic"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "questions_bank_exam_bank_id_fkey"
             columns: ["exam_bank_id"]
             isOneToOne: false
@@ -33157,6 +33377,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_curriculum_coverage_by_banca"
             referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "questions_bank_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -33291,6 +33518,7 @@ export type Database = {
           unique_questions: number
         }[]
       }
+      calculate_rvs_score: { Args: { topic_id: string }; Returns: number }
       capture_enamed_evidence_snapshot: {
         Args: { p_day_offset: number; p_user_id: string }
         Returns: undefined
@@ -33313,6 +33541,10 @@ export type Database = {
       check_function_exists: { Args: { func_name: string }; Returns: boolean }
       check_system_health: { Args: never; Returns: undefined }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
+      classify_recovery_priority: {
+        Args: { rvs_score: number }
+        Returns: string
+      }
       cleanup_dead_pedagogical_sessions: { Args: never; Returns: undefined }
       cleanup_stale_approval_scores: { Args: never; Returns: undefined }
       cleanup_tutor_cache: { Args: never; Returns: undefined }
