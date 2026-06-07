@@ -95,6 +95,8 @@ const ScientificAuditPage = lazyWithRetry(() => import("./pages/admin/Scientific
 const CampaignDashboardPage = lazyWithRetry(() => import("./pages/admin/CampaignDashboardPage"), "CampaignDashboardPage");
 const LearningScienceCenterPage = lazyWithRetry(() => import("./pages/LearningScienceCenterPage"), "LearningScienceCenterPage");
 const CVRPDashboard = lazyWithRetry(() => import("./pages/admin/cvrp/Dashboard"), "CVRPDashboard");
+const ClinicalEvidenceCenter = lazyWithRetry(() => import("./pages/ClinicalEvidenceCenter"), "ClinicalEvidenceCenter");
+
 
 
 
