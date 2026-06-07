@@ -294,13 +294,25 @@ const Flashcards = () => {
   }, [phase, mode, sprintTimeLeft > 0]);
 
   const handleStartSession = (selectedMode: "due" | "all" | "sprint") => {
-    setMode(selectedMode);
-    if (selectedMode === "sprint") {
-      setSprintTimeLeft(sprintConfig.timeMinutes * 60);
+    console.log(`[FLASHCARD_SESSION_START] mode=${selectedMode}`);
+    try {
+      setMode(selectedMode);
+      if (selectedMode === "sprint") {
+        setSprintTimeLeft(sprintConfig.timeMinutes * 60);
+      }
+      setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
+      setPhase("active");
+      console.log(`[FLASHCARD_SESSION_CREATED] mode=${selectedMode}`);
+    } catch (err) {
+      console.error(`[FLASHCARD_SESSION_ERROR]`, err);
+      toast({
+        title: "Erro",
+        description: "Não foi possível iniciar a revisão. Tente novamente.",
+        variant: "destructive",
+      });
     }
-    setSessionStats({ correct: 0, wrong: 0, skipped: 0 });
-    setPhase("active");
   };
+
 
   const handleReview = async (cardId: string, rating: Rating, userAnswer: string) => {
     if (!user) return;
