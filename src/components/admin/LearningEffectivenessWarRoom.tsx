@@ -142,6 +142,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
               <Zap className="h-3 w-3 text-primary" /> Impulso de Prontidão (Boost)
+              <InfoTooltip content="Média de aumento na probabilidade de acerto após intervenção do Tutor IA." />
             </CardTitle>
           </CardHeader>
           <CardContent>
