@@ -187,7 +187,14 @@ async function generateBatch(
   mode: SimuladoMode = "estudo",
   avoidIds?: string[],
   selectedSubtopics: string[] = []
-): Promise<{ questions: SimQuestion[]; sessionId: string | null; insufficientQuestions?: boolean; message?: string }> {
+): Promise<{ 
+  questions: SimQuestion[]; 
+  sessionId: string | null; 
+  insufficientQuestions?: boolean; 
+  message?: string;
+  requestedCount?: number;
+  generatedCount?: number;
+}> {
   // [SIM_UI_FILTERS_SUBMITTED]
   console.log("[SIM_UI_FILTERS_SUBMITTED] Config:", { topics, count, difficulty, examBoard, mode, selectedSubtopics });
   const startedAt = performance.now();
