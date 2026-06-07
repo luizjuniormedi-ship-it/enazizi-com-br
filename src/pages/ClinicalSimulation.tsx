@@ -569,6 +569,7 @@ const ClinicalSimulation = () => {
 
       setVitals(res.vitals);
       setSetting(res.setting || "Pronto-Socorro");
+      setCurrentTopic(res.topic || "");
       setTriageColor(res.triage_color || "amarelo");
       setPatientStatus("estável"); setPrevPatientStatus("estável");
       setScore(50); setPrevScore(50); setTimeElapsed(0);
