@@ -10078,6 +10078,13 @@ export type Database = {
             foreignKeyName: "curriculum_golden_set_competency_id_fkey"
             columns: ["competency_id"]
             isOneToOne: false
+            referencedRelation: "ghost_competency_registry"
+            referencedColumns: ["competency_id"]
+          },
+          {
+            foreignKeyName: "curriculum_golden_set_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
             referencedRelation: "v_exact_topic_coverage_audit"
             referencedColumns: ["registry_id"]
           },
@@ -15914,6 +15921,55 @@ export type Database = {
           specialty?: string
         }
         Relationships: []
+      }
+      legacy_to_curriculum_map: {
+        Row: {
+          competency_id: string | null
+          created_at: string | null
+          id: string
+          legacy_string: string
+          mapping_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          competency_id?: string | null
+          created_at?: string | null
+          id?: string
+          legacy_string: string
+          mapping_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          competency_id?: string | null
+          created_at?: string | null
+          id?: string
+          legacy_string?: string
+          mapping_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legacy_to_curriculum_map_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_to_curriculum_map_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "ghost_competency_registry"
+            referencedColumns: ["competency_id"]
+          },
+          {
+            foreignKeyName: "legacy_to_curriculum_map_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "v_exact_topic_coverage_audit"
+            referencedColumns: ["registry_id"]
+          },
+        ]
       }
       lesson_doubts: {
         Row: {
@@ -23241,6 +23297,7 @@ export type Database = {
           realism_score: number | null
           reasoning_complexity_score: number | null
           reasoning_score: number | null
+          reconciliation_data: Json | null
           retention_value_score: number | null
           review_status: string | null
           source: string | null
@@ -23323,6 +23380,7 @@ export type Database = {
           realism_score?: number | null
           reasoning_complexity_score?: number | null
           reasoning_score?: number | null
+          reconciliation_data?: Json | null
           retention_value_score?: number | null
           review_status?: string | null
           source?: string | null
@@ -23405,6 +23463,7 @@ export type Database = {
           realism_score?: number | null
           reasoning_complexity_score?: number | null
           reasoning_score?: number | null
+          reconciliation_data?: Json | null
           retention_value_score?: number | null
           review_status?: string | null
           source?: string | null
@@ -30731,6 +30790,16 @@ export type Database = {
         }
         Relationships: []
       }
+      ghost_competency_registry: {
+        Row: {
+          competency_id: string | null
+          competency_name: string | null
+          physical_questions: number | null
+          visibility_ratio: number | null
+          visible_questions: number | null
+        }
+        Relationships: []
+      }
       ingestion_dashboard: {
         Row: {
           file_count: number | null
@@ -31745,6 +31814,12 @@ export type Database = {
           r2: number
           sample: number
           spearman: number
+        }[]
+      }
+      calculate_ocr: {
+        Args: never
+        Returns: {
+          ocr_rate: number
         }[]
       }
       calculate_plan_viability: {
