@@ -108,7 +108,7 @@ export const ScientificAuditDashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase italic flex items-center gap-3">
-            <ShieldCheck className="h-8 w-8 text-primary animate-pulse" />
+            <FlaskConical className="h-8 w-8 text-primary animate-pulse" />
             Operação Caixa-Preta: LEC Certification
           </h1>
           <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">
