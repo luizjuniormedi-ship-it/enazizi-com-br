@@ -71,14 +71,18 @@ export default function ShiftHeader({
         <div className="flex items-center justify-between gap-3">
           {/* Left: Setting + triage */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-red-500" />
-              <span className="text-sm font-bold">Plantão</span>
+            <div className="flex items-center gap-2 overflow-hidden">
+              <Activity className="h-4 w-4 text-red-500 shrink-0" />
+              <div className="flex flex-col">
+                <span className="text-xs font-bold leading-tight truncate">
+                  {topic || "Caso Clínico"}
+                </span>
+                <span className="text-[9px] text-muted-foreground leading-tight hidden sm:block">📍 {setting}</span>
+              </div>
             </div>
-            <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${triage.bg} ${triage.border} ${triage.text}`}>
+            <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${triage.bg} ${triage.border} ${triage.text}`}>
               {triage.label}
             </div>
-            <span className="text-[10px] text-muted-foreground hidden sm:inline">📍 {setting}</span>
             <div className="flex gap-1 ml-2">
               <Button 
                 variant="ghost" 
