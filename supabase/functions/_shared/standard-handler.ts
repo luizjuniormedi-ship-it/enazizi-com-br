@@ -97,7 +97,7 @@ export async function handleStandardEdgeFunction(
       {
         success: false,
         error: "INTERNAL_ERROR",
-        message: e instanceof Error ? e.message : "Erro interno no servidor.",
+        message: "Erro interno no servidor.",
       },
       500,
     );
