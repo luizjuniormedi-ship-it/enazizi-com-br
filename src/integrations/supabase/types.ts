@@ -10551,6 +10551,39 @@ export type Database = {
           },
         ]
       }
+      cvrp_user_requests_impact: {
+        Row: {
+          competency_name: string
+          id: string
+          last_updated: string | null
+          ocr_percentage: number | null
+          physical_available: number | null
+          request_count: number | null
+          user_impact_score: string | null
+          visible_available: number | null
+        }
+        Insert: {
+          competency_name: string
+          id?: string
+          last_updated?: string | null
+          ocr_percentage?: number | null
+          physical_available?: number | null
+          request_count?: number | null
+          user_impact_score?: string | null
+          visible_available?: number | null
+        }
+        Update: {
+          competency_name?: string
+          id?: string
+          last_updated?: string | null
+          ocr_percentage?: number | null
+          physical_available?: number | null
+          request_count?: number | null
+          user_impact_score?: string | null
+          visible_available?: number | null
+        }
+        Relationships: []
+      }
       daily_generation_log: {
         Row: {
           created_at: string
@@ -30787,6 +30820,26 @@ export type Database = {
           render_progress: number | null
           render_status: string | null
           title: string | null
+        }
+        Relationships: []
+      }
+      cvrp_ghost_competencies: {
+        Row: {
+          competency: string | null
+          physical_count: number | null
+          root_cause: string | null
+          specialty: string | null
+        }
+        Relationships: []
+      }
+      cvrp_specialty_stats: {
+        Row: {
+          lost_count: number | null
+          ocr_percentage: number | null
+          physical_count: number | null
+          specialty: string | null
+          status: string | null
+          visible_count: number | null
         }
         Relationships: []
       }
