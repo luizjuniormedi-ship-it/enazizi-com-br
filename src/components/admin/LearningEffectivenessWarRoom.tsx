@@ -169,7 +169,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardContent>
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-black text-emerald-400">-{errorReduction?.value || '18.5'}%</span>
-              <span className="text-[10px] font-bold text-emerald-500/50">LTM Impact</span>
+              <span className="text-[10px] font-bold text-emerald-500/50">Impacto LTM</span>
             </div>
             <p className="text-[9px] text-white/30 font-mono mt-2 uppercase tracking-tighter">
               Redução de erros em questões do mesmo tema nas 48h seguintes

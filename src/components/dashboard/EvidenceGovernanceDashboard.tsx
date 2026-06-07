@@ -44,13 +44,13 @@ export default function EvidenceGovernanceDashboard() {
         <div className="space-y-1">
           <h3 className="text-xl font-black text-white tracking-tight uppercase flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-emerald-500" />
-            Evidence Governance Panel
+            Painel de Governança de Evidências
           </h3>
           <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Controle de Integridade Estatística</p>
         </div>
         <div className="flex gap-4">
           <Badge className="bg-slate-900 text-slate-300 border-white/10 px-4 py-1 text-xs font-black">
-            CONFIDENCE: {gov?.confidenceLevel}
+            CONFIANÇA: {gov?.confidenceLevel}
           </Badge>
           <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-4 py-1 text-xs font-black">
             HEALTH: {gov?.healthScore}%

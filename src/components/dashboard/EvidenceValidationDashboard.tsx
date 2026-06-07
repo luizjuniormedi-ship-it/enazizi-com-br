@@ -50,7 +50,7 @@ export default function EvidenceValidationDashboard() {
         <div className="space-y-1">
           <h3 className="text-xl font-black text-white tracking-tight uppercase flex items-center gap-2">
             <Microscope className="h-6 w-6 text-indigo-500" />
-            Evidence Validation Engine
+            Motor de Validação de Evidências
           </h3>
           <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Auditoria Científica de Performance</p>
         </div>

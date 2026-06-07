@@ -165,13 +165,13 @@ export const LearningScienceCenter: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Learning Velocity</span>
+                <span className="text-muted-foreground">Velocidade de Aprendizado</span>
                 <span className={snapshot.riskIndex.factors.velocity < 0 ? 'text-destructive font-bold' : 'text-emerald-500 font-bold'}>
                   {snapshot.riskIndex.factors.velocity} pts
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Error Bank Density</span>
+                <span className="text-muted-foreground">Densidade do Banco de Erros</span>
                 <span>{snapshot.riskIndex.factors.errorBankCount} pendentes</span>
               </div>
             </div>
@@ -180,7 +180,7 @@ export const LearningScienceCenter: React.FC = () => {
               <p className="text-[11px] leading-relaxed opacity-80">
                 {snapshot.riskIndex.level === 'low' 
                   ? "Sinais vitais pedagógicos estáveis. Baixa probabilidade de queda de rendimento."
-                  : "Sinais de fadiga ou esquecimento detectados. Recomenda-se intervenção via Tutor Recovery."}
+                  : "Sinais de fadiga ou esquecimento detectados. Recomenda-se intervenção via Recuperação do Tutor."}
               </p>
             </div>
           </CardContent>
