@@ -545,6 +545,8 @@ const Simulados = () => {
     setShowConfigStep(false); // Ensure config step is hidden when starting
 
     try {
+      setLoadingPercent(0);
+      setLoadingProgress("Iniciando geração...");
       const accessToken = await getAccessTokenForSimulado(authSession?.access_token);
       if (isMontarBancoFlow) {
         logMontarBancoEvent("[MONTAR_BANCO_REQUEST]", {
