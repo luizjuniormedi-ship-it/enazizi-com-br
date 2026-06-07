@@ -131,6 +131,8 @@ const VideoLessonsLibrary = lazyWithRetry(() => import("./pages/VideoLessonsLibr
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 const Favoritos = lazyWithRetry(() => import("./pages/Favoritos"), "Favoritos");
 const Historico = lazyWithRetry(() => import("./pages/Historico"), "Historico");
+const DogfoodMonitor = lazyWithRetry(() => import("./pages/DogfoodMonitor"), "DogfoodMonitor");
+
 
 const PageLoader = () => {
   const [timedOut, setTimedOut] = useState(false);
@@ -427,6 +429,8 @@ const App = () => (
                 <Route path="hospital-v5" element={<HospitalVirtualPage />} />
                 <Route path="scientific-audit" element={<ScientificAuditPage />} />
                 <Route path="national-campaign" element={<CampaignDashboardPage />} />
+                <Route path="dogfood-monitor" element={<DogfoodMonitor />} />
+
 
 
 

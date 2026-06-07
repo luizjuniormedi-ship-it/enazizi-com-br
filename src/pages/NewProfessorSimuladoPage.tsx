@@ -41,12 +41,26 @@ const NewProfessorSimuladoPage = () => {
   const [editingSimulado, setEditingSimulado] = useState<any>(null);
 
   const callAPI = async (payload: any) => {
-    const { data, error } = await supabase.functions.invoke("professor-simulado", {
-      body: payload,
-    });
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error } = await supabase.functions.invoke("professor-simulado", {
+        body: payload,
+      });
+      if (error) {
+        console.error("[PROFESSOR_API_ERROR]", error);
+        throw new Error("Não foi possível carregar os simulados agora.");
+      }
+      return data;
+    } catch (err) {
+      console.error("[PROFESSOR_API_EXCEPTION]", err);
+      toast({
+        title: "Erro de Conexão",
+        description: "Não foi possível carregar os simulados agora. Tente novamente.",
+        variant: "destructive"
+      });
+      throw err;
+    }
   };
+
 
   useEffect(() => {
     if (id) {
