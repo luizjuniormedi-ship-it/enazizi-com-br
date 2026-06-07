@@ -234,7 +234,7 @@ const TelemetryAdmin = () => {
       </Card>
 
       {/* Tabs principais */}
-      <Tabs defaultValue="funnel" className="w-full">
+      <Tabs defaultValue="lec" className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-8">
           <TabsTrigger value="lec"><Activity className="h-4 w-4 mr-1" /> LEC Certification</TabsTrigger>
           <TabsTrigger value="health"><HeartPulse className="h-4 w-4 mr-1" /> Saúde</TabsTrigger>
