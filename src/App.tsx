@@ -429,6 +429,8 @@ const App = () => (
                 <Route path="hospital-v5" element={<HospitalVirtualPage />} />
                 <Route path="scientific-audit" element={<ScientificAuditPage />} />
                 <Route path="national-campaign" element={<CampaignDashboardPage />} />
+                <Route path="dogfood-monitor" element={<DogfoodMonitor />} />
+
 
 
 
