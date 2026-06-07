@@ -120,7 +120,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             onClick={async () => {
               startAudit();
               try {
-                await supabase.functions.invoke('evidence-engine');
+                await supabase.functions.invoke('pedagogical-evidence-engine');
               } catch (err) {
                 console.error("Evidence Engine trigger failed", err);
               }
