@@ -102,24 +102,27 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       const applyExclusion = (q: any) =>
         excludedIds.length > 0 ? q.not("id", "in", `(${excludedIds.join(",")})`) : q;
 
-      // ── Strict topic filter (curriculum_theme/discipline are 100% NULL no banco, então só topic) ──
+      // ── Filtro tolerante: ILIKE em topic + curriculum_theme cobre variações de grafia ──
       let candidates: any[] = [];
+      const topicOr = topics
+        .flatMap((t: string) => [`topic.ilike.%${t}%`, `curriculum_theme.ilike.%${t}%`])
+        .join(",");
 
       // Tentativa 1: subtopic via ilike (fuzzy) + topic, se houver subtopic
       if (subtopics.length > 0 && topics.length > 0) {
         const subOr = subtopics
           .flatMap((s: string) => [`subtopic.ilike.%${s}%`, `curriculum_subtheme.ilike.%${s}%`])
           .join(",");
-        let q = buildBaseQuery().in("topic", topics).or(subOr);
+        let q = buildBaseQuery().or(topicOr).or(subOr);
         q = applyExclusion(q);
         const { data } = await q.limit(requestedCount * 3);
         candidates = data || [];
         console.log(`[SIM_GENERATOR_SUBTOPIC_MATCH] count=${candidates.length}`);
       }
 
-      // Tentativa 2 (fallback): só topic estrito
+      // Tentativa 2 (fallback): só topic tolerante
       if (candidates.length === 0 && topics.length > 0) {
-        let q = buildBaseQuery().in("topic", topics);
+        let q = buildBaseQuery().or(topicOr);
         q = applyExclusion(q);
         const { data } = await q.limit(requestedCount * 3);
         candidates = data || [];
