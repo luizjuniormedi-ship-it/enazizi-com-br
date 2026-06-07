@@ -49,6 +49,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
   ];
 
   return (
+    <TooltipProvider>
     <div className="space-y-6 mt-6 border-t pt-8">
       <div className="flex items-center gap-2 mb-4">
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-3 py-1">
