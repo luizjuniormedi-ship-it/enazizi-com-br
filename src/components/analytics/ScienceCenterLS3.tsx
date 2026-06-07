@@ -100,6 +100,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
             <div className="flex justify-between items-center">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Target className="w-4 h-4 text-emerald-500" /> Curva de Calibração de Prontidão
+                <Tooltip>
+                  <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                  <TooltipContent><p>Relação entre sua prontidão na plataforma e as notas reais em exames oficiais.</p></TooltipContent>
+                </Tooltip>
               </CardTitle>
               <Badge variant="outline" className="text-[10px] font-mono">
                 Pearson: {validation.pearsonCorrelation}
