@@ -315,6 +315,7 @@ const App = () => (
                   <Route path="uploads" element={<Uploads />} />
                   <Route path="diagnostico" element={<Diagnostic />} />
                   <Route path="simulacao-clinica" element={<ClinicalSimulation />} />
+                  <Route path="plantao" element={<ClinicalSimulation />} />
                   <Route path="anamnese" element={<AnamnesisTrainer />} />
                   <Route path="cronicas" element={<MedicalChronicles />} />
                   <Route path="image-quiz" element={<MedicalImageQuiz />} />

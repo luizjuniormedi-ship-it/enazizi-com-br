@@ -74,6 +74,7 @@ const NAV_SECTIONS = [
     title: "PRÁTICA",
     items: [
       { to: "/dashboard/simulacao-clinica", label: "Simulação Clínica", icon: Stethoscope },
+      { to: "/dashboard/plantao", label: "Modo Plantão", icon: Activity },
       
     ]
   },
