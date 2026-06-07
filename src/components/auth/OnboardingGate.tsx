@@ -41,11 +41,7 @@ const OnboardingGate = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   const [formName, setFormName] = useState(profile?.display_name ?? "");
-  const [formPhone, setFormPhone] = useState(profile?.phone ?? "");
-  const [formPeriodo, setFormPeriodo] = useState(profile?.periodo ? String(profile.periodo) : "");
-  const [formFaculdade, setFormFaculdade] = useState(profile?.faculdade ?? "");
   const [formUserType, setFormUserType] = useState(profile?.user_type ?? "estudante");
-  const [formTargetExams, setFormTargetExams] = useState<string[]>(profile?.target_exams ?? []);
   const [saving, setSaving] = useState(false);
 
   if (kind === "loading") {
