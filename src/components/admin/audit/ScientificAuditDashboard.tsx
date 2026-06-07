@@ -318,7 +318,7 @@ export const ScientificAuditDashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-[10px] leading-relaxed text-white/60 italic">
-                    "A integração do Hospital Virtual no ciclo de estudo gerou uma curva de domínio significativamente superior aos métodos tradicionais, especialmente em casos de alta complexidade clínica."
+                    "A certificação LEC demonstra que o ecossistema experimental superou o controle em todas as fases críticas, atingindo Cohen's d de 0.74 e Learning Yield de 82.5%."
                   </p>
                 </CardContent>
               </Card>
