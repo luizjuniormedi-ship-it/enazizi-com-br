@@ -423,7 +423,6 @@ export const LearningScienceCenter: React.FC = () => {
         </div>
       </footer>
     </div>
-    </TooltipProvider>
   );
 };
 
