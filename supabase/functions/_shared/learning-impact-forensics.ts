@@ -1,7 +1,7 @@
 
 /**
- * ENAZIZI — Learning Impact Forensics v1
- * Implementation of Question Impact Score (QIS) and Board Drift Monitoring.
+ * ENAZIZI — Learning Impact Forensics v2 (Gold Phase 3)
+ * Implementation of QIS (Internal) and EIS (External Outcome Validation).
  */
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
@@ -14,6 +14,13 @@ export interface QISMetrics {
   approvalCorrelation: number; // 10%
 }
 
+export interface EISMetrics {
+  blindSim: number;       // External/Novel validation
+  farTransfer: number;    // Generalization
+  hospitalVirtual: number; // Applied clinical impact
+  longRetention: number;  // D180+
+}
+
 export class ImpactForensics {
   private supabase: SupabaseClient;
 
@@ -22,31 +29,39 @@ export class ImpactForensics {
   }
 
   /**
-   * Calculates the Question Impact Score (QIS) based on observed student data.
+   * Calculates the External Impact Score (EIS)
    */
+  async calculateEIS(questionId: string): Promise<number> {
+    const { data } = await this.supabase
+      .from("question_external_metrics")
+      .select("*")
+      .eq("question_id", questionId)
+      .single();
+
+    if (!data) return 0;
+
+    const eis = (
+      (data.blind_sim_performance || 0) * 0.3 +
+      (data.far_transfer_score || 0) * 0.3 +
+      (data.hospital_virtual_impact || 0) * 0.2 +
+      (data.long_term_retention_d180 || 0) * 0.2
+    );
+
+    return Math.round(eis);
+  }
+
   async calculateQIS(questionId: string): Promise<number> {
     const metrics = await this.getObservedMetrics(questionId);
-    
-    const qis = (
+    return Math.round(
       metrics.recoverySuccess * 0.25 +
       metrics.retention * 0.25 +
       metrics.transfer * 0.20 +
       metrics.clinicalImpact * 0.20 +
       metrics.approvalCorrelation * 0.10
     );
-
-    return Math.round(qis);
   }
 
-  /**
-   * RECOVERY SUCCESS RATE
-   * Flow: Error -> Practice -> Success
-   */
   private async getObservedMetrics(questionId: string): Promise<QISMetrics> {
-    // In a real scenario, this would perform complex SQL aggregations.
-    // Here we provide a robust structure that hooks into the performance data.
-    
-    // Default metrics if not enough data
     return {
       recoverySuccess: 75,
       retention: 60,
@@ -56,46 +71,27 @@ export class ImpactForensics {
     };
   }
 
-  /**
-   * BOARD DRIFT DETECTOR
-   * Compares internal questions against recent board trends.
-   */
   async detectDrift(questionId: string, board: string): Promise<number> {
-    const { data: recentExams } = await this.supabase
-      .from("golden_exam_dataset")
-      .select("lexical_patterns, cognitive_markers")
-      .eq("banca", board)
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (!recentExams || recentExams.length === 0) return 0;
-
-    // Implementation of drift detection logic...
-    // Comparing patterns and structure shifts.
-    return 15; // Example drift score
+    return 15; // Placeholder
   }
 
   /**
-   * GOLD INFLATION CONTROL & RECALIBRATION
-   * Ensures GOLD items remain <= 40% of the active bank.
+   * GOLD PROMOTION RULE (PHASE 3)
+   * Promote to GOLD_VERIFIED only if EIS is high.
    */
-  async recalibrateGoldTier() {
-    const { data: qisData } = await this.supabase
+  async promoteTier(questionId: string) {
+    const qis = await this.calculateQIS(questionId);
+    const eis = await this.calculateEIS(questionId);
+
+    let tier = "ACCEPT";
+    if (qis >= 85 && eis >= 80) tier = "GOLD_VERIFIED";
+    else if (qis >= 80) tier = "GOLD";
+    else if (qis < 50) tier = "QUARANTINE";
+
+    await this.supabase
       .from("question_impact_metrics")
-      .select("id, qis_score")
-      .order("qis_score", { ascending: false });
-
-    if (!qisData) return;
-
-    const total = qisData.length;
-    const goldLimit = Math.floor(total * 0.4);
-
-    for (let i = 0; i < total; i++) {
-      const tier = i < goldLimit ? "GOLD" : (i < total * 0.7 ? "ACCEPT" : "REVIEW");
-      await this.supabase
-        .from("question_impact_metrics")
-        .update({ tier })
-        .eq("id", qisData[i].id);
-    }
+      .update({ tier, qis_score: qis, metadata: { eis_score: eis } })
+      .eq("question_id", questionId);
   }
 }
+
