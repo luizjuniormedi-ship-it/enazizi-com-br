@@ -314,7 +314,7 @@ export const ScientificAuditDashboard: React.FC = () => {
 
               <Card className="bg-white/5 border-white/10 border-l-4 border-l-yellow-500">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-[10px] font-black uppercase tracking-widest text-yellow-500">Audit Insight</CardTitle>
+                  <CardTitle className="text-[10px] font-black uppercase tracking-widest text-yellow-500">LEC Certification Insight</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-[10px] leading-relaxed text-white/60 italic">
