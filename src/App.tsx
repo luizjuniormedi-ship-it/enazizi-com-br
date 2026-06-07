@@ -94,6 +94,8 @@ const HospitalVirtualPage = lazyWithRetry(() => import("./pages/admin/HospitalVi
 const ScientificAuditPage = lazyWithRetry(() => import("./pages/admin/ScientificAuditPage"), "ScientificAuditPage");
 const CampaignDashboardPage = lazyWithRetry(() => import("./pages/admin/CampaignDashboardPage"), "CampaignDashboardPage");
 const LearningScienceCenterPage = lazyWithRetry(() => import("./pages/LearningScienceCenterPage"), "LearningScienceCenterPage");
+const CVRPDashboard = lazyWithRetry(() => import("./pages/admin/cvrp/Dashboard"), "CVRPDashboard");
+
 
 
 
@@ -430,6 +432,8 @@ const App = () => (
                 <Route path="scientific-audit" element={<ScientificAuditPage />} />
                 <Route path="national-campaign" element={<CampaignDashboardPage />} />
                 <Route path="dogfood-monitor" element={<DogfoodMonitor />} />
+                <Route path="cvrp" element={<CVRPDashboard />} />
+
 
 
 
