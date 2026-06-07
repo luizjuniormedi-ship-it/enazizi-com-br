@@ -29575,6 +29575,93 @@ export type Database = {
           },
         ]
       }
+      ugrp_alias_resolution_audit: {
+        Row: {
+          captured_at: string | null
+          id: string
+          is_success: boolean | null
+          requested_term: string | null
+          resolution_time_ms: number | null
+          resolved_competency: string | null
+        }
+        Insert: {
+          captured_at?: string | null
+          id?: string
+          is_success?: boolean | null
+          requested_term?: string | null
+          resolution_time_ms?: number | null
+          resolved_competency?: string | null
+        }
+        Update: {
+          captured_at?: string | null
+          id?: string
+          is_success?: boolean | null
+          requested_term?: string | null
+          resolution_time_ms?: number | null
+          resolved_competency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ugrp_alias_resolution_audit_resolved_competency_fkey"
+            columns: ["resolved_competency"]
+            isOneToOne: false
+            referencedRelation: "ugrp_competency_audit"
+            referencedColumns: ["competency"]
+          },
+          {
+            foreignKeyName: "ugrp_alias_resolution_audit_resolved_competency_fkey"
+            columns: ["resolved_competency"]
+            isOneToOne: false
+            referencedRelation: "ugrp_uis_dashboard"
+            referencedColumns: ["competency"]
+          },
+        ]
+      }
+      ugrp_competency_audit: {
+        Row: {
+          alias_resolution_rate: number | null
+          competency: string
+          duplicate_pressure_rate: number | null
+          last_audit_at: string | null
+          mapped_questions: number | null
+          max_capacity: number | null
+          physical_questions: number | null
+          selectable_questions: number | null
+          topic_leakage_rate: number | null
+          topic_success_rate: number | null
+          uis: number | null
+          visible_questions: number | null
+        }
+        Insert: {
+          alias_resolution_rate?: number | null
+          competency: string
+          duplicate_pressure_rate?: number | null
+          last_audit_at?: string | null
+          mapped_questions?: number | null
+          max_capacity?: number | null
+          physical_questions?: number | null
+          selectable_questions?: number | null
+          topic_leakage_rate?: number | null
+          topic_success_rate?: number | null
+          uis?: number | null
+          visible_questions?: number | null
+        }
+        Update: {
+          alias_resolution_rate?: number | null
+          competency?: string
+          duplicate_pressure_rate?: number | null
+          last_audit_at?: string | null
+          mapped_questions?: number | null
+          max_capacity?: number | null
+          physical_questions?: number | null
+          selectable_questions?: number | null
+          topic_leakage_rate?: number | null
+          topic_success_rate?: number | null
+          uis?: number | null
+          visible_questions?: number | null
+        }
+        Relationships: []
+      }
       ugrp_critical_competencies: {
         Row: {
           last_validation_at: string | null
@@ -29680,6 +29767,78 @@ export type Database = {
         }
         Relationships: []
       }
+      ugrp_question_attrition_map: {
+        Row: {
+          captured_at: string | null
+          competency: string | null
+          count: number | null
+          id: string
+          stage: string | null
+        }
+        Insert: {
+          captured_at?: string | null
+          competency?: string | null
+          count?: number | null
+          id?: string
+          stage?: string | null
+        }
+        Update: {
+          captured_at?: string | null
+          competency?: string | null
+          count?: number | null
+          id?: string
+          stage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ugrp_question_attrition_map_competency_fkey"
+            columns: ["competency"]
+            isOneToOne: false
+            referencedRelation: "ugrp_competency_audit"
+            referencedColumns: ["competency"]
+          },
+          {
+            foreignKeyName: "ugrp_question_attrition_map_competency_fkey"
+            columns: ["competency"]
+            isOneToOne: false
+            referencedRelation: "ugrp_uis_dashboard"
+            referencedColumns: ["competency"]
+          },
+        ]
+      }
+      ugrp_recovery_actions: {
+        Row: {
+          competency: string | null
+          created_at: string | null
+          fix_action: string | null
+          id: string
+          impact_estimate: number | null
+          priority: string | null
+          root_cause: string | null
+          status: string | null
+        }
+        Insert: {
+          competency?: string | null
+          created_at?: string | null
+          fix_action?: string | null
+          id?: string
+          impact_estimate?: number | null
+          priority?: string | null
+          root_cause?: string | null
+          status?: string | null
+        }
+        Update: {
+          competency?: string | null
+          created_at?: string | null
+          fix_action?: string | null
+          id?: string
+          impact_estimate?: number | null
+          priority?: string | null
+          root_cause?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       ugrp_remediation_plan: {
         Row: {
           competency_id: string | null
@@ -29710,6 +29869,45 @@ export type Database = {
           root_cause_code?: string | null
           root_cause_desc?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      ugrp_simulado_generation_logs: {
+        Row: {
+          alias_used: string | null
+          captured_at: string | null
+          competency: string | null
+          error_details: string | null
+          frontend_status: string | null
+          id: string
+          requested_count: number | null
+          requested_term: string | null
+          returned_count: number | null
+          trace_id: string | null
+        }
+        Insert: {
+          alias_used?: string | null
+          captured_at?: string | null
+          competency?: string | null
+          error_details?: string | null
+          frontend_status?: string | null
+          id?: string
+          requested_count?: number | null
+          requested_term?: string | null
+          returned_count?: number | null
+          trace_id?: string | null
+        }
+        Update: {
+          alias_used?: string | null
+          captured_at?: string | null
+          competency?: string | null
+          error_details?: string | null
+          frontend_status?: string | null
+          id?: string
+          requested_count?: number | null
+          requested_term?: string | null
+          returned_count?: number | null
+          trace_id?: string | null
         }
         Relationships: []
       }
@@ -31230,6 +31428,36 @@ export type Database = {
           total_clicks: number | null
           total_errors: number | null
           total_messages: number | null
+        }
+        Relationships: []
+      }
+      ugrp_uis_dashboard: {
+        Row: {
+          alias_resolution_rate: number | null
+          competency: string | null
+          coverage_score: number | null
+          last_audit_at: string | null
+          max_capacity: number | null
+          topic_success_rate: number | null
+          uis: number | null
+        }
+        Insert: {
+          alias_resolution_rate?: number | null
+          competency?: string | null
+          coverage_score?: never
+          last_audit_at?: string | null
+          max_capacity?: number | null
+          topic_success_rate?: number | null
+          uis?: number | null
+        }
+        Update: {
+          alias_resolution_rate?: number | null
+          competency?: string | null
+          coverage_score?: never
+          last_audit_at?: string | null
+          max_capacity?: number | null
+          topic_success_rate?: number | null
+          uis?: number | null
         }
         Relationships: []
       }
