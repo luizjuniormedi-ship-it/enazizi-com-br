@@ -100,7 +100,7 @@ serve(async (req) => {
     }
 
     const aiResp = await aiFetch({
-      model: "google/gemini-2.0-flash-001",
+      model: "google/gemini-2.5-flash",
       messages,
       timeoutMs: 60000,
     });
