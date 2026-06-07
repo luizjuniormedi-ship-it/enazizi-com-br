@@ -3768,6 +3768,7 @@ export type Database = {
           started_at: string | null
           status: string
           total_cost: number | null
+          wave_id: string | null
         }
         Insert: {
           batch_size: number
@@ -3781,6 +3782,7 @@ export type Database = {
           started_at?: string | null
           status?: string
           total_cost?: number | null
+          wave_id?: string | null
         }
         Update: {
           batch_size?: number
@@ -3794,8 +3796,24 @@ export type Database = {
           started_at?: string | null
           status?: string
           total_cost?: number | null
+          wave_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "classification_batches_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_waves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_batches_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "v_wave_2_stress_report"
+            referencedColumns: ["wave_id"]
+          },
+        ]
       }
       classification_health_snapshots: {
         Row: {
@@ -22260,6 +22278,7 @@ export type Database = {
           similarity_score: number | null
           updated_at: string | null
           validation_divergence: string | null
+          wave_id: string | null
         }
         Insert: {
           audit_status?: string | null
@@ -22291,6 +22310,7 @@ export type Database = {
           similarity_score?: number | null
           updated_at?: string | null
           validation_divergence?: string | null
+          wave_id?: string | null
         }
         Update: {
           audit_status?: string | null
@@ -22322,6 +22342,7 @@ export type Database = {
           similarity_score?: number | null
           updated_at?: string | null
           validation_divergence?: string | null
+          wave_id?: string | null
         }
         Relationships: [
           {
@@ -22344,6 +22365,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_clinica_medica_umbrella"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_staging_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_waves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_staging_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "v_wave_2_stress_report"
+            referencedColumns: ["wave_id"]
           },
         ]
       }
