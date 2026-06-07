@@ -14,7 +14,8 @@ import {
   History,
   Activity,
   Award,
-  ShieldCheck
+  ShieldCheck,
+  Info
 } from 'lucide-react';
 import { 
   BarChart as ReBarChart, 
@@ -22,13 +23,14 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
+  Tooltip as RechartsTooltip, 
   ResponsiveContainer, 
   LineChart, 
   Line,
   Cell
 } from 'recharts';
 import { Progress } from '@/components/ui/progress';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 export const LearningEffectivenessWarRoom: React.FC = () => {
   // Q1: Quanto o Tutor melhora o Readiness?
