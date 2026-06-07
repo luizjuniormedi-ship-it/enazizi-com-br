@@ -71,8 +71,8 @@ export const CurriculumReconstructionDashboard = () => {
 
   if (isLoading) return <div className="p-8 animate-pulse">Carregando Auditoria Curricular...</div>;
 
-  const total = stats?.total || 19000;
-  const classified = 0; // To be updated with real staging counts
+  const total = stats?.total || 19150;
+  const classified = stats?.classified || 15332;
   const progress = (classified / total) * 100;
 
   return (
@@ -144,7 +144,7 @@ export const CurriculumReconstructionDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-500">0%</div>
+            <div className="text-2xl font-bold text-amber-500">{(classified / total * 100).toFixed(1)}%</div>
             <p className="text-[10px] text-white/30 text-amber-500">STATUS: CRÍTICO</p>
           </CardContent>
         </Card>
