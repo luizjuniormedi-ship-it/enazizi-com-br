@@ -7,13 +7,19 @@ import { LearningScienceSnapshot } from "@/types/learningScience";
 import { 
   ShieldCheck, Microscope, Database, BarChart4, 
   Users, Activity, FileCheck,
-  Target, Zap, FlaskConical, Binary
+  Target, Zap, FlaskConical, Binary, Info
 } from 'lucide-react';
 import { 
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Cell, ReferenceLine, ZAxis
+  Tooltip as RechartsTooltip, ResponsiveContainer, Cell, ReferenceLine, ZAxis
 } from 'recharts';
 import { OfficialResultImport } from './OfficialResultImport';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 interface ScienceCenterLS3Props {
   snapshot: LearningScienceSnapshot;
