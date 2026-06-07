@@ -9,22 +9,25 @@ export interface EvidenceHardeningStats {
 
 export const CASE_DIFFICULTY_MAP: Record<string, number> = {
   "IAM": 0.8,
-  "IAM simples": 0.8,
+  "Infarto": 0.8,
   "Pneumonia": 0.9,
   "CAD": 1.1,
+  "Cetoacidose": 1.1,
   "Sepse": 1.4,
-  "Sepse Grave": 1.4,
   "Choque Séptico": 1.6,
   "Politrauma": 1.8,
   "PCR": 2.0,
+  "Parada": 2.0,
 };
 
 export const getCaseDifficulty = (diagnosis: string | undefined): number => {
   if (!diagnosis) return 1.0;
   
+  const diagLower = diagnosis.toLowerCase();
+  
   // Try exact match or partial match
   for (const [key, value] of Object.entries(CASE_DIFFICULTY_MAP)) {
-    if (diagnosis.toLowerCase().includes(key.toLowerCase())) {
+    if (diagLower.includes(key.toLowerCase())) {
       return value;
     }
   }
