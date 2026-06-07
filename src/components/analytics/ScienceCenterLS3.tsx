@@ -48,7 +48,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-3 py-1">
           <ShieldCheck className="w-3 h-3 mr-1" /> PHASE LS-3 REAL WORLD VALIDATION
         </Badge>
-        <h2 className="text-2xl font-bold">National Validation Dashboard</h2>
+        <h2 className="text-2xl font-bold">Painel de Validação Nacional</h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -56,7 +56,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
         <Card className="lg:col-span-1 border-primary/20 bg-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Microscope className="w-4 h-4" /> Evidence Health Score
+              <Microscope className="w-4 h-4" /> Score de Saúde da Evidência
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -68,15 +68,15 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
             </div>
             <div className="space-y-3 mt-4">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3" /> Sample Size</span>
+                <span className="text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3" /> Tamanho da Amostra</span>
                 <span className="font-mono">{evidenceHealth.sampleSize}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground flex items-center gap-1"><Activity className="w-3 h-3" /> Conf. Interval</span>
+                <span className="text-muted-foreground flex items-center gap-1"><Activity className="w-3 h-3" /> Intervalo de Conf.</span>
                 <span className="font-mono">±{(evidenceHealth.confidenceInterval * 100).toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground flex items-center gap-1"><Binary className="w-3 h-3" /> Effect Size</span>
+                <span className="text-muted-foreground flex items-center gap-1"><Binary className="w-3 h-3" /> Tamanho do Efeito</span>
                 <span className="font-mono">{evidenceHealth.effectSize}</span>
               </div>
             </div>
@@ -88,7 +88,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <div className="flex justify-between items-center">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Target className="w-4 h-4 text-emerald-500" /> Readiness Calibration Curve
+                <Target className="w-4 h-4 text-emerald-500" /> Curva de Calibração de Prontidão
               </CardTitle>
               <Badge variant="outline" className="text-[10px] font-mono">
                 Pearson: {validation.pearsonCorrelation}
@@ -125,20 +125,20 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
         <Card className="lg:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <BarChart4 className="w-4 h-4 text-blue-500" /> Forecast Validation
+              <BarChart4 className="w-4 h-4 text-blue-500" /> Validação de Previsão
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-3 rounded bg-blue-500/5 border border-blue-500/10">
               <div className="flex justify-between items-end">
-                <span className="text-[10px] uppercase text-muted-foreground">Accuracy</span>
+                <span className="text-[10px] uppercase text-muted-foreground">Acurácia</span>
                 <span className="text-xl font-bold">{(validation.forecastAccuracy * 100).toFixed(1)}%</span>
               </div>
               <Progress value={validation.forecastAccuracy * 100} className="h-1 mt-1 bg-blue-500/20" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2 rounded bg-muted/50 text-center">
-                <span className="text-[9px] uppercase text-muted-foreground block">Error Rate</span>
+                <span className="text-[9px] uppercase text-muted-foreground block">Taxa de Erro</span>
                 <span className="text-sm font-bold text-orange-500">{(validation.forecastError * 100).toFixed(1)}%</span>
               </div>
               <div className="p-2 rounded bg-muted/50 text-center">
@@ -158,7 +158,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Binary className="w-4 h-4 text-purple-500" /> Feature Attribution Matrix
+              <Binary className="w-4 h-4 text-purple-500" /> Matriz de Atribuição de Funcionalidade
             </CardTitle>
             <CardDescription className="text-[10px]">Contribuição de cada funcionalidade para a aprovação</CardDescription>
           </CardHeader>
@@ -184,7 +184,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Zap className="w-4 h-4 text-amber-500" /> Impact ROI Analysis
+              <Zap className="w-4 h-4 text-amber-500" /> Análise de ROI de Impacto
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -222,7 +222,7 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
         <Card className="border-emerald-500/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <FileCheck className="w-4 h-4 text-emerald-500" /> Outcome Confirmation
+              <FileCheck className="w-4 h-4 text-emerald-500" /> Confirmação de Desfecho
             </CardTitle>
           </CardHeader>
           <CardContent>

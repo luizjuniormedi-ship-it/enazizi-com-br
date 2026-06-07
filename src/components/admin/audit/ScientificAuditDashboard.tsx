@@ -62,13 +62,13 @@ const MOCK_HISTORICAL_DATA = [
 ];
 
 const AUDIT_PHASES = [
-  { id: 'fidelity', name: 'Fidelity Audit', icon: Stethoscope, color: 'text-blue-500', meta: '95', current: '96.4' },
-  { id: 'les', name: 'Learning Effectiveness (LES)', icon: FlaskConical, color: 'text-purple-600', meta: '85', current: '88.7' },
-  { id: 'yield', name: 'Learning Yield', icon: GraduationCap, color: 'text-emerald-500', meta: '80', current: '82.5' },
-  { id: 'transfer', name: 'Transfer Score', icon: Target, color: 'text-orange-500', meta: '75', current: '79.2' },
+  { id: 'fidelity', name: 'Auditoria de Fidelidade', icon: Stethoscope, color: 'text-blue-500', meta: '95', current: '96.4' },
+  { id: 'les', name: 'Eficácia de Aprendizado (LES)', icon: FlaskConical, color: 'text-purple-600', meta: '85', current: '88.7' },
+  { id: 'yield', name: 'Rendimento de Aprendizado', icon: GraduationCap, color: 'text-emerald-500', meta: '80', current: '82.5' },
+  { id: 'transfer', name: 'Score de Transferência', icon: Target, color: 'text-orange-500', meta: '75', current: '79.2' },
   { id: 'cohen', name: "Cohen's d", icon: Scale, color: 'text-pink-500', meta: '0.5', current: '0.74' },
-  { id: 'recovery', name: 'Recovery Half-Life', icon: Activity, color: 'text-amber-500', meta: 'D7', current: 'D4.2' },
-  { id: 'safety', name: 'Security Audit', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8' },
+  { id: 'recovery', name: 'Meia-vida de Recuperação', icon: Activity, color: 'text-amber-500', meta: 'D7', current: 'D4.2' },
+  { id: 'safety', name: 'Auditoria de Segurança', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8' },
 ];
 
 
@@ -184,7 +184,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             <Card className="bg-white/5 border-white/10">
               <CardHeader>
                 <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-amber-500" /> Recovery Half-Life (D1-D90)
+                  <Activity className="h-4 w-4 text-amber-500" /> Meia-vida de Recuperação (D1-D90)
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-[200px]">
@@ -239,7 +239,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             <Card className="bg-white/5 border-white/10">
               <CardHeader>
                 <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary" /> FSRS Adherence Impact
+                  <Zap className="h-4 w-4 text-primary" /> Impacto de Aderência FSRS
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -334,7 +334,7 @@ export const ScientificAuditDashboard: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Baseline Amostra</CardTitle>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Linha de Base Amostra</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-black">512</div>
@@ -343,7 +343,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             </Card>
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Experimental Group</CardTitle>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Grupo Experimental</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-black">256</div>
@@ -352,7 +352,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             </Card>
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Control Group</CardTitle>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Grupo de Controle</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-black">256</div>
@@ -361,7 +361,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             </Card>
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Attrition Bias</CardTitle>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Viés de Desistência</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-black">2.4%</div>
