@@ -92,7 +92,7 @@ serve(async (req) => {
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `Contexto Global: ${active_patients?.length || 1} pacientes ativos. Ação Atual: ${action}. Mensagem: ${message || 'Iniciando'}. Paciente ID: ${current_patient_id}` }
+      { role: "user", content: `Contexto Global: ${active_patients?.length || 1} pacientes ativos. Ação Atual: ${action}. Mensagem: ${message || 'Iniciando'}. Paciente ID: ${current_patient_id}. Especialidade solicitada: ${specialty || 'Geral'}.` }
     ];
 
     if (conversation_history) {
