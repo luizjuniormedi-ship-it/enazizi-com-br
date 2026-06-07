@@ -7,6 +7,7 @@ import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 import { TopicEngine } from "../_shared/topic-engine.ts";
+import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
@@ -122,11 +123,11 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         
         const matchResult = topicEngine.calculateScore(q, topics, subtopics);
         
-        if (matchResult.exactTopicMode && matchResult.score < 90) {
-          continue;
-        }
-
-        if (matchResult.score === 0) {
+        // FINAL TOPIC GUARD - Mandatory enforcement
+        const guardResult = validateFinalQuestionTopic(q, topics[0], subtopics[0]);
+        
+        if (!guardResult.allowed) {
+          console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult.reason} requested=${topics[0]}`);
           continue;
         }
 
@@ -139,7 +140,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           correct: q.correct_index, 
           _source: "bank",
           _topic_match_score: matchResult.score,
-          _match_type: matchResult.matchType
+          _match_type: matchResult.matchType,
+          _guard: guardResult
         });
         
         seenHashes.add(hash);
@@ -199,7 +201,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           metadata: {
             requested_count: requestedCount,
             generated_count: finalQuestions.length,
-            match_types: finalQuestions.map(q => q._match_type)
+            match_types: finalQuestions.map(q => q._match_type),
+            guard_forensics: finalQuestions.map(q => q._guard)
           }
         })
       ]);
