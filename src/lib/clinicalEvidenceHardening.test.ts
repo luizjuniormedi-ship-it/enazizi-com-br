@@ -4,7 +4,7 @@ import {
   calculateDQIInflation, 
   calculateTransferConfidence, 
   calculateEvidenceQuality 
-} from '../clinicalEvidenceHardening';
+} from './clinicalEvidenceHardening';
 
 describe('Clinical Evidence Hardening (CEH)', () => {
   it('Case Difficulty: IAM should be < 1.0 (0.8)', () => {
