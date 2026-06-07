@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useLearningScience } from "@/hooks/useLearningScience";
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, 
   BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
 import { 
@@ -17,6 +17,12 @@ import { motion } from 'framer-motion';
 import { ScienceCenterLS3 } from './ScienceCenterLS3';
 import { InstitutionalDashboard } from './InstitutionalDashboard';
 import { PublicationCenter } from './PublicationCenter';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 export const LearningScienceCenter: React.FC = () => {
   const snapshot = useLearningScience();
