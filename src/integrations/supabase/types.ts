@@ -22004,6 +22004,7 @@ export type Database = {
           audit_status: string | null
           batch_id: string | null
           batch_index: number | null
+          classification_a: Json | null
           classification_b: Json | null
           classification_source: string | null
           classification_status: string | null
@@ -22034,6 +22035,7 @@ export type Database = {
           audit_status?: string | null
           batch_id?: string | null
           batch_index?: number | null
+          classification_a?: Json | null
           classification_b?: Json | null
           classification_source?: string | null
           classification_status?: string | null
@@ -22064,6 +22066,7 @@ export type Database = {
           audit_status?: string | null
           batch_id?: string | null
           batch_index?: number | null
+          classification_a?: Json | null
           classification_b?: Json | null
           classification_source?: string | null
           classification_status?: string | null
@@ -30788,6 +30791,18 @@ export type Database = {
           avg_quality: number | null
           topic: string | null
           total_questions: number | null
+        }
+        Relationships: []
+      }
+      view_curriculum_coverage_audit: {
+        Row: {
+          curriculum_area: string | null
+          curriculum_competency: string | null
+          curriculum_theme: string | null
+          duplicate_candidates: number | null
+          specialty: string | null
+          total_questions: number | null
+          unique_questions: number | null
         }
         Relationships: []
       }
