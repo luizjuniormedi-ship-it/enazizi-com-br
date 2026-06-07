@@ -25,35 +25,35 @@ export function validateFinalQuestionTopic(
   const qSubtheme = (question.curriculum_subtheme || "").toLowerCase();
   const qCompetency = (question.curriculum_competency || "").toLowerCase();
   
-  const reqTopicLower = requestedTopic.toLowerCase();
-  const reqCompLower = (requestedCompetency || "").toLowerCase();
+  const reqTopicLower = (requestedTopic || "").trim().toLowerCase();
+  const reqCompLower = (requestedCompetency || "").trim().toLowerCase();
 
   const matchedFields: string[] = [];
   let score = 0;
 
   // 1. Exact Competency Match (Priority 1)
-  if (reqCompLower && [qCompetency, qSubtopic, qSubtheme].some(val => val === reqCompLower)) {
+  if (reqCompLower && reqCompLower.length > 0 && [qCompetency, qSubtopic, qSubtheme].some(val => val === reqCompLower)) {
     matchedFields.push("curriculum_competency");
     score = 100;
   }
 
   // 2. Exact Topic/Theme Match (Priority 2)
-  if (score < 100) {
+  if (score < 100 && reqTopicLower.length > 0) {
     if ([qTopic, qTheme].some(val => val === reqTopicLower)) {
       matchedFields.push("topic");
-      score = 100;
+      // Se houver uma competência solicitada e NÃO batemos nela, o score do tópico pai deve ser baixo
+      score = (reqCompLower && reqCompLower.length > 0) ? 70 : 100;
     } else if ([qSubtopic, qSubtheme].some(val => val === reqTopicLower)) {
       matchedFields.push("subtopic");
-      score = 95;
+      score = (reqCompLower && reqCompLower.length > 0) ? 60 : 95;
     }
   }
 
-  // 3. Partial/Alias Match (Internal check via score if provided from TopicEngine, but Guard is autonomous)
-  // If score wasn't set by exact matches, check inclusion
+  // 3. Partial/Alias Match
   if (score === 0) {
     if ([qTopic, qTheme, qSubtopic, qSubtheme, qCompetency].some(val => val.includes(reqTopicLower))) {
       matchedFields.push("partial_inclusion");
-      score = 80; // Lower than default minScore 90 for strict adherence
+      score = 50; 
     }
   }
 
