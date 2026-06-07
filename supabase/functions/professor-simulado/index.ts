@@ -3088,10 +3088,17 @@ REGRAS:
       }
 
       default:
-        return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        console.warn(`[PROFESSOR_SIMULADO_ERROR] Ação desconhecida: ${action} traceId=${traceId}`);
+        return jsonResponse({ error: `Ação desconhecida: ${action}`, traceId }, 400);
     }
-  } catch (e) {
-    console.error("professor-simulado error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro interno" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  } catch (error) {
+    console.error(`[PROFESSOR_SIMULADO_ERROR] traceId=${traceId}`, error);
+    return jsonResponse({
+      success: false,
+      error: "INTERNAL_ERROR",
+      message: error instanceof Error ? error.message : "Erro interno",
+      traceId
+    }, 500);
   }
 });
+
