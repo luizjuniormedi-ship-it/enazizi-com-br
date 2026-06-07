@@ -277,5 +277,6 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
