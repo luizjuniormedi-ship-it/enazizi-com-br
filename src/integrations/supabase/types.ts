@@ -10553,32 +10553,47 @@ export type Database = {
       }
       cvrp_user_requests_impact: {
         Row: {
+          alias_resolution_rate: number | null
           competency_name: string
+          coverage_sufficiency: number | null
           id: string
           last_updated: string | null
           ocr_percentage: number | null
           physical_available: number | null
           request_count: number | null
+          topic_integrity: number | null
+          topic_success_rate: number | null
+          uis_score: number | null
           user_impact_score: string | null
           visible_available: number | null
         }
         Insert: {
+          alias_resolution_rate?: number | null
           competency_name: string
+          coverage_sufficiency?: number | null
           id?: string
           last_updated?: string | null
           ocr_percentage?: number | null
           physical_available?: number | null
           request_count?: number | null
+          topic_integrity?: number | null
+          topic_success_rate?: number | null
+          uis_score?: number | null
           user_impact_score?: string | null
           visible_available?: number | null
         }
         Update: {
+          alias_resolution_rate?: number | null
           competency_name?: string
+          coverage_sufficiency?: number | null
           id?: string
           last_updated?: string | null
           ocr_percentage?: number | null
           physical_available?: number | null
           request_count?: number | null
+          topic_integrity?: number | null
+          topic_success_rate?: number | null
+          uis_score?: number | null
           user_impact_score?: string | null
           visible_available?: number | null
         }
@@ -29559,6 +29574,174 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ugrp_critical_competencies: {
+        Row: {
+          last_validation_at: string | null
+          name: string
+          status: string | null
+        }
+        Insert: {
+          last_validation_at?: string | null
+          name: string
+          status?: string | null
+        }
+        Update: {
+          last_validation_at?: string | null
+          name?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      ugrp_e2e_trace: {
+        Row: {
+          alias_resolved: string | null
+          competency_id: string | null
+          id: string
+          questions_found: number | null
+          requested_term: string | null
+          response_returned: Json | null
+          trace_at: string | null
+        }
+        Insert: {
+          alias_resolved?: string | null
+          competency_id?: string | null
+          id?: string
+          questions_found?: number | null
+          requested_term?: string | null
+          response_returned?: Json | null
+          trace_at?: string | null
+        }
+        Update: {
+          alias_resolved?: string | null
+          competency_id?: string | null
+          id?: string
+          questions_found?: number | null
+          requested_term?: string | null
+          response_returned?: Json | null
+          trace_at?: string | null
+        }
+        Relationships: []
+      }
+      ugrp_generation_tests: {
+        Row: {
+          competency_id: string
+          found_count: number | null
+          id: string
+          leakage_score: number | null
+          requested_size: number
+          status: string
+          tested_at: string | null
+        }
+        Insert: {
+          competency_id: string
+          found_count?: number | null
+          id?: string
+          leakage_score?: number | null
+          requested_size: number
+          status: string
+          tested_at?: string | null
+        }
+        Update: {
+          competency_id?: string
+          found_count?: number | null
+          id?: string
+          leakage_score?: number | null
+          requested_size?: number
+          status?: string
+          tested_at?: string | null
+        }
+        Relationships: []
+      }
+      ugrp_leakage_audit: {
+        Row: {
+          checked_at: string | null
+          id: string
+          integrity_score: number | null
+          leakage_count: number | null
+          source_competency: string | null
+          target_competency: string | null
+        }
+        Insert: {
+          checked_at?: string | null
+          id?: string
+          integrity_score?: number | null
+          leakage_count?: number | null
+          source_competency?: string | null
+          target_competency?: string | null
+        }
+        Update: {
+          checked_at?: string | null
+          id?: string
+          integrity_score?: number | null
+          leakage_count?: number | null
+          source_competency?: string | null
+          target_competency?: string | null
+        }
+        Relationships: []
+      }
+      ugrp_remediation_plan: {
+        Row: {
+          competency_id: string | null
+          corrective_action: string | null
+          estimated_recovery_at: string | null
+          id: string
+          priority: string | null
+          root_cause_code: string | null
+          root_cause_desc: string | null
+          status: string | null
+        }
+        Insert: {
+          competency_id?: string | null
+          corrective_action?: string | null
+          estimated_recovery_at?: string | null
+          id?: string
+          priority?: string | null
+          root_cause_code?: string | null
+          root_cause_desc?: string | null
+          status?: string | null
+        }
+        Update: {
+          competency_id?: string | null
+          corrective_action?: string | null
+          estimated_recovery_at?: string | null
+          id?: string
+          priority?: string | null
+          root_cause_code?: string | null
+          root_cause_desc?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      ugrp_top_100_requests: {
+        Row: {
+          frequency: number | null
+          id: string
+          insufficient_bank_rate: number | null
+          last_audit_at: string | null
+          leakage_detected: boolean | null
+          success_rate: number | null
+          term: string
+        }
+        Insert: {
+          frequency?: number | null
+          id?: string
+          insufficient_bank_rate?: number | null
+          last_audit_at?: string | null
+          leakage_detected?: boolean | null
+          success_rate?: number | null
+          term: string
+        }
+        Update: {
+          frequency?: number | null
+          id?: string
+          insufficient_bank_rate?: number | null
+          last_audit_at?: string | null
+          leakage_detected?: boolean | null
+          success_rate?: number | null
+          term?: string
+        }
+        Relationships: []
       }
       uploads: {
         Row: {
