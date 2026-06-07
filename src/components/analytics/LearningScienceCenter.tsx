@@ -235,6 +235,10 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-purple-500" />
               Motor de Rendimento de Aprendizado
+              <Tooltip>
+                <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Cálculo da eficiência global do seu aprendizado, considerando retenção, acurácia e velocidade.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
             <CardDescription>{snapshot.learningYield.formula}</CardDescription>
           </CardHeader>
