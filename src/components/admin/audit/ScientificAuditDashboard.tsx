@@ -109,7 +109,7 @@ export const ScientificAuditDashboard: React.FC = () => {
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase italic flex items-center gap-3">
             <ShieldCheck className="h-8 w-8 text-primary animate-pulse" />
-            Operação Caixa-Preta: Auditoria Científica
+            Operação Caixa-Preta: LEC Certification
           </h1>
           <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">
             Certificação Final para Transição V6 • Pedagogical Validation Engine
