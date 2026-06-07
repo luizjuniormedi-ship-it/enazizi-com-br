@@ -173,10 +173,26 @@ function pickCachedQuestions(params: {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const traceId = crypto.randomUUID();
+  console.log(`[PROFESSOR_SIMULADO_BOOT] traceId=${traceId}`);
+
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    
+    if (body?.action === "healthcheck") {
+      console.log(`[PROFESSOR_SIMULADO_HEALTHCHECK] traceId=${traceId}`);
+      return new Response(JSON.stringify({
+        success: true,
+        status: "ok",
+        function: "professor-simulado",
+        timestamp: new Date().toISOString(),
+        traceId
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -184,7 +200,6 @@ serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const sb = createClient(supabaseUrl, serviceRoleKey);
 
-    // Use anon-key client with user's token for auth validation (avoids session_not_found with service role)
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -193,13 +208,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check professor role
+    console.log(`[PROFESSOR_SIMULADO_AUTH_OK] userId=${user.id} traceId=${traceId}`);
+
     const { data: roleData } = await sb.from("user_roles").select("role").eq("user_id", user.id).in("role", ["professor", "admin"]);
     if (!roleData || roleData.length === 0) {
       return new Response(JSON.stringify({ error: "Apenas professores podem usar esta função." }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { action, ...params } = await req.json();
+    const { action, ...params } = body;
     const ok = (data: unknown) => new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // Get professor's faculdade and name for scoping and notifications
