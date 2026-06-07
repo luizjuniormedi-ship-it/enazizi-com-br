@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, AlertTriangle, MessageSquare, ShieldCheck, HeartPulse } from "lucide-react";
+import { Users, AlertTriangle, MessageSquare, ShieldCheck, HeartPulse, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface StaffMember {
   id: string;
