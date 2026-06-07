@@ -118,7 +118,7 @@ serve(async (req) => {
 
     // P4: Deterministic Deterioration Overlay
     // The engine overrides the LLM's vitals based on physiological rules
-    if (parsed.vitals && specialty) {
+    if (parsed.vitals) {
       const currentPatientState: PatientState = {
         heartRate: parseInt(String(parsed.vitals.FC || 80)),
         sysBP: parseInt(String(parsed.vitals.PA?.split('/')[0] || 120)),
@@ -129,7 +129,7 @@ serve(async (req) => {
       };
 
       const deterministicState = calculatePhysiologicalResponse(
-        specialty as ClinicalCondition,
+        (specialty || 'Geral') as ClinicalCondition,
         currentPatientState,
         parsed.maneuvers_performed || []
       );
