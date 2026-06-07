@@ -115,51 +115,76 @@ export const HospitalTeamPanel = ({ sessionId, patientId }: HospitalTeamPanelPro
         <div className="p-4 border-b bg-white/50">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Membros Ativos</h4>
-            <div title="Equipe que auxilia no atendimento e pode trazer informações do paciente ou do serviço." className="cursor-help">
+            <div title="Esta é a sua equipe de suporte. Eles executam suas ordens, monitoram o paciente e trazem alertas críticos do hospital." className="cursor-help">
               <Badge variant="outline" className="text-[8px] h-4 opacity-50">?</Badge>
             </div>
           </div>
           <div className="flex flex-wrap gap-1">
-            {staff.map((s) => (
+            {staff.length > 0 ? staff.map((s) => (
               <Badge key={s.id} variant="secondary" className={`text-[9px] ${ROLE_LABELS[s.role]?.color || ''}`}>
                 {s.name} ({ROLE_LABELS[s.role]?.label || s.role})
               </Badge>
-            ))}
+            )) : (
+              <span className="text-[9px] text-muted-foreground italic">Aguardando escalonamento...</span>
+            )}
           </div>
         </div>
 
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
-            {interactions.map((i) => (
-              <div key={i.id} className="bg-white p-3 rounded-lg border shadow-sm border-slate-200">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-bold text-slate-700">{i.staff_name}</span>
-                  <Badge variant="outline" className="text-[8px] h-4">
-                    {ROLE_LABELS[i.role]?.label}
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed italic">
-                  "{i.message}"
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[8px] text-slate-400">
-                    {new Date(i.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  {i.interaction_type === 'alert' && (
-                    <AlertTriangle className="w-3 h-3 text-red-500" />
-                  )}
+            {interactions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full py-8 text-center space-y-3 opacity-60">
+                <MessageSquare className="w-8 h-8 text-slate-300" />
+                <div className="space-y-1">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase">Central de Comunicação</p>
+                  <p className="text-[10px] text-slate-400 max-w-[180px] leading-tight">
+                    Aqui você receberá alertas de sinais vitais, status de exames, pedidos da enfermagem e atualizações da regulação.
+                  </p>
                 </div>
               </div>
-            ))}
+            ) : (
+              interactions.map((i) => (
+                <div key={i.id} className="bg-white p-3 rounded-lg border shadow-sm border-slate-200 animate-in fade-in slide-in-from-right-2 duration-300">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-bold text-slate-700">{i.staff_name}</span>
+                    <Badge variant="outline" className="text-[8px] h-4">
+                      {ROLE_LABELS[i.role]?.label}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed italic">
+                    "{i.message}"
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-[8px] text-slate-400">
+                      {new Date(i.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {i.interaction_type === 'alert' && (
+                      <AlertTriangle className="w-3 h-3 text-red-500" />
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </ScrollArea>
 
         <div className="p-4 border-t bg-white">
+          <p className="text-[9px] font-bold text-slate-400 uppercase mb-2 tracking-widest text-center">Protocolos de Comunicação</p>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" className="text-[10px] h-8 gap-1">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-[10px] h-8 gap-1"
+              title="SBAR: Situation, Background, Assessment, Recommendation. Use para passar o caso para outro médico ou preceptor."
+            >
               <MessageSquare className="w-3 h-3" /> SBAR
             </Button>
-            <Button variant="outline" size="sm" className="text-[10px] h-8 gap-1">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-[10px] h-8 gap-1"
+              title="SPIKES: Protocolo para comunicação de más notícias."
+            >
               <ShieldCheck className="w-3 h-3" /> SPIKES
             </Button>
           </div>
