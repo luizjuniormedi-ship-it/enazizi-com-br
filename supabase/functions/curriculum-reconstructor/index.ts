@@ -17,6 +17,35 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
   try {
     const { action, batch_size = 100, limit = 500 } = await req.json();
 
+    if (action === "inventory_report") {
+      const { data: stats } = await supabaseAdmin.rpc('get_curriculum_inventory_stats');
+      
+      // Fallback if RPC doesn't exist yet or to provide detailed report
+      const { count: totalQuestions } = await supabaseAdmin
+        .from("questions_bank")
+        .select("*", { count: "exact", head: true });
+
+      const { count: unclassified } = await supabaseAdmin
+        .from("questions_bank")
+        .select("*", { count: "exact", head: true })
+        .is("topic_id", null);
+
+      const { data: lastBatch } = await supabaseAdmin
+        .from("classification_batches")
+        .select("id")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        total: totalQuestions,
+        unclassified,
+        classified: (totalQuestions || 0) - (unclassified || 0),
+        last_batch_id: lastBatch?.id
+      }), { headers: corsHeaders });
+    }
+
     if (action === "classify_sentinel" || action === "classify_batch") {
       const actualLimit = action === "classify_sentinel" ? 500 : limit;
       

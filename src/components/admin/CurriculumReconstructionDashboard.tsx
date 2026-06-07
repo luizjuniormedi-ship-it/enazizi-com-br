@@ -11,6 +11,7 @@ export const CurriculumReconstructionDashboard = () => {
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClassifying, setIsClassifying] = useState(false);
+  const [isMaterializing, setIsMaterializing] = useState(false);
 
   const fetchStats = async () => {
     setIsLoading(true);
@@ -25,6 +26,25 @@ export const CurriculumReconstructionDashboard = () => {
       toast.error("Erro ao carregar inventário curricular");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const materializeBatch = async (batchId: string) => {
+    setIsMaterializing(true);
+    try {
+      const { data, error } = await supabase.rpc('materialize_classifications', {
+        p_batch_id: batchId
+      });
+      
+      if (error) throw error;
+      
+      toast.success(`${data} questões materializadas no currículo oficial`);
+      fetchStats();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Falha ao materializar lote: " + err.message);
+    } finally {
+      setIsMaterializing(false);
     }
   };
 
@@ -78,6 +98,17 @@ export const CurriculumReconstructionDashboard = () => {
           >
             <Brain className="h-4 w-4 mr-2" /> {isClassifying ? "Classificando..." : "Classificar Lote IA"}
           </Button>
+          {stats?.last_batch_id && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => materializeBatch(stats.last_batch_id)} 
+              disabled={isMaterializing}
+              className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10"
+            >
+              <ShieldCheck className="h-4 w-4 mr-2" /> {isMaterializing ? "Materializando..." : "Materializar Lote"}
+            </Button>
+          )}
         </div>
       </div>
 
