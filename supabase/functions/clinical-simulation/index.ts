@@ -168,7 +168,7 @@ serve(async (req) => {
 
     if (action === "finish") {
       await updatePerformanceMetrics(supabaseService, {
-        userId: user.id,
+        userId: userId,
         specialty: specialty || "Geral",
         topic: String(parsed.hidden_diagnosis || "Simulação V5"),
         isCorrect: (Number(parsed.score_delta) || 0) >= 0,
