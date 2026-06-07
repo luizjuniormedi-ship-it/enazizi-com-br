@@ -78,6 +78,7 @@ const TutorStabilizationDashboard = lazy(() => import("@/components/admin/cognit
 const CognitiveGovernanceDashboard = lazy(() => import("@/components/admin/cognitive-observatory/CognitiveGovernanceDashboard"));
 const GoldCuration = lazy(() => import("@/pages/admin/GoldCuration"));
 const ClassificationBackfill = lazy(() => import("@/pages/admin/ClassificationBackfill"));
+const CurriculumEvidenceDashboard = lazy(() => import("@/components/admin/CurriculumEvidenceDashboard").then(m => ({ default: m.CurriculumEvidenceDashboard })));
 
 
 
@@ -166,6 +167,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "audit", label: "Auditoria", icon: Shield },
         { key: "system-checklist", label: "Checklist", icon: ShieldCheck },
         { key: "tutor-qa", label: "Tutor QA Engine", icon: Beaker },
+        { key: "curriculum-evidence", label: "Evidência COVE", icon: ShieldCheck },
+
 
       ],
     },
@@ -662,7 +665,9 @@ const Admin = ({ initialTab }: AdminProps) => {
                   {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} /></Suspense>}
                   {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} /></Suspense>}
                   {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
-                  {activeSection === "tutor-qa" && <Suspense fallback={<PanelLoader />}><TutorQAPanel /></Suspense>}
+                  { activeSection === "tutor-qa" && <Suspense fallback={<PanelLoader />}><TutorQAPanel /></Suspense> }
+                  { activeSection === "curriculum-evidence" && <Suspense fallback={<PanelLoader />}><CurriculumEvidenceDashboard /></Suspense> }
+
 
 
 
