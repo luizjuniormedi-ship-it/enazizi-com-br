@@ -432,6 +432,8 @@ const App = () => (
                 <Route path="scientific-audit" element={<ScientificAuditPage />} />
                 <Route path="national-campaign" element={<CampaignDashboardPage />} />
                 <Route path="dogfood-monitor" element={<DogfoodMonitor />} />
+                <Route path="cvrp" element={<CVRPDashboard />} />
+
 
 
 
