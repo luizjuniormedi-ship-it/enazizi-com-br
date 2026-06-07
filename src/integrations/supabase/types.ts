@@ -10609,71 +10609,92 @@ export type Database = {
       }
       curriculum_topics: {
         Row: {
+          approval_correlation: number | null
           ativo: boolean
           ccs_gain_potential: number | null
           ccs_score: number | null
+          coi_score: number | null
           created_at: string
           cri_score: number | null
           demand_score: number | null
           effort_level: string | null
           exam_incidence: number | null
           id: string
+          ips_score: number | null
+          learning_yield: number | null
+          longitudinal_mastery: number | null
           nome: string
           ordem: number
           recommended_action: string | null
           recoverable_questions: number | null
           recovery_priority: string | null
+          retention_gain: number | null
           rps: number | null
           rvp_metadata: Json | null
           rvs_score: number | null
           specialty_id: string
           status: string | null
+          transfer_score: number | null
           uis_score: number | null
           visible_questions: number | null
         }
         Insert: {
+          approval_correlation?: number | null
           ativo?: boolean
           ccs_gain_potential?: number | null
           ccs_score?: number | null
+          coi_score?: number | null
           created_at?: string
           cri_score?: number | null
           demand_score?: number | null
           effort_level?: string | null
           exam_incidence?: number | null
           id?: string
+          ips_score?: number | null
+          learning_yield?: number | null
+          longitudinal_mastery?: number | null
           nome: string
           ordem?: number
           recommended_action?: string | null
           recoverable_questions?: number | null
           recovery_priority?: string | null
+          retention_gain?: number | null
           rps?: number | null
           rvp_metadata?: Json | null
           rvs_score?: number | null
           specialty_id: string
           status?: string | null
+          transfer_score?: number | null
           uis_score?: number | null
           visible_questions?: number | null
         }
         Update: {
+          approval_correlation?: number | null
           ativo?: boolean
           ccs_gain_potential?: number | null
           ccs_score?: number | null
+          coi_score?: number | null
           created_at?: string
           cri_score?: number | null
           demand_score?: number | null
           effort_level?: string | null
           exam_incidence?: number | null
           id?: string
+          ips_score?: number | null
+          learning_yield?: number | null
+          longitudinal_mastery?: number | null
           nome?: string
           ordem?: number
           recommended_action?: string | null
           recoverable_questions?: number | null
           recovery_priority?: string | null
+          retention_gain?: number | null
           rps?: number | null
           rvp_metadata?: Json | null
           rvs_score?: number | null
           specialty_id?: string
           status?: string | null
+          transfer_score?: number | null
           uis_score?: number | null
           visible_questions?: number | null
         }
@@ -13741,6 +13762,76 @@ export type Database = {
           },
           {
             foreignKeyName: "fccp_maturity_ranking_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fccp_outcome_audit_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          created_by: string | null
+          id: string
+          learning_yield_change: number | null
+          new_coi: number | null
+          new_ips: number | null
+          notes: string | null
+          previous_coi: number | null
+          previous_ips: number | null
+          retention_gain_change: number | null
+          topic_id: string | null
+          transfer_score_change: number | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          learning_yield_change?: number | null
+          new_coi?: number | null
+          new_ips?: number | null
+          notes?: string | null
+          previous_coi?: number | null
+          previous_ips?: number | null
+          retention_gain_change?: number | null
+          topic_id?: string | null
+          transfer_score_change?: number | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          learning_yield_change?: number | null
+          new_coi?: number | null
+          new_ips?: number | null
+          notes?: string | null
+          previous_coi?: number | null
+          previous_ips?: number | null
+          retention_gain_change?: number | null
+          topic_id?: string | null
+          transfer_score_change?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_outcome_audit_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fccp_outcome_audit_log_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "fccp_outcome_audit_log_topic_id_fkey"
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "v_fccp_recovery_ranking"
@@ -33568,6 +33659,10 @@ export type Database = {
           sample: number
           spearman: number
         }[]
+      }
+      calculate_cove_metrics: {
+        Args: { p_topic_id: string }
+        Returns: undefined
       }
       calculate_cri_metrics: { Args: never; Returns: undefined }
       calculate_fccp_ccs: { Args: never; Returns: number }
