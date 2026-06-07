@@ -145,7 +145,7 @@ export const CurriculumReconstructionDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-500">{(classified / total * 100).toFixed(1)}%</div>
-            <p className="text-[10px] text-white/30 text-amber-500">STATUS: CRÍTICO</p>
+            <p className="text-[10px] text-white/30 text-amber-500">STATUS: {progress < 30 ? 'CRÍTICO' : progress < 80 ? 'MATERIALIZANDO' : 'CERTIFICADO'}</p>
           </CardContent>
         </Card>
 
