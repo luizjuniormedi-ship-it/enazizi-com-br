@@ -64,6 +64,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Microscope className="w-4 h-4" /> Score de Saúde da Evidência
+              <Tooltip>
+                <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Qualidade e confiabilidade estatística das evidências coletadas.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent>
