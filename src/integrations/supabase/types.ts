@@ -34444,6 +34444,10 @@ export type Database = {
               topic: string
             }[]
           }
+      materialize_classifications: {
+        Args: { p_batch_id: string }
+        Returns: number
+      }
       memory_drift_analysis: { Args: never; Returns: Json }
       memory_hallucination_forensics: {
         Args: { p_limit?: number }
@@ -34502,6 +34506,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      rebuild_curriculum_metrics: { Args: never; Returns: undefined }
       recalculate_user_theta: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number

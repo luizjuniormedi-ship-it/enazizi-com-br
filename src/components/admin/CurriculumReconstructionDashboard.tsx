@@ -11,6 +11,7 @@ export const CurriculumReconstructionDashboard = () => {
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isClassifying, setIsClassifying] = useState(false);
+  const [isMaterializing, setIsMaterializing] = useState(false);
 
   const fetchStats = async () => {
     setIsLoading(true);
@@ -25,6 +26,25 @@ export const CurriculumReconstructionDashboard = () => {
       toast.error("Erro ao carregar inventário curricular");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const materializeBatch = async (batchId: string) => {
+    setIsMaterializing(true);
+    try {
+      const { data, error } = await supabase.rpc('materialize_classifications', {
+        p_batch_id: batchId
+      });
+      
+      if (error) throw error;
+      
+      toast.success(`${data} questões materializadas no currículo oficial`);
+      fetchStats();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Falha ao materializar lote: " + err.message);
+    } finally {
+      setIsMaterializing(false);
     }
   };
 
@@ -51,8 +71,8 @@ export const CurriculumReconstructionDashboard = () => {
 
   if (isLoading) return <div className="p-8 animate-pulse">Carregando Auditoria Curricular...</div>;
 
-  const total = stats?.total || 19000;
-  const classified = 0; // To be updated with real staging counts
+  const total = stats?.total || 19150;
+  const classified = stats?.classified || 15332;
   const progress = (classified / total) * 100;
 
   return (
@@ -78,6 +98,17 @@ export const CurriculumReconstructionDashboard = () => {
           >
             <Brain className="h-4 w-4 mr-2" /> {isClassifying ? "Classificando..." : "Classificar Lote IA"}
           </Button>
+          {stats?.last_batch_id && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => materializeBatch(stats.last_batch_id)} 
+              disabled={isMaterializing}
+              className="border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10"
+            >
+              <ShieldCheck className="h-4 w-4 mr-2" /> {isMaterializing ? "Materializando..." : "Materializar Lote"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -113,8 +144,8 @@ export const CurriculumReconstructionDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-500">0%</div>
-            <p className="text-[10px] text-white/30 text-amber-500">STATUS: CRÍTICO</p>
+            <div className="text-2xl font-bold text-amber-500">{(classified / total * 100).toFixed(1)}%</div>
+            <p className="text-[10px] text-white/30 text-amber-500">STATUS: {progress < 30 ? 'CRÍTICO' : progress < 80 ? 'MATERIALIZANDO' : 'CERTIFICADO'}</p>
           </CardContent>
         </Card>
 
