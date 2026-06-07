@@ -328,11 +328,20 @@ export const OutcomeScienceCenter: React.FC = () => {
   );
 };
 
-const MetricCard: React.FC<{ title: string; value: string; delta: string; icon: any; status: 'success' | 'warning' | 'danger' }> = ({ title, value, delta, icon: Icon, status }) => (
+const MetricCard: React.FC<{ 
+  title: string; 
+  value: string; 
+  delta: string; 
+  icon: any; 
+  status: 'success' | 'warning' | 'danger';
+  description?: string;
+}> = ({ title, value, delta, icon: Icon, status, description }) => (
   <Card className="bg-white/5 border-white/10 backdrop-blur-xl hover:border-primary/30 transition-all">
     <CardHeader className="pb-2">
       <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
-        <Icon className={`h-4 w-4 ${status === 'success' ? 'text-primary' : 'text-yellow-500'}`} /> {title}
+        <Icon className={`h-4 w-4 ${status === 'success' ? 'text-primary' : 'text-yellow-500'}`} /> 
+        {title}
+        {description && <InfoTooltip content={description} />}
       </CardTitle>
     </CardHeader>
     <CardContent>
