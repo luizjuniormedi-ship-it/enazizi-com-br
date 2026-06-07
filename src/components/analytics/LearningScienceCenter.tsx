@@ -126,7 +126,17 @@ export const LearningScienceCenter: React.FC = () => {
               <div className="flex-1 space-y-6 w-full">
                 <div>
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-sm font-medium">Gap de Aprovação (Meta: 78%)</span>
+                    <span className="text-sm font-medium flex items-center gap-1">
+                      Gap de Aprovação (Meta: 78%)
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="w-3 h-3 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>A distância estatística que separa seu conhecimento atual da nota de corte projetada para aprovação.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
                     <span className="text-2xl font-bold text-primary">-{snapshot.approvalGap}pts</span>
                   </div>
                   <Progress value={snapshot.readiness} className="h-3" />
