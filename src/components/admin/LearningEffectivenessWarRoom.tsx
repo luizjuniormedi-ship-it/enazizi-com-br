@@ -14,7 +14,8 @@ import {
   History,
   Activity,
   Award,
-  ShieldCheck
+  ShieldCheck,
+  Info
 } from 'lucide-react';
 import { 
   BarChart as ReBarChart, 
@@ -22,13 +23,14 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
+  Tooltip as RechartsTooltip, 
   ResponsiveContainer, 
   LineChart, 
   Line,
   Cell
 } from 'recharts';
 import { Progress } from '@/components/ui/progress';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 export const LearningEffectivenessWarRoom: React.FC = () => {
   // Q1: Quanto o Tutor melhora o Readiness?
@@ -140,6 +142,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
               <Zap className="h-3 w-3 text-primary" /> Impulso de Prontidão (Boost)
+              <InfoTooltip content="Média de aumento na probabilidade de acerto após intervenção do Tutor IA." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -164,6 +167,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
               <Award className="h-3 w-3 text-emerald-400" /> Redução de Erros
+              <InfoTooltip content="Percentual de redução de erros em temas revisados nas últimas 48 horas." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -190,6 +194,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
               <History className="h-3 w-3 text-amber-400" /> Recovery Efficiency
+              <InfoTooltip content="Eficácia do loop de recuperação em consolidar temas que foram previamente errados." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -213,6 +218,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
               <Brain className="h-3 w-3 text-blue-400" /> Retention Ceiling
+              <InfoTooltip content="Teto estimado de retenção de longo prazo utilizando o algoritmo FSRS otimizado." />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -254,7 +260,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
                     tick={{ fill: '#ffffff60', fontSize: 10, fontWeight: 'bold' }}
                     width={100}
                   />
-                  <Tooltip 
+                  <RechartsTooltip 
                     cursor={{ fill: '#ffffff05' }}
                     contentStyle={{ backgroundColor: '#050508', border: '1px solid #ffffff10', fontSize: 10 }}
                   />

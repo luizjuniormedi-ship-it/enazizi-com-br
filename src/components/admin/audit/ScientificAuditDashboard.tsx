@@ -26,9 +26,11 @@ import {
   Dna,
   Scale,
   Megaphone,
-  FlaskConical
+  FlaskConical,
+  Info
 } from 'lucide-react';
 import { OutcomeScienceCenter } from './OutcomeScienceCenter';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { 
   ResponsiveContainer, 
@@ -37,7 +39,7 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip,
+  Tooltip as RechartsTooltip,
   BarChart,
   Bar,
   Cell,
@@ -62,13 +64,13 @@ const MOCK_HISTORICAL_DATA = [
 ];
 
 const AUDIT_PHASES = [
-  { id: 'fidelity', name: 'Auditoria de Fidelidade', icon: Stethoscope, color: 'text-blue-500', meta: '95', current: '96.4' },
-  { id: 'les', name: 'Eficácia de Aprendizado (LES)', icon: FlaskConical, color: 'text-purple-600', meta: '85', current: '88.7' },
-  { id: 'yield', name: 'Rendimento de Aprendizado', icon: GraduationCap, color: 'text-emerald-500', meta: '80', current: '82.5' },
-  { id: 'transfer', name: 'Score de Transferência', icon: Target, color: 'text-orange-500', meta: '75', current: '79.2' },
-  { id: 'cohen', name: "Cohen's d", icon: Scale, color: 'text-pink-500', meta: '0.5', current: '0.74' },
-  { id: 'recovery', name: 'Meia-vida de Recuperação', icon: Activity, color: 'text-amber-500', meta: 'D7', current: 'D4.2' },
-  { id: 'safety', name: 'Auditoria de Segurança', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8' },
+  { id: 'fidelity', name: 'Auditoria de Fidelidade', icon: Stethoscope, color: 'text-blue-500', meta: '95', current: '96.4', description: 'Mede o quanto a simulação reflete a prática médica real e as diretrizes clínicas.' },
+  { id: 'les', name: 'Eficácia de Aprendizado (LES)', icon: FlaskConical, color: 'text-purple-600', meta: '85', current: '88.7', description: 'Learning Effectiveness Score: O ganho real de conhecimento medido pré e pós intervenção.' },
+  { id: 'yield', name: 'Rendimento de Aprendizado', icon: GraduationCap, color: 'text-emerald-500', meta: '80', current: '82.5', description: 'Eficiência da sessão de estudo: quantidade de conhecimento retido por minuto investido.' },
+  { id: 'transfer', name: 'Score de Transferência', icon: Target, color: 'text-orange-500', meta: '75', current: '79.2', description: 'Capacidade de aplicar o que foi aprendido no simulador em casos clínicos reais.' },
+  { id: 'cohen', name: "Cohen's d", icon: Scale, color: 'text-pink-500', meta: '0.5', current: '0.74', description: 'Métrica estatística que valida o tamanho do efeito da nossa intervenção pedagógica.' },
+  { id: 'recovery', name: 'Meia-vida de Recuperação', icon: Activity, color: 'text-amber-500', meta: 'D7', current: 'D4.2', description: 'Tempo médio para um usuário recuperar um conhecimento esquecido via loop de correção.' },
+  { id: 'safety', name: 'Auditoria de Segurança', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8', description: 'Garante que as métricas não estão infladas e são auditáveis para fins científicos.' },
 ];
 
 
@@ -146,6 +148,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
                 <phase.icon className={`h-4 w-4 ${phase.color}`} /> {phase.name}
+                <InfoTooltip content={phase.description} />
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -198,7 +201,7 @@ export const ScientificAuditDashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                     <XAxis dataKey="day" stroke="#ffffff40" fontSize={10} />
                     <YAxis stroke="#ffffff40" fontSize={10} />
-                    <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
                     <Bar dataKey="efficiency" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -276,7 +279,7 @@ export const ScientificAuditDashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                     <XAxis dataKey="day" stroke="#ffffff40" fontSize={10} />
                     <YAxis stroke="#ffffff40" fontSize={10} domain={[0, 100]} />
-                    <Tooltip 
+                    <RechartsTooltip 
                       contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20', borderRadius: '8px', fontSize: '10px' }}
                       itemStyle={{ color: '#fff' }}
                     />
@@ -382,7 +385,7 @@ export const ScientificAuditDashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                     <XAxis dataKey="day" stroke="#ffffff40" fontSize={10} />
                     <YAxis stroke="#ffffff40" fontSize={10} />
-                    <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff20' }} />
                     <Line type="monotone" dataKey="score" stroke="#3b82f6" name="Experimental" strokeWidth={3} dot={false} />
                     <Line type="monotone" dataKey="control" stroke="#ffffff40" name="Controle" strokeWidth={2} dot={false} />
                   </LineChart>
