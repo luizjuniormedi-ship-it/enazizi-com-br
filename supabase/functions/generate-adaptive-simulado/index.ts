@@ -162,14 +162,31 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     }).select().single();
 
     if (sess) {
-      await supabaseAdmin.from("simulado_questions").insert(
-        finalQuestions.map((q, idx) => ({
-          session_id: sess.id,
-          question_id: q.id,
-          order_index: idx,
-          is_ai_generated: q._source === "generated"
-        }))
-      );
+      await Promise.all([
+        supabaseAdmin.from("simulado_questions").insert(
+          finalQuestions.map((q, idx) => ({
+            session_id: sess.id,
+            question_id: q.id,
+            order_index: idx,
+            is_ai_generated: q._source === "generated"
+          }))
+        ),
+        // REGRESSÃO PERMANENTE: Registro obrigatório de geração temática
+        supabaseAdmin.from("topic_generation_logs").insert({
+          user_id: userId,
+          requested_topic: topics[0],
+          canonical_topic: topicEngine.identifyCanonical(topics[0]),
+          curriculum_competency: subtopics[0] || null,
+          matched_question_ids: finalQuestions.map(q => q.id),
+          insufficient_bank_flag: insufficientQuestions,
+          correlation_id: correlationId,
+          metadata: {
+            requested_count: requestedCount,
+            generated_count: finalQuestions.length,
+            match_types: finalQuestions.map(q => q._match_type)
+          }
+        })
+      ]);
     }
 
     return new Response(JSON.stringify({ 
