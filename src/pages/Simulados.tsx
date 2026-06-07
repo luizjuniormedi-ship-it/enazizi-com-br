@@ -264,10 +264,9 @@ async function generateBatch(
       sessionId: data.session_id || null,
       insufficientQuestions: data.insufficientQuestions,
       message: data.message,
-      insufficientQuestionsData: {
-        requested: data.requestedCount,
-        generated: data.generatedCount,
-        isInsufficient: data.insufficientQuestions
+      requestedCount: data.requestedCount,
+      generatedCount: data.generatedCount
+    };
       }
     };
 
