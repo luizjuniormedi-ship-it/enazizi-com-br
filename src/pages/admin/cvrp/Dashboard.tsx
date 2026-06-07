@@ -6,20 +6,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+interface SpecialtyStat {
+  specialty: string;
+  physical_count: number;
+  visible_count: number;
+  lost_count: number;
+  ocr_percentage: number;
+  status: 'CRITICAL' | 'POOR' | 'PARTIAL' | 'OPERATIONAL';
+}
+
 const CVRPDashboard = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['cvrp-specialty-stats'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('cvrp_specialty_stats')
-        .select('*')
-        .order('ocr_percentage', { ascending: true });
+        .from('cvrp_specialty_stats' as any)
+        .select('*');
+      
       if (error) throw error;
-      return data;
+      return (data as any[])?.sort((a, b) => a.ocr_percentage - b.ocr_percentage) as SpecialtyStat[];
     }
   });
 
-  const globalOCR = stats 
+  const globalOCR = stats && stats.length > 0
     ? stats.reduce((acc, curr) => acc + curr.ocr_percentage, 0) / stats.length 
     : 0;
 
@@ -32,6 +41,8 @@ const CVRPDashboard = () => {
       default: return 'bg-secondary';
     }
   };
+
+  if (isLoading) return <div className="p-8">Carregando auditoria CVRP...</div>;
 
   return (
     <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
@@ -74,7 +85,7 @@ const CVRPDashboard = () => {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Ghost Competencies</CardTitle>
+            <CardTitle className="text-sm font-medium">Ghost Potential</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
@@ -135,3 +146,4 @@ const CVRPDashboard = () => {
 };
 
 export default CVRPDashboard;
+
