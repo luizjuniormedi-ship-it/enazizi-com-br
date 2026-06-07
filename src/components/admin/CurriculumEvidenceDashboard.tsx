@@ -14,7 +14,12 @@ import {
   Zap,
   Microscope,
   Stethoscope,
-  GraduationCap
+  GraduationCap,
+  FlaskConical,
+  Scale,
+  AlertCircle,
+  Clock,
+  CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -38,8 +43,8 @@ export const CurriculumEvidenceDashboard = () => {
       const { data, error } = await supabase
         .from('curriculum_topics')
         .select('*')
-        .order('ips_score', { ascending: false })
-        .limit(20);
+        .order('ecs_score', { ascending: false })
+        .limit(30);
 
       if (error) throw error;
       setTopics(data || []);
@@ -55,20 +60,28 @@ export const CurriculumEvidenceDashboard = () => {
     fetchOutcomeData();
   }, []);
 
-  if (isLoading) return <div className="p-8 animate-pulse text-white">Carregando COVE Metrics...</div>;
-
+  if (isLoading) return <div className="p-8 animate-pulse text-white">Carregando Evidence Confidence Engine...</div>;
+  
   const avgCoi = topics.reduce((acc, t) => acc + (Number(t.coi_score) || 0), 0) / (topics.length || 1);
   const avgIps = topics.reduce((acc, t) => acc + (Number(t.ips_score) || 0), 0) / (topics.length || 1);
+  const avgEcs = topics.reduce((acc, t) => acc + (Number(t.ecs_score) || 0), 0) / (topics.length || 1);
+  const goldVerifiedCount = topics.filter(t => 
+    (Number(t.coi_score) >= 80 && 
+     (Number(t.ips_score) || 0) >= 80 && 
+     (Number(t.ecs_score) || 0) >= 80 && 
+     (Number(t.sample_size) || 0) >= 500 &&
+     t.drift_status !== 'DRIFT CRÍTICO')
+  ).length;
 
   return (
     <div className="space-y-6 p-6 bg-black/40 rounded-3xl border border-white/5 backdrop-blur-sm">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black text-white flex items-center gap-2">
-            <ShieldCheck className="h-6 w-6 text-indigo-500" />
-            Curriculum Outcome Validation Engine (COVE)
+            <FlaskConical className="h-6 w-6 text-pink-500" />
+            Evidence Confidence Engine (ECE)
           </h2>
-          <p className="text-white/50 text-sm">FCCP Phase 6.4 - Curriculum Outcome & Impact Analytics</p>
+          <p className="text-white/50 text-sm">FCCP Phase 6.5 - Statistical Validation & Bias Detection</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchOutcomeData} className="bg-white/5">
           <Activity className="h-4 w-4 mr-2" /> Recalcular Impacto
@@ -76,6 +89,18 @@ export const CurriculumEvidenceDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
+              <FlaskConical className="h-3 w-3" /> ECS MÉDIO (CONFIDENCE)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-pink-400">{avgEcs.toFixed(1)}</div>
+            <p className="text-[10px] text-white/30">Média de Confiança Estatística</p>
+          </CardContent>
+        </Card>
+
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
@@ -91,36 +116,26 @@ export const CurriculumEvidenceDashboard = () => {
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
-              <Zap className="h-3 w-3" /> IPS MÉDIO (PRIORITY)
+              <Scale className="h-3 w-3" /> N TOTAL (SAMPLES)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-400">{avgIps.toFixed(1)}</div>
-            <p className="text-[10px] text-white/30">Média de Prioridade de Impacto</p>
+            <div className="text-2xl font-bold text-emerald-400">
+              {topics.reduce((acc, t) => acc + (t.sample_size || 0), 0).toLocaleString()}
+            </div>
+            <p className="text-[10px] text-white/30">Amostragem Curricular Total</p>
           </CardContent>
         </Card>
 
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
-              <Brain className="h-3 w-3" /> LEARNING YIELD
+              <Award className="h-3 w-3" /> GOLD CERTIFIED
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-400">74.2%</div>
-            <p className="text-[10px] text-white/30">Ganho de Aprendizagem Médio</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
-              <Award className="h-3 w-3" /> GOLD VERIFIED
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">0</div>
-            <p className="text-[10px] text-white/30">Tópicos com COI & IPS ≥ 80</p>
+            <div className="text-2xl font-bold text-amber-400">{goldVerifiedCount}</div>
+            <p className="text-[10px] text-white/30">ECS, COI, IPS ≥ 80 & N ≥ 500</p>
           </CardContent>
         </Card>
       </div>
@@ -128,11 +143,14 @@ export const CurriculumEvidenceDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 bg-white/5 border-white/10">
           <CardHeader>
-            <CardTitle className="text-sm font-bold text-white/80">Top 10 Competências por IPS (Impact Priority Score)</CardTitle>
+            <CardTitle className="text-sm font-bold text-white/80 flex items-center justify-between">
+              <span>Robustez de Evidência por Competência (ECS)</span>
+              <Badge variant="outline" className="text-[10px] text-pink-400 border-pink-500/30">N ≥ 500 para Certificação</Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topics.slice(0, 10)}>
+              <BarChart data={topics.slice(0, 15)}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                 <XAxis 
                   dataKey="nome" 
@@ -150,10 +168,11 @@ export const CurriculumEvidenceDashboard = () => {
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '8px' }}
                   itemStyle={{ fontSize: '12px' }}
+                  labelStyle={{ color: '#fff', marginBottom: '4px' }}
                 />
-                <Bar dataKey="ips_score" radius={[4, 4, 0, 0]}>
-                  {topics.slice(0, 10).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index < 3 ? '#fbbf24' : '#6366f1'} />
+                <Bar dataKey="ecs_score" radius={[4, 4, 0, 0]}>
+                  {topics.slice(0, 15).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={Number(entry.ecs_score) >= 80 ? '#ec4899' : '#6366f1'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -161,29 +180,41 @@ export const CurriculumEvidenceDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/5 border-white/10">
+        <Card className="bg-white/5 border-white/10 overflow-hidden">
           <CardHeader>
-            <CardTitle className="text-sm font-bold text-white/80">Outcome Evidence Table</CardTitle>
+            <CardTitle className="text-sm font-bold text-white/80">Evidence Audit Table</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topics.slice(0, 5).map((topic) => (
-                <div key={topic.id} className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2">
+          <CardContent className="px-2">
+            <div className="space-y-3">
+              {topics.slice(0, 6).map((topic) => (
+                <div key={topic.id} className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-2 relative overflow-hidden group">
+                  {topic.drift_status === 'DRIFT CRÍTICO' && (
+                    <div className="absolute top-0 left-0 w-1 h-full bg-red-500 animate-pulse" />
+                  )}
                   <div className="flex justify-between items-start">
-                    <span className="text-xs font-bold text-white/90 truncate max-w-[150px]">{topic.nome}</span>
-                    <Badge className="bg-indigo-500/20 text-indigo-300 border-none text-[10px]">IPS: {topic.ips_score}</Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="flex flex-col">
-                      <span className="text-white/40">COI (Outcome)</span>
-                      <span className="text-white/80">{topic.coi_score}</span>
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-white/90 block truncate max-w-[140px]">{topic.nome}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Badge className={`text-[9px] px-1 py-0 h-4 border-none ${
+                          topic.evidence_maturity_level >= 4 ? 'bg-amber-500/20 text-amber-300' : 'bg-white/10 text-white/50'
+                        }`}>
+                          Nível {topic.evidence_maturity_level}
+                        </Badge>
+                        <span className="text-[10px] text-white/30 italic">N={topic.sample_size}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-white/40">CRI (ROI)</span>
-                      <span className="text-white/80">{topic.cri_score}</span>
+                    <div className="text-right">
+                      <div className="text-[11px] font-black text-pink-400">ECS {topic.ecs_score}</div>
+                      <div className="text-[9px] text-white/40">CI: [{topic.ci_low}-{topic.ci_high}]</div>
                     </div>
                   </div>
-                  <Progress value={topic.learning_yield} className="h-1 bg-white/5" />
+                  
+                  <div className="flex items-center gap-2">
+                    <Progress value={topic.ecs_score} className="h-1 flex-1 bg-white/5" />
+                    {topic.drift_status !== 'SEM DRIFT' && (
+                      <AlertCircle className={`h-3 w-3 ${topic.drift_status === 'DRIFT CRÍTICO' ? 'text-red-500' : 'text-amber-500'}`} />
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -191,29 +222,37 @@ export const CurriculumEvidenceDashboard = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="p-4 rounded-2xl bg-pink-500/5 border border-pink-500/20">
+          <div className="flex items-center gap-3 mb-3">
+            <FlaskConical className="h-5 w-5 text-pink-400" />
+            <h3 className="text-sm font-bold text-white/90">ECS Score</h3>
+          </div>
+          <p className="text-[10px] text-white/60">Evidence Confidence Score. Validação estatística baseada em N, variância e estabilidade temporal das evidências observadas.</p>
+        </div>
+
         <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20">
           <div className="flex items-center gap-3 mb-3">
-            <Microscope className="h-5 w-5 text-indigo-400" />
-            <h3 className="text-sm font-bold text-white/90">Learning Yield</h3>
+            <Scale className="h-5 w-5 text-indigo-400" />
+            <h3 className="text-sm font-bold text-white/90">Bias Detection</h3>
           </div>
-          <p className="text-xs text-white/60">Mede o ganho direto entre erro inicial, exposição ao conteúdo e acerto subsequente por competência.</p>
+          <p className="text-[10px] text-white/60">Identifica riscos de viés de seleção, sobrevivência e engajamento que podem inflar artificialmente os scores de desfecho.</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
           <div className="flex items-center gap-3 mb-3">
-            <Stethoscope className="h-5 w-5 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white/90">Transfer Score</h3>
+            <Activity className="h-5 w-5 text-emerald-400" />
+            <h3 className="text-sm font-bold text-white/90">Outcome Drift</h3>
           </div>
-          <p className="text-xs text-white/60">Avalia a transição do conhecimento teórico para o Hospital Virtual e OSCE (Desempenho Clínico).</p>
+          <p className="text-[10px] text-white/60">Monitora a degradação da eficácia educacional ao longo do tempo (D30-D365), detectando perda de retenção ou transferência.</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
           <div className="flex items-center gap-3 mb-3">
-            <GraduationCap className="h-5 w-5 text-amber-400" />
-            <h3 className="text-sm font-bold text-white/90">Approval Impact</h3>
+            <ShieldCheck className="h-5 w-5 text-amber-400" />
+            <h3 className="text-sm font-bold text-white/90">Gold Certification</h3>
           </div>
-          <p className="text-xs text-white/60">Correlação longitudinal entre o domínio da competência e a taxa de aprovação em provas reais (ENARE/ENAMED).</p>
+          <p className="text-[10px] text-white/60">Selo de robustez máxima. Exige COI, IPS e ECS ≥ 80, com amostra N ≥ 500 e estabilidade temporal comprovada.</p>
         </div>
       </div>
     </div>
