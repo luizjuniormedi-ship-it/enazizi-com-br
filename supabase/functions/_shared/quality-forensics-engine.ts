@@ -1,21 +1,18 @@
 
 /**
- * ENAZIZI — Question Quality Forensics Engine
- * Implements strict psychometric and quality auditing for questions.
+ * ENAZIZI — Question Quality Forensics Engine v2
+ * Implements strict psychometric and observed LEARNING IMPACT (QIS).
  */
 
 import { ForensicResult } from "./forensic-board-analyzer.ts";
 import { BancaProfile } from "./banca-profiles.ts";
+import { ImpactForensics } from "./learning-impact-forensics.ts";
 
 export interface QualityAuditResult {
   tier: "GOLD" | "ACCEPT" | "REVIEW" | "QUARANTINE";
+  qis_score: number;
   forensic: ForensicResult;
-  psychometric: {
-    discrimination_index: number;
-    high_success_rate: number;
-    low_success_rate: number;
-    status: string;
-  };
+  impact_metrics: any;
   technical: {
     medical_accuracy: "VERIFIED" | "SUSPECT" | "ERROR";
     distractor_fatigue: number;
@@ -29,53 +26,46 @@ export async function runForensicAudit(
   supabaseAdmin: any,
   psychometricData?: any
 ): Promise<QualityAuditResult> {
-  // 1. Structural & Fidelity Analysis
+  // 1. Observed Learning Impact (QIS)
+  const impactEngine = new ImpactForensics(supabaseAdmin);
+  const qis_score = await impactEngine.calculateQIS(question.id);
+
+  // 2. Structural & Fidelity Analysis
   const { analyzeQuestionForensic } = await import("./forensic-board-analyzer.ts");
   const forensic = await analyzeQuestionForensic(question, profile, supabaseAdmin);
 
-  // 2. Psychometric Analysis (Calculated if data exists)
-  const discrimination = psychometricData?.discrimination || 0;
-  const highRate = psychometricData?.highRate || 0.5;
-  const lowRate = psychometricData?.lowRate || 0.5;
-  
-  // Rule: Questão que alunos fracos e fortes acertam na mesma proporção deve ser revisada.
-  const diff = Math.abs(highRate - lowRate);
-  const psychometricStatus = diff < 0.1 ? "POOR_DISCRIMINATION" : "OK";
+  // 3. Board Drift Detection
+  const drift_score = await impactEngine.detectDrift(question.id, profile.label);
 
-  // 3. Distractor Fatigue
-  const options = question.options || [];
-  let distractorFatigue = 100;
+  // 4. Decision Pipeline (Impact-First)
+  let tier: QualityAuditResult['tier'] = "ACCEPT";
   
-  // Penalize for obvious distractors or length issues
-  const lengths = options.map((o: string) => o.length);
-  const maxLen = Math.max(...lengths);
-  const minLen = Math.min(...lengths);
-  if (maxLen > minLen * 3) distractorFatigue -= 30; // Length outlier
-
-  // 4. Decision Pipeline
-  let tier: QualityAuditResult['tier'] = "GOLD";
-  
-  if (question.metadata?.medical_error || forensic.fidelity_score < 40) {
+  // Rule: QIS < 50 or Technical Error -> QUARANTINE
+  if (question.metadata?.medical_error || qis_score < 50) {
     tier = "QUARANTINE";
-  } else if (psychometricStatus === "POOR_DISCRIMINATION" || forensic.fidelity_score < 70) {
+  } 
+  // Rule: QIS >= 85 + High Fidelity -> GOLD (Pending recalibration)
+  else if (qis_score >= 85 && forensic.fidelity_score >= 85 && drift_score < 20) {
+    tier = "GOLD";
+  }
+  // Rule: QIS < 70 -> REVIEW
+  else if (qis_score < 70) {
     tier = "REVIEW";
-  } else if (forensic.fidelity_score < 85) {
-    tier = "ACCEPT";
   }
 
   return {
     tier,
+    qis_score,
     forensic,
-    psychometric: {
-      discrimination_index: discrimination,
-      high_success_rate: highRate,
-      low_success_rate: lowRate,
-      status: psychometricStatus
+    impact_metrics: {
+      drift_score,
+      retention: qis_score > 70 ? "HIGH" : "OBSERVING"
     },
     technical: {
       medical_accuracy: tier === "QUARANTINE" ? "SUSPECT" : "VERIFIED",
-      distractor_fatigue: distractorFatigue,
+      distractor_fatigue: 85, // Placeholder
       standard_fidelity: forensic.fidelity_score
     }
   };
 }
+
