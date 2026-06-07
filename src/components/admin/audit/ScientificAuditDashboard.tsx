@@ -64,13 +64,13 @@ const MOCK_HISTORICAL_DATA = [
 ];
 
 const AUDIT_PHASES = [
-  { id: 'fidelity', name: 'Auditoria de Fidelidade', icon: Stethoscope, color: 'text-blue-500', meta: '95', current: '96.4' },
-  { id: 'les', name: 'Eficácia de Aprendizado (LES)', icon: FlaskConical, color: 'text-purple-600', meta: '85', current: '88.7' },
-  { id: 'yield', name: 'Rendimento de Aprendizado', icon: GraduationCap, color: 'text-emerald-500', meta: '80', current: '82.5' },
-  { id: 'transfer', name: 'Score de Transferência', icon: Target, color: 'text-orange-500', meta: '75', current: '79.2' },
-  { id: 'cohen', name: "Cohen's d", icon: Scale, color: 'text-pink-500', meta: '0.5', current: '0.74' },
-  { id: 'recovery', name: 'Meia-vida de Recuperação', icon: Activity, color: 'text-amber-500', meta: 'D7', current: 'D4.2' },
-  { id: 'safety', name: 'Auditoria de Segurança', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8' },
+  { id: 'fidelity', name: 'Auditoria de Fidelidade', icon: Stethoscope, color: 'text-blue-500', meta: '95', current: '96.4', description: 'Mede o quanto a simulação reflete a prática médica real e as diretrizes clínicas.' },
+  { id: 'les', name: 'Eficácia de Aprendizado (LES)', icon: FlaskConical, color: 'text-purple-600', meta: '85', current: '88.7', description: 'Learning Effectiveness Score: O ganho real de conhecimento medido pré e pós intervenção.' },
+  { id: 'yield', name: 'Rendimento de Aprendizado', icon: GraduationCap, color: 'text-emerald-500', meta: '80', current: '82.5', description: 'Eficiência da sessão de estudo: quantidade de conhecimento retido por minuto investido.' },
+  { id: 'transfer', name: 'Score de Transferência', icon: Target, color: 'text-orange-500', meta: '75', current: '79.2', description: 'Capacidade de aplicar o que foi aprendido no simulador em casos clínicos reais.' },
+  { id: 'cohen', name: "Cohen's d", icon: Scale, color: 'text-pink-500', meta: '0.5', current: '0.74', description: 'Métrica estatística que valida o tamanho do efeito da nossa intervenção pedagógica.' },
+  { id: 'recovery', name: 'Meia-vida de Recuperação', icon: Activity, color: 'text-amber-500', meta: 'D7', current: 'D4.2', description: 'Tempo médio para um usuário recuperar um conhecimento esquecido via loop de correção.' },
+  { id: 'safety', name: 'Auditoria de Segurança', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8', description: 'Garante que as métricas não estão infladas e são auditáveis para fins científicos.' },
 ];
 
 
