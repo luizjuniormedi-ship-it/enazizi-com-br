@@ -176,6 +176,7 @@ const ClinicalSimulation = () => {
   // ─── EXECUTION STATE (active session) ───
   const [vitals, setVitals] = useState<Vitals | null>(null);
   const [setting, setSetting] = useState("");
+  const [currentTopic, setCurrentTopic] = useState("");
   const [triageColor, setTriageColor] = useState("");
   const [patientStatus, setPatientStatus] = useState("estável");
   const [prevPatientStatus, setPrevPatientStatus] = useState("estável");
