@@ -259,7 +259,7 @@ const ClinicalSimulation = () => {
 
   const getClinicalState = useCallback(() => {
     if (phase !== "active") return {};
-    return { phase, specialty, difficulty, realisticMode, learnerMode, messages: messages.map(m => ({ ...m })), vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores };
+    return { phase, specialty, difficulty, realisticMode, learnerMode, messages: messages.map(m => ({ ...m })), vitals, setting, currentTopic, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores };
   }, [phase, specialty, difficulty, realisticMode, learnerMode, messages, vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores]);
 
   const detectABCDE = useCallback((text: string) => {
