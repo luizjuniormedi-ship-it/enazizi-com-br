@@ -26602,13 +26602,19 @@ export type Database = {
       }
       simulation_history: {
         Row: {
+          attribution_confidence: number | null
+          audit_flag: boolean | null
           audit_score: number | null
           audit_status: string | null
+          case_difficulty_score: number | null
+          ceh_logs: Json | null
           correct_diagnosis: string | null
           created_at: string
           differential_diagnosis: Json | null
           difficulty: string
+          dqi_inflation_penalty: number | null
           evaluation: Json | null
+          evidence_quality_score: number | null
           final_score: number
           grade: string
           id: string
@@ -26619,17 +26625,24 @@ export type Database = {
           strengths: Json | null
           student_got_diagnosis: boolean
           time_total_minutes: number
+          transfer_confidence: number | null
           user_id: string
           xp_earned: number
         }
         Insert: {
+          attribution_confidence?: number | null
+          audit_flag?: boolean | null
           audit_score?: number | null
           audit_status?: string | null
+          case_difficulty_score?: number | null
+          ceh_logs?: Json | null
           correct_diagnosis?: string | null
           created_at?: string
           differential_diagnosis?: Json | null
           difficulty?: string
+          dqi_inflation_penalty?: number | null
           evaluation?: Json | null
+          evidence_quality_score?: number | null
           final_score?: number
           grade?: string
           id?: string
@@ -26640,17 +26653,24 @@ export type Database = {
           strengths?: Json | null
           student_got_diagnosis?: boolean
           time_total_minutes?: number
+          transfer_confidence?: number | null
           user_id: string
           xp_earned?: number
         }
         Update: {
+          attribution_confidence?: number | null
+          audit_flag?: boolean | null
           audit_score?: number | null
           audit_status?: string | null
+          case_difficulty_score?: number | null
+          ceh_logs?: Json | null
           correct_diagnosis?: string | null
           created_at?: string
           differential_diagnosis?: Json | null
           difficulty?: string
+          dqi_inflation_penalty?: number | null
           evaluation?: Json | null
+          evidence_quality_score?: number | null
           final_score?: number
           grade?: string
           id?: string
@@ -26661,6 +26681,7 @@ export type Database = {
           strengths?: Json | null
           student_got_diagnosis?: boolean
           time_total_minutes?: number
+          transfer_confidence?: number | null
           user_id?: string
           xp_earned?: number
         }

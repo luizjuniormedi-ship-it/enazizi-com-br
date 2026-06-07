@@ -382,6 +382,77 @@ export default function ClinicalEvidenceCenter() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="bg-white/5 border-white/10 mt-6">
+        <CardHeader>
+          <CardTitle className="text-lg font-black uppercase tracking-tighter flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-primary" />
+            Clinical Evidence Audit
+          </CardTitle>
+          <CardDescription className="text-[10px] uppercase font-bold text-white/30">
+            Monitoramento de robustez e blindagem das evidências clínicas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-[10px] font-bold text-white/40 uppercase mb-2">DQI Inflation Rate</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-rose-400">{stats.inflationRate}%</span>
+                  <Badge className="bg-rose-500/10 text-rose-500 text-[8px] uppercase">Monitorado</Badge>
+                </div>
+                <p className="text-[8px] text-white/20 mt-2 uppercase font-bold italic">[DQI_INFLATION_DETECTED]</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-[10px] font-bold text-white/40 uppercase mb-2">Evidence Quality Score</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-emerald-400">{stats.evidenceQuality}</span>
+                  <Badge className="bg-emerald-500/10 text-emerald-400 text-[8px] uppercase">Elite</Badge>
+                </div>
+                <p className="text-[8px] text-white/20 mt-2 uppercase font-bold italic">[CLINICAL_EVIDENCE_QUALITY_HIGH]</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-[10px] font-bold text-white/40 uppercase mb-2">Transfer Confidence</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-blue-400">0.82</span>
+                  <Badge className="bg-blue-500/10 text-blue-400 text-[8px] uppercase">High</Badge>
+                </div>
+                <p className="text-[8px] text-white/20 mt-2 uppercase font-bold italic">[FAR_TRANSFER_CONFIDENCE_HIGH]</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-[10px] font-bold text-white/40 uppercase mb-2">Attribution Confidence</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-purple-400">{stats.attributionConfidence}</span>
+                  <Badge className="bg-purple-500/10 text-purple-400 text-[8px] uppercase">Stable</Badge>
+                </div>
+                <p className="text-[8px] text-white/20 mt-2 uppercase font-bold italic">[ATTRIBUTION_STABILITY_UPDATED]</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 border-dashed">
+                <p className="text-[10px] font-black text-white/40 uppercase mb-4">Governance Alerts</p>
+                <div className="space-y-2">
+                  {[
+                    '[CLINICAL_METRIC_INFLATION]',
+                    '[FAR_TRANSFER_UNSTABLE]',
+                    '[EVIDENCE_QUALITY_DEGRADED]'
+                  ].map((alert, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[8px] font-black text-rose-500/60 bg-rose-500/5 p-2 rounded border border-rose-500/10">
+                      <AlertCircle className="h-3 w-3" />
+                      {alert}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
