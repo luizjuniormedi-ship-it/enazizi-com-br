@@ -78,6 +78,7 @@ const TutorStabilizationDashboard = lazy(() => import("@/components/admin/cognit
 const CognitiveGovernanceDashboard = lazy(() => import("@/components/admin/cognitive-observatory/CognitiveGovernanceDashboard"));
 const GoldCuration = lazy(() => import("@/pages/admin/GoldCuration"));
 const ClassificationBackfill = lazy(() => import("@/pages/admin/ClassificationBackfill"));
+const CurriculumEvidenceDashboard = lazy(() => import("@/components/admin/CurriculumEvidenceDashboard").then(m => ({ default: m.CurriculumEvidenceDashboard })));
 
 
 
