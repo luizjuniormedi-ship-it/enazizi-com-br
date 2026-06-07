@@ -151,10 +151,38 @@ export const OutcomeScienceCenter: React.FC = () => {
 
       {/* Primary Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Forecast Accuracy" value="94.2%" delta="-0.8%" icon={Target} status="success" />
-        <MetricCard title="Readiness Correlation (R²)" value="0.88" delta="+0.03" icon={Activity} status="success" />
-        <MetricCard title="Tutor Effect Size (d)" value="0.92" delta="Large" icon={Cpu} status="success" />
-        <MetricCard title="Confidence Level" value="99.9%" delta="P < 0.001" icon={ShieldCheck} status="success" />
+        <MetricCard 
+          title="Forecast Accuracy" 
+          value="94.2%" 
+          delta="-0.8%" 
+          icon={Target} 
+          status="success" 
+          description="Acurácia da IA em prever o seu desempenho em provas reais baseada no seu histórico."
+        />
+        <MetricCard 
+          title="Readiness Correlation (R²)" 
+          value="0.88" 
+          delta="+0.03" 
+          icon={Activity} 
+          status="success" 
+          description="Correlação estatística entre o seu nível de prontidão na plataforma e notas em simulados."
+        />
+        <MetricCard 
+          title="Tutor Effect Size (d)" 
+          value="0.92" 
+          delta="Large" 
+          icon={Cpu} 
+          status="success" 
+          description="Medida do impacto direto do Tutor IA no seu ganho de conhecimento (Cohen's d)."
+        />
+        <MetricCard 
+          title="Confidence Level" 
+          value="99.9%" 
+          delta="P < 0.001" 
+          icon={ShieldCheck} 
+          status="success" 
+          description="Nível de confiança estatística de que os resultados observados não são obra do acaso."
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
