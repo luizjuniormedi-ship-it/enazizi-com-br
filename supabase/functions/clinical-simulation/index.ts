@@ -176,6 +176,12 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: corsHeaders });
+    console.error(`[HDA_ERROR] exception=${e.message}`);
+    return new Response(JSON.stringify({ 
+      success: false, 
+      message: "Não foi possível carregar a HDA.",
+      error: e.message 
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
+
