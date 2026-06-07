@@ -334,38 +334,38 @@ export const ScientificAuditDashboard: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Amostra Total</CardTitle>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Baseline Amostra</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-black">412</div>
-                <p className="text-[9px] text-emerald-500 uppercase mt-1">Meta: 500 (82.4%)</p>
+                <div className="text-3xl font-black">512</div>
+                <p className="text-[9px] text-emerald-500 uppercase mt-1">Theta TRI: 1.42 (Avg)</p>
               </CardContent>
             </Card>
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Grupo Controle</CardTitle>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Experimental Group</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-black">204</div>
-                <p className="text-[9px] text-white/30 uppercase mt-1">Usuários Ativos</p>
+                <div className="text-3xl font-black">256</div>
+                <p className="text-[9px] text-white/30 uppercase mt-1">Tutor + Hospital + FSRS</p>
               </CardContent>
             </Card>
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Grupo Experimental</CardTitle>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Control Group</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-black">208</div>
-                <p className="text-[9px] text-white/30 uppercase mt-1">Usuários Ativos</p>
+                <div className="text-3xl font-black">256</div>
+                <p className="text-[9px] text-white/30 uppercase mt-1">Traditional Study Only</p>
               </CardContent>
             </Card>
             <Card className="bg-white/5 border-white/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Dias Decorridos</CardTitle>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white/40">Attrition Bias</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-black">12/90</div>
-                <p className="text-[9px] text-white/30 uppercase mt-1">Sessão: D12</p>
+                <div className="text-3xl font-black">2.4%</div>
+                <p className="text-[9px] text-emerald-500 uppercase mt-1">Status: Controlled</p>
               </CardContent>
             </Card>
           </div>
