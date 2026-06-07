@@ -13334,7 +13334,7 @@ export type Database = {
           {
             foreignKeyName: "fccp_competency_audit_competency_id_fkey"
             columns: ["competency_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "fccp_curriculum_inventory"
             referencedColumns: ["competency_id"]
           },
