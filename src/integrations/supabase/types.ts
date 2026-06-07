@@ -31039,6 +31039,24 @@ export type Database = {
         }
         Relationships: []
       }
+      v_exact_topic_coverage_audit: {
+        Row: {
+          active_aliases: string[] | null
+          competency_id: string | null
+          failure_count: number | null
+          frequency_requested: number | null
+          max_simulado_capacity: string | null
+          questions_gold: number | null
+          questions_gold_verified: number | null
+          questions_gold_verified_empirical: number | null
+          questions_total: number | null
+          questions_unique: number | null
+          root_cause: string | null
+          success_count: number | null
+          user_impact_status: string | null
+        }
+        Relationships: []
+      }
       v_generator_telemetry_summary: {
         Row: {
           ab_bucket: string | null
