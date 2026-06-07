@@ -579,7 +579,8 @@ Deno.serve(async (req) => {
         });
     }
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
+    console.error("[admin-actions] error:", e);
+    return new Response(JSON.stringify({ error: "INTERNAL_ERROR", message: "Erro interno no servidor." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
