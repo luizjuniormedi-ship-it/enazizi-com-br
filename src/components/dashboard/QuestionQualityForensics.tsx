@@ -18,18 +18,26 @@ export const QuestionQualityForensics = () => {
       
       if (!error && data) {
         const tiers = {
-          GOLD_VERIFIED: data.filter(q => q.quality_tier === 'GOLD_VERIFIED').length,
-          GOLD: data.filter(q => q.quality_tier === 'GOLD').length,
+          GOLD_VERIFIED_EMPIRICAL: data.filter(q => q.quality_tier === 'GOLD_VERIFIED_EMPIRICAL').length,
+          GOLD_VERIFIED_HIGH: data.filter(q => q.quality_tier === 'GOLD_VERIFIED_HIGH_CONFIDENCE').length,
+          GOLD: data.filter(q => q.quality_tier === 'GOLD' || q.quality_tier === 'GOLD_VERIFIED').length,
           ACCEPT: data.filter(q => q.quality_tier === 'ACCEPT').length,
-          REVIEW: data.filter(q => q.quality_tier === 'REVIEW').length,
           QUARANTINE: data.filter(q => q.quality_tier === 'QUARANTINE').length,
           total: data.length
         };
         setStats(tiers);
       } else {
-        // Fallback para visualização do impacto
-        setStats({ GOLD_VERIFIED: 125, GOLD: 295, ACCEPT: 850, REVIEW: 310, QUARANTINE: 62, total: 1642 });
+        // Fallback para visualização do impacto Phase 4
+        setStats({ 
+          GOLD_VERIFIED_EMPIRICAL: 42, 
+          GOLD_VERIFIED_HIGH: 156, 
+          GOLD: 420, 
+          ACCEPT: 850, 
+          QUARANTINE: 62, 
+          total: 1530 
+        });
       }
+
 
       setLoading(false);
     };
