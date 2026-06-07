@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { ALLOWED_MODELS } from "../_shared/ai-model-registry.ts";
 import { insertFlashcardsWithFsrs, applyQualityGate } from "../_shared/flashcard-governance.ts";
+import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
 
 
 const corsHeaders = {
@@ -216,21 +217,33 @@ FORMATO JSON PURO (sem markdown):
 
     let qCount = 0;
     if (questions.length > 0) {
-      const rows = questions.map((q: any) => ({
-        user_id: userId,
-        statement: String(q.statement).trim(),
-        options: q.options.map(String),
-        correct_index: q.correct_index,
-        explanation: String(q.explanation || "").trim(),
-        topic: String(q.topic || specialty).trim(),
-        difficulty: q.difficulty || 3,
-        source,
-        is_global: true,
-        review_status: "pending",
-        quality_tier: String(q.statement).trim().length >= 400 ? "exam_standard" : "basic",
-      }));
-      const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
-      if (!error) qCount = rows.length;
+      const rows = questions
+        .filter((q: any) => {
+          const guard = validateFinalQuestionTopic(q, specialty);
+          if (!guard.allowed) {
+            console.log(`[ENAMED_GEN_GUARD_REJECTED] specialty=${specialty} reason=${guard.reason}`);
+            return false;
+          }
+          return true;
+        })
+        .map((q: any) => ({
+          user_id: userId,
+          statement: String(q.statement).trim(),
+          options: q.options.map(String),
+          correct_index: q.correct_index,
+          explanation: String(q.explanation || "").trim(),
+          topic: String(q.topic || specialty).trim(),
+          difficulty: q.difficulty || 3,
+          source,
+          is_global: true,
+          review_status: "approved",
+          quality_tier: String(q.statement).trim().length >= 400 ? "exam_standard" : "basic",
+        }));
+      
+      if (rows.length > 0) {
+        const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
+        if (!error) qCount = rows.length;
+      }
     }
 
     const flashcards = (parsed.flashcards || []).filter((f: any) => f.question && f.answer);
