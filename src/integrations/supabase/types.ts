@@ -13394,6 +13394,72 @@ export type Database = {
           },
         ]
       }
+      fccp_content_recovery_audit: {
+        Row: {
+          archived_recoverable: number | null
+          classification: string | null
+          id: string
+          last_audit_at: string | null
+          legacy_recoverable: number | null
+          operational_deficit: number | null
+          orphans_recoverable: number | null
+          quarantined_recoverable: number | null
+          rps_score: number | null
+          topic_id: string | null
+          topic_name: string | null
+          total_recoverable: number | null
+          unclassified_recoverable: number | null
+          visible_questions: number | null
+        }
+        Insert: {
+          archived_recoverable?: number | null
+          classification?: string | null
+          id?: string
+          last_audit_at?: string | null
+          legacy_recoverable?: number | null
+          operational_deficit?: number | null
+          orphans_recoverable?: number | null
+          quarantined_recoverable?: number | null
+          rps_score?: number | null
+          topic_id?: string | null
+          topic_name?: string | null
+          total_recoverable?: number | null
+          unclassified_recoverable?: number | null
+          visible_questions?: number | null
+        }
+        Update: {
+          archived_recoverable?: number | null
+          classification?: string | null
+          id?: string
+          last_audit_at?: string | null
+          legacy_recoverable?: number | null
+          operational_deficit?: number | null
+          orphans_recoverable?: number | null
+          quarantined_recoverable?: number | null
+          rps_score?: number | null
+          topic_id?: string | null
+          topic_name?: string | null
+          total_recoverable?: number | null
+          unclassified_recoverable?: number | null
+          visible_questions?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fccp_content_recovery_audit_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: true
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fccp_content_recovery_audit_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: true
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+        ]
+      }
       fccp_coverage_gap_registry: {
         Row: {
           competency_id: string | null
@@ -32443,6 +32509,33 @@ export type Database = {
         }
         Relationships: []
       }
+      v_fccp_recovery_report: {
+        Row: {
+          Competência: string | null
+          Déficit: number | null
+          Recuperáveis: number | null
+          "RPS %": number | null
+          Status: string | null
+          Visíveis: number | null
+        }
+        Insert: {
+          Competência?: string | null
+          Déficit?: number | null
+          Recuperáveis?: number | null
+          "RPS %"?: number | null
+          Status?: string | null
+          Visíveis?: number | null
+        }
+        Update: {
+          Competência?: string | null
+          Déficit?: number | null
+          Recuperáveis?: number | null
+          "RPS %"?: number | null
+          Status?: string | null
+          Visíveis?: number | null
+        }
+        Relationships: []
+      }
       v_fccp_specialty_certification: {
         Row: {
           certification_status: string | null
@@ -33281,6 +33374,10 @@ export type Database = {
         Returns: string
       }
       execute_data_retention: { Args: never; Returns: undefined }
+      fccp_refresh_recovery_audit: {
+        Args: { p_topic_id: string }
+        Returns: undefined
+      }
       fn_cvrp_reconstruct_links: {
         Args: never
         Returns: {
