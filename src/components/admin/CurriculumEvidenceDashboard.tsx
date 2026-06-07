@@ -92,6 +92,18 @@ export const CurriculumEvidenceDashboard = () => {
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
+              <FlaskConical className="h-3 w-3" /> ECS MÉDIO (CONFIDENCE)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-pink-400">{avgEcs.toFixed(1)}</div>
+            <p className="text-[10px] text-white/30">Média de Confiança Estatística</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
               <TrendingUp className="h-3 w-3" /> COI MÉDIO (OUTCOME)
             </CardTitle>
           </CardHeader>
@@ -104,36 +116,26 @@ export const CurriculumEvidenceDashboard = () => {
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
-              <Zap className="h-3 w-3" /> IPS MÉDIO (PRIORITY)
+              <Scale className="h-3 w-3" /> N TOTAL (SAMPLES)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-400">{avgIps.toFixed(1)}</div>
-            <p className="text-[10px] text-white/30">Média de Prioridade de Impacto</p>
+            <div className="text-2xl font-bold text-emerald-400">
+              {topics.reduce((acc, t) => acc + (t.sample_size || 0), 0).toLocaleString()}
+            </div>
+            <p className="text-[10px] text-white/30">Amostragem Curricular Total</p>
           </CardContent>
         </Card>
 
         <Card className="bg-white/5 border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
-              <Brain className="h-3 w-3" /> LEARNING YIELD
+              <Award className="h-3 w-3" /> GOLD CERTIFIED
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-400">74.2%</div>
-            <p className="text-[10px] text-white/30">Ganho de Aprendizagem Médio</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-white/50 flex items-center gap-2">
-              <Award className="h-3 w-3" /> GOLD VERIFIED
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">0</div>
-            <p className="text-[10px] text-white/30">Tópicos com COI & IPS ≥ 80</p>
+            <div className="text-2xl font-bold text-amber-400">{goldVerifiedCount}</div>
+            <p className="text-[10px] text-white/30">ECS, COI, IPS ≥ 80 & N ≥ 500</p>
           </CardContent>
         </Card>
       </div>
