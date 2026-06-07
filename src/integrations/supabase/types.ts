@@ -9773,6 +9773,108 @@ export type Database = {
           },
         ]
       }
+      curriculum_audit_logs: {
+        Row: {
+          batch_id: string | null
+          comment: string | null
+          comparison_data: Json | null
+          created_at: string | null
+          finding_type: string | null
+          id: string
+          inspector_id: string | null
+          staging_id: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          comment?: string | null
+          comparison_data?: Json | null
+          created_at?: string | null
+          finding_type?: string | null
+          id?: string
+          inspector_id?: string | null
+          staging_id?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          comment?: string | null
+          comparison_data?: Json | null
+          created_at?: string | null
+          finding_type?: string | null
+          id?: string
+          inspector_id?: string | null
+          staging_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_audit_logs_staging_id_fkey"
+            columns: ["staging_id"]
+            isOneToOne: false
+            referencedRelation: "question_classification_staging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curriculum_golden_set: {
+        Row: {
+          competency_id: string | null
+          created_at: string | null
+          curriculum_competency: string | null
+          curriculum_theme: string | null
+          id: string
+          question_id: string | null
+          specialty: string
+          subtopic: string | null
+          topic: string
+          validated_by: string | null
+        }
+        Insert: {
+          competency_id?: string | null
+          created_at?: string | null
+          curriculum_competency?: string | null
+          curriculum_theme?: string | null
+          id?: string
+          question_id?: string | null
+          specialty: string
+          subtopic?: string | null
+          topic: string
+          validated_by?: string | null
+        }
+        Update: {
+          competency_id?: string | null
+          created_at?: string | null
+          curriculum_competency?: string | null
+          curriculum_theme?: string | null
+          id?: string
+          question_id?: string | null
+          specialty?: string
+          subtopic?: string | null
+          topic?: string
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_golden_set_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_golden_set_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_golden_set_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       curriculum_matrix: {
         Row: {
           ativo: boolean
@@ -21899,8 +22001,10 @@ export type Database = {
       }
       question_classification_staging: {
         Row: {
+          audit_status: string | null
           batch_id: string | null
           batch_index: number | null
+          classification_b: Json | null
           classification_source: string | null
           classification_status: string | null
           competency_id: string | null
@@ -21908,22 +22012,29 @@ export type Database = {
           cost: number | null
           created_at: string | null
           cross_validated: boolean | null
+          duplicate_cluster_id: string | null
           embedding: string | null
           id: string
+          is_exact_duplicate: boolean | null
           model_used: string | null
           predicted_area: string | null
           predicted_competency: string | null
           predicted_subtheme: string | null
           predicted_theme: string | null
           prompt_version: string | null
+          quality_score: number | null
           question_id: string | null
           reasoning_summary: string | null
+          secondary_competency_ids: string[] | null
+          similarity_score: number | null
           updated_at: string | null
           validation_divergence: string | null
         }
         Insert: {
+          audit_status?: string | null
           batch_id?: string | null
           batch_index?: number | null
+          classification_b?: Json | null
           classification_source?: string | null
           classification_status?: string | null
           competency_id?: string | null
@@ -21931,22 +22042,29 @@ export type Database = {
           cost?: number | null
           created_at?: string | null
           cross_validated?: boolean | null
+          duplicate_cluster_id?: string | null
           embedding?: string | null
           id?: string
+          is_exact_duplicate?: boolean | null
           model_used?: string | null
           predicted_area?: string | null
           predicted_competency?: string | null
           predicted_subtheme?: string | null
           predicted_theme?: string | null
           prompt_version?: string | null
+          quality_score?: number | null
           question_id?: string | null
           reasoning_summary?: string | null
+          secondary_competency_ids?: string[] | null
+          similarity_score?: number | null
           updated_at?: string | null
           validation_divergence?: string | null
         }
         Update: {
+          audit_status?: string | null
           batch_id?: string | null
           batch_index?: number | null
+          classification_b?: Json | null
           classification_source?: string | null
           classification_status?: string | null
           competency_id?: string | null
@@ -21954,16 +22072,21 @@ export type Database = {
           cost?: number | null
           created_at?: string | null
           cross_validated?: boolean | null
+          duplicate_cluster_id?: string | null
           embedding?: string | null
           id?: string
+          is_exact_duplicate?: boolean | null
           model_used?: string | null
           predicted_area?: string | null
           predicted_competency?: string | null
           predicted_subtheme?: string | null
           predicted_theme?: string | null
           prompt_version?: string | null
+          quality_score?: number | null
           question_id?: string | null
           reasoning_summary?: string | null
+          secondary_competency_ids?: string[] | null
+          similarity_score?: number | null
           updated_at?: string | null
           validation_divergence?: string | null
         }
