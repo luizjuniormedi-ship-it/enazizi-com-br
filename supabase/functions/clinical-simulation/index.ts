@@ -73,8 +73,9 @@ serve(async (req) => {
 
   try {
     const traceId = crypto.randomUUID();
-    const { user, ok, response } = await requireAuth(req);
-    if (!ok) return response;
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+    const userId = auth.userId;
 
     const body = await req.json();
     const { 
@@ -87,11 +88,11 @@ serve(async (req) => {
       current_patient_id
     } = body;
 
-    console.log(`[HDA_REQUEST] traceId=${traceId} action=${action} userId=${user.id}`);
+    console.log(`[HDA_REQUEST] traceId=${traceId} action=${action} userId=${userId}`);
 
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `Contexto Global: ${active_patients?.length || 1} pacientes ativos. Ação Atual: ${action}. Mensagem: ${message || 'Iniciando'}. Paciente ID: ${current_patient_id}` }
+      { role: "user", content: `Contexto Global: ${active_patients?.length || 1} pacientes ativos. Ação Atual: ${action}. Mensagem: ${message || 'Iniciando'}. Paciente ID: ${current_patient_id}. Especialidade solicitada: ${specialty || 'Geral'}.` }
     ];
 
     if (conversation_history) {
@@ -99,7 +100,7 @@ serve(async (req) => {
     }
 
     const aiResp = await aiFetch({
-      model: "google/gemini-2.0-flash-001",
+      model: "google/gemini-2.5-flash",
       messages,
       timeoutMs: 60000,
     });
@@ -117,7 +118,7 @@ serve(async (req) => {
 
     // P4: Deterministic Deterioration Overlay
     // The engine overrides the LLM's vitals based on physiological rules
-    if (parsed.vitals && specialty) {
+    if (parsed.vitals) {
       const currentPatientState: PatientState = {
         heartRate: parseInt(String(parsed.vitals.FC || 80)),
         sysBP: parseInt(String(parsed.vitals.PA?.split('/')[0] || 120)),
@@ -128,7 +129,7 @@ serve(async (req) => {
       };
 
       const deterministicState = calculatePhysiologicalResponse(
-        specialty as ClinicalCondition,
+        (specialty || 'Geral') as ClinicalCondition,
         currentPatientState,
         parsed.maneuvers_performed || []
       );
@@ -145,7 +146,7 @@ serve(async (req) => {
 
     if (parsed.prescription_validation && parsed.prescription_validation.status !== 'correct') {
       await supabaseService.from('hospital_errors_v2').insert({
-        user_id: user.id,
+        user_id: userId,
         theme: specialty || 'Prescrição',
         error_type: 'prescription',
         severity: parsed.prescription_validation.severity || 'medium',
@@ -156,7 +157,7 @@ serve(async (req) => {
 
     if (parsed.scale_audit?.missed?.length > 0) {
       await supabaseService.from('hospital_errors_v2').insert({
-        user_id: user.id,
+        user_id: userId,
         theme: specialty || 'Protocolo',
         error_type: 'scale',
         severity: 'medium',
@@ -167,7 +168,7 @@ serve(async (req) => {
 
     if (action === "finish") {
       await updatePerformanceMetrics(supabaseService, {
-        userId: user.id,
+        userId: userId,
         specialty: specialty || "Geral",
         topic: String(parsed.hidden_diagnosis || "Simulação V5"),
         isCorrect: (Number(parsed.score_delta) || 0) >= 0,

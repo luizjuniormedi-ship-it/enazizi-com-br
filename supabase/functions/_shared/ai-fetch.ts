@@ -51,6 +51,15 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: numbe
   }
 }
 
+/**
+ * Limpa e sanitiza o conteúdo retornado pela IA.
+ */
+export function sanitizeAiContent(content: string): string {
+  if (!content) return "";
+  // Remove markdown code blocks
+  return content.replace(/```(?:json|html|markdown|text)?\s?/gi, "").replace(/```/g, "").trim();
+}
+
 export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const source = (Deno.env.get("FUNCTION_NAME") || "unknown-edge-function");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
