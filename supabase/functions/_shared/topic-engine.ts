@@ -14,6 +14,7 @@ export class TopicEngine {
   private supabase: SupabaseClient;
   private aliases: Map<string, string[]> = new Map();
   private siblingBlocks: Map<string, string[]> = new Map();
+  private competencies: Map<string, string> = new Map(); // subtopic -> canonical_topic
 
   constructor(supabase: SupabaseClient) {
     this.supabase = supabase;
@@ -39,6 +40,9 @@ export class TopicEngine {
         const list = this.aliases.get(item.canonical_topic) || [];
         list.push(item.alias.toLowerCase());
         this.aliases.set(item.canonical_topic, list);
+        
+        // Map subtopics (aliases) back to canonical for competency matching
+        this.competencies.set(item.alias.toLowerCase(), item.canonical_topic);
       }
     }
   }
@@ -55,46 +59,60 @@ export class TopicEngine {
   }
 
   calculateScore(question: any, requestedTopics: string[], requestedSubtopics: string[]): TopicMatchResult {
-    const exactTopicMode = requestedSubtopics.length > 0 || requestedTopics.some(t => this.isSpecificTopic(t));
+    // Exact mode logic
+    const hasSubtopics = requestedSubtopics.length > 0;
+    const hasSpecificTopic = requestedTopics.some(t => this.isSpecificTopic(t));
+    const exactTopicMode = hasSubtopics || hasSpecificTopic;
     
     if (exactTopicMode) {
-      console.log(`[SIM_EXACT_TOPIC_MODE] active=true`);
+      console.log(`[SIM_EXACT_TOPIC_MODE] active=true | reason=${hasSubtopics ? 'has_subtopics' : 'specific_topic'}`);
     }
 
     const qTopic = (question.topic || "").toLowerCase();
     const qSubtopic = (question.subtopic || "").toLowerCase();
     const qTheme = (question.curriculum_theme || "").toLowerCase();
     const qSubtheme = (question.curriculum_subtheme || "").toLowerCase();
+    const qCompetency = (question.curriculum_competency || "").toLowerCase();
 
     let maxScore = 0;
     let matchType: TopicMatchResult['matchType'] = "invalid";
     let bestCanonical: string | null = null;
 
-    const requestedTerms = [...requestedSubtopics, ...requestedTopics];
+    // 1. Competency/Subtopic Match (Highest Priority: 100 points)
+    if (hasSubtopics) {
+      for (const sub of requestedSubtopics) {
+        const subLower = sub.toLowerCase();
+        // Exact match in curriculum_competency or subtopic fields
+        const isExactMatch = [qCompetency, qSubtopic, qSubtheme].some(val => val === subLower);
+        
+        if (isExactMatch) {
+          console.log(`[SIM_TOPIC_MATCH_SCORE] question_id=${question.id} score=100 type=exact (competency)`);
+          return { score: 100, canonicalTopic: this.competencies.get(subLower) || null, matchType: "exact", exactTopicMode };
+        }
+      }
+    }
 
+    // 2. Canonical/Alias Match (90-100 points)
+    const requestedTerms = [...requestedSubtopics, ...requestedTopics];
     for (const term of requestedTerms) {
       const canonical = this.identifyCanonical(term);
       const termLower = term.toLowerCase();
 
-      // check exact or alias
       if (canonical) {
         const aliases = this.aliases.get(canonical) || [];
-        const isMatch = [qTopic, qSubtopic, qTheme, qSubtheme].some(val => 
-          val === termLower || 
-          val === canonical.toLowerCase() ||
-          aliases.includes(val)
-        );
+        const isExact = [qTopic, qSubtopic, qTheme, qSubtheme].some(val => val === termLower || val === canonical.toLowerCase());
+        const isAlias = !isExact && aliases.includes(qTopic) || aliases.includes(qSubtopic) || aliases.includes(qTheme) || aliases.includes(qSubtheme);
 
-        if (isMatch) {
-          const score = (qTopic === termLower || qSubtopic === termLower) ? 100 : 90;
+        if (isExact || isAlias) {
+          const score = isExact ? 100 : 90;
           if (score > maxScore) {
             maxScore = score;
-            matchType = score === 100 ? "exact" : "alias";
+            matchType = isExact ? "exact" : "alias";
             bestCanonical = canonical;
           }
         }
 
-        // Sibling blocking
+        // 3. Sibling Topic Blocker (CRITICAL)
         const blocked = this.siblingBlocks.get(canonical) || [];
         const isSibling = blocked.some(b => 
           [qTopic, qSubtopic, qTheme, qSubtheme].some(val => val.includes(b.toLowerCase()))
@@ -105,16 +123,18 @@ export class TopicEngine {
           return { score: 0, canonicalTopic: canonical, matchType: "invalid", exactTopicMode };
         }
       } else {
-        // Fallback score for non-canonical terms
+        // Fallback for non-canonical terms (e.g., broad categories)
         const isMatch = [qTopic, qSubtopic, qTheme, qSubtheme].some(val => val.includes(termLower));
         if (isMatch) {
-          maxScore = 70;
-          matchType = "parent";
+          if (70 > maxScore) {
+            maxScore = 70;
+            matchType = "parent";
+          }
         }
       }
     }
 
-    // Block parent fallback if exactTopicMode and score < 90
+    // 4. Parent Fallback Blocker (CRITICAL)
     if (exactTopicMode && maxScore < 90 && maxScore > 0) {
       console.log(`[SIM_PARENT_FALLBACK_BLOCKED] question_id=${question.id} score=${maxScore}`);
       maxScore = 0;
