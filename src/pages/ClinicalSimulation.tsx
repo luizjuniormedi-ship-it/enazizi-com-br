@@ -176,6 +176,7 @@ const ClinicalSimulation = () => {
   // ─── EXECUTION STATE (active session) ───
   const [vitals, setVitals] = useState<Vitals | null>(null);
   const [setting, setSetting] = useState("");
+  const [currentTopic, setCurrentTopic] = useState("");
   const [triageColor, setTriageColor] = useState("");
   const [patientStatus, setPatientStatus] = useState("estável");
   const [prevPatientStatus, setPrevPatientStatus] = useState("estável");
@@ -258,7 +259,7 @@ const ClinicalSimulation = () => {
 
   const getClinicalState = useCallback(() => {
     if (phase !== "active") return {};
-    return { phase, specialty, difficulty, realisticMode, learnerMode, messages: messages.map(m => ({ ...m })), vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores };
+    return { phase, specialty, difficulty, realisticMode, learnerMode, messages: messages.map(m => ({ ...m })), vitals, setting, currentTopic, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores };
   }, [phase, specialty, difficulty, realisticMode, learnerMode, messages, vitals, setting, triageColor, patientStatus, score, timeElapsed, conversationHistory, actionTimeline, examResults, vitalsSnapshots, countdown, abcdeChecklist, medicalRecord, categoryScores]);
 
   const detectABCDE = useCallback((text: string) => {
@@ -311,6 +312,7 @@ const ClinicalSimulation = () => {
     if (data.messages) setMessages(data.messages);
     if (data.vitals) setVitals(data.vitals);
     if (data.setting) setSetting(data.setting);
+    if (data.currentTopic) setCurrentTopic(data.currentTopic);
     if (data.triageColor) setTriageColor(data.triageColor);
     if (data.patientStatus) { setPatientStatus(data.patientStatus); setPrevPatientStatus(data.patientStatus); }
     if (typeof data.score === "number") { setScore(data.score); setPrevScore(data.score); }
@@ -568,6 +570,7 @@ const ClinicalSimulation = () => {
 
       setVitals(res.vitals);
       setSetting(res.setting || "Pronto-Socorro");
+      setCurrentTopic(res.topic || "");
       setTriageColor(res.triage_color || "amarelo");
       setPatientStatus("estável"); setPrevPatientStatus("estável");
       setScore(50); setPrevScore(50); setTimeElapsed(0);
@@ -1139,6 +1142,7 @@ const ClinicalSimulation = () => {
           <div className="shrink-0 flex items-stretch bg-white border-b border-border/50">
             <div className="flex-1 min-w-0 flex items-center">
               <ShiftHeader
+                topic={currentTopic}
                 patientStatus={patientStatus}
                 statusAlert={statusAlert}
                 countdown={countdown}
