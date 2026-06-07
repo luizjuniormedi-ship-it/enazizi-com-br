@@ -279,6 +279,10 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Zap className="w-5 h-5 text-amber-500" />
               Score de Atribuição de Funcionalidade
+              <Tooltip>
+                <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Quanto cada recurso da plataforma contribui para o seu ganho de desempenho total.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
             <CardDescription>Impacto de cada ferramenta na aprovação</CardDescription>
           </CardHeader>
