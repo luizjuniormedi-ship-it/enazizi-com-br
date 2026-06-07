@@ -10075,6 +10075,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "curriculum_golden_set_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "v_exact_topic_coverage_audit"
+            referencedColumns: ["registry_id"]
+          },
+          {
             foreignKeyName: "curriculum_golden_set_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: true
@@ -31042,17 +31049,16 @@ export type Database = {
       v_exact_topic_coverage_audit: {
         Row: {
           active_aliases: string[] | null
-          competency_id: string | null
+          competency_name: string | null
           failure_count: number | null
           frequency_requested: number | null
           max_simulado_capacity: string | null
           questions_gold: number | null
           questions_gold_verified: number | null
-          questions_gold_verified_empirical: number | null
           questions_total: number | null
           questions_unique: number | null
+          registry_id: string | null
           root_cause: string | null
-          success_count: number | null
           user_impact_status: string | null
         }
         Relationships: []
