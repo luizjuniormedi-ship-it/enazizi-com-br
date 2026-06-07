@@ -37,7 +37,7 @@ const STATUS_CONFIG: Record<string, { color: string; pulse: boolean }> = {
 };
 
 export default function ShiftHeader({
-  patientStatus, statusAlert, countdown, initialCountdown, timerExpired,
+  topic, patientStatus, statusAlert, countdown, initialCountdown, timerExpired,
   score, scoreFlash, triageColor, setting, inactivityWarning,
   abcdeChecklist,
   onToggleMultiView, onToggleStressTest, showMultiView, showStressTest
