@@ -364,6 +364,10 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2 text-sm">
               <Brain className="w-4 h-4 text-primary" />
               Ciência de Impacto do Tutor
+              <Tooltip>
+                <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>O diferencial de desempenho conquistado através das orientações personalizadas da IA.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
