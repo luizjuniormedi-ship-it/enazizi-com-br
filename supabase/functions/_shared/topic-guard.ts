@@ -25,28 +25,27 @@ export function validateFinalQuestionTopic(
   const qSubtheme = (question.curriculum_subtheme || "").toLowerCase();
   const qCompetency = (question.curriculum_competency || "").toLowerCase();
   
-  const reqTopicLower = requestedTopic.toLowerCase();
-  const reqCompLower = (requestedCompetency || "").toLowerCase();
+  const reqTopicLower = (requestedTopic || "").trim().toLowerCase();
+  const reqCompLower = (requestedCompetency || "").trim().toLowerCase();
 
   const matchedFields: string[] = [];
   let score = 0;
 
   // 1. Exact Competency Match (Priority 1)
-  if (reqCompLower && [qCompetency, qSubtopic, qSubtheme].some(val => val === reqCompLower)) {
+  if (reqCompLower && reqCompLower.length > 0 && [qCompetency, qSubtopic, qSubtheme].some(val => val === reqCompLower)) {
     matchedFields.push("curriculum_competency");
     score = 100;
   }
 
   // 2. Exact Topic/Theme Match (Priority 2)
-  if (score < 100) {
+  if (score < 100 && reqTopicLower.length > 0) {
     if ([qTopic, qTheme].some(val => val === reqTopicLower)) {
       matchedFields.push("topic");
       // Se houver uma competência solicitada e NÃO batemos nela, o score do tópico pai deve ser baixo
-      // para evitar "Parent Fallback" (ex: pedir IAM e vir Cardiologia genérica)
-      score = reqCompLower ? 70 : 100;
+      score = (reqCompLower && reqCompLower.length > 0) ? 70 : 100;
     } else if ([qSubtopic, qSubtheme].some(val => val === reqTopicLower)) {
       matchedFields.push("subtopic");
-      score = reqCompLower ? 60 : 95;
+      score = (reqCompLower && reqCompLower.length > 0) ? 60 : 95;
     }
   }
 
