@@ -158,7 +158,13 @@ export const LearningScienceCenter: React.FC = () => {
                     <span className="text-[10px] ml-1 opacity-70">pts/mês</span>
                   </div>
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <span className="text-[10px] uppercase text-muted-foreground block mb-1">Score de Transferência</span>
+                    <span className="text-[10px] uppercase text-muted-foreground flex items-center gap-1 mb-1">
+                      Score de Transferência
+                      <Tooltip>
+                        <TooltipTrigger><Info className="w-2 h-2" /></TooltipTrigger>
+                        <TooltipContent><p>Capacidade de aplicar o conhecimento teórico em cenários clínicos reais.</p></TooltipContent>
+                      </Tooltip>
+                    </span>
                     <span className="text-xl font-bold">{snapshot.transferScore}%</span>
                     <span className="text-[10px] ml-1 opacity-70">fidelidade</span>
                   </div>
