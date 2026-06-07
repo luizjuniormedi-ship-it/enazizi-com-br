@@ -19559,6 +19559,102 @@ export type Database = {
           },
         ]
       }
+      pedagogical_baseline_snapshots: {
+        Row: {
+          competencies_deficit: number | null
+          competencies_mastered: number | null
+          id: string
+          initial_accuracy: number | null
+          initial_theta: number | null
+          recorded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          competencies_deficit?: number | null
+          competencies_mastered?: number | null
+          id?: string
+          initial_accuracy?: number | null
+          initial_theta?: number | null
+          recorded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          competencies_deficit?: number | null
+          competencies_mastered?: number | null
+          id?: string
+          initial_accuracy?: number | null
+          initial_theta?: number | null
+          recorded_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pedagogical_certification_results: {
+        Row: {
+          audit_date: string | null
+          cohens_d: number | null
+          id: string
+          learning_yield: number | null
+          les_score: number
+          raw_metrics: Json | null
+          retention_control: number | null
+          retention_experimental: number | null
+          transfer_control: number | null
+          transfer_experimental: number | null
+          wave_id: number | null
+        }
+        Insert: {
+          audit_date?: string | null
+          cohens_d?: number | null
+          id?: string
+          learning_yield?: number | null
+          les_score: number
+          raw_metrics?: Json | null
+          retention_control?: number | null
+          retention_experimental?: number | null
+          transfer_control?: number | null
+          transfer_experimental?: number | null
+          wave_id?: number | null
+        }
+        Update: {
+          audit_date?: string | null
+          cohens_d?: number | null
+          id?: string
+          learning_yield?: number | null
+          les_score?: number
+          raw_metrics?: Json | null
+          retention_control?: number | null
+          retention_experimental?: number | null
+          transfer_control?: number | null
+          transfer_experimental?: number | null
+          wave_id?: number | null
+        }
+        Relationships: []
+      }
+      pedagogical_cohorts: {
+        Row: {
+          cohort_type: string
+          id: string
+          is_active: boolean | null
+          joined_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cohort_type: string
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cohort_type?: string
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pedagogical_event_versions: {
         Row: {
           cognitive_state_after: Json | null
@@ -19808,6 +19904,42 @@ export type Database = {
           retention_score?: number | null
           topic_id?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      pedagogical_learning_events: {
+        Row: {
+          competency_id: string | null
+          event_type: string
+          feature_used: string | null
+          id: string
+          metadata: Json | null
+          outcome: string | null
+          question_id: string | null
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          competency_id?: string | null
+          event_type: string
+          feature_used?: string | null
+          id?: string
+          metadata?: Json | null
+          outcome?: string | null
+          question_id?: string | null
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          competency_id?: string | null
+          event_type?: string
+          feature_used?: string | null
+          id?: string
+          metadata?: Json | null
+          outcome?: string | null
+          question_id?: string | null
+          timestamp?: string | null
+          user_id?: string
         }
         Relationships: []
       }

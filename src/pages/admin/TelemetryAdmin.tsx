@@ -14,6 +14,7 @@ import {
   Smartphone, MessageSquare, Activity, Target, Brain, HeartPulse,
 } from "lucide-react";
 import { TelemetryHealthCheck } from "./TelemetryHealthCheck";
+import { ScientificAuditDashboard } from "@/components/admin/audit/ScientificAuditDashboard";
 import { toast } from "sonner";
 
 type Severity = "low" | "medium" | "high" | "critical";
@@ -233,8 +234,9 @@ const TelemetryAdmin = () => {
       </Card>
 
       {/* Tabs principais */}
-      <Tabs defaultValue="funnel" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-7">
+      <Tabs defaultValue="lec" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-8">
+          <TabsTrigger value="lec"><Activity className="h-4 w-4 mr-1" /> LEC Certification</TabsTrigger>
           <TabsTrigger value="health"><HeartPulse className="h-4 w-4 mr-1" /> Saúde</TabsTrigger>
           <TabsTrigger value="optimization"><TrendingUp className="h-4 w-4 mr-1" /> Otimização</TabsTrigger>
           <TabsTrigger value="funnel"><Target className="h-4 w-4 mr-1" /> Funil</TabsTrigger>
@@ -243,6 +245,10 @@ const TelemetryAdmin = () => {
           <TabsTrigger value="heatmap"><Activity className="h-4 w-4 mr-1" /> Heatmap</TabsTrigger>
           <TabsTrigger value="recent"><MessageSquare className="h-4 w-4 mr-1" /> Eventos</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="lec" className="mt-4">
+          <ScientificAuditDashboard />
+        </TabsContent>
 
         <TabsContent value="health" className="mt-4">
           <TelemetryHealthCheck />
