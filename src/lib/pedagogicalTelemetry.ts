@@ -147,7 +147,10 @@ export type TelemetryEventName =
   | 'ls_scientific_report_generated'
   | 'ls_institutional_dashboard_refreshed'
   | 'ls_causality_confidence_updated'
-  | 'ls_investor_pack_generated';
+  | 'ls_investor_pack_generated'
+  | 'ceh_metric_audit_failed'
+  | 'ceh_inflation_detected'
+  | 'ceh_evidence_quality_updated';
 
 
 

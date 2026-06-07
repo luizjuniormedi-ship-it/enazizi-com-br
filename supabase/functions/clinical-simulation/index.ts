@@ -6,6 +6,25 @@ import { requireAuth } from "../_shared/require-auth.ts";
 import { updatePerformanceMetrics } from "../_shared/performance-engine.ts";
 import { calculatePhysiologicalResponse, PatientState, ClinicalCondition } from "../_shared/clinical-deterministic-engine.ts";
 
+// CEH (Clinical Evidence Hardening) Definitions
+const CASE_DIFFICULTY_MAP: Record<string, number> = {
+  "IAM": 0.8,
+  "Pneumonia": 0.9,
+  "CAD": 1.1,
+  "Sepse": 1.4,
+  "Choque Séptico": 1.6,
+  "Politrauma": 1.8,
+  "PCR": 2.0,
+};
+
+const calculateDQIInflation = (examCount: number, maneuverCount: number): number => {
+  let penalty = 0;
+  if (examCount > 10) penalty += (examCount - 10) * 2;
+  if (maneuverCount > 15) penalty += (maneuverCount - 15) * 1;
+  return Math.min(penalty, 40);
+};
+
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -167,11 +186,20 @@ serve(async (req) => {
     }
 
     if (action === "finish") {
+      const diagnosis = String(parsed.hidden_diagnosis || "");
+      const difficultyScore = CASE_DIFFICULTY_MAP[Object.keys(CASE_DIFFICULTY_MAP).find(k => diagnosis.includes(k)) || ""] || 1.0;
+      const inflationPenalty = calculateDQIInflation(parsed.exam_results?.length || 0, parsed.maneuvers_performed?.length || 0);
+      
+      console.log(`[CASE_DIFFICULTY_ASSIGNED] difficulty=${difficultyScore}`);
+      console.log(`[DQI_INFLATION_DETECTED] penalty=${inflationPenalty}`);
+
       await updatePerformanceMetrics(supabaseService, {
         userId: userId,
         specialty: specialty || "Geral",
-        topic: String(parsed.hidden_diagnosis || "Simulação V5"),
+        topic: diagnosis || "Simulação V5",
         isCorrect: (Number(parsed.score_delta) || 0) >= 0,
+        case_difficulty: difficultyScore,
+        dqi_penalty: inflationPenalty
       });
     }
 
