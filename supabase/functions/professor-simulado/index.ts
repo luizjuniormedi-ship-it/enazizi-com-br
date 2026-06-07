@@ -661,6 +661,11 @@ REGRAS INVIOLÁVEIS:
         }
         allCached = allCached.filter((q: any) => {
           const stmt = String(q.statement || "");
+          const guard = validateFinalQuestionTopic(q, topics[0]);
+          if (!guard.allowed) {
+            console.log(`[Bank_Guard] Rejeitada topic=${topics[0]} reason=${guard.reason} id=${q.id}`);
+            return false;
+          }
           return !IMAGE_REF_PATTERN.test(stmt) && !ENGLISH_PATTERN.test(stmt);
         });
         // Shuffle global para variar conteúdo entre simulados.
@@ -739,8 +744,15 @@ REGRAS INVIOLÁVEIS:
                   else continue;
                 }
 
-                // Strict filter: language, length, structure
-                const valid = strictFilter(parsed, level);
+                // Strict filter: language, length, structure + Topic Guard
+                const valid = strictFilter(parsed, level).filter((q: any) => {
+                  const guard = validateFinalQuestionTopic(q, topics[0]);
+                  if (!guard.allowed) {
+                    console.log(`[AI_Guard] Rejeitada topic=${topics[0]} reason=${guard.reason}`);
+                    return false;
+                  }
+                  return true;
+                });
 
                 // Dedup
                 const prevKeys = new Set(globalPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
