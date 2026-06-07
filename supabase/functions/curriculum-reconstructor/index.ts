@@ -20,14 +20,23 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
     if (action === "classify_sentinel" || action === "classify_batch") {
       const actualLimit = action === "classify_sentinel" ? 500 : limit;
       
-      // 1. Fetch questions not yet in staging
-      const { data: questions, error: fetchError } = await supabaseAdmin
+      // 1. Fetch IDs already in staging to avoid duplicates
+      const { data: existingStaging } = await supabaseAdmin
+        .from("question_classification_staging")
+        .select("question_id");
+      
+      const existingIds = existingStaging?.map(s => s.question_id) || [];
+
+      // 2. Fetch questions not yet in staging
+      let query = supabaseAdmin
         .from("questions_bank")
-        .select("id, statement, explanation, specialty, topic, subtopic")
-        .not("id", "in", (
-          supabaseAdmin.from("question_classification_staging").select("question_id")
-        ))
-        .limit(actualLimit);
+        .select("id, statement, explanation, specialty, topic, subtopic");
+
+      if (existingIds.length > 0) {
+        query = query.not("id", "in", `(${existingIds.join(",")})`);
+      }
+
+      const { data: questions, error: fetchError } = await query.limit(actualLimit);
 
       if (fetchError) throw fetchError;
       if (!questions || questions.length === 0) {
