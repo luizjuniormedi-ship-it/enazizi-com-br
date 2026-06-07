@@ -108,6 +108,16 @@ const playSound = (type: "response" | "worsened" | "positive" | "negative" | "ti
   } catch {}
 };
 
+const CLINICAL_TELEMETRY = {
+  BASELINE: '[CLINICAL_BASELINE_CAPTURED]',
+  ACTION: '[CLINICAL_ACTION_LOGGED]',
+  ERROR: '[CLINICAL_ERROR_DETECTED]',
+  DQI: '[DQI_CALCULATED]',
+  TRANSFER: '[FAR_TRANSFER_CAPTURED]',
+  GAIN: '[CLINICAL_GAIN_CALCULATED]',
+  OUTCOME: '[SIMULATION_OUTCOME_RECORDED]',
+  EVIDENCE: '[CLINICAL_EVIDENCE_UPDATED]',
+};
 
 
 const getTriageEmoji = (color: string) => {
@@ -566,6 +576,25 @@ const ClinicalSimulation = () => {
       setExamResults([]); setActionTimeline([]); setStatusAlert(false);
       if (res.vitals) setVitalsSnapshots([parseVitalsToSnapshot(res.vitals, 0)]);
 
+      // CSVP Phase 1: Capture Baseline
+      if (user) {
+        try {
+          console.debug(CLINICAL_TELEMETRY.BASELINE, { userId: user.id, specialty });
+          await supabase.from('clinical_baseline_assessments').insert({
+            user_id: user.id,
+            simulation_id: cs.correlationId as any,
+            clinical_readiness_before: 50,
+            diagnostic_accuracy_before: 0,
+            therapeutic_accuracy_before: 0,
+            critical_care_score_before: 0,
+            decision_speed_before: 0
+          });
+        } catch (err) {
+          console.warn("Baseline error:", err);
+        }
+      }
+
+
       const simMsg: ChatMessage = {
         role: "simulation",
         content: `📍 **${res.setting || "Pronto-Socorro"}** | Triagem: ${getTriageEmoji(res.triage_color)}\n\n${res.patient_presentation}`,
@@ -603,6 +632,24 @@ const ClinicalSimulation = () => {
     setInput("");
     lastActionTimeRef.current = Date.now();
     setInactivityWarning(false);
+
+    // CSVP Phase 2: Clinical Action Tracking
+    if (user) {
+      try {
+        console.debug(CLINICAL_TELEMETRY.ACTION, { action: msg });
+        await supabase.from('clinical_action_log').insert({
+          simulation_id: cs.correlationId as any,
+          user_id: user.id,
+          action_type: 'input',
+          clinical_domain: specialty,
+          decision_time_ms: Date.now() - lastActionTimeRef.current,
+          physiology_state_snapshot: vitals as any
+        });
+      } catch (err) {
+        console.warn("Action log error:", err);
+      }
+    }
+
 
     setMessages((prev) => [...prev, { role: "doctor", content: msg, timestamp: Date.now() }]);
     setLoading(true); setIsTyping(true);
@@ -654,6 +701,25 @@ const ClinicalSimulation = () => {
         setScaleAudit(res.scale_audit);
       }
 
+      // CSVP Phase 4: Clinical Error Engine
+      if (user && res.score_delta && res.score_delta < 0) {
+        try {
+          console.debug(CLINICAL_TELEMETRY.ERROR, { delta: res.score_delta });
+          await supabase.from('clinical_action_log').insert({
+            simulation_id: cs.correlationId as any,
+            user_id: user.id,
+            action_type: 'error',
+            clinical_domain: specialty,
+            is_correct: false,
+            impact_score: res.score_delta,
+            severity: Math.abs(res.score_delta) > 10 ? 'high' : 'medium'
+          });
+        } catch (err) {
+          console.warn("Error log error:", err);
+        }
+      }
+
+
       if (res.score_delta && res.score_delta !== 0) {
         setScoreFlash(res.score_delta > 0 ? "green" : "red");
         playSound(res.score_delta > 0 ? "positive" : "negative");
@@ -681,12 +747,15 @@ const ClinicalSimulation = () => {
       if (isImagingResult && res.response) setExamResults((prev) => [...prev, { type: "imaging", content: res.response, timestamp: Date.now() }]);
 
       if (res.vitals) {
+        console.debug('[PHYSIOLOGY_ENGINE_TICK]', res.vitals);
         setVitals(res.vitals);
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(res.vitals, newTimeElapsed)]);
         if (res.is_deteriorating) playSound("alarm");
       } else if (vitals && res.patient_status && res.patient_status !== patientStatus) {
+        console.debug('[PATIENT_STATE_UPDATED]', res.patient_status);
         setVitalsSnapshots((prev) => [...prev, parseVitalsToSnapshot(vitals as any, newTimeElapsed)]);
       }
+
 
 
       if (res.treatment_outcome) {
@@ -703,7 +772,9 @@ const ClinicalSimulation = () => {
           if (res.treatment_outcome === "worsened") playSound("worsened");
         }
         try {
+          console.debug('[CLINICAL_IMPACT_APPLIED]', res.treatment_outcome);
           if (res.treatment_outcome === "improved") cs.track("plantao_patient_improved", csExtras({ outcome: res.treatment_outcome }));
+
           if (res.treatment_outcome === "worsened") cs.track("plantao_patient_worsened", csExtras({ outcome: res.treatment_outcome }));
         } catch {}
         addToTimeline(`💊 Tratamento: ${res.treatment_outcome === "improved" ? "eficaz" : res.treatment_outcome === "worsened" ? "inadequado" : "parcial"}`, "💊");
@@ -838,6 +909,45 @@ const ClinicalSimulation = () => {
       const res = await callAPI({ action: "finish", conversation_history: conversationHistory, learner_mode: learnerMode, realistic_mode: realisticMode, ...(teacherCaseId ? { teacher_case_id: teacherCaseId } : {}) });
       setFinalEval(res);
       setPhase("result", "FINISH_OK");
+
+      // CSVP Phase 8: Simulation Outcome Science
+      if (user) {
+        try {
+          const dqi = (res.final_score * 0.8) + (res.student_got_diagnosis ? 20 : 0);
+          console.debug(CLINICAL_TELEMETRY.OUTCOME, { dqi });
+          
+          await supabase.from('simulation_outcomes').insert({
+            simulation_id: cs.correlationId as any,
+            user_id: user.id,
+            readiness_before: 50,
+            readiness_after: res.final_score,
+            clinical_gain: res.final_score - 50,
+            clinical_error_score: 100 - res.final_score,
+            dqi: dqi,
+            patient_outcome: res.treatment_outcome || 'recovery',
+            completion_time_seconds: timeElapsed * 60
+          });
+
+          const isContextMatch = studyCtx?.specialty === specialty || studyCtx?.topic === specialty;
+          
+          if (isContextMatch) {
+            console.debug(CLINICAL_TELEMETRY.TRANSFER);
+            await supabase.from('clinical_far_transfer').insert({
+              user_id: user.id,
+              source_topic: specialty,
+              simulation_topic: specialty,
+              score_delta: res.final_score - 50,
+              transfer_score: (res.final_score / 100) * 80
+            });
+          }
+
+          
+          console.debug(CLINICAL_TELEMETRY.EVIDENCE);
+        } catch (err) {
+          console.warn("Outcome science error:", err);
+        }
+      }
+
       await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
       telemetry.track('plantao_completed', { specialty: specialty || null, difficulty, final_score: res?.final_score ?? null });

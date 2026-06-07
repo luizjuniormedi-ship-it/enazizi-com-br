@@ -4003,6 +4003,87 @@ export type Database = {
           },
         ]
       }
+      clinical_action_log: {
+        Row: {
+          action_timestamp: string
+          action_type: string
+          clinical_domain: string | null
+          created_at: string
+          decision_time_ms: number | null
+          id: string
+          impact_score: number | null
+          is_correct: boolean | null
+          physiology_state_snapshot: Json | null
+          severity: string | null
+          simulation_id: string
+          user_id: string
+        }
+        Insert: {
+          action_timestamp?: string
+          action_type: string
+          clinical_domain?: string | null
+          created_at?: string
+          decision_time_ms?: number | null
+          id?: string
+          impact_score?: number | null
+          is_correct?: boolean | null
+          physiology_state_snapshot?: Json | null
+          severity?: string | null
+          simulation_id: string
+          user_id: string
+        }
+        Update: {
+          action_timestamp?: string
+          action_type?: string
+          clinical_domain?: string | null
+          created_at?: string
+          decision_time_ms?: number | null
+          id?: string
+          impact_score?: number | null
+          is_correct?: boolean | null
+          physiology_state_snapshot?: Json | null
+          severity?: string | null
+          simulation_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      clinical_baseline_assessments: {
+        Row: {
+          clinical_readiness_before: number | null
+          created_at: string
+          critical_care_score_before: number | null
+          decision_speed_before: number | null
+          diagnostic_accuracy_before: number | null
+          id: string
+          simulation_id: string | null
+          therapeutic_accuracy_before: number | null
+          user_id: string
+        }
+        Insert: {
+          clinical_readiness_before?: number | null
+          created_at?: string
+          critical_care_score_before?: number | null
+          decision_speed_before?: number | null
+          diagnostic_accuracy_before?: number | null
+          id?: string
+          simulation_id?: string | null
+          therapeutic_accuracy_before?: number | null
+          user_id: string
+        }
+        Update: {
+          clinical_readiness_before?: number | null
+          created_at?: string
+          critical_care_score_before?: number | null
+          decision_speed_before?: number | null
+          diagnostic_accuracy_before?: number | null
+          id?: string
+          simulation_id?: string | null
+          therapeutic_accuracy_before?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       clinical_cases: {
         Row: {
           clinical_history: string
@@ -4060,6 +4141,36 @@ export type Database = {
           treatment?: string | null
           user_id?: string
           vitals?: Json | null
+        }
+        Relationships: []
+      }
+      clinical_far_transfer: {
+        Row: {
+          created_at: string
+          id: string
+          score_delta: number | null
+          simulation_topic: string
+          source_topic: string
+          transfer_score: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          score_delta?: number | null
+          simulation_topic: string
+          source_topic: string
+          transfer_score?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          score_delta?: number | null
+          simulation_topic?: string
+          source_topic?: string
+          transfer_score?: number | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -26555,6 +26666,51 @@ export type Database = {
         }
         Relationships: []
       }
+      simulation_outcomes: {
+        Row: {
+          clinical_error_score: number | null
+          clinical_gain: number | null
+          completion_time_seconds: number | null
+          created_at: string
+          dqi: number | null
+          far_transfer: number | null
+          id: string
+          patient_outcome: string | null
+          readiness_after: number | null
+          readiness_before: number | null
+          simulation_id: string
+          user_id: string
+        }
+        Insert: {
+          clinical_error_score?: number | null
+          clinical_gain?: number | null
+          completion_time_seconds?: number | null
+          created_at?: string
+          dqi?: number | null
+          far_transfer?: number | null
+          id?: string
+          patient_outcome?: string | null
+          readiness_after?: number | null
+          readiness_before?: number | null
+          simulation_id: string
+          user_id: string
+        }
+        Update: {
+          clinical_error_score?: number | null
+          clinical_gain?: number | null
+          completion_time_seconds?: number | null
+          created_at?: string
+          dqi?: number | null
+          far_transfer?: number | null
+          id?: string
+          patient_outcome?: string | null
+          readiness_after?: number | null
+          readiness_before?: number | null
+          simulation_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       simulation_sessions: {
         Row: {
           created_at: string
@@ -33736,6 +33892,16 @@ export type Database = {
       }
       calculate_blueprint_health: {
         Args: { p_exam_key: string }
+        Returns: number
+      }
+      calculate_clinical_dqi: {
+        Args: {
+          diag_acc: number
+          outcome_val: number
+          safety_score: number
+          time_eff: number
+          treat_acc: number
+        }
         Returns: number
       }
       calculate_cme_media_health_score: {
