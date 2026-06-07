@@ -124,7 +124,7 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
             Confirma que esta questão trata de ${CRITICAL_TOPICS.join(", ")}?
             Responda APENAS JSON: {"confirmed": boolean, "alternative_competency_id": "string", "reason": "string"}`;
 
-            const auditResponse = await ai.chat.completions.create({
+            const auditResponse = await ai({
               model: AI_MODELS.FAST,
               messages: [{ role: "user", content: auditPrompt }],
               response_format: { type: "json_object" }
