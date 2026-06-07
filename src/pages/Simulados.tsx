@@ -267,9 +267,6 @@ async function generateBatch(
       requestedCount: data.requestedCount,
       generatedCount: data.generatedCount
     };
-      }
-    };
-
   } catch (e) {
     const durationMs = Math.round(performance.now() - startedAt);
     const isTimeout = e instanceof TimeoutError;
