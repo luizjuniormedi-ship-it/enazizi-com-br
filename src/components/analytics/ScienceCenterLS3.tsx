@@ -141,6 +141,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <BarChart4 className="w-4 h-4 text-blue-500" /> Validação de Previsão
+              <Tooltip>
+                <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Acurácia do algoritmo em prever seu desempenho futuro.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
