@@ -26,9 +26,11 @@ import {
   Dna,
   Scale,
   Megaphone,
-  FlaskConical
+  FlaskConical,
+  Info
 } from 'lucide-react';
 import { OutcomeScienceCenter } from './OutcomeScienceCenter';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { 
   ResponsiveContainer, 
@@ -37,7 +39,7 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip,
+  Tooltip as RechartsTooltip,
   BarChart,
   Bar,
   Cell,
