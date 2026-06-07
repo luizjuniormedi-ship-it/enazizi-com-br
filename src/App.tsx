@@ -131,6 +131,8 @@ const VideoLessonsLibrary = lazyWithRetry(() => import("./pages/VideoLessonsLibr
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 const Favoritos = lazyWithRetry(() => import("./pages/Favoritos"), "Favoritos");
 const Historico = lazyWithRetry(() => import("./pages/Historico"), "Historico");
+const DogfoodMonitor = lazyWithRetry(() => import("./pages/DogfoodMonitor"), "DogfoodMonitor");
+
 
 const PageLoader = () => {
   const [timedOut, setTimedOut] = useState(false);
