@@ -597,7 +597,7 @@ const ClinicalSimulation = () => {
 
       const simMsg: ChatMessage = {
         role: "simulation",
-        content: `📍 **${res.setting || "Pronto-Socorro"}** | Triagem: ${getTriageEmoji(res.triage_color)}\n\n${res.patient_presentation}`,
+        content: `📍 **${res.setting || "Pronto-Socorro"}** | Triagem: ${getTriageEmoji(res.triage_color)}\n\n**${res.topic || "Caso Clínico"}**\n\n${res.patient_presentation}`,
         type: "presentation", timestamp: Date.now(),
       };
       setMessages([simMsg]);

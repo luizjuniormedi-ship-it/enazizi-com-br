@@ -113,7 +113,12 @@ export const HospitalTeamPanel = ({ sessionId, patientId }: HospitalTeamPanelPro
       </CardHeader>
       <CardContent className="p-0 flex flex-col h-[calc(100%-60px)]">
         <div className="p-4 border-b bg-white/50">
-          <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-tighter">Membros Ativos</h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Membros Ativos</h4>
+            <div title="Equipe que auxilia no atendimento e pode trazer informações do paciente ou do serviço." className="cursor-help">
+              <Badge variant="outline" className="text-[8px] h-4 opacity-50">?</Badge>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-1">
             {staff.map((s) => (
               <Badge key={s.id} variant="secondary" className={`text-[9px] ${ROLE_LABELS[s.role]?.color || ''}`}>
