@@ -167,8 +167,16 @@ function pickCachedQuestions(params: {
     selected.push(...leftovers.slice(0, params.requestedCount - selected.length));
   }
 
-  return selected.slice(0, params.requestedCount);
+    return selected.slice(0, params.requestedCount);
 }
+
+const jsonResponse = (data: any, status = 200) => {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+};
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -308,6 +316,7 @@ serve(async (req) => {
           await sb.from("professor_turma_students").insert(studentLinks);
         }
 
+        console.log(`[PROFESSOR_SIMULADO_CREATE_OK] traceId=${traceId} turmaId=${turma.id}`);
         return ok({ success: true, turma });
       }
 
