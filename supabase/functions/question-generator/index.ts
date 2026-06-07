@@ -6,6 +6,7 @@ import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
+import { TopicEngine } from "../_shared/topic-engine.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
@@ -53,7 +54,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const examBoard = body.targetExam || body.examBoard;
     const difficulty = body.difficulty || "misto";
 
-    console.log(`[SIM_GENERATOR_FILTERS_RECEIVED] userId=${userId} requested=${requestedCount} topics=${topics.join(",")} subtopics=${subtopics.join(",")} board=${examBoard}`);
+    const topicEngine = new TopicEngine(supabaseAdmin);
+    await topicEngine.loadAliases(topics, subtopics);
 
     const bancaResolution = resolveBanca(examBoard);
     const profile = bancaResolution.profile;
@@ -102,43 +104,44 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       const applyExclusion = (q: any) =>
         excludedIds.length > 0 ? q.not("id", "in", `(${excludedIds.join(",")})`) : q;
 
-      // ── Filtro tolerante: ILIKE em topic + curriculum_theme cobre variações de grafia ──
       let candidates: any[] = [];
-      const topicOr = topics
-        .flatMap((t: string) => [`topic.ilike.%${t}%`, `curriculum_theme.ilike.%${t}%`])
+      const allTerms = [...topics, ...subtopics];
+      const topicOr = allTerms
+        .flatMap((t: string) => [`topic.ilike.%${t}%`, `curriculum_theme.ilike.%${t}%`, `subtopic.ilike.%${t}%`, `curriculum_subtheme.ilike.%${t}%`])
         .join(",");
 
-      // Tentativa 1: subtopic via ilike (fuzzy) + topic, se houver subtopic
-      if (subtopics.length > 0 && topics.length > 0) {
-        const subOr = subtopics
-          .flatMap((s: string) => [`subtopic.ilike.%${s}%`, `curriculum_subtheme.ilike.%${s}%`])
-          .join(",");
-        let q = buildBaseQuery().or(topicOr).or(subOr);
-        q = applyExclusion(q);
-        const { data } = await q.limit(requestedCount * 3);
-        candidates = data || [];
-        console.log(`[SIM_GENERATOR_SUBTOPIC_MATCH] count=${candidates.length}`);
-      }
-
-      // Tentativa 2 (fallback): só topic tolerante
-      if (candidates.length === 0 && topics.length > 0) {
-        let q = buildBaseQuery().or(topicOr);
-        q = applyExclusion(q);
-        const { data } = await q.limit(requestedCount * 3);
-        candidates = data || [];
-        console.log(`[SIM_GENERATOR_TOPIC_MATCH] count=${candidates.length}`);
-      }
-
+      let q = buildBaseQuery().or(topicOr);
+      q = applyExclusion(q);
+      const { data } = await q.limit(requestedCount * 10);
+      candidates = data || [];
+      
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
-
 
       for (const q of candidates) {
         if (finalQuestions.length >= requestedCount) break;
+        
+        const matchResult = topicEngine.calculateScore(q, topics, subtopics);
+        
+        if (matchResult.exactTopicMode && matchResult.score < 90) {
+          continue;
+        }
+
+        if (matchResult.score === 0) {
+          continue;
+        }
+
         const hash = makeHash(q.statement);
         const norm = normalizeStatement(q.statement);
         if (seenHashes.has(hash) || seenNormalized.has(norm)) continue;
         
-        finalQuestions.push({ ...q, correct: q.correct_index, _source: "bank" });
+        finalQuestions.push({ 
+          ...q, 
+          correct: q.correct_index, 
+          _source: "bank",
+          _topic_match_score: matchResult.score,
+          _match_type: matchResult.matchType
+        });
+        
         seenHashes.add(hash);
         seenNormalized.add(norm);
       }
@@ -148,9 +151,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     let insufficientQuestions = finalQuestions.length < requestedCount;
     
-    // AI Fallback removed to ensure strict topic adherence from verified bank
-    if (finalQuestions.length < requestedCount) {
-      console.log(`[SIM_GENERATOR_INSUFFICIENT_QUESTIONS] requested=${requestedCount} final=${finalQuestions.length}`);
+    if (insufficientQuestions) {
+      console.log(`[SIM_INSUFFICIENT_TOPIC_BANK] requested=${requestedCount} final=${finalQuestions.length}`);
     }
 
     // 4. Persistence

@@ -26233,6 +26233,30 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_aliases: {
+        Row: {
+          active: boolean | null
+          alias: string
+          canonical_topic: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          active?: boolean | null
+          alias: string
+          canonical_topic: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          active?: boolean | null
+          alias?: string
+          canonical_topic?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       topic_distribution_stats: {
         Row: {
           last_generated_at: string | null
