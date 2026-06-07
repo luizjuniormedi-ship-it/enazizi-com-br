@@ -112,7 +112,7 @@ export const ScientificAuditDashboard: React.FC = () => {
             Operação Caixa-Preta: LEC Certification
           </h1>
           <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">
-            Certificação Final para Transição V6 • Pedagogical Validation Engine
+            Certificação Final para Transição V6 • Learning Effectiveness Certification (LEC)
           </p>
         </div>
         <div className="flex gap-3">
