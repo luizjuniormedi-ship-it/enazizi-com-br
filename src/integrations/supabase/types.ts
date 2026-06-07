@@ -26586,6 +26586,7 @@ export type Database = {
           matched_question_ids: string[] | null
           metadata: Json | null
           requested_topic: string | null
+          simulado_id: string | null
           user_id: string | null
         }
         Insert: {
@@ -26598,6 +26599,7 @@ export type Database = {
           matched_question_ids?: string[] | null
           metadata?: Json | null
           requested_topic?: string | null
+          simulado_id?: string | null
           user_id?: string | null
         }
         Update: {
@@ -26610,9 +26612,25 @@ export type Database = {
           matched_question_ids?: string[] | null
           metadata?: Json | null
           requested_topic?: string | null
+          simulado_id?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "topic_generation_logs_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "simulado_health"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "topic_generation_logs_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "simulado_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trajectory_applied_actions: {
         Row: {
