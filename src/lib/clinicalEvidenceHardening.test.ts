@@ -8,7 +8,8 @@ import {
 
 describe('Clinical Evidence Hardening (CEH)', () => {
   it('Case Difficulty: IAM should be < 1.0 (0.8)', () => {
-    expect(getCaseDifficulty('Infarto Agudo do Miocárdio')).toBe(0.8);
+    const result = getCaseDifficulty('Infarto Agudo do Miocárdio');
+    expect(result).toBe(0.8);
   });
 
   it('Case Difficulty: Choque Séptico should be > 1.5 (1.6)', () => {
