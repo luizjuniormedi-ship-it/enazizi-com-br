@@ -316,6 +316,10 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2 text-sm">
               <History className="w-4 h-4 text-primary" />
               Previsão de Declínio de Conhecimento (Lógica FSRS)
+              <Tooltip>
+                <TooltipTrigger><Info className="w-4 h-4 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Previsão baseada no algoritmo FSRS de como seu conhecimento irá decair nos próximos 9 dias se não houver revisão.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent>
