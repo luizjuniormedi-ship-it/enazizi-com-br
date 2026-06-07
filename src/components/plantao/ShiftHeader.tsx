@@ -3,6 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 
 interface ShiftHeaderProps {
+  topic?: string;
   patientStatus: string;
   statusAlert: boolean;
   countdown: number;
