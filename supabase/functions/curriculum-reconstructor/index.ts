@@ -102,7 +102,7 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
           ]
         }`;
 
-        const aiResponse = await ai.chat.completions.create({
+        const aiResponse = await ai({
           model: AI_MODELS.REASONING,
           messages: [{ role: "system", content: "Você é um classificador médico rigoroso." }, { role: "user", content: prompt }],
           response_format: { type: "json_object" }
