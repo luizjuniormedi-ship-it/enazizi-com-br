@@ -208,6 +208,10 @@ export const ScienceCenterLS3: React.FC<ScienceCenterLS3Props> = ({ snapshot }) 
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-500" /> Análise de ROI de Impacto
+              <Tooltip>
+                <TooltipTrigger><Info className="w-3 h-3 opacity-50" /></TooltipTrigger>
+                <TooltipContent><p>Retorno sobre Investimento (ROI) de tempo e esforço em cada módulo de aprendizado.</p></TooltipContent>
+              </Tooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
