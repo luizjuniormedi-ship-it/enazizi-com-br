@@ -30,7 +30,7 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
       // 2. Fetch questions not yet in staging
       let query = supabaseAdmin
         .from("questions_bank")
-        .select("id, statement, explanation, specialty, topic, subtopic");
+        .select("id, statement, explanation, topic, subtopic");
 
       if (existingIds.length > 0) {
         query = query.not("id", "in", `(${existingIds.join(",")})`);
