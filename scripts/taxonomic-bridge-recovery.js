@@ -6,7 +6,19 @@ const supabase = createClient(
 );
 
 async function recoverTaxonomicBridge() {
-  console.log('🚀 Starting P0 Taxonomic Bridge Recovery...');
+  console.log('🚀 Starting P0 Taxonomic Bridge Recovery (Direct Query Mode)...');
+
+  // 1. First, get all competencies to avoid string matching issues
+  const { data: registry, error: regError } = await supabase
+    .from('curriculum_registry')
+    .select('id, curriculum_competency');
+
+  if (regError) {
+    console.error('Failed to fetch registry:', regError);
+    return;
+  }
+
+  console.log('Registry loaded: ' + registry.length + ' competencies.');
 
   const criticalMappings = [
     { 
@@ -42,17 +54,12 @@ async function recoverTaxonomicBridge() {
   ];
 
   for (const map of criticalMappings) {
-    console.log('Processing: ' + map.target);
-    
-    const { data: comp } = await supabase
-      .from('curriculum_registry')
-      .select('id')
-      .eq('curriculum_competency', map.target)
-      .maybeSingle();
+    const comp = registry.find(r => r.curriculum_competency.trim() === map.target);
 
     if (comp) {
-      console.log('Found ID: ' + comp.id);
+      console.log('Processing: ' + map.target + ' (ID: ' + comp.id + ')');
       
+      // Upsert Aliases
       for (const alias of map.aliases) {
         await supabase.from('competency_aliases').upsert({
           competency_id: comp.id,
@@ -61,6 +68,7 @@ async function recoverTaxonomicBridge() {
         });
       }
 
+      // Bulk Link Questions
       let orFilter = 'topic.eq.' + map.legacy;
       for (const p of map.patterns) {
         orFilter += ',topic.ilike.' + p + ',subtopic.ilike.' + p;
@@ -73,8 +81,7 @@ async function recoverTaxonomicBridge() {
           reconciliation_data: {
             source: 'P0_BRIDGE_RECOVERY',
             timestamp: new Date().toISOString(),
-            confidence: 0.95,
-            target: map.target
+            confidence: 0.95
           }
         })
         .or(orFilter);
@@ -85,13 +92,12 @@ async function recoverTaxonomicBridge() {
         console.log('✅ Linked ' + (count || 0) + ' questions to ' + map.target);
       }
     } else {
-        console.warn('⚠️ Competency not found in registry: ' + map.target);
+        console.warn('⚠️ Competency not found in registry (Exact Match Failed): ' + map.target);
     }
   }
 
-  const { data: ocrData, error: ocrError } = await supabase.rpc('calculate_ocr');
-  if (ocrError) console.error('OCR Error:', ocrError);
-  console.log('📊 Operational Coverage Rate (OCR): ' + (ocrData ? JSON.stringify(ocrData) : 'N/A') + '%');
+  const { data: ocrData } = await supabase.rpc('calculate_ocr');
+  console.log('📊 Operational Coverage Rate (OCR): ' + JSON.stringify(ocrData) + '%');
 }
 
 recoverTaxonomicBridge().catch(console.error);
