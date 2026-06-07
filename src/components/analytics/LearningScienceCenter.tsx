@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +16,7 @@ import { motion } from 'framer-motion';
 import { ScienceCenterLS3 } from './ScienceCenterLS3';
 import { InstitutionalDashboard } from './InstitutionalDashboard';
 import { PublicationCenter } from './PublicationCenter';
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
-} from "@/components/ui/tooltip";
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 export const LearningScienceCenter: React.FC = () => {
   const snapshot = useLearningScience();
