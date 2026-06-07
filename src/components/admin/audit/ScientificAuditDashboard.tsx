@@ -63,11 +63,11 @@ const MOCK_HISTORICAL_DATA = [
 
 const AUDIT_PHASES = [
   { id: 'fidelity', name: 'Fidelity Audit', icon: Stethoscope, color: 'text-blue-500', meta: '95', current: '96.4' },
-  { id: 'cognitive', name: 'Cognitive Audit', icon: Brain, color: 'text-purple-500', meta: '85', current: '88.2' },
-  { id: 'recovery', name: 'Recovery Audit', icon: Activity, color: 'text-emerald-500', meta: '100', current: '100' },
-  { id: 'enare', name: 'ENARE Fidelity', icon: Dna, color: 'text-yellow-500', meta: '90', current: '92.1' },
-  { id: 'yield', name: 'Learning Yield', icon: GraduationCap, color: 'text-primary', meta: '80', current: '82.5' },
-  { id: 'transfer', name: 'Transfer Score', icon: Target, color: 'text-orange-500', meta: '75', current: '78.1' },
+  { id: 'les', name: 'Learning Effectiveness (LES)', icon: FlaskConical, color: 'text-purple-600', meta: '85', current: '88.7' },
+  { id: 'yield', name: 'Learning Yield', icon: GraduationCap, color: 'text-emerald-500', meta: '80', current: '82.5' },
+  { id: 'transfer', name: 'Transfer Score', icon: Target, color: 'text-orange-500', meta: '75', current: '79.2' },
+  { id: 'cohen', name: "Cohen's d", icon: Scale, color: 'text-pink-500', meta: '0.5', current: '0.74' },
+  { id: 'recovery', name: 'Recovery Half-Life', icon: Activity, color: 'text-amber-500', meta: 'D7', current: 'D4.2' },
   { id: 'safety', name: 'Security Audit', icon: ShieldCheck, color: 'text-red-500', meta: '99', current: '99.8' },
 ];
 
