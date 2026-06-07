@@ -31,8 +31,9 @@ export async function auditSimuladoContamination(sessionId?: string) {
   }
 
   const contaminationReport = logs.map(log => {
-    const forensics = log.metadata?.guard_forensics || [];
-    const totalGenerated = log.metadata?.generated_count || 0;
+    const metadata = (log.metadata as any) || {};
+    const forensics = metadata.guard_forensics || [];
+    const totalGenerated = metadata.generated_count || 0;
     const rejectedByGuard = forensics.filter((f: any) => f && f.allowed === false).length;
     
     // Detect mismatch if any question delivered doesn't match requested_topic or its canonical form
