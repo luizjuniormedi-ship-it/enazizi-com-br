@@ -109,10 +109,10 @@ export const ScientificAuditDashboard: React.FC = () => {
         <div>
           <h1 className="text-3xl font-black tracking-tighter uppercase italic flex items-center gap-3">
             <FlaskConical className="h-8 w-8 text-primary animate-pulse" />
-            Operação Caixa-Preta: LEC Certification
+            Operação Caixa-Preta: Certificação LEC
           </h1>
           <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">
-            Certificação Final para Transição V6 • Learning Effectiveness Certification (LEC)
+            Certificação Final para Transição V6 • Certificação de Eficácia de Aprendizado (LEC)
           </p>
         </div>
         <div className="flex gap-3">
@@ -134,7 +134,7 @@ export const ScientificAuditDashboard: React.FC = () => {
 
           <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 uppercase tracking-widest text-[10px] px-3 py-1 flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-            LEC Certified (LES: 88.7%)
+            Certificado LEC (LES: 88.7%)
           </Badge>
         </div>
       </div>
@@ -356,7 +356,7 @@ export const ScientificAuditDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-black">256</div>
-                <p className="text-[9px] text-white/30 uppercase mt-1">Traditional Study Only</p>
+                <p className="text-[9px] text-white/30 uppercase mt-1">Apenas Estudo Tradicional</p>
               </CardContent>
             </Card>
             <Card className="bg-white/5 border-white/10">
@@ -365,7 +365,7 @@ export const ScientificAuditDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-black">2.4%</div>
-                <p className="text-[9px] text-emerald-500 uppercase mt-1">Status: Controlled</p>
+                <p className="text-[9px] text-emerald-500 uppercase mt-1">Status: Controlado</p>
               </CardContent>
             </Card>
           </div>

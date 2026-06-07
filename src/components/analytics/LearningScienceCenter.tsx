@@ -50,13 +50,13 @@ export const LearningScienceCenter: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="outline" className={`px-3 py-1 ${snapshot.telemetryTags.includes('[SECURITY_AUDIT_PASSED]') ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/5 text-primary border-primary/20'}`}>
-              <Beaker className="w-3 h-3 mr-1" /> {snapshot.telemetryTags.includes('[SECURITY_AUDIT_PASSED]') ? 'SECURITY VERIFIED' : 'PHASE LS-4 PUBLICATION READY'}
+              <Beaker className="w-3 h-3 mr-1" /> {snapshot.telemetryTags.includes('[SECURITY_AUDIT_PASSED]') ? 'SEGURANÇA VERIFICADA' : 'FASE LS-4 PRONTA PARA PUBLICAÇÃO'}
             </Badge>
             <span className="text-xs text-muted-foreground font-mono">
-              VALIDATED_AT: {new Date(snapshot.validatedAt).toLocaleTimeString()}
+              VALIDADO_EM: {new Date(snapshot.validatedAt).toLocaleTimeString()}
             </span>
             <Badge className="bg-purple-600 text-white border-none ml-2 text-[10px]">
-              SCIENTIFIC TIER A
+              NÍVEL CIENTÍFICO A
             </Badge>
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Centro de Validação Nacional ENAZIZI</h1>
@@ -129,7 +129,7 @@ export const LearningScienceCenter: React.FC = () => {
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
                     <span className="text-[10px] uppercase text-muted-foreground block mb-1">Score de Transferência</span>
                     <span className="text-xl font-bold">{snapshot.transferScore}%</span>
-                    <span className="text-[10px] ml-1 opacity-70">fidelity</span>
+                    <span className="text-[10px] ml-1 opacity-70">fidelidade</span>
                   </div>
                 </div>
               </div>
@@ -223,7 +223,7 @@ export const LearningScienceCenter: React.FC = () => {
                 <div className="text-2xl font-bold">{snapshot.learningYield.score}</div>
               </div>
               <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 border-purple-500/20">
-                MAX_EFFICIENCY
+                EFICIÊNCIA_MÁXIMA
               </Badge>
             </div>
           </CardContent>

@@ -116,17 +116,17 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
             War Room: Learning Effectiveness
           </h1>
           <p className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] mt-1">
-            Autonomous Outcome Monitoring • Real-time Evidence Collection
+            Monitoramento de Resultados Autônomo • Coleta de Evidências em Tempo Real
           </p>
         </div>
         <div className="flex gap-2">
           <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-2">
             <Activity className="h-3 w-3" />
-            System Live
+            Sistema Ativo
           </div>
           <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-2">
             <ShieldCheck className="h-3 w-3" />
-            V3 Premium Stable
+            V3 Premium Estável
           </div>
         </div>
       </div>
@@ -139,7 +139,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
           </div>
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
-              <Zap className="h-3 w-3 text-primary" /> Readiness Boost
+              <Zap className="h-3 w-3 text-primary" /> Impulso de Prontidão (Boost)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -153,7 +153,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
               Aumento médio na probabilidade de aprovação pós-Tutor
             </p>
             <div className="mt-4 flex items-center justify-between text-[9px] font-bold uppercase">
-              <span className="text-white/20">Confidence</span>
+              <span className="text-white/20">Confiança</span>
               <span className="text-primary">{((readinessImpact?.confidence || 0.88) * 100).toFixed(0)}%</span>
             </div>
             <Progress value={(readinessImpact?.confidence || 0.88) * 100} className="h-1 mt-1 bg-white/5" />
@@ -163,7 +163,7 @@ export const LearningEffectivenessWarRoom: React.FC = () => {
         <Card className="bg-white/5 border-white/10 backdrop-blur-xl relative overflow-hidden group">
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2">
-              <Award className="h-3 w-3 text-emerald-400" /> Error Reduction
+              <Award className="h-3 w-3 text-emerald-400" /> Redução de Erros
             </CardTitle>
           </CardHeader>
           <CardContent>
