@@ -826,13 +826,17 @@ REGRAS INVIOLÁVEIS:
 
         const generatedCount = allQuestions.length;
         const missingCount = requestedCount - generatedCount;
+        const insufficientQuestions = generatedCount < requestedCount;
 
         return ok({
+          success: true,
           questions: allQuestions,
           source,
           requested_count: requestedCount,
           generated_count: generatedCount,
           missing_count: missingCount,
+          insufficientQuestions,
+          message: insufficientQuestions ? `Encontramos apenas ${generatedCount} questões para os filtros selecionados.` : undefined,
           exact_count: missingCount === 0,
           difficulty_distribution: finalDistribution,
           slot_metrics: slotMetrics,
