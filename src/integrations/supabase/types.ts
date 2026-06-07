@@ -26209,6 +26209,54 @@ export type Database = {
         }
         Relationships: []
       }
+      system_integrity_audits: {
+        Row: {
+          audit_date: string | null
+          failure_details: Json | null
+          id: string
+          integrity_score: number | null
+          module_name: string
+          test_cases_passed: number | null
+          test_cases_total: number | null
+          wave_id: string | null
+        }
+        Insert: {
+          audit_date?: string | null
+          failure_details?: Json | null
+          id?: string
+          integrity_score?: number | null
+          module_name: string
+          test_cases_passed?: number | null
+          test_cases_total?: number | null
+          wave_id?: string | null
+        }
+        Update: {
+          audit_date?: string | null
+          failure_details?: Json | null
+          id?: string
+          integrity_score?: number | null
+          module_name?: string
+          test_cases_passed?: number | null
+          test_cases_total?: number | null
+          wave_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_integrity_audits_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_waves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_integrity_audits_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "v_wave_2_stress_report"
+            referencedColumns: ["wave_id"]
+          },
+        ]
+      }
       system_metrics: {
         Row: {
           created_at: string
@@ -30999,6 +31047,13 @@ export type Database = {
           seconds_to_action?: never
           user_id?: string | null
           viewport?: string | null
+        }
+        Relationships: []
+      }
+      v_pmis_report: {
+        Row: {
+          module_breakdown: Json | null
+          pmis_total: number | null
         }
         Relationships: []
       }
