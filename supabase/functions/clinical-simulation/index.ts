@@ -146,7 +146,7 @@ serve(async (req) => {
 
     if (parsed.prescription_validation && parsed.prescription_validation.status !== 'correct') {
       await supabaseService.from('hospital_errors_v2').insert({
-        user_id: user.id,
+        user_id: userId,
         theme: specialty || 'Prescrição',
         error_type: 'prescription',
         severity: parsed.prescription_validation.severity || 'medium',
@@ -157,7 +157,7 @@ serve(async (req) => {
 
     if (parsed.scale_audit?.missed?.length > 0) {
       await supabaseService.from('hospital_errors_v2').insert({
-        user_id: user.id,
+        user_id: userId,
         theme: specialty || 'Protocolo',
         error_type: 'scale',
         severity: 'medium',
