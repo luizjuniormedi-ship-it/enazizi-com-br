@@ -21768,6 +21768,75 @@ export type Database = {
           },
         ]
       }
+      question_forensics: {
+        Row: {
+          audited_at: string | null
+          avg_response_time_seconds: number | null
+          clinical_reasoning_score: number | null
+          commentary_quality_tier: string | null
+          discrimination_index: number | null
+          distractor_fatigue_score: number | null
+          enamed_fidelity_score: number | null
+          fidelity_score: number | null
+          id: string
+          medical_accuracy_status: string | null
+          metadata: Json | null
+          quality_tier: string | null
+          question_id: string
+          success_rate_high_performers: number | null
+          success_rate_low_performers: number | null
+        }
+        Insert: {
+          audited_at?: string | null
+          avg_response_time_seconds?: number | null
+          clinical_reasoning_score?: number | null
+          commentary_quality_tier?: string | null
+          discrimination_index?: number | null
+          distractor_fatigue_score?: number | null
+          enamed_fidelity_score?: number | null
+          fidelity_score?: number | null
+          id?: string
+          medical_accuracy_status?: string | null
+          metadata?: Json | null
+          quality_tier?: string | null
+          question_id: string
+          success_rate_high_performers?: number | null
+          success_rate_low_performers?: number | null
+        }
+        Update: {
+          audited_at?: string | null
+          avg_response_time_seconds?: number | null
+          clinical_reasoning_score?: number | null
+          commentary_quality_tier?: string | null
+          discrimination_index?: number | null
+          distractor_fatigue_score?: number | null
+          enamed_fidelity_score?: number | null
+          fidelity_score?: number | null
+          id?: string
+          medical_accuracy_status?: string | null
+          metadata?: Json | null
+          quality_tier?: string | null
+          question_id?: string
+          success_rate_high_performers?: number | null
+          success_rate_low_performers?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_forensics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_forensics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_generation_run_items: {
         Row: {
           asset_code: string | null
@@ -26272,6 +26341,45 @@ export type Database = {
           last_generated_at?: string | null
           question_count?: number | null
           topic?: string
+        }
+        Relationships: []
+      }
+      topic_generation_logs: {
+        Row: {
+          canonical_topic: string | null
+          correlation_id: string | null
+          created_at: string | null
+          curriculum_competency: string | null
+          id: string
+          insufficient_bank_flag: boolean | null
+          matched_question_ids: string[] | null
+          metadata: Json | null
+          requested_topic: string | null
+          user_id: string | null
+        }
+        Insert: {
+          canonical_topic?: string | null
+          correlation_id?: string | null
+          created_at?: string | null
+          curriculum_competency?: string | null
+          id?: string
+          insufficient_bank_flag?: boolean | null
+          matched_question_ids?: string[] | null
+          metadata?: Json | null
+          requested_topic?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          canonical_topic?: string | null
+          correlation_id?: string | null
+          created_at?: string | null
+          curriculum_competency?: string | null
+          id?: string
+          insufficient_bank_flag?: boolean | null
+          matched_question_ids?: string[] | null
+          metadata?: Json | null
+          requested_topic?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
