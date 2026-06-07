@@ -222,29 +222,37 @@ export const CurriculumEvidenceDashboard = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="p-4 rounded-2xl bg-pink-500/5 border border-pink-500/20">
+          <div className="flex items-center gap-3 mb-3">
+            <FlaskConical className="h-5 w-5 text-pink-400" />
+            <h3 className="text-sm font-bold text-white/90">ECS Score</h3>
+          </div>
+          <p className="text-[10px] text-white/60">Evidence Confidence Score. Validação estatística baseada em N, variância e estabilidade temporal das evidências observadas.</p>
+        </div>
+
         <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20">
           <div className="flex items-center gap-3 mb-3">
-            <Microscope className="h-5 w-5 text-indigo-400" />
-            <h3 className="text-sm font-bold text-white/90">Learning Yield</h3>
+            <Scale className="h-5 w-5 text-indigo-400" />
+            <h3 className="text-sm font-bold text-white/90">Bias Detection</h3>
           </div>
-          <p className="text-xs text-white/60">Mede o ganho direto entre erro inicial, exposição ao conteúdo e acerto subsequente por competência.</p>
+          <p className="text-[10px] text-white/60">Identifica riscos de viés de seleção, sobrevivência e engajamento que podem inflar artificialmente os scores de desfecho.</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
           <div className="flex items-center gap-3 mb-3">
-            <Stethoscope className="h-5 w-5 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white/90">Transfer Score</h3>
+            <Activity className="h-5 w-5 text-emerald-400" />
+            <h3 className="text-sm font-bold text-white/90">Outcome Drift</h3>
           </div>
-          <p className="text-xs text-white/60">Avalia a transição do conhecimento teórico para o Hospital Virtual e OSCE (Desempenho Clínico).</p>
+          <p className="text-[10px] text-white/60">Monitora a degradação da eficácia educacional ao longo do tempo (D30-D365), detectando perda de retenção ou transferência.</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
           <div className="flex items-center gap-3 mb-3">
-            <GraduationCap className="h-5 w-5 text-amber-400" />
-            <h3 className="text-sm font-bold text-white/90">Approval Impact</h3>
+            <ShieldCheck className="h-5 w-5 text-amber-400" />
+            <h3 className="text-sm font-bold text-white/90">Gold Certification</h3>
           </div>
-          <p className="text-xs text-white/60">Correlação longitudinal entre o domínio da competência e a taxa de aprovação em provas reais (ENARE/ENAMED).</p>
+          <p className="text-[10px] text-white/60">Selo de robustez máxima. Exige COI, IPS e ECS ≥ 80, com amostra N ≥ 500 e estabilidade temporal comprovada.</p>
         </div>
       </div>
     </div>
