@@ -2,77 +2,184 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { AI_MODELS } from "../_shared/ai-models.ts";
 
 /**
- * ENAZIZI — CURRICULUM RECONSTRUCTOR ENGINE
- * Phases 4, 6, 7 & 8: Classification, Coverage & Deduplication
+ * ENAZIZI — CURRICULUM RECONSTRUCTOR ENGINE (Phase 3-5)
+ * Classification, Confidence Gate & Sampling
  */
+
+const CRITICAL_TOPICS = [
+  "IAM com supra", "Sepse", "AVC", "Hipercalemia", "CAD", 
+  "Pré-natal", "Metrorragia", "Apendicite", "Pneumonia", "Insuficiência cardíaca"
+];
 
 Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseContext) => {
   const { req, logger, supabaseAdmin, ai } = enterpriseContext;
   
   try {
-    const { action, limit = 50, batch_size = 10 } = await req.json();
+    const { action, batch_size = 100, limit = 500 } = await req.json();
 
-    if (action === "inventory_report") {
-      const { data, count } = await supabaseAdmin
-        .from("questions_bank")
-        .select("id, specialty, topic, subtopic, difficulty, lifecycle_state", { count: 'exact' });
+    if (action === "classify_sentinel" || action === "classify_batch") {
+      const actualLimit = action === "classify_sentinel" ? 500 : limit;
       
-      return new Response(JSON.stringify({ 
-        success: true, 
-        total: count,
-        summary: data?.reduce((acc: any, q: any) => {
-          acc[q.specialty] = (acc[q.specialty] || 0) + 1;
-          return acc;
-        }, {})
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    if (action === "classify_batch") {
-      // Phase 4: AI Classification
-      const { data: questions } = await supabaseAdmin
+      // 1. Fetch questions not yet in staging
+      const { data: questions, error: fetchError } = await supabaseAdmin
         .from("questions_bank")
         .select("id, statement, explanation, specialty, topic, subtopic")
-        .is("competency_id", null)
-        .limit(limit);
+        .not("id", "in", (
+          supabaseAdmin.from("question_classification_staging").select("question_id")
+        ))
+        .limit(actualLimit);
 
+      if (fetchError) throw fetchError;
       if (!questions || questions.length === 0) {
         return new Response(JSON.stringify({ success: true, message: "No questions to classify" }), { headers: corsHeaders });
       }
 
-      const results = [];
-      for (let i = 0; i < questions.length; i += batch_size) {
-        const batch = questions.slice(i, i + batch_size);
-        const prompt = `Analise as seguintes questões médicas e mapeie-as para um currículo estruturado.
-        Para cada questão, retorne um JSON com:
-        - predicted_theme
-        - predicted_subtheme
-        - predicted_competency
-        - competency_id (Baseado no tema/subtema, ex: CARDIO_001)
-        - confidence_score (0-1)
+      // 2. Fetch canonical curriculum for context
+      const { data: registry } = await supabaseAdmin
+        .from("curriculum_registry")
+        .select("curriculum_area, curriculum_theme, curriculum_subtheme, competency_id");
 
-        Questões:
-        ${batch.map((q, idx) => `Q${idx}: ${q.statement.substring(0, 500)}`).join('\n')}`;
+      const registryContext = registry?.slice(0, 100).map(r => 
+        `${r.curriculum_area} > ${r.curriculum_theme} > ${r.curriculum_subtheme} (ID: ${r.competency_id})`
+      ).join("\n");
+
+      // 3. Create Batch Entry
+      const { data: batchEntry, error: batchError } = await supabaseAdmin
+        .from("classification_batches")
+        .insert({
+          batch_size: questions.length,
+          model_used: AI_MODELS.REASONING,
+          prompt_version: "v3.5-curriculum-exact",
+          status: "processing"
+        })
+        .select()
+        .single();
+
+      if (batchError) throw batchError;
+
+      const results = [];
+      let totalCost = 0;
+
+      // 4. Process in chunks of 10 (AI handles small batches better for accuracy)
+      for (let i = 0; i < questions.length; i += 10) {
+        const chunk = questions.slice(i, i + 10);
+        
+        const prompt = `Você é um Auditor Médico Sênior. Sua missão é classificar questões para o currículo ENAZIZI.
+        REGRA DE OURO: Use apenas os competency_id fornecidos se houver correspondência exata. Se não, sugira um novo ID seguindo o padrão AREA_THEME_SUBTHEME.
+
+        Currículo de Referência (Amostra):
+        ${registryContext}
+
+        Questões para classificar:
+        ${chunk.map((q, idx) => `
+        --- QUESTÃO ${idx} (ID: ${q.id}) ---
+        Statement: ${q.statement.substring(0, 800)}
+        Topic/Subtopic Legado: ${q.topic} / ${q.subtopic}
+        `).join('\n')}
+
+        Retorne um JSON no formato:
+        {
+          "classifications": [
+            {
+              "question_id": "uuid",
+              "predicted_area": "string",
+              "predicted_theme": "string",
+              "predicted_subtheme": "string",
+              "predicted_competency": "string",
+              "competency_id": "string",
+              "confidence_score": 0.98,
+              "reasoning_summary": "string"
+            }
+          ]
+        }`;
 
         const aiResponse = await ai.chat.completions.create({
-          model: AI_MODELS.GPT4O,
-          messages: [{ role: "user", content: prompt }],
+          model: AI_MODELS.REASONING,
+          messages: [{ role: "system", content: "Você é um classificador médico rigoroso." }, { role: "user", content: prompt }],
           response_format: { type: "json_object" }
         });
 
-        const parsed = JSON.parse(aiResponse.choices[0].message.content || "{}");
-        // Logic to save to question_classification_staging would go here
-        results.push(...Object.values(parsed));
+        const parsed = JSON.parse(aiResponse.choices[0].message.content || '{"classifications":[]}');
+        const batchResults = parsed.classifications || [];
+
+        // 5. Cross-Validation for Critical Topics
+        for (const res of batchResults) {
+          const isCritical = CRITICAL_TOPICS.some(t => 
+            res.predicted_theme?.includes(t) || res.predicted_subtheme?.includes(t)
+          );
+
+          if (isCritical) {
+            const auditPrompt = `VALIDE ESTA CLASSIFICAÇÃO CRÍTICA.
+            Questão ID: ${res.question_id}
+            Classificação Proposta: ${res.predicted_theme} > ${res.predicted_subtheme}
+            Confirma que esta questão trata de ${CRITICAL_TOPICS.join(", ")}?
+            Responda APENAS JSON: {"confirmed": boolean, "alternative_competency_id": "string", "reason": "string"}`;
+
+            const auditResponse = await ai.chat.completions.create({
+              model: AI_MODELS.FAST,
+              messages: [{ role: "user", content: auditPrompt }],
+              response_format: { type: "json_object" }
+            });
+
+            const auditParsed = JSON.parse(auditResponse.choices[0].message.content || "{}");
+            res.cross_validated = true;
+            if (!auditParsed.confirmed) {
+              res.confidence_score = Math.min(res.confidence_score, 0.7); // Drop confidence if auditor disagrees
+              res.validation_divergence = auditParsed.reason;
+            }
+          }
+
+          // 6. Apply Confidence Gates Status
+          let status = "manual_review_required";
+          if (res.confidence_score >= 0.95) {
+            status = "auto_approved_pending_sample";
+          } else if (res.confidence_score >= 0.80) {
+            status = "sample_review_required";
+          }
+
+          // 7. Save to Staging
+          await supabaseAdmin.from("question_classification_staging").insert({
+            question_id: res.question_id,
+            batch_id: batchEntry.id,
+            predicted_area: res.predicted_area,
+            predicted_theme: res.predicted_theme,
+            predicted_subtheme: res.predicted_subtheme,
+            predicted_competency: res.predicted_competency,
+            competency_id: res.competency_id,
+            confidence_score: res.confidence_score,
+            reasoning_summary: res.reasoning_summary,
+            classification_status: status,
+            model_used: AI_MODELS.REASONING,
+            prompt_version: "v3.5-curriculum-exact",
+            cross_validated: res.cross_validated || false,
+            validation_divergence: res.validation_divergence || null
+          });
+
+          results.push({ ...res, status });
+        }
       }
 
-      return new Response(JSON.stringify({ success: true, processed: questions.length, results }), { headers: corsHeaders });
-    }
+      // 8. Finalize Batch Report
+      const stats = results.reduce((acc, curr) => {
+        acc[curr.status] = (acc[curr.status] || 0) + 1;
+        return acc;
+      }, {} as any);
 
-    if (action === "coverage_report") {
-      // Phase 6 & 8: Coverage & Gap Analysis
-      const { data: registry } = await supabaseAdmin.from("curriculum_registry").select("*");
-      const { data: counts } = await supabaseAdmin.rpc("get_competency_counts"); // Assuming a helper function or raw query
+      await supabaseAdmin.from("classification_batches").update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        quality_report: {
+          stats,
+          critical_topics_processed: results.filter(r => r.cross_validated).length,
+        }
+      }).eq("id", batchEntry.id);
 
-      return new Response(JSON.stringify({ success: true, coverage: counts }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ 
+        success: true, 
+        batch_id: batchEntry.id,
+        processed: results.length,
+        stats 
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ success: false, error: "Invalid action" }), { status: 400, headers: corsHeaders });
