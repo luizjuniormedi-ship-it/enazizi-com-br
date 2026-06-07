@@ -612,7 +612,7 @@ const Simulados = () => {
 
           if (data.insufficientQuestions) {
             setQuestions(adaptiveQs);
-            setPartialMessage(data.message || `Encontramos apenas ${adaptiveQs.length} questões para os filtros selecionados.`);
+            setPartialMessage(data.message || `Aviso: Banco insuficiente para o tema solicitado. Geradas ${adaptiveQs.length} de ${config.count || 20} questões.`);
             setPhase("partial");
             return;
           }
@@ -968,7 +968,7 @@ const Simulados = () => {
 
       if (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
         setQuestions(allGenerated);
-        setPartialMessage(`Encontramos apenas ${allGenerated.length} questões para os filtros selecionados.`);
+        setPartialMessage(`Aviso: Banco insuficiente para o tema solicitado. Geradas ${allGenerated.length} de ${requestedTotal} questões.`);
         setPhase("partial");
         return;
       }
