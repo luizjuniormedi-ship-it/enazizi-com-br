@@ -10551,6 +10551,111 @@ export type Database = {
           },
         ]
       }
+      cvrp_orphan_reconstruction_log: {
+        Row: {
+          applied_at: string | null
+          id: string
+          match_confidence: number | null
+          match_method: string | null
+          new_competency_id: string | null
+          new_topic_id: string | null
+          previous_competency_id: string | null
+          previous_topic_id: string | null
+          question_id: string
+          source_metadata: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          id?: string
+          match_confidence?: number | null
+          match_method?: string | null
+          new_competency_id?: string | null
+          new_topic_id?: string | null
+          previous_competency_id?: string | null
+          previous_topic_id?: string | null
+          question_id: string
+          source_metadata?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          id?: string
+          match_confidence?: number | null
+          match_method?: string | null
+          new_competency_id?: string | null
+          new_topic_id?: string | null
+          previous_competency_id?: string | null
+          previous_topic_id?: string | null
+          question_id?: string
+          source_metadata?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cvrp_orphan_reconstruction_log_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cvrp_orphan_reconstruction_log_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cvrp_topic_link_audit: {
+        Row: {
+          has_competency_id: boolean
+          has_topic_id: boolean
+          id: string
+          is_competency_valid: boolean
+          is_topic_valid: boolean
+          last_audit_at: string | null
+          orphan_reason: string | null
+          question_id: string
+          specialty_consistency: boolean
+        }
+        Insert: {
+          has_competency_id: boolean
+          has_topic_id: boolean
+          id?: string
+          is_competency_valid: boolean
+          is_topic_valid: boolean
+          last_audit_at?: string | null
+          orphan_reason?: string | null
+          question_id: string
+          specialty_consistency: boolean
+        }
+        Update: {
+          has_competency_id?: boolean
+          has_topic_id?: boolean
+          id?: string
+          is_competency_valid?: boolean
+          is_topic_valid?: boolean
+          last_audit_at?: string | null
+          orphan_reason?: string | null
+          question_id?: string
+          specialty_consistency?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cvrp_topic_link_audit_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cvrp_topic_link_audit_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cvrp_user_requests_impact: {
         Row: {
           alias_resolution_rate: number | null
@@ -23536,6 +23641,41 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_questions_bank_competency_registry"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_questions_bank_competency_registry"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "ghost_competency_registry"
+            referencedColumns: ["competency_id"]
+          },
+          {
+            foreignKeyName: "fk_questions_bank_competency_registry"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "v_exact_topic_coverage_audit"
+            referencedColumns: ["registry_id"]
+          },
+          {
+            foreignKeyName: "fk_questions_bank_curriculum_topic"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_questions_bank_curriculum_topic"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+          {
             foreignKeyName: "questions_bank_exam_bank_id_fkey"
             columns: ["exam_bank_id"]
             isOneToOne: false
@@ -31658,6 +31798,26 @@ export type Database = {
         }
         Relationships: []
       }
+      v_cvrp_operational_certification: {
+        Row: {
+          competency_name: string | null
+          physical_questions: number | null
+          usability_rate: number | null
+          usable_questions: number | null
+        }
+        Relationships: []
+      }
+      v_cvrp_topic_link_health: {
+        Row: {
+          competency_link_rate: number | null
+          competency_linked_questions: number | null
+          linked_questions: number | null
+          orphan_questions: number | null
+          topic_link_rate: number | null
+          total_questions: number | null
+        }
+        Relationships: []
+      }
       v_enrichment_progress: {
         Row: {
           enriched_24h: number | null
@@ -32200,6 +32360,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_questions_bank_curriculum_topic"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_questions_bank_curriculum_topic"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+          {
             foreignKeyName: "questions_bank_exam_bank_id_fkey"
             columns: ["exam_bank_id"]
             isOneToOne: false
@@ -32501,6 +32675,14 @@ export type Database = {
         Returns: string
       }
       execute_data_retention: { Args: never; Returns: undefined }
+      fn_cvrp_reconstruct_links: {
+        Args: never
+        Returns: {
+          total_failed: number
+          total_processed: number
+          total_resolved: number
+        }[]
+      }
       generate_incident_rca: { Args: { incident_id: string }; Returns: Json }
       get_active_blueprint: {
         Args: { p_exam_key: string }
