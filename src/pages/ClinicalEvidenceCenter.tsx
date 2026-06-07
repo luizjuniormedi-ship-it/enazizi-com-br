@@ -69,7 +69,11 @@ export default function ClinicalEvidenceCenter() {
       recovery: 85,
       icu: 10,
       death: 5
-    }
+    },
+    evidenceQuality: 92,
+    inflationRate: 4.2,
+    attributionConfidence: 0.85,
+    caseDifficultyAvg: 1.2
   });
 
   useEffect(() => {
