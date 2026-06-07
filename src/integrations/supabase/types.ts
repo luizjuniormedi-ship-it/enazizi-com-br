@@ -3043,6 +3043,65 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_reports: {
+        Row: {
+          accuracy_competency: number | null
+          accuracy_competency_id: number | null
+          accuracy_subtheme: number | null
+          accuracy_theme: number | null
+          confidence_calibration_error: number | null
+          created_at: string | null
+          drift_score: number | null
+          false_negative_rate: number | null
+          false_positive_rate: number | null
+          id: string
+          is_rare_competency_audit: boolean | null
+          specialty: string
+          total_samples: number
+          wave_id: string | null
+        }
+        Insert: {
+          accuracy_competency?: number | null
+          accuracy_competency_id?: number | null
+          accuracy_subtheme?: number | null
+          accuracy_theme?: number | null
+          confidence_calibration_error?: number | null
+          created_at?: string | null
+          drift_score?: number | null
+          false_negative_rate?: number | null
+          false_positive_rate?: number | null
+          id?: string
+          is_rare_competency_audit?: boolean | null
+          specialty: string
+          total_samples: number
+          wave_id?: string | null
+        }
+        Update: {
+          accuracy_competency?: number | null
+          accuracy_competency_id?: number | null
+          accuracy_subtheme?: number | null
+          accuracy_theme?: number | null
+          confidence_calibration_error?: number | null
+          created_at?: string | null
+          drift_score?: number | null
+          false_negative_rate?: number | null
+          false_positive_rate?: number | null
+          id?: string
+          is_rare_competency_audit?: boolean | null
+          specialty?: string
+          total_samples?: number
+          wave_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_reports_wave_id_fkey"
+            columns: ["wave_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_waves"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_simulados_bancas: {
         Row: {
           alias_used: boolean | null
@@ -9636,6 +9695,42 @@ export type Database = {
           topic?: string | null
           topic_id?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      critical_competency_validation: {
+        Row: {
+          classifier_a_result: Json | null
+          classifier_b_result: Json | null
+          competency_id: string
+          created_at: string | null
+          final_status: string | null
+          id: string
+          is_consensus: boolean | null
+          question_id: string
+          validated_at: string | null
+        }
+        Insert: {
+          classifier_a_result?: Json | null
+          classifier_b_result?: Json | null
+          competency_id: string
+          created_at?: string | null
+          final_status?: string | null
+          id?: string
+          is_consensus?: boolean | null
+          question_id: string
+          validated_at?: string | null
+        }
+        Update: {
+          classifier_a_result?: Json | null
+          classifier_b_result?: Json | null
+          competency_id?: string
+          created_at?: string | null
+          final_status?: string | null
+          id?: string
+          is_consensus?: boolean | null
+          question_id?: string
+          validated_at?: string | null
         }
         Relationships: []
       }
@@ -21250,6 +21345,39 @@ export type Database = {
           },
         ]
       }
+      promotion_waves: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          started_at: string | null
+          status: string
+          target_size: number
+          wave_number: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          target_size: number
+          wave_number: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          target_size?: number
+          wave_number?: number
+        }
+        Relationships: []
+      }
       publication_datasets: {
         Row: {
           approval_rate: number
@@ -30737,6 +30865,18 @@ export type Database = {
         }
         Relationships: []
       }
+      v_production_readiness_score: {
+        Row: {
+          avg_acc_comp: number | null
+          avg_acc_theme: number | null
+          avg_calib_error: number | null
+          avg_drift: number | null
+          avg_fnr: number | null
+          avg_fpr: number | null
+          final_readiness_score: number | null
+        }
+        Relationships: []
+      }
       v_route_efficiency_ranking: {
         Row: {
           avg_clicks: number | null
@@ -31260,6 +31400,15 @@ export type Database = {
       calculate_readiness_score_v2: {
         Args: { p_user_id: string }
         Returns: number
+      }
+      calculate_real_coverage: {
+        Args: { p_competency_id: string }
+        Returns: {
+          duplicate_count: number
+          effective_coverage_ratio: number
+          total_questions: number
+          unique_questions: number
+        }[]
       }
       capture_enamed_evidence_snapshot: {
         Args: { p_day_offset: number; p_user_id: string }
