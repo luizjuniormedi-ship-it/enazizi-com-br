@@ -89,6 +89,14 @@ export const LearningScienceCenter: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
               Ciência de Prontidão & Aprovação
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="w-4 h-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">Métrica que combina seu desempenho atual com a probabilidade estatística de aprovação em provas reais.</p>
+                </TooltipContent>
+              </Tooltip>
             </CardTitle>
             <CardDescription>Correlação atual com desempenho real: {Math.round(snapshot.forecastAccuracy * 100)}%</CardDescription>
           </CardHeader>
