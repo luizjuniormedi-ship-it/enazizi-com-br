@@ -222,7 +222,7 @@ export const OCC90RecoveryProgram: React.FC = () => {
             </div>
             <div className="mt-4 flex items-center gap-2">
               <Badge className="bg-blue-500/20 text-blue-500 border-none text-[10px]">TARGETED GEN</Badge>
-              <span className="text-[10px] font-black text-blue-500">RPS < 50%</span>
+              <span className="text-[10px] font-black text-blue-500">RPS &lt; 50%</span>
             </div>
           </CardContent>
         </Card>
