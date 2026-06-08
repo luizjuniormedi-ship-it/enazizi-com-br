@@ -34507,7 +34507,7 @@ export type Database = {
             }[]
           }
       materialize_classifications: {
-        Args: { p_batch_id: string }
+        Args: { p_batch_id?: string }
         Returns: number
       }
       memory_drift_analysis: { Args: never; Returns: Json }
