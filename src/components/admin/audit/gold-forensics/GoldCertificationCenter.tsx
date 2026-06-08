@@ -32,6 +32,7 @@ import {
 } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { telemetry } from '@/lib/pedagogicalTelemetry';
 
 const TIER_DISTRIBUTION = [
   { name: 'GOLD', value: 38, color: '#f59e0b' },
