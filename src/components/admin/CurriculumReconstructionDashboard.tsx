@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { 
   Database, Brain, Activity, Target, ShieldCheck, 
-  AlertTriangle, CheckCircle2, ListFilter, Warplane, 
+  AlertTriangle, CheckCircle2, ListFilter, Flame, 
   FileText, ArrowRight, BarChart3, Search, Info
 } from "lucide-react";
 import { toast } from "sonner";
