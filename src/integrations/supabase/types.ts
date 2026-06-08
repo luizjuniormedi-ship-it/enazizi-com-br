@@ -34401,6 +34401,16 @@ export type Database = {
           total_runs: number
         }[]
       }
+      get_unclassified_questions: {
+        Args: { p_limit: number }
+        Returns: {
+          explanation: string
+          id: string
+          statement: string
+          subtopic: string
+          topic: string
+        }[]
+      }
       get_unified_dashboard_data: {
         Args: { p_reset_at: string; p_today_iso: string; p_user_id: string }
         Returns: Json

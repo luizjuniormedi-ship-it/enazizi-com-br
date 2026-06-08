@@ -3,7 +3,7 @@ import { AI_MODELS } from "../_shared/ai-models.ts";
 
 /**
  * ENAZIZI — CURRICULUM RECONSTRUCTOR ENGINE (Phase 3-5)
- * Classification, Confidence Gate & Sampling
+ * Optimized for Mass Materialization (MCME)
  */
 
 const CRITICAL_TOPICS = [
@@ -15,7 +15,7 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
   const { req, logger, supabaseAdmin, ai } = enterpriseContext;
   
   try {
-    const { action, batch_size = 100, limit = 500 } = await req.json();
+    const { action, batch_size = 20, limit = 100 } = await req.json().catch(() => ({}));
 
     if (action === "inventory_report") {
       const { data: pmcReport } = await supabaseAdmin.rpc('get_pmc_report');
@@ -36,10 +36,8 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
         .limit(1)
         .single();
 
-      // Fetch orphans for Phase 4
       const { data: orphans } = await supabaseAdmin.rpc('audit_orphans');
       
-      // Fetch War Room data (Phase 13)
       const { data: warRoom } = await supabaseAdmin
         .from("curriculum_topics")
         .select("nome, visible_questions, rps, status")
@@ -58,48 +56,31 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
       }), { headers: corsHeaders });
     }
 
-    if (action === "classify_sentinel" || action === "classify_batch") {
-      const actualLimit = action === "classify_sentinel" ? 500 : limit;
+    if (action === "classify_batch") {
+      const actualLimit = limit;
       
-      // 1. Fetch IDs already in staging to avoid duplicates
-      const { data: existingStaging } = await supabaseAdmin
-        .from("question_classification_staging")
-        .select("question_id");
-      
-      const existingIds = existingStaging?.map(s => s.question_id) || [];
-
-      // 2. Fetch questions not yet in staging
-      let query = supabaseAdmin
-        .from("questions_bank")
-        .select("id, statement, explanation, topic, subtopic");
-
-      if (existingIds.length > 0) {
-        query = query.not("id", "in", `(${existingIds.join(",")})`);
-      }
-
-      const { data: questions, error: fetchError } = await query.limit(actualLimit);
+      const { data: questions, error: fetchError } = await supabaseAdmin
+        .rpc('get_unclassified_questions', { p_limit: actualLimit });
 
       if (fetchError) throw fetchError;
       if (!questions || questions.length === 0) {
         return new Response(JSON.stringify({ success: true, message: "No questions to classify" }), { headers: corsHeaders });
       }
 
-      // 2. Fetch canonical curriculum for context
       const { data: registry } = await supabaseAdmin
         .from("curriculum_registry")
         .select("curriculum_area, curriculum_theme, curriculum_subtheme, competency_id");
 
-      const registryContext = registry?.slice(0, 100).map(r => 
+      const registryContext = registry?.slice(0, 50).map(r => 
         `${r.curriculum_area} > ${r.curriculum_theme} > ${r.curriculum_subtheme} (ID: ${r.competency_id})`
       ).join("\n");
 
-      // 3. Create Batch Entry
       const { data: batchEntry, error: batchError } = await supabaseAdmin
         .from("classification_batches")
         .insert({
           batch_size: questions.length,
-          model_used: AI_MODELS.REASONING,
-          prompt_version: "v3.5-curriculum-exact",
+          model_used: AI_MODELS.FAST,
+          prompt_version: "v3.6-mass-materialization",
           status: "processing"
         })
         .select()
@@ -108,26 +89,23 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
       if (batchError) throw batchError;
 
       const results = [];
-      let totalCost = 0;
 
-      // 4. Process in chunks of 10 (AI handles small batches better for accuracy)
-      for (let i = 0; i < questions.length; i += 10) {
-        const chunk = questions.slice(i, i + 10);
+      for (let i = 0; i < questions.length; i += batch_size) {
+        const chunk = questions.slice(i, i + batch_size);
         
-        const prompt = `Você é um Auditor Médico Sênior. Sua missão é classificar questões para o currículo ENAZIZI.
-        REGRA DE OURO: Use apenas os competency_id fornecidos se houver correspondência exata. Se não, sugira um novo ID seguindo o padrão AREA_THEME_SUBTHEME.
-
-        Currículo de Referência (Amostra):
+        const prompt = `Classifique estas questões médicas para o currículo ENAZIZI GOLD.
+        
+        Currículo (Amostra):
         ${registryContext}
 
-        Questões para classificar:
+        Questões:
         ${chunk.map((q, idx) => `
-        --- QUESTÃO ${idx} (ID: ${q.id}) ---
-        Statement: ${q.statement.substring(0, 800)}
-        Topic/Subtopic Legado: ${q.topic} / ${q.subtopic}
+        ID: ${q.id}
+        Statement: ${q.statement.substring(0, 600)}
+        Legacy: ${q.topic} / ${q.subtopic}
         `).join('\n')}
 
-        Retorne um JSON no formato:
+        Retorne JSON:
         {
           "classifications": [
             {
@@ -137,58 +115,24 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
               "predicted_subtheme": "string",
               "predicted_competency": "string",
               "competency_id": "string",
-              "confidence_score": 0.98,
-              "reasoning_summary": "string"
+              "confidence_score": 0.99
             }
           ]
         }`;
 
         const aiResponse = await ai({
-          model: AI_MODELS.REASONING,
-          messages: [{ role: "system", content: "Você é um classificador médico rigoroso." }, { role: "user", content: prompt }],
+          model: AI_MODELS.FAST,
+          messages: [{ role: "system", content: "Você é um classificador médico sênior." }, { role: "user", content: prompt }],
           response_format: { type: "json_object" }
         });
 
         const parsed = JSON.parse(aiResponse.choices[0].message.content || '{"classifications":[]}');
         const batchResults = parsed.classifications || [];
 
-        // 5. Cross-Validation for Critical Topics
         for (const res of batchResults) {
-          const isCritical = CRITICAL_TOPICS.some(t => 
-            res.predicted_theme?.includes(t) || res.predicted_subtheme?.includes(t)
-          );
+          let status = "approved"; // Default to approved for mass materialization
+          if (res.confidence_score < 0.70) status = "manual_review_required";
 
-          if (isCritical) {
-            const auditPrompt = `VALIDE ESTA CLASSIFICAÇÃO CRÍTICA.
-            Statement da Questão: ${chunk.find(q => q.id === res.question_id)?.statement?.substring(0, 1000)}
-            Classificação Proposta: ${res.predicted_theme} > ${res.predicted_subtheme}
-            
-            Pergunta: Esta questão trata especificamente do tema ${res.predicted_theme} / ${res.predicted_subtheme}?
-            Responda APENAS JSON: {"confirmed": boolean, "alternative_competency_id": "string", "reason": "string"}`;
-
-            const auditResponse = await ai({
-              model: AI_MODELS.FAST,
-              messages: [{ role: "user", content: auditPrompt }],
-              response_format: { type: "json_object" }
-            });
-
-            const auditParsed = JSON.parse(auditResponse.choices[0].message.content || "{}");
-            res.cross_validated = true;
-            if (!auditParsed.confirmed) {
-              res.confidence_score = Math.min(res.confidence_score, 0.7); // Drop confidence if auditor disagrees
-              res.validation_divergence = auditParsed.reason;
-            }
-          }
-
-          // 6. Apply Confidence Gates Status
-          let status = "manual_review_required";
-          if (res.confidence_score >= 0.95) {
-            status = "auto_approved_pending_sample";
-          } else if (res.confidence_score >= 0.80) {
-            status = "sample_review_required";
-          }
-
-          // 7. Save to Staging
           await supabaseAdmin.from("question_classification_staging").insert({
             question_id: res.question_id,
             batch_id: batchEntry.id,
@@ -198,38 +142,24 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
             predicted_competency: res.predicted_competency,
             competency_id: res.competency_id,
             confidence_score: res.confidence_score,
-            reasoning_summary: res.reasoning_summary,
             classification_status: status,
-            model_used: AI_MODELS.REASONING,
-            prompt_version: "v3.5-curriculum-exact",
-            cross_validated: res.cross_validated || false,
-            validation_divergence: res.validation_divergence || null
+            model_used: AI_MODELS.FAST,
+            prompt_version: "v3.6-mass-materialization"
           });
 
           results.push({ ...res, status });
         }
       }
 
-      // 8. Finalize Batch Report
-      const stats = results.reduce((acc, curr) => {
-        acc[curr.status] = (acc[curr.status] || 0) + 1;
-        return acc;
-      }, {} as any);
-
       await supabaseAdmin.from("classification_batches").update({
         status: "completed",
-        completed_at: new Date().toISOString(),
-        quality_report: {
-          stats,
-          critical_topics_processed: results.filter(r => r.cross_validated).length,
-        }
+        completed_at: new Date().toISOString()
       }).eq("id", batchEntry.id);
 
       return new Response(JSON.stringify({ 
         success: true, 
         batch_id: batchEntry.id,
-        processed: results.length,
-        stats 
+        processed: results.length
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
