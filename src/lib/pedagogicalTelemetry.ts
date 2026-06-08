@@ -150,7 +150,14 @@ export type TelemetryEventName =
   | 'ls_investor_pack_generated'
   | 'ceh_metric_audit_failed'
   | 'ceh_inflation_detected'
-  | 'ceh_evidence_quality_updated';
+  | 'ceh_evidence_quality_updated'
+  | 'gcf_audit_started'
+  | 'gcf_gold_validated'
+  | 'gcf_gold_rejected'
+  | 'gcf_promotion_approved'
+  | 'gcf_demotion_approved'
+  | 'gcf_enare_fidelity_calculated'
+  | 'gcf_audit_completed';
 
 
 
