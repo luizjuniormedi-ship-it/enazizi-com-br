@@ -2,171 +2,125 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { AI_MODELS } from "../_shared/ai-models.ts";
 
 /**
- * ENAZIZI — CURRICULUM RECONSTRUCTOR ENGINE (Phase 3-5)
- * Optimized for Mass Materialization (MCME)
+ * ENAZIZI — MCME (MASS CURRICULUM MATERIALIZATION EXECUTION)
+ * Dual Validation Engine (Phase 2-3)
  */
-
-const CRITICAL_TOPICS = [
-  "IAM com supra", "Sepse", "AVC", "Hipercalemia", "CAD", 
-  "Pré-natal", "Metrorragia", "Apendicite", "Pneumonia", "Insuficiência cardíaca"
-];
 
 Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseContext) => {
   const { req, logger, supabaseAdmin, ai } = enterpriseContext;
   
   try {
-    const { action, batch_size = 20, limit = 100 } = await req.json().catch(() => ({}));
+    const { action, limit = 50, batch_size = 5 } = await req.json().catch(() => ({}));
 
     if (action === "inventory_report") {
-      const { data: pmcReport } = await supabaseAdmin.rpc('get_pmc_report');
+      const { data: pmcReport } = await supabaseAdmin.rpc('get_pmc_report').catch(() => ({ data: null }));
       
-      const { count: totalQuestions } = await supabaseAdmin
-        .from("questions_bank")
-        .select("*", { count: "exact", head: true });
-
-      const { count: unclassified } = await supabaseAdmin
-        .from("questions_bank")
-        .select("*", { count: "exact", head: true })
-        .is("topic_id", null);
-
-      const { data: lastBatch } = await supabaseAdmin
-        .from("classification_batches")
-        .select("id")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      const { data: orphans } = await supabaseAdmin.rpc('audit_orphans');
+      const { data: stats } = await supabaseAdmin.rpc('rebuild_curriculum_metrics');
       
-      const { data: warRoom } = await supabaseAdmin
-        .from("curriculum_topics")
-        .select("nome, visible_questions, rps, status")
-        .order("visible_questions", { ascending: true })
-        .limit(50);
-
+      const { data: orphans } = await supabaseAdmin.rpc('audit_orphans').catch(() => ({ data: [] }));
+      
       return new Response(JSON.stringify({ 
         success: true, 
-        total: totalQuestions,
-        unclassified,
-        classified: (totalQuestions || 0) - (unclassified || 0),
-        last_batch_id: lastBatch?.id,
-        pmc_report: pmcReport,
-        orphans: orphans || [],
-        war_room: warRoom || []
+        stats,
+        orphans: orphans?.slice(0, 10) || []
       }), { headers: corsHeaders });
     }
 
-    if (action === "classify_batch") {
-      const actualLimit = limit;
-      
+    if (action === "mcme_mass_execute") {
+      // 1. Fetch unmaterialized but approved questions
       const { data: questions, error: fetchError } = await supabaseAdmin
-        .rpc('get_unclassified_questions', { p_limit: actualLimit });
+        .from("questions_bank")
+        .select("id, statement, topic, subtopic")
+        .eq("approved_for_generation", true)
+        .is("competency_id", null)
+        .limit(limit);
 
       if (fetchError) throw fetchError;
       if (!questions || questions.length === 0) {
-        return new Response(JSON.stringify({ success: true, message: "No questions to classify" }), { headers: corsHeaders });
+        return new Response(JSON.stringify({ success: true, message: "Materialization complete" }), { headers: corsHeaders });
       }
 
+      // 2. Fetch Curriculum Registry for context
       const { data: registry } = await supabaseAdmin
         .from("curriculum_registry")
-        .select("curriculum_area, curriculum_theme, curriculum_subtheme, competency_id");
+        .select("curriculum_area, curriculum_theme, curriculum_subtheme, curriculum_competency, competency_id")
+        .limit(100);
 
-      const registryContext = registry?.slice(0, 50).map(r => 
-        `${r.curriculum_area} > ${r.curriculum_theme} > ${r.curriculum_subtheme} (ID: ${r.competency_id})`
+      const registryText = registry?.map(r => 
+        `- [${r.competency_id}] ${r.curriculum_area} > ${r.curriculum_theme} > ${r.curriculum_subtheme} (${r.curriculum_competency})`
       ).join("\n");
 
-      const { data: batchEntry, error: batchError } = await supabaseAdmin
-        .from("classification_batches")
-        .insert({
-          batch_size: questions.length,
-          model_used: AI_MODELS.FAST,
-          prompt_version: "v3.6-mass-materialization",
-          status: "processing"
-        })
-        .select()
-        .single();
-
-      if (batchError) throw batchError;
-
-      const results = [];
+      let processedCount = 0;
 
       for (let i = 0; i < questions.length; i += batch_size) {
         const chunk = questions.slice(i, i + batch_size);
         
-        const prompt = `Classifique estas questões médicas para o currículo ENAZIZI GOLD.
+        // DUAL VALIDATION: Principal Classifier
+        const promptPrincipal = `Classificador Principal ENAZIZI GOLD.
+        Materialize estas questões no currículo abaixo. Use apenas IDs do currículo.
         
-        Currículo (Amostra):
-        ${registryContext}
+        Currículo:
+        ${registryText}
 
         Questões:
-        ${chunk.map((q, idx) => `
-        ID: ${q.id}
-        Statement: ${q.statement.substring(0, 600)}
-        Legacy: ${q.topic} / ${q.subtopic}
-        `).join('\n')}
+        ${chunk.map(q => `ID: ${q.id} | Contexto: ${q.topic} > ${q.subtopic} | Enunciado: ${q.statement.substring(0, 300)}`).join('\n')}
 
-        Retorne JSON:
-        {
-          "classifications": [
-            {
-              "question_id": "uuid",
-              "predicted_area": "string",
-              "predicted_theme": "string",
-              "predicted_subtheme": "string",
-              "predicted_competency": "string",
-              "competency_id": "string",
-              "confidence_score": 0.99
-            }
-          ]
-        }`;
+        Retorne JSON: {"results": [{"id": "uuid", "competency_id": "uuid", "confidence": 0.95}]}`;
 
-        const aiResponse = await ai({
+        const respPrincipal = await ai({
           model: AI_MODELS.FAST,
-          messages: [{ role: "system", content: "Você é um classificador médico sênior." }, { role: "user", content: prompt }],
+          messages: [{ role: "system", content: "Expert em materialização curricular médica." }, { role: "user", content: promptPrincipal }],
           response_format: { type: "json_object" }
         });
 
-        const parsed = JSON.parse(aiResponse.choices[0].message.content || '{"classifications":[]}');
-        const batchResults = parsed.classifications || [];
+        const principalResults = JSON.parse(respPrincipal.choices[0].message.content).results;
 
-        for (const res of batchResults) {
-          let status = "approved"; // Default to approved for mass materialization
-          if (res.confidence_score < 0.70) status = "manual_review_required";
+        // DUAL VALIDATION: Auditor Classifier
+        const promptAuditor = `Auditor ENAZIZI GOLD. 
+        Valide a materialização para estas questões.
+        Questões: ${chunk.map(q => `ID: ${q.id} | Contexto: ${q.topic} > ${q.subtopic}`).join('\n')}
+        Retorne JSON: {"results": [{"id": "uuid", "competency_id": "uuid"}]}`;
 
-          await supabaseAdmin.from("question_classification_staging").insert({
-            question_id: res.question_id,
-            batch_id: batchEntry.id,
-            predicted_area: res.predicted_area,
-            predicted_theme: res.predicted_theme,
-            predicted_subtheme: res.predicted_subtheme,
-            predicted_competency: res.predicted_competency,
-            competency_id: res.competency_id,
-            confidence_score: res.confidence_score,
-            classification_status: status,
-            model_used: AI_MODELS.FAST,
-            prompt_version: "v3.6-mass-materialization"
-          });
+        const respAuditor = await ai({
+          model: AI_MODELS.FAST,
+          messages: [{ role: "system", content: "Auditor rigoroso de currículo médico." }, { role: "user", content: promptAuditor }],
+          response_format: { type: "json_object" }
+        });
 
-          results.push({ ...res, status });
+        const auditorResults = JSON.parse(respAuditor.choices[0].message.content).results;
+
+        // Conciliation & Execution
+        for (const p of principalResults) {
+          const a = auditorResults.find(res => res.id === p.id);
+          const isValidated = a && a.competency_id === p.competency_id;
+
+          if (isValidated && p.confidence >= 0.90) {
+            // Success: Persist Materialization
+            await supabaseAdmin.from("questions_bank").update({
+              competency_id: p.competency_id,
+              classification_method: 'MCME_DUAL_AI_V1',
+              classification_confidence: p.confidence,
+              classified_at: new Date().toISOString()
+            }).eq("id", p.id);
+            processedCount++;
+          }
         }
       }
 
-      await supabaseAdmin.from("classification_batches").update({
-        status: "completed",
-        completed_at: new Date().toISOString()
-      }).eq("id", batchEntry.id);
+      // 3. Rebuild metrics
+      await supabaseAdmin.rpc('rebuild_curriculum_metrics');
 
       return new Response(JSON.stringify({ 
         success: true, 
-        batch_id: batchEntry.id,
-        processed: results.length
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        materialized: processedCount,
+        total_in_batch: questions.length 
+      }), { headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({ success: false, error: "Invalid action" }), { status: 400, headers: corsHeaders });
 
   } catch (err) {
-    logger.critical("RECONSTRUCTOR_CRASH", err.message);
+    logger.critical("MCME_CRASH", err.message);
     return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: corsHeaders });
   }
 }));
