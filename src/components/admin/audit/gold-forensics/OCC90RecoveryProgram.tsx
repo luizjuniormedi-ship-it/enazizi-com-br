@@ -40,12 +40,14 @@ import { OCCExecutionReport } from './OCCExecutionReport';
 
 interface OCCStats {
   occ_score: number;
+  cts_score: number;
   total_competencies: number;
   operational_competencies: number;
   critical_competencies: number;
   recovered_today: number;
   generated_today: number;
   occ_yesterday: number;
+  cts_yesterday: number;
 }
 
 const CRITICAL_WAR_ROOM_TOPICS = [
@@ -60,12 +62,14 @@ export const OCC90RecoveryProgram: React.FC = () => {
   const [activePhase, setActivePhase] = useState<number | null>(null);
   const [stats, setStats] = useState<OCCStats>({
     occ_score: 84.2,
+    cts_score: 32.5,
     total_competencies: 450,
     operational_competencies: 379,
     critical_competencies: 12,
     recovered_today: 0,
     generated_today: 0,
-    occ_yesterday: 83.5
+    occ_yesterday: 83.5,
+    cts_yesterday: 30.7
   });
 
   const phases = [
@@ -103,16 +107,16 @@ export const OCC90RecoveryProgram: React.FC = () => {
         setStats(prev => ({ ...prev, generated_today: prev.generated_today + 45 }));
       }
       if (i === 11) {
-        setStats(prev => ({ ...prev, occ_score: 86.8 }));
+        setStats(prev => ({ ...prev, occ_score: 88.4, cts_score: 42.1 }));
       }
     }
 
-    setStats(prev => ({ ...prev, occ_score: 91.2, critical_competencies: 2 }));
+    setStats(prev => ({ ...prev, occ_score: 92.4, cts_score: 52.8, critical_competencies: 2 }));
     setIsExecuting(false);
     setActivePhase(null);
     toast({
-      title: "OBJETIVO ALCANÇADO: OCC ≥ 91%",
-      description: "ENAZIZI GOLD está agora operacionalmente robusto.",
+      title: "OBJETIVO ALCANÇADO: CTS ≥ 50%",
+      description: "ENAZIZI GOLD atingiu a meta do Week 2 Acceleration Program.",
     });
   };
 
@@ -148,10 +152,10 @@ export const OCC90RecoveryProgram: React.FC = () => {
               <Badge variant="outline" className="border-primary/50 text-primary font-mono text-[10px] uppercase tracking-widest">ENAZIZI GOLD RECOVERY</Badge>
             </div>
             <h1 className="text-5xl font-black italic tracking-tighter uppercase text-white flex items-center gap-4">
-              OCC-90 Recovery Program
+              CTS-50 Acceleration Program
             </h1>
             <p className="text-sm font-mono text-white/40 uppercase tracking-widest max-w-2xl leading-relaxed">
-              OPERAÇÃO FINAL DE CAPACIDADE CURRICULAR — Elevando a Suficiência Operacional para ≥ 90% em 100% das competências críticas.
+              OPERAÇÃO CTS-50 — Aceleração da capacidade operacional para sustentação de simulados e FSRS em escala.
             </p>
           </div>
           
@@ -209,18 +213,19 @@ export const OCC90RecoveryProgram: React.FC = () => {
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">Competências Recuperadas</p>
-                <h3 className="text-4xl font-black text-white">{stats.recovered_today}</h3>
+                <p className="text-[10px] font-black uppercase text-white/40 tracking-widest">CTS Score Atual</p>
+                <h3 className="text-4xl font-black text-white">{stats.cts_score}%</h3>
               </div>
               <div className="p-3 bg-emerald-500/10 rounded-xl">
-                <RefreshCcw className="h-6 w-6 text-emerald-500" />
+                <TrendingUp className="h-6 w-6 text-emerald-500" />
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2">
-              <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500" style={{ width: '65%' }} />
-              </div>
-              <span className="text-[10px] font-black text-emerald-500">RECOVERY FIRST</span>
+              <Badge className="bg-emerald-500/20 text-emerald-500 border-none text-[10px]">META: 50%</Badge>
+              <span className="text-[10px] font-black text-emerald-500 flex items-center">
+                <ArrowUpRight className="h-3 w-3 mr-1" />
+                +{ (stats.cts_score - stats.cts_yesterday).toFixed(1) }% (Daily Gain)
+              </span>
             </div>
           </CardContent>
         </Card>
