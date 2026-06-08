@@ -27,9 +27,11 @@ import {
   Scale,
   Megaphone,
   FlaskConical,
-  Info
+  Info,
+  Award
 } from 'lucide-react';
 import { OutcomeScienceCenter } from './OutcomeScienceCenter';
+import { GoldCertificationCenter } from './gold-forensics/GoldCertificationCenter';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { 
@@ -167,6 +169,9 @@ export const ScientificAuditDashboard: React.FC = () => {
         <TabsList className="bg-white/5 border border-white/10 p-1">
           <TabsTrigger value="pedagogical" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Comparativo Pedagógico
+          </TabsTrigger>
+          <TabsTrigger value="gold-forensics" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-amber-500 data-[state=active]:text-black">
+            Gold Certification Center
           </TabsTrigger>
           <TabsTrigger value="lec-metrics" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Métricas LEC
@@ -327,6 +332,10 @@ export const ScientificAuditDashboard: React.FC = () => {
               </Card>
             </div>
           </div>
+        </TabsContent>
+        
+        <TabsContent value="gold-forensics" className="space-y-6">
+          <GoldCertificationCenter />
         </TabsContent>
 
         <TabsContent value="outcome-science" className="space-y-6">
