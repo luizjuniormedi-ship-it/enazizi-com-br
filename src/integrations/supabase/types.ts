@@ -34682,7 +34682,7 @@ export type Database = {
           read_ct: number
         }[]
       }
-      rebuild_curriculum_metrics: { Args: never; Returns: undefined }
+      rebuild_curriculum_metrics: { Args: never; Returns: Json }
       recalculate_user_theta: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
