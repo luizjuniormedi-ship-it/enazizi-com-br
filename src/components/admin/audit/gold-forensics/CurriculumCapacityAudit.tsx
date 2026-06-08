@@ -282,7 +282,7 @@ export const CurriculumCapacityAudit: React.FC = () => {
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <Badge className="bg-emerald-500/20 text-emerald-500 border-none">
-                    STABLE (< 20%)
+                    STABLE (&lt; 20%)
                   </Badge>
                 </div>
               </CardContent>
@@ -391,7 +391,7 @@ export const CurriculumCapacityAudit: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-[10px] font-bold">
-                    <span className="text-white/60">RECOVERY READY (>30Q)</span>
+                    <span className="text-white/60">RECOVERY READY (&gt;30Q)</span>
                     <span className="text-emerald-500">72.4%</span>
                   </div>
                   <Progress value={72.4} className="h-1.5 bg-white/5" indicatorClassName="bg-emerald-600" />
@@ -469,7 +469,7 @@ export const CurriculumCapacityAudit: React.FC = () => {
                         <span className="text-emerald-500 font-bold">84.2%</span>
                       </li>
                       <li className="flex justify-between text-xs">
-                        <span className="text-white/60">Competências Críticas (<20Q):</span>
+                        <span className="text-white/60">Competências Críticas (&lt;20Q):</span>
                         <span className="text-red-500 font-bold">12 (4.8%)</span>
                       </li>
                       <li className="flex justify-between text-xs">
