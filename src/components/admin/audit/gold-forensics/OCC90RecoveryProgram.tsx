@@ -21,7 +21,8 @@ import {
   ListFilter,
   Flame,
   Construction,
-  Award
+  Award,
+  FileBarChart
 } from 'lucide-react';
 import { 
   Table, 
@@ -34,6 +35,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OCCExecutionReport } from './OCCExecutionReport';
 
 interface OCCStats {
   occ_score: number;
