@@ -27,9 +27,11 @@ import {
   Scale,
   Megaphone,
   FlaskConical,
-  Info
+  Info,
+  Award
 } from 'lucide-react';
 import { OutcomeScienceCenter } from './OutcomeScienceCenter';
+import { GoldCertificationCenter } from './gold-forensics/GoldCertificationCenter';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { 
