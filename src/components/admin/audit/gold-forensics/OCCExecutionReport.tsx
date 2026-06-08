@@ -134,10 +134,17 @@ export const OCCExecutionReport: React.FC = () => {
                   <SearchCode className="h-5 w-5 text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <h4 className="text-xs font-black uppercase text-white">Insight Estratégico</h4>
-                  <p className="text-[10px] text-white/60 italic leading-relaxed">
-                    "O gargalo de materialização foi superado. O próximo ciclo deve focar em reduzir o overlap de simulados de 22% para &lt; 15%."
-                  </p>
+                  <h4 className="text-xs font-black uppercase text-white">CTS Forecast (Week 4)</h4>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-white/40">Projection CTS 75%</span>
+                      <span className="text-emerald-500 font-bold">D21</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-white/40">Projection CTS 95%</span>
+                      <span className="text-primary font-bold">D30</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
