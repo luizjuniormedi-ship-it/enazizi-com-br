@@ -12919,6 +12919,110 @@ export type Database = {
         }
         Relationships: []
       }
+      etgc_certification_results: {
+        Row: {
+          competency_id: string | null
+          competency_name: string | null
+          created_at: string | null
+          execution_time_ms: number | null
+          failure_reason: string | null
+          id: string
+          leakage_count: number | null
+          metrics: Json | null
+          returned_10_count: number | null
+          returned_20_count: number | null
+          returned_50_count: number | null
+          status: string | null
+          tps: number | null
+          trace_ids: Json | null
+        }
+        Insert: {
+          competency_id?: string | null
+          competency_name?: string | null
+          created_at?: string | null
+          execution_time_ms?: number | null
+          failure_reason?: string | null
+          id?: string
+          leakage_count?: number | null
+          metrics?: Json | null
+          returned_10_count?: number | null
+          returned_20_count?: number | null
+          returned_50_count?: number | null
+          status?: string | null
+          tps?: number | null
+          trace_ids?: Json | null
+        }
+        Update: {
+          competency_id?: string | null
+          competency_name?: string | null
+          created_at?: string | null
+          execution_time_ms?: number | null
+          failure_reason?: string | null
+          id?: string
+          leakage_count?: number | null
+          metrics?: Json | null
+          returned_10_count?: number | null
+          returned_20_count?: number | null
+          returned_50_count?: number | null
+          status?: string | null
+          tps?: number | null
+          trace_ids?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "etgc_certification_results_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_registry"
+            referencedColumns: ["competency_id"]
+          },
+        ]
+      }
+      etgc_certification_summary: {
+        Row: {
+          avg_execution_time: number | null
+          created_at: string | null
+          cts: number | null
+          full_report: Json | null
+          green_count: number | null
+          id: string
+          is_certified: boolean | null
+          red_count: number | null
+          topic_leakage_avg: number | null
+          total_competencies: number | null
+          tps_avg: number | null
+          yellow_count: number | null
+        }
+        Insert: {
+          avg_execution_time?: number | null
+          created_at?: string | null
+          cts?: number | null
+          full_report?: Json | null
+          green_count?: number | null
+          id?: string
+          is_certified?: boolean | null
+          red_count?: number | null
+          topic_leakage_avg?: number | null
+          total_competencies?: number | null
+          tps_avg?: number | null
+          yellow_count?: number | null
+        }
+        Update: {
+          avg_execution_time?: number | null
+          created_at?: string | null
+          cts?: number | null
+          full_report?: Json | null
+          green_count?: number | null
+          id?: string
+          is_certified?: boolean | null
+          red_count?: number | null
+          topic_leakage_avg?: number | null
+          total_competencies?: number | null
+          tps_avg?: number | null
+          yellow_count?: number | null
+        }
+        Relationships: []
+      }
       evidence_health_metrics: {
         Row: {
           confidence_interval: number | null
