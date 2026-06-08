@@ -20135,6 +20135,97 @@ export type Database = {
         }
         Relationships: []
       }
+      occ_daily_stats: {
+        Row: {
+          created_at: string | null
+          critical_competencies: number
+          date: string
+          generated_today: number | null
+          id: string
+          occ_score: number
+          operational_competencies: number
+          recovered_today: number | null
+          total_competencies: number
+        }
+        Insert: {
+          created_at?: string | null
+          critical_competencies: number
+          date?: string
+          generated_today?: number | null
+          id?: string
+          occ_score: number
+          operational_competencies: number
+          recovered_today?: number | null
+          total_competencies: number
+        }
+        Update: {
+          created_at?: string | null
+          critical_competencies?: number
+          date?: string
+          generated_today?: number | null
+          id?: string
+          occ_score?: number
+          operational_competencies?: number
+          recovered_today?: number | null
+          total_competencies?: number
+        }
+        Relationships: []
+      }
+      occ_recovery_logs: {
+        Row: {
+          action_taken: string | null
+          created_at: string | null
+          id: string
+          phase: string
+          questions_after: number | null
+          questions_before: number | null
+          status: string | null
+          topic_id: string | null
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string | null
+          id?: string
+          phase: string
+          questions_after?: number | null
+          questions_before?: number | null
+          status?: string | null
+          topic_id?: string | null
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string | null
+          id?: string
+          phase?: string
+          questions_after?: number | null
+          questions_before?: number | null
+          status?: string | null
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "occ_recovery_logs_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "occ_recovery_logs_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+          {
+            foreignKeyName: "occ_recovery_logs_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_fccp_recovery_ranking"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       official_exam_assets: {
         Row: {
           asset_type: string | null
