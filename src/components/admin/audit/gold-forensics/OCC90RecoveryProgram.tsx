@@ -20,7 +20,8 @@ import {
   BarChart3,
   ListFilter,
   Flame,
-  Construction
+  Construction,
+  Award
 } from 'lucide-react';
 import { 
   Table, 
