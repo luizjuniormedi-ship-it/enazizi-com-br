@@ -190,6 +190,9 @@ export const ScientificAuditDashboard: React.FC = () => {
           <TabsTrigger value="cca-audit" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             CCA Capacity Audit
           </TabsTrigger>
+          <TabsTrigger value="occ-recovery" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-red-600 data-[state=active]:text-white">
+            OCC-90 Recovery
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="lec-metrics" className="space-y-6">
