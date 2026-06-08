@@ -33,6 +33,7 @@ import {
 import { OutcomeScienceCenter } from './OutcomeScienceCenter';
 import { GoldCertificationCenter } from './gold-forensics/GoldCertificationCenter';
 import { CurriculumCapacityAudit } from './gold-forensics/CurriculumCapacityAudit';
+import { OCC90RecoveryProgram } from './gold-forensics/OCC90RecoveryProgram';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { 
@@ -188,6 +189,9 @@ export const ScientificAuditDashboard: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="cca-audit" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             CCA Capacity Audit
+          </TabsTrigger>
+          <TabsTrigger value="occ-recovery" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-red-600 data-[state=active]:text-white">
+            OCC-90 Recovery
           </TabsTrigger>
         </TabsList>
 
@@ -348,6 +352,10 @@ export const ScientificAuditDashboard: React.FC = () => {
 
         <TabsContent value="cca-audit" className="space-y-6">
           <CurriculumCapacityAudit />
+        </TabsContent>
+
+        <TabsContent value="occ-recovery" className="space-y-6">
+          <OCC90RecoveryProgram />
         </TabsContent>
 
         <TabsContent value="protocol" className="space-y-6">
