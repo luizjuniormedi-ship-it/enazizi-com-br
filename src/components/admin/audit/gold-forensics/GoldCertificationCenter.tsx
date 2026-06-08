@@ -71,6 +71,8 @@ export const GoldCertificationCenter: React.FC = () => {
         if (prev >= 100) {
           clearInterval(interval);
           setIsAuditing(false);
+          telemetry.track('gcf_gold_validated', { audit_score: 90.2 });
+          telemetry.track('gcf_audit_completed', { result: 'APPROVED' });
           toast({
             title: "Auditoria GCF Concluída",
             description: "Certificação GOLD VALIDATED com sucesso.",
