@@ -33,6 +33,7 @@ import {
 import { OutcomeScienceCenter } from './OutcomeScienceCenter';
 import { GoldCertificationCenter } from './gold-forensics/GoldCertificationCenter';
 import { CurriculumCapacityAudit } from './gold-forensics/CurriculumCapacityAudit';
+import { OCC90RecoveryProgram } from './gold-forensics/OCC90RecoveryProgram';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { 
