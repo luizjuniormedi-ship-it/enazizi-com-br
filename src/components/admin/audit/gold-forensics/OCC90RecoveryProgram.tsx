@@ -331,6 +331,52 @@ export const OCC90RecoveryProgram: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Phase 10: SPECIALTY CERTIFICATION RANKING */}
+          <Card className="bg-[#0a0a0f] border-white/10 overflow-hidden">
+            <CardHeader className="bg-white/[0.02] border-b border-white/10">
+              <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <Award className="h-4 w-4 text-amber-500" /> Specialty Certification Ranking
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-white/10 hover:bg-transparent">
+                    <TableHead className="text-[9px] font-black uppercase h-10 px-6">Especialidade</TableHead>
+                    <TableHead className="text-[9px] font-black uppercase h-10 text-center">OCC %</TableHead>
+                    <TableHead className="text-[9px] font-black uppercase h-10 text-right px-6">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[
+                    { spec: 'Cardiologia', occ: 98, status: 'GOLD' },
+                    { spec: 'Pneumologia', occ: 85, status: 'ROBUSTA' },
+                    { spec: 'Infectologia', occ: 72, status: 'OPERACIONAL' },
+                    { spec: 'Neurologia', occ: 45, status: 'PARCIAL' },
+                    { spec: 'Ginecologia', occ: 15, status: 'CRÍTICA' },
+                  ].map((row) => (
+                    <TableRow key={row.spec} className="border-white/5 hover:bg-white/5 transition-colors">
+                      <TableCell className="py-4 px-6 text-xs font-bold text-white">{row.spec}</TableCell>
+                      <TableCell className="py-4 text-center text-xs font-mono">{row.occ}%</TableCell>
+                      <TableCell className="py-4 text-right px-6">
+                        <Badge 
+                          className={`text-[8px] font-black border-none ${
+                            row.status === 'GOLD' ? 'bg-amber-500 text-black' : 
+                            row.status === 'ROBUSTA' ? 'bg-blue-600 text-white' : 
+                            row.status === 'OPERACIONAL' ? 'bg-emerald-500 text-black' : 
+                            row.status === 'PARCIAL' ? 'bg-yellow-500 text-black' : 'bg-red-600 text-white animate-pulse'
+                          }`}
+                        >
+                          {row.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
           {/* OVERLAP REDUCTION (Phase 8) */}
           <Card className="bg-[#0a0a0f] border-white/10 border-t-4 border-t-primary">
             <CardHeader>
