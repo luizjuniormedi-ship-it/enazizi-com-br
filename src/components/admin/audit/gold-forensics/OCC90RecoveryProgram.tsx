@@ -433,12 +433,14 @@ export const OCC90RecoveryProgram: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
+      </div>
+    </TabsContent>
 
-        <TabsContent value="report" className="animate-in fade-in duration-500">
-          <OCCExecutionReport />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+    <TabsContent value="report" className="animate-in fade-in duration-500">
+      <OCCExecutionReport />
+    </TabsContent>
+  </Tabs>
+</div>
+);
 };
