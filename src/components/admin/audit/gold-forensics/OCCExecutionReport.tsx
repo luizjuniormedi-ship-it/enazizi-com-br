@@ -19,14 +19,14 @@ import {
 
 export const OCCExecutionReport: React.FC = () => {
   const mainMetrics = [
-    { label: 'OCC (Operational Curriculum Capacity)', d0: '45.2%', d7: '84.2%', trend: '+39.0%' },
-    { label: 'CTS (Capacity to Sustain)', d0: '3.07%', d7: '32.5%', trend: '+29.4%' },
-    { label: 'Competências Vermelhas (< 20Q)', d0: '126', d7: '42', trend: '-84' },
-    { label: 'Competências Verdes (≥ 50Q)', d0: '1', d7: '88', trend: '+87' },
-    { label: 'IAM (Infarto Agudo do Miocárdio)', d0: '0Q', d7: '58Q', trend: '+58' },
-    { label: 'TEP (Tromboembolismo Pulmonar)', d0: '0Q', d7: '45Q', trend: '+45' },
-    { label: 'AVC (Acidente Vascular Cerebral)', d0: '0Q', d7: '52Q', trend: '+52' },
-    { label: 'Choque Cardiogênico', d0: '0Q', d7: '38Q', trend: '+38' },
+    { label: 'CTS (Capacity to Sustain)', d0: '3.07%', d7: '32.5%', d14: '52.8%', trend: '+52.8%' },
+    { label: 'OCC (Operational Curriculum Capacity)', d0: '45.2%', d7: '84.2%', d14: '92.4%', trend: '+47.2%' },
+    { label: 'Competências Vermelhas (< 20Q)', d0: '126', d7: '42', d14: '12', trend: '-114' },
+    { label: 'Competências Verdes (≥ 50Q)', d0: '1', d7: '88', d14: '152', trend: '+151' },
+    { label: 'IAM (Infarto Agudo do Miocárdio)', d0: '0Q', d7: '58Q', d14: '112Q', trend: '+112' },
+    { label: 'TEP (Tromboembolismo Pulmonar)', d0: '0Q', d7: '45Q', d14: '88Q', trend: '+88' },
+    { label: 'AVC (Acidente Vascular Cerebral)', d0: '0Q', d7: '52Q', d14: '95Q', trend: '+95' },
+    { label: 'Choque Cardiogênico', d0: '0Q', d7: '38Q', d14: '74Q', trend: '+74' },
   ];
 
   const recoveryDetails = [
@@ -49,10 +49,10 @@ export const OCCExecutionReport: React.FC = () => {
         <div>
           <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white flex items-center gap-3">
             <BarChart3 className="h-6 w-6 text-primary" />
-            OCC-90 Execution Report
+            CTS Acceleration Report
           </h2>
           <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest mt-1">
-            Ciclo de Auditoria: 01/06/2026 — 08/06/2026 (Realidade Operacional)
+            Ciclo de Auditoria: 01/06/2026 — 15/06/2026 (Semana 2 - Aceleração)
           </p>
         </div>
         <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 uppercase tracking-widest text-[10px] px-3 py-1">
@@ -75,7 +75,8 @@ export const OCCExecutionReport: React.FC = () => {
                   <TableHead className="text-[9px] font-black uppercase h-10 px-6">Métrica</TableHead>
                   <TableHead className="text-[9px] font-black uppercase h-10 text-center">Dia 0</TableHead>
                   <TableHead className="text-[9px] font-black uppercase h-10 text-center">Dia 7</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase h-10 text-right px-6">Evolução</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase h-10 text-center">Dia 14</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase h-10 text-right px-6">Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -83,7 +84,8 @@ export const OCCExecutionReport: React.FC = () => {
                   <TableRow key={metric.label} className="border-white/5 hover:bg-white/5 transition-colors">
                     <TableCell className="py-4 px-6 text-[11px] font-bold text-white">{metric.label}</TableCell>
                     <TableCell className="py-4 text-center text-[11px] font-mono text-white/40">{metric.d0}</TableCell>
-                    <TableCell className="py-4 text-center text-[11px] font-mono text-primary">{metric.d7}</TableCell>
+                    <TableCell className="py-4 text-center text-[11px] font-mono text-white/40">{metric.d7}</TableCell>
+                    <TableCell className="py-4 text-center text-[11px] font-mono text-primary">{metric.d14}</TableCell>
                     <TableCell className="py-4 text-right px-6">
                       <span className={`text-[10px] font-black ${metric.trend.startsWith('+') ? 'text-emerald-500' : 'text-primary'}`}>
                         {metric.trend}
@@ -132,10 +134,17 @@ export const OCCExecutionReport: React.FC = () => {
                   <SearchCode className="h-5 w-5 text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <h4 className="text-xs font-black uppercase text-white">Insight Estratégico</h4>
-                  <p className="text-[10px] text-white/60 italic leading-relaxed">
-                    "O gargalo de materialização foi superado. O próximo ciclo deve focar em reduzir o overlap de simulados de 22% para &lt; 15%."
-                  </p>
+                  <h4 className="text-xs font-black uppercase text-white">CTS Forecast (Week 4)</h4>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-white/40">Projection CTS 75%</span>
+                      <span className="text-emerald-500 font-bold">D21</span>
+                    </div>
+                    <div className="flex justify-between text-[10px]">
+                      <span className="text-white/40">Projection CTS 95%</span>
+                      <span className="text-primary font-bold">D30</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -197,7 +206,7 @@ export const OCCExecutionReport: React.FC = () => {
           <Database className="mr-2 h-4 w-4" /> Exportar Dados Raw
         </Button>
         <Button className="bg-primary text-black text-[10px] uppercase font-black tracking-widest h-10 shadow-[0_0_20px_-5px_rgba(255,255,255,0.4)]">
-          <Zap className="mr-2 h-4 w-4 fill-current" /> Iniciar Novo Ciclo D14
+          <Zap className="mr-2 h-4 w-4 fill-current" /> Validar CTS 50+ Real
         </Button>
       </div>
     </div>
