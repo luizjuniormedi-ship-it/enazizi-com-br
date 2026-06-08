@@ -15117,6 +15117,109 @@ export type Database = {
         }
         Relationships: []
       }
+      gold_certification_audits: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          decision: string | null
+          enare_fidelity_avg: number | null
+          gold_fidelity_avg: number | null
+          gold_inflation_rate: number | null
+          id: string
+          impact_validation_avg: number | null
+          sample_size: number | null
+          started_at: string | null
+          status: string | null
+          survival_validation_avg: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          decision?: string | null
+          enare_fidelity_avg?: number | null
+          gold_fidelity_avg?: number | null
+          gold_inflation_rate?: number | null
+          id?: string
+          impact_validation_avg?: number | null
+          sample_size?: number | null
+          started_at?: string | null
+          status?: string | null
+          survival_validation_avg?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          decision?: string | null
+          enare_fidelity_avg?: number | null
+          gold_fidelity_avg?: number | null
+          gold_inflation_rate?: number | null
+          id?: string
+          impact_validation_avg?: number | null
+          sample_size?: number | null
+          started_at?: string | null
+          status?: string | null
+          survival_validation_avg?: number | null
+        }
+        Relationships: []
+      }
+      gold_promotion_candidates: {
+        Row: {
+          audit_id: string | null
+          created_at: string | null
+          current_tier: string | null
+          id: string
+          processed_at: string | null
+          question_id: string | null
+          reason: string | null
+          status: string | null
+          suggested_tier: string | null
+        }
+        Insert: {
+          audit_id?: string | null
+          created_at?: string | null
+          current_tier?: string | null
+          id?: string
+          processed_at?: string | null
+          question_id?: string | null
+          reason?: string | null
+          status?: string | null
+          suggested_tier?: string | null
+        }
+        Update: {
+          audit_id?: string | null
+          created_at?: string | null
+          current_tier?: string | null
+          id?: string
+          processed_at?: string | null
+          question_id?: string | null
+          reason?: string | null
+          status?: string | null
+          suggested_tier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gold_promotion_candidates_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "gold_certification_audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gold_promotion_candidates_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gold_promotion_candidates_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinica_medica_umbrella"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gold_questions_metadata: {
         Row: {
           clinical_reasoning_level: string | null
@@ -24682,6 +24785,7 @@ export type Database = {
           exam_bank_id: string | null
           explanation: string
           fsrs_hooks: Json | null
+          gold_fidelity_score: number | null
           guideline_recency_score: number | null
           guideline_reference: string | null
           guideline_relevancy_score: number | null
@@ -24690,6 +24794,7 @@ export type Database = {
           hallucination_risk_score: number | null
           id: string
           image_url: string | null
+          impact_validation_score: number | null
           ingestion_version: string | null
           institution: string | null
           is_clinical_case: boolean | null
@@ -24722,6 +24827,7 @@ export type Database = {
           statement: string
           subtopic: string | null
           subtopic_id: string | null
+          survival_validation_score: number | null
           tags: string[] | null
           topic: string | null
           topic_id: string | null
@@ -24767,6 +24873,7 @@ export type Database = {
           exam_bank_id?: string | null
           explanation: string
           fsrs_hooks?: Json | null
+          gold_fidelity_score?: number | null
           guideline_recency_score?: number | null
           guideline_reference?: string | null
           guideline_relevancy_score?: number | null
@@ -24775,6 +24882,7 @@ export type Database = {
           hallucination_risk_score?: number | null
           id?: string
           image_url?: string | null
+          impact_validation_score?: number | null
           ingestion_version?: string | null
           institution?: string | null
           is_clinical_case?: boolean | null
@@ -24807,6 +24915,7 @@ export type Database = {
           statement: string
           subtopic?: string | null
           subtopic_id?: string | null
+          survival_validation_score?: number | null
           tags?: string[] | null
           topic?: string | null
           topic_id?: string | null
@@ -24852,6 +24961,7 @@ export type Database = {
           exam_bank_id?: string | null
           explanation?: string
           fsrs_hooks?: Json | null
+          gold_fidelity_score?: number | null
           guideline_recency_score?: number | null
           guideline_reference?: string | null
           guideline_relevancy_score?: number | null
@@ -24860,6 +24970,7 @@ export type Database = {
           hallucination_risk_score?: number | null
           id?: string
           image_url?: string | null
+          impact_validation_score?: number | null
           ingestion_version?: string | null
           institution?: string | null
           is_clinical_case?: boolean | null
@@ -24892,6 +25003,7 @@ export type Database = {
           statement?: string
           subtopic?: string | null
           subtopic_id?: string | null
+          survival_validation_score?: number | null
           tags?: string[] | null
           topic?: string | null
           topic_id?: string | null
