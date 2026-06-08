@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { OutcomeScienceCenter } from './OutcomeScienceCenter';
 import { GoldCertificationCenter } from './gold-forensics/GoldCertificationCenter';
+import { CurriculumCapacityAudit } from './gold-forensics/CurriculumCapacityAudit';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { 
@@ -184,6 +185,9 @@ export const ScientificAuditDashboard: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="recovery" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
             Recovery Cycle
+          </TabsTrigger>
+          <TabsTrigger value="cca-audit" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black">
+            CCA Capacity Audit
           </TabsTrigger>
         </TabsList>
 
@@ -340,6 +344,10 @@ export const ScientificAuditDashboard: React.FC = () => {
 
         <TabsContent value="outcome-science" className="space-y-6">
           <OutcomeScienceCenter />
+        </TabsContent>
+
+        <TabsContent value="cca-audit" className="space-y-6">
+          <CurriculumCapacityAudit />
         </TabsContent>
 
         <TabsContent value="protocol" className="space-y-6">
