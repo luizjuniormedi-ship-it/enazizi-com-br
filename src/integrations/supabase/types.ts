@@ -22276,6 +22276,57 @@ export type Database = {
         }
         Relationships: []
       }
+      pmc_snapshots: {
+        Row: {
+          ccs_score: number | null
+          competency_id_filled: number | null
+          cos_score: number | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          ocr_score: number | null
+          operational_competencies: number | null
+          orphans: number | null
+          phase: string
+          specialty_id_filled: number | null
+          topic_id_filled: number | null
+          total_questions: number | null
+          tps_score: number | null
+        }
+        Insert: {
+          ccs_score?: number | null
+          competency_id_filled?: number | null
+          cos_score?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          ocr_score?: number | null
+          operational_competencies?: number | null
+          orphans?: number | null
+          phase: string
+          specialty_id_filled?: number | null
+          topic_id_filled?: number | null
+          total_questions?: number | null
+          tps_score?: number | null
+        }
+        Update: {
+          ccs_score?: number | null
+          competency_id_filled?: number | null
+          cos_score?: number | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          ocr_score?: number | null
+          operational_competencies?: number | null
+          orphans?: number | null
+          phase?: string
+          specialty_id_filled?: number | null
+          topic_id_filled?: number | null
+          total_questions?: number | null
+          tps_score?: number | null
+        }
+        Relationships: []
+      }
       practical_exam_results: {
         Row: {
           case_summary: string | null
@@ -33907,6 +33958,16 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: string
       }
+      audit_orphans: {
+        Args: never
+        Returns: {
+          audit_category: string
+          current_subtopic: string
+          current_topic: string
+          question_id: string
+          statement: string
+        }[]
+      }
       audit_question_funnel: {
         Args: { target_topic_name: string }
         Returns: Json
@@ -34193,6 +34254,7 @@ export type Database = {
           feedback_text: string
         }[]
       }
+      get_pmc_report: { Args: never; Returns: Json }
       get_questions_topic_counts: {
         Args: never
         Returns: {
@@ -34445,7 +34507,7 @@ export type Database = {
             }[]
           }
       materialize_classifications: {
-        Args: { p_batch_id: string }
+        Args: { p_batch_id?: string }
         Returns: number
       }
       memory_drift_analysis: { Args: never; Returns: Json }
