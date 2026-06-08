@@ -36,6 +36,7 @@ const DashboardMetricsGrid = lazy(() => import("@/components/dashboard/Dashboard
 const CognitiveValidation = lazy(() => import("@/components/admin/CognitiveValidation").then(m => ({ default: m.CognitiveValidation })));
 const HighImpactThemesCard = lazy(() => import("@/components/dashboard/HighImpactThemesCard"));
 const CurriculumReconstructionDashboard = lazy(() => import("@/components/admin/CurriculumReconstructionDashboard").then(m => ({ default: m.CurriculumReconstructionDashboard })));
+const ETGCProudDashboard = lazy(() => import("@/components/admin/ETGCProudDashboard").then(m => ({ default: m.ETGCProudDashboard })));
 const EnamedMatrixHealth = lazy(() => import("@/components/dashboard/EnamedMatrixHealth"));
 const ApprovalIntelligenceDashboard = lazy(() => import("@/components/dashboard/ApprovalIntelligenceDashboard"));
 
@@ -226,6 +227,9 @@ const Dashboard = () => {
         <div className="mx-4 sm:mx-8 lg:mx-14 relative z-10 space-y-8">
           <Suspense fallback={null}>
             <CurriculumReconstructionDashboard />
+          </Suspense>
+          <Suspense fallback={null}>
+            <ETGCProudDashboard />
           </Suspense>
           <Suspense fallback={null}>
             <CognitiveValidation />
