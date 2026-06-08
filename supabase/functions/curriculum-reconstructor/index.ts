@@ -18,9 +18,8 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
     const { action, batch_size = 100, limit = 500 } = await req.json();
 
     if (action === "inventory_report") {
-      const { data: stats } = await supabaseAdmin.rpc('get_curriculum_inventory_stats');
+      const { data: pmcReport } = await supabaseAdmin.rpc('get_pmc_report');
       
-      // Fallback if RPC doesn't exist yet or to provide detailed report
       const { count: totalQuestions } = await supabaseAdmin
         .from("questions_bank")
         .select("*", { count: "exact", head: true });
@@ -37,12 +36,25 @@ Deno.serve(enterpriseEdgeHandler("curriculum-reconstructor", async (enterpriseCo
         .limit(1)
         .single();
 
+      // Fetch orphans for Phase 4
+      const { data: orphans } = await supabaseAdmin.rpc('audit_orphans');
+      
+      // Fetch War Room data (Phase 13)
+      const { data: warRoom } = await supabaseAdmin
+        .from("curriculum_topics")
+        .select("nome, visible_questions, rps, status")
+        .order("visible_questions", { ascending: true })
+        .limit(50);
+
       return new Response(JSON.stringify({ 
         success: true, 
         total: totalQuestions,
         unclassified,
         classified: (totalQuestions || 0) - (unclassified || 0),
-        last_batch_id: lastBatch?.id
+        last_batch_id: lastBatch?.id,
+        pmc_report: pmcReport,
+        orphans: orphans || [],
+        war_room: warRoom || []
       }), { headers: corsHeaders });
     }
 
