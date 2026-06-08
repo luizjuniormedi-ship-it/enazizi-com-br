@@ -124,7 +124,18 @@ export const OCC90RecoveryProgram: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-20">
-      {/* HEADER OPERACIONAL */}
+      <Tabs defaultValue="operation" className="space-y-6">
+        <TabsList className="bg-white/5 border border-white/10 p-1">
+          <TabsTrigger value="operation" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black flex items-center gap-2">
+            <Zap className="h-3 w-3" /> Painel de Operação
+          </TabsTrigger>
+          <TabsTrigger value="report" className="text-[10px] font-black uppercase tracking-widest px-6 data-[state=active]:bg-primary data-[state=active]:text-black flex items-center gap-2">
+            <FileBarChart className="h-3 w-3" /> Execution Report (D0-D7)
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="operation" className="space-y-6 animate-in fade-in duration-500">
+          {/* HEADER OPERACIONAL */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#0a0a0f] to-[#12121a] border border-white/10 p-8 rounded-3xl">
         <div className="absolute top-0 right-0 p-4 opacity-5">
           <Flame className="h-40 w-40" />
