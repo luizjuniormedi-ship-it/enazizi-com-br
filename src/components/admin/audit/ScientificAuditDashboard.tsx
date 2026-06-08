@@ -333,6 +333,10 @@ export const ScientificAuditDashboard: React.FC = () => {
             </div>
           </div>
         </TabsContent>
+        
+        <TabsContent value="gold-forensics" className="space-y-6">
+          <GoldCertificationCenter />
+        </TabsContent>
 
         <TabsContent value="outcome-science" className="space-y-6">
           <OutcomeScienceCenter />
