@@ -131,6 +131,13 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
   const [classes, setClasses] = useState<any[]>([]);
   const [professorTurmas, setProfessorTurmas] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  useEffect(() => {
+    if (previewStudents.length > 0) {
+      setHasSearched(true);
+    }
+  }, [previewStudents.length]);
 
   useEffect(() => {
     if (assignmentMode === "classes" && classes.length === 0) {
@@ -345,9 +352,14 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                 <Input
-                  placeholder="Filtrar por nome ou e-mail..."
+                  placeholder="Buscar por nome ou e-mail..."
                   value={studentSearch}
                   onChange={(e) => onStudentSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      onPreviewMatchingStudents(false);
+                    }
+                  }}
                   className="h-11 pl-10 border-white/10 bg-background/50 text-xs font-medium"
                 />
               </div>
@@ -358,7 +370,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                 className="h-11 px-8 bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
               >
                 {previewLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-                ABRIR SELEÇÃO DE ALUNOS
+                BUSCAR ALUNOS
               </Button>
             </div>
           </div>
@@ -367,7 +379,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
             <Alert className="bg-primary/5 border-primary/20">
               <Building2 className="h-4 w-4 text-primary" />
               <AlertDescription className="text-[11px] font-bold uppercase tracking-widest opacity-70">
-                Após escolher universidade/período, abra a seleção nominal abaixo: somente os alunos marcados 1 a 1 receberão o simulado.
+                Utilize os filtros e a busca para encontrar os alunos. Marque individualmente quem deve receber este simulado. Você pode mudar os filtros e continuar selecionando alunos de diferentes turmas/universidades.
               </AlertDescription>
             </Alert>
           )}
@@ -445,8 +457,14 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
           ) : !previewLoading && (
             <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30 flex flex-col items-center">
               <Users className="h-10 w-10 mb-4" />
-              <p className="text-sm font-black uppercase tracking-widest">Nenhum aluno encontrado</p>
-              <p className="text-[11px] font-medium opacity-60 mt-1">Ajuste os filtros ou digite um nome para buscar</p>
+              <p className="text-sm font-black uppercase tracking-widest">
+                {hasSearched ? "Nenhum aluno encontrado" : "Aguardando busca"}
+              </p>
+              <p className="text-[11px] font-medium opacity-60 mt-1">
+                {hasSearched 
+                  ? "Tente ajustar os filtros ou o termo de busca." 
+                  : "Defina os filtros acima e clique em 'BUSCAR ALUNOS' para listar os nomes."}
+              </p>
             </div>
           )}
 
