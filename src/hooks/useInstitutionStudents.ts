@@ -39,7 +39,7 @@ export function useInstitutionStudents(filters: InstitutionStudentsFilters = {})
           _faculdade: faculdade,
           _periodo: periodo,
           _search: search?.trim() ? search.trim() : null,
-          _limit: 200,
+          _limit: 1000,
           _class_id: classId,
         }
       );
