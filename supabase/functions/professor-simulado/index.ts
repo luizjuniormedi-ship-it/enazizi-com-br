@@ -85,9 +85,13 @@ function normalizePeriodArray(value: unknown): number[] {
 
 function scopedFaculdadeFilters(requested: unknown, professorFaculdade: string | null, isAdmin: boolean): string[] {
   const clean = normalizeStringArray(requested);
+  // Relax restriction: allow all if admin or if searching for a specific university
+  // This helps when a professor wants to assign to students of a different college
   if (isAdmin || !professorFaculdade) return clean;
+  // Even if professor has a college, we allow them to filter by others if they choose to
+  // but we default to theirs if none requested.
   if (clean.length === 0) return [professorFaculdade];
-  return clean.includes(professorFaculdade) ? [professorFaculdade] : [NO_FACULDADE_MATCH];
+  return clean;
 }
 
 function sanitizeStudentSearch(value: unknown): string {
