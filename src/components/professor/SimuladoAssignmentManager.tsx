@@ -345,9 +345,14 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
                 <Input
-                  placeholder="Filtrar por nome ou e-mail..."
+                  placeholder="Buscar por nome ou e-mail..."
                   value={studentSearch}
                   onChange={(e) => onStudentSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      onPreviewMatchingStudents(false);
+                    }
+                  }}
                   className="h-11 pl-10 border-white/10 bg-background/50 text-xs font-medium"
                 />
               </div>
@@ -358,7 +363,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                 className="h-11 px-8 bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
               >
                 {previewLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-                ABRIR SELEÇÃO DE ALUNOS
+                BUSCAR ALUNOS
               </Button>
             </div>
           </div>
