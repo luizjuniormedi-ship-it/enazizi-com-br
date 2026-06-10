@@ -211,7 +211,7 @@ const StudentDistributionSelector = ({ selected, onChange, onFilterChange }: Pro
 
       {/* Student List */}
       <div className="rounded-xl border border-border/50 bg-card/30 overflow-hidden shadow-inner">
-        <ScrollArea className="h-56">
+        <ScrollArea className="h-80">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
