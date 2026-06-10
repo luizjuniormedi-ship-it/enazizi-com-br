@@ -372,7 +372,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
             <Alert className="bg-primary/5 border-primary/20">
               <Building2 className="h-4 w-4 text-primary" />
               <AlertDescription className="text-[11px] font-bold uppercase tracking-widest opacity-70">
-                Após escolher universidade/período, abra a seleção nominal abaixo: somente os alunos marcados 1 a 1 receberão o simulado.
+                Utilize os filtros e a busca para encontrar os alunos. Marque individualmente quem deve receber este simulado. Você pode mudar os filtros e continuar selecionando alunos de diferentes turmas/universidades.
               </AlertDescription>
             </Alert>
           )}
