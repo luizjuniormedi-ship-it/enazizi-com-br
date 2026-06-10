@@ -457,8 +457,14 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
           ) : !previewLoading && (
             <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30 flex flex-col items-center">
               <Users className="h-10 w-10 mb-4" />
-              <p className="text-sm font-black uppercase tracking-widest">Nenhum aluno encontrado</p>
-              <p className="text-[11px] font-medium opacity-60 mt-1">Ajuste os filtros ou digite um nome para buscar</p>
+              <p className="text-sm font-black uppercase tracking-widest">
+                {hasSearched ? "Nenhum aluno encontrado" : "Aguardando busca"}
+              </p>
+              <p className="text-[11px] font-medium opacity-60 mt-1">
+                {hasSearched 
+                  ? "Tente ajustar os filtros ou o termo de busca." 
+                  : "Defina os filtros acima e clique em 'BUSCAR ALUNOS' para listar os nomes."}
+              </p>
             </div>
           )}
 
