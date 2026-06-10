@@ -131,6 +131,13 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
   const [classes, setClasses] = useState<any[]>([]);
   const [professorTurmas, setProfessorTurmas] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  useEffect(() => {
+    if (previewStudents.length > 0) {
+      setHasSearched(true);
+    }
+  }, [previewStudents.length]);
 
   useEffect(() => {
     if (assignmentMode === "classes" && classes.length === 0) {
