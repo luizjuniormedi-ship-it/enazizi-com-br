@@ -58,7 +58,7 @@ export default function TutorContinueCard() {
           .from("chat_conversations")
           .select("id, title, updated_at, agent_type")
           .eq("user_id", user.id)
-          .in("agent_type", ["chatgpt-agent", "tutor-v3-premium"])
+          .in("agent_type", ["chatgpt-agent", "eu-ai"])
           .gte("updated_at", sevenDaysAgoIso);
 
         if (resetAt) query = query.gt("updated_at", resetAt);

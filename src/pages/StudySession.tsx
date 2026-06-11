@@ -98,7 +98,7 @@ const StudySessionContent = () => {
         topic,
         phase
       }, { 
-        functionName: "tutor-v3-premium",
+        functionName: "eu-ai",
         stream: false 
       });
       

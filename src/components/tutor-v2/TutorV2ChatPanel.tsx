@@ -49,7 +49,7 @@ export default function TutorV2ChatPanel({
     }
   }, [messages, isTyping]);
 
-  // [HOTFIX P0 TUTOR V3] Auto-dispatch initial topic so tutor-v3-premium is actually invoked
+  // [HOTFIX P0 TUTOR V3] Auto-dispatch initial topic so eu-ai is actually invoked
   // after session creation. Without this the chat panel mounts but never triggers AI,
   // leaving the user stuck on the loading state (same failure pattern as Simulado P0).
   useEffect(() => {

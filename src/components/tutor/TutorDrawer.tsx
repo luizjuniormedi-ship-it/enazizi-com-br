@@ -108,7 +108,7 @@ export default function TutorDrawer() {
             }
             welcomeMessageWithUploads="📚 Detectei {count} material(is) no seu acervo: {materiais}. Vou usar como base. 👇"
             placeholder={topic ? `Pergunte algo sobre ${topic}...` : "Faça sua pergunta..."}
-            functionName="tutor-v3-premium"
+            functionName="eu-ai"
             quickActions={QUICK_ACTIONS}
             initialPrompt={initialPrompt || undefined}
             topic={context?.topic ?? null}

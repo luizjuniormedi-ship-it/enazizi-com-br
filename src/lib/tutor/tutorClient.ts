@@ -9,7 +9,7 @@ export async function callTutorV3(payload: any, options: {
   stream?: boolean,
   signal?: AbortSignal 
 } = {}) {
-  const functionName = options.functionName || "tutor-v3-premium";
+  const functionName = options.functionName || "eu-ai";
   const requestId = payload.requestId || crypto.randomUUID();
   const correlationId = crypto.randomUUID();
   
