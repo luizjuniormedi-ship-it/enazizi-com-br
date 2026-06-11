@@ -318,9 +318,11 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   }, [selectedStudentIds]);
 
   const toggleAllStudents = useCallback(() => {
-    if (selectedStudentIds.length === previewStudents.length) {
+    const previewIds = previewStudents.map(s => s.user_id);
+    const allSelected = previewIds.every(id => selectedStudentIds.includes(id));
+
+    if (allSelected) {
       // Unselect only those in current preview
-      const previewIds = previewStudents.map(s => s.user_id);
       setSelectedStudentIds(prev => prev.filter(id => !previewIds.includes(id)));
       setSelectedStudentsData(prev => prev.filter(s => !previewIds.includes(s.user_id)));
     } else {
