@@ -467,7 +467,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       setExpandedQuestion(null);
       try {
       const total = parseInt(questionCount);
-      let allQuestions: any[] = [];
+      let allQuestionsLocal: any[] = [];
 
       if (useDistribution && selectedTopics.length > 1) {
         for (const topic of selectedTopics) {
@@ -486,10 +486,10 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
 
             toast({
               title: `${topic}: lote ${b + 1}/${batches}`,
-              description: `${allQuestions.length + topicQuestions.length}/${total} questões prontas`,
+              description: `${allQuestionsLocal.length + topicQuestions.length}/${total} questões prontas`,
             });
 
-            const previousStatements = [...allQuestions, ...topicQuestions].map((q: any) =>
+            const previousStatements = [...allQuestionsLocal, ...topicQuestions].map((q: any) =>
               String(q.statement || "").slice(0, 120)
             );
 
@@ -529,8 +529,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
               });
             }
           }
-          allQuestions = [...allQuestions, ...topicQuestions];
-          setGeneratedQuestions([...allQuestions]);
+          allQuestionsLocal = [...allQuestionsLocal, ...topicQuestions];
+          setGeneratedQuestions([...allQuestionsLocal]);
         }
       } else {
         const topicsWithSubs = selectedTopics.map((t) => {
@@ -541,15 +541,15 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         const batches = Math.ceil(total / FRONTEND_BATCH);
 
         for (let b = 0; b < batches; b++) {
-          const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
+          const batchCount = Math.min(FRONTEND_BATCH, total - allQuestionsLocal.length);
           if (batchCount <= 0) break;
 
           toast({
             title: `Gerando lote ${b + 1}/${batches}...`,
-            description: `${allQuestions.length}/${total} questões prontas`,
+            description: `${allQuestionsLocal.length}/${total} questões prontas`,
           });
 
-          const previousStatements = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+          const previousStatements = allQuestionsLocal.map((q: any) => String(q.statement || "").slice(0, 120));
 
           try {
             const res = await callAPI({
@@ -578,8 +578,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
               });
             }
             const batchQ = res.questions || [];
-            allQuestions = [...allQuestions, ...batchQ];
-            setGeneratedQuestions([...allQuestions]);
+            allQuestionsLocal = [...allQuestionsLocal, ...batchQ];
+            setGeneratedQuestions([...allQuestionsLocal]);
           } catch (batchErr) {
             console.error(`Batch ${b + 1} failed:`, batchErr);
             toast({
@@ -592,13 +592,13 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       }
 
       const target = total;
-      for (let fill = 0; fill < 4 && allQuestions.length < target; fill++) {
-        const deficit = target - allQuestions.length;
+      for (let fill = 0; fill < 4 && allQuestionsLocal.length < target; fill++) {
+        const deficit = target - allQuestionsLocal.length;
         toast({
           title: `Completando déficit...`,
           description: `Faltam ${deficit} questões (tentativa ${fill + 1})`,
         });
-        const prevStmts = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+        const prevStmts = allQuestionsLocal.map((q: any) => String(q.statement || "").slice(0, 120));
         const topicsWithSubsFill = selectedTopics.map((t) => {
           const subs = subtopics[t]?.trim();
           return subs ? `${t} (${subs})` : t;
@@ -612,14 +612,20 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
             previousStatements: prevStmts,
             examBoard: examBoard !== "all" ? examBoard : undefined,
           });
-          allQuestions = [...allQuestions, ...(res.questions || [])];
-          setGeneratedQuestions([...allQuestions]);
+          allQuestionsLocal = [...allQuestionsLocal, ...(res.questions || [])];
+          setGeneratedQuestions([...allQuestionsLocal]);
         } catch {
           break;
         }
       }
 
-      toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas.` });
+      toast({ title: "Questões geradas!", description: `${allQuestionsLocal.length} questões criadas.` });
+      
+      // v26: Se gerou 0 questões e é a primeira tentativa, tenta de novo após 1s (edge function cold start protection)
+      if (allQuestionsLocal.length === 0 && retryCount === 0) {
+        console.warn("[generateQuestionsAI] Gerou zero questões. Tentando retry em 1s...");
+        setTimeout(() => generateQuestionsAI(1), 1000);
+      }
     } catch (e: any) {
       toast({
         title: "Erro na geração",
@@ -628,11 +634,6 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       });
     } finally {
       setGenerating(false);
-      // v26: Se gerou 0 questões e é a primeira tentativa, tenta de novo após 1s (edge function cold start protection)
-      if (allQuestions.length === 0 && retryCount === 0) {
-        console.warn("[generateQuestionsAI] Gerou zero questões. Tentando retry em 1s...");
-        setTimeout(() => generateQuestionsAI(1), 1000);
-      }
     }
     });
   }, [
