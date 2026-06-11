@@ -452,7 +452,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     setManualQuestions((prev) => prev.filter((_, i) => i !== idx));
   }, []);
 
-  const generateQuestionsAI = useCallback(async () => {
+  const generateQuestionsAI = useCallback(async (retryCount = 0) => {
     await safeAction("generate_questions_ai", async () => {
       if (selectedTopics.length === 0) {
         toast({
@@ -628,6 +628,11 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       });
     } finally {
       setGenerating(false);
+      // v26: Se gerou 0 questões e é a primeira tentativa, tenta de novo após 1s (edge function cold start protection)
+      if (allQuestions.length === 0 && retryCount === 0) {
+        console.warn("[generateQuestionsAI] Gerou zero questões. Tentando retry em 1s...");
+        setTimeout(() => generateQuestionsAI(1), 1000);
+      }
     }
     });
   }, [
