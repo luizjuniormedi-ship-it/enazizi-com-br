@@ -306,17 +306,16 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
 
   const toggleStudentSelection = useCallback((student: any) => {
     const userId = student.user_id;
-    setSelectedStudentIds((prev) => {
-      const isSelected = prev.includes(userId);
-      if (isSelected) {
-        setSelectedStudentsData(data => data.filter(s => s.user_id !== userId));
-        setSelectedStudentIds(prev => prev.filter((id) => id !== userId));
-      } else {
-        setSelectedStudentsData(data => [...data, student]);
-        setSelectedStudentIds(prev => [...prev, userId]);
-      }
-    });
-  }, []);
+    const isSelected = selectedStudentIds.includes(userId);
+    
+    if (isSelected) {
+      setSelectedStudentsData(data => data.filter(s => s.user_id !== userId));
+      setSelectedStudentIds(prev => prev.filter((id) => id !== userId));
+    } else {
+      setSelectedStudentsData(data => [...data, student]);
+      setSelectedStudentIds(prev => [...prev, userId]);
+    }
+  }, [selectedStudentIds]);
 
   const toggleAllStudents = useCallback(() => {
     if (selectedStudentIds.length === previewStudents.length) {
