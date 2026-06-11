@@ -167,6 +167,14 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         setTimeLimit("60");
         setGeneratedQuestions([]);
         setManualQuestions([]);
+        setSelectedStudentIds([]);
+        setSelectedStudentsData([]);
+        setSelectedClassIds([]);
+        setSelectedProfessorTurmaIds([]);
+        setFaculdadeFilters([]);
+        setPeriodoFilters([]);
+        setStudentSearch("");
+        setPreviewStudents([]);
       }
     }
   }, [open, initialData]);
