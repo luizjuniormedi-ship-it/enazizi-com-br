@@ -154,9 +154,11 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
               manualTopic={manualTopic}
               onStatementChange={setManualStatement}
               onOptionChange={(i, v) => {
-                const newOpts = [...manualOptions];
-                newOpts[i] = v;
-                setManualOptions(newOpts);
+                setManualOptions(prev => {
+                  const copy = [...prev];
+                  copy[i] = v;
+                  return copy;
+                });
               }}
               onCorrectChange={setManualCorrect}
               onTopicChange={setManualTopic}
