@@ -220,11 +220,19 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       // Sem isso, mudar universidade/período/busca apagava os nomes já marcados (bug reportado).
       const newIds = students.map((s: any) => s.user_id).filter(Boolean);
       setSelectedStudentIds(prev => {
+        // No modo "manual", nós NÃO queremos auto-selecionar tudo o que vem da busca.
+        // Queremos que o professor clique um a um.
+        if (assignmentMode === "manual" || assignmentMode === "filter") {
+          return prev;
+        }
         const merged = new Set([...prev, ...newIds]);
         return Array.from(merged);
       });
       setSelectedStudentsData(prev => {
         const map = new Map(prev.map((s: any) => [s.user_id, s]));
+        // No modo manual/filter, só adicionamos aos dados se já estiver selecionado ou se for apenas para visualização
+        // Mas o SimuladoAssignmentManager depende de selectedStudentsData para renderizar os badges.
+        // Vamos manter o mapa atualizado com todos os dados de alunos que já vimos para evitar badges vazios.
         students.forEach((s: any) => map.set(s.user_id, s));
         return Array.from(map.values());
       });
@@ -444,7 +452,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     setManualQuestions((prev) => prev.filter((_, i) => i !== idx));
   }, []);
 
-  const generateQuestionsAI = useCallback(async () => {
+  const generateQuestionsAI = useCallback(async (retryCount = 0) => {
     await safeAction("generate_questions_ai", async () => {
       if (selectedTopics.length === 0) {
         toast({
@@ -459,7 +467,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       setExpandedQuestion(null);
       try {
       const total = parseInt(questionCount);
-      let allQuestions: any[] = [];
+      let allQuestionsLocal: any[] = [];
 
       if (useDistribution && selectedTopics.length > 1) {
         for (const topic of selectedTopics) {
@@ -478,10 +486,10 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
 
             toast({
               title: `${topic}: lote ${b + 1}/${batches}`,
-              description: `${allQuestions.length + topicQuestions.length}/${total} questões prontas`,
+              description: `${allQuestionsLocal.length + topicQuestions.length}/${total} questões prontas`,
             });
 
-            const previousStatements = [...allQuestions, ...topicQuestions].map((q: any) =>
+            const previousStatements = [...allQuestionsLocal, ...topicQuestions].map((q: any) =>
               String(q.statement || "").slice(0, 120)
             );
 
@@ -521,8 +529,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
               });
             }
           }
-          allQuestions = [...allQuestions, ...topicQuestions];
-          setGeneratedQuestions([...allQuestions]);
+          allQuestionsLocal = [...allQuestionsLocal, ...topicQuestions];
+          setGeneratedQuestions([...allQuestionsLocal]);
         }
       } else {
         const topicsWithSubs = selectedTopics.map((t) => {
@@ -533,15 +541,15 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         const batches = Math.ceil(total / FRONTEND_BATCH);
 
         for (let b = 0; b < batches; b++) {
-          const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
+          const batchCount = Math.min(FRONTEND_BATCH, total - allQuestionsLocal.length);
           if (batchCount <= 0) break;
 
           toast({
             title: `Gerando lote ${b + 1}/${batches}...`,
-            description: `${allQuestions.length}/${total} questões prontas`,
+            description: `${allQuestionsLocal.length}/${total} questões prontas`,
           });
 
-          const previousStatements = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+          const previousStatements = allQuestionsLocal.map((q: any) => String(q.statement || "").slice(0, 120));
 
           try {
             const res = await callAPI({
@@ -570,8 +578,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
               });
             }
             const batchQ = res.questions || [];
-            allQuestions = [...allQuestions, ...batchQ];
-            setGeneratedQuestions([...allQuestions]);
+            allQuestionsLocal = [...allQuestionsLocal, ...batchQ];
+            setGeneratedQuestions([...allQuestionsLocal]);
           } catch (batchErr) {
             console.error(`Batch ${b + 1} failed:`, batchErr);
             toast({
@@ -584,13 +592,13 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       }
 
       const target = total;
-      for (let fill = 0; fill < 4 && allQuestions.length < target; fill++) {
-        const deficit = target - allQuestions.length;
+      for (let fill = 0; fill < 4 && allQuestionsLocal.length < target; fill++) {
+        const deficit = target - allQuestionsLocal.length;
         toast({
           title: `Completando déficit...`,
           description: `Faltam ${deficit} questões (tentativa ${fill + 1})`,
         });
-        const prevStmts = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+        const prevStmts = allQuestionsLocal.map((q: any) => String(q.statement || "").slice(0, 120));
         const topicsWithSubsFill = selectedTopics.map((t) => {
           const subs = subtopics[t]?.trim();
           return subs ? `${t} (${subs})` : t;
@@ -604,14 +612,20 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
             previousStatements: prevStmts,
             examBoard: examBoard !== "all" ? examBoard : undefined,
           });
-          allQuestions = [...allQuestions, ...(res.questions || [])];
-          setGeneratedQuestions([...allQuestions]);
+          allQuestionsLocal = [...allQuestionsLocal, ...(res.questions || [])];
+          setGeneratedQuestions([...allQuestionsLocal]);
         } catch {
           break;
         }
       }
 
-      toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas.` });
+      toast({ title: "Questões geradas!", description: `${allQuestionsLocal.length} questões criadas.` });
+      
+      // v26: Se gerou 0 questões e é a primeira tentativa, tenta de novo após 1s (edge function cold start protection)
+      if (allQuestionsLocal.length === 0 && retryCount === 0) {
+        console.warn("[generateQuestionsAI] Gerou zero questões. Tentando retry em 1s...");
+        setTimeout(() => generateQuestionsAI(1), 1000);
+      }
     } catch (e: any) {
       toast({
         title: "Erro na geração",

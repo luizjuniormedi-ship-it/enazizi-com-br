@@ -328,7 +328,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
         </div>
       </div>
 
-      {(assignmentMode === "filter" || assignmentMode === "manual") && (
+      {(assignmentMode === "filter" || assignmentMode === "manual" || assignmentMode === "all") && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
           <div className="p-5 rounded-2xl border border-white/5 bg-white/5 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
