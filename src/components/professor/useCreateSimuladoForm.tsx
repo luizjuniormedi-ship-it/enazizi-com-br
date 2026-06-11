@@ -222,7 +222,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       setSelectedStudentIds(prev => {
         // No modo "manual", nós NÃO queremos auto-selecionar tudo o que vem da busca.
         // Queremos que o professor clique um a um.
-        if (assignmentMode === "manual" || assignmentMode === "filter") {
+        if (assignmentMode === "manual") {
           return prev;
         }
         const merged = new Set([...prev, ...newIds]);
@@ -310,10 +310,10 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       const isSelected = prev.includes(userId);
       if (isSelected) {
         setSelectedStudentsData(data => data.filter(s => s.user_id !== userId));
-        return prev.filter((id) => id !== userId);
+        setSelectedStudentIds(prev => prev.filter((id) => id !== userId));
       } else {
         setSelectedStudentsData(data => [...data, student]);
-        return [...prev, userId];
+        setSelectedStudentIds(prev => [...prev, userId]);
       }
     });
   }, []);

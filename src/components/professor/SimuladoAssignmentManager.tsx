@@ -230,7 +230,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               Alunos do filtro: {studentPagination.total}
             </h4>
             <p className="text-[9px] font-bold text-primary/60 uppercase">
-              {selectedStudentIds.length} participarão · desmarque para excluir
+              {selectedStudentIds.length} selecionados manualmentes
             </p>
           </div>
           <button
