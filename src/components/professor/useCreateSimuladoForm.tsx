@@ -220,11 +220,19 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       // Sem isso, mudar universidade/período/busca apagava os nomes já marcados (bug reportado).
       const newIds = students.map((s: any) => s.user_id).filter(Boolean);
       setSelectedStudentIds(prev => {
+        // No modo "manual", nós NÃO queremos auto-selecionar tudo o que vem da busca.
+        // Queremos que o professor clique um a um.
+        if (assignmentMode === "manual" || assignmentMode === "filter") {
+          return prev;
+        }
         const merged = new Set([...prev, ...newIds]);
         return Array.from(merged);
       });
       setSelectedStudentsData(prev => {
         const map = new Map(prev.map((s: any) => [s.user_id, s]));
+        // No modo manual/filter, só adicionamos aos dados se já estiver selecionado ou se for apenas para visualização
+        // Mas o SimuladoAssignmentManager depende de selectedStudentsData para renderizar os badges.
+        // Vamos manter o mapa atualizado com todos os dados de alunos que já vimos para evitar badges vazios.
         students.forEach((s: any) => map.set(s.user_id, s));
         return Array.from(map.values());
       });
