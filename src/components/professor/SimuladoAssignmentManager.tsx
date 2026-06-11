@@ -238,7 +238,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
             onClick={() => onToggleAllStudents()}
             className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors"
           >
-            {selectedStudentIds.length >= previewStudents.length && previewStudents.length > 0 ? "DESMARCAR PÁGINA" : "MARCAR PÁGINA"}
+            {previewStudents.length > 0 && previewStudents.every(s => selectedStudentIds.includes(s.user_id)) ? "DESMARCAR PÁGINA" : "MARCAR PÁGINA"}
           </button>
         </div>
 
