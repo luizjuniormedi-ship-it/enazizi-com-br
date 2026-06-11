@@ -167,6 +167,14 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         setTimeLimit("60");
         setGeneratedQuestions([]);
         setManualQuestions([]);
+        setSelectedStudentIds([]);
+        setSelectedStudentsData([]);
+        setSelectedClassIds([]);
+        setSelectedProfessorTurmaIds([]);
+        setFaculdadeFilters([]);
+        setPeriodoFilters([]);
+        setStudentSearch("");
+        setPreviewStudents([]);
       }
     }
   }, [open, initialData]);
@@ -306,22 +314,23 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
 
   const toggleStudentSelection = useCallback((student: any) => {
     const userId = student.user_id;
-    setSelectedStudentIds((prev) => {
-      const isSelected = prev.includes(userId);
-      if (isSelected) {
-        setSelectedStudentsData(data => data.filter(s => s.user_id !== userId));
-        return prev.filter((id) => id !== userId);
-      } else {
-        setSelectedStudentsData(data => [...data, student]);
-        return [...prev, userId];
-      }
-    });
-  }, []);
+    const isSelected = selectedStudentIds.includes(userId);
+    
+    if (isSelected) {
+      setSelectedStudentsData(data => data.filter(s => s.user_id !== userId));
+      setSelectedStudentIds(prev => prev.filter((id) => id !== userId));
+    } else {
+      setSelectedStudentsData(data => [...data, student]);
+      setSelectedStudentIds(prev => [...prev, userId]);
+    }
+  }, [selectedStudentIds]);
 
   const toggleAllStudents = useCallback(() => {
-    if (selectedStudentIds.length === previewStudents.length) {
+    const previewIds = previewStudents.map(s => s.user_id);
+    const allSelected = previewIds.every(id => selectedStudentIds.includes(id));
+
+    if (allSelected) {
       // Unselect only those in current preview
-      const previewIds = previewStudents.map(s => s.user_id);
       setSelectedStudentIds(prev => prev.filter(id => !previewIds.includes(id)));
       setSelectedStudentsData(prev => prev.filter(s => !previewIds.includes(s.user_id)));
     } else {

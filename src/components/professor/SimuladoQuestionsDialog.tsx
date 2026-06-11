@@ -70,7 +70,7 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
         .insert([{
           simulado_id: simuladoId,
           statement: manualStatement,
-          options: manualOptions.filter(o => o.trim()),
+          options: manualOptions.map((o, i) => `${String.fromCharCode(65 + i)}) ${o.trim()}`).filter((_, i) => manualOptions[i].trim()),
           correct_index: parseInt(manualCorrect),
           topic: manualTopic || "Geral",
           order_index: questions.length
@@ -154,9 +154,11 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
               manualTopic={manualTopic}
               onStatementChange={setManualStatement}
               onOptionChange={(i, v) => {
-                const newOpts = [...manualOptions];
-                newOpts[i] = v;
-                setManualOptions(newOpts);
+                setManualOptions(prev => {
+                  const copy = [...prev];
+                  copy[i] = v;
+                  return copy;
+                });
               }}
               onCorrectChange={setManualCorrect}
               onTopicChange={setManualTopic}

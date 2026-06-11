@@ -230,7 +230,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               Alunos do filtro: {studentPagination.total}
             </h4>
             <p className="text-[9px] font-bold text-primary/60 uppercase">
-              {selectedStudentIds.length} participarão · desmarque para excluir
+              {selectedStudentIds.length} selecionados manualmentes
             </p>
           </div>
           <button
@@ -238,7 +238,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
             onClick={() => onToggleAllStudents()}
             className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors"
           >
-            {selectedStudentIds.length >= previewStudents.length && previewStudents.length > 0 ? "DESMARCAR PÁGINA" : "MARCAR PÁGINA"}
+            {previewStudents.length > 0 && previewStudents.every(s => selectedStudentIds.includes(s.user_id)) ? "DESMARCAR PÁGINA" : "MARCAR PÁGINA"}
           </button>
         </div>
 
@@ -401,7 +401,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                     onClick={() => onToggleAllStudents()}
                     className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors"
                   >
-                    {selectedStudentIds.length >= previewStudents.length && previewStudents.length > 0 ? "DESELECIONAR PÁGINA" : "SELECIONAR PÁGINA"}
+                    {previewStudents.length > 0 && previewStudents.every(s => selectedStudentIds.includes(s.user_id)) ? "DESELECIONAR PÁGINA" : "SELECIONAR PÁGINA"}
                   </button>
                 </div>
               </div>
