@@ -11,6 +11,12 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    allowedHosts: true,
+  },
+  preview: {
+    host: "::",
+    port: 8080,
+    allowedHosts: true,
   },
   plugins: [
     react(),
