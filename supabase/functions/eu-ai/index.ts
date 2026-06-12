@@ -8,7 +8,6 @@
 // DEPOIS: supabase.functions.invoke('eu-ai', { body: {...} })
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // URL da API Railway (EU/Claude)
 const EU_API_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
@@ -27,9 +26,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    const isStream = body.stream === true;
 
     // Extrair mensagem do payload
-    // Pode vir como: { message }, { messages: [...] }, { prompt }, { text }
     let message = body.message || body.prompt || body.text;
 
     if (!message && body.messages && Array.isArray(body.messages)) {
@@ -43,7 +42,7 @@ serve(async (req) => {
 
     const topic = body.topic || body.especialidade || body.subject || "Medicina";
 
-    console.log(`[EU-AI] Chamando EU para: "${message.substring(0, 50)}..."`);
+    console.log(`[EU-AI] Chamando EU para: "${message.substring(0, 50)}..." | Stream: ${isStream}`);
 
     // Chamar API Railway (EU/Claude)
     const response = await fetch(`${EU_API_URL}/api/v1/chat`, {
@@ -52,6 +51,7 @@ serve(async (req) => {
       body: JSON.stringify({
         message,
         topic,
+        stream: isStream, // Pass along the stream preference
         context: {
           source: "supabase-edge-function",
           original_body: body
@@ -63,6 +63,56 @@ serve(async (req) => {
       throw new Error(`EU API error: ${response.status} ${response.statusText}`);
     }
 
+    // Se o cliente pediu stream e o backend suporta
+    if (isStream && response.body) {
+      console.log(`[EU-AI] Iniciando stream SSE para o cliente...`);
+      
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+      const reader = response.body.getReader();
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+
+      (async () => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              await writer.write(encoder.encode("data: [DONE]\n\n"));
+              break;
+            }
+            
+            // O backend do Railway envia texto puro ou SSE?
+            // Se enviar texto puro em partes, precisamos envelopar em SSE
+            const chunk = decoder.decode(value);
+            
+            // Aqui assumimos que o Railway retorna o formato SSE se stream=true.
+            // Se não retornar, precisaríamos parsear e envelopar.
+            // Por segurança, vamos envelopar como SSE se não parecer SSE.
+            if (!chunk.startsWith("data: ")) {
+              const sseChunk = `data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`;
+              await writer.write(encoder.encode(sseChunk));
+            } else {
+              await writer.write(value);
+            }
+          }
+        } catch (e) {
+          console.error(`[EU-AI] Erro no pipe de stream:`, e);
+        } finally {
+          writer.close();
+        }
+      })();
+
+      return new Response(readable, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      });
+    }
+
     const data = await response.json();
 
     console.log(`[EU-AI] Resposta recebida via ${data.provider}`);
@@ -70,10 +120,8 @@ serve(async (req) => {
     // Retornar no formato esperado pelo frontend
     return new Response(
       JSON.stringify({
-        // Formato original do tutor-ai
         response: data.message,
         content: data.message,
-        // Metadados
         provider: data.provider,
         source: "eu-railway",
         success: data.success !== false,
@@ -88,7 +136,6 @@ serve(async (req) => {
   } catch (error: any) {
     console.error(`[EU-AI] Erro: ${error.message}`);
 
-    // Em caso de erro, retornar mensagem de fallback
     return new Response(
       JSON.stringify({
         response: "Desculpe, o serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes.",
@@ -101,7 +148,7 @@ serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200 // Retornar 200 para o frontend processar
+        status: 200
       }
     );
   }
