@@ -22,7 +22,7 @@ export default function DiagnosticTutor() {
         console.log("[MENTOR_PAYLOAD_NORMALIZED]", testId);
       }
 
-      const { data, error } = await supabase.functions.invoke("eu-ai", {
+      const { data, error } = await supabase.functions.invoke("tutor-v3-premium", {
         body: normalized
       });
 

@@ -64,7 +64,7 @@ export const QUICK_TOPICS = [
 ];
 
 // TUDO AGORA VAI VIA EU (CLAUDE) - API Railway
-export const FUNCTION_NAME = "eu-ai";
+export const FUNCTION_NAME = "tutor-v3-premium";
 
 export const MEDSTUDY_SEQUENTIAL_APPENDIX = "IMPORTANTE: para não cortar a explicação, divida em tópicos e entregue em blocos atômicos sequenciais (2 a 3 seções por resposta), finalize cada bloco sem truncar frases e pergunte se pode continuar antes do próximo bloco.";
 

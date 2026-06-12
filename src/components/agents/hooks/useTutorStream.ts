@@ -144,7 +144,7 @@ export function useTutorStream() {
 
       try {
         // v15 CENTRALIZATION: Hardcoded function name
-        const functionName = "eu-ai";
+        const functionName = "tutor-v3-premium";
         
         // Use the official Resilient Client
         const resp = await callTutorV3(body, {

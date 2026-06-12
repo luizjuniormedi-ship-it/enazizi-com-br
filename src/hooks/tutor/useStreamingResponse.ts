@@ -74,7 +74,7 @@ export function useStreamingResponse() {
 
     try {
       // v14 CENTRALIZATION: Use the Resilient Client
-      const functionName = url.split('/').pop() || "eu-ai";
+      const functionName = url.split('/').pop() || "tutor-v3-premium";
       const resp = await callTutorV3(body, {
         functionName,
         stream: true
