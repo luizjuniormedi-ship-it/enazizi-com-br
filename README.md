@@ -89,3 +89,4 @@ Isso roda:
 - `npx playwright test e2e/edge-function-boot.spec.ts` — smoke test que valida que as Edge Functions críticas inicializam sem `BOOT_ERROR`.
 
 O CI executa o mesmo guard via `.github/workflows/edge-contract-guard.yml` em todo PR que toca `supabase/functions/**`. Build falha se qualquer função nova importar helper interno diretamente.
+
