@@ -3,9 +3,6 @@
 //
 // Esta função substitui a chamada direta ao OpenAI por uma chamada
 // à API Railway que usa EU (Claude) como provedor primário.
-//
-// ANTES: supabase.functions.invoke('tutor-ai', { body: {...} })
-// DEPOIS: supabase.functions.invoke('eu-ai', { body: {...} })
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -19,7 +16,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -28,30 +24,24 @@ serve(async (req) => {
     const body = await req.json();
     const isStream = body.stream === true;
 
-    // Extrair mensagem do payload
     let message = body.message || body.prompt || body.text;
-
     if (!message && body.messages && Array.isArray(body.messages)) {
       const lastUser = [...body.messages].reverse().find((m: any) => m.role === "user");
       message = lastUser?.content || "";
     }
-
-    if (!message) {
-      message = "Olá";
-    }
+    if (!message) message = "Olá";
 
     const topic = body.topic || body.especialidade || body.subject || "Medicina";
 
     console.log(`[EU-AI] Chamando EU para: "${message.substring(0, 50)}..." | Stream: ${isStream}`);
 
-    // Chamar API Railway (EU/Claude)
     const response = await fetch(`${EU_API_URL}/api/v1/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message,
         topic,
-        stream: isStream, // Pass along the stream preference
+        stream: isStream,
         context: {
           source: "supabase-edge-function",
           original_body: body
@@ -63,10 +53,8 @@ serve(async (req) => {
       throw new Error(`EU API error: ${response.status} ${response.statusText}`);
     }
 
-    // Se o cliente pediu stream e o backend suporta
     if (isStream && response.body) {
       console.log(`[EU-AI] Iniciando stream SSE para o cliente...`);
-      
       const { readable, writable } = new TransformStream();
       const writer = writable.getWriter();
       const reader = response.body.getReader();
@@ -82,19 +70,22 @@ serve(async (req) => {
               break;
             }
             
-            // O backend do Railway envia texto puro ou SSE?
-            // Se enviar texto puro em partes, precisamos envelopar em SSE
             const chunk = decoder.decode(value);
             
-            // Aqui assumimos que o Railway retorna o formato SSE se stream=true.
-            // Se não retornar, precisaríamos parsear e envelopar.
-            // Por segurança, vamos envelopar como SSE se não parecer SSE.
-            if (!chunk.startsWith("data: ")) {
-              const sseChunk = `data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`;
-              await writer.write(encoder.encode(sseChunk));
-            } else {
-              await writer.write(value);
+            // Tentativa de extrair o conteúdo real se vier como um objeto JSON stringificado
+            // Algumas APIs de stream podem enviar JSONs em chunks
+            let contentToStream = chunk;
+            try {
+                const parsed = JSON.parse(chunk);
+                if (parsed.message) contentToStream = parsed.message;
+                else if (parsed.content) contentToStream = parsed.content;
+                else if (parsed.response) contentToStream = parsed.response;
+            } catch {
+                // Não é JSON, envia como texto puro
             }
+
+            const sseChunk = `data: ${JSON.stringify({ choices: [{ delta: { content: contentToStream } }] })}\n\n`;
+            await writer.write(encoder.encode(sseChunk));
           }
         } catch (e) {
           console.error(`[EU-AI] Erro no pipe de stream:`, e);
@@ -114,10 +105,6 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-
-    console.log(`[EU-AI] Resposta recebida via ${data.provider}`);
-
-    // Retornar no formato esperado pelo frontend
     return new Response(
       JSON.stringify({
         response: data.message,
@@ -135,16 +122,12 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error(`[EU-AI] Erro: ${error.message}`);
-
     return new Response(
       JSON.stringify({
-        response: "Desculpe, o serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes.",
-        content: "Desculpe, o serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes.",
-        provider: "fallback",
-        source: "error",
+        response: "Desculpe, o serviço de IA está temporariamente indisponível.",
+        content: "Desculpe, o serviço de IA está temporariamente indisponível.",
         success: false,
-        error: error.message,
-        timestamp: new Date().toISOString()
+        error: error.message
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
