@@ -52,7 +52,7 @@ export interface AISelectInput {
 }
 
 export interface ModelRef {
-  provider: "lovable-ai";
+  provider: "lovable-ai" | "openai" | "eu-ai";
   model: string;
 }
 
