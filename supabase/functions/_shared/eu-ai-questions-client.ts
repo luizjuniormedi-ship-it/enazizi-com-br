@@ -12,11 +12,16 @@ const EU_AI_TIMEOUT_MS = 55_000;
 
 const JSON_TAIL = `
 
-# REGRA DE SAÍDA OBRIGATÓRIA
-Responda APENAS com um array JSON válido entre <json> e </json>. NÃO escreva nada antes ou depois.
-Não comente, não use \`\`\`json, não mencione provedor/modelo. Apenas:
+# REGRAS DE SAÍDA OBRIGATÓRIAS (NÃO NEGOCIÁVEIS)
+1. Responda APENAS com um array JSON válido entre <json> e </json>. NÃO escreva nada antes ou depois. Sem \`\`\`json, sem comentários.
+2. Cada "statement" DEVE ter NO MÍNIMO 450 caracteres — caso clínico COMPLETO em pt-BR (identificação do paciente, HDA detalhada, antecedentes, exame físico com sinais vitais, exames complementares relevantes) e terminar com pergunta objetiva.
+3. Cada questão DEVE ter EXATAMENTE 4 opções no formato "A) ...", "B) ...", "C) ...", "D) ...".
+4. "explanation" DEVE ter no mínimo 200 caracteres, em pt-BR, citando Harrison/Nelson/Sabiston/UpToDate.
+5. NUNCA use inglês, LaTeX ($x$, \\times), referências a imagens/figuras, ou mencione provedor/modelo/identidade de IA.
+6. Responda apenas como gerador médico ENAZIZI.
+
 <json>
-[ { "block": "...", "statement": "...", "options": ["A) ...","B) ...","C) ...","D) ..."], "correct_index": 0, "explanation": "...", "topic": "...", "difficulty_level": "easy|medium|hard" } ]
+[ { "block": "...", "statement": "<>=450 chars em pt-BR>", "options": ["A) ...","B) ...","C) ...","D) ..."], "correct_index": 0, "explanation": "<>=200 chars em pt-BR com bibliografia>", "topic": "...", "difficulty_level": "easy|medium|hard" } ]
 </json>`;
 
 export interface ClaudeSimResponse {
@@ -34,7 +39,8 @@ export function isClaudePrimarySimuladoEnabled(): boolean {
 }
 
 export async function claudeFetchQuestions(prompt: string, topicHint = "simulado"): Promise<ClaudeSimResponse> {
-  const augmented = `${prompt}${JSON_TAIL}`;
+  const topicLock = `\n\n# TRAVA DE TEMA (OBRIGATÓRIO)\nO campo "topic" de TODA questão DEVE ser EXATAMENTE: "${topicHint}". Não use sinônimos, abreviações, nem o nome da especialidade pai. Use a string literal "${topicHint}".`;
+  const augmented = `${prompt}${topicLock}${JSON_TAIL}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), EU_AI_TIMEOUT_MS);
 
@@ -88,6 +94,15 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
   } else {
     const arr = message.match(/\[[\s\S]*\]/);
     if (arr) jsonText = arr[0];
+  }
+
+  // Diagnóstico: se não achou array, dump dos primeiros 500 chars
+  if (jsonText === "[]") {
+    console.warn(`[CLAUDE_SIM_NO_JSON] len=${message.length} head="${message.slice(0, 500).replace(/\n/g, " ")}"`);
+  } else {
+    // Sanity: contar quantos objetos provavelmente vieram
+    const objCount = (jsonText.match(/"statement"\s*:/g) || []).length;
+    console.log(`[CLAUDE_SIM_PARSED] objects=${objCount} jsonLen=${jsonText.length}`);
   }
 
   return {
