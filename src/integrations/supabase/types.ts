@@ -25387,6 +25387,7 @@ export type Database = {
       rag_documents: {
         Row: {
           created_at: string
+          drive_file_id: string | null
           error_message: string | null
           file_name: string
           file_path: string
@@ -25398,6 +25399,8 @@ export type Database = {
           organization_id: string
           published_at: string | null
           replaced_by: string | null
+          source_type: string
+          specialty: string | null
           status: string
           title: string
           updated_at: string
@@ -25406,6 +25409,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          drive_file_id?: string | null
           error_message?: string | null
           file_name: string
           file_path: string
@@ -25417,6 +25421,8 @@ export type Database = {
           organization_id: string
           published_at?: string | null
           replaced_by?: string | null
+          source_type?: string
+          specialty?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -25425,6 +25431,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          drive_file_id?: string | null
           error_message?: string | null
           file_name?: string
           file_path?: string
@@ -25436,6 +25443,8 @@ export type Database = {
           organization_id?: string
           published_at?: string | null
           replaced_by?: string | null
+          source_type?: string
+          specialty?: string | null
           status?: string
           title?: string
           updated_at?: string

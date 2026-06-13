@@ -1,77 +1,86 @@
 
-# Execução sequencial — 1 passo por vez
+# Plano: Ingestão Drive → RAG Corpus (Claude + Gemini)
 
-Princípio: cada passo só começa depois que o anterior estiver validado em produção. Sem atalho, sem "agradar".
+## Decisões já travadas
+- ✅ Materiais autorizados (responsabilidade do usuário)
+- ✅ Reaproveitar `rag_documents` / `rag_chunks` / `rag_embeddings` (já com pgvector)
+- ✅ Processamento via **eu-ai-v3-client (Claude)**
+- ✅ Embedding via **google/gemini-embedding-001** (Claude não faz embedding)
+- ✅ Isolar do RAG Global de 20 com flag `source_type='drive_corpus'`
 
----
-
-## Ordem responsável (por dependência técnica, não por estética)
-
-```text
-PASSO 1  →  Diagnóstico dos pipelines mortos
-PASSO 2  →  Reativar approval_scores  (desbloqueia 30% dos KPIs)
-PASSO 3  →  Reativar ranking_snapshots
-PASSO 4  →  Backfill user_topic_profiles (hoje 4/184 usuários)
-PASSO 5  →  Remover mocks do Dashboard.tsx (Math.random + cards hardcoded)
-PASSO 6  →  Aplicar <MetricCard> no Dashboard do aluno
-PASSO 7  →  RPC get_student_bi_summary (1 chamada vs 6-8 hoje)
-PASSO 8  →  BI Professor: status segmentado + tooltips
-PASSO 9  →  Heatmap curricular da turma
-PASSO 10 →  Bloco de impacto de intervenções (antes/depois)
-PASSO 11 →  Consolidar 5 sistemas de alerta em 1 feed
-PASSO 12 →  Mobile pass (hero 500→180px, grids 2-col)
-```
-
-Justificativa da ordem: aplicar `MetricCard` antes de reativar os pipelines só mostraria "Sem dados ainda" em 30% dos cards. Isso seria cosmético, não responsável.
-
----
-
-## PASSO 1 agora — Diagnóstico (somente leitura)
-
-Antes de qualquer mudança, preciso provar **por que** `approval_scores` parou em abril e `ranking_snapshots` está vazio. Sem isso, "reativar" vira chute.
-
-Vou executar (read-only, sem migração):
-
-1. Consultar `approval_scores`:
-   - última data de cálculo
-   - distribuição por usuário (quantos têm registro)
-   - identificar a edge function / cron responsável
-2. Consultar `ranking_snapshots`:
-   - última snapshot
-   - schedule do cron (se existir em `pg_cron`)
-3. Inspecionar `supabase/functions/` por nomes relacionados (approval-score-*, ranking-*, snapshot-*)
-4. Ler logs recentes da edge function suspeita para identificar o erro que matou o pipeline
-
-Saída do Passo 1 (entregue como relatório no chat, conforme sua preferência):
+## Arquitetura
 
 ```text
-- Tabela approval_scores: última atualização YYYY-MM-DD, N usuários cobertos
-- Cron responsável: <nome>, schedule '<cron>', status: ativo/pausado/inexistente
-- Causa raiz provável: <erro do log / função ausente / cron desabilitado>
-- Plano corretivo mínimo para o Passo 2 (1 migração específica, sem refactor)
+Google Drive (já conectado)
+   │  list files (recursivo por pasta = especialidade)
+   ▼
+drive-corpus-scan (edge fn)  ──► drive_folders_scan + fila em drive_ingestion_log
+   │
+   ▼
+drive-corpus-ingest (edge fn, chamada em lote de 5)
+   │  1. Sign URL (Drive gateway, mode=read)
+   │  2. Download PDF (até 50MB)
+   │  3. PDF → texto (Gemini 2.5 Flash multimodal — aceita PDF nativo, melhor que pdf-parse em Deno)
+   │  4. Claude (eu-ai) resume + estrutura por seção (especialidade vem da pasta-pai)
+   │  5. Chunk 1200 chars c/ overlap 150
+   │  6. Embed Gemini → grava rag_chunks + rag_embeddings
+   │  7. Marca drive_ingestion_log.status='completed'
+   │
+   ▼
+Tutor (tutor-v3-premium) — busca RAG continua igual; filtro
+`source_type IN ('global_rag','drive_corpus')` com peso menor pro corpus
 ```
 
-Só depois desse diagnóstico no chat eu peço aprovação para executar o Passo 2 (reativação propriamente dita).
+## Migration (única)
 
----
+1. `ALTER TABLE rag_documents ADD COLUMN source_type TEXT DEFAULT 'global_rag'`
+   (constraint check: 'global_rag' | 'drive_corpus')
+2. `ALTER TABLE rag_documents ADD COLUMN drive_file_id TEXT UNIQUE` (dedupe)
+3. `ALTER TABLE rag_documents ADD COLUMN specialty TEXT` (vem da pasta)
+4. Índice `(source_type, specialty)` para filtro rápido
+5. Atualizar função `match_rag_chunks` (se existir) p/ aceitar filtro `source_type[]`
 
-## Regras de execução que vou seguir
+Não cria tabela nova — usa a infra existente.
 
-```text
-1. Um passo por mensagem. Nada de batch grande.
-2. Cada passo termina com:
-   • o que mudou
-   • como validar (query SQL ou rota)
-   • próximo passo proposto, aguardando seu "ok"
-3. Migrações sempre mínimas, sem refactor oportunista.
-4. Respeitar Go-Live Freeze: zero mudança em FSRS, Tutor, Planner core.
-5. Respeitar Sprint 2.3: nenhum recálculo psicométrico abaixo dos thresholds.
-6. Respeitar constraint de nomenclatura: não renomear módulos/sidebar.
-7. Se um passo revelar problema maior, paro e reporto — não invento solução.
-```
+## Edge functions novas
 
----
+### `drive-corpus-scan`
+- Input: `{ folder_id: "1apsS3Jl..." }`
+- Percorre recursivo, popula `drive_folders_scan` + insere PDFs como `pending` em `drive_ingestion_log`
+- Output: `{ folders: N, files: M, total_size_mb: X }`
 
-## Pergunta para destravar
+### `drive-corpus-ingest`
+- Input: `{ batch_size: 5 }` (default)
+- Pega 5 `pending` → processa em paralelo → atualiza status
+- Idempotente: usa `drive_file_id` como chave única
 
-Posso executar o **Passo 1 (diagnóstico read-only)** agora? Ele não altera nada — só consulta tabelas e logs e devolve o relatório no chat para você decidir se autoriza o Passo 2.
+### Admin UI (1 página nova: `/admin/drive-corpus`)
+- Botão "Escanear pasta"
+- Tabela: nome / pasta / status / tamanho / erro
+- Botão "Processar próximos 5"
+- Cards: total, pending, completed, failed
+
+## Custos estimados (1000 PDFs, ~300 pág médias)
+- Gemini Flash (PDF→texto): ~$15
+- Claude Sonnet (resumo): ~$80
+- Gemini embedding: ~$8
+- **Total estimado: ~$100-150** (1x, não recorrente)
+
+## Guard-rails
+- Skip se `file_size > 50MB`
+- Skip se nome contém: `harrison|nelson|sabiston|robbins|guyton|netter` (você confirmou autorização, mas mantenho lista visível p/ você desativar manualmente)
+- Hard cap: processa 50 PDFs/dia (anti-runaway de custo)
+- Logs completos em `drive_ingestion_log`
+
+## Fora de escopo (não vou fazer)
+- Não mexer no `tutor-v3-premium` (apenas o filtro RAG já vai puxar o corpus novo automaticamente)
+- Não tocar em RAG Global de 20 (continua intocado)
+- Não alterar UI do tutor
+
+## Aprovação
+Aprova esse plano? Se sim, eu já executo:
+1. Migration (3 colunas + índice)
+2. 2 edge functions
+3. 1 página admin
+4. Rodo o scan da pasta automaticamente após deploy
+
