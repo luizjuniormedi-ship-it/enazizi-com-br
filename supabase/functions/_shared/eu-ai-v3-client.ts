@@ -115,7 +115,7 @@ export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpt
   }
 
   // Estimativa grosseira de tokens (proxy não retorna usage)
-  const promptTokens = Math.ceil((augmentedSystem.length + augmentedUser.length) / 4);
+  const promptTokens = Math.ceil(augmentedUser.length / 4);
   const completionTokens = Math.ceil(raw.length / 4);
 
   return {
