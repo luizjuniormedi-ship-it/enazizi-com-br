@@ -46,6 +46,11 @@ describe("shouldBypassMemory", () => {
     expect(shouldBypassMemory("quero algo mais profundo")).toBe(true);
   });
 
+  it("detecta comandos de avanço da aula", () => {
+    expect(shouldBypassMemory("Compreendido, pode prosseguir para o próximo bloco da aula.")).toBe(true);
+    expect(shouldBypassMemory("Próximo bloco")).toBe(true);
+  });
+
   it("retorna falso para perguntas comuns", () => {
     expect(shouldBypassMemory("o que é IAM")).toBe(false);
   });
