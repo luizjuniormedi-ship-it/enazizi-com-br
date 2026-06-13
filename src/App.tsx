@@ -82,6 +82,9 @@ const EnrichmentProgress = lazyWithRetry(() => import("./pages/admin/EnrichmentP
 const ClassificationRunner = lazyWithRetry(() => import("./pages/admin/ClassificationRunner"), "ClassificationRunner");
 const IntelligenceRunner = lazyWithRetry(() => import("./pages/admin/IntelligenceRunner"), "IntelligenceRunner");
 const IntelligenceIndex = lazyWithRetry(() => import("./pages/admin/IntelligenceIndex"), "IntelligenceIndex");
+const AlphaCohort = lazyWithRetry(() => import("./pages/admin/AlphaCohort"), "AlphaCohort");
+const OfficialOutcomes = lazyWithRetry(() => import("./pages/admin/OfficialOutcomes"), "OfficialOutcomes");
+const ResultadosOficiais = lazyWithRetry(() => import("./pages/ResultadosOficiais"), "ResultadosOficiais");
 const ClassificationHealthDashboard = lazyWithRetry(() => import("./pages/admin/ClassificationHealthDashboard"), "ClassificationHealthDashboard");
 const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
 const GoldCuration = lazyWithRetry(() => import("./pages/admin/GoldCuration"), "GoldCuration");
