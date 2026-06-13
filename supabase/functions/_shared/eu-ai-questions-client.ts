@@ -95,6 +95,15 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
     if (arr) jsonText = arr[0];
   }
 
+  // Diagnóstico: se não achou array, dump dos primeiros 500 chars
+  if (jsonText === "[]") {
+    console.warn(`[CLAUDE_SIM_NO_JSON] len=${message.length} head="${message.slice(0, 500).replace(/\n/g, " ")}"`);
+  } else {
+    // Sanity: contar quantos objetos provavelmente vieram
+    const objCount = (jsonText.match(/"statement"\s*:/g) || []).length;
+    console.log(`[CLAUDE_SIM_PARSED] objects=${objCount} jsonLen=${jsonText.length}`);
+  }
+
   return {
     ok: true,
     status: 200,
