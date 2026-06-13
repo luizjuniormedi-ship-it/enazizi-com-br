@@ -735,6 +735,15 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
     }
   }
 
+  // preferEuAI: Claude (eu-ai) como 1ª escolha — só Tutor free chat.
+  // Fallback automático para o chain existente se o proxy falhar/timeout (8s).
+  if (input.preferEuAI && EU_AI_URL) {
+    if (!fullChain.some(c => c.provider === "eu-ai")) {
+      fullChain.unshift({ provider: "eu-ai", model: "claude-eu" });
+      console.log(`[AI_RUNTIME_EU_AI_PRIMARY] req=${reqTag} — Claude prepended as primary`);
+    }
+  }
+
   // Health-aware filtering: pula modelos com falha recente conhecida.
   const healthChain = await filterByHealth(input.supabase, fullChain);
 
