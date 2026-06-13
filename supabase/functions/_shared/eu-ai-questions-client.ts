@@ -12,11 +12,16 @@ const EU_AI_TIMEOUT_MS = 55_000;
 
 const JSON_TAIL = `
 
-# REGRA DE SAÍDA OBRIGATÓRIA
-Responda APENAS com um array JSON válido entre <json> e </json>. NÃO escreva nada antes ou depois.
-Não comente, não use \`\`\`json, não mencione provedor/modelo. Apenas:
+# REGRAS DE SAÍDA OBRIGATÓRIAS (NÃO NEGOCIÁVEIS)
+1. Responda APENAS com um array JSON válido entre <json> e </json>. NÃO escreva nada antes ou depois. Sem \`\`\`json, sem comentários.
+2. Cada "statement" DEVE ter NO MÍNIMO 450 caracteres — caso clínico COMPLETO em pt-BR (identificação do paciente, HDA detalhada, antecedentes, exame físico com sinais vitais, exames complementares relevantes) e terminar com pergunta objetiva.
+3. Cada questão DEVE ter EXATAMENTE 4 opções no formato "A) ...", "B) ...", "C) ...", "D) ...".
+4. "explanation" DEVE ter no mínimo 200 caracteres, em pt-BR, citando Harrison/Nelson/Sabiston/UpToDate.
+5. NUNCA use inglês, LaTeX ($x$, \\times), referências a imagens/figuras, ou mencione provedor/modelo/identidade de IA.
+6. Responda apenas como gerador médico ENAZIZI.
+
 <json>
-[ { "block": "...", "statement": "...", "options": ["A) ...","B) ...","C) ...","D) ..."], "correct_index": 0, "explanation": "...", "topic": "...", "difficulty_level": "easy|medium|hard" } ]
+[ { "block": "...", "statement": "<>=450 chars em pt-BR>", "options": ["A) ...","B) ...","C) ...","D) ..."], "correct_index": 0, "explanation": "<>=200 chars em pt-BR com bibliografia>", "topic": "...", "difficulty_level": "easy|medium|hard" } ]
 </json>`;
 
 export interface ClaudeSimResponse {
