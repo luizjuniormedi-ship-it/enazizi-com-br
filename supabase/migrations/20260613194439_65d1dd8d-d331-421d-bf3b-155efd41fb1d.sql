@@ -1,0 +1,3 @@
+ALTER TABLE public.tutor_knowledge_memory
+ADD CONSTRAINT tutor_knowledge_memory_scope_user_question_unique
+UNIQUE (scope, user_id, question_normalized);
