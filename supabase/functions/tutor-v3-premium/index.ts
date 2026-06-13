@@ -355,23 +355,16 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }, "cache");
       console.log(`[TUTOR_CACHE_HIT] memoryId=${memoryHit.id}`);
 
-      return corsResponse({
-        success: true,
-        ok: true,
-        content: normalized.content,
+      return corsResponse(buildTutorEnvelope(normalized, {
         currentBlock: nextBlock,
         blockTitle: currentBlockConfig.title,
-        teachingPhase: normalized.teachingPhase,
-        shouldWaitForStudent: true,
-        socraticQuestion: normalized.socraticQuestion,
-        actionsContext: { topic, block: nextBlock },
         topic,
         correlation_id: correlationId,
         fromMemory: true,
         memoryId: memoryHit.id,
-        source: "cache",
+        actionsContext: { topic, block: nextBlock },
         debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity, action: decision.action },
-      }, 200);
+      }), 200);
     }
 
 
