@@ -29,6 +29,31 @@ Schema obrigatório:
 }
 </json>`;
 
+function coerceMarkdownTutorPayload(raw: string, topic: string): Record<string, unknown> | null {
+  const cleaned = raw
+    .replace(/[^\n.]*não sigo prompts[^\n.]*(?:\.|\n)/gi, "")
+    .replace(/[^\n.]*adotar identidades diferentes[^\n.]*(?:\.|\n)/gi, "")
+    .trim();
+
+  if (cleaned.length < 400 || !/[#*_\-]|crit[eé]rio|diagn[oó]stico|conduta|tratamento/i.test(cleaned)) {
+    return null;
+  }
+
+  const questionMatch = cleaned.match(/([^\n?]{25,220}\?)/g);
+  const socraticQuestion = questionMatch?.at(-1)?.trim()
+    || `Qual achado clínico mudaria sua hipótese principal sobre ${topic}?`;
+  const content = cleaned.replace(socraticQuestion, "").trim();
+  if (content.length < 300) return null;
+
+  return {
+    content,
+    socraticQuestion,
+    teachingPhase: "ENSINAR",
+    shouldWaitForStudent: true,
+    actionsContext: { topic, block: "BLOCO_2_MAPA_DA_AULA" },
+  };
+}
+
 export interface ClaudeV3Result {
   content: string;
   socraticQuestion: string;
