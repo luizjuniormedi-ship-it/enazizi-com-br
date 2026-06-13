@@ -6,6 +6,7 @@ import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory
 import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
 import { normalizeTutorResponse, TutorResponse, getStaticFallback } from "../_shared/ai-stability-kit.ts";
+import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
 
 
 // Métrica fire-and-forget — nunca trava o fluxo.
