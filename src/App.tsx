@@ -95,6 +95,7 @@ const ScientificAuditPage = lazyWithRetry(() => import("./pages/admin/Scientific
 const CampaignDashboardPage = lazyWithRetry(() => import("./pages/admin/CampaignDashboardPage"), "CampaignDashboardPage");
 const LearningScienceCenterPage = lazyWithRetry(() => import("./pages/LearningScienceCenterPage"), "LearningScienceCenterPage");
 const CVRPDashboard = lazyWithRetry(() => import("./pages/admin/cvrp/Dashboard"), "CVRPDashboard");
+const DriveCorpusAdmin = lazyWithRetry(() => import("./pages/admin/DriveCorpusAdmin"), "DriveCorpusAdmin");
 const ClinicalEvidenceCenter = lazyWithRetry(() => import("./pages/ClinicalEvidenceCenter"), "ClinicalEvidenceCenter");
 
 
@@ -435,6 +436,7 @@ const App = () => (
                 <Route path="national-campaign" element={<CampaignDashboardPage />} />
                 <Route path="dogfood-monitor" element={<DogfoodMonitor />} />
                 <Route path="cvrp" element={<CVRPDashboard />} />
+                <Route path="drive-corpus" element={<DriveCorpusAdmin />} />
 
 
 
