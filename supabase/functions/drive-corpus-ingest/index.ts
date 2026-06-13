@@ -1,5 +1,5 @@
 // Drive Corpus — Ingestão em lote
-// Pipeline: Drive PDF -> Gemini (extrai texto) -> Claude (resumo estruturado)
+// Pipeline: Drive PDF -> Claude (extrai + estrutura PDF nativo)
 // -> chunk -> OpenAI embedding -> rag_documents/chunks/embeddings
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -45,54 +45,39 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-async function extractPdfTextWithGemini(pdfBytes: Uint8Array, fileName: string): Promise<string> {
+async function extractAndStructureWithClaude(
+  pdfBytes: Uint8Array,
+  specialty: string,
+  fileName: string,
+): Promise<string> {
   const b64 = bytesToBase64(pdfBytes);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-  const body = {
-    contents: [{
-      role: "user",
-      parts: [
-        { inline_data: { mime_type: "application/pdf", data: b64 } },
-        { text: `Extraia TODO o texto médico relevante deste PDF (${fileName}) em pt-BR. Preserve estrutura por seções (use ## títulos). Ignore cabeçalhos/rodapés/numeração de página. Não resuma — extraia integral. Saída: apenas o texto extraído, sem comentários.` },
-      ],
-    }],
-    generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
-  };
-  const r = await fetch(url, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(`GEMINI_EXTRACT_${r.status}: ${(await r.text()).slice(0, 200)}`);
-  const j = await r.json();
-  const text = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("\n") || "";
-  if (text.length < 200) throw new Error(`GEMINI_EXTRACT_EMPTY (${text.length} chars)`);
-  return text;
-}
-
-async function structureWithClaude(rawText: string, specialty: string, fileName: string): Promise<string> {
-  // Limita input (claude-sonnet aceita 200k, mas controlamos custo)
-  const input = rawText.slice(0, 60000);
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": ANTHROPIC_API_KEY,
       "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
+      "anthropic-beta": "pdfs-2024-09-25",
     },
     body: JSON.stringify({
       model: "claude-3-5-sonnet-20241022",
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [{
         role: "user",
-        content: `Você está estruturando conteúdo médico para uma base de conhecimento RAG (especialidade: ${specialty}, arquivo: ${fileName}).
+        content: [
+          {
+            type: "document",
+            source: { type: "base64", media_type: "application/pdf", data: b64 },
+          },
+          {
+            type: "text",
+            text: `Você está estruturando este PDF médico para uma base de conhecimento RAG (especialidade: ${specialty}, arquivo: ${fileName}).
 
-Reescreva o texto abaixo em pt-BR como uma referência clínica estruturada por seções com títulos ## (Definição, Epidemiologia, Fisiopatologia, Quadro Clínico, Diagnóstico, Tratamento, Complicações, Prognóstico, Pontos de Prova). Preserve todos os dados clínicos relevantes (critérios, doses, valores, classificações). Cite a fonte ao final como: _Fonte: ${fileName}_.
-
-Texto bruto:
-<texto>
-${input}
-</texto>
+Extraia TODO o conteúdo clínico relevante e reescreva em pt-BR como referência clínica estruturada com títulos ## (Definição, Epidemiologia, Fisiopatologia, Quadro Clínico, Diagnóstico, Tratamento, Complicações, Prognóstico, Pontos de Prova). Preserve critérios, doses, valores, classificações, fluxogramas. Ignore cabeçalhos/rodapés/numeração. Cite fonte ao final como: _Fonte: ${fileName}_.
 
 Saída: apenas o markdown estruturado, sem comentários introdutórios.`,
+          },
+        ],
       }],
     }),
   });
@@ -132,8 +117,7 @@ async function processOne(row: any, token: string, supabase: any): Promise<void>
 
   try {
     const pdfBytes = await downloadDrivePdf(row.drive_file_id, token);
-    const rawText = await extractPdfTextWithGemini(pdfBytes, row.file_name);
-    const structured = await structureWithClaude(rawText, row.specialty || "Geral", row.file_name);
+    const structured = await extractAndStructureWithClaude(pdfBytes, row.specialty || "Geral", row.file_name);
 
     // Cria rag_document
     const { data: doc, error: docErr } = await supabase.from("rag_documents").insert({
