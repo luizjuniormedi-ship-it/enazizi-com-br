@@ -5,7 +5,7 @@ import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockI
 import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory, estimateQualityScore } from "../_shared/tutor-memory.ts";
 import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
-import { normalizeTutorResponse, TutorResponse, getStaticFallback } from "../_shared/ai-stability-kit.ts";
+import { normalizeTutorResponse, TutorResponse, getStaticFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
 
 
@@ -355,23 +355,16 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }, "cache");
       console.log(`[TUTOR_CACHE_HIT] memoryId=${memoryHit.id}`);
 
-      return corsResponse({
-        success: true,
-        ok: true,
-        content: normalized.content,
+      return corsResponse(buildTutorEnvelope(normalized, {
         currentBlock: nextBlock,
         blockTitle: currentBlockConfig.title,
-        teachingPhase: normalized.teachingPhase,
-        shouldWaitForStudent: true,
-        socraticQuestion: normalized.socraticQuestion,
-        actionsContext: { topic, block: nextBlock },
         topic,
         correlation_id: correlationId,
         fromMemory: true,
         memoryId: memoryHit.id,
-        source: "cache",
+        actionsContext: { topic, block: nextBlock },
         debug: { studentIntent, nextBlock, memoryHit: true, similarity: memoryHit.similarity, action: decision.action },
-      }, 200);
+      }), 200);
     }
 
 
@@ -591,24 +584,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     })());
 
 
-    return corsResponse({
-      success: true,
-      ok: true,
-      content: normalized.content,
+    return corsResponse(buildTutorEnvelope(normalized, {
       currentBlock: activeBlock,
       blockTitle: activeBlockConfig.title,
-      teachingPhase: normalized.teachingPhase,
-      shouldWaitForStudent: true,
-      socraticQuestion: normalized.socraticQuestion,
-      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
       topic,
       correlation_id: correlationId,
-      source: normalized.source,
-      debug: {
-        studentIntent,
-        nextBlock: activeBlock
-      }
-    }, 200);
+      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
+      debug: { studentIntent, nextBlock: activeBlock, provider: aiProviderUsed },
+    }), 200);
 
 
 
@@ -641,19 +624,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }
     })());
 
-    return corsResponse({
-      success: true,
-      ok: true,
-      content: safeResponse.content,
+    return corsResponse(buildTutorEnvelope(safeResponse, {
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
-      teachingPhase: safeResponse.teachingPhase,
-      socraticQuestion: safeResponse.socraticQuestion,
-      shouldWaitForStudent: true,
-      source: "safe_mode",
-      debug_stage: "safe_mode_emergency",
+      topic: (correlation as any)?.topic || "geral",
+      correlation_id: (correlation as any)?.correlationId,
       error: err.message,
-      request_id: requestId
-    }, 200);
+      request_id: requestId,
+      debug: { stage: "safe_mode_emergency" },
+    }), 200);
   }
 
 
