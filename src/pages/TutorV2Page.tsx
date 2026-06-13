@@ -8,7 +8,7 @@ import TutorV2Sidebar from "@/components/tutor-v2/TutorV2Sidebar";
 import { useTutorV2Session } from "@/components/tutor-v2/hooks/useTutorV2Session";
 import { useStudyContext } from "@/lib/studyContext";
 
-import { Brain, Sparkles, GraduationCap, ArrowRight, Zap, Target, BookOpen, Clock, Heart, Shield, Activity, Stethoscope } from "lucide-react";
+import { Brain, Sparkles, GraduationCap, ArrowRight, Zap, Target, BookOpen, Clock, Heart, Shield, Activity, Stethoscope, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -313,6 +313,15 @@ export default function TutorV2Page() {
         )}
       </AnimatePresence>
       <main className="flex-1 relative flex flex-col min-w-0 min-h-0">
+        <Button
+          onClick={() => navigate("/dashboard/enaflix")}
+          variant="ghost"
+          size="sm"
+          className="absolute top-3 left-3 z-30 h-9 px-3 gap-2 rounded-xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-slate-300 hover:text-white hover:bg-slate-800/80 text-[11px] font-bold uppercase tracking-widest"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Enaflix
+        </Button>
         <TutorV2ChatPanel 
           key={session?.id} 
           session={session} 
