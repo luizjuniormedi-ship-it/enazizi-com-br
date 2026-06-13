@@ -441,6 +441,8 @@ const App = () => (
                 <Route path="dogfood-monitor" element={<DogfoodMonitor />} />
                 <Route path="cvrp" element={<CVRPDashboard />} />
                 <Route path="drive-corpus" element={<DriveCorpusAdmin />} />
+                <Route path="alpha-cohort" element={<AlphaCohort />} />
+                <Route path="official-outcomes" element={<OfficialOutcomes />} />
 
 
 
