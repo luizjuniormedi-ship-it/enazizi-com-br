@@ -144,7 +144,14 @@ const REGENERATE_PATTERNS = [
   /vers[ãa]o nova/i,
 ];
 
+const NAVIGATION_PATTERNS = [
+  /\bpr[óo]ximo\s+bloco\b/i,
+  /\bprosseguir\b.*\b(pr[óo]ximo|bloco|aula)\b/i,
+  /\bcontinu(ar|e)\b.*\b(aula|bloco)\b/i,
+  /\badiante\b/i,
+];
+
 export function shouldBypassMemory(text: string): boolean {
   if (!text) return false;
-  return REGENERATE_PATTERNS.some((rx) => rx.test(text));
+  return REGENERATE_PATTERNS.some((rx) => rx.test(text)) || NAVIGATION_PATTERNS.some((rx) => rx.test(text));
 }
