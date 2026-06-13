@@ -49,8 +49,8 @@ interface CallOpts {
 
 export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpts): Promise<ClaudeV3Result> {
   const start = Date.now();
-  const augmentedSystem = `${systemPrompt}${JSON_INSTRUCTION}`;
-  const augmentedUser = `${userMessage}\n\nResponda SOMENTE no formato <json>{...}</json> conforme schema acima.`;
+  // Coloca a instrução JSON DENTRO da mensagem do usuário — proxies às vezes ignoram system_prompt no context
+  const augmentedUser = `${systemPrompt}\n\n---\n\n${userMessage}\n${JSON_INSTRUCTION}\n\nLembrete final: responda APENAS com <json>{...}</json>. Sem texto antes ou depois.`;
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), EU_AI_TIMEOUT_MS);
@@ -64,7 +64,7 @@ export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpt
         message: augmentedUser,
         topic,
         stream: false,
-        context: { source: "tutor-v3-premium", system_prompt: augmentedSystem.slice(0, 4000) },
+        context: { source: "tutor-v3-premium", format: "json_strict" },
       }),
       signal: ctrl.signal,
     });
@@ -98,8 +98,10 @@ export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpt
     parsed = safeJsonExtract<Record<string, unknown>>(raw);
   } catch (e) {
     const reason = e instanceof JsonExtractError ? e.reason : String((e as any)?.message || e);
+    console.warn(`[CLAUDE_RAW_DEBUG] len=${raw.length} head="${raw.slice(0, 400).replace(/\n/g, " ")}"`);
     throw new Error(`CLAUDE_JSON_EXTRACT_FAIL: ${reason}`);
   }
+
 
   const content = String(parsed.content || "").trim();
   const socratic = String(parsed.socraticQuestion || "").trim();
@@ -113,7 +115,7 @@ export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpt
   }
 
   // Estimativa grosseira de tokens (proxy não retorna usage)
-  const promptTokens = Math.ceil((augmentedSystem.length + augmentedUser.length) / 4);
+  const promptTokens = Math.ceil(augmentedUser.length / 4);
   const completionTokens = Math.ceil(raw.length / 4);
 
   return {
