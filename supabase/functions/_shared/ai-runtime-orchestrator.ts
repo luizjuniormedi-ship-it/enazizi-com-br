@@ -343,6 +343,10 @@ function getAIKey(provider: string): string {
   if (provider === "openai") {
     return Deno.env.get("OPENAI_API_KEY") || "";
   }
+  if (provider === "eu-ai") {
+    // proxy Railway não exige auth; retorna marker p/ não falhar checagem de key
+    return "eu-ai-noauth";
+  }
   return (
     Deno.env.get("LOVABLE_API_KEY") ||
     Deno.env.get("AI_GATEWAY_API_KEY") ||
