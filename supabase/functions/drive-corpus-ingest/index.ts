@@ -1,5 +1,5 @@
 // Drive Corpus — Ingestão em lote
-// Pipeline: Drive PDF -> Gemini (extrai texto) -> Claude (resumo estruturado)
+// Pipeline: Drive PDF -> Claude (extrai + estrutura PDF nativo)
 // -> chunk -> OpenAI embedding -> rag_documents/chunks/embeddings
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
