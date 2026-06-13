@@ -244,7 +244,13 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     let memoryHit: Awaited<ReturnType<typeof lookupTutorMemory>> = null;
     let ragHits: Awaited<ReturnType<typeof lookupRagSemantic>> = [];
 
-    if (!MEMORY_DISABLED && !newTopic && userQuestion.length >= 8 && studentIntent !== "new_topic") {
+    // 🔒 Só consulta memória em perguntas substantivas. Mensagens de navegação
+    // ("continue", "ok", "ave", respostas curtas a active recall, dúvidas pontuais)
+    // NÃO devem reusar cache — senão a aula trava no mesmo bloco.
+    const isSubstantiveQuery =
+      (studentIntent === "other" || studentIntent === "new_topic") &&
+      userQuestion.length >= 20;
+    if (!MEMORY_DISABLED && !newTopic && isSubstantiveQuery) {
       // Lookup paralelo defensivo: memória + RAG nunca devem travar o Tutor
       try {
         const [m, r] = await Promise.all([
