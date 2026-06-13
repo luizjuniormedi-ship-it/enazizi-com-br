@@ -345,7 +345,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         }
       })());
 
-      const normalized = normalizeTutorResponse(memoryHit, "cache");
+      // FIX: memoryHit usa shape {answer, question, ...}; adapta para o normalizer
+      const normalized = normalizeTutorResponse({
+        content: memoryHit.answer,
+        teachingPhase: "ENSINAR",
+        socraticQuestion: (memoryHit as any).socraticQuestion || `O que ficou mais claro para você sobre ${topic}?`,
+        confidence: memoryHit.qualityScore ?? 0.9,
+        metadata: { fromMemory: true, memoryId: memoryHit.id },
+      }, "cache");
       console.log(`[TUTOR_CACHE_HIT] memoryId=${memoryHit.id}`);
 
       return corsResponse({
