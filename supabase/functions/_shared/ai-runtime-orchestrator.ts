@@ -77,6 +77,8 @@ export interface AIRunInput extends AISelectInput {
   sessionId?: string | null;
   requestId?: string | null;
   emergencyTemplate?: string;
+  /** When true, prepend Claude via eu-ai proxy as primary attempt (free chat only). */
+  preferEuAI?: boolean;
   /** When provided, log row is written via this Supabase client. */
   supabase?: any;
 }
