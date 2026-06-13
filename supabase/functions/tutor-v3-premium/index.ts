@@ -624,19 +624,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }
     })());
 
-    return corsResponse({
-      success: true,
-      ok: true,
-      content: safeResponse.content,
+    return corsResponse(buildTutorEnvelope(safeResponse, {
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
-      teachingPhase: safeResponse.teachingPhase,
-      socraticQuestion: safeResponse.socraticQuestion,
-      shouldWaitForStudent: true,
-      source: "safe_mode",
-      debug_stage: "safe_mode_emergency",
+      topic: (correlation as any)?.topic || "geral",
+      correlation_id: (correlation as any)?.correlationId,
       error: err.message,
-      request_id: requestId
-    }, 200);
+      request_id: requestId,
+      debug: { stage: "safe_mode_emergency" },
+    }), 200);
   }
 
 
