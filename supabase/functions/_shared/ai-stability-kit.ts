@@ -244,6 +244,49 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
   };
 }
 
+/**
+ * PROTOCOLO ÚNICO DE RESPOSTA DO TUTOR
+ * Garante envelope consistente em TODOS os caminhos (cache, IA, fallback, safe-mode).
+ * Use este helper em vez de montar o objeto manualmente.
+ */
+export function buildTutorEnvelope(
+  normalized: TutorResponse,
+  extras: {
+    currentBlock: string;
+    blockTitle?: string;
+    topic: string;
+    correlation_id?: string;
+    actionsContext?: Record<string, any>;
+    fromMemory?: boolean;
+    memoryId?: string;
+    debug?: Record<string, any>;
+    error?: string;
+    request_id?: string;
+  }
+) {
+  return {
+    success: true,
+    ok: true,
+    content: normalized.content,
+    teachingPhase: normalized.teachingPhase,
+    socraticQuestion: normalized.socraticQuestion,
+    shouldWaitForStudent: true,
+    currentBlock: extras.currentBlock,
+    blockTitle: extras.blockTitle,
+    topic: extras.topic,
+    actionsContext: extras.actionsContext || { topic: extras.topic, block: extras.currentBlock },
+    source: normalized.source,
+    confidence: normalized.confidence ?? 1.0,
+    metadata: normalized.metadata ?? {},
+    correlation_id: extras.correlation_id,
+    fromMemory: extras.fromMemory ?? false,
+    memoryId: extras.memoryId,
+    request_id: extras.request_id,
+    error: extras.error,
+    debug: extras.debug,
+  };
+}
+
 
 export function getStaticFallback(tema: string): any {
   // Normalize search term
