@@ -11685,6 +11685,74 @@ export type Database = {
         }
         Relationships: []
       }
+      drive_corpus_queue: {
+        Row: {
+          chunks_count: number | null
+          created_at: string
+          drive_file_id: string
+          error_message: string | null
+          file_name: string
+          file_size: number | null
+          folder_path: string | null
+          id: string
+          mime_type: string | null
+          processed_at: string | null
+          rag_document_id: string | null
+          retry_count: number
+          skip_reason: string | null
+          specialty: string | null
+          status: string
+          tokens_used: number | null
+          updated_at: string
+        }
+        Insert: {
+          chunks_count?: number | null
+          created_at?: string
+          drive_file_id: string
+          error_message?: string | null
+          file_name: string
+          file_size?: number | null
+          folder_path?: string | null
+          id?: string
+          mime_type?: string | null
+          processed_at?: string | null
+          rag_document_id?: string | null
+          retry_count?: number
+          skip_reason?: string | null
+          specialty?: string | null
+          status?: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Update: {
+          chunks_count?: number | null
+          created_at?: string
+          drive_file_id?: string
+          error_message?: string | null
+          file_name?: string
+          file_size?: number | null
+          folder_path?: string | null
+          id?: string
+          mime_type?: string | null
+          processed_at?: string | null
+          rag_document_id?: string | null
+          retry_count?: number
+          skip_reason?: string | null
+          specialty?: string | null
+          status?: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_corpus_queue_rag_document_id_fkey"
+            columns: ["rag_document_id"]
+            isOneToOne: false
+            referencedRelation: "rag_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drive_folders_scan: {
         Row: {
           files_count: number | null
@@ -25387,6 +25455,7 @@ export type Database = {
       rag_documents: {
         Row: {
           created_at: string
+          drive_file_id: string | null
           error_message: string | null
           file_name: string
           file_path: string
@@ -25398,6 +25467,8 @@ export type Database = {
           organization_id: string
           published_at: string | null
           replaced_by: string | null
+          source_type: string
+          specialty: string | null
           status: string
           title: string
           updated_at: string
@@ -25406,6 +25477,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          drive_file_id?: string | null
           error_message?: string | null
           file_name: string
           file_path: string
@@ -25417,6 +25489,8 @@ export type Database = {
           organization_id: string
           published_at?: string | null
           replaced_by?: string | null
+          source_type?: string
+          specialty?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -25425,6 +25499,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          drive_file_id?: string | null
           error_message?: string | null
           file_name?: string
           file_path?: string
@@ -25436,6 +25511,8 @@ export type Database = {
           organization_id?: string
           published_at?: string | null
           replaced_by?: string | null
+          source_type?: string
+          specialty?: string | null
           status?: string
           title?: string
           updated_at?: string
