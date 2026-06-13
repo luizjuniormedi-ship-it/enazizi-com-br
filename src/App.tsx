@@ -342,6 +342,7 @@ const App = () => (
                   <Route path="revisor" element={<MedicalReviewer />} />
                   <Route path="entrevista" element={<InterviewSimulator />} />
                   <Route path="perfil" element={<Profile />} />
+                  <Route path="resultados-oficiais" element={<ResultadosOficiais />} />
                   <Route path="configuracoes" element={<Settings />} />
                   <Route path="favoritos" element={<Favoritos />} />
                   <Route path="historico" element={<Historico />} />
