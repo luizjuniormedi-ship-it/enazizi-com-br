@@ -12,6 +12,8 @@
 // ============================================================================
 
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const EU_AI_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
+const EU_AI_TIMEOUT_MS = 8_000; // fail fast → fallback p/ OpenAI
 const AI_TIMEOUT_MS = 30_000;
 const AI_MAX_TOKENS = 4096;
 const AI_MAX_TOKENS_DEEP = 6000; // For tutor_chat high complexity & clinical_reasoning
