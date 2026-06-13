@@ -503,7 +503,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
 
     // ── 4. STABILITY & PARSING ───────────────────────────────
-    const normalized = normalizeTutorResponse(aiResponse, aiResponse.choices ? "openai" : "fallback");
+    const normalized = normalizeTutorResponse(
+      aiResponse,
+      aiProviderUsed === "claude" || aiResponse.choices ? "openai" : "fallback"
+    );
     
     if (normalized.source === "fallback") {
       console.log("[TUTOR_FALLBACK_ACTIVATED]");
