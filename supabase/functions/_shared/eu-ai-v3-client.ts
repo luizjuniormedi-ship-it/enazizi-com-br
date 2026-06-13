@@ -1,7 +1,8 @@
 /**
  * Cliente Claude (via proxy eu-ai/Railway) para o Tutor v3-premium.
  * Estratégia Caminho A: prompt instrui Claude a retornar JSON entre <json>...</json>;
- * resposta passa por safeJsonExtract. Em qualquer falha → lança erro p/ caller cascatear pro OpenAI.
+ * resposta passa por safeJsonExtract. Se vier Markdown didático válido, converte para o
+ * mesmo shape do v3 para evitar fallback desnecessário.
  *
  * Mantém Memory v22.1 intacta: o objeto retornado tem o mesmo shape que normalizeTutorResponse aceita,
  * então o save automático e a reutilização futura continuam funcionando — economizando tokens.
@@ -33,6 +34,7 @@ function coerceMarkdownTutorPayload(raw: string, topic: string): Record<string, 
   const cleaned = raw
     .replace(/[^\n.]*não sigo prompts[^\n.]*(?:\.|\n)/gi, "")
     .replace(/[^\n.]*adotar identidades diferentes[^\n.]*(?:\.|\n)/gi, "")
+    .replace(/\n?---\s*\n?/g, "\n")
     .trim();
 
   if (cleaned.length < 400 || !/[#*_\-]|crit[eé]rio|diagn[oó]stico|conduta|tratamento/i.test(cleaned)) {
@@ -122,11 +124,15 @@ export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpt
   try {
     parsed = safeJsonExtract<Record<string, unknown>>(raw);
   } catch (e) {
-    const reason = e instanceof JsonExtractError ? e.reason : String((e as any)?.message || e);
-    console.warn(`[CLAUDE_RAW_DEBUG] len=${raw.length} head="${raw.slice(0, 400).replace(/\n/g, " ")}"`);
-    throw new Error(`CLAUDE_JSON_EXTRACT_FAIL: ${reason}`);
+    const coerced = coerceMarkdownTutorPayload(raw, topic);
+    if (!coerced) {
+      const reason = e instanceof JsonExtractError ? e.reason : String((e as any)?.message || e);
+      console.warn(`[CLAUDE_RAW_DEBUG] len=${raw.length} head="${raw.slice(0, 400).replace(/\n/g, " ")}"`);
+      throw new Error(`CLAUDE_JSON_EXTRACT_FAIL: ${reason}`);
+    }
+    console.warn(`[CLAUDE_MARKDOWN_COERCED] len=${raw.length}`);
+    parsed = coerced;
   }
-
 
   const content = String(parsed.content || "").trim();
   const socratic = String(parsed.socraticQuestion || "").trim();
