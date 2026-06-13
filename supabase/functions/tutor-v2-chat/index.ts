@@ -450,6 +450,9 @@ E) Ver exemplo clínico"
       cognitiveLoad,
       requiresReasoning: wantsDeep || qReview.active,
       budgetMode: "balanced",
+      // Claude (eu-ai) como 1ª escolha SOMENTE em chat livre.
+      // QR mode exige metadados JSON estruturados → mantém OpenAI primário.
+      preferEuAI: !qReview.active,
       messages,
       userId,
       sessionId,
