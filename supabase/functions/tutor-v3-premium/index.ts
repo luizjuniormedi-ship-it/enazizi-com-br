@@ -564,7 +564,15 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       // Save em tutor_knowledge_memory (LGPD-SAFE — Opção C / Hardening v25.1):
       // Toda memória nasce PRIVADA (scope='user'). Promoção para 'global' acontece
       // exclusivamente via tutor-memory-promotion-cron, que sanitiza PII antes.
-      if (!MEMORY_DISABLED && userQuestion.length >= 8 && (normalized.content || "").length >= 60 && studentIntent !== "new_topic") {
+      const canSaveTutorMemory =
+        !MEMORY_DISABLED &&
+        userQuestion.length >= 8 &&
+        (normalized.content || "").length >= 60 &&
+        studentIntent !== "new_topic" &&
+        studentIntent !== "continue" &&
+        studentIntent !== "answer_question" &&
+        studentIntent !== "shortcut_summary";
+      if (canSaveTutorMemory) {
         const answerText = normalized.content || "";
         const autoQuality = estimateQualityScore(answerText);
         const savedId = await saveTutorMemory(supabaseAdmin, {

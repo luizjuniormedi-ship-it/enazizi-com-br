@@ -98,17 +98,27 @@ export type StudentIntent =
 
 export function classifyStudentIntent(message: string): StudentIntent {
   const msg = message.toLowerCase().trim();
+  const normalizedMsg = msg.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   
   if (msg.length === 0) return "continue";
-  
-  const continueKeywords = ["continue", "próximo", "prosseguir", "vamos", "ok", "adiante", "next"];
-  if (continueKeywords.some(k => msg.includes(k)) && msg.length < 15) {
-    return "continue";
-  }
   
   const doubtKeywords = ["não entendi", "dúvida", "como assim", "explica melhor", "por que", "quê", "?", "pode repetir"];
   if (doubtKeywords.some(k => msg.includes(k))) {
     return "doubt";
+  }
+
+  const continueKeywords = ["continue", "proximo", "prosseguir", "vamos", "ok", "adiante", "next"];
+  const continuePhrases = [
+    /\bproximo\s+bloco\b/,
+    /\bprosseguir\b.*\b(proximo|bloco|aula)\b/,
+    /\bcontinu(ar|e)\b.*\b(aula|bloco)\b/,
+    /\badiante\b/,
+  ];
+  if (
+    (continueKeywords.some(k => normalizedMsg.includes(k)) && normalizedMsg.length < 20) ||
+    continuePhrases.some(rx => rx.test(normalizedMsg))
+  ) {
+    return "continue";
   }
   
   const summaryKeywords = ["resumo", "resumir", "direto ao ponto", "final"];
