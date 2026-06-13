@@ -2542,6 +2542,56 @@ export type Database = {
         }
         Relationships: []
       }
+      alpha_cohort_snapshots: {
+        Row: {
+          captured_at: string
+          checkpoint: Database["public"]["Enums"]["alpha_snapshot_checkpoint"]
+          cohort_id: string
+          fsrs_due_count: number | null
+          id: string
+          metadata: Json
+          readiness: number | null
+          simulado_count: number | null
+          study_minutes_7d: number | null
+          tutor_sessions_7d: number | null
+          user_id: string
+        }
+        Insert: {
+          captured_at?: string
+          checkpoint: Database["public"]["Enums"]["alpha_snapshot_checkpoint"]
+          cohort_id: string
+          fsrs_due_count?: number | null
+          id?: string
+          metadata?: Json
+          readiness?: number | null
+          simulado_count?: number | null
+          study_minutes_7d?: number | null
+          tutor_sessions_7d?: number | null
+          user_id: string
+        }
+        Update: {
+          captured_at?: string
+          checkpoint?: Database["public"]["Enums"]["alpha_snapshot_checkpoint"]
+          cohort_id?: string
+          fsrs_due_count?: number | null
+          id?: string
+          metadata?: Json
+          readiness?: number | null
+          simulado_count?: number | null
+          study_minutes_7d?: number | null
+          tutor_sessions_7d?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alpha_cohort_snapshots_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "academic_cohorts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ambiguity_clusters: {
         Row: {
           cluster_name: string
@@ -20598,6 +20648,63 @@ export type Database = {
           },
         ]
       }
+      official_exam_outcomes: {
+        Row: {
+          approval: boolean | null
+          created_at: string
+          evidence_tier: Database["public"]["Enums"]["exam_evidence_tier"]
+          evidence_url: string | null
+          exam: string
+          exam_year: number | null
+          id: string
+          institution: string | null
+          notes: string | null
+          rank_position: number | null
+          score: number | null
+          updated_at: string
+          user_id: string
+          validated: boolean
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          approval?: boolean | null
+          created_at?: string
+          evidence_tier?: Database["public"]["Enums"]["exam_evidence_tier"]
+          evidence_url?: string | null
+          exam: string
+          exam_year?: number | null
+          id?: string
+          institution?: string | null
+          notes?: string | null
+          rank_position?: number | null
+          score?: number | null
+          updated_at?: string
+          user_id: string
+          validated?: boolean
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          approval?: boolean | null
+          created_at?: string
+          evidence_tier?: Database["public"]["Enums"]["exam_evidence_tier"]
+          evidence_url?: string | null
+          exam?: string
+          exam_year?: number | null
+          id?: string
+          institution?: string | null
+          notes?: string | null
+          rank_position?: number | null
+          score?: number | null
+          updated_at?: string
+          user_id?: string
+          validated?: boolean
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: []
+      }
       official_exam_processing_queue: {
         Row: {
           attempts: number | null
@@ -35133,6 +35240,7 @@ export type Database = {
         | "quiz"
         | "video_script"
         | "commented_questions"
+      alpha_snapshot_checkpoint: "d0" | "d30" | "d60" | "d90"
       app_role:
         | "admin"
         | "user"
@@ -35213,6 +35321,10 @@ export type Database = {
         | "rejected"
         | "failed"
       difficulty_level: "easy" | "medium" | "hard"
+      exam_evidence_tier:
+        | "student_reported"
+        | "document_verified"
+        | "institution_verified"
       hospital_sector_type:
         | "sala_vermelha"
         | "sala_laranja"
@@ -35486,6 +35598,7 @@ export const Constants = {
         "video_script",
         "commented_questions",
       ],
+      alpha_snapshot_checkpoint: ["d0", "d30", "d60", "d90"],
       app_role: [
         "admin",
         "user",
@@ -35573,6 +35686,11 @@ export const Constants = {
         "failed",
       ],
       difficulty_level: ["easy", "medium", "hard"],
+      exam_evidence_tier: [
+        "student_reported",
+        "document_verified",
+        "institution_verified",
+      ],
       hospital_sector_type: [
         "sala_vermelha",
         "sala_laranja",
