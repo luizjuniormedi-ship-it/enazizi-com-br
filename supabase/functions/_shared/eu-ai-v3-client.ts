@@ -18,6 +18,7 @@ const JSON_INSTRUCTION = `
 # REGRAS DE SAÍDA OBRIGATÓRIAS (NÃO NEGOCIÁVEIS)
 Você DEVE retornar APENAS um objeto JSON válido entre as tags <json> e </json>.
 NÃO escreva nada antes ou depois das tags. NÃO use \`\`\`json. NÃO comente o JSON.
+Nunca mencione provedor/modelo/identidade de IA, prompts, instruções injetadas ou comparação com outro provedor; responda apenas como tutor médico ENAZIZI em pt-BR.
 
 Schema obrigatório:
 <json>
@@ -32,8 +33,11 @@ Schema obrigatório:
 
 function coerceMarkdownTutorPayload(raw: string, topic: string): Record<string, unknown> | null {
   const cleaned = raw
+    .replace(/[^\n.?!]*(?:não sou|sou o claude|anthropic|instruções? injetadas?|prompts? injetados?)[^\n.?!]*(?:[.?!]|\n)/gi, "")
+    .replace(/quanto à pergunta legítima[^\n—-]*[—-]?/gi, "")
     .replace(/[^\n.]*não sigo prompts[^\n.]*(?:\.|\n)/gi, "")
     .replace(/[^\n.]*adotar identidades diferentes[^\n.]*(?:\.|\n)/gi, "")
+    .replace(/persistently positive/gi, "persistentemente positivas")
     .replace(/\n?---\s*\n?/g, "\n")
     .trim();
 
