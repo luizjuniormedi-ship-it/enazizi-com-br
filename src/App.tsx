@@ -82,6 +82,9 @@ const EnrichmentProgress = lazyWithRetry(() => import("./pages/admin/EnrichmentP
 const ClassificationRunner = lazyWithRetry(() => import("./pages/admin/ClassificationRunner"), "ClassificationRunner");
 const IntelligenceRunner = lazyWithRetry(() => import("./pages/admin/IntelligenceRunner"), "IntelligenceRunner");
 const IntelligenceIndex = lazyWithRetry(() => import("./pages/admin/IntelligenceIndex"), "IntelligenceIndex");
+const AlphaCohort = lazyWithRetry(() => import("./pages/admin/AlphaCohort"), "AlphaCohort");
+const OfficialOutcomes = lazyWithRetry(() => import("./pages/admin/OfficialOutcomes"), "OfficialOutcomes");
+const ResultadosOficiais = lazyWithRetry(() => import("./pages/ResultadosOficiais"), "ResultadosOficiais");
 const ClassificationHealthDashboard = lazyWithRetry(() => import("./pages/admin/ClassificationHealthDashboard"), "ClassificationHealthDashboard");
 const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
 const GoldCuration = lazyWithRetry(() => import("./pages/admin/GoldCuration"), "GoldCuration");
@@ -339,6 +342,7 @@ const App = () => (
                   <Route path="revisor" element={<MedicalReviewer />} />
                   <Route path="entrevista" element={<InterviewSimulator />} />
                   <Route path="perfil" element={<Profile />} />
+                  <Route path="resultados-oficiais" element={<ResultadosOficiais />} />
                   <Route path="configuracoes" element={<Settings />} />
                   <Route path="favoritos" element={<Favoritos />} />
                   <Route path="historico" element={<Historico />} />
@@ -437,6 +441,8 @@ const App = () => (
                 <Route path="dogfood-monitor" element={<DogfoodMonitor />} />
                 <Route path="cvrp" element={<CVRPDashboard />} />
                 <Route path="drive-corpus" element={<DriveCorpusAdmin />} />
+                <Route path="alpha-cohort" element={<AlphaCohort />} />
+                <Route path="official-outcomes" element={<OfficialOutcomes />} />
 
 
 
