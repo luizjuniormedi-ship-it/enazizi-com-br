@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-fetch.ts";
+import { claudeFetchQuestions, isClaudePrimarySimuladoEnabled } from "../_shared/eu-ai-questions-client.ts";
 import { sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { cleanQuestionText } from "../_shared/contracts/parser.contract.ts";
 import { IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
@@ -721,17 +722,34 @@ REGRAS INVIOLÁVEIS:
 
               try {
                 const prompt = buildSlotPrompt(stillNeeded, level, globalPrev);
-                const response = await aiFetch({
-                  messages: [{ role: "user", content: prompt }],
-                  model: "google/gemini-2.5-flash",
-                  maxTokens: 8192,
-                  timeoutMs: 55000,
-                  maxRetries: 0,
-                });
+                let response: any;
+                let usedClaude = false;
+                // Piloto Sprint 2.3: Claude como primário SÓ se flag ligada e batch pequeno (<=10)
+                if (isClaudePrimarySimuladoEnabled() && stillNeeded <= 10 && attempt === 0) {
+                  usedClaude = true;
+                  response = await claudeFetchQuestions(prompt, topics[0]);
+                  if (!response.ok) {
+                    const t = await response.text();
+                    console.warn(`[CLAUDE_SIM_FAIL] level=${level} status=${response.status} ${t.slice(0, 160)} — fallback Gemini`);
+                    response = null;
+                  } else {
+                    console.log(`[CLAUDE_SIM_OK] level=${level} batch=${stillNeeded}`);
+                  }
+                }
+                if (!response) {
+                  usedClaude = false;
+                  response = await aiFetch({
+                    messages: [{ role: "user", content: prompt }],
+                    model: "google/gemini-2.5-flash",
+                    maxTokens: 8192,
+                    timeoutMs: 55000,
+                    maxRetries: 0,
+                  });
+                }
 
                 if (!response.ok) {
                   const t = await response.text();
-                  console.error(`[Slot ${level}] AI batch ${attempt + 1} error:`, t.slice(0, 200));
+                  console.error(`[Slot ${level}] AI batch ${attempt + 1} error (provider=${usedClaude ? "claude" : "gemini"}):`, t.slice(0, 200));
                   continue;
                 }
 
