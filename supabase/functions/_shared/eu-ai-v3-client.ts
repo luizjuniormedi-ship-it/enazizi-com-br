@@ -10,7 +10,7 @@
 import { safeJsonExtract, JsonExtractError } from "./json-extractor.ts";
 
 const EU_AI_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
-const EU_AI_TIMEOUT_MS = 18_000; // v3 = respostas mais longas que v2
+const EU_AI_TIMEOUT_MS = 35_000; // v3 = respostas mais longas; Claude pode levar 15-25s
 
 const JSON_INSTRUCTION = `
 
