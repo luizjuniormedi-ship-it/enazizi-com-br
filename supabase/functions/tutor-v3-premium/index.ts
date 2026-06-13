@@ -584,24 +584,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     })());
 
 
-    return corsResponse({
-      success: true,
-      ok: true,
-      content: normalized.content,
+    return corsResponse(buildTutorEnvelope(normalized, {
       currentBlock: activeBlock,
       blockTitle: activeBlockConfig.title,
-      teachingPhase: normalized.teachingPhase,
-      shouldWaitForStudent: true,
-      socraticQuestion: normalized.socraticQuestion,
-      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
       topic,
       correlation_id: correlationId,
-      source: normalized.source,
-      debug: {
-        studentIntent,
-        nextBlock: activeBlock
-      }
-    }, 200);
+      actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
+      debug: { studentIntent, nextBlock: activeBlock, provider: aiProviderUsed },
+    }), 200);
 
 
 
