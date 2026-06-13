@@ -6,6 +6,7 @@ import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory
 import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
 import { normalizeTutorResponse, TutorResponse, getStaticFallback } from "../_shared/ai-stability-kit.ts";
+import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
 
 
 // Métrica fire-and-forget — nunca trava o fluxo.
@@ -445,9 +446,34 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       complexity: "high" as any
     };
 
-    const aiResponse = await ai(aiConfigToRun, { retries: 2 });
+    // ── Caminho A: tenta Claude (eu-ai) com extrator JSON tolerante; fallback automático p/ OpenAI ──
+    let aiResponse: any;
+    let aiProviderUsed = "openai";
+    try {
+      if (isClaudeV3Enabled()) {
+        const sys = aiConfigToRun.messages.find((m: any) => m.role === "system")?.content || "";
+        const lastUser = [...aiConfigToRun.messages].reverse().find((m: any) => m.role === "user")?.content || "";
+        const claude = await callClaudeV3({ systemPrompt: sys, userMessage: lastUser, topic });
+        aiResponse = {
+          content: claude.content,
+          socraticQuestion: claude.socraticQuestion,
+          teachingPhase: claude.teachingPhase,
+          shouldWaitForStudent: claude.shouldWaitForStudent,
+          actionsContext: claude.actionsContext,
+          model: "claude-eu",
+          usage: claude.usage,
+        };
+        aiProviderUsed = "claude";
+        console.log("[TUTOR_CLAUDE_OK]", { latency_ms: claude._latencyMs, content_len: claude.content.length });
+      } else {
+        throw new Error("CLAUDE_V3_DISABLED");
+      }
+    } catch (claudeErr: any) {
+      console.log("[TUTOR_CLAUDE_FALLBACK_OPENAI]", { reason: claudeErr?.message?.slice(0, 200) || "unknown" });
+      aiResponse = await ai(aiConfigToRun, { retries: 2 });
+    }
     const latencyEnd = Date.now();
-    console.log("[TUTOR_RUNAI_OK]");
+    console.log("[TUTOR_RUNAI_OK]", { provider: aiProviderUsed });
 
     // AI Cost Validation: Log actual usage
     waitUntil((async () => {

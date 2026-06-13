@@ -1,0 +1,137 @@
+/**
+ * Cliente Claude (via proxy eu-ai/Railway) para o Tutor v3-premium.
+ * Estratégia Caminho A: prompt instrui Claude a retornar JSON entre <json>...</json>;
+ * resposta passa por safeJsonExtract. Em qualquer falha → lança erro p/ caller cascatear pro OpenAI.
+ *
+ * Mantém Memory v22.1 intacta: o objeto retornado tem o mesmo shape que normalizeTutorResponse aceita,
+ * então o save automático e a reutilização futura continuam funcionando — economizando tokens.
+ */
+
+import { safeJsonExtract, JsonExtractError } from "./json-extractor.ts";
+
+const EU_AI_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
+const EU_AI_TIMEOUT_MS = 18_000; // v3 = respostas mais longas que v2
+
+const JSON_INSTRUCTION = `
+
+# REGRAS DE SAÍDA OBRIGATÓRIAS (NÃO NEGOCIÁVEIS)
+Você DEVE retornar APENAS um objeto JSON válido entre as tags <json> e </json>.
+NÃO escreva nada antes ou depois das tags. NÃO use \`\`\`json. NÃO comente o JSON.
+
+Schema obrigatório:
+<json>
+{
+  "content": "<explicação em Markdown PT-BR, 200-2000 chars, com bibliografia Harrison/Nelson/Sabiston>",
+  "socraticQuestion": "<uma pergunta socrática provocativa para o aluno>",
+  "teachingPhase": "ENSINAR" | "TESTAR" | "CORRIGIR" | "REFORCAR" | "AVANCAR",
+  "shouldWaitForStudent": true,
+  "actionsContext": { "topic": "<tema atual>", "block": "<bloco pedagógico>" }
+}
+</json>`;
+
+export interface ClaudeV3Result {
+  content: string;
+  socraticQuestion: string;
+  teachingPhase: string;
+  shouldWaitForStudent: boolean;
+  actionsContext?: Record<string, unknown>;
+  _provider: "claude";
+  _model: "claude-eu";
+  _latencyMs: number;
+  usage: { prompt_tokens: number; completion_tokens: number };
+}
+
+interface CallOpts {
+  systemPrompt: string;
+  userMessage: string;
+  topic: string;
+}
+
+export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpts): Promise<ClaudeV3Result> {
+  const start = Date.now();
+  const augmentedSystem = `${systemPrompt}${JSON_INSTRUCTION}`;
+  const augmentedUser = `${userMessage}\n\nResponda SOMENTE no formato <json>{...}</json> conforme schema acima.`;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), EU_AI_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(`${EU_AI_URL}/api/v1/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: augmentedUser,
+        topic,
+        stream: false,
+        context: { source: "tutor-v3-premium", system_prompt: augmentedSystem.slice(0, 4000) },
+      }),
+      signal: ctrl.signal,
+    });
+  } catch (e: any) {
+    clearTimeout(timer);
+    throw new Error(`CLAUDE_NETWORK_FAIL: ${e?.message || e}`);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  const latencyMs = Date.now() - start;
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`CLAUDE_HTTP_${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  let envelope: any;
+  try {
+    envelope = JSON.parse(text);
+  } catch {
+    throw new Error("CLAUDE_INVALID_ENVELOPE_JSON");
+  }
+
+  const raw: string = envelope?.message || envelope?.content || envelope?.response || "";
+  if (!raw || typeof raw !== "string") {
+    throw new Error("CLAUDE_EMPTY_MESSAGE");
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = safeJsonExtract<Record<string, unknown>>(raw);
+  } catch (e) {
+    const reason = e instanceof JsonExtractError ? e.reason : String((e as any)?.message || e);
+    throw new Error(`CLAUDE_JSON_EXTRACT_FAIL: ${reason}`);
+  }
+
+  const content = String(parsed.content || "").trim();
+  const socratic = String(parsed.socraticQuestion || "").trim();
+  const phase = String(parsed.teachingPhase || "ENSINAR").trim().toUpperCase();
+
+  if (content.length < 100) {
+    throw new Error(`CLAUDE_CONTENT_TOO_SHORT: ${content.length} chars`);
+  }
+  if (!socratic) {
+    throw new Error("CLAUDE_MISSING_SOCRATIC");
+  }
+
+  // Estimativa grosseira de tokens (proxy não retorna usage)
+  const promptTokens = Math.ceil((augmentedSystem.length + augmentedUser.length) / 4);
+  const completionTokens = Math.ceil(raw.length / 4);
+
+  return {
+    content,
+    socraticQuestion: socratic,
+    teachingPhase: phase,
+    shouldWaitForStudent: parsed.shouldWaitForStudent !== false,
+    actionsContext: (parsed.actionsContext as Record<string, unknown>) || { topic },
+    _provider: "claude",
+    _model: "claude-eu",
+    _latencyMs: latencyMs,
+    usage: { prompt_tokens: promptTokens, completion_tokens: completionTokens },
+  };
+}
+
+export function isClaudeV3Enabled(): boolean {
+  // Default ON; desligue setando ENABLE_CLAUDE_V3=false
+  const v = Deno.env.get("ENABLE_CLAUDE_V3");
+  if (v === undefined || v === null || v === "") return true;
+  return v.toLowerCase() !== "false" && v !== "0";
+}
