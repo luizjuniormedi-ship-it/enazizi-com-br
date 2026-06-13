@@ -8,7 +8,7 @@ import TutorV2Sidebar from "@/components/tutor-v2/TutorV2Sidebar";
 import { useTutorV2Session } from "@/components/tutor-v2/hooks/useTutorV2Session";
 import { useStudyContext } from "@/lib/studyContext";
 
-import { Brain, Sparkles, GraduationCap, ArrowRight, Zap, Target, BookOpen, Clock, Heart, Shield, Activity, Stethoscope } from "lucide-react";
+import { Brain, Sparkles, GraduationCap, ArrowRight, Zap, Target, BookOpen, Clock, Heart, Shield, Activity, Stethoscope, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
