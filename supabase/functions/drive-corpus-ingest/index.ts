@@ -117,8 +117,7 @@ async function processOne(row: any, token: string, supabase: any): Promise<void>
 
   try {
     const pdfBytes = await downloadDrivePdf(row.drive_file_id, token);
-    const rawText = await extractPdfTextWithGemini(pdfBytes, row.file_name);
-    const structured = await structureWithClaude(rawText, row.specialty || "Geral", row.file_name);
+    const structured = await extractAndStructureWithClaude(pdfBytes, row.specialty || "Geral", row.file_name);
 
     // Cria rag_document
     const { data: doc, error: docErr } = await supabase.from("rag_documents").insert({
