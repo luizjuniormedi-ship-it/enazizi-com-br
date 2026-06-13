@@ -399,6 +399,42 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
+    // ---- Branch: eu-ai (Claude via Railway proxy) ----
+    if (ref.provider === "eu-ai") {
+      const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content || "";
+      const systemMsg = messages.find((m) => m.role === "system")?.content || "";
+      const payload = {
+        message: lastUser,
+        topic: "Tutor ENAZIZI",
+        stream: false,
+        context: { source: "ai-runtime-orchestrator", system_prompt: systemMsg.slice(0, 2000) },
+      };
+      const res = await fetchWithTimeout(
+        `${EU_AI_URL}/api/v1/chat`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+        EU_AI_TIMEOUT_MS,
+      );
+      const latency_ms = Date.now() - start;
+      const responseText = await res.text();
+      if (!res.ok) {
+        const e = extractProviderError(res.status, responseText);
+        return { attempt: { ...ref, success: false, status: res.status, ...e, latency_ms } };
+      }
+      let parsed: any;
+      try { parsed = JSON.parse(responseText); } catch {
+        return { attempt: { ...ref, success: false, status: res.status, code: "AI_INVALID_JSON", message: "eu-ai returned invalid JSON", latency_ms } };
+      }
+      const content = parsed?.message || parsed?.content || parsed?.response;
+      if (!content || typeof content !== "string" || parsed?.success === false) {
+        return { attempt: { ...ref, success: false, status: res.status, code: "AI_EMPTY_RESPONSE", message: parsed?.error || "eu-ai returned no content", latency_ms } };
+      }
+      return { content, usage: undefined, attempt: { ...ref, success: true, status: res.status, latency_ms } };
+    }
+
     const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model) || /^o[13]/.test(ref.model) || ref.model.includes("gpt-5");
     const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
     const body: Record<string, unknown> = {
