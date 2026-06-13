@@ -39,7 +39,8 @@ export function isClaudePrimarySimuladoEnabled(): boolean {
 }
 
 export async function claudeFetchQuestions(prompt: string, topicHint = "simulado"): Promise<ClaudeSimResponse> {
-  const augmented = `${prompt}${JSON_TAIL}`;
+  const topicLock = `\n\n# TRAVA DE TEMA (OBRIGATÓRIO)\nO campo "topic" de TODA questão DEVE ser EXATAMENTE: "${topicHint}". Não use sinônimos, abreviações, nem o nome da especialidade pai. Use a string literal "${topicHint}".`;
+  const augmented = `${prompt}${topicLock}${JSON_TAIL}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), EU_AI_TIMEOUT_MS);
 
