@@ -12,6 +12,8 @@
 // ============================================================================
 
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const EU_AI_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
+const EU_AI_TIMEOUT_MS = 8_000; // fail fast → fallback p/ OpenAI
 const AI_TIMEOUT_MS = 30_000;
 const AI_MAX_TOKENS = 4096;
 const AI_MAX_TOKENS_DEEP = 6000; // For tutor_chat high complexity & clinical_reasoning
@@ -50,7 +52,7 @@ export interface AISelectInput {
 }
 
 export interface ModelRef {
-  provider: "lovable-ai";
+  provider: "lovable-ai" | "openai" | "eu-ai";
   model: string;
 }
 
@@ -75,6 +77,8 @@ export interface AIRunInput extends AISelectInput {
   sessionId?: string | null;
   requestId?: string | null;
   emergencyTemplate?: string;
+  /** When true, prepend Claude via eu-ai proxy as primary attempt (free chat only). */
+  preferEuAI?: boolean;
   /** When provided, log row is written via this Supabase client. */
   supabase?: any;
 }
@@ -339,6 +343,10 @@ function getAIKey(provider: string): string {
   if (provider === "openai") {
     return Deno.env.get("OPENAI_API_KEY") || "";
   }
+  if (provider === "eu-ai") {
+    // proxy Railway não exige auth; retorna marker p/ não falhar checagem de key
+    return "eu-ai-noauth";
+  }
   return (
     Deno.env.get("LOVABLE_API_KEY") ||
     Deno.env.get("AI_GATEWAY_API_KEY") ||
@@ -391,6 +399,42 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
+    // ---- Branch: eu-ai (Claude via Railway proxy) ----
+    if (ref.provider === "eu-ai") {
+      const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content || "";
+      const systemMsg = messages.find((m) => m.role === "system")?.content || "";
+      const payload = {
+        message: lastUser,
+        topic: "Tutor ENAZIZI",
+        stream: false,
+        context: { source: "ai-runtime-orchestrator", system_prompt: systemMsg.slice(0, 2000) },
+      };
+      const res = await fetchWithTimeout(
+        `${EU_AI_URL}/api/v1/chat`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+        EU_AI_TIMEOUT_MS,
+      );
+      const latency_ms = Date.now() - start;
+      const responseText = await res.text();
+      if (!res.ok) {
+        const e = extractProviderError(res.status, responseText);
+        return { attempt: { ...ref, success: false, status: res.status, ...e, latency_ms } };
+      }
+      let parsed: any;
+      try { parsed = JSON.parse(responseText); } catch {
+        return { attempt: { ...ref, success: false, status: res.status, code: "AI_INVALID_JSON", message: "eu-ai returned invalid JSON", latency_ms } };
+      }
+      const content = parsed?.message || parsed?.content || parsed?.response;
+      if (!content || typeof content !== "string" || parsed?.success === false) {
+        return { attempt: { ...ref, success: false, status: res.status, code: "AI_EMPTY_RESPONSE", message: parsed?.error || "eu-ai returned no content", latency_ms } };
+      }
+      return { content, usage: undefined, attempt: { ...ref, success: true, status: res.status, latency_ms } };
+    }
+
     const isOpenAI5 = ref.model.includes("google/gemini-2.5-pro") || /^openai\/o[13]/.test(ref.model) || /^o[13]/.test(ref.model) || ref.model.includes("gpt-5");
     const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
     const body: Record<string, unknown> = {
@@ -688,6 +732,15 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
     const modelClean = selection.model.replace("openai/", "");
     if (!fullChain.some(c => c.provider === "openai" && c.model === modelClean)) {
       fullChain.unshift({ provider: "openai", model: modelClean });
+    }
+  }
+
+  // preferEuAI: Claude (eu-ai) como 1ª escolha — só Tutor free chat.
+  // Fallback automático para o chain existente se o proxy falhar/timeout (8s).
+  if (input.preferEuAI && EU_AI_URL) {
+    if (!fullChain.some(c => c.provider === "eu-ai")) {
+      fullChain.unshift({ provider: "eu-ai", model: "claude-eu" });
+      console.log(`[AI_RUNTIME_EU_AI_PRIMARY] req=${reqTag} — Claude prepended as primary`);
     }
   }
 
