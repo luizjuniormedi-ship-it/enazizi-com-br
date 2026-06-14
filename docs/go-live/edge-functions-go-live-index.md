@@ -105,7 +105,23 @@ Compatível com **Go-Live Structural Freeze**.
 | Patch aplicado | Nenhum — função já blind orchestrator v11 (sempre 200, parse seguro, waitUntil isolado) |
 | Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
 
+### Planner Core — `GO-LIVE READY` (Wave 7)
+
+Bloco protegido por um único CI gate: `.github/workflows/planner-core-contract.yml`
+(`Planner core contract regression`, 33 cenários totais).
+
+| Função | Contract test | Patch |
+|---|---|---|
+| `generate-daily-plan` | ✅ `__tests__/contract.test.ts` (9 cenários) | Nenhum |
+| `autonomous-planner-engine` | ✅ `__tests__/contract.test.ts` (8 cenários) | Nenhum |
+| `planner-orchestrator-v1` | ✅ `__tests__/contract.test.ts` (9 cenários) | Nenhum |
+| `replan-overdue-tasks` | ✅ `__tests__/contract.test.ts` (7 cenários) | Nenhum |
+
+Evidência: [`planner-core-hardening-evidence.md`](./planner-core-hardening-evidence.md).
+Próximo passo: monitorar gate; promover a `LOCKED` após 1 ciclo verde.
+
 ---
+
 
 
 ## Funções pendentes de triagem (`NEEDS TRIAGE`)
