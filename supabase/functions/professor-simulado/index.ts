@@ -6,6 +6,8 @@ import { sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { cleanQuestionText } from "../_shared/contracts/parser.contract.ts";
 import { IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
 import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
+import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
+import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
