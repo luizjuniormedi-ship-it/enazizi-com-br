@@ -540,6 +540,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       console.error("[TUTOR_EMPTY_RESPONSE_BLOCKED]");
       throw new Error("Empty AI response detected after normalization");
     }
+    const finalQualityIssue = detectTutorQualityIssue(normalized.content);
+    if (finalQualityIssue) {
+      console.error("[TUTOR_QUALITY_GATE_BLOCK]", { reason: finalQualityIssue, provider: aiProviderUsed, topic });
+      throw new Error(`Tutor quality gate blocked unsafe output: ${finalQualityIssue}`);
+    }
 
     // ── 5. IDEMPOTENT PERSISTENCE ──────────────────────────
     waitUntil((async () => {
