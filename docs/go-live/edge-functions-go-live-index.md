@@ -120,6 +120,19 @@ Bloco protegido por um único CI gate: `.github/workflows/planner-core-contract.
 Evidência: [`planner-core-hardening-evidence.md`](./planner-core-hardening-evidence.md).
 Próximo passo: monitorar gate; promover a `LOCKED` após 1 ciclo verde.
 
+### FSRS Core — `GO-LIVE READY` (Wave 8)
+
+CI gate único: `.github/workflows/fsrs-core-contract.yml`
+(`FSRS core contract regression`, 18 cenários totais).
+
+| Função | Contract test | Patch | Observação |
+|---|---|---|---|
+| `schedule-review` | ✅ `__tests__/contract.test.ts` (9 cenários) | Nenhum | DEPRECATED (orphan) — contrato preservado |
+| `generate-recovery-flashcard` | ✅ `__tests__/contract.test.ts` (9 cenários) | Nenhum | enterpriseEdgeHandler garante 500 controlado sem stack |
+
+Evidência: [`fsrs-core-hardening-evidence.md`](./fsrs-core-hardening-evidence.md).
+Próximo passo: monitorar gate; promover a `LOCKED` após 1 ciclo verde.
+
 ---
 
 
