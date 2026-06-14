@@ -9,7 +9,7 @@ export interface TutorResponse {
   content: string;
   teachingPhase: string;
   socraticQuestion: string;
-  source: "openai" | "lovable" | "fallback" | "safe_mode" | "cache";
+  source: "openai" | "claude" | "lovable" | "fallback" | "safe_mode" | "cache";
   confidence: number;
   metadata?: any;
 }
