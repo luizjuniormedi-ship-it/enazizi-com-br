@@ -294,8 +294,18 @@ const App = () => (
               <Route path="/performance" element={<Navigate to="/dashboard/analytics" replace />} />
               <Route path="/profile" element={<Navigate to="/dashboard/perfil" replace />} />
               <Route path="/settings" element={<Navigate to="/dashboard/perfil" replace />} />
-              
+
+              <Route
+                path="/alpha/onboarding"
+                element={
+                  <ProtectedRoute>
+                    <AlphaOnboarding />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
+
                 <Route path="/enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
                 <Route path="/dashboard">
                   <Route index element={<ModuleBoundary name="Dashboard"><Dashboard /></ModuleBoundary>} />
