@@ -30,7 +30,11 @@ function expectNoRuntimeCrash(raw: string) {
 
 function expectControlledResponse(status: number, raw: string) {
   expectNoRuntimeCrash(raw);
-  if (status >= 500) throw new Error(`Uncontrolled 5xx: ${status} ${raw}`);
+  // enterpriseEdgeHandler returns controlled 500 (generic INTERNAL_ERROR, no stack).
+  if (status > 500) throw new Error(`Uncontrolled ${status}: ${raw}`);
+  if (status === 500 && raw.includes('"stack"')) {
+    throw new Error(`Uncontrolled 500: ${raw}`);
+  }
 }
 
 function expectFsrsShape(json: any) {
