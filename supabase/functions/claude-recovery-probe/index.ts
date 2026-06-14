@@ -66,7 +66,13 @@ serve(async (req) => {
     ]);
 
     const tests: any[] = [];
-    if (mode === "all" || mode === "progressive") {
+    if (mode === "one") {
+      tests.push(await runGeneration(1));
+    } else if (mode === "two") {
+      tests.push(await runGeneration(2));
+    } else if (mode === "five") {
+      tests.push(await runGeneration(5));
+    } else if (mode === "all" || mode === "progressive") {
       tests.push(await runGeneration(1));
       tests.push(await runGeneration(2));
       tests.push(await runGeneration(5));
