@@ -179,7 +179,5 @@ function extractAllJsonObjects(input: string): any[] {
   }
 
   return results;
-}
 
-  };
-}
+
