@@ -64,8 +64,9 @@ Compatível com **Go-Live Structural Freeze**.
 | Release protection | ✅ via PR template global |
 | Final evidence | ✅ [`tutor-v3-premium-hardening-evidence.md`](./tutor-v3-premium-hardening-evidence.md) |
 | Patch aplicado | Nenhum — função já defensiva |
-| Performance | ✅ `OPTIMIZED` (Wave Perf-1) — timings por etapa + smoke latency test |
+| Performance | ✅ `BENCHMARKED` (Perf-1/2/3/4) — timings + aiTimings + contextStats + benchmark script |
 | Latency evidence | [`tutor-v3-premium-latency-audit.md`](./tutor-v3-premium-latency-audit.md) |
+| Latest benchmark | [`perf-results/tutor-v3-premium-benchmark-latest.md`](./perf-results/tutor-v3-premium-benchmark-latest.md) |
 | Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
 
 ### `generate-flashcards` — `GO-LIVE READY` (Wave 4)

@@ -267,3 +267,42 @@ Ordem de corte quando `totalInputChars > TUTOR_MAX_TOTAL_CONTEXT_CHARS`:
 Sem mudança em prompt, persona, sequência pedagógica, FSRS, memória (como conceito), RAG (como conceito), Planner, Event Bus, Error Bank, schema, RLS, frontend ou contrato público.
 
 **Status:** `TUTOR CONTEXT BUDGET READY — FREEZE SAFE`
+
+---
+
+## Perf-4 — Real Benchmark
+
+### 1. Como rodar
+```bash
+USER_JWT=<jwt> SUPABASE_PUBLISHABLE_KEY=<anon> \
+  deno run --allow-net --allow-env --allow-write \
+  scripts/perf/benchmark-tutor-v3-premium.ts
+```
+Variáveis opcionais: `TUTOR_FUNCTION_URL` | `SUPABASE_FUNCTIONS_URL` | `TUTOR_BENCH_RUNS` (default 5).
+
+### 2. Cenários medidos
+1. `healthcheck` — sem IA; mede cold start / edge overhead.
+2. `tutor_minimal` — mensagem curta sem histórico.
+3. `continue_block` — `intent=continue` com histórico pequeno.
+4. `student_question` — pergunta média com histórico médio.
+5. `oversized_history` — 20 mensagens grandes; deve ativar `contextTrimmed=true` (valida Perf-3).
+
+### 3. Métricas por cenário
+`count, min, max, avg, p50, p95, p99, avgAiMs, fallbackRate, timeoutRate, avgInputChars, trimmedRate`.
+
+Findings derivados: cold-vs-warm delta, cenário mais lento por p95, AI-dominance (avgAiMs > 60% de avgTotal), fallback ≥30%, timeout observado, trimming ativado.
+
+### 4. Último resultado
+Ver [`perf-results/tutor-v3-premium-benchmark-latest.md`](./perf-results/tutor-v3-premium-benchmark-latest.md). Arquivo é reescrito a cada execução do script.
+
+### 5. Interpretação
+- `PROVIDER_LATENCY_DOMINANT` → IA externa é o gargalo (timeout/fallback ou avgAi alto). Próximo passo: provider/model routing, **não** mexer no Tutor.
+- `CONTEXT_STILL_TOO_LARGE` → reduzir orçamentos de Perf-3 ou compactar pedagógico.
+- `COLD_START_DOMINANT` → manter a função quente (cron ping leve).
+- `SUPABASE_OVERHEAD_DOMINANT` → investigar sessão/memória/RAG individualmente.
+- `READY_FOR_NEXT_FUNCTION` → seguir para a próxima função lenta.
+
+### 6. Freeze
+Benchmark é read-only: usa `debug=true` para coletar `timings`/`aiTimings`/`contextStats` já existentes. Nenhum prompt, persona, sequência pedagógica, FSRS, memória, Planner, Event Bus, Error Bank, schema, RLS, frontend, modelo ou contrato público é alterado.
+
+**Status:** `TUTOR REAL BENCHMARK READY — FREEZE SAFE`
