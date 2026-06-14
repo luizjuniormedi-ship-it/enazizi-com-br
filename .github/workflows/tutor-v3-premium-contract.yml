@@ -1,0 +1,41 @@
+name: tutor-v3-premium Contract Gate
+
+# Freeze-safe CI gate for the `tutor-v3-premium` Edge Function.
+# MODE A (no token): runs OPTIONS, 401 and no-crash structural checks.
+# MODE B (SUPABASE_CONTRACT_USER_JWT): runs the full battery.
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'supabase/functions/tutor-v3-premium/**'
+      - '.github/workflows/tutor-v3-premium-contract.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - 'supabase/functions/tutor-v3-premium/**'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: Tutor V3 Premium contract regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run contract suite
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_CONTRACT_USER_JWT: ${{ secrets.SUPABASE_CONTRACT_USER_JWT }}
+        run: |
+          deno test \
+            --allow-net --allow-env --allow-read \
+            supabase/functions/tutor-v3-premium/__tests__/contract.test.ts
