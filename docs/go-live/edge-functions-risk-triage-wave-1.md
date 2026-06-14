@@ -30,9 +30,10 @@ e fora desta fila.
 | `generate-flashcards` | `generate-flashcards` | FSRS feed | auth, payload, dedup | ✅ `GO-LIVE READY` (Wave 4) | ver evidência |
 | `generate-recovery-flashcard` | idem | Recuperação | auth, payload | `NEEDS TRIAGE` | inspecionar |
 | `generate-medical-mnemonic` / `generate-mnemonic` / `mnemonic-studio` | idem | Mnemônicos | auth, payload, no-text-in-image | `NEEDS HARDENING` | contract test |
-| `generate-daily-plan` / `generate-study-plan` | idem | Planner | auth, idempotência, datas | `NEEDS HARDENING` | contract test |
-| `autonomous-planner-engine` / `planner-orchestrator-v1` | idem | Planner core | auth, no-crash | `NEEDS HARDENING` | contract test |
-| `replan-overdue-tasks` / `plan-next-batch` | idem | Planner jobs | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
+| `generate-daily-plan` | idem | Planner | auth, idempotência, datas | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
+| `autonomous-planner-engine` / `planner-orchestrator-v1` | idem | Planner core | auth, no-crash | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
+| `replan-overdue-tasks` | idem | Planner jobs | auth, idempotência | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
+| `generate-study-plan` / `plan-next-batch` | idem | Planner aux | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
 | `schedule-review` | idem | FSRS scheduling | auth, payload, datas válidas | `NEEDS HARDENING` | contract test |
 | `study-orchestrator` / `study-session` / `study-next` / `study-complete` | idem | Hub de estudo | auth, payload, contrato de eventos | `NEEDS HARDENING` | contract test |
 | `orchestrator-record-outcome` / `orchestrator-tune-weights` | idem | Pesos do orquestrador | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
