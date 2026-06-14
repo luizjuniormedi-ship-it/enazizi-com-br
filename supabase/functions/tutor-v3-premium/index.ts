@@ -397,6 +397,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         ragHits = [];
       }
     }
+    mark("memoryLookupMs");
+
 
     if (!MEMORY_DISABLED) {
       waitUntil(bumpMetric(supabaseAdmin, "total_lookups"));
