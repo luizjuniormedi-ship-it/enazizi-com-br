@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-fetch.ts";
-import { claudeFetchQuestions, isClaudePrimarySimuladoEnabled } from "../_shared/eu-ai-questions-client.ts";
+import { claudeFetchQuestionsMicrobatch, isClaudePrimarySimuladoEnabled, claudeHealthCheck } from "../_shared/eu-ai-questions-client.ts";
 import { sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { cleanQuestionText } from "../_shared/contracts/parser.contract.ts";
 import { IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
@@ -730,13 +730,13 @@ REGRAS INVIOLÁVEIS:
                 // Piloto Sprint 2.3: Claude como primário SÓ se flag ligada e batch pequeno (<=10)
                 if (isClaudePrimarySimuladoEnabled() && stillNeeded <= 10 && attempt === 0) {
                   usedClaude = true;
-                  response = await claudeFetchQuestions(prompt, topics[0], stillNeeded);
+                  response = await claudeFetchQuestionsMicrobatch(prompt, topics[0], stillNeeded);
                   if (!response.ok) {
                     const t = await response.text();
                     console.warn(`[CLAUDE_SIM_FAIL] level=${level} status=${response.status} ${t.slice(0, 160)} — fallback Gemini`);
                     response = null;
                   } else {
-                    console.log(`[CLAUDE_SIM_OK] level=${level} batch=${stillNeeded}`);
+                    console.log(`[CLAUDE_SIM_OK] level=${level} batch=${stillNeeded} (microbatch)`);
                   }
                 }
                 if (!response) {
