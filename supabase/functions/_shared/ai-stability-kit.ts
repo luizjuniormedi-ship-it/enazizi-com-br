@@ -315,6 +315,7 @@ export function getStaticFallback(tema: string): any {
     teachingPhase: "ENSINAR",
     sigla: "FIX",
     fallback: true,
+    generic: true,
     tema
   };
 }
