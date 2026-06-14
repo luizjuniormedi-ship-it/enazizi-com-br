@@ -88,28 +88,22 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
   try { envelope = JSON.parse(raw); } catch { /* keep empty */ }
   const message: string = envelope?.message || envelope?.content || envelope?.response || raw;
 
-  // Extrai array JSON: 1) bloco <json>, 2) primeiro [...] do texto, 3) objeto solto {...} -> wrappa em array
-  let jsonText = "[]";
-  const tagged = message.match(/<json>\s*([\s\S]*?)\s*<\/json>/i);
-  const haystack = tagged && tagged[1] ? tagged[1] : message;
+  console.log(`[CLAUDE_RAW_RESPONSE] chars=${message.length} preview="${message.slice(0, 200).replace(/\n/g, " ")}"`);
+  console.log(`[CLAUDE_EXTRACTION_START] topic=${topicHint} expected=${expectedCount}`);
 
-  const arrMatch = haystack.match(/\[[\s\S]*\]/);
-  if (arrMatch) {
-    jsonText = arrMatch[0];
-  } else {
-    // Fallback: Claude pode ter devolvido um único objeto OU múltiplos objetos concatenados
-    const objMatches = haystack.match(/\{[\s\S]*?"statement"[\s\S]*?\}(?=\s*[,\{\]]|\s*$)/g);
-    if (objMatches && objMatches.length > 0) {
-      jsonText = `[${objMatches.join(",")}]`;
-      console.log(`[CLAUDE_SIM_WRAPPED] standalone objects wrapped into array, count=${objMatches.length}`);
-    }
+  // Parser resiliente — cobre 6 cenários: array, objeto solto, NDJSON, texto+json, <json>...</json>, ```json```
+  const objects = extractAllJsonObjects(message);
+  const jsonText = objects.length > 0 ? `[${objects.map(o => JSON.stringify(o)).join(",")}]` : "[]";
+
+  console.log(`[CLAUDE_EXTRACTION_END] objects_found=${objects.length}`);
+  console.log(`[CLAUDE_OBJECTS_FOUND] count=${objects.length} expected=${expectedCount}`);
+  if (expectedCount > 0 && objects.length !== expectedCount) {
+    console.warn(`[COUNT_MISMATCH] requested=${expectedCount} parsed=${objects.length}`);
   }
-
-  if (jsonText === "[]") {
+  if (objects.length === 0) {
     console.warn(`[CLAUDE_SIM_NO_JSON] len=${message.length} head="${message.slice(0, 500).replace(/\n/g, " ")}"`);
   } else {
-    const objCount = (jsonText.match(/"statement"\s*:/g) || []).length;
-    console.log(`[CLAUDE_SIM_PARSED] objects=${objCount} jsonLen=${jsonText.length}`);
+    console.log(`[CLAUDE_SIM_PARSED] objects=${objects.length} jsonLen=${jsonText.length}`);
   }
 
   return {
@@ -120,3 +114,70 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
     json: async () => ({ choices: [{ message: { content: jsonText } }] }),
   };
 }
+
+/**
+ * Extrator resiliente — escaneia o texto com balanced-brace tracking
+ * respeitando strings/escapes, e coleta TODOS os objetos JSON top-level válidos.
+ * Cobre: array [...], objeto solto {...}, NDJSON {..}{..}, texto+json,
+ * <json>...</json>, ```json...```.
+ */
+function extractAllJsonObjects(input: string): any[] {
+  if (!input) return [];
+
+  // 1) Normaliza: remove markdown fences + extrai <json>...</json> se houver
+  let text = input.replace(/```json\s*/gi, "").replace(/```\s*/g, "");
+  const tagged = text.match(/<json>\s*([\s\S]*?)\s*<\/json>/i);
+  if (tagged && tagged[1]) text = tagged[1];
+
+  const results: any[] = [];
+  const seen = new Set<string>();
+
+  // 2) Scanner balanceado — encontra TODOS os {...} top-level
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] !== "{") { i++; continue; }
+    const start = i;
+    let depth = 0;
+    let inStr = false;
+    let escape = false;
+    let end = -1;
+
+    for (let j = i; j < text.length; j++) {
+      const ch = text[j];
+      if (escape) { escape = false; continue; }
+      if (ch === "\\") { escape = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) { end = j; break; }
+      }
+    }
+
+    if (end === -1) break; // truncado — para aqui
+    const candidate = text.slice(start, end + 1);
+
+    // 3) Tenta parsear (com reparo leve para trailing commas)
+    let parsed: any = null;
+    try { parsed = JSON.parse(candidate); }
+    catch {
+      try { parsed = JSON.parse(candidate.replace(/,(\s*[}\]])/g, "$1")); }
+      catch { /* skip */ }
+    }
+
+    // 4) Aceita apenas se parecer questão (statement + options) — evita ruído
+    if (parsed && typeof parsed === "object" && parsed.statement && Array.isArray(parsed.options)) {
+      const key = String(parsed.statement).slice(0, 100);
+      if (!seen.has(key)) {
+        seen.add(key);
+        results.push(parsed);
+      }
+    }
+
+    i = end + 1;
+  }
+
+  return results;
+
+
