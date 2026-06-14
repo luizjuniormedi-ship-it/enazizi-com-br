@@ -227,7 +227,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
 
     // ── 3. PEDAGOGICAL ORCHESTRATION (DETERMINISTIC) ──────────────────────
-    const prevBlock = (session?.current_block as TutorBlockId) || (bodyBlock as TutorBlockId) || "BLOCO_1_MISSAO_CLINICA";
+    const validBodyBlock = bodyBlock && PEDAGOGICAL_BLOCKS[bodyBlock as TutorBlockId] ? bodyBlock as TutorBlockId : null;
+    const validSessionBlock = session?.current_block && PEDAGOGICAL_BLOCKS[session.current_block as TutorBlockId] ? session.current_block as TutorBlockId : null;
+    const prevBlock = validBodyBlock || validSessionBlock || "BLOCO_1_MISSAO_CLINICA";
     const studentIntent = newTopic ? "new_topic" : classifyStudentIntent(message || "");
     const { nextBlock, stayInBlock, lessonComplete } = decideTutorStep(prevBlock, studentIntent);
     
