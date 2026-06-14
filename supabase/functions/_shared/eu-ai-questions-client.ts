@@ -88,22 +88,26 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
   try { envelope = JSON.parse(raw); } catch { /* keep empty */ }
   const message: string = envelope?.message || envelope?.content || envelope?.response || raw;
 
-  // Extrai array JSON: prefere bloco <json>...</json>, fallback para primeiro [ ... ] do texto
+  // Extrai array JSON: 1) bloco <json>, 2) primeiro [...] do texto, 3) objeto solto {...} -> wrappa em array
   let jsonText = "[]";
   const tagged = message.match(/<json>\s*([\s\S]*?)\s*<\/json>/i);
-  if (tagged && tagged[1]) {
-    const arr = tagged[1].match(/\[[\s\S]*\]/);
-    if (arr) jsonText = arr[0];
+  const haystack = tagged && tagged[1] ? tagged[1] : message;
+
+  const arrMatch = haystack.match(/\[[\s\S]*\]/);
+  if (arrMatch) {
+    jsonText = arrMatch[0];
   } else {
-    const arr = message.match(/\[[\s\S]*\]/);
-    if (arr) jsonText = arr[0];
+    // Fallback: Claude pode ter devolvido um único objeto OU múltiplos objetos concatenados
+    const objMatches = haystack.match(/\{[\s\S]*?"statement"[\s\S]*?\}(?=\s*[,\{\]]|\s*$)/g);
+    if (objMatches && objMatches.length > 0) {
+      jsonText = `[${objMatches.join(",")}]`;
+      console.log(`[CLAUDE_SIM_WRAPPED] standalone objects wrapped into array, count=${objMatches.length}`);
+    }
   }
 
-  // Diagnóstico: se não achou array, dump dos primeiros 500 chars
   if (jsonText === "[]") {
     console.warn(`[CLAUDE_SIM_NO_JSON] len=${message.length} head="${message.slice(0, 500).replace(/\n/g, " ")}"`);
   } else {
-    // Sanity: contar quantos objetos provavelmente vieram
     const objCount = (jsonText.match(/"statement"\s*:/g) || []).length;
     console.log(`[CLAUDE_SIM_PARSED] objects=${objCount} jsonLen=${jsonText.length}`);
   }
