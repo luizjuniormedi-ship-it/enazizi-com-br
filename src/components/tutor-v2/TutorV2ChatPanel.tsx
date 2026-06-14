@@ -126,7 +126,13 @@ export default function TutorV2ChatPanel({
       if (shouldPersistUserMessage) await addMessage(user.id, "user", text);
 
       // Call AI
-      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction, pedagogicalInteraction === 'new_topic' ? session.topic : undefined);
+      const response = await TutorV2Service.sendMessage(
+        session.id,
+        text,
+        pedagogicalInteraction,
+        pedagogicalInteraction === 'new_topic' ? session.topic : undefined,
+        liveCurrentBlock
+      );
 
       if (!response?.ok && response?.success !== true) throw new Error(response?.error || "Erro na resposta da IA");
       if (response?.fallback) {
