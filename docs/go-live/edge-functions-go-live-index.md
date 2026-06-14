@@ -165,8 +165,7 @@ Listadas por domínio. Nenhuma alteração de código aplicada — apenas invent
 ### Planner / Trajectory
 `generate-study-plan`, `plan-next-batch`,
 `trajectory-apply-v1`, `trajectory-complete-action-v1`, `trajectory-engine-v1`,
-`trajectory-explain-v1`, `trajectory-telemetry-v1`, `trajectory-health-engine`,
-`schedule-review`.
+`trajectory-explain-v1`, `trajectory-telemetry-v1`, `trajectory-health-engine`.
 
 ### Study Engine / Orchestrator
 `study-orchestrator`, `study-session`, `study-next`, `study-complete`,
