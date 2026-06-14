@@ -335,12 +335,24 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(authHeader.replace("Bearer ", ""));
     if (userError || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
-    const body = await req.json();
-    const { uploadId, module } = body;
-    if (!uploadId) throw new Error("uploadId required");
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return new Response(JSON.stringify({ success: false, error: "Invalid JSON body" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const uploadIdRaw = (body as any).uploadId;
+    const moduleRaw = (body as any).module;
+    const uploadId = typeof uploadIdRaw === "string" ? uploadIdRaw.trim() : "";
+    const module = typeof moduleRaw === "string" ? moduleRaw : undefined;
+    if (!uploadId) {
+      return new Response(JSON.stringify({ success: false, error: "uploadId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    // Basic UUID shape guard to avoid invalid-input DB errors
+    if (!/^[0-9a-fA-F-]{8,64}$/.test(uploadId)) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid uploadId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     const { data: upload } = await supabaseAdmin.from("uploads").select("*").eq("id", uploadId).maybeSingle();
-    if (!upload) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: corsHeaders });
+    if (!upload) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // Se o módulo for flashcards, usamos a tabela flashcard_uploads para tracking específico
     if (module === 'flashcards') {
