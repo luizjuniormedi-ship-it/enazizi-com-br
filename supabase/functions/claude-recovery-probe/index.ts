@@ -37,7 +37,8 @@ Retorne APENAS um array JSON válido com este schema:
 async function runGeneration(count: number) {
   const t0 = Date.now();
   const response = await claudeFetchQuestionsMicrobatch(buildIamPrompt(count), "IAM", count);
-  const text = await response.text();
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content || "[]";
   let questions: any[] = [];
   try { questions = JSON.parse(text); } catch { questions = []; }
   return {
