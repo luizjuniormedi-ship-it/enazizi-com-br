@@ -744,6 +744,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     })());
 
 
+    mark("totalMs");
+    const includeTimings = ENABLE_TIMINGS || body?.debug === true;
     return corsResponse(buildTutorEnvelope(normalized, {
       currentBlock: activeBlock,
       blockTitle: activeBlockConfig.title,
@@ -751,7 +753,13 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       correlation_id: correlationId,
       actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
       lessonComplete: !!lessonComplete,
-      debug: { studentIntent, nextBlock: activeBlock, provider: aiProviderUsed, lessonComplete: !!lessonComplete },
+      debug: {
+        studentIntent,
+        nextBlock: activeBlock,
+        provider: aiProviderUsed,
+        lessonComplete: !!lessonComplete,
+        ...(includeTimings ? { timings } : {}),
+      },
     }), 200);
 
 
