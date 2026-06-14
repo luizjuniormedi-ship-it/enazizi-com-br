@@ -23,6 +23,7 @@ interface AiFetchOptions {
   userId?: string;
   tier?: 'FAST' | 'REASONING';
   skipCache?: boolean;
+  disableFallbackChain?: boolean;
 }
 
 /**
@@ -67,7 +68,9 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
 
   // 1. Determine the chain
   const tier = options.tier || 'FAST';
-  const chain = options.model ? [options.model, ...FALLBACK_CHAINS[tier]] : FALLBACK_CHAINS[tier];
+  const chain = options.model
+    ? (options.disableFallbackChain ? [options.model] : [options.model, ...FALLBACK_CHAINS[tier]])
+    : FALLBACK_CHAINS[tier];
   
   // 2. Cache Check (only for non-streaming)
   const prompt = options.messages.map(m => m.content).join("\n");
