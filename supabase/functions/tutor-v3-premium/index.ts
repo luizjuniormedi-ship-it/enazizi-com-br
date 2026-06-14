@@ -82,6 +82,40 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): P
   }
 }
 
+// Perf-3: Context Budget / Token Diet helpers
+function safeString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+function truncateChars(text: string, maxChars: number): string {
+  const s = safeString(text);
+  if (s.length <= maxChars) return s;
+  return s.slice(0, maxChars) + "\n[TRUNCATED_FOR_LATENCY]";
+}
+function limitArray<T>(items: T[], maxItems: number): T[] {
+  return Array.isArray(items) ? items.slice(-maxItems) : [];
+}
+const TUTOR_MAX_HISTORY_ITEMS = Number(Deno.env.get("TUTOR_MAX_HISTORY_ITEMS") ?? 6);
+const TUTOR_MAX_HISTORY_CHARS = Number(Deno.env.get("TUTOR_MAX_HISTORY_CHARS") ?? 6000);
+const TUTOR_MAX_MEMORY_CHARS = Number(Deno.env.get("TUTOR_MAX_MEMORY_CHARS") ?? 4000);
+const TUTOR_MAX_RAG_CHARS = Number(Deno.env.get("TUTOR_MAX_RAG_CHARS") ?? 6000);
+const TUTOR_MAX_TOTAL_CONTEXT_CHARS = Number(Deno.env.get("TUTOR_MAX_TOTAL_CONTEXT_CHARS") ?? 18000);
+
+function trimHistoryForBudget(history: any[]): { trimmed: any[]; chars: number } {
+  const limited = limitArray(history, TUTOR_MAX_HISTORY_ITEMS);
+  let chars = 0;
+  const out: any[] = [];
+  // Walk from most recent to oldest, keeping under char budget
+  for (let i = limited.length - 1; i >= 0; i--) {
+    const c = safeString(limited[i]?.content);
+    if (chars + c.length > TUTOR_MAX_HISTORY_CHARS) break;
+    chars += c.length;
+    out.unshift(limited[i]);
+  }
+  return { trimmed: out, chars };
+}
+
+
+
 
 
 console.log("[TUTOR_V3_BOOT] Function module loaded");
