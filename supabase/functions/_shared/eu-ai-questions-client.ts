@@ -257,15 +257,13 @@ export async function claudeFetchQuestionsMicrobatch(prompt: string, topicHint: 
     left -= take;
   }
 
-  console.log(`[CLAUDE_MICROBATCH_PLAN] requested=${expectedCount} calls=${plan.length} plan=${plan.join("+")}`);
+  console.log(`[CLAUDE_MICROBATCH_PLAN] requested=${expectedCount} calls=${plan.length} plan=${plan.join("+")} parallel=${MICROBATCH_PARALLEL}`);
 
   const allObjects: any[] = [];
   const t0 = Date.now();
   let anyOk = false;
 
-  for (let i = 0; i < plan.length; i++) {
-    const size = plan[i];
-    const idx = i + 1;
+  const runCall = async (size: number, idx: number) => {
     const callT0 = Date.now();
     console.log(`[CLAUDE_MICROBATCH_START] index=${idx}/${plan.length} size=${size}`);
     try {
@@ -273,7 +271,7 @@ export async function claudeFetchQuestionsMicrobatch(prompt: string, topicHint: 
       const callElapsed = Date.now() - callT0;
       if (!resp.ok) {
         console.warn(`[CLAUDE_MICROBATCH_FAIL] index=${idx} elapsedMs=${callElapsed} status=${resp.status}`);
-        continue;
+        return [];
       }
       const data = await resp.json();
       const content = data?.choices?.[0]?.message?.content || "[]";
@@ -281,16 +279,28 @@ export async function claudeFetchQuestionsMicrobatch(prompt: string, topicHint: 
       try { arr = JSON.parse(content); } catch { arr = []; }
       if (Array.isArray(arr) && arr.length > 0) {
         anyOk = true;
-        allObjects.push(...arr);
-        console.log(`[CLAUDE_MICROBATCH_OK] index=${idx} count=${arr.length} elapsedMs=${callElapsed} totalAccum=${allObjects.length}`);
-      } else {
-        console.warn(`[CLAUDE_MICROBATCH_EMPTY] index=${idx} elapsedMs=${callElapsed}`);
+        console.log(`[CLAUDE_MICROBATCH_OK] index=${idx} count=${arr.length} elapsedMs=${callElapsed}`);
+        return arr;
       }
+      console.warn(`[CLAUDE_MICROBATCH_EMPTY] index=${idx} elapsedMs=${callElapsed}`);
+      return [];
     } catch (e: any) {
       console.warn(`[CLAUDE_MICROBATCH_FAIL] index=${idx} reason="${e?.message || e}"`);
+      return [];
     }
-    // Early-stop se já temos o suficiente
-    if (allObjects.length >= expectedCount) break;
+  };
+
+  if (MICROBATCH_PARALLEL) {
+    const settled = await Promise.allSettled(plan.map((size, i) => runCall(size, i + 1)));
+    for (const s of settled) {
+      if (s.status === "fulfilled" && Array.isArray(s.value)) allObjects.push(...s.value);
+    }
+  } else {
+    for (let i = 0; i < plan.length; i++) {
+      const arr = await runCall(plan[i], i + 1);
+      allObjects.push(...arr);
+      if (allObjects.length >= expectedCount) break;
+    }
   }
 
   // Dedupe por statement (primeiros 100 chars)
