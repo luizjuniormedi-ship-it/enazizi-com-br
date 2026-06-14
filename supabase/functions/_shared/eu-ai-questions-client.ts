@@ -38,9 +38,12 @@ export function isClaudePrimarySimuladoEnabled(): boolean {
   return v.toLowerCase() === "true" || v === "1";
 }
 
-export async function claudeFetchQuestions(prompt: string, topicHint = "simulado"): Promise<ClaudeSimResponse> {
+export async function claudeFetchQuestions(prompt: string, topicHint = "simulado", expectedCount = 0): Promise<ClaudeSimResponse> {
   const topicLock = `\n\n# TRAVA DE TEMA (OBRIGATÓRIO)\nO campo "topic" de TODA questão DEVE ser EXATAMENTE: "${topicHint}". Não use sinônimos, abreviações, nem o nome da especialidade pai. Use a string literal "${topicHint}".`;
-  const augmented = `${prompt}${topicLock}${JSON_TAIL}`;
+  const countLock = expectedCount > 0
+    ? `\n\n# QUANTIDADE OBRIGATÓRIA\nVocê DEVE retornar EXATAMENTE ${expectedCount} objeto(s) dentro do array JSON. Nem mais, nem menos. Se gerar menos, a resposta será rejeitada.`
+    : `\n\n# QUANTIDADE OBRIGATÓRIA\nSempre retorne um ARRAY JSON, mesmo que com 1 elemento. NUNCA retorne um objeto JSON solto.`;
+  const augmented = `${prompt}${topicLock}${countLock}${JSON_TAIL}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), EU_AI_TIMEOUT_MS);
 
