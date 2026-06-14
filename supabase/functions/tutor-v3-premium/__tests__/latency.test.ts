@@ -87,6 +87,17 @@ if (USER_JWT) {
         if (ai.fallbackUsed) console.log(`[AI_FALLBACK_USED] provider=${ai.fallbackProvider}`);
         if (ai.timedOut) console.log(`[AI_TIMEOUT_OBSERVED] controlled response returned`);
       }
+      // Perf-3 context budget stats
+      const cs = json?.debug?.contextStats;
+      if (cs) {
+        console.log(`[CONTEXT_STATS] ${JSON.stringify(cs)}`);
+        if (typeof cs.totalInputChars !== "number") {
+          console.warn("[CONTEXT_STATS_WARN] totalInputChars missing");
+        }
+        if (cs.contextTrimmed) console.log(`[CONTEXT_TRIMMED] reason=${cs.trimReason}`);
+      } else {
+        console.warn("[CONTEXT_STATS] missing — Perf-3 debug not exposed");
+      }
       // Invariantes anti-leak
       for (const bad of ["TypeError", "\"stack\"", "Cannot read"]) {
         if (raw.includes(bad)) throw new Error(`Leaked: ${bad}`);
@@ -94,6 +105,40 @@ if (USER_JWT) {
     } catch (e) {
       if ((e as Error).message?.startsWith("Leaked:")) throw e;
       // tolerate non-JSON during outage
+    }
+  });
+
+  Deno.test("oversized history triggers context trimming (warning-only)", async () => {
+    const bigHistory = Array.from({ length: 40 }, (_, i) => ({
+      role: i % 2 === 0 ? "user" : "assistant",
+      content: "x".repeat(800) + ` msg${i}`,
+    }));
+    const { status, raw, ms } = await postJson(
+      {
+        debug: true,
+        message: "Continuar.",
+        topic: "Asma",
+        history: bigHistory,
+        stream: false,
+      },
+      { auth: true },
+    );
+    console.log(`[LATENCY] oversized totalMs=${ms} status=${status}`);
+    if (status >= 500) throw new Error(`Uncontrolled ${status}: ${raw.slice(0, 300)}`);
+    try {
+      const json = JSON.parse(raw);
+      const cs = json?.debug?.contextStats;
+      if (cs) {
+        console.log(`[CONTEXT_STATS_BIG] ${JSON.stringify(cs)}`);
+        if (!cs.contextTrimmed && cs.totalInputChars > 18000) {
+          console.warn("[CONTEXT_STATS_WARN] expected contextTrimmed=true on oversized payload");
+        }
+      }
+      for (const bad of ["TypeError", "\"stack\"", "Cannot read"]) {
+        if (raw.includes(bad)) throw new Error(`Leaked: ${bad}`);
+      }
+    } catch (e) {
+      if ((e as Error).message?.startsWith("Leaked:")) throw e;
     }
   });
 } else {

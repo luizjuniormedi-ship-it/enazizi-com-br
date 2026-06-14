@@ -82,6 +82,40 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): P
   }
 }
 
+// Perf-3: Context Budget / Token Diet helpers
+function safeString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+function truncateChars(text: string, maxChars: number): string {
+  const s = safeString(text);
+  if (s.length <= maxChars) return s;
+  return s.slice(0, maxChars) + "\n[TRUNCATED_FOR_LATENCY]";
+}
+function limitArray<T>(items: T[], maxItems: number): T[] {
+  return Array.isArray(items) ? items.slice(-maxItems) : [];
+}
+const TUTOR_MAX_HISTORY_ITEMS = Number(Deno.env.get("TUTOR_MAX_HISTORY_ITEMS") ?? 6);
+const TUTOR_MAX_HISTORY_CHARS = Number(Deno.env.get("TUTOR_MAX_HISTORY_CHARS") ?? 6000);
+const TUTOR_MAX_MEMORY_CHARS = Number(Deno.env.get("TUTOR_MAX_MEMORY_CHARS") ?? 4000);
+const TUTOR_MAX_RAG_CHARS = Number(Deno.env.get("TUTOR_MAX_RAG_CHARS") ?? 6000);
+const TUTOR_MAX_TOTAL_CONTEXT_CHARS = Number(Deno.env.get("TUTOR_MAX_TOTAL_CONTEXT_CHARS") ?? 18000);
+
+function trimHistoryForBudget(history: any[]): { trimmed: any[]; chars: number } {
+  const limited = limitArray(history, TUTOR_MAX_HISTORY_ITEMS);
+  let chars = 0;
+  const out: any[] = [];
+  // Walk from most recent to oldest, keeping under char budget
+  for (let i = limited.length - 1; i >= 0; i--) {
+    const c = safeString(limited[i]?.content);
+    if (chars + c.length > TUTOR_MAX_HISTORY_CHARS) break;
+    chars += c.length;
+    out.unshift(limited[i]);
+  }
+  return { trimmed: out, chars };
+}
+
+
+
 
 
 console.log("[TUTOR_V3_BOOT] Function module loaded");
@@ -551,17 +585,15 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       throw new Error("CIRCUIT_BREAKER: Forced local fallback mode");
     }
 
-    const aiConfig: any = {
-      taskType: "tutor_deep",
-      complexity: "alta",
-      costTier,
-      userId: activeUserId,
-      stream: false, // Force JSON for structured orchestration
-      response_format: { type: "json_object" },
-      messages: [
-        { 
-          role: "system", 
-          content: `${PROMPT_COMPLETO}
+
+    // ── Perf-3: Context Budget / Token Diet ────────────────────────────────────
+    // Trim payload sent to AI without altering prompt, persona ou pedagogia.
+    const memoryContextTrimmed = truncateChars(memoryContext, TUTOR_MAX_MEMORY_CHARS);
+    const ragContextTrimmed = truncateChars(ragContext, TUTOR_MAX_RAG_CHARS);
+    const { trimmed: historyTrimmed, chars: historyChars } = trimHistoryForBudget(history);
+    const userMessageContent = newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula");
+
+    const pedagogicalHeader = `${PROMPT_COMPLETO}
           
           # OBJETIVO OBRIGATÓRIO DO MOMENTO:
           Você está no ${activeBlock}: ${activeBlockConfig.title}.
@@ -582,15 +614,85 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           
           TEMA ATUAL: ${topic}
           CONTEXTO ENAMED 2026: ${JSON.stringify(body.enamedContext || {})}
-          CONTESTO DE MEMÓRIA: ${memoryContext}${ragContext}`
-        },
-        ...history,
-        { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula") }
+          CONTESTO DE MEMÓRIA: ${memoryContextTrimmed}${ragContextTrimmed}`;
+
+    const contextStats: Record<string, any> = {
+      historyChars,
+      memoryChars: memoryContextTrimmed.length,
+      ragChars: ragContextTrimmed.length,
+      pedagogicalChars: pedagogicalHeader.length,
+      userMessageChars: userMessageContent.length,
+      historyItems: historyTrimmed.length,
+      memoryItems: memoryContextTrimmed ? 1 : 0,
+      ragItems: Array.isArray(ragHits) ? ragHits.length : 0,
+      totalInputChars: 0,
+      contextTrimmed: false,
+      trimReason: null as string | null,
+    };
+    contextStats.totalInputChars =
+      contextStats.pedagogicalChars +
+      contextStats.historyChars +
+      contextStats.userMessageChars;
+
+    // Corte progressivo se ainda exceder o teto total (preserva user message + bloco essencial)
+    let finalSystemContent = pedagogicalHeader;
+    let finalHistory = historyTrimmed;
+    if (contextStats.totalInputChars > TUTOR_MAX_TOTAL_CONTEXT_CHARS) {
+      contextStats.contextTrimmed = true;
+      contextStats.trimReason = "exceeds_total_budget";
+      // 1) drop oldest history first
+      while (
+        finalHistory.length > 0 &&
+        contextStats.totalInputChars > TUTOR_MAX_TOTAL_CONTEXT_CHARS
+      ) {
+        const dropped = finalHistory.shift();
+        contextStats.historyChars -= safeString(dropped?.content).length;
+        contextStats.historyItems = finalHistory.length;
+        contextStats.totalInputChars =
+          contextStats.pedagogicalChars +
+          contextStats.historyChars +
+          contextStats.userMessageChars;
+      }
+      // 2) hard-cap system content as last resort (RAG/memory já são parte dele)
+      if (contextStats.totalInputChars > TUTOR_MAX_TOTAL_CONTEXT_CHARS) {
+        const overshoot = contextStats.totalInputChars - TUTOR_MAX_TOTAL_CONTEXT_CHARS;
+        const newSysLen = Math.max(2000, finalSystemContent.length - overshoot);
+        finalSystemContent = truncateChars(finalSystemContent, newSysLen);
+        contextStats.pedagogicalChars = finalSystemContent.length;
+        contextStats.totalInputChars =
+          contextStats.pedagogicalChars +
+          contextStats.historyChars +
+          contextStats.userMessageChars;
+        contextStats.trimReason = "system_hard_cap";
+      }
+    }
+
+    const aiConfig: any = {
+      taskType: "tutor_deep",
+      complexity: "alta",
+      costTier,
+      userId: activeUserId,
+      stream: false, // Force JSON for structured orchestration
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: finalSystemContent },
+        ...finalHistory,
+        { role: "user", content: userMessageContent }
       ]
     };
 
 
+
+
     console.log("[TUTOR_RUNAI_START]", { topic, qLen: userQuestion.length, action: decision.action });
+    console.log("[TUTOR_CONTEXT_BUDGET]", {
+      totalInputChars: contextStats.totalInputChars,
+      historyItems: contextStats.historyItems,
+      memoryChars: contextStats.memoryChars,
+      ragChars: contextStats.ragChars,
+      contextTrimmed: contextStats.contextTrimmed,
+      trimReason: contextStats.trimReason,
+    });
     waitUntil(bumpMetric(supabaseAdmin, "openai_calls"));
     
     const aiConfigToRun = {
@@ -814,7 +916,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         nextBlock: activeBlock,
         provider: aiProviderUsed,
         lessonComplete: !!lessonComplete,
-        ...(includeTimings ? { timings, aiTimings } : {}),
+        ...(includeTimings ? { timings, aiTimings, contextStats } : {}),
       },
     }), 200);
 
