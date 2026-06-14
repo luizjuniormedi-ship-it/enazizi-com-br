@@ -483,6 +483,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           shouldWaitForStudent: claude.shouldWaitForStudent,
           actionsContext: claude.actionsContext,
           model: "claude-eu",
+          provider: "claude",
           usage: claude.usage,
         };
         aiProviderUsed = "claude";
