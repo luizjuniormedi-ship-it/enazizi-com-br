@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { MascotAvatar } from "@/components/mascot/MascotAvatar";
+import { toast } from "sonner";
 
 export default function TutorV2Page() {
   const { sessionId } = useParams();
