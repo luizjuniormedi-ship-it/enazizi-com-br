@@ -13,10 +13,9 @@ const EU_AI_TIMEOUT_MS = 40_000;
 const EU_AI_MINIMAL_TIMEOUT_MS = 8_000;
 const EU_AI_HEALTH_TIMEOUT_MS = 3_000;
 
-// Microbatch: batches >= MICROBATCH_THRESHOLD são divididos em chamadas paralelas de MICROBATCH_SIZE
-// Empírico (2026-06-14): N=1 ~17s, N=2 >60s, N=5 ~46s no Railway → size=1 paralelo é mais previsível.
-const MICROBATCH_THRESHOLD = 2;
-const MICROBATCH_SIZE = 1;
+// Microbatch: batch >= 3 dividido em chamadas paralelas de até 2 questões (5 = 2+2+1).
+const MICROBATCH_THRESHOLD = 3;
+const MICROBATCH_SIZE = 2;
 const MICROBATCH_PARALLEL = true;
 
 const JSON_TAIL_FULL = `
@@ -124,7 +123,7 @@ export async function claudeMinimalTest(): Promise<{ ok: boolean; status: number
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: `Responda apenas: {"ok":true}`,
+        message: `{"ok":true}`,
         stream: false,
         context: { source: "claude-minimal-test" },
       }),
@@ -179,7 +178,6 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
       }),
       signal: ctrl.signal,
     });
-    console.log(`[RAILWAY_REQ_OK] status=${res.status} elapsedMs=${Date.now() - t0} topic="${topicHint}"`);
   } catch (e: any) {
     clearTimeout(timer);
     const elapsed = Date.now() - t0;
@@ -198,8 +196,9 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
   }
 
   const raw = await res.text();
+  const elapsedAfterBody = Date.now() - t0;
   if (!res.ok) {
-    console.warn(`[RAILWAY_REQ_HTTP_ERROR] status=${res.status} body="${raw.slice(0, 200)}"`);
+    console.warn(`[RAILWAY_REQ_FAIL] status=${res.status} elapsedMs=${elapsedAfterBody} expectedCount=${expectedCount} inputChars=${inputChars} outputChars=${raw.length} body="${raw.slice(0, 200)}"`);
     return {
       ok: false,
       status: res.status,
@@ -214,7 +213,7 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
   const message: string = envelope?.message || envelope?.content || envelope?.response || raw;
   const outputChars = message.length;
 
-  console.log(`[RAILWAY_REQ_PAYLOAD] inputChars=${inputChars} outputChars=${outputChars} topic="${topicHint}"`);
+  console.log(`[RAILWAY_REQ_OK] status=${res.status} elapsedMs=${elapsedAfterBody} topic="${topicHint}" expectedCount=${expectedCount} inputChars=${inputChars} outputChars=${outputChars}`);
 
   const objects = extractAllJsonObjects(message);
   const jsonText = objects.length > 0 ? `[${objects.map(o => JSON.stringify(o)).join(",")}]` : "[]";
@@ -222,6 +221,13 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
   console.log(`[CLAUDE_OBJECTS_FOUND] count=${objects.length} expected=${expectedCount}`);
   if (expectedCount > 0 && objects.length !== expectedCount) {
     console.warn(`[COUNT_MISMATCH] requested=${expectedCount} parsed=${objects.length}`);
+    return {
+      ok: false,
+      status: 422,
+      _claude: true,
+      text: async () => `CLAUDE_COUNT_MISMATCH: requested=${expectedCount} parsed=${objects.length}`,
+      json: async () => ({ choices: [{ message: { content: "[]" } }] }),
+    };
   }
   if (objects.length === 0) {
     console.warn(`[CLAUDE_SIM_NO_JSON] len=${message.length} head="${message.slice(0, 500).replace(/\n/g, " ")}"`);
@@ -321,6 +327,17 @@ export async function claudeFetchQuestionsMicrobatch(prompt: string, topicHint: 
       status: 599,
       _claude: true,
       text: async () => `CLAUDE_MICROBATCH_EMPTY: all ${plan.length} calls failed/empty (elapsed=${totalElapsed}ms)`,
+      json: async () => ({ choices: [{ message: { content: "[]" } }] }),
+    };
+  }
+
+  if (deduped.length !== expectedCount) {
+    console.warn(`[COUNT_MISMATCH] provider=claude-microbatch requested=${expectedCount} parsed=${deduped.length} collected=${allObjects.length}`);
+    return {
+      ok: false,
+      status: 422,
+      _claude: true,
+      text: async () => `CLAUDE_MICROBATCH_COUNT_MISMATCH: requested=${expectedCount} parsed=${deduped.length}`,
       json: async () => ({ choices: [{ message: { content: "[]" } }] }),
     };
   }

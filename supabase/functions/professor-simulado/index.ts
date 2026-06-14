@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-fetch.ts";
-import { claudeFetchQuestionsMicrobatch, isClaudePrimarySimuladoEnabled, claudeHealthCheck } from "../_shared/eu-ai-questions-client.ts";
+import { claudeFetchQuestionsMicrobatch, isClaudePrimarySimuladoEnabled, claudeHealthCheck, claudeWarmup, claudeMinimalTest } from "../_shared/eu-ai-questions-client.ts";
 import { sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { cleanQuestionText } from "../_shared/contracts/parser.contract.ts";
 import { IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
@@ -197,6 +197,7 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    const { action, ...params } = body;
     
     if (body?.action === "healthcheck") {
       console.log(`[PROFESSOR_SIMULADO_HEALTHCHECK] traceId=${traceId}`);
@@ -207,6 +208,26 @@ serve(async (req) => {
         timestamp: new Date().toISOString(),
         traceId
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "claude_recovery_probe") {
+      const startedAt = Date.now();
+      const [health, warmup, minimal] = await Promise.all([
+        claudeHealthCheck(),
+        claudeWarmup(),
+        claudeMinimalTest(),
+      ]);
+      const diagnosis = minimal.ok
+        ? "EDGE_RECOVERY_PROBES_OK"
+        : (minimal.elapsedMs >= 7900 ? "RAILWAY_PROXY_OR_ANTHROPIC_SDK_REQUIRED" : "CLAUDE_MINIMAL_FAILED_CLEARLY");
+      return jsonResponse({
+        success: true,
+        health,
+        warmup,
+        minimal,
+        diagnosis,
+        elapsedMs: Date.now() - startedAt,
+      });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -229,7 +250,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Apenas professores podem usar esta função." }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { action, ...params } = body;
     const ok = (data: unknown) => new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // Get professor's faculdade and name for scoping and notifications
@@ -733,7 +753,7 @@ REGRAS INVIOLÁVEIS:
                   response = await claudeFetchQuestionsMicrobatch(prompt, topics[0], stillNeeded);
                   if (!response.ok) {
                     const t = await response.text();
-                    console.warn(`[CLAUDE_SIM_FAIL] level=${level} status=${response.status} ${t.slice(0, 160)} — fallback Gemini`);
+                    console.warn(`[CLAUDE_SIM_FAIL] level=${level} status=${response.status} ${t.slice(0, 160)} — fallback OpenAI`);
                     response = null;
                   } else {
                     console.log(`[CLAUDE_SIM_OK] level=${level} batch=${stillNeeded} (microbatch)`);
@@ -743,10 +763,11 @@ REGRAS INVIOLÁVEIS:
                   usedClaude = false;
                   response = await aiFetch({
                     messages: [{ role: "user", content: prompt }],
-                    model: "google/gemini-2.5-flash",
+                    model: "openai/gpt-4o-mini",
                     maxTokens: 8192,
                     timeoutMs: 55000,
                     maxRetries: 0,
+                    disableFallbackChain: true,
                   });
                 }
 
