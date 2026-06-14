@@ -46,8 +46,16 @@ export default function TutorV2Page() {
 
 
   const handleStartSession = async (topic?: string) => {
-    const finalTopic = topic || newTopic;
-    if (!finalTopic.trim() || !user || isCreating) return;
+    const finalTopic = (topic || newTopic || "").trim();
+    if (isCreating) return;
+    if (!finalTopic) {
+      toast.error("Digite um tema para começar.");
+      return;
+    }
+    if (!user) {
+      toast.error("Aguarde a autenticação carregar e tente novamente.");
+      return;
+    }
     
     setIsCreating(true);
     setBootStatus("Inicializando preceptor...");
