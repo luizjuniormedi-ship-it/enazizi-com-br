@@ -191,7 +191,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
       socraticQuestion: raw.socraticQuestion,
       source: source,
       confidence: raw.confidence ?? 1.0,
-      metadata: raw.metadata ?? {}
+      metadata: { ...(raw.metadata ?? {}), model: raw.model, provider: raw.provider }
     };
   }
 
