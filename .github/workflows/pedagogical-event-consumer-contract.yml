@@ -1,0 +1,29 @@
+name: pedagogical-event-consumer Contract Gate
+
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/pedagogical-event-consumer/**"
+      - ".github/workflows/pedagogical-event-consumer-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/pedagogical-event-consumer/**"
+      - ".github/workflows/pedagogical-event-consumer-contract.yml"
+
+jobs:
+  contract:
+    name: Pedagogical event consumer contract regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - name: Run contract tests
+        env:
+          SUPABASE_CONTRACT_USER_JWT: ${{ secrets.SUPABASE_CONTRACT_USER_JWT }}
+          USER_JWT: ${{ secrets.SUPABASE_CONTRACT_USER_JWT }}
+        run: |
+          deno test --allow-net --allow-env \
+            supabase/functions/pedagogical-event-consumer/__tests__/contract.test.ts
