@@ -13,9 +13,11 @@ const EU_AI_TIMEOUT_MS = 40_000;
 const EU_AI_MINIMAL_TIMEOUT_MS = 8_000;
 const EU_AI_HEALTH_TIMEOUT_MS = 3_000;
 
-// Microbatch: batches >= MICROBATCH_THRESHOLD são divididos em chamadas de MICROBATCH_SIZE
-const MICROBATCH_THRESHOLD = 3;
-const MICROBATCH_SIZE = 2;
+// Microbatch: batches >= MICROBATCH_THRESHOLD são divididos em chamadas paralelas de MICROBATCH_SIZE
+// Empírico (2026-06-14): N=1 ~17s, N=2 >60s, N=5 ~46s no Railway → size=1 paralelo é mais previsível.
+const MICROBATCH_THRESHOLD = 2;
+const MICROBATCH_SIZE = 1;
+const MICROBATCH_PARALLEL = true;
 
 const JSON_TAIL_FULL = `
 
