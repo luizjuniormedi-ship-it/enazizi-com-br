@@ -78,6 +78,8 @@ const QuestionQuality = lazyWithRetry(() => import("./pages/admin/QuestionQualit
 const LoadMonitor = lazyWithRetry(() => import("./pages/admin/LoadMonitor"), "LoadMonitor");
 const MemoryHealth = lazyWithRetry(() => import("./pages/admin/MemoryHealth"), "MemoryHealth");
 const MemoryHallucinations = lazyWithRetry(() => import("./pages/admin/MemoryHallucinations"), "MemoryHallucinations");
+const AlphaOnboarding = lazyWithRetry(() => import("./pages/AlphaOnboarding"), "AlphaOnboarding");
+
 const EnrichmentProgress = lazyWithRetry(() => import("./pages/admin/EnrichmentProgress"), "EnrichmentProgress");
 const ClassificationRunner = lazyWithRetry(() => import("./pages/admin/ClassificationRunner"), "ClassificationRunner");
 const IntelligenceRunner = lazyWithRetry(() => import("./pages/admin/IntelligenceRunner"), "IntelligenceRunner");
@@ -294,8 +296,18 @@ const App = () => (
               <Route path="/performance" element={<Navigate to="/dashboard/analytics" replace />} />
               <Route path="/profile" element={<Navigate to="/dashboard/perfil" replace />} />
               <Route path="/settings" element={<Navigate to="/dashboard/perfil" replace />} />
-              
+
+              <Route
+                path="/alpha/onboarding"
+                element={
+                  <ProtectedRoute>
+                    <AlphaOnboarding />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
+
                 <Route path="/enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
                 <Route path="/dashboard">
                   <Route index element={<ModuleBoundary name="Dashboard"><Dashboard /></ModuleBoundary>} />
