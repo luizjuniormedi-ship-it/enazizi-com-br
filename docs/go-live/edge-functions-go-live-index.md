@@ -150,8 +150,7 @@ Listadas por domínio. Nenhuma alteração de código aplicada — apenas invent
 `auto-assign-simulados`.
 
 ### Planner / Trajectory
-`generate-daily-plan`, `generate-study-plan`, `plan-next-batch`,
-`autonomous-planner-engine`, `planner-orchestrator-v1`, `replan-overdue-tasks`,
+`generate-study-plan`, `plan-next-batch`,
 `trajectory-apply-v1`, `trajectory-complete-action-v1`, `trajectory-engine-v1`,
 `trajectory-explain-v1`, `trajectory-telemetry-v1`, `trajectory-health-engine`,
 `schedule-review`.
