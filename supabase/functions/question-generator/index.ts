@@ -60,6 +60,23 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const topicEngine = new TopicEngine(supabaseAdmin);
     await topicEngine.loadAliases(topics, subtopics);
 
+    // ── TOPIC FIDELITY (Sprint V1 / Fase 2 — observacional) ───────────────────
+    try {
+      for (const t of topics) {
+        const tfResult = resolveTopicGranularity(String(t));
+        logTopicFidelity("question-generator", tfResult);
+        recordTopicFidelity(supabaseAdmin, {
+          source: "question-generator",
+          userId,
+          result: tfResult,
+          metadata: { count: requestedCount, examBoard: examBoard || null, correlationId },
+        }).catch(() => {});
+      }
+    } catch (e: any) {
+      console.warn("[TOPIC_FIDELITY_HOOK_ERROR]", e?.message);
+    }
+
+
     const bancaResolution = resolveBanca(examBoard);
     const profile = bancaResolution.profile;
 
