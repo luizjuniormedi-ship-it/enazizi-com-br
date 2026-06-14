@@ -685,6 +685,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
 
     console.log("[TUTOR_RUNAI_START]", { topic, qLen: userQuestion.length, action: decision.action });
+    console.log("[TUTOR_CONTEXT_BUDGET]", {
+      totalInputChars: contextStats.totalInputChars,
+      historyItems: contextStats.historyItems,
+      memoryChars: contextStats.memoryChars,
+      ragChars: contextStats.ragChars,
+      contextTrimmed: contextStats.contextTrimmed,
+      trimReason: contextStats.trimReason,
+    });
     waitUntil(bumpMetric(supabaseAdmin, "openai_calls"));
     
     const aiConfigToRun = {
