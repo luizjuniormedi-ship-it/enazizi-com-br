@@ -8,6 +8,17 @@ import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "
 import { normalizeTutorResponse, TutorResponse, getStaticFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
 
+const LANGUAGE_LEAK_PATTERN = /[\u4e00-\u9fff]|\b(?:seg[uú]n|presentaci[oó]n|colelitiasis|watchful waiting|bile salts|cholesterol|thickened|female|forty|fat)\b/i;
+const PROVIDER_LEAK_PATTERN = /\b(?:claude|anthropic|openai|gpt-|gemini|modelo de ia|provedor)\b/i;
+
+function detectTutorQualityIssue(content: string): string | null {
+  const text = String(content || "").trim();
+  if (text.length < 180) return `too_short:${text.length}`;
+  if (LANGUAGE_LEAK_PATTERN.test(text)) return "language_leak";
+  if (PROVIDER_LEAK_PATTERN.test(text)) return "provider_leak";
+  return null;
+}
+
 
 // Métrica fire-and-forget — nunca trava o fluxo.
 async function bumpMetric(supabaseAdmin: any, field: string, delta = 1) {
