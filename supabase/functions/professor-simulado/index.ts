@@ -753,7 +753,7 @@ REGRAS INVIOLÁVEIS:
                   response = await claudeFetchQuestionsMicrobatch(prompt, topics[0], stillNeeded);
                   if (!response.ok) {
                     const t = await response.text();
-                    console.warn(`[CLAUDE_SIM_FAIL] level=${level} status=${response.status} ${t.slice(0, 160)} — fallback Gemini`);
+                    console.warn(`[CLAUDE_SIM_FAIL] level=${level} status=${response.status} ${t.slice(0, 160)} — fallback OpenAI`);
                     response = null;
                   } else {
                     console.log(`[CLAUDE_SIM_OK] level=${level} batch=${stillNeeded} (microbatch)`);
@@ -763,10 +763,11 @@ REGRAS INVIOLÁVEIS:
                   usedClaude = false;
                   response = await aiFetch({
                     messages: [{ role: "user", content: prompt }],
-                    model: "google/gemini-2.5-flash",
+                    model: "openai/gpt-4o-mini",
                     maxTokens: 8192,
                     timeoutMs: 55000,
                     maxRetries: 0,
+                    disableFallbackChain: true,
                   });
                 }
 
