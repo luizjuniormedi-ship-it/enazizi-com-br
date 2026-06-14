@@ -1,0 +1,35 @@
+name: quality-core Contract Gate
+
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/qa-agent/**"
+      - "supabase/functions/qa-autocorrect/**"
+      - "supabase/functions/quality-lock-validator/**"
+      - ".github/workflows/quality-core-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/qa-agent/**"
+      - "supabase/functions/qa-autocorrect/**"
+      - "supabase/functions/quality-lock-validator/**"
+      - ".github/workflows/quality-core-contract.yml"
+
+jobs:
+  contract:
+    name: Quality core contract regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - name: Run quality-core contract tests
+        env:
+          SUPABASE_CONTRACT_USER_JWT: ${{ secrets.SUPABASE_CONTRACT_USER_JWT }}
+          USER_JWT: ${{ secrets.SUPABASE_CONTRACT_USER_JWT }}
+        run: |
+          deno test --allow-net --allow-env \
+            supabase/functions/qa-agent/__tests__/contract.test.ts \
+            supabase/functions/qa-autocorrect/__tests__/contract.test.ts \
+            supabase/functions/quality-lock-validator/__tests__/contract.test.ts
