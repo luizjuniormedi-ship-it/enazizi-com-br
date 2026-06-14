@@ -141,7 +141,6 @@ if (USER_JWT) {
       if ((e as Error).message?.startsWith("Leaked:")) throw e;
     }
   });
-}
 } else {
   console.warn("[latency] USER_JWT not set — full request test skipped.");
 }
