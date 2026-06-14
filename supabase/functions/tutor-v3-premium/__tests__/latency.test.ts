@@ -65,13 +65,34 @@ if (USER_JWT) {
     }
     try {
       const json = JSON.parse(raw);
+      // Perf-1 timings
       const t = json?.debug?.timings;
       if (t) {
         console.log(`[LATENCY_TIMINGS] ${JSON.stringify(t)}`);
+        for (const [k, v] of Object.entries(t)) {
+          if (k !== "aiMs" && k !== "totalMs" && typeof v === "number" && v > 1500) {
+            console.warn(`[LATENCY_WARN] step ${k}=${v}ms exceeds 1500ms`);
+          }
+        }
       } else {
         console.warn("[LATENCY_TIMINGS] missing — instrumentação não retornou timings");
       }
-    } catch (_) {
+      // Perf-2 AI timings
+      const ai = json?.debug?.aiTimings;
+      if (ai) {
+        console.log(`[AI_TIMINGS] ${JSON.stringify(ai)}`);
+        if (typeof ai.totalAiMs === "number" && ai.totalAiMs > 12000) {
+          console.warn(`[AI_LATENCY_WARN] totalAiMs=${ai.totalAiMs}ms exceeds 12000ms`);
+        }
+        if (ai.fallbackUsed) console.log(`[AI_FALLBACK_USED] provider=${ai.fallbackProvider}`);
+        if (ai.timedOut) console.log(`[AI_TIMEOUT_OBSERVED] controlled response returned`);
+      }
+      // Invariantes anti-leak
+      for (const bad of ["TypeError", "\"stack\"", "Cannot read"]) {
+        if (raw.includes(bad)) throw new Error(`Leaked: ${bad}`);
+      }
+    } catch (e) {
+      if ((e as Error).message?.startsWith("Leaked:")) throw e;
       // tolerate non-JSON during outage
     }
   });
