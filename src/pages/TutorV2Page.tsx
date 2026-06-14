@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { MascotAvatar } from "@/components/mascot/MascotAvatar";
+import { toast } from "sonner";
 
 export default function TutorV2Page() {
   const { sessionId } = useParams();
@@ -45,8 +46,16 @@ export default function TutorV2Page() {
 
 
   const handleStartSession = async (topic?: string) => {
-    const finalTopic = topic || newTopic;
-    if (!finalTopic.trim() || !user || isCreating) return;
+    const finalTopic = (topic || newTopic || "").trim();
+    if (isCreating) return;
+    if (!finalTopic) {
+      toast.error("Digite um tema para começar.");
+      return;
+    }
+    if (!user) {
+      toast.error("Aguarde a autenticação carregar e tente novamente.");
+      return;
+    }
     
     setIsCreating(true);
     setBootStatus("Inicializando preceptor...");
@@ -118,8 +127,9 @@ export default function TutorV2Page() {
       await new Promise(resolve => setTimeout(resolve, 800));
       
       navigate(`/dashboard/sessao-estudo/${data.id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating session:", err);
+      toast.error(`Não foi possível iniciar a sessão: ${err?.message || "erro desconhecido"}`);
       setIsCreating(false);
       setBootStatus("");
     }
