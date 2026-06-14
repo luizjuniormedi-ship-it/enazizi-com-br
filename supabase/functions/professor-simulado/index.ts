@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-fetch.ts";
-import { claudeFetchQuestionsMicrobatch, isClaudePrimarySimuladoEnabled, claudeHealthCheck } from "../_shared/eu-ai-questions-client.ts";
+import { claudeFetchQuestionsMicrobatch, isClaudePrimarySimuladoEnabled, claudeHealthCheck, claudeWarmup, claudeMinimalTest } from "../_shared/eu-ai-questions-client.ts";
 import { sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { cleanQuestionText } from "../_shared/contracts/parser.contract.ts";
 import { IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
@@ -281,6 +281,26 @@ serve(async (req) => {
     };
 
     switch (action) {
+      case "claude_recovery_probe": {
+        const startedAt = Date.now();
+        const [health, warmup, minimal] = await Promise.all([
+          claudeHealthCheck(),
+          claudeWarmup(),
+          claudeMinimalTest(),
+        ]);
+        const diagnosis = minimal.ok
+          ? "EDGE_RECOVERY_PROBES_OK"
+          : (minimal.elapsedMs >= 7900 ? "RAILWAY_PROXY_OR_ANTHROPIC_SDK_REQUIRED" : "CLAUDE_MINIMAL_FAILED_CLEARLY");
+        return ok({
+          success: true,
+          health,
+          warmup,
+          minimal,
+          diagnosis,
+          elapsedMs: Date.now() - startedAt,
+        });
+      }
+
       case "list_turmas": {
         const { data: profProfile } = await sb.from("profiles").select("id").eq("user_id", user.id).single();
         if (!profProfile) throw new Error("Perfil não encontrado");
