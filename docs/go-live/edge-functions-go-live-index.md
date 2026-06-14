@@ -92,6 +92,19 @@ Compatível com **Go-Live Structural Freeze**.
 | Patch aplicado | Sim — parse seguro de body, validação de `uploadId` (string + shape), catch top-level sem leak |
 | Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
 
+### `pedagogical-event-consumer` — `GO-LIVE READY` (Wave 6)
+
+| Item | Valor |
+|---|---|
+| Caminho | `supabase/functions/pedagogical-event-consumer` |
+| Contract test | ✅ `__tests__/contract.test.ts` (13 cenários) |
+| CI gate | ✅ `.github/workflows/pedagogical-event-consumer-contract.yml` |
+| Status check | ✅ `Pedagogical event consumer contract regression` |
+| Release protection | ✅ via PR template global |
+| Final evidence | ✅ [`pedagogical-event-consumer-hardening-evidence.md`](./pedagogical-event-consumer-hardening-evidence.md) |
+| Patch aplicado | Nenhum — função já blind orchestrator v11 (sempre 200, parse seguro, waitUntil isolado) |
+| Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
+
 ---
 
 
