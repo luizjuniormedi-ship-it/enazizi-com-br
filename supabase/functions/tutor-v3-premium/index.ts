@@ -8,7 +8,9 @@ import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "
 import { normalizeTutorResponse, TutorResponse, getStaticFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
 
-const LANGUAGE_LEAK_PATTERN = /[\u4e00-\u9fff]|\b(?:seg[uú]n|presentaci[oó]n|colelitiasis|watchful waiting|bile salts|cholesterol|thickened|female|forty|fat|pancreatitis|enamed-style|roadmap|timing|readiness score)\b/i;
+// Apenas vazamentos inequívocos. Termos médicos cognatos (cholesterol, pancreatitis,
+// female/forty/fat do mnemônico 4Fs) NÃO contam como leak — aparecem em texto pt-BR válido.
+const LANGUAGE_LEAK_PATTERN = /[\u4e00-\u9fff]|\b(?:seg[uú]n|presentaci[oó]n|colelitiasis|watchful waiting|bile salts|enamed-style|readiness score)\b/i;
 const PROVIDER_LEAK_PATTERN = /\b(?:claude|anthropic|openai|gpt-|gemini|modelo de ia|provedor)\b/i;
 
 function detectTutorQualityIssue(content: string): string | null {
