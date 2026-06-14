@@ -66,12 +66,13 @@ export default function TutorV2ChatPanel({
       initialDispatchedRef.current = true;
       const kickoff = `Quero estudar: ${session.topic}`;
       console.log("[TUTOR_INITIAL_MESSAGE_DISPATCH] Triggering first message:", { sessionId: session.id, topic: session.topic });
-      handleSendMessage(kickoff);
+      handleSendMessage(kickoff, "new_topic");
     }
   }, [isLoading, messages.length, session?.id, session?.topic, user?.id, isTyping]);
 
   const handleSendMessage = async (text: string, pedagogicalInteraction?: string) => {
     if (!text.trim() || isTyping || !user) return;
+    const shouldPersistUserMessage = pedagogicalInteraction !== 'continue';
     setError(null);
     triggerInteraction({ 
       state: 'thinking', 
@@ -93,30 +94,32 @@ export default function TutorV2ChatPanel({
     setIsTyping(true);
 
     // Optimistic: append user message immediately
-    setMessages((prev) => {
-      // Evitar duplicata se o realtime já inseriu
-      if (prev.some(m => m.id === tempId || (m.role === 'user' && m.content === text && Math.abs(new Date(m.created_at).getTime() - Date.now()) < 2000))) {
-        return prev;
-      }
-      return [
-        ...prev,
-        {
-          id: tempId,
-          role: "user",
-          content: text,
-          tutor_session_id: session.id,
-          user_id: user.id,
-          created_at: new Date().toISOString(),
-        },
-      ];
-    });
+    if (shouldPersistUserMessage) {
+      setMessages((prev) => {
+        // Evitar duplicata se o realtime já inseriu
+        if (prev.some(m => m.id === tempId || (m.role === 'user' && m.content === text && Math.abs(new Date(m.created_at).getTime() - Date.now()) < 2000))) {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            id: tempId,
+            role: "user",
+            content: text,
+            tutor_session_id: session.id,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+          },
+        ];
+      });
+    }
 
     try {
       // Persist user message
-      await addMessage(user.id, "user", text);
+      if (shouldPersistUserMessage) await addMessage(user.id, "user", text);
 
       // Call AI
-      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction, pedagogicalInteraction === 'new_topic' ? text : undefined);
+      const response = await TutorV2Service.sendMessage(session.id, text, pedagogicalInteraction, pedagogicalInteraction === 'new_topic' ? session.topic : undefined);
 
       if (!response?.ok && response?.success !== true) throw new Error(response?.error || "Erro na resposta da IA");
       if (response?.fallback) {
