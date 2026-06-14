@@ -619,6 +619,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       aiResponse = await ai(aiConfigToRun, { retries: 2 });
     }
     const latencyEnd = Date.now();
+    mark("aiMs");
     console.log("[TUTOR_RUNAI_OK]", { provider: aiProviderUsed });
 
     // AI Cost Validation: Log actual usage
