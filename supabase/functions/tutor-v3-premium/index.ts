@@ -7,6 +7,8 @@ import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
 import { normalizeTutorResponse, TutorResponse, getStaticFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
+import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
+import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 
 // ─── LANGUAGE LEAK ENGINE v2 (False-Positive Elimination Sprint) ───────────
 // Apenas vazamentos INEQUÍVOCOS. Termos médicos cognatos, mnemônicos
