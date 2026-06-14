@@ -212,3 +212,58 @@ público, modelo padrão, ou funções das Waves 1–9. Apenas timeout hard +
 medição por provider + exposição condicional em debug.
 
 `AI LATENCY GUARD READY — FREEZE SAFE`
+
+---
+
+## Perf-3 — Context Budget / Token Diet
+
+### 1. Orçamentos aplicados (env-tunable, defaults seguros)
+| Variável | Default |
+|---|---|
+| `TUTOR_MAX_HISTORY_ITEMS` | 6 mensagens |
+| `TUTOR_MAX_HISTORY_CHARS` | 6.000 |
+| `TUTOR_MAX_MEMORY_CHARS` | 4.000 |
+| `TUTOR_MAX_RAG_CHARS` | 6.000 |
+| `TUTOR_MAX_TOTAL_CONTEXT_CHARS` | 18.000 |
+
+### 2. `contextStats` (exposto só com `debug=true` ou `ENABLE_TUTOR_TIMINGS=true`)
+```json
+{
+  "historyChars": 2400,
+  "memoryChars": 980,
+  "ragChars": 3120,
+  "pedagogicalChars": 7400,
+  "userMessageChars": 84,
+  "totalInputChars": 13908,
+  "historyItems": 4,
+  "memoryItems": 1,
+  "ragItems": 3,
+  "contextTrimmed": false,
+  "trimReason": null
+}
+```
+Também emitido em log estruturado `[TUTOR_CONTEXT_BUDGET]` (sem texto sensível, só métricas numéricas).
+
+### 3. Política de truncamento
+Ordem de corte quando `totalInputChars > TUTOR_MAX_TOTAL_CONTEXT_CHARS`:
+1. Histórico antigo (oldest-first), até caber.
+2. Hard-cap defensivo no system content (RAG/memória dentro dele) preservando piso de 2000 chars.
+
+### 4. Nunca truncado
+- Mensagem atual do aluno (`userMessageContent`).
+- Identificador do bloco pedagógico ativo e o objetivo do bloco (`PROMPT_COMPLETO` + cabeçalho do bloco preservados acima do piso).
+- `aiTimings` e contrato público.
+
+### 5. Truncado primeiro
+- Memória longitudinal (cap por `TUTOR_MAX_MEMORY_CHARS` + sufixo `[TRUNCATED_FOR_LATENCY]`).
+- RAG (cap por `TUTOR_MAX_RAG_CHARS`).
+- Histórico antigo (slice das últimas N + cap de chars walking from most-recent).
+
+### 6. Riscos remanescentes
+- Provider externo (Claude/OpenAI) ainda domina `aiMs` quando responde dentro do timeout.
+- `max_tokens` da resposta não foi alterado nesta fase (configurado no wrapper `ai()` / `callClaudeV3`); recomendação: auditar tetos em fase Perf-4.
+
+### 7. Freeze
+Sem mudança em prompt, persona, sequência pedagógica, FSRS, memória (como conceito), RAG (como conceito), Planner, Event Bus, Error Bank, schema, RLS, frontend ou contrato público.
+
+**Status:** `TUTOR CONTEXT BUDGET READY — FREEZE SAFE`
