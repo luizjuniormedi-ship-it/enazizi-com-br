@@ -565,10 +565,13 @@ REGRAS INVIOLÁVEIS:
 
         // ── Helper: strict post-generation filter ──
         const strictFilter = (questions: any[], level: DifficultyLevel): any[] => {
+          // Adaptive min length per difficulty (facil tends to be shorter naturally)
+          const MIN_CHARS_BY_LEVEL: Record<string, number> = { facil: 300, medio: 350, dificil: 400 };
+          const minChars = MIN_CHARS_BY_LEVEL[level] ?? 350;
           return questions.filter((q: any) => {
             const stmt = String(q.statement || "");
-            // Reject short
-            if (stmt.length < 350) { console.warn(`[Filter] Rejeitada: curta (${stmt.length} chars)`); return false; }
+            // Reject short (adaptive)
+            if (stmt.length < minChars) { console.warn(`[Filter] Rejeitada: curta (${stmt.length}<${minChars} chars, level=${level})`); return false; }
             // Reject English
             if (ENGLISH_PATTERN.test(stmt)) { console.warn(`[Filter] Rejeitada: inglês detectado`); return false; }
             // Reject image refs
