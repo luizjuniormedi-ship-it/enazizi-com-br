@@ -38,6 +38,8 @@ export default function TutorV2ChatPanel({
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
+  const [liveCurrentBlock, setLiveCurrentBlock] = useState(session.current_block || session.current_stage || "BLOCO_1_MISSAO_CLINICA");
+  const [lessonComplete, setLessonComplete] = useState(session.status === "completed");
   const scrollRef = useRef<HTMLDivElement>(null);
   const initialDispatchedRef = useRef(false);
   const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
@@ -48,6 +50,11 @@ export default function TutorV2ChatPanel({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    setLiveCurrentBlock(session.current_block || session.current_stage || "BLOCO_1_MISSAO_CLINICA");
+    setLessonComplete(session.status === "completed");
+  }, [session.id, session.current_block, session.current_stage, session.status]);
 
   // [HOTFIX P0 TUTOR V3] Auto-dispatch initial topic so eu-ai is actually invoked
   // after session creation. Without this the chat panel mounts but never triggers AI,
@@ -125,6 +132,14 @@ export default function TutorV2ChatPanel({
       if (response?.fallback) {
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
+      const responseLessonComplete = !!(
+        response?.lessonComplete ||
+        response?.metadata?.lessonComplete ||
+        response?.actionsContext?.lessonComplete
+      );
+      if (response?.currentBlock) setLiveCurrentBlock(response.currentBlock);
+      if (responseLessonComplete) setLessonComplete(true);
+
       if (response?.content) {
         setMessages((prev) => {
           const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === response.content);
@@ -142,8 +157,10 @@ export default function TutorV2ChatPanel({
                 fallback_used: !!response.fallback, 
                 provider: response.provider,
                 blockTitle: response.blockTitle,
+                currentBlock: response.currentBlock,
                 socraticQuestion: response.socraticQuestion,
-                actionsContext: response.actionsContext
+                actionsContext: response.actionsContext,
+                lessonComplete: responseLessonComplete
               },
 
             },
@@ -178,8 +195,9 @@ export default function TutorV2ChatPanel({
         }, user.id);
       } else {
         triggerInteraction({
-          state: 'teaching',
-          type: 'explanation'
+          state: responseLessonComplete ? 'success' : 'teaching',
+          type: responseLessonComplete ? 'feedback' : 'explanation',
+          speech: responseLessonComplete ? "Aula concluída. Escolha o próximo passo." : undefined
         });
       }
 
@@ -195,6 +213,11 @@ export default function TutorV2ChatPanel({
       setIsTyping(false);
     }
   };
+
+  const currentBlockIndex = BLOCK_SEQUENCE_FRONTEND.indexOf(liveCurrentBlock as any);
+  const liveProgress = lessonComplete
+    ? 100
+    : session.cognitive_progress || (currentBlockIndex >= 0 ? Math.round(((currentBlockIndex + 1) / BLOCK_SEQUENCE_FRONTEND.length) * 100) : 0);
 
   return (
     <div className="flex flex-col h-full bg-slate-900/40 relative overflow-hidden">
@@ -255,16 +278,16 @@ export default function TutorV2ChatPanel({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-0.5">
               <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
-                Estágio Cognitivo: <span className="text-white">{session.current_block || session.current_stage || 'Missão Clínica'}</span>
+                    Estágio Cognitivo: <span className="text-white">{lessonComplete ? 'Aula concluída' : liveCurrentBlock}</span>
               </span>
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                {session.cognitive_progress || (session.current_block ? Math.round((BLOCK_SEQUENCE_FRONTEND.indexOf(session.current_block) + 1) / 9 * 100) : 0)}% Concluído
+                    {liveProgress}% Concluído
               </span>
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
-                animate={{ width: `${session.cognitive_progress || (session.current_block ? Math.round((BLOCK_SEQUENCE_FRONTEND.indexOf(session.current_block) + 1) / 9 * 100) : 0)}%` }}
+                    animate={{ width: `${liveProgress}%` }}
                 className="h-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-400"
               />
             </div>
@@ -285,6 +308,7 @@ export default function TutorV2ChatPanel({
               <TutorV2MessageList 
                 messages={messages} 
                 isTyping={isTyping} 
+                lessonComplete={lessonComplete}
                 onIncrementalAction={(action) => {
                   let prompt = "";
                   switch (action) {
