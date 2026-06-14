@@ -8,7 +8,8 @@
  */
 
 const EU_AI_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
-const EU_AI_TIMEOUT_MS = 55_000;
+// Reduzido de 55s → 40s para deixar orçamento ao fallback (Gemini/OpenAI) dentro do limite de 60s da edge.
+const EU_AI_TIMEOUT_MS = 40_000;
 
 const JSON_TAIL = `
 
@@ -46,9 +47,11 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
   const augmented = `${prompt}${topicLock}${countLock}${JSON_TAIL}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), EU_AI_TIMEOUT_MS);
+  const t0 = Date.now();
 
   let res: Response;
   try {
+    console.log(`[CLAUDE_NETWORK_START] url=${EU_AI_URL} topic="${topicHint}" expected=${expectedCount} timeoutMs=${EU_AI_TIMEOUT_MS}`);
     res = await fetch(`${EU_AI_URL}/api/v1/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -60,13 +63,18 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
       }),
       signal: ctrl.signal,
     });
+    console.log(`[CLAUDE_NETWORK_OK] status=${res.status} elapsedMs=${Date.now() - t0}`);
   } catch (e: any) {
     clearTimeout(timer);
+    const elapsed = Date.now() - t0;
+    const aborted = e?.name === "AbortError" || /aborted/i.test(String(e?.message));
+    const reason = aborted ? `TIMEOUT_${EU_AI_TIMEOUT_MS}MS` : (e?.message || String(e));
+    console.warn(`[CLAUDE_NETWORK_FAIL] elapsedMs=${elapsed} aborted=${aborted} reason="${reason}" url=${EU_AI_URL} topic="${topicHint}"`);
     return {
       ok: false,
       status: 599,
       _claude: true,
-      text: async () => `CLAUDE_NETWORK_FAIL: ${e?.message || e}`,
+      text: async () => `CLAUDE_NETWORK_FAIL: ${reason} (elapsed=${elapsed}ms)`,
       json: async () => ({ choices: [{ message: { content: "[]" } }] }),
     };
   } finally {
