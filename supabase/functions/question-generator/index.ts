@@ -8,6 +8,8 @@ import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 import { TopicEngine } from "../_shared/topic-engine.ts";
 import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
+import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
+import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
