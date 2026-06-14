@@ -120,7 +120,7 @@ sem alterar) para reclassificar.
 4. `process-upload`
 5. `pedagogical-event-consumer` — ✅ Wave 6 concluída
 6. Planner core (`generate-daily-plan`, `autonomous-planner-engine`, `planner-orchestrator-v1`, `replan-overdue-tasks`) — ✅ Wave 7 concluída
-7. FSRS (`schedule-review`, `generate-recovery-flashcard`)
+7. FSRS (`schedule-review`, `generate-recovery-flashcard`) — ✅ Wave 8 concluída
 8. Error Bank / Quality (`qa-agent`, `qa-autocorrect`, `quality-lock-validator`)
 9. Auth / Profile (`auth-email-hook`, `admin-actions`)
 10. Payments / Subscription (criar gate quando função existir)
