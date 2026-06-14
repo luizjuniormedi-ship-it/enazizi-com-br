@@ -79,6 +79,19 @@ Compatível com **Go-Live Structural Freeze**.
 | Patch aplicado | Nenhum — função já defensiva (`clampQuantity`, `requireAuth`, `parseAiJson`) |
 | Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
 
+### `process-upload` — `GO-LIVE READY` (Wave 5)
+
+| Item | Valor |
+|---|---|
+| Caminho | `supabase/functions/process-upload` |
+| Contract test | ✅ `__tests__/contract.test.ts` (12 cenários) |
+| CI gate | ✅ `.github/workflows/process-upload-contract.yml` |
+| Status check | ✅ `Process upload contract regression` |
+| Release protection | ✅ via PR template global |
+| Final evidence | ✅ [`process-upload-hardening-evidence.md`](./process-upload-hardening-evidence.md) |
+| Patch aplicado | Sim — parse seguro de body, validação de `uploadId` (string + shape), catch top-level sem leak |
+| Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
+
 ---
 
 
