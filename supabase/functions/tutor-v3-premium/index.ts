@@ -471,6 +471,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         const sys = aiConfigToRun.messages.find((m: any) => m.role === "system")?.content || "";
         const lastUser = [...aiConfigToRun.messages].reverse().find((m: any) => m.role === "user")?.content || "";
         const claude = await callClaudeV3({ systemPrompt: sys, userMessage: lastUser, topic });
+        const claudeQualityIssue = detectTutorQualityIssue(claude.content);
+        if (claudeQualityIssue) {
+          console.warn("[TUTOR_CLAUDE_QUALITY_REJECT]", { reason: claudeQualityIssue, topic, content_len: claude.content.length });
+          throw new Error(`CLAUDE_QUALITY_REJECT:${claudeQualityIssue}`);
+        }
         aiResponse = {
           content: claude.content,
           socraticQuestion: claude.socraticQuestion,
