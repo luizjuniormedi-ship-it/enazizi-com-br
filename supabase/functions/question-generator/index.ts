@@ -8,6 +8,8 @@ import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 import { TopicEngine } from "../_shared/topic-engine.ts";
 import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
+import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
+import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
@@ -57,6 +59,23 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     const topicEngine = new TopicEngine(supabaseAdmin);
     await topicEngine.loadAliases(topics, subtopics);
+
+    // ── TOPIC FIDELITY (Sprint V1 / Fase 2 — observacional) ───────────────────
+    try {
+      for (const t of topics) {
+        const tfResult = resolveTopicGranularity(String(t));
+        logTopicFidelity("question-generator", tfResult);
+        recordTopicFidelity(supabaseAdmin, {
+          source: "question-generator",
+          userId,
+          result: tfResult,
+          metadata: { count: requestedCount, examBoard: examBoard || null, correlationId },
+        }).catch(() => {});
+      }
+    } catch (e: any) {
+      console.warn("[TOPIC_FIDELITY_HOOK_ERROR]", e?.message);
+    }
+
 
     const bancaResolution = resolveBanca(examBoard);
     const profile = bancaResolution.profile;

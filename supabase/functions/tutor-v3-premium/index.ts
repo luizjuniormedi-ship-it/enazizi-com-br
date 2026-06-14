@@ -7,6 +7,8 @@ import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
 import { normalizeTutorResponse, TutorResponse, getStaticFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
+import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
+import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 
 // ─── LANGUAGE LEAK ENGINE v2 (False-Positive Elimination Sprint) ───────────
 // Apenas vazamentos INEQUÍVOCOS. Termos médicos cognatos, mnemônicos
@@ -120,6 +122,24 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
 
     if (!topic) topic = "Medicina Geral";
+
+    // ── TOPIC FIDELITY (Sprint V1 / Fase 2 — observacional, não-bloqueante) ─────
+    try {
+      const tfRaw = String(newTopic || body.topic || pedagogicalContext?.topic || topic || "");
+      if (tfRaw) {
+        const tfResult = resolveTopicGranularity(tfRaw);
+        logTopicFidelity("tutor-v3-premium", tfResult);
+        waitUntil?.(recordTopicFidelity(supabaseAdmin, {
+          source: "tutor-v3-premium",
+          userId: activeUserId,
+          result: tfResult,
+          metadata: { sessionId: sessionId || null, hasNewTopic: !!newTopic },
+        }));
+      }
+    } catch (e: any) {
+      console.warn("[TOPIC_FIDELITY_HOOK_ERROR]", e?.message);
+    }
+
 
     // ── 1.5 QR MODE V3 (Question Review) — Fase 1.3 ─────────────────────────────
     // Detecta intent "question_review" e responde em modo corretor pedagógico.

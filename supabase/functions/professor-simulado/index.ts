@@ -6,6 +6,8 @@ import { sanitizeAiContent } from "../_shared/enterprise-edge/parse-ai-json.ts";
 import { cleanQuestionText } from "../_shared/contracts/parser.contract.ts";
 import { IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
 import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
+import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
+import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -480,6 +482,23 @@ serve(async (req) => {
         const requestedCount = Math.min(count, 100);
         const SAFE_BATCH = 8;
         const topicList = topics.join(", ");
+
+        // ── TOPIC FIDELITY (Sprint V1 / Fase 2 — observacional) ───────────────
+        try {
+          for (const t of topics) {
+            const tfResult = resolveTopicGranularity(String(t));
+            logTopicFidelity("professor-simulado", tfResult);
+            recordTopicFidelity(sb, {
+              source: "professor-simulado",
+              userId: null,
+              result: tfResult,
+              metadata: { count: requestedCount, examBoard: examBoard || null, traceId },
+            }).catch(() => {});
+          }
+        } catch (e: any) {
+          console.warn("[TOPIC_FIDELITY_HOOK_ERROR]", e?.message);
+        }
+
 
         // ── Compute exact per-slot targets ──
         type Slot = { level: DifficultyLevel; target: number };
