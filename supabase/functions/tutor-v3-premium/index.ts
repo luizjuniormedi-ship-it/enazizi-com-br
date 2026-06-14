@@ -683,7 +683,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       topic,
       correlation_id: correlationId,
       actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
-      debug: { studentIntent, nextBlock: activeBlock, provider: aiProviderUsed },
+      lessonComplete: !!lessonComplete,
+      debug: { studentIntent, nextBlock: activeBlock, provider: aiProviderUsed, lessonComplete: !!lessonComplete },
     }), 200);
 
 
