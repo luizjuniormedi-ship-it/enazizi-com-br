@@ -229,12 +229,12 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     // ── 3. PEDAGOGICAL ORCHESTRATION (DETERMINISTIC) ──────────────────────
     const prevBlock = (session?.current_block as TutorBlockId) || (bodyBlock as TutorBlockId) || "BLOCO_1_MISSAO_CLINICA";
     const studentIntent = newTopic ? "new_topic" : classifyStudentIntent(message || "");
-    const { nextBlock, stayInBlock } = decideTutorStep(prevBlock, studentIntent);
+    const { nextBlock, stayInBlock, lessonComplete } = decideTutorStep(prevBlock, studentIntent);
     
     const currentBlockConfig = PEDAGOGICAL_BLOCKS[nextBlock];
     const blockObjective = currentBlockConfig.objective;
 
-    console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock}`);
+    console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock} lessonComplete=${!!lessonComplete}`);
 
     // [AI COST REDUCTION] ── HYBRID TUTOR: CHECK LOCAL KNOWLEDGE ──────────────────
     const searchTerms = [message || "", topic || ""].join(" ");
@@ -683,7 +683,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       topic,
       correlation_id: correlationId,
       actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
-      debug: { studentIntent, nextBlock: activeBlock, provider: aiProviderUsed },
+      lessonComplete: !!lessonComplete,
+      debug: { studentIntent, nextBlock: activeBlock, provider: aiProviderUsed, lessonComplete: !!lessonComplete },
     }), 200);
 
 

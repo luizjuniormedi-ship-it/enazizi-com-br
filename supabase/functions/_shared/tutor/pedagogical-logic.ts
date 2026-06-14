@@ -134,10 +134,14 @@ export function classifyStudentIntent(message: string): StudentIntent {
   return "other";
 }
 
+export function isLastBlock(block: TutorBlockId): boolean {
+  return BLOCK_SEQUENCE.indexOf(block) === BLOCK_SEQUENCE.length - 1;
+}
+
 export function decideTutorStep(
   currentBlock: TutorBlockId, 
   intent: StudentIntent
-): { nextBlock: TutorBlockId; stayInBlock: boolean } {
+): { nextBlock: TutorBlockId; stayInBlock: boolean; lessonComplete?: boolean } {
   
   if (intent === "new_topic") {
     return { nextBlock: "BLOCO_1_MISSAO_CLINICA", stayInBlock: false };
@@ -151,10 +155,19 @@ export function decideTutorStep(
     return { nextBlock: "BLOCO_9_RESUMO_ALTA_RETENCAO", stayInBlock: false };
   }
 
+  // FIX: avoid travamento no BLOCO_9. Se já está no último bloco e quer continuar,
+  // marcar lição como completa para a UI oferecer novo tema/handoff.
+  if ((intent === "continue" || intent === "answer_question") && isLastBlock(currentBlock)) {
+    return { nextBlock: currentBlock, stayInBlock: true, lessonComplete: true };
+  }
+
   if (intent === "continue" || intent === "answer_question") {
     return { nextBlock: getNextBlock(currentBlock), stayInBlock: false };
   }
 
-  // Default: advance if not a doubt
+  // Default: advance if not at last block
+  if (isLastBlock(currentBlock)) {
+    return { nextBlock: currentBlock, stayInBlock: true, lessonComplete: true };
+  }
   return { nextBlock: getNextBlock(currentBlock), stayInBlock: false };
 }
