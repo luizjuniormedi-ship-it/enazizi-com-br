@@ -127,8 +127,9 @@ export default function TutorV2Page() {
       await new Promise(resolve => setTimeout(resolve, 800));
       
       navigate(`/dashboard/sessao-estudo/${data.id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating session:", err);
+      toast.error(`Não foi possível iniciar a sessão: ${err?.message || "erro desconhecido"}`);
       setIsCreating(false);
       setBootStatus("");
     }
