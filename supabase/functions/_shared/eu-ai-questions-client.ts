@@ -14,8 +14,8 @@ const EU_AI_MINIMAL_TIMEOUT_MS = 8_000;
 const EU_AI_HEALTH_TIMEOUT_MS = 3_000;
 
 // Microbatch: batch >= 3 dividido em chamadas paralelas de até 2 questões (5 = 2+2+1).
-const MICROBATCH_THRESHOLD = 3;
-const MICROBATCH_SIZE = 2;
+const MICROBATCH_THRESHOLD = 2;
+const MICROBATCH_SIZE = 1;
 const MICROBATCH_PARALLEL = true;
 
 const JSON_TAIL_FULL = `
