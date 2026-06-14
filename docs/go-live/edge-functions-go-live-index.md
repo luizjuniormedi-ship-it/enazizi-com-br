@@ -40,6 +40,19 @@ Compatível com **Go-Live Structural Freeze**.
 | Riscos pendentes | Nenhum conhecido |
 | Próximo passo | Não alterar salvo bug real (`LOCKED FOR GO-LIVE`) |
 
+### `question-generator` — `GO-LIVE READY` (Wave 2)
+
+| Item | Valor |
+|---|---|
+| Caminho | `supabase/functions/question-generator` |
+| Contract test | ✅ `__tests__/contract.test.ts` (15 cenários) |
+| CI gate | ✅ `.github/workflows/question-generator-contract.yml` |
+| Status check | ✅ `Question generator contract regression` |
+| Release protection | ✅ via PR template global |
+| Final evidence | ✅ [`question-generator-hardening-evidence.md`](./question-generator-hardening-evidence.md) |
+| Patch aplicado | Sanitização defensiva `count` + `topics` |
+| Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
+
 ---
 
 ## Funções pendentes de triagem (`NEEDS TRIAGE`)

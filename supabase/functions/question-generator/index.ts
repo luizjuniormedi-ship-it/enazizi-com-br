@@ -51,9 +51,27 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     if (!authResult.ok) return authResult.response;
     const userId = authResult.userId;
 
-    const requestedCount = Math.min(Number(body.count || body.questionCount) || 5, 100);
-    const topics = Array.isArray(body.topics || body.selectedTopics) ? (body.topics || body.selectedTopics) : [body.specialty || "Clínica Médica"];
-    const subtopics = Array.isArray(body.subtopics || body.selectedSubtopics) ? (body.subtopics || body.selectedSubtopics) : [];
+    const rawCount = Number(body.count ?? body.questionCount);
+    const requestedCount = Math.max(
+      1,
+      Math.min(Number.isFinite(rawCount) && rawCount > 0 ? rawCount : 5, 100),
+    );
+    const rawTopics = Array.isArray(body.topics ?? body.selectedTopics)
+      ? (body.topics ?? body.selectedTopics)
+      : [body.specialty || "Clínica Médica"];
+    const sanitizedTopics = (rawTopics as any[])
+      .filter((t: any) => typeof t === "string" && t.trim())
+      .map((t: string) => t.trim());
+    const topics = sanitizedTopics.length > 0
+      ? sanitizedTopics
+      : [typeof body.specialty === "string" && body.specialty.trim()
+        ? body.specialty.trim()
+        : "Clínica Médica"];
+    const subtopics = Array.isArray(body.subtopics ?? body.selectedSubtopics)
+      ? (body.subtopics ?? body.selectedSubtopics)
+          .filter((s: any) => typeof s === "string" && s.trim())
+          .map((s: string) => s.trim())
+      : [];
     const examBoard = body.targetExam || body.examBoard;
     const difficulty = body.difficulty || "misto";
 

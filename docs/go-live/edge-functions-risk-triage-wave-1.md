@@ -24,7 +24,7 @@ e fora desta fila.
 | `tutor-v3-premium` | `supabase/functions/tutor-v3-premium` | IA do tutor + memória + RAG; fluxo principal | auth, OPTIONS, payload vazio, no-stack-leak, BLOCO obrigatório | `NEEDS HARDENING` | contract test |
 | `tutor-v2-chat` | `tutor-v2-chat` | QR Mode + runtime orchestrator | auth, OPTIONS, payload vazio, modo QR | `NEEDS HARDENING` | contract test |
 | `tutor-orchestrator-v2` | `tutor-orchestrator-v2` | Decisão entre 6 ações da memória | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
-| `question-generator` | `question-generator` | Geração de questões IA | auth, payload mínimo, dedup, ≤ N | `NEEDS HARDENING` | contract test |
+| `question-generator` | `question-generator` | Geração de questões IA | auth, payload mínimo, dedup, ≤ N | ✅ `GO-LIVE READY` (Wave 2) | ver evidência |
 | `generate-adaptive-question` | `generate-adaptive-question` | Adaptive IA por aluno | auth, payload, no-crash | `NEEDS HARDENING` | contract test |
 | `generate-tutor-lesson` / `generate-tutor-v2-lesson` | idem | Aulas IA | auth, payload, no-stack-leak | `NEEDS HARDENING` | contract test |
 | `generate-flashcards` | `generate-flashcards` | FSRS feed | auth, payload, dedup | `NEEDS HARDENING` | contract test |
