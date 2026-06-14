@@ -585,17 +585,15 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       throw new Error("CIRCUIT_BREAKER: Forced local fallback mode");
     }
 
-    const aiConfig: any = {
-      taskType: "tutor_deep",
-      complexity: "alta",
-      costTier,
-      userId: activeUserId,
-      stream: false, // Force JSON for structured orchestration
-      response_format: { type: "json_object" },
-      messages: [
-        { 
-          role: "system", 
-          content: `${PROMPT_COMPLETO}
+
+    // ── Perf-3: Context Budget / Token Diet ────────────────────────────────────
+    // Trim payload sent to AI without altering prompt, persona ou pedagogia.
+    const memoryContextTrimmed = truncateChars(memoryContext, TUTOR_MAX_MEMORY_CHARS);
+    const ragContextTrimmed = truncateChars(ragContext, TUTOR_MAX_RAG_CHARS);
+    const { trimmed: historyTrimmed, chars: historyChars } = trimHistoryForBudget(history);
+    const userMessageContent = newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula");
+
+    const pedagogicalHeader = `${PROMPT_COMPLETO}
           
           # OBJETIVO OBRIGATÓRIO DO MOMENTO:
           Você está no ${activeBlock}: ${activeBlockConfig.title}.
@@ -616,12 +614,74 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           
           TEMA ATUAL: ${topic}
           CONTEXTO ENAMED 2026: ${JSON.stringify(body.enamedContext || {})}
-          CONTESTO DE MEMÓRIA: ${memoryContext}${ragContext}`
-        },
-        ...history,
-        { role: "user", content: newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula") }
+          CONTESTO DE MEMÓRIA: ${memoryContextTrimmed}${ragContextTrimmed}`;
+
+    const contextStats: Record<string, any> = {
+      historyChars,
+      memoryChars: memoryContextTrimmed.length,
+      ragChars: ragContextTrimmed.length,
+      pedagogicalChars: pedagogicalHeader.length,
+      userMessageChars: userMessageContent.length,
+      historyItems: historyTrimmed.length,
+      memoryItems: memoryContextTrimmed ? 1 : 0,
+      ragItems: Array.isArray(ragHits) ? ragHits.length : 0,
+      totalInputChars: 0,
+      contextTrimmed: false,
+      trimReason: null as string | null,
+    };
+    contextStats.totalInputChars =
+      contextStats.pedagogicalChars +
+      contextStats.historyChars +
+      contextStats.userMessageChars;
+
+    // Corte progressivo se ainda exceder o teto total (preserva user message + bloco essencial)
+    let finalSystemContent = pedagogicalHeader;
+    let finalHistory = historyTrimmed;
+    if (contextStats.totalInputChars > TUTOR_MAX_TOTAL_CONTEXT_CHARS) {
+      contextStats.contextTrimmed = true;
+      contextStats.trimReason = "exceeds_total_budget";
+      // 1) drop oldest history first
+      while (
+        finalHistory.length > 0 &&
+        contextStats.totalInputChars > TUTOR_MAX_TOTAL_CONTEXT_CHARS
+      ) {
+        const dropped = finalHistory.shift();
+        contextStats.historyChars -= safeString(dropped?.content).length;
+        contextStats.historyItems = finalHistory.length;
+        contextStats.totalInputChars =
+          contextStats.pedagogicalChars +
+          contextStats.historyChars +
+          contextStats.userMessageChars;
+      }
+      // 2) hard-cap system content as last resort (RAG/memory já são parte dele)
+      if (contextStats.totalInputChars > TUTOR_MAX_TOTAL_CONTEXT_CHARS) {
+        const overshoot = contextStats.totalInputChars - TUTOR_MAX_TOTAL_CONTEXT_CHARS;
+        const newSysLen = Math.max(2000, finalSystemContent.length - overshoot);
+        finalSystemContent = truncateChars(finalSystemContent, newSysLen);
+        contextStats.pedagogicalChars = finalSystemContent.length;
+        contextStats.totalInputChars =
+          contextStats.pedagogicalChars +
+          contextStats.historyChars +
+          contextStats.userMessageChars;
+        contextStats.trimReason = "system_hard_cap";
+      }
+    }
+
+    const aiConfig: any = {
+      taskType: "tutor_deep",
+      complexity: "alta",
+      costTier,
+      userId: activeUserId,
+      stream: false, // Force JSON for structured orchestration
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: finalSystemContent },
+        ...finalHistory,
+        { role: "user", content: userMessageContent }
       ]
     };
+
+
 
 
     console.log("[TUTOR_RUNAI_START]", { topic, qLen: userQuestion.length, action: decision.action });
