@@ -3,12 +3,13 @@ import { callTutorV3 } from "@/lib/tutor/tutorClient";
 const FRIENDLY_PROVIDER_ERROR = "O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.";
 
 export const TutorV2Service = {
-  async sendMessage(sessionId: string, message: string, pedagogicalInteraction?: string, newTopic?: string, retryCount = 0) {
+  async sendMessage(sessionId: string, message: string, pedagogicalInteraction?: string, newTopic?: string, currentBlock?: string, retryCount = 0) {
     const payload = { 
       sessionId, 
       message, 
       pedagogicalInteraction, 
       newTopic,
+      currentBlock,
       topic: newTopic || null, // Ensure topic is passed if it's a new subject
       fsrsContext: {},
       masteryState: "initial",
@@ -31,7 +32,7 @@ export const TutorV2Service = {
       if (retryCount < 2 && (err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError"))) {
         console.warn(`[TUTOR_V2_RETRY] Attempt ${retryCount + 1}...`);
         await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
-        return this.sendMessage(sessionId, message, pedagogicalInteraction, newTopic, retryCount + 1);
+        return this.sendMessage(sessionId, message, pedagogicalInteraction, newTopic, currentBlock, retryCount + 1);
       }
 
       throw new Error(err.message || FRIENDLY_PROVIDER_ERROR);
