@@ -1,0 +1,41 @@
+name: generate-flashcards Contract Gate
+
+# Freeze-safe CI gate for the `generate-flashcards` Edge Function.
+# MODE A (no token): OPTIONS, 401 and no-crash structural checks.
+# MODE B (SUPABASE_CONTRACT_USER_JWT): full battery.
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'supabase/functions/generate-flashcards/**'
+      - '.github/workflows/generate-flashcards-contract.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - 'supabase/functions/generate-flashcards/**'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: Generate flashcards contract regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run contract suite
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_CONTRACT_USER_JWT: ${{ secrets.SUPABASE_CONTRACT_USER_JWT }}
+        run: |
+          deno test \
+            --allow-net --allow-env --allow-read \
+            supabase/functions/generate-flashcards/__tests__/contract.test.ts

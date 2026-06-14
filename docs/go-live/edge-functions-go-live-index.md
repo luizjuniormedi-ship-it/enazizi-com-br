@@ -66,6 +66,19 @@ Compatível com **Go-Live Structural Freeze**.
 | Patch aplicado | Nenhum — função já defensiva |
 | Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
 
+### `generate-flashcards` — `GO-LIVE READY` (Wave 4)
+
+| Item | Valor |
+|---|---|
+| Caminho | `supabase/functions/generate-flashcards` |
+| Contract test | ✅ `__tests__/contract.test.ts` (13 cenários) |
+| CI gate | ✅ `.github/workflows/generate-flashcards-contract.yml` |
+| Status check | ✅ `Generate flashcards contract regression` |
+| Release protection | ✅ via PR template global |
+| Final evidence | ✅ [`generate-flashcards-hardening-evidence.md`](./generate-flashcards-hardening-evidence.md) |
+| Patch aplicado | Nenhum — função já defensiva (`clampQuantity`, `requireAuth`, `parseAiJson`) |
+| Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
+
 ---
 
 
