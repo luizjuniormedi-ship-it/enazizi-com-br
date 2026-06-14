@@ -788,6 +788,9 @@ REGRAS INVIOLÁVEIS:
                   globalPrev.push(String(q.statement || "").slice(0, 120));
                   slotQuestions.push(q);
                 }
+                if (usedClaude && deduped.length !== stillNeeded) {
+                  console.warn(`[COUNT_MISMATCH] provider=claude level=${level} requested=${stillNeeded} parsed=${parsed.length} valid=${valid.length} deduped=${deduped.length} accumulated=${slotQuestions.length}/${target}`);
+                }
 
                 console.log(`[Slot ${level}] batch ${attempt + 1}: +${deduped.length} valid, total: ${slotQuestions.length}/${target}`);
               } catch (err) {
