@@ -1,5 +1,8 @@
 # Release Gate — `generate-adaptive-simulado`
 
+> Evidência final consolidada em [`generate-adaptive-simulado-final-evidence.md`](./generate-adaptive-simulado-final-evidence.md).
+
+
 Trava obrigatória de release para a Edge Function `generate-adaptive-simulado`.
 Compatível com **Go-Live Structural Freeze**.
 
