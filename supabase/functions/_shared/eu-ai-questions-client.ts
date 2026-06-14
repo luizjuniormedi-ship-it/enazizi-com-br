@@ -221,6 +221,13 @@ export async function claudeFetchQuestions(prompt: string, topicHint = "simulado
   console.log(`[CLAUDE_OBJECTS_FOUND] count=${objects.length} expected=${expectedCount}`);
   if (expectedCount > 0 && objects.length !== expectedCount) {
     console.warn(`[COUNT_MISMATCH] requested=${expectedCount} parsed=${objects.length}`);
+    return {
+      ok: false,
+      status: 422,
+      _claude: true,
+      text: async () => `CLAUDE_COUNT_MISMATCH: requested=${expectedCount} parsed=${objects.length}`,
+      json: async () => ({ choices: [{ message: { content: "[]" } }] }),
+    };
   }
   if (objects.length === 0) {
     console.warn(`[CLAUDE_SIM_NO_JSON] len=${message.length} head="${message.slice(0, 500).replace(/\n/g, " ")}"`);
@@ -320,6 +327,17 @@ export async function claudeFetchQuestionsMicrobatch(prompt: string, topicHint: 
       status: 599,
       _claude: true,
       text: async () => `CLAUDE_MICROBATCH_EMPTY: all ${plan.length} calls failed/empty (elapsed=${totalElapsed}ms)`,
+      json: async () => ({ choices: [{ message: { content: "[]" } }] }),
+    };
+  }
+
+  if (deduped.length !== expectedCount) {
+    console.warn(`[COUNT_MISMATCH] provider=claude-microbatch requested=${expectedCount} parsed=${deduped.length} collected=${allObjects.length}`);
+    return {
+      ok: false,
+      status: 422,
+      _claude: true,
+      text: async () => `CLAUDE_MICROBATCH_COUNT_MISMATCH: requested=${expectedCount} parsed=${deduped.length}`,
       json: async () => ({ choices: [{ message: { content: "[]" } }] }),
     };
   }
