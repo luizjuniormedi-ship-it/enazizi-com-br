@@ -34,7 +34,7 @@ e fora desta fila.
 | `autonomous-planner-engine` / `planner-orchestrator-v1` | idem | Planner core | auth, no-crash | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
 | `replan-overdue-tasks` | idem | Planner jobs | auth, idempotência | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
 | `generate-study-plan` / `plan-next-batch` | idem | Planner aux | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
-| `schedule-review` | idem | FSRS scheduling | auth, payload, datas válidas | `NEEDS HARDENING` | contract test |
+| `schedule-review` | idem | FSRS scheduling (DEPRECATED orphan) | auth, payload, datas válidas | ✅ `GO-LIVE READY` (Wave 8) | ver evidência |
 | `study-orchestrator` / `study-session` / `study-next` / `study-complete` | idem | Hub de estudo | auth, payload, contrato de eventos | `NEEDS HARDENING` | contract test |
 | `orchestrator-record-outcome` / `orchestrator-tune-weights` | idem | Pesos do orquestrador | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
 | `reinforce-error` | idem | Em deprecation controlada | auth, payload | `BLOCKED` (deprecation) | seguir plano 4 fases |
