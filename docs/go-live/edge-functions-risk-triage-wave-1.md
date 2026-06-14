@@ -21,7 +21,7 @@ e fora desta fila.
 
 | Função | Caminho | Motivo do risco | Contrato mínimo recomendado | Status | Próximo passo |
 |---|---|---|---|---|---|
-| `tutor-v3-premium` | `supabase/functions/tutor-v3-premium` | IA do tutor + memória + RAG; fluxo principal | auth, OPTIONS, payload vazio, no-stack-leak, BLOCO obrigatório | `NEEDS HARDENING` | contract test |
+| `tutor-v3-premium` | `supabase/functions/tutor-v3-premium` | IA do tutor + memória + RAG; fluxo principal | auth, OPTIONS, payload vazio, no-stack-leak, BLOCO obrigatório | ✅ `GO-LIVE READY` (Wave 3) | ver evidência |
 | `tutor-v2-chat` | `tutor-v2-chat` | QR Mode + runtime orchestrator | auth, OPTIONS, payload vazio, modo QR | `NEEDS HARDENING` | contract test |
 | `tutor-orchestrator-v2` | `tutor-orchestrator-v2` | Decisão entre 6 ações da memória | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
 | `question-generator` | `question-generator` | Geração de questões IA | auth, payload mínimo, dedup, ≤ N | ✅ `GO-LIVE READY` (Wave 2) | ver evidência |
