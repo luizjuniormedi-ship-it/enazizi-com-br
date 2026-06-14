@@ -28,13 +28,13 @@ e fora desta fila.
 | `generate-adaptive-question` | `generate-adaptive-question` | Adaptive IA por aluno | auth, payload, no-crash | `NEEDS HARDENING` | contract test |
 | `generate-tutor-lesson` / `generate-tutor-v2-lesson` | idem | Aulas IA | auth, payload, no-stack-leak | `NEEDS HARDENING` | contract test |
 | `generate-flashcards` | `generate-flashcards` | FSRS feed | auth, payload, dedup | ✅ `GO-LIVE READY` (Wave 4) | ver evidência |
-| `generate-recovery-flashcard` | idem | Recuperação | auth, payload | `NEEDS TRIAGE` | inspecionar |
+| `generate-recovery-flashcard` | idem | Recuperação | auth, payload | ✅ `GO-LIVE READY` (Wave 8) | ver evidência |
 | `generate-medical-mnemonic` / `generate-mnemonic` / `mnemonic-studio` | idem | Mnemônicos | auth, payload, no-text-in-image | `NEEDS HARDENING` | contract test |
 | `generate-daily-plan` | idem | Planner | auth, idempotência, datas | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
 | `autonomous-planner-engine` / `planner-orchestrator-v1` | idem | Planner core | auth, no-crash | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
 | `replan-overdue-tasks` | idem | Planner jobs | auth, idempotência | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
 | `generate-study-plan` / `plan-next-batch` | idem | Planner aux | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
-| `schedule-review` | idem | FSRS scheduling | auth, payload, datas válidas | `NEEDS HARDENING` | contract test |
+| `schedule-review` | idem | FSRS scheduling (DEPRECATED orphan) | auth, payload, datas válidas | ✅ `GO-LIVE READY` (Wave 8) | ver evidência |
 | `study-orchestrator` / `study-session` / `study-next` / `study-complete` | idem | Hub de estudo | auth, payload, contrato de eventos | `NEEDS HARDENING` | contract test |
 | `orchestrator-record-outcome` / `orchestrator-tune-weights` | idem | Pesos do orquestrador | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
 | `reinforce-error` | idem | Em deprecation controlada | auth, payload | `BLOCKED` (deprecation) | seguir plano 4 fases |
@@ -120,7 +120,7 @@ sem alterar) para reclassificar.
 4. `process-upload`
 5. `pedagogical-event-consumer` — ✅ Wave 6 concluída
 6. Planner core (`generate-daily-plan`, `autonomous-planner-engine`, `planner-orchestrator-v1`, `replan-overdue-tasks`) — ✅ Wave 7 concluída
-7. FSRS (`schedule-review`, `generate-recovery-flashcard`)
+7. FSRS (`schedule-review`, `generate-recovery-flashcard`) — ✅ Wave 8 concluída
 8. Error Bank / Quality (`qa-agent`, `qa-autocorrect`, `quality-lock-validator`)
 9. Auth / Profile (`auth-email-hook`, `admin-actions`)
 10. Payments / Subscription (criar gate quando função existir)

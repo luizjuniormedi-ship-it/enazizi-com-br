@@ -120,6 +120,19 @@ Bloco protegido por um único CI gate: `.github/workflows/planner-core-contract.
 Evidência: [`planner-core-hardening-evidence.md`](./planner-core-hardening-evidence.md).
 Próximo passo: monitorar gate; promover a `LOCKED` após 1 ciclo verde.
 
+### FSRS Core — `GO-LIVE READY` (Wave 8)
+
+CI gate único: `.github/workflows/fsrs-core-contract.yml`
+(`FSRS core contract regression`, 18 cenários totais).
+
+| Função | Contract test | Patch | Observação |
+|---|---|---|---|
+| `schedule-review` | ✅ `__tests__/contract.test.ts` (9 cenários) | Nenhum | DEPRECATED (orphan) — contrato preservado |
+| `generate-recovery-flashcard` | ✅ `__tests__/contract.test.ts` (9 cenários) | Nenhum | enterpriseEdgeHandler garante 500 controlado sem stack |
+
+Evidência: [`fsrs-core-hardening-evidence.md`](./fsrs-core-hardening-evidence.md).
+Próximo passo: monitorar gate; promover a `LOCKED` após 1 ciclo verde.
+
 ---
 
 
@@ -152,16 +165,14 @@ Listadas por domínio. Nenhuma alteração de código aplicada — apenas invent
 ### Planner / Trajectory
 `generate-study-plan`, `plan-next-batch`,
 `trajectory-apply-v1`, `trajectory-complete-action-v1`, `trajectory-engine-v1`,
-`trajectory-explain-v1`, `trajectory-telemetry-v1`, `trajectory-health-engine`,
-`schedule-review`.
+`trajectory-explain-v1`, `trajectory-telemetry-v1`, `trajectory-health-engine`.
 
 ### Study Engine / Orchestrator
 `study-orchestrator`, `study-session`, `study-next`, `study-complete`,
 `orchestrator-record-outcome`, `orchestrator-tune-weights`,
 `cognitive-orchestrator`, `cognitive-orchestrator-v2`,
 `cognitive-analytics-engine`, `cognitive-executive-report`,
-`cognitive-recovery-engine`, `recovery-agent`,
-`generate-recovery-flashcard`.
+`cognitive-recovery-engine`, `recovery-agent`.
 
 ### Conteúdo / Mnemônicos / Flashcards
 `generate-flashcards`, `generate-map-flashcards`, `generate-map-questions`,
