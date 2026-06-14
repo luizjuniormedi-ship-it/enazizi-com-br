@@ -37,7 +37,7 @@ e fora desta fila.
 | `study-orchestrator` / `study-session` / `study-next` / `study-complete` | idem | Hub de estudo | auth, payload, contrato de eventos | `NEEDS HARDENING` | contract test |
 | `orchestrator-record-outcome` / `orchestrator-tune-weights` | idem | Pesos do orquestrador | auth, idempotência | `NEEDS TRIAGE` | inspecionar |
 | `reinforce-error` | idem | Em deprecation controlada | auth, payload | `BLOCKED` (deprecation) | seguir plano 4 fases |
-| `pedagogical-event-consumer` | idem | Event Bus → estado pedagógico | auth, idempotência, no-crash | `NEEDS HARDENING` | contract test |
+| `pedagogical-event-consumer` | idem | Event Bus → estado pedagógico | auth, idempotência, no-crash | ✅ `GO-LIVE READY` (Wave 6) | ver evidência |
 | `pedagogical-health-governor` | idem | Governança crítica | auth, no-crash | `NEEDS TRIAGE` | inspecionar |
 | `process-upload` / `process-rag-document` | idem | Upload aluno + RAG | auth, MIME, tamanho, no-stack-leak | ✅ `GO-LIVE READY` (Wave 5, process-upload) | ver evidência |
 | `auth-email-hook` | idem | Auth / emails | assinatura, payload, idempotência | `NEEDS HARDENING` | contract test |
