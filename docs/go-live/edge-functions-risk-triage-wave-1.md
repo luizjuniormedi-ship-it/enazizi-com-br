@@ -39,7 +39,7 @@ e fora desta fila.
 | `reinforce-error` | idem | Em deprecation controlada | auth, payload | `BLOCKED` (deprecation) | seguir plano 4 fases |
 | `pedagogical-event-consumer` | idem | Event Bus → estado pedagógico | auth, idempotência, no-crash | `NEEDS HARDENING` | contract test |
 | `pedagogical-health-governor` | idem | Governança crítica | auth, no-crash | `NEEDS TRIAGE` | inspecionar |
-| `process-upload` / `process-rag-document` | idem | Upload aluno + RAG | auth, MIME, tamanho, no-stack-leak | `NEEDS HARDENING` | contract test |
+| `process-upload` / `process-rag-document` | idem | Upload aluno + RAG | auth, MIME, tamanho, no-stack-leak | ✅ `GO-LIVE READY` (Wave 5, process-upload) | ver evidência |
 | `auth-email-hook` | idem | Auth / emails | assinatura, payload, idempotência | `NEEDS HARDENING` | contract test |
 | `admin-actions` | idem | Privilégio admin | auth role, payload | `NEEDS HARDENING` | contract test |
 | `tutor-memory-promotion-cron` | idem | Promotion LGPD | service-role only, PII sanitizer | `NEEDS HARDENING` | contract test |
