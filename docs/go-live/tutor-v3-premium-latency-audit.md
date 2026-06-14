@@ -129,3 +129,86 @@ schema, RLS, Tutor logic, Planner, Event Bus, Error Bank ou contrato público.
 Único impacto: 5 marcos `performance.now()` e exposição condicional de `timings`.
 
 `TUTOR-V3-PREMIUM LATENCY OPTIMIZED — FREEZE SAFE`
+
+---
+
+## Perf-2 — AI Latency Guard
+
+**Status:** `AI LATENCY GUARD READY — FREEZE SAFE`
+
+### Timeouts adicionados (defense-in-depth)
+
+Aplicados no `index.ts` do `tutor-v3-premium`, **acima** dos timeouts internos
+já existentes (`EU_AI_TIMEOUT_MS=35s` no Claude EU client; `25s/120s` no `ai-router`).
+
+| Camada | Timeout | Override env |
+|---|---|---|
+| `callClaudeV3` (primário) | 9 000 ms | `TUTOR_CLAUDE_TIMEOUT_MS` |
+| `ai()` OpenAI (fallback) | 9 000 ms | `TUTOR_OPENAI_TIMEOUT_MS` |
+| `withTimeout` helper | local, com `clearTimeout` no `finally` | — |
+
+### Providers medidos
+
+Novo objeto `aiTimings` (somente em `debug.aiTimings` quando `body.debug===true`
+ou `ENABLE_TUTOR_TIMINGS=true`):
+
+```jsonc
+debug: {
+  aiTimings: {
+    providerPrimary: "claude" | "openai" | "unknown",
+    primaryMs: 0,                 // tempo do provider primário
+    fallbackProvider: "openai",   // só se acionado
+    fallbackMs: 0,                // só se acionado
+    totalAiMs: 0,                 // soma da etapa IA dentro do tutor
+    timedOut: false,              // true se qualquer provider esgotou
+    fallbackUsed: false           // true se passou pelo fallback
+  }
+}
+```
+
+### Comportamento de falha
+
+1. **Claude OK** → resposta normal, `fallbackUsed=false`.
+2. **Claude timeout / erro** → log `[TUTOR_CLAUDE_FALLBACK_OPENAI]`, tenta OpenAI com novo timeout.
+3. **OpenAI timeout / erro** → log `[TUTOR_AI_UNAVAILABLE]`, lança `AI_UNAVAILABLE:<reason>` que cai no `safe_mode` já existente (Bloco 1 / mensagem controlada).
+4. Nenhum stack trace é exposto ao aluno; o `safe_mode` envelopa via `buildTutorEnvelope`.
+5. Cada provider tenta **uma vez** nesta camada (retries internos do `ai()` permanecem, mas o `withTimeout` externo limita o tempo total real).
+
+### Helper
+
+```ts
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label}_TIMEOUT`)), ms);
+  });
+  try { return await Promise.race([promise, timeout]); }
+  finally { if (timeoutId) clearTimeout(timeoutId); }
+}
+```
+
+### Smoke test
+
+`__tests__/latency.test.ts` agora:
+- loga `[AI_TIMINGS]` quando disponível;
+- warning quando `totalAiMs > 12000 ms`;
+- registra `[AI_FALLBACK_USED]` e `[AI_TIMEOUT_OBSERVED]` sem falhar;
+- bloqueia explicitamente leaks (`TypeError`, `"stack"`, `Cannot read`).
+
+### Riscos remanescentes
+
+- Provider externo ainda pode estar lento (Claude EU 8–25 s típico). O timeout
+  apenas evita travar; não acelera o provider.
+- Quando Claude esgota 9 s, o aluno paga **9 s + tempo OpenAI** no pior caso.
+  Aceitável enquanto a P95 do fallback for < 6 s.
+- Considerar reduzir `TUTOR_CLAUDE_TIMEOUT_MS` para 7 s após 24 h de telemetria,
+  se Claude p95 ≤ 6 s estável.
+
+### Freeze
+
+Nenhuma alteração em: prompts, persona, system prompt, sequência pedagógica,
+FSRS, memória, Planner, Event Bus, Error Bank, schema, RLS, frontend, contrato
+público, modelo padrão, ou funções das Waves 1–9. Apenas timeout hard +
+medição por provider + exposição condicional em debug.
+
+`AI LATENCY GUARD READY — FREEZE SAFE`
