@@ -8,7 +8,8 @@
  */
 
 const EU_AI_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
-const EU_AI_TIMEOUT_MS = 55_000;
+// Reduzido de 55s → 40s para deixar orçamento ao fallback (Gemini/OpenAI) dentro do limite de 60s da edge.
+const EU_AI_TIMEOUT_MS = 40_000;
 
 const JSON_TAIL = `
 
