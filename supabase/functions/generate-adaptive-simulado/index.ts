@@ -43,9 +43,15 @@ Deno.serve(enterpriseEdgeHandler("generate-adaptive-simulado", async (enterprise
     if (!authResult.ok) return authResult.response;
     const userId = authResult.userId;
 
-    const requestedCount = Math.min(Number(body.target_question_count || body.count || body.questionCount) || 10, 100);
-    const topics = Array.isArray(body.topics || body.selectedTopics) ? (body.topics || body.selectedTopics) : [body.topic || body.specialty || "Clínica Médica"];
-    const subtopics = Array.isArray(body.subtopics || body.selectedSubtopics) ? (body.subtopics || body.selectedSubtopics) : [];
+    const rawCount = Number(body.target_question_count ?? body.count ?? body.questionCount);
+    const requestedCount = Math.max(1, Math.min(Number.isFinite(rawCount) && rawCount > 0 ? rawCount : 10, 100));
+    const rawTopics = Array.isArray(body.topics || body.selectedTopics) ? (body.topics || body.selectedTopics) : [body.topic || body.specialty || "Clínica Médica"];
+    const topics = (rawTopics.filter((t: any) => typeof t === "string" && t.trim()).length > 0)
+      ? rawTopics.filter((t: any) => typeof t === "string" && t.trim())
+      : [body.topic || body.specialty || "Clínica Médica"];
+    const subtopics = Array.isArray(body.subtopics || body.selectedSubtopics)
+      ? (body.subtopics || body.selectedSubtopics).filter((s: any) => typeof s === "string" && s.trim())
+      : [];
     const examBoard = body.targetExam || body.examBoard || "ENARE";
     
     const topicEngine = new TopicEngine(supabaseAdmin);
