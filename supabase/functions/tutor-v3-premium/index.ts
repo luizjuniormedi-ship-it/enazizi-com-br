@@ -227,12 +227,64 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     }
 
     // ── 3. PEDAGOGICAL ORCHESTRATION (DETERMINISTIC) ──────────────────────
-    const prevBlock = (session?.current_block as TutorBlockId) || (bodyBlock as TutorBlockId) || "BLOCO_1_MISSAO_CLINICA";
+    const validBodyBlock = bodyBlock && PEDAGOGICAL_BLOCKS[bodyBlock as TutorBlockId] ? bodyBlock as TutorBlockId : null;
+    const validSessionBlock = session?.current_block && PEDAGOGICAL_BLOCKS[session.current_block as TutorBlockId] ? session.current_block as TutorBlockId : null;
+    const prevBlock = validBodyBlock || validSessionBlock || "BLOCO_1_MISSAO_CLINICA";
     const studentIntent = newTopic ? "new_topic" : classifyStudentIntent(message || "");
     const { nextBlock, stayInBlock, lessonComplete } = decideTutorStep(prevBlock, studentIntent);
     
     const currentBlockConfig = PEDAGOGICAL_BLOCKS[nextBlock];
     const blockObjective = currentBlockConfig.objective;
+
+    if (lessonComplete) {
+      const completionContent = `### Aula concluída ✅\n\nVocê finalizou a sequência cognitiva de **${topic}**.\n\n**Evolução real registrada:**\n- Bloco final alcançado: **Resumo de Alta Retenção**\n- Sequência pedagógica: **concluída**\n- Próxima ação recomendada: escolher novo tema, revisar erros ou gerar questões.`;
+
+      waitUntil((async () => {
+        if (activeUserId && sessionId) {
+          await supabaseAdmin.from("tutor_sessions").update({
+            current_block: nextBlock,
+            cognitive_progress: 100,
+            status: "completed",
+            updated_at: new Date().toISOString(),
+          }).eq("id", sessionId);
+
+          await supabaseAdmin.from("tutor_messages").insert({
+            tutor_session_id: sessionId,
+            user_id: activeUserId,
+            role: "assistant",
+            content: completionContent,
+            metadata: {
+              request_id: requestId,
+              correlation_id: correlationId,
+              block: nextBlock,
+              blockTitle: currentBlockConfig.title,
+              intent: studentIntent,
+              lessonComplete: true,
+              source: "lesson_completion",
+            },
+          });
+        }
+      })());
+
+      console.log(`[TUTOR_LESSON_COMPLETE] session=${sessionId || "none"} topic=${topic}`);
+      return corsResponse({
+        success: true,
+        ok: true,
+        content: completionContent,
+        teachingPhase: "AVANCAR",
+        socraticQuestion: "Qual será sua próxima ação?",
+        shouldWaitForStudent: true,
+        currentBlock: nextBlock,
+        blockTitle: currentBlockConfig.title,
+        topic,
+        actionsContext: { topic, block: nextBlock, lessonComplete: true },
+        source: "lesson_completion",
+        confidence: 1,
+        lessonComplete: true,
+        correlation_id: correlationId,
+        debug: { studentIntent, nextBlock, lessonComplete: true, terminal: true },
+      }, 200);
+    }
 
     console.log(`[TUTOR_PEDAGOGICAL_DECISION] prev=${prevBlock} intent=${studentIntent} next=${nextBlock} lessonComplete=${!!lessonComplete}`);
 

@@ -259,6 +259,7 @@ export function buildTutorEnvelope(
     actionsContext?: Record<string, any>;
     fromMemory?: boolean;
     memoryId?: string;
+    lessonComplete?: boolean;
     debug?: Record<string, any>;
     error?: string;
     request_id?: string;
@@ -281,6 +282,7 @@ export function buildTutorEnvelope(
     correlation_id: extras.correlation_id,
     fromMemory: extras.fromMemory ?? false,
     memoryId: extras.memoryId,
+    lessonComplete: extras.lessonComplete ?? false,
     request_id: extras.request_id,
     error: extras.error,
     debug: extras.debug,
