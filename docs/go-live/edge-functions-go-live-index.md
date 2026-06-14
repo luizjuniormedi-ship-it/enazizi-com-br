@@ -187,7 +187,7 @@ Listadas por domínio. Nenhuma alteração de código aplicada — apenas invent
 `approval-snapshot-cron`, `alpha-cohort-snapshot`, `benchmark-percentile`,
 `baseline-freeze-check`, `compute-gold-heuristic-score`,
 `compute-intelligence-index`, `consolidate-audit-pipeline`,
-`pedagogical-event-consumer`, `pedagogical-health-governor`,
+`pedagogical-health-governor`,
 `pedagogical-warmup-audit`.
 
 ### AI Infra / Health / Quality
