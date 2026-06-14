@@ -130,8 +130,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         if (!topic) topic = session?.topic;
       }
     }
+    mark("sessionMs");
 
     if (!topic) topic = "Medicina Geral";
+
 
     // ── TOPIC FIDELITY (Sprint V1 / Fase 2 — observacional, não-bloqueante) ─────
     try {
