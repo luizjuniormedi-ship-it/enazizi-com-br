@@ -28,7 +28,7 @@ e fora desta fila.
 | `generate-adaptive-question` | `generate-adaptive-question` | Adaptive IA por aluno | auth, payload, no-crash | `NEEDS HARDENING` | contract test |
 | `generate-tutor-lesson` / `generate-tutor-v2-lesson` | idem | Aulas IA | auth, payload, no-stack-leak | `NEEDS HARDENING` | contract test |
 | `generate-flashcards` | `generate-flashcards` | FSRS feed | auth, payload, dedup | ✅ `GO-LIVE READY` (Wave 4) | ver evidência |
-| `generate-recovery-flashcard` | idem | Recuperação | auth, payload | `NEEDS TRIAGE` | inspecionar |
+| `generate-recovery-flashcard` | idem | Recuperação | auth, payload | ✅ `GO-LIVE READY` (Wave 8) | ver evidência |
 | `generate-medical-mnemonic` / `generate-mnemonic` / `mnemonic-studio` | idem | Mnemônicos | auth, payload, no-text-in-image | `NEEDS HARDENING` | contract test |
 | `generate-daily-plan` | idem | Planner | auth, idempotência, datas | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
 | `autonomous-planner-engine` / `planner-orchestrator-v1` | idem | Planner core | auth, no-crash | ✅ `GO-LIVE READY` (Wave 7) | ver evidência |
