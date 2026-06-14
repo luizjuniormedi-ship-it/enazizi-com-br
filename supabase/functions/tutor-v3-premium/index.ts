@@ -814,7 +814,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         nextBlock: activeBlock,
         provider: aiProviderUsed,
         lessonComplete: !!lessonComplete,
-        ...(includeTimings ? { timings } : {}),
+        ...(includeTimings ? { timings, aiTimings } : {}),
       },
     }), 200);
 
