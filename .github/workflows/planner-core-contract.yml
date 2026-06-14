@@ -1,0 +1,38 @@
+name: planner-core Contract Gate
+
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/generate-daily-plan/**"
+      - "supabase/functions/autonomous-planner-engine/**"
+      - "supabase/functions/planner-orchestrator-v1/**"
+      - "supabase/functions/replan-overdue-tasks/**"
+      - ".github/workflows/planner-core-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/generate-daily-plan/**"
+      - "supabase/functions/autonomous-planner-engine/**"
+      - "supabase/functions/planner-orchestrator-v1/**"
+      - "supabase/functions/replan-overdue-tasks/**"
+      - ".github/workflows/planner-core-contract.yml"
+
+jobs:
+  contract:
+    name: Planner core contract regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - name: Run planner-core contract tests
+        env:
+          SUPABASE_CONTRACT_USER_JWT: ${{ secrets.SUPABASE_CONTRACT_USER_JWT }}
+          USER_JWT: ${{ secrets.SUPABASE_CONTRACT_USER_JWT }}
+        run: |
+          deno test --allow-net --allow-env \
+            supabase/functions/generate-daily-plan/__tests__/contract.test.ts \
+            supabase/functions/autonomous-planner-engine/__tests__/contract.test.ts \
+            supabase/functions/planner-orchestrator-v1/__tests__/contract.test.ts \
+            supabase/functions/replan-overdue-tasks/__tests__/contract.test.ts

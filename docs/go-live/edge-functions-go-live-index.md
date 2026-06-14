@@ -105,7 +105,23 @@ Compatível com **Go-Live Structural Freeze**.
 | Patch aplicado | Nenhum — função já blind orchestrator v11 (sempre 200, parse seguro, waitUntil isolado) |
 | Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
 
+### Planner Core — `GO-LIVE READY` (Wave 7)
+
+Bloco protegido por um único CI gate: `.github/workflows/planner-core-contract.yml`
+(`Planner core contract regression`, 33 cenários totais).
+
+| Função | Contract test | Patch |
+|---|---|---|
+| `generate-daily-plan` | ✅ `__tests__/contract.test.ts` (9 cenários) | Nenhum |
+| `autonomous-planner-engine` | ✅ `__tests__/contract.test.ts` (8 cenários) | Nenhum |
+| `planner-orchestrator-v1` | ✅ `__tests__/contract.test.ts` (9 cenários) | Nenhum |
+| `replan-overdue-tasks` | ✅ `__tests__/contract.test.ts` (7 cenários) | Nenhum |
+
+Evidência: [`planner-core-hardening-evidence.md`](./planner-core-hardening-evidence.md).
+Próximo passo: monitorar gate; promover a `LOCKED` após 1 ciclo verde.
+
 ---
+
 
 
 ## Funções pendentes de triagem (`NEEDS TRIAGE`)
@@ -134,8 +150,7 @@ Listadas por domínio. Nenhuma alteração de código aplicada — apenas invent
 `auto-assign-simulados`.
 
 ### Planner / Trajectory
-`generate-daily-plan`, `generate-study-plan`, `plan-next-batch`,
-`autonomous-planner-engine`, `planner-orchestrator-v1`, `replan-overdue-tasks`,
+`generate-study-plan`, `plan-next-batch`,
 `trajectory-apply-v1`, `trajectory-complete-action-v1`, `trajectory-engine-v1`,
 `trajectory-explain-v1`, `trajectory-telemetry-v1`, `trajectory-health-engine`,
 `schedule-review`.
