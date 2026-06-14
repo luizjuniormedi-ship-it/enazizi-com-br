@@ -135,6 +135,21 @@ Próximo passo: monitorar gate; promover a `LOCKED` após 1 ciclo verde.
 
 ---
 
+### Quality Core — `GO-LIVE READY` (Wave 9)
+
+CI gate único: `.github/workflows/quality-core-contract.yml`
+(`Quality core contract regression`, 20 cenários totais).
+
+| Função | Contract test | Patch | Observação |
+|---|---|---|---|
+| `qa-agent` | ✅ `__tests__/contract.test.ts` (7 cenários) | Nenhum | `requireAuth` + body parse defensivo |
+| `qa-autocorrect` | ✅ `__tests__/contract.test.ts` (6 cenários) | Nenhum | Pipeline interno service-role |
+| `quality-lock-validator` | ✅ `__tests__/contract.test.ts` (7 cenários) | Nenhum | Gatekeeper IA; valida 4 alternativas e correct_index |
+
+Evidência: [`quality-core-hardening-evidence.md`](./quality-core-hardening-evidence.md).
+
+---
+
 
 
 ## Funções pendentes de triagem (`NEEDS TRIAGE`)
