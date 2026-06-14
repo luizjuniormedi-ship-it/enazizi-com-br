@@ -8,6 +8,17 @@ import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "
 import { normalizeTutorResponse, TutorResponse, getStaticFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
 
+const LANGUAGE_LEAK_PATTERN = /[\u4e00-\u9fff]|\b(?:seg[uú]n|presentaci[oó]n|colelitiasis|watchful waiting|bile salts|cholesterol|thickened|female|forty|fat|pancreatitis|enamed-style|roadmap|timing|readiness score)\b/i;
+const PROVIDER_LEAK_PATTERN = /\b(?:claude|anthropic|openai|gpt-|gemini|modelo de ia|provedor)\b/i;
+
+function detectTutorQualityIssue(content: string): string | null {
+  const text = String(content || "").trim();
+  if (text.length < 180) return `too_short:${text.length}`;
+  if (LANGUAGE_LEAK_PATTERN.test(text)) return "language_leak";
+  if (PROVIDER_LEAK_PATTERN.test(text)) return "provider_leak";
+  return null;
+}
+
 
 // Métrica fire-and-forget — nunca trava o fluxo.
 async function bumpMetric(supabaseAdmin: any, field: string, delta = 1) {
@@ -173,7 +184,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     const localFallback = getStaticFallback(searchTerms);
     
     // If we have a premium local summary and the user is asking a basic question
-    if (localFallback && (studentIntent === "doubt" || studentIntent === "new_topic") && searchTerms.length < 100) {
+    if (localFallback && !localFallback.generic && (studentIntent === "doubt" || studentIntent === "new_topic") && searchTerms.length < 100) {
       console.log("[LOCAL_KNOWLEDGE_USED]", { topic: localFallback.tema });
       
       const normalizedLocal = normalizeTutorResponse(localFallback, "fallback");
@@ -460,6 +471,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         const sys = aiConfigToRun.messages.find((m: any) => m.role === "system")?.content || "";
         const lastUser = [...aiConfigToRun.messages].reverse().find((m: any) => m.role === "user")?.content || "";
         const claude = await callClaudeV3({ systemPrompt: sys, userMessage: lastUser, topic });
+        const claudeQualityIssue = detectTutorQualityIssue(claude.content);
+        if (claudeQualityIssue) {
+          console.warn("[TUTOR_CLAUDE_QUALITY_REJECT]", { reason: claudeQualityIssue, topic, content_len: claude.content.length });
+          throw new Error(`CLAUDE_QUALITY_REJECT:${claudeQualityIssue}`);
+        }
         aiResponse = {
           content: claude.content,
           socraticQuestion: claude.socraticQuestion,
@@ -467,6 +483,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           shouldWaitForStudent: claude.shouldWaitForStudent,
           actionsContext: claude.actionsContext,
           model: "claude-eu",
+          provider: "claude",
           usage: claude.usage,
         };
         aiProviderUsed = "claude";
@@ -511,7 +528,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     // ── 4. STABILITY & PARSING ───────────────────────────────
     const normalized = normalizeTutorResponse(
       aiResponse,
-      aiProviderUsed === "claude" || aiResponse.choices ? "openai" : "fallback"
+      aiProviderUsed === "claude" ? "claude" : aiResponse.choices ? "openai" : "fallback"
     );
     
     if (normalized.source === "fallback") {
@@ -523,6 +540,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     if (!normalized.content || normalized.content.trim().length === 0) {
       console.error("[TUTOR_EMPTY_RESPONSE_BLOCKED]");
       throw new Error("Empty AI response detected after normalization");
+    }
+    const finalQualityIssue = detectTutorQualityIssue(normalized.content);
+    if (finalQualityIssue) {
+      console.error("[TUTOR_QUALITY_GATE_BLOCK]", { reason: finalQualityIssue, provider: aiProviderUsed, topic });
+      throw new Error(`Tutor quality gate blocked unsafe output: ${finalQualityIssue}`);
     }
 
     // ── 5. IDEMPOTENT PERSISTENCE ──────────────────────────

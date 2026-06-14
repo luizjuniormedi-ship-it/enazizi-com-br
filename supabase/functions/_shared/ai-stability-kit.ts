@@ -9,7 +9,7 @@ export interface TutorResponse {
   content: string;
   teachingPhase: string;
   socraticQuestion: string;
-  source: "openai" | "lovable" | "fallback" | "safe_mode" | "cache";
+  source: "openai" | "claude" | "lovable" | "fallback" | "safe_mode" | "cache";
   confidence: number;
   metadata?: any;
 }
@@ -191,7 +191,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
       socraticQuestion: raw.socraticQuestion,
       source: source,
       confidence: raw.confidence ?? 1.0,
-      metadata: raw.metadata ?? {}
+      metadata: { ...(raw.metadata ?? {}), model: raw.model, provider: raw.provider }
     };
   }
 
@@ -315,6 +315,7 @@ export function getStaticFallback(tema: string): any {
     teachingPhase: "ENSINAR",
     sigla: "FIX",
     fallback: true,
+    generic: true,
     tema
   };
 }
