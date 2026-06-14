@@ -79,8 +79,18 @@ console.log("[TUTOR_V3_BOOT] Function module loaded");
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const { requestId, correlationId, userId } = correlation;
 
+  // ── Latency instrumentation (Wave Perf-1) — passive, opt-in via body.debug ──
+  const t0 = performance.now();
+  const timings: Record<string, number> = {};
+  const mark = (label: string) => {
+    timings[label] = Math.round(performance.now() - t0);
+  };
+  const ENABLE_TIMINGS = Deno.env.get("ENABLE_TUTOR_TIMINGS") === "true";
+
   try {
     const body = await req.json().catch(() => ({}));
+    mark("parseBodyMs");
+
     
     // [TUTOR_V3_OFFICIAL_CLIENT_CALL] - Requirement validation log
     console.log(`[TUTOR_V3_OFFICIAL_CLIENT_CALL] requestId=${requestId} userId=${userId}`);
@@ -120,8 +130,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         if (!topic) topic = session?.topic;
       }
     }
+    mark("sessionMs");
 
     if (!topic) topic = "Medicina Geral";
+
 
     // ── TOPIC FIDELITY (Sprint V1 / Fase 2 — observacional, não-bloqueante) ─────
     try {
@@ -385,6 +397,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         ragHits = [];
       }
     }
+    mark("memoryLookupMs");
+
 
     if (!MEMORY_DISABLED) {
       waitUntil(bumpMetric(supabaseAdmin, "total_lookups"));
@@ -605,6 +619,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       aiResponse = await ai(aiConfigToRun, { retries: 2 });
     }
     const latencyEnd = Date.now();
+    mark("aiMs");
     console.log("[TUTOR_RUNAI_OK]", { provider: aiProviderUsed });
 
     // AI Cost Validation: Log actual usage
@@ -729,6 +744,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     })());
 
 
+    mark("totalMs");
+    const includeTimings = ENABLE_TIMINGS || body?.debug === true;
     return corsResponse(buildTutorEnvelope(normalized, {
       currentBlock: activeBlock,
       blockTitle: activeBlockConfig.title,
@@ -736,7 +753,13 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       correlation_id: correlationId,
       actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
       lessonComplete: !!lessonComplete,
-      debug: { studentIntent, nextBlock: activeBlock, provider: aiProviderUsed, lessonComplete: !!lessonComplete },
+      debug: {
+        studentIntent,
+        nextBlock: activeBlock,
+        provider: aiProviderUsed,
+        lessonComplete: !!lessonComplete,
+        ...(includeTimings ? { timings } : {}),
+      },
     }), 200);
 
 
