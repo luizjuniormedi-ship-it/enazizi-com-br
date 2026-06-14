@@ -234,8 +234,7 @@ Listadas por domínio. Nenhuma alteração de código aplicada — apenas invent
 ### AI Infra / Health / Quality
 `ai-proxy`, `ai-benchmark-pipeline`, `ai-pipeline-test`,
 `ai-provider-health`, `ai-quality-monitor`, `ai-test`, `eu-ai`,
-`agent-question-quality`, `qa-agent`, `qa-autocorrect`,
-`quality-lock-validator`, `self-healing-monitor`,
+`agent-question-quality`, `self-healing-monitor`,
 `system-daily-monitor`, `system-health-check`, `system-health-dashboard`,
 `run-pipeline`, `framework-test`, `chatgpt-agent`, `claude-recovery-probe`,
 `test-anthropic`, `test-gateway`, `debug-boot`, `debug-import-cors`,
