@@ -28,7 +28,10 @@ const ANON_KEY =
   Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY") ||
   Deno.env.get("VITE_SUPABASE_ANON_KEY") ||
   Deno.env.get("SUPABASE_ANON_KEY")!;
-const USER_JWT = Deno.env.get("USER_JWT") || ""; // optional; required for 200-path tests
+const USER_JWT =
+  Deno.env.get("USER_JWT") ||
+  Deno.env.get("SUPABASE_CONTRACT_USER_JWT") ||
+  ""; // optional; required for 200-path tests
 const URL_FN = `${SUPABASE_URL}/functions/v1/generate-adaptive-simulado`;
 
 const HAS_USER = USER_JWT.length > 20;
