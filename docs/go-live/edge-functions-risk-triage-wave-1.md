@@ -190,3 +190,15 @@ Bank Guard, frontend, schema, RLS, workflows ou testes existentes.
 Esta fase é **somente documentação**.
 
 `EDGE FUNCTIONS RISK TRIAGE WAVE 1 READY — FREEZE SAFE`
+
+---
+
+## Wave 9 — Quality Core (concluída)
+
+Funções promovidas a `GO-LIVE READY`:
+- `qa-agent`
+- `qa-autocorrect`
+- `quality-lock-validator`
+
+CI: `Quality core contract regression` (`.github/workflows/quality-core-contract.yml`).
+Evidência: `docs/go-live/quality-core-hardening-evidence.md`.
