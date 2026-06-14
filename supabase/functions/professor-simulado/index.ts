@@ -197,6 +197,7 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    const { action, ...params } = body;
     
     if (body?.action === "healthcheck") {
       console.log(`[PROFESSOR_SIMULADO_HEALTHCHECK] traceId=${traceId}`);
@@ -207,6 +208,26 @@ serve(async (req) => {
         timestamp: new Date().toISOString(),
         traceId
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "claude_recovery_probe") {
+      const startedAt = Date.now();
+      const [health, warmup, minimal] = await Promise.all([
+        claudeHealthCheck(),
+        claudeWarmup(),
+        claudeMinimalTest(),
+      ]);
+      const diagnosis = minimal.ok
+        ? "EDGE_RECOVERY_PROBES_OK"
+        : (minimal.elapsedMs >= 7900 ? "RAILWAY_PROXY_OR_ANTHROPIC_SDK_REQUIRED" : "CLAUDE_MINIMAL_FAILED_CLEARLY");
+      return jsonResponse({
+        success: true,
+        health,
+        warmup,
+        minimal,
+        diagnosis,
+        elapsedMs: Date.now() - startedAt,
+      });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -229,7 +250,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Apenas professores podem usar esta função." }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { action, ...params } = body;
     const ok = (data: unknown) => new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     // Get professor's faculdade and name for scoping and notifications
@@ -281,26 +301,6 @@ serve(async (req) => {
     };
 
     switch (action) {
-      case "claude_recovery_probe": {
-        const startedAt = Date.now();
-        const [health, warmup, minimal] = await Promise.all([
-          claudeHealthCheck(),
-          claudeWarmup(),
-          claudeMinimalTest(),
-        ]);
-        const diagnosis = minimal.ok
-          ? "EDGE_RECOVERY_PROBES_OK"
-          : (minimal.elapsedMs >= 7900 ? "RAILWAY_PROXY_OR_ANTHROPIC_SDK_REQUIRED" : "CLAUDE_MINIMAL_FAILED_CLEARLY");
-        return ok({
-          success: true,
-          health,
-          warmup,
-          minimal,
-          diagnosis,
-          elapsedMs: Date.now() - startedAt,
-        });
-      }
-
       case "list_turmas": {
         const { data: profProfile } = await sb.from("profiles").select("id").eq("user_id", user.id).single();
         if (!profProfile) throw new Error("Perfil não encontrado");
