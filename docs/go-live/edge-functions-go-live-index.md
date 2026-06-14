@@ -53,7 +53,21 @@ Compatível com **Go-Live Structural Freeze**.
 | Patch aplicado | Sanitização defensiva `count` + `topics` |
 | Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
 
+### `tutor-v3-premium` — `GO-LIVE READY` (Wave 3)
+
+| Item | Valor |
+|---|---|
+| Caminho | `supabase/functions/tutor-v3-premium` |
+| Contract test | ✅ `__tests__/contract.test.ts` (13 cenários) |
+| CI gate | ✅ `.github/workflows/tutor-v3-premium-contract.yml` |
+| Status check | ✅ `Tutor V3 Premium contract regression` |
+| Release protection | ✅ via PR template global |
+| Final evidence | ✅ [`tutor-v3-premium-hardening-evidence.md`](./tutor-v3-premium-hardening-evidence.md) |
+| Patch aplicado | Nenhum — função já defensiva |
+| Próximo passo | Monitorar gate; promover a `LOCKED` após 1 ciclo verde |
+
 ---
+
 
 ## Funções pendentes de triagem (`NEEDS TRIAGE`)
 
