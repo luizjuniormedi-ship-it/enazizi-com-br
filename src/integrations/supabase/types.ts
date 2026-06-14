@@ -29424,6 +29424,66 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_fidelity_telemetry: {
+        Row: {
+          confidence: number
+          created_at: string
+          granularity_level: number
+          id: string
+          is_generic: boolean
+          is_granular: boolean
+          matched_via: string | null
+          metadata: Json
+          raw_input: string
+          resolved_specialty: string | null
+          resolved_subtopic: string | null
+          resolved_system: string | null
+          resolved_topic: string | null
+          source: string
+          suggestions: Json
+          user_id: string | null
+          was_blocked: boolean
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          granularity_level?: number
+          id?: string
+          is_generic?: boolean
+          is_granular?: boolean
+          matched_via?: string | null
+          metadata?: Json
+          raw_input: string
+          resolved_specialty?: string | null
+          resolved_subtopic?: string | null
+          resolved_system?: string | null
+          resolved_topic?: string | null
+          source: string
+          suggestions?: Json
+          user_id?: string | null
+          was_blocked?: boolean
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          granularity_level?: number
+          id?: string
+          is_generic?: boolean
+          is_granular?: boolean
+          matched_via?: string | null
+          metadata?: Json
+          raw_input?: string
+          resolved_specialty?: string | null
+          resolved_subtopic?: string | null
+          resolved_system?: string | null
+          resolved_topic?: string | null
+          source?: string
+          suggestions?: Json
+          user_id?: string | null
+          was_blocked?: boolean
+        }
+        Relationships: []
+      }
       topic_generation_logs: {
         Row: {
           canonical_topic: string | null
