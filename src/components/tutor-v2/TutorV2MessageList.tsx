@@ -17,10 +17,11 @@ import { InteractiveCognitiveCard } from "../tutor/pedagogical/InteractiveCognit
 interface TutorV2MessageListProps {
   messages: any[];
   isTyping: boolean;
+  lessonComplete?: boolean;
   onIncrementalAction?: (action: string) => void;
 }
 
-export default function TutorV2MessageList({ messages, isTyping, onIncrementalAction }: TutorV2MessageListProps) {
+export default function TutorV2MessageList({ messages, isTyping, lessonComplete = false, onIncrementalAction }: TutorV2MessageListProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -127,6 +128,8 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
           }
         }
         
+        const isLessonCompleteMessage = lessonComplete || !!msg.metadata?.lessonComplete || !!msg.metadata?.actionsContext?.lessonComplete;
+
         return (
         <motion.div
           key={msg.id || idx}
@@ -240,7 +243,11 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
               )}
 
               {/* Gating Real Tutor 3.0 */}
-              {msg.role === "assistant" && idx === messages.length - 1 && !isTyping && (
+              {msg.role === "assistant" && idx === messages.length - 1 && !isTyping && isLessonCompleteMessage && (
+                <LessonCompleteActions topic={msg.metadata?.actionsContext?.topic} />
+              )}
+
+              {msg.role === "assistant" && idx === messages.length - 1 && !isTyping && !isLessonCompleteMessage && (
                 <div className="mt-8">
                   <InteractiveCognitiveCard 
                     onAction={(action) => {
@@ -301,6 +308,44 @@ export default function TutorV2MessageList({ messages, isTyping, onIncrementalAc
         </motion.div>
       )}
     </div>
+  );
+}
+
+function LessonCompleteActions({ topic }: { topic?: string }) {
+  const navigate = useNavigate();
+  const topicQuery = topic ? `?topic=${encodeURIComponent(topic)}` : "";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-8 p-5 rounded-3xl bg-emerald-500/5 border border-emerald-500/20"
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-9 w-9 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
+          <Check className="h-5 w-5 text-emerald-400" />
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Aula concluída</p>
+          <p className="text-xs text-slate-400">Escolha o próximo passo de estudo.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard/sessao-estudo")} className="justify-start h-10 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10">
+          <Plus className="h-4 w-4 mr-2" /> Escolher novo tema
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard/banco-erros")} className="justify-start h-10 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10">
+          <AlertCircle className="h-4 w-4 mr-2" /> Revisar erros
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/dashboard/gerador-questoes${topicQuery}`)} className="justify-start h-10 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10">
+          <Activity className="h-4 w-4 mr-2" /> Gerar questões
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="justify-start h-10 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10">
+          <Layout className="h-4 w-4 mr-2" /> Voltar ao dashboard
+        </Button>
+      </div>
+    </motion.div>
   );
 }
 
