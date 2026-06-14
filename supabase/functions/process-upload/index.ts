@@ -383,6 +383,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, message: "Pipeline iniciado", uploadId }), { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
-    return new Response(JSON.stringify({ success: false, error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    console.error("[PROCESS_UPLOAD] Top-level error:", err?.message);
+    return new Response(JSON.stringify({ success: false, error: "Internal error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
