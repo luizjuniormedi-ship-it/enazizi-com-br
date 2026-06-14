@@ -121,6 +121,24 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     if (!topic) topic = "Medicina Geral";
 
+    // ── TOPIC FIDELITY (Sprint V1 / Fase 2 — observacional, não-bloqueante) ─────
+    try {
+      const tfRaw = String(newTopic || body.topic || pedagogicalContext?.topic || topic || "");
+      if (tfRaw) {
+        const tfResult = resolveTopicGranularity(tfRaw);
+        logTopicFidelity("tutor-v3-premium", tfResult);
+        waitUntil?.(recordTopicFidelity(supabaseAdmin, {
+          source: "tutor-v3-premium",
+          userId: activeUserId,
+          result: tfResult,
+          metadata: { sessionId: sessionId || null, hasNewTopic: !!newTopic },
+        }));
+      }
+    } catch (e: any) {
+      console.warn("[TOPIC_FIDELITY_HOOK_ERROR]", e?.message);
+    }
+
+
     // ── 1.5 QR MODE V3 (Question Review) — Fase 1.3 ─────────────────────────────
     // Detecta intent "question_review" e responde em modo corretor pedagógico.
     // Curto-circuito: bypassa 9 blocos, memória, RAG e persistência de aula.
