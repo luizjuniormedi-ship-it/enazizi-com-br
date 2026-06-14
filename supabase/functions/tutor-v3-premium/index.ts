@@ -8,18 +8,53 @@ import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "
 import { normalizeTutorResponse, TutorResponse, getStaticFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
 
-// Apenas vazamentos inequívocos. Termos médicos cognatos (cholesterol, pancreatitis,
-// female/forty/fat do mnemônico 4Fs) NÃO contam como leak — aparecem em texto pt-BR válido.
+// ─── LANGUAGE LEAK ENGINE v2 (False-Positive Elimination Sprint) ───────────
+// Apenas vazamentos INEQUÍVOCOS. Termos médicos cognatos, mnemônicos
+// internacionais e siglas científicas NÃO contam como leak.
+//
+// WHITELIST OFICIAL (garantida por desenho — termos abaixo NÃO estão no regex):
+//   Mnemônicos     : 4Fs, Female, Forty, Fat, Fertile, MONA, ABCDE,
+//                    CHA2DS2-VASc, CURB-65, SOFA, qSOFA, Wells, PERC, FAST, ATLS
+//   Cardiologia    : stent, bypass, shock, guideline, NSTEMI, STEMI
+//   Gastro         : cholesterol, pancreatitis, hepatitis, gallstones
+//   Emergência     : sepsis, stroke, trauma
+//   Pesquisa       : trial, follow-up, screening, endpoint, meta-analysis
+//
+// REJEITAR apenas:
+//   - Caracteres CJK
+//   - Termos espanhóis inequívocos (según, presentación, colelitiasis)
+//   - Frases inglesas exclusivas do domínio (watchful waiting, bile salts)
+//   - Marcadores internos (enamed-style, readiness score)
 const LANGUAGE_LEAK_PATTERN = /[\u4e00-\u9fff]|\b(?:seg[uú]n|presentaci[oó]n|colelitiasis|watchful waiting|bile salts|enamed-style|readiness score)\b/i;
 const PROVIDER_LEAK_PATTERN = /\b(?:claude|anthropic|openai|gpt-|gemini|modelo de ia|provedor)\b/i;
 
 function detectTutorQualityIssue(content: string): string | null {
   const text = String(content || "").trim();
-  if (text.length < 180) return `too_short:${text.length}`;
-  if (LANGUAGE_LEAK_PATTERN.test(text)) return "language_leak";
-  if (PROVIDER_LEAK_PATTERN.test(text)) return "provider_leak";
+  const t0 = Date.now();
+  console.log(`[LANGUAGE_CHECK_START] len=${text.length}`);
+
+  if (text.length < 180) {
+    console.log(`[LANGUAGE_CHECK_FAIL] reason=too_short len=${text.length}`);
+    return `too_short:${text.length}`;
+  }
+
+  const langMatch = text.match(LANGUAGE_LEAK_PATTERN);
+  if (langMatch) {
+    console.warn(`[LANGUAGE_CHECK_FAIL] reason=language_leak matchedTerm="${langMatch[0]}" matchedRegex=LANGUAGE_LEAK_PATTERN confidence=high elapsedMs=${Date.now() - t0}`);
+    console.warn(`[LANGUAGE_CHECK_MATCHES] terms=["${langMatch[0]}"]`);
+    return "language_leak";
+  }
+
+  const provMatch = text.match(PROVIDER_LEAK_PATTERN);
+  if (provMatch) {
+    console.warn(`[LANGUAGE_CHECK_FAIL] reason=provider_leak matchedTerm="${provMatch[0]}" matchedRegex=PROVIDER_LEAK_PATTERN`);
+    return "provider_leak";
+  }
+
+  console.log(`[LANGUAGE_CHECK_PASS] score=0 len=${text.length} elapsedMs=${Date.now() - t0}`);
   return null;
 }
+
 
 
 // Métrica fire-and-forget — nunca trava o fluxo.
