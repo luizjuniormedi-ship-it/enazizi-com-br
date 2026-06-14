@@ -483,6 +483,23 @@ serve(async (req) => {
         const SAFE_BATCH = 8;
         const topicList = topics.join(", ");
 
+        // ── TOPIC FIDELITY (Sprint V1 / Fase 2 — observacional) ───────────────
+        try {
+          for (const t of topics) {
+            const tfResult = resolveTopicGranularity(String(t));
+            logTopicFidelity("professor-simulado", tfResult);
+            recordTopicFidelity(sb, {
+              source: "professor-simulado",
+              userId: null,
+              result: tfResult,
+              metadata: { count: requestedCount, examBoard: examBoard || null, traceId },
+            }).catch(() => {});
+          }
+        } catch (e: any) {
+          console.warn("[TOPIC_FIDELITY_HOOK_ERROR]", e?.message);
+        }
+
+
         // ── Compute exact per-slot targets ──
         type Slot = { level: DifficultyLevel; target: number };
         const slots: Slot[] = [];
