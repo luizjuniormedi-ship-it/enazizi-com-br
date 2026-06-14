@@ -69,6 +69,20 @@ async function bumpMetric(supabaseAdmin: any, field: string, delta = 1) {
   }
 }
 
+// Perf-2: Timeout hard por chamada IA (defense-in-depth sobre AbortController interno)
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label}_TIMEOUT`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+
 
 console.log("[TUTOR_V3_BOOT] Function module loaded");
 
@@ -587,13 +601,31 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     };
 
     // ── Caminho A: tenta Claude (eu-ai) com extrator JSON tolerante; fallback automático p/ OpenAI ──
+    // Perf-2: timeout hard por provider + medição diferenciada
+    const CLAUDE_TIMEOUT_MS = Number(Deno.env.get("TUTOR_CLAUDE_TIMEOUT_MS") || 9000);
+    const OPENAI_TIMEOUT_MS = Number(Deno.env.get("TUTOR_OPENAI_TIMEOUT_MS") || 9000);
+    const aiTimings: Record<string, any> = {
+      providerPrimary: "unknown",
+      totalAiMs: 0,
+      timedOut: false,
+      fallbackUsed: false,
+    };
+
     let aiResponse: any;
     let aiProviderUsed = "openai";
+    const aiStart = performance.now();
     try {
       if (isClaudeV3Enabled()) {
+        aiTimings.providerPrimary = "claude";
         const sys = aiConfigToRun.messages.find((m: any) => m.role === "system")?.content || "";
         const lastUser = [...aiConfigToRun.messages].reverse().find((m: any) => m.role === "user")?.content || "";
-        const claude = await callClaudeV3({ systemPrompt: sys, userMessage: lastUser, topic });
+        const primaryStart = performance.now();
+        const claude = await withTimeout(
+          callClaudeV3({ systemPrompt: sys, userMessage: lastUser, topic }),
+          CLAUDE_TIMEOUT_MS,
+          "claude",
+        );
+        aiTimings.primaryMs = Math.round(performance.now() - primaryStart);
         const claudeQualityIssue = detectTutorQualityIssue(claude.content);
         if (claudeQualityIssue) {
           console.warn("[TUTOR_CLAUDE_QUALITY_REJECT]", { reason: claudeQualityIssue, topic, content_len: claude.content.length });
@@ -612,15 +644,39 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         aiProviderUsed = "claude";
         console.log("[TUTOR_CLAUDE_OK]", { latency_ms: claude._latencyMs, content_len: claude.content.length });
       } else {
+        aiTimings.providerPrimary = "openai";
         throw new Error("CLAUDE_V3_DISABLED");
       }
     } catch (claudeErr: any) {
-      console.log("[TUTOR_CLAUDE_FALLBACK_OPENAI]", { reason: claudeErr?.message?.slice(0, 200) || "unknown" });
-      aiResponse = await ai(aiConfigToRun, { retries: 2 });
+      const reason = claudeErr?.message?.slice(0, 200) || "unknown";
+      const wasTimeout = reason.includes("_TIMEOUT");
+      if (wasTimeout) aiTimings.timedOut = true;
+      console.log("[TUTOR_CLAUDE_FALLBACK_OPENAI]", { reason, timedOut: wasTimeout });
+      aiTimings.fallbackUsed = aiTimings.providerPrimary === "claude";
+      aiTimings.fallbackProvider = "openai";
+      const fbStart = performance.now();
+      try {
+        aiResponse = await withTimeout(
+          ai(aiConfigToRun, { retries: 2 }),
+          OPENAI_TIMEOUT_MS,
+          "openai",
+        );
+        aiTimings.fallbackMs = Math.round(performance.now() - fbStart);
+        aiProviderUsed = "openai";
+      } catch (openaiErr: any) {
+        aiTimings.fallbackMs = Math.round(performance.now() - fbStart);
+        const fbReason = openaiErr?.message?.slice(0, 200) || "unknown";
+        if (fbReason.includes("_TIMEOUT")) aiTimings.timedOut = true;
+        console.warn("[TUTOR_AI_UNAVAILABLE]", { fbReason });
+        // Re-throw para cair no safe_mode existente (preserva contrato)
+        throw new Error(`AI_UNAVAILABLE:${fbReason}`);
+      }
     }
+    aiTimings.totalAiMs = Math.round(performance.now() - aiStart);
     const latencyEnd = Date.now();
     mark("aiMs");
-    console.log("[TUTOR_RUNAI_OK]", { provider: aiProviderUsed });
+    console.log("[TUTOR_RUNAI_OK]", { provider: aiProviderUsed, totalAiMs: aiTimings.totalAiMs, fallbackUsed: aiTimings.fallbackUsed });
+
 
     // AI Cost Validation: Log actual usage
     waitUntil((async () => {
@@ -758,7 +814,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         nextBlock: activeBlock,
         provider: aiProviderUsed,
         lessonComplete: !!lessonComplete,
-        ...(includeTimings ? { timings } : {}),
+        ...(includeTimings ? { timings, aiTimings } : {}),
       },
     }), 200);
 
