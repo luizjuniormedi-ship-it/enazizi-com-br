@@ -172,8 +172,7 @@ Listadas por domínio. Nenhuma alteração de código aplicada — apenas invent
 `orchestrator-record-outcome`, `orchestrator-tune-weights`,
 `cognitive-orchestrator`, `cognitive-orchestrator-v2`,
 `cognitive-analytics-engine`, `cognitive-executive-report`,
-`cognitive-recovery-engine`, `recovery-agent`,
-`generate-recovery-flashcard`.
+`cognitive-recovery-engine`, `recovery-agent`.
 
 ### Conteúdo / Mnemônicos / Flashcards
 `generate-flashcards`, `generate-map-flashcards`, `generate-map-questions`,
