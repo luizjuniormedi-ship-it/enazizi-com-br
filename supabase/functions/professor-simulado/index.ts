@@ -730,13 +730,13 @@ REGRAS INVIOLÁVEIS:
                 // Piloto Sprint 2.3: Claude como primário SÓ se flag ligada e batch pequeno (<=10)
                 if (isClaudePrimarySimuladoEnabled() && stillNeeded <= 10 && attempt === 0) {
                   usedClaude = true;
-                  response = await claudeFetchQuestions(prompt, topics[0], stillNeeded);
+                  response = await claudeFetchQuestionsMicrobatch(prompt, topics[0], stillNeeded);
                   if (!response.ok) {
                     const t = await response.text();
                     console.warn(`[CLAUDE_SIM_FAIL] level=${level} status=${response.status} ${t.slice(0, 160)} — fallback Gemini`);
                     response = null;
                   } else {
-                    console.log(`[CLAUDE_SIM_OK] level=${level} batch=${stillNeeded}`);
+                    console.log(`[CLAUDE_SIM_OK] level=${level} batch=${stillNeeded} (microbatch)`);
                   }
                 }
                 if (!response) {
