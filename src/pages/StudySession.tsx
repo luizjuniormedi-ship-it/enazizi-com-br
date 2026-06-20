@@ -30,6 +30,8 @@ import TutorChatPanel from "@/components/study/TutorChatPanel";
 import OperationalHub from "@/components/study/OperationalHub";
 import { parseStudySignal, type StudySignal } from "@/lib/parseStudySignal";
 import { flushStudyCompleteQueue } from "@/lib/studyCompleteRetryQueue";
+import { MemoryConsolidationCard } from "@/components/study/MemoryConsolidationCard";
+import { useMemoryConsolidationFlag } from "@/hooks/useMemoryConsolidationFlag";
 
 console.error("🔥 BUILD_FORENSE", {
   component: "StudySession.tsx",
@@ -84,6 +86,8 @@ const StudySessionContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [phase, setPhase] = useState<Phase>("start");
   const [topic, setTopic] = useState("");
+  const { enabled: mceEnabled, shadow: mceShadow } = useMemoryConsolidationFlag();
+  const mceVisible = mceEnabled && !!topic && (phase === "scoring" || phase === "reinforcement");
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -140,6 +144,29 @@ const StudySessionContent = () => {
             </div>
           ))}
           {isLoading && <div className="flex items-center gap-2 text-xs text-white/30 animate-pulse"><Loader2 className="h-3 w-3 animate-spin" /> Mentor pensando...</div>}
+
+          {mceVisible && (
+            <div data-mce-mode={mceShadow ? "shadow" : "active"} className="pt-2">
+              <MemoryConsolidationCard
+                topicLabel={topic}
+                source="tutor_v3"
+                onCompleted={(r) => {
+                  // Shadow mode: NÃO bloqueia avanço. Apenas registra telemetria.
+                  try {
+                    console.info("[MCE] consolidation completed", {
+                      shadow: mceShadow,
+                      advance_allowed: r?.advance_allowed,
+                      micro_reinforcement_required: r?.micro_reinforcement_required,
+                      rigor_level: r?.rigor_level,
+                    });
+                  } catch { /* noop */ }
+                  // Quando sair do shadow, ativar bloqueio real:
+                  // if (!mceShadow && !r.advance_allowed) return;
+                  // goNext();
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <div className="p-4 border-t border-white/5 bg-black/40 backdrop-blur-md">
