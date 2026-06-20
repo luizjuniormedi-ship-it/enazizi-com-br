@@ -514,6 +514,7 @@ const App = () => (
               <Route path="/banco-questoes" element={<Navigate to="/dashboard/banco-questoes" replace />} />
               <Route path="/mnemonico" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
               <Route path="/mnemonic-studio" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
+              <Route path="/dev/mce" element={<ProtectedRoute><DevMCE /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
