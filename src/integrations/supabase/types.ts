@@ -19119,15 +19119,27 @@ export type Database = {
       }
       memory_consolidation_sessions: {
         Row: {
+          advance_allowed: boolean | null
+          cognitive_state: string | null
           completed_at: string | null
           confidence_score: number | null
           created_at: string
+          enamed_relevance: number | null
+          enamed_takeaways: Json
+          error_bank_entries: Json
           false_confidence_flag: boolean
+          fsrs_cards_to_create: Json
+          high_yield_score: number | null
           id: string
+          knowledge_gaps: Json
           mastery_score: number | null
           metacog_quality: number | null
           metadata: Json
+          micro_reinforcement_required: boolean | null
+          planner_updates: Json
+          rigor_level: string | null
           source: string
+          specialty: string | null
           started_at: string
           status: string
           subtopic_id: string | null
@@ -19139,15 +19151,27 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          advance_allowed?: boolean | null
+          cognitive_state?: string | null
           completed_at?: string | null
           confidence_score?: number | null
           created_at?: string
+          enamed_relevance?: number | null
+          enamed_takeaways?: Json
+          error_bank_entries?: Json
           false_confidence_flag?: boolean
+          fsrs_cards_to_create?: Json
+          high_yield_score?: number | null
           id?: string
+          knowledge_gaps?: Json
           mastery_score?: number | null
           metacog_quality?: number | null
           metadata?: Json
+          micro_reinforcement_required?: boolean | null
+          planner_updates?: Json
+          rigor_level?: string | null
           source: string
+          specialty?: string | null
           started_at?: string
           status?: string
           subtopic_id?: string | null
@@ -19159,15 +19183,27 @@ export type Database = {
           user_id: string
         }
         Update: {
+          advance_allowed?: boolean | null
+          cognitive_state?: string | null
           completed_at?: string | null
           confidence_score?: number | null
           created_at?: string
+          enamed_relevance?: number | null
+          enamed_takeaways?: Json
+          error_bank_entries?: Json
           false_confidence_flag?: boolean
+          fsrs_cards_to_create?: Json
+          high_yield_score?: number | null
           id?: string
+          knowledge_gaps?: Json
           mastery_score?: number | null
           metacog_quality?: number | null
           metadata?: Json
+          micro_reinforcement_required?: boolean | null
+          planner_updates?: Json
+          rigor_level?: string | null
           source?: string
+          specialty?: string | null
           started_at?: string
           status?: string
           subtopic_id?: string | null
