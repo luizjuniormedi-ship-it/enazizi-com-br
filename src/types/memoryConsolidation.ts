@@ -1,11 +1,94 @@
 /**
- * Memory Consolidation Engine — Sprint 1 (ENAZIZI)
- * Tipos compartilhados entre UI, hook e edge function.
+ * ENAZIZI Memory Consolidation Engine — V4.0 (14 etapas)
+ * Tipos compartilhados (UI ↔ hook ↔ edge function).
+ *
+ * O MCE NÃO ensina conteúdo novo. Ele consolida memória, detecta lacunas,
+ * mede domínio real e gera evidências reusadas por Tutor V3, Error Bank,
+ * FSRS, Planner, Simulados, Cognitive State e Analytics.
  */
 
-export type ConsolidationSource = 'tutor_v3' | 'error_review' | 'fsrs_due' | 'manual';
-export type ConsolidationStep = 'retrieval' | 'connective_summary' | 'metacog' | 'confidence';
+export type ConsolidationSource =
+  | 'tutor_v3'
+  | 'question'
+  | 'simulado'
+  | 'flashcard'
+  | 'error_review'
+  | 'mission'
+  | 'fsrs_due'
+  | 'manual';
+
+export type ConsolidationStep =
+  | 'retrieval'
+  | 'generation_effect'
+  | 'clinical_recall'
+  | 'connective_summary'
+  | 'metacog'
+  | 'confidence';
+
 export type ConsolidationStatus = 'in_progress' | 'completed' | 'abandoned';
+
+export type RigorLevel = 'simplified' | 'standard' | 'full';
+
+export type CognitiveState =
+  | 'NOVATO'
+  | 'RECONHECIMENTO'
+  | 'COMPREENSAO'
+  | 'APLICACAO'
+  | 'DOMINIO'
+  | 'AUTOMATIZACAO';
+
+export type GapSeverity = 'mild' | 'moderate' | 'severe' | 'critical';
+
+export interface KnowledgeGap {
+  topic: string;
+  subtopic?: string;
+  severity: GapSeverity;
+}
+
+export interface FsrsCardDraft {
+  type: 'concept' | 'diagnosis' | 'conduct' | 'trap' | 'differential';
+  front: string;
+  back: string;
+  priority?: number;
+}
+
+export interface PlannerUpdate {
+  topic: string;
+  delta: number;
+  reason: string;
+}
+
+export interface ErrorBankEntry {
+  topic: string;
+  subtopic?: string;
+  severity: GapSeverity;
+  source: ConsolidationSource;
+}
+
+export interface EnamedTakeaways {
+  must_memorize: string[];
+  exam_pattern: string[];
+  trap: string;
+  cannot_forget_conduct: string;
+}
+
+export interface StartConsolidationInput {
+  topic_label: string;
+  topic_id?: string | null;
+  subtopic_id?: string | null;
+  source: ConsolidationSource;
+  trigger_event_id?: string | null;
+  context_summary?: string;
+  /** Pedagogical context (drives rigor + ENAMED weighting). */
+  specialty?: string;
+  high_yield_score?: number; // 0-100 (ENAMED/ENARE/Revalida incidence)
+  enamed_relevance?: number; // 0-100
+  student_level?: 'M5' | 'M6' | 'R1' | 'R2' | 'R3' | string;
+  cognitive_state?: CognitiveState;
+  recent_mistakes?: string[];
+  error_bank_context?: string[];
+  fsrs_context?: string[];
+}
 
 export interface MemoryConsolidationSession {
   id: string;
@@ -24,21 +107,15 @@ export interface MemoryConsolidationSession {
   metadata: Record<string, unknown>;
   started_at: string;
   completed_at: string | null;
+  specialty: string | null;
+  high_yield_score: number | null;
+  enamed_relevance: number | null;
+  cognitive_state: CognitiveState | null;
+  advance_allowed: boolean | null;
+  micro_reinforcement_required: boolean | null;
+  rigor_level: RigorLevel | null;
 }
 
-export interface MemoryConsolidationResponse {
-  id: string;
-  session_id: string;
-  step: ConsolidationStep;
-  prompt: string | null;
-  response: string | null;
-  ai_evaluation: Record<string, unknown>;
-  score: number | null;
-  latency_ms: number | null;
-  created_at: string;
-}
-
-/** Eventos novos emitidos pelo Memory Consolidation Engine (Event Bus). */
 export const MEMORY_CONSOLIDATION_EVENTS = {
   STARTED: 'memory_consolidation_started',
   COMPLETED: 'memory_consolidation_completed',
@@ -50,29 +127,29 @@ export const MEMORY_CONSOLIDATION_EVENTS = {
 export type MemoryConsolidationEvent =
   (typeof MEMORY_CONSOLIDATION_EVENTS)[keyof typeof MEMORY_CONSOLIDATION_EVENTS];
 
-export interface StartConsolidationInput {
-  topic_id?: string | null;
-  topic_label: string;
-  subtopic_id?: string | null;
-  source: ConsolidationSource;
-  trigger_event_id?: string | null;
-  context_summary?: string;
-}
-
 export interface RespondStepInput {
   session_id: string;
   step: ConsolidationStep;
   response: string;
-  /** Para o passo 'confidence': valor 0-100 do slider antes do gabarito. */
-  confidence_value?: number;
+  confidence_value?: number; // 1-5 Likert OR 0-100
 }
 
 export interface CompleteSessionResult {
+  memory_consolidation_completed: true;
   session_id: string;
   mastery_score: number;
   confidence_score: number;
-  false_confidence_flag: boolean;
+  false_confidence: boolean;
   metacog_quality: number;
-  summary: string;
+  cognitive_state: CognitiveState;
+  rigor_level: RigorLevel;
+  advance_allowed: boolean;
+  micro_reinforcement_required: boolean;
+  knowledge_gaps: KnowledgeGap[];
+  error_bank_entries: ErrorBankEntry[];
+  fsrs_cards_to_create: FsrsCardDraft[];
+  planner_updates: PlannerUpdate[];
+  enamed_takeaways: EnamedTakeaways;
   emitted_events: MemoryConsolidationEvent[];
+  summary: string;
 }
