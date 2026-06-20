@@ -78,6 +78,7 @@ const QuestionQuality = lazyWithRetry(() => import("./pages/admin/QuestionQualit
 const LoadMonitor = lazyWithRetry(() => import("./pages/admin/LoadMonitor"), "LoadMonitor");
 const MemoryHealth = lazyWithRetry(() => import("./pages/admin/MemoryHealth"), "MemoryHealth");
 const MemoryHallucinations = lazyWithRetry(() => import("./pages/admin/MemoryHallucinations"), "MemoryHallucinations");
+const DevMCE = lazyWithRetry(() => import("./pages/dev/DevMCE"), "DevMCE");
 const AlphaOnboarding = lazyWithRetry(() => import("./pages/AlphaOnboarding"), "AlphaOnboarding");
 
 const EnrichmentProgress = lazyWithRetry(() => import("./pages/admin/EnrichmentProgress"), "EnrichmentProgress");
@@ -514,6 +515,7 @@ const App = () => (
               <Route path="/banco-questoes" element={<Navigate to="/dashboard/banco-questoes" replace />} />
               <Route path="/mnemonico" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
               <Route path="/mnemonic-studio" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
+              <Route path="/dev/mce" element={<ProtectedRoute><DevMCE /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
