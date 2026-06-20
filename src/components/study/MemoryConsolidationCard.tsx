@@ -79,7 +79,14 @@ export function MemoryConsolidationCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicLabel]);
 
-  useEffect(() => { if (result) onCompleted?.(result); }, [result, onCompleted]);
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (result && !firedRef.current) {
+      firedRef.current = true;
+      onCompleted?.(result);
+    }
+    if (!result) firedRef.current = false;
+  }, [result, onCompleted]);
 
   const currentStep = steps[stepIdx];
   const isLast = stepIdx === steps.length - 1;
