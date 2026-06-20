@@ -4,31 +4,35 @@ import type {
   CompleteSessionResult,
   ConsolidationStep,
   MemoryConsolidationSession,
+  RigorLevel,
   StartConsolidationInput,
 } from "@/types/memoryConsolidation";
 
-type Prompts = Record<ConsolidationStep, string>;
+type Prompts = Partial<Record<ConsolidationStep, string>>;
 
 interface State {
   session: MemoryConsolidationSession | null;
-  prompts: Prompts | null;
+  prompts: Prompts;
+  steps: ConsolidationStep[];
+  rigor: RigorLevel | null;
   loading: boolean;
   error: string | null;
   result: CompleteSessionResult | null;
 }
 
-/**
- * Hook do Memory Consolidation Engine (Sprint 1).
- * Não dispara nada automaticamente — é o componente que chama start/respond/complete.
- */
+const INITIAL: State = {
+  session: null,
+  prompts: {},
+  steps: [],
+  rigor: null,
+  loading: false,
+  error: null,
+  result: null,
+};
+
+/** Hook do Memory Consolidation Engine V4. */
 export function useMemoryConsolidation() {
-  const [state, setState] = useState<State>({
-    session: null,
-    prompts: null,
-    loading: false,
-    error: null,
-    result: null,
-  });
+  const [state, setState] = useState<State>(INITIAL);
 
   const invoke = useCallback(async <T,>(body: Record<string, unknown>): Promise<T> => {
     const { data, error } = await supabase.functions.invoke("memory-consolidation", { body });
@@ -41,11 +45,21 @@ export function useMemoryConsolidation() {
     async (input: StartConsolidationInput) => {
       setState((s) => ({ ...s, loading: true, error: null, result: null }));
       try {
-        const data = await invoke<{ session: MemoryConsolidationSession; prompts: Prompts }>({
-          action: "start",
-          ...input,
+        const data = await invoke<{
+          session: MemoryConsolidationSession;
+          prompts: Prompts;
+          steps: ConsolidationStep[];
+          rigor: RigorLevel;
+        }>({ action: "start", ...input });
+        setState({
+          session: data.session,
+          prompts: data.prompts,
+          steps: data.steps,
+          rigor: data.rigor,
+          loading: false,
+          error: null,
+          result: null,
         });
-        setState({ session: data.session, prompts: data.prompts, loading: false, error: null, result: null });
         return data;
       } catch (e) {
         setState((s) => ({ ...s, loading: false, error: (e as Error).message }));
@@ -92,9 +106,7 @@ export function useMemoryConsolidation() {
     }
   }, [invoke, state.session?.id]);
 
-  const reset = useCallback(() => {
-    setState({ session: null, prompts: null, loading: false, error: null, result: null });
-  }, []);
+  const reset = useCallback(() => setState(INITIAL), []);
 
   return { ...state, start, respond, complete, reset };
 }
