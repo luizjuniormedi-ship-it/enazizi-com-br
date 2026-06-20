@@ -19019,6 +19019,167 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_consolidation_metrics: {
+        Row: {
+          computed_at: string
+          created_at: string
+          false_confidence_rate: number | null
+          id: string
+          is_experimental: boolean
+          knowledge_gap_score: number | null
+          mastery_avg: number | null
+          retention_index: number | null
+          sample_size: number
+          topic_id: string | null
+          topic_label: string | null
+          updated_at: string
+          user_id: string
+          window_label: string
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          false_confidence_rate?: number | null
+          id?: string
+          is_experimental?: boolean
+          knowledge_gap_score?: number | null
+          mastery_avg?: number | null
+          retention_index?: number | null
+          sample_size?: number
+          topic_id?: string | null
+          topic_label?: string | null
+          updated_at?: string
+          user_id: string
+          window_label: string
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          false_confidence_rate?: number | null
+          id?: string
+          is_experimental?: boolean
+          knowledge_gap_score?: number | null
+          mastery_avg?: number | null
+          retention_index?: number | null
+          sample_size?: number
+          topic_id?: string | null
+          topic_label?: string | null
+          updated_at?: string
+          user_id?: string
+          window_label?: string
+        }
+        Relationships: []
+      }
+      memory_consolidation_responses: {
+        Row: {
+          ai_evaluation: Json
+          created_at: string
+          id: string
+          latency_ms: number | null
+          prompt: string | null
+          response: string | null
+          score: number | null
+          session_id: string
+          step: string
+          user_id: string
+        }
+        Insert: {
+          ai_evaluation?: Json
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          prompt?: string | null
+          response?: string | null
+          score?: number | null
+          session_id: string
+          step: string
+          user_id: string
+        }
+        Update: {
+          ai_evaluation?: Json
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          prompt?: string | null
+          response?: string | null
+          score?: number | null
+          session_id?: string
+          step?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_consolidation_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "memory_consolidation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_consolidation_sessions: {
+        Row: {
+          completed_at: string | null
+          confidence_score: number | null
+          created_at: string
+          false_confidence_flag: boolean
+          id: string
+          mastery_score: number | null
+          metacog_quality: number | null
+          metadata: Json
+          source: string
+          started_at: string
+          status: string
+          subtopic_id: string | null
+          summary_text: string | null
+          topic_id: string | null
+          topic_label: string | null
+          trigger_event_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          false_confidence_flag?: boolean
+          id?: string
+          mastery_score?: number | null
+          metacog_quality?: number | null
+          metadata?: Json
+          source: string
+          started_at?: string
+          status?: string
+          subtopic_id?: string | null
+          summary_text?: string | null
+          topic_id?: string | null
+          topic_label?: string | null
+          trigger_event_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          false_confidence_flag?: boolean
+          id?: string
+          mastery_score?: number | null
+          metacog_quality?: number | null
+          metadata?: Json
+          source?: string
+          started_at?: string
+          status?: string
+          subtopic_id?: string | null
+          summary_text?: string | null
+          topic_id?: string | null
+          topic_label?: string | null
+          trigger_event_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       memory_governance_metrics: {
         Row: {
           cost_saved_usd: number
