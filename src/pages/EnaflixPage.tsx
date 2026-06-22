@@ -71,15 +71,26 @@ export default function EnaflixPage() {
     queryKey: ["enaflix-ai-lessons", user?.id],
     queryFn: async () => {
       try {
-        const { data: profile } = await supabase.from("profiles").select("organization_id").eq("user_id", user?.id).single();
-        const userOrgId = (profile as any)?.organization_id || 'null';
-        const orgId = profile?.organization_id || 'null';
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("user_id", user?.id)
+          .maybeSingle();
+
+        if (profileError) {
+          console.warn("[EnaflixPage] Perfil sem organização disponível:", profileError.message);
+        }
+
+        const orgId = profile?.organization_id;
+        const visibilityFilter = orgId
+          ? `is_global.eq.true,organization_id.eq.${orgId}`
+          : "is_global.eq.true";
 
         const { data, error } = await supabase
           .from("ai_video_lessons")
           .select("id, title, thumbnail_url, specialty, is_gold_content, duration_seconds, published_at, status, organization_id, is_global")
           .eq("status", "published")
-          .or(`is_global.eq.true,organization_id.eq.${orgId}`)
+          .or(visibilityFilter)
           .order("published_at", { ascending: false })
           .limit(10);
 
@@ -90,7 +101,7 @@ export default function EnaflixPage() {
           .select("id, title, thumbnail_url, subject, duration, published_at, status, hidden_from_student, organization_id, is_global")
           .eq("status", "published")
           .eq("hidden_from_student", false)
-          .or(`is_global.eq.true,organization_id.eq.${orgId}`)
+          .or(visibilityFilter)
           .order("published_at", { ascending: false })
           .limit(10);
 
