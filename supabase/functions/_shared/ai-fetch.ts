@@ -99,8 +99,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
 
   // 3. Iterate through fallback chain
   for (const model of chain) {
-    const provider = model.includes('google') ? 'google' : (model.includes('openai') ? 'openai' : 'unknown');
-    
+    const isAnthropic = model.startsWith(ANTHROPIC_PREFIX);
+    const provider = isAnthropic ? 'anthropic'
+      : (model.includes('google') ? 'google' : (model.includes('openai') ? 'openai' : 'unknown'));
+
+    // Skip Claude attempts if key missing
+    if (isAnthropic && !ANTHROPIC_API_KEY) continue;
+
     // Check if provider is available (not in cooldown)
     if (!(await aiGatewayManager.isAvailable(provider, model))) {
       console.warn(`[AI_GATEWAY] Skipping ${model} due to active cooldown`);
@@ -114,16 +119,28 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       const startTime = Date.now();
       try {
         console.log(`[AI_GATEWAY] Attempting ${model} (Attempt ${attempt + 1})`);
-        
+
         const isDirectOpenAI = provider === 'openai' && OPENAI_API_KEY;
-        const url = isDirectOpenAI ? OPENAI_API : LOVABLE_GATEWAY;
-        const apiKey = isDirectOpenAI ? OPENAI_API_KEY : LOVABLE_API_KEY;
-        
+        let url: string;
+        let apiKey: string | undefined;
+        let payloadModel: string;
+
+        if (isAnthropic) {
+          url = `${ANTHROPIC_BASE_URL}/v1/chat/completions`;
+          apiKey = ANTHROPIC_API_KEY;
+          payloadModel = model.replace(ANTHROPIC_PREFIX, '');
+        } else if (isDirectOpenAI) {
+          url = OPENAI_API;
+          apiKey = OPENAI_API_KEY;
+          payloadModel = model.replace('openai/', '');
+        } else {
+          url = LOVABLE_GATEWAY;
+          apiKey = LOVABLE_API_KEY;
+          payloadModel = model;
+        }
+
         const tokenKey = getTokenParameterName(model);
-        // Lovable AI Gateway exige o prefixo provider/ (ex: "google/gemini-2.5-flash").
-        // OpenAI direta exige modelo cru (ex: "gpt-4o-mini"). Só strippa nesse caso.
-        const payloadModel = isDirectOpenAI ? model.replace('openai/', '') : model;
-        const payload = {
+        const payload: Record<string, unknown> = {
           model: payloadModel,
           messages: options.messages,
           [tokenKey]: options.maxTokens ?? 16384,
@@ -134,14 +151,18 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
           tool_choice: options.tool_choice
         };
 
+        const headers: Record<string, string> = {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        };
+        if (isAnthropic) headers["x-api-key"] = apiKey || "";
+
         const response = await fetchWithTimeout(url, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify(payload),
         }, timeoutMs);
+
 
         const latency = Date.now() - startTime;
 
