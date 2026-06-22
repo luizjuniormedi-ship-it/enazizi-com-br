@@ -404,6 +404,45 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
+    // ---- Branch: anthropic (Claude via hudapi.cloud / OpenAI-compatible proxy) ----
+    if (ref.provider === "anthropic") {
+      const body: Record<string, unknown> = {
+        model: ref.model,
+        messages,
+        max_tokens: maxTokens,
+      };
+      const res = await fetchWithTimeout(
+        `${ANTHROPIC_BASE_URL}/v1/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "x-api-key": apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+        AI_TIMEOUT_MS,
+      );
+      const latency_ms = Date.now() - start;
+      const responseText = await res.text();
+      if (!res.ok) {
+        const e = extractProviderError(res.status, responseText);
+        return { attempt: { ...ref, success: false, status: res.status, ...e, latency_ms } };
+      }
+      let parsed: any;
+      try { parsed = JSON.parse(responseText); } catch {
+        return { attempt: { ...ref, success: false, status: res.status, code: "AI_INVALID_JSON", message: "anthropic returned invalid JSON", latency_ms } };
+      }
+      const content = parsed?.choices?.[0]?.message?.content
+        || (Array.isArray(parsed?.content) ? parsed.content.map((p: any) => p?.text || "").join("") : parsed?.content)
+        || parsed?.message;
+      if (!content || typeof content !== "string") {
+        return { attempt: { ...ref, success: false, status: res.status, code: "AI_EMPTY_RESPONSE", message: "anthropic returned no content", latency_ms } };
+      }
+      return { content, usage: parsed?.usage, attempt: { ...ref, success: true, status: res.status, latency_ms } };
+    }
+
     // ---- Branch: eu-ai (Claude via Railway proxy) ----
     if (ref.provider === "eu-ai") {
       const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content || "";
