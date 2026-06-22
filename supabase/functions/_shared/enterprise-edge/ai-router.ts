@@ -48,6 +48,9 @@ const FALLBACK_CHAINS = {
 
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
+const ANTHROPIC_BASE_URL = (Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.anthropic.com").replace(/\/+$/, "");
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
+const ANTHROPIC_REF = `anthropic/${ANTHROPIC_MODEL}`;
 
 export async function callAi(
   payload: AiRequest,
