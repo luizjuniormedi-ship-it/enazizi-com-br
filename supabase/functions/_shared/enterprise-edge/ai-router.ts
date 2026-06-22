@@ -60,22 +60,28 @@ export async function callAi(
 ) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
   // 1. Determine Tier and Chain
   const tier = (payload.costTier === "PREMIUM" || payload.complexity === "alta" || payload.taskType === "reasoning" || payload.taskType === "tutor_deep") ? 'REASONING' : 'FAST';
-  
+
   // If LOW_COST is requested, we strictly prefer fast/cheap models
   const isLowCost = payload.costTier === "LOW_COST";
-  
+
   const requestedModel = payload.model;
   let baseChain = requestedModel ? [requestedModel, ...FALLBACK_CHAINS[tier]] : FALLBACK_CHAINS[tier];
-  
+
   if (isLowCost) {
-    // Re-order chain to prioritize cheapest models
     baseChain = ["openai/gpt-5-mini", "google/gemini-2.5-flash-lite", ...baseChain];
   }
 
+  // Claude (hudapi) primário global quando ANTHROPIC_API_KEY está setada.
+  if (ANTHROPIC_API_KEY && payload.taskType !== "vision") {
+    baseChain = [ANTHROPIC_REF, ...baseChain];
+  }
+
   const uniqueChain = [...new Set(baseChain)];
+
 
 
   // 2. Global Cache Check (SHA256)
