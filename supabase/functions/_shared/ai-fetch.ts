@@ -6,6 +6,9 @@ import { logPipelineAlert } from "./pipeline-logger.ts";
 
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
+const ANTHROPIC_BASE_URL = (Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.anthropic.com").replace(/\/+$/, "");
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
+const ANTHROPIC_PREFIX = "anthropic/";
 
 // Retryable status codes (transient errors)
 const RETRYABLE_STATUSES = new Set([402, 429, 500, 502, 503, 504]);
@@ -65,12 +68,20 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const source = (Deno.env.get("FUNCTION_NAME") || "unknown-edge-function");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
   // 1. Determine the chain
   const tier = options.tier || 'FAST';
-  const chain = options.model
+  let chain = options.model
     ? (options.disableFallbackChain ? [options.model] : [options.model, ...FALLBACK_CHAINS[tier]])
     : FALLBACK_CHAINS[tier];
+
+  // Claude (hudapi) primário global quando ANTHROPIC_API_KEY está setada.
+  if (ANTHROPIC_API_KEY && !options.disableFallbackChain) {
+    const claudeRef = `${ANTHROPIC_PREFIX}${ANTHROPIC_MODEL}`;
+    if (!chain.includes(claudeRef)) chain = [claudeRef, ...chain];
+  }
+
   
   // 2. Cache Check (only for non-streaming)
   const prompt = options.messages.map(m => m.content).join("\n");
@@ -88,8 +99,13 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
 
   // 3. Iterate through fallback chain
   for (const model of chain) {
-    const provider = model.includes('google') ? 'google' : (model.includes('openai') ? 'openai' : 'unknown');
-    
+    const isAnthropic = model.startsWith(ANTHROPIC_PREFIX);
+    const provider = isAnthropic ? 'anthropic'
+      : (model.includes('google') ? 'google' : (model.includes('openai') ? 'openai' : 'unknown'));
+
+    // Skip Claude attempts if key missing
+    if (isAnthropic && !ANTHROPIC_API_KEY) continue;
+
     // Check if provider is available (not in cooldown)
     if (!(await aiGatewayManager.isAvailable(provider, model))) {
       console.warn(`[AI_GATEWAY] Skipping ${model} due to active cooldown`);
@@ -103,16 +119,28 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       const startTime = Date.now();
       try {
         console.log(`[AI_GATEWAY] Attempting ${model} (Attempt ${attempt + 1})`);
-        
+
         const isDirectOpenAI = provider === 'openai' && OPENAI_API_KEY;
-        const url = isDirectOpenAI ? OPENAI_API : LOVABLE_GATEWAY;
-        const apiKey = isDirectOpenAI ? OPENAI_API_KEY : LOVABLE_API_KEY;
-        
+        let url: string;
+        let apiKey: string | undefined;
+        let payloadModel: string;
+
+        if (isAnthropic) {
+          url = `${ANTHROPIC_BASE_URL}/v1/chat/completions`;
+          apiKey = ANTHROPIC_API_KEY;
+          payloadModel = model.replace(ANTHROPIC_PREFIX, '');
+        } else if (isDirectOpenAI) {
+          url = OPENAI_API;
+          apiKey = OPENAI_API_KEY;
+          payloadModel = model.replace('openai/', '');
+        } else {
+          url = LOVABLE_GATEWAY;
+          apiKey = LOVABLE_API_KEY;
+          payloadModel = model;
+        }
+
         const tokenKey = getTokenParameterName(model);
-        // Lovable AI Gateway exige o prefixo provider/ (ex: "google/gemini-2.5-flash").
-        // OpenAI direta exige modelo cru (ex: "gpt-4o-mini"). Só strippa nesse caso.
-        const payloadModel = isDirectOpenAI ? model.replace('openai/', '') : model;
-        const payload = {
+        const payload: Record<string, unknown> = {
           model: payloadModel,
           messages: options.messages,
           [tokenKey]: options.maxTokens ?? 16384,
@@ -123,14 +151,18 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
           tool_choice: options.tool_choice
         };
 
+        const headers: Record<string, string> = {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        };
+        if (isAnthropic) headers["x-api-key"] = apiKey || "";
+
         const response = await fetchWithTimeout(url, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify(payload),
         }, timeoutMs);
+
 
         const latency = Date.now() - startTime;
 
