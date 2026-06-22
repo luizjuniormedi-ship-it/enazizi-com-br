@@ -52,14 +52,15 @@ if (ANTHROPIC_API_KEY && !(globalThis as any).__claudeInterceptInstalled) {
       // Skip vision/multimodal — hudapi Claude proxy here is text-only.
       if (hasImageContent(body.messages)) return originalFetch(input, init);
       // Skip tool/function calling — schemas differ; let original run.
-      if (body.tools || body.functions || body.response_format) return originalFetch(input, init);
+      if (body.tools || body.functions) return originalFetch(input, init);
 
-      const claudeBody = {
+      const claudeBody: any = {
         model: ANTHROPIC_MODEL,
         messages: body.messages,
         max_tokens: body.max_tokens || body.max_completion_tokens || 4096,
         temperature: body.temperature ?? 0.7,
       };
+      if (body.response_format) claudeBody.response_format = body.response_format;
 
       const res = await originalFetch(`${ANTHROPIC_BASE_URL}/v1/chat/completions`, {
         method: "POST",
