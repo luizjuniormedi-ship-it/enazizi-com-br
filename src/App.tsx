@@ -360,10 +360,17 @@ const App = () => (
                   <Route path="favoritos" element={<Favoritos />} />
                   <Route path="historico" element={<Historico />} />
                   <Route path="learning-science" element={<LearningScienceCenterPage />} />
+                  <Route path="clinical-evidence" element={<ClinicalEvidenceCenter />} />
 
 
                   {/* Redirecionamentos de conveniência / Legados */}
                   <Route path="home" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="study" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="biblioteca-enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
+                  <Route path="video-lessons" element={<Navigate to="/dashboard/videoaulas" replace />} />
+                  <Route path="fsrs" element={<Navigate to="/dashboard/flashcards" replace />} />
+                  <Route path="revisao" element={<Navigate to="/dashboard/flashcards" replace />} />
+                  <Route path="mnemonicos" element={<Navigate to="/dashboard/mnemonico" replace />} />
                   <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="plano-estudos" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="revisoes" element={<Navigate to="/dashboard/planner" replace />} />
