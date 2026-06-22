@@ -71,6 +71,8 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
       console.warn("Anthropic failed:", e);
     }
   }
+  if (OPENAI_API_KEY) {
+    try {
       const startMs = Date.now();
       const model = "gpt-4o-mini";
       const res = await fetch(OPENAI_API, {
