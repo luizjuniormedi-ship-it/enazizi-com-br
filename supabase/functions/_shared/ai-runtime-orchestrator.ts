@@ -788,6 +788,14 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
     }
   }
 
+  // Anthropic (Claude via hudapi.cloud) como PRIMÁRIO global quando ANTHROPIC_API_KEY estiver setado.
+  // Fallback automático para OpenAI/Gemini se falhar.
+  const hasAnthropic = !!Deno.env.get("ANTHROPIC_API_KEY");
+  if (hasAnthropic && !fullChain.some(c => c.provider === "anthropic")) {
+    fullChain.unshift({ provider: "anthropic", model: ANTHROPIC_DEFAULT_MODEL });
+    console.log(`[AI_RUNTIME_ANTHROPIC_PRIMARY] req=${reqTag} — Claude (${ANTHROPIC_DEFAULT_MODEL} @ ${ANTHROPIC_BASE_URL}) prepended as primary`);
+  }
+
   // Health-aware filtering: pula modelos com falha recente conhecida.
   const healthChain = await filterByHealth(input.supabase, fullChain);
 
