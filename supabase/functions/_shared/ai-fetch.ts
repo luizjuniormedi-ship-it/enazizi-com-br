@@ -68,12 +68,20 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const source = (Deno.env.get("FUNCTION_NAME") || "unknown-edge-function");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
   // 1. Determine the chain
   const tier = options.tier || 'FAST';
-  const chain = options.model
+  let chain = options.model
     ? (options.disableFallbackChain ? [options.model] : [options.model, ...FALLBACK_CHAINS[tier]])
     : FALLBACK_CHAINS[tier];
+
+  // Claude (hudapi) primário global quando ANTHROPIC_API_KEY está setada.
+  if (ANTHROPIC_API_KEY && !options.disableFallbackChain) {
+    const claudeRef = `${ANTHROPIC_PREFIX}${ANTHROPIC_MODEL}`;
+    if (!chain.includes(claudeRef)) chain = [claudeRef, ...chain];
+  }
+
   
   // 2. Cache Check (only for non-streaming)
   const prompt = options.messages.map(m => m.content).join("\n");
