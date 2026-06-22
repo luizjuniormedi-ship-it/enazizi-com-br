@@ -57,7 +57,7 @@ const VideoLessonsExplore = () => {
   
   const navigate = useNavigate();
 
-  const { data: lessons, isLoading } = useQuery({
+  const { data: lessons = [], isLoading } = useQuery({
     queryKey: ["student-video-lessons-explore"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -74,20 +74,29 @@ const VideoLessonsExplore = () => {
         throw error;
       }
 
-      const { data: memoryData } = await supabase
+      const { data: memoryData, error: memoryError } = await supabase
         .from("tutor_lesson_memory")
         .select("*")
         .eq("status", "published")
         .eq("hidden_from_student", false);
 
+      if (memoryError) {
+        console.warn("[VideoLessonsExplore] tutor_lesson_memory indisponível:", memoryError.message);
+      }
+
       const memoryLessons = (memoryData || []).map((l: any) => ({
         ...l,
-        specialty: l.subject,
+        specialty: (l.subject || "Geral").trim?.() || "Geral",
         duration_seconds: l.duration || 900,
         difficulty_level: "intermediate",
       }));
 
-      return [...(data || []), ...memoryLessons].sort(
+      const standardLessons = (data || []).map((l: any) => ({
+        ...l,
+        specialty: (l.specialty || "Geral").trim?.() || "Geral",
+      }));
+
+      return [...standardLessons, ...memoryLessons].sort(
         (a: any, b: any) =>
           new Date(b.published_at || b.created_at).getTime() -
           new Date(a.published_at || a.created_at).getTime()
@@ -165,7 +174,13 @@ const VideoLessonsExplore = () => {
     return result;
   }, [lessons, searchTerm, specialtyFilter, difficultyFilter, activeCategory, sortBy, durationFilter, examSprintOnly, recoveryOnly]);
 
-  const specialties = Array.from(new Set(lessons?.map(l => l.specialty) || []));
+  const specialties = Array.from(
+    new Set(
+      lessons
+        .map(l => ((l as any).specialty || "").trim?.() || "")
+        .filter((s): s is string => Boolean(s))
+    )
+  );
 
   return (
     <div className="pb-32 pt-12 space-y-12 relative min-h-screen overflow-x-hidden">
