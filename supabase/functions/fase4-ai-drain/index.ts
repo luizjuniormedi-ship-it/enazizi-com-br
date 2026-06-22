@@ -2,6 +2,7 @@
 // Auth admin obrigatório. Service role usado apenas dentro desta função.
 // Padrão alinhado com classify-question-hierarchy.
 
+import "../_shared/claude-intercept.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {

@@ -1,3 +1,4 @@
+import "../_shared/claude-intercept.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
