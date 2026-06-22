@@ -343,8 +343,10 @@ function getAIKey(provider: string): string {
   if (provider === "openai") {
     return Deno.env.get("OPENAI_API_KEY") || "";
   }
+  if (provider === "anthropic") {
+    return Deno.env.get("ANTHROPIC_API_KEY") || "";
+  }
   if (provider === "eu-ai") {
-    // proxy Railway não exige auth; retorna marker p/ não falhar checagem de key
     return "eu-ai-noauth";
   }
   return (
@@ -354,6 +356,9 @@ function getAIKey(provider: string): string {
     ""
   );
 }
+
+const ANTHROPIC_BASE_URL = (Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.anthropic.com").replace(/\/+$/, "");
+const ANTHROPIC_DEFAULT_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
 
 function extractProviderError(status: number | undefined, bodyText: string, err?: unknown) {
   const fallbackMessage = err instanceof Error ? err.message : bodyText || "Provider unavailable";
