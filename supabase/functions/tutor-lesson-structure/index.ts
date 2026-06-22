@@ -1,5 +1,6 @@
 // tutor-lesson-structure: gera estrutura pedagógica completa via Lovable AI.
 // Roda com service role para escrever em tutor_lesson_memory (bypass de trigger via auth.uid()=null).
+import "../_shared/claude-intercept.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
