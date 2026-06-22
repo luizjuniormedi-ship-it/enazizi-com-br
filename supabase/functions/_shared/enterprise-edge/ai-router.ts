@@ -29,18 +29,18 @@ export interface AiRequest {
 // Multiple OpenAI model variants maximize hit chance if a specific model is rate-limited.
 const FALLBACK_CHAINS = {
   FAST: [
-    "openai/gpt-4o-mini",
+    "openai/gpt-5-mini",
     "openai/gpt-5-mini",
     "openai/gpt-5-nano",
-    "openai/gpt-4o",
+    "openai/gpt-5",
     "google/gemini-2.5-flash",
     "google/gemini-2.5-flash-lite"
   ],
   REASONING: [
-    "openai/gpt-4o",
+    "openai/gpt-5",
     "openai/gpt-5",
     "openai/gpt-5-mini",
-    "openai/gpt-4o-mini",
+    "openai/gpt-5-mini",
     "google/gemini-2.5-pro",
     "google/gemini-2.5-flash"
   ]
@@ -69,7 +69,7 @@ export async function callAi(
   
   if (isLowCost) {
     // Re-order chain to prioritize cheapest models
-    baseChain = ["openai/gpt-4o-mini", "google/gemini-2.5-flash-lite", ...baseChain];
+    baseChain = ["openai/gpt-5-mini", "google/gemini-2.5-flash-lite", ...baseChain];
   }
 
   const uniqueChain = [...new Set(baseChain)];

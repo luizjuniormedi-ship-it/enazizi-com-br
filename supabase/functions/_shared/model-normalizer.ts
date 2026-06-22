@@ -20,8 +20,8 @@ export function normalizeModel(model: string | null | undefined): string {
   if (normalized.includes("gemini-2.5-flash")) return "google/gemini-2.5-flash";
 
 
-  if (normalized.includes("gpt-4o-mini")) return "openai/gpt-4o-mini";
-  if (normalized.includes("gpt-4o")) return "openai/gpt-4o";
+  if (normalized.includes("gpt-4o-mini")) return "openai/gpt-5-mini";
+  if (normalized.includes("gpt-4o")) return "openai/gpt-5";
   if (normalized.includes("gemini-2.0-flash")) return "google/gemini-2.5-flash";
   if (normalized.includes("gemini-1.5-flash")) return "google/gemini-flash-1.5";
   if (normalized.includes("gemini-1.5-pro")) return "google/gemini-pro-1.5";

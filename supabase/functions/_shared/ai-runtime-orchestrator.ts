@@ -117,8 +117,8 @@ const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "google/gemini-2.5-pro": "medium",
   "gpt-4o-mini": "low",
   "gpt-4o": "medium",
-  "openai/gpt-4o-mini": "low",
-  "openai/gpt-4o": "medium",
+  "openai/gpt-5-mini": "low",
+  "openai/gpt-5": "medium",
 };
 
 // ---------------------------------------------------------------------------
@@ -127,8 +127,8 @@ const COST_TIER: Record<string, "low" | "medium" | "high"> = {
 const COST_RATES: Record<string, { input: number; output: number }> = {
   "gpt-4o":               { input: 2.50e-6,  output: 10.00e-6 },
   "gpt-4o-mini":          { input: 0.15e-6,  output: 0.60e-6  },
-  "openai/gpt-4o":        { input: 2.50e-6,  output: 10.00e-6 },
-  "openai/gpt-4o-mini":   { input: 0.15e-6,  output: 0.60e-6  },
+  "openai/gpt-5":        { input: 2.50e-6,  output: 10.00e-6 },
+  "openai/gpt-5-mini":   { input: 0.15e-6,  output: 0.60e-6  },
   "google/gemini-2.5-flash":      { input: 0.30e-6, output: 2.50e-6 },
   "google/gemini-2.5-flash-lite": { input: 0.10e-6, output: 0.40e-6 },
   "google/gemini-2.5-pro":        { input: 1.25e-6, output: 5.00e-6 },

@@ -8,7 +8,7 @@ import { getDeterministicFallback, safeParseMnemonic } from "./mnemonics-hardene
 
 // ═══ CONFIG ═══
 const AI_MODEL = ALLOWED_MODELS.generation;
-const IMAGE_MODEL = "openai/gpt-4o-mini";
+const IMAGE_MODEL = "openai/gpt-5-mini";
 const MODULE_NAME = "mnemonic";
 
 interface MnemonicRequest { 

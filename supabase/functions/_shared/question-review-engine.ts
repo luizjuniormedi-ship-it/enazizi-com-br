@@ -93,7 +93,7 @@ Transforme em PADRÃO OURO. Se irremediavelmente ruim, marque REJECTED.`;
 
   const response = await callAi({
     taskType: "generation",
-    model: "openai/gpt-4o-mini",
+    model: "openai/gpt-5-mini",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt }
