@@ -48,6 +48,9 @@ const FALLBACK_CHAINS = {
 
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
+const ANTHROPIC_BASE_URL = (Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.anthropic.com").replace(/\/+$/, "");
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
+const ANTHROPIC_REF = `anthropic/${ANTHROPIC_MODEL}`;
 
 export async function callAi(
   payload: AiRequest,
@@ -57,22 +60,28 @@ export async function callAi(
 ) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
   // 1. Determine Tier and Chain
   const tier = (payload.costTier === "PREMIUM" || payload.complexity === "alta" || payload.taskType === "reasoning" || payload.taskType === "tutor_deep") ? 'REASONING' : 'FAST';
-  
+
   // If LOW_COST is requested, we strictly prefer fast/cheap models
   const isLowCost = payload.costTier === "LOW_COST";
-  
+
   const requestedModel = payload.model;
   let baseChain = requestedModel ? [requestedModel, ...FALLBACK_CHAINS[tier]] : FALLBACK_CHAINS[tier];
-  
+
   if (isLowCost) {
-    // Re-order chain to prioritize cheapest models
     baseChain = ["openai/gpt-5-mini", "google/gemini-2.5-flash-lite", ...baseChain];
   }
 
+  // Claude (hudapi) primário global quando ANTHROPIC_API_KEY está setada.
+  if (ANTHROPIC_API_KEY && payload.taskType !== "vision") {
+    baseChain = [ANTHROPIC_REF, ...baseChain];
+  }
+
   const uniqueChain = [...new Set(baseChain)];
+
 
 
   // 2. Global Cache Check (SHA256)
@@ -133,10 +142,21 @@ export async function callAi(
         
         // REPAIR: Clean payload of custom internal arguments that OpenAI doesn't recognize
         // Direct OpenAI if key exists and provider is openai
-        if (OPENAI_API_KEY && provider === "openai") {
-          // REPAIR: OpenAI doesn't recognize internal ENAZIZI metadata
+        if (provider === "anthropic") {
+          if (!ANTHROPIC_API_KEY) { circuit.recordFailure(); break; }
           const { taskType, complexity, userId, skipCache, costTier, topic, ...standardPayload } = payload as any;
-          
+          res = await fetch(`${ANTHROPIC_BASE_URL}/v1/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${ANTHROPIC_API_KEY}`,
+              "x-api-key": ANTHROPIC_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ ...standardPayload, model: modelName }),
+            signal: controller.signal
+          });
+        } else if (OPENAI_API_KEY && provider === "openai") {
+          const { taskType, complexity, userId, skipCache, costTier, topic, ...standardPayload } = payload as any;
           res = await fetch(OPENAI_API, {
             method: "POST",
             headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -144,12 +164,11 @@ export async function callAi(
             signal: controller.signal
           });
         } else {
-          // Use Lovable Gateway — strip internal ENAZIZI metadata to avoid 400 from downstream provider
           const { taskType: _tt, complexity: _cx, userId: _uid, skipCache: _sc, costTier: _ct, topic: _tp, ...gatewayPayload } = payload as any;
           res = await fetch(LOVABLE_GATEWAY, {
             method: "POST",
-            headers: { 
-              "Authorization": `Bearer ${LOVABLE_API_KEY}`, 
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
               "Content-Type": "application/json",
               "X-Correlation-Id": logger.correlationId
             },
