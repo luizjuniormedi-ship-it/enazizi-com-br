@@ -52,7 +52,7 @@ export interface AISelectInput {
 }
 
 export interface ModelRef {
-  provider: "lovable-ai" | "openai" | "eu-ai";
+  provider: "lovable-ai" | "openai" | "eu-ai" | "anthropic";
   model: string;
 }
 
@@ -343,8 +343,10 @@ function getAIKey(provider: string): string {
   if (provider === "openai") {
     return Deno.env.get("OPENAI_API_KEY") || "";
   }
+  if (provider === "anthropic") {
+    return Deno.env.get("ANTHROPIC_API_KEY") || "";
+  }
   if (provider === "eu-ai") {
-    // proxy Railway não exige auth; retorna marker p/ não falhar checagem de key
     return "eu-ai-noauth";
   }
   return (
@@ -354,6 +356,9 @@ function getAIKey(provider: string): string {
     ""
   );
 }
+
+const ANTHROPIC_BASE_URL = (Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.anthropic.com").replace(/\/+$/, "");
+const ANTHROPIC_DEFAULT_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
 
 function extractProviderError(status: number | undefined, bodyText: string, err?: unknown) {
   const fallbackMessage = err instanceof Error ? err.message : bodyText || "Provider unavailable";
@@ -399,6 +404,45 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
+    // ---- Branch: anthropic (Claude via hudapi.cloud / OpenAI-compatible proxy) ----
+    if (ref.provider === "anthropic") {
+      const body: Record<string, unknown> = {
+        model: ref.model,
+        messages,
+        max_tokens: maxTokens,
+      };
+      const res = await fetchWithTimeout(
+        `${ANTHROPIC_BASE_URL}/v1/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "x-api-key": apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+        AI_TIMEOUT_MS,
+      );
+      const latency_ms = Date.now() - start;
+      const responseText = await res.text();
+      if (!res.ok) {
+        const e = extractProviderError(res.status, responseText);
+        return { attempt: { ...ref, success: false, status: res.status, ...e, latency_ms } };
+      }
+      let parsed: any;
+      try { parsed = JSON.parse(responseText); } catch {
+        return { attempt: { ...ref, success: false, status: res.status, code: "AI_INVALID_JSON", message: "anthropic returned invalid JSON", latency_ms } };
+      }
+      const content = parsed?.choices?.[0]?.message?.content
+        || (Array.isArray(parsed?.content) ? parsed.content.map((p: any) => p?.text || "").join("") : parsed?.content)
+        || parsed?.message;
+      if (!content || typeof content !== "string") {
+        return { attempt: { ...ref, success: false, status: res.status, code: "AI_EMPTY_RESPONSE", message: "anthropic returned no content", latency_ms } };
+      }
+      return { content, usage: parsed?.usage, attempt: { ...ref, success: true, status: res.status, latency_ms } };
+    }
+
     // ---- Branch: eu-ai (Claude via Railway proxy) ----
     if (ref.provider === "eu-ai") {
       const lastUser = [...messages].reverse().find((m) => m.role === "user")?.content || "";
@@ -742,6 +786,14 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
       fullChain.unshift({ provider: "eu-ai", model: "claude-eu" });
       console.log(`[AI_RUNTIME_EU_AI_PRIMARY] req=${reqTag} — Claude prepended as primary`);
     }
+  }
+
+  // Anthropic (Claude via hudapi.cloud) como PRIMÁRIO global quando ANTHROPIC_API_KEY estiver setado.
+  // Fallback automático para OpenAI/Gemini se falhar.
+  const hasAnthropic = !!Deno.env.get("ANTHROPIC_API_KEY");
+  if (hasAnthropic && !fullChain.some(c => c.provider === "anthropic")) {
+    fullChain.unshift({ provider: "anthropic", model: ANTHROPIC_DEFAULT_MODEL });
+    console.log(`[AI_RUNTIME_ANTHROPIC_PRIMARY] req=${reqTag} — Claude (${ANTHROPIC_DEFAULT_MODEL} @ ${ANTHROPIC_BASE_URL}) prepended as primary`);
   }
 
   // Health-aware filtering: pula modelos com falha recente conhecida.
