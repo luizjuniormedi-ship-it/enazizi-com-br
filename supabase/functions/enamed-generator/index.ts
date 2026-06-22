@@ -13,6 +13,8 @@ const corsHeaders = {
 
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const ANTHROPIC_API = `${Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.anthropic.com"}/v1/chat/completions`;
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
 
 const ENAMED_THEMES = [
   { specialty: "Clínica Médica", topics: ["IAM e SCA", "Insuficiência Cardíaca", "DPOC e Asma", "Pneumonia Comunitária", "TEP", "AVC Isquêmico e Hemorrágico", "Diabetes Mellitus", "Cetoacidose Diabética", "Hipotireoidismo e Hipertireoidismo", "Sepse e Choque Séptico", "Insuficiência Renal Aguda", "Doença Renal Crônica", "Distúrbios Hidroeletrolíticos", "Cirrose e Hepatopatias", "Anemia Falciforme", "Lúpus Eritematoso Sistêmico", "Artrite Reumatoide", "Meningite Bacteriana", "HIV/AIDS", "Tuberculose Pulmonar e Extrapulmonar"] },
@@ -33,6 +35,7 @@ const ENAMED_THEMES = [
 async function callAI(messages: Array<{ role: string; content: string }>): Promise<string> {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
   const buildBody = (model: string) => {
     const modelToUse = model.includes("openai/") ? model.split("/")[1] : model;
@@ -46,8 +49,27 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     });
   };
 
-  if (OPENAI_API_KEY) {
+  if (ANTHROPIC_API_KEY) {
     try {
+      const startMs = Date.now();
+      const res = await fetch(ANTHROPIC_API, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${ANTHROPIC_API_KEY}`,
+          "x-api-key": ANTHROPIC_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model: ANTHROPIC_MODEL, messages, max_tokens: 16384, temperature: 0.85 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        logAiUsage({ userId: "system", functionName: "enamed-generator", modelUsed: `anthropic/${ANTHROPIC_MODEL}`, success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
+        return data.choices?.[0]?.message?.content || "";
+      }
+    } catch (e) {
+      console.warn("Anthropic failed:", e);
+    }
+  }
       const startMs = Date.now();
       const model = "gpt-4o-mini";
       const res = await fetch(OPENAI_API, {
