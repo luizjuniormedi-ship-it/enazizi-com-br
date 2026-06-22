@@ -142,10 +142,21 @@ export async function callAi(
         
         // REPAIR: Clean payload of custom internal arguments that OpenAI doesn't recognize
         // Direct OpenAI if key exists and provider is openai
-        if (OPENAI_API_KEY && provider === "openai") {
-          // REPAIR: OpenAI doesn't recognize internal ENAZIZI metadata
+        if (provider === "anthropic") {
+          if (!ANTHROPIC_API_KEY) { circuit.recordFailure(); break; }
           const { taskType, complexity, userId, skipCache, costTier, topic, ...standardPayload } = payload as any;
-          
+          res = await fetch(`${ANTHROPIC_BASE_URL}/v1/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${ANTHROPIC_API_KEY}`,
+              "x-api-key": ANTHROPIC_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ ...standardPayload, model: modelName }),
+            signal: controller.signal
+          });
+        } else if (OPENAI_API_KEY && provider === "openai") {
+          const { taskType, complexity, userId, skipCache, costTier, topic, ...standardPayload } = payload as any;
           res = await fetch(OPENAI_API, {
             method: "POST",
             headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -153,12 +164,11 @@ export async function callAi(
             signal: controller.signal
           });
         } else {
-          // Use Lovable Gateway — strip internal ENAZIZI metadata to avoid 400 from downstream provider
           const { taskType: _tt, complexity: _cx, userId: _uid, skipCache: _sc, costTier: _ct, topic: _tp, ...gatewayPayload } = payload as any;
           res = await fetch(LOVABLE_GATEWAY, {
             method: "POST",
-            headers: { 
-              "Authorization": `Bearer ${LOVABLE_API_KEY}`, 
+            headers: {
+              "Authorization": `Bearer ${LOVABLE_API_KEY}`,
               "Content-Type": "application/json",
               "X-Correlation-Id": logger.correlationId
             },
