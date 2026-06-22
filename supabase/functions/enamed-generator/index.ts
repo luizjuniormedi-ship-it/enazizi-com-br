@@ -67,7 +67,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
 
   if (LOVABLE_API_KEY) {
     const startMs = Date.now();
-    const model = "openai/gpt-4o-mini";
+    const model = "openai/gpt-5-mini";
     const res = await fetch(LOVABLE_GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },

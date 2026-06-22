@@ -48,7 +48,7 @@ Responda em JSON: { "score": 0-100, "hallucination": boolean, "feedback": "texto
 
         for (const msg of messages) {
             const auditRes = await aiFetch({
-                model: "openai/gpt-4o-mini", // Use smaller/faster model for auditing
+                model: "openai/gpt-5-mini", // Use smaller/faster model for auditing
                 messages: [
                     { role: "system", content: GUARDIAN_PROMPT },
                     { role: "user", content: `AUDITAR ESTA RESPOSTA:\n\n${msg.content}` }

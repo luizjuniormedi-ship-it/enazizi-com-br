@@ -332,8 +332,8 @@ export async function checkAndIncrementUsage(
 // ── AI calls (OpenAI primary, Gemini fallback) ──
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
-const LIGHT_MODEL = "openai/gpt-4o-mini";
-const HEAVY_MODEL = "openai/gpt-4o-mini";
+const LIGHT_MODEL = "openai/gpt-5-mini";
+const HEAVY_MODEL = "openai/gpt-5-mini";
 const GEMINI_FALLBACK_LIGHT = "google/gemini-2.5-flash-lite";
 const GEMINI_FALLBACK_HEAVY = "google/gemini-2.5-flash";
 

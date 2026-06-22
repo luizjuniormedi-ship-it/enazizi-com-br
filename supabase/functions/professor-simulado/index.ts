@@ -782,7 +782,7 @@ REGRAS INVIOLÁVEIS:
                   usedClaude = false;
                   response = await aiFetch({
                     messages: [{ role: "user", content: prompt }],
-                    model: "openai/gpt-4o-mini",
+                    model: "openai/gpt-5-mini",
                     maxTokens: 8192,
                     timeoutMs: 55000,
                     maxRetries: 0,

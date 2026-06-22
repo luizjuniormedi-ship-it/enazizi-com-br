@@ -5,8 +5,8 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const MODELS_TO_TEST = [
   "google/gemini-2.5-flash",
-  "openai/gpt-4o",
-  "openai/gpt-4o-mini"
+  "openai/gpt-5",
+  "openai/gpt-5-mini"
 ];
 
 serve(async (req) => {

@@ -139,7 +139,7 @@ Deno.serve(enterpriseEdgeHandler("upgrade-questions", async ({ req, logger, wait
         await supabaseAdmin.from("pipeline_governance").insert({
           pipeline_name: "upgrade-questions",
           function_name: "upgrade-questions",
-          model_used: "openai/gpt-4o-mini",
+          model_used: "openai/gpt-5-mini",
           latency_ms: latency,
           status: result.quality_tier,
           metadata: {

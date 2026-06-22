@@ -31,12 +31,12 @@ interface AiFetchOptions {
  */
 const FALLBACK_CHAINS = {
   FAST: [
-    "openai/gpt-4o-mini",
+    "openai/gpt-5-mini",
     "google/gemini-2.5-flash-lite",
     "google/gemini-2.5-flash"
   ],
   REASONING: [
-    "openai/gpt-4o",
+    "openai/gpt-5",
     "google/gemini-2.5-pro",
     "openai/o3-mini"
   ]
