@@ -43,10 +43,10 @@ const VideoLessonsLibrary = () => {
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const navigate = useNavigate();
 
-  const { data: lessons, isLoading } = useQuery({
+  const { data: lessons = [], isLoading } = useQuery({
     queryKey: ["student-video-lessons"],
     queryFn: async () => {
-      const { data: memoryData } = await supabase
+      const { data: memoryData, error: memoryError } = await supabase
         .from("tutor_lesson_memory")
         .select("*")
         .eq("status", "published")
@@ -63,9 +63,20 @@ const VideoLessonsLibrary = () => {
         throw error;
       }
 
+      if (memoryError) {
+        console.warn("[VideoLessonsLibrary] tutor_lesson_memory indisponível:", memoryError.message);
+      }
+
       // Merge and standardize
-      const standardLessons = (data || []).map(l => ({ ...l, duration: l.duration_seconds }));
-      const memoryLessons = (memoryData || []).map(l => ({ ...l, specialty: l.subject }));
+      const standardLessons = (data || []).map(l => ({
+        ...l,
+        duration: l.duration_seconds,
+        specialty: ((l as any).specialty || "Geral").trim?.() || "Geral",
+      }));
+      const memoryLessons = (memoryData || []).map(l => ({
+        ...l,
+        specialty: ((l as any).subject || "Geral").trim?.() || "Geral",
+      }));
       
       return [...standardLessons, ...memoryLessons].sort((a, b) => 
         new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime()
@@ -103,7 +114,7 @@ const VideoLessonsLibrary = () => {
     return Math.max(...logs.map(log => Number(log.completion_rate) || 0));
   };
 
-  const filteredLessons = lessons?.filter(lesson => {
+  const filteredLessons = lessons.filter(lesson => {
     const title = lesson.title || "";
     const specialty = (lesson as any).specialty || "";
     const topic = lesson.topic || "";
@@ -124,7 +135,13 @@ const VideoLessonsLibrary = () => {
   });
 
 
-  const specialties = Array.from(new Set(lessons?.map(l => (l as any).specialty) || []));
+  const specialties = Array.from(
+    new Set(
+      lessons
+        .map(l => ((l as any).specialty || "").trim?.() || "")
+        .filter((s): s is string => Boolean(s))
+    )
+  );
 
   return (
     <div className="pb-32 pt-12 space-y-12 relative min-h-screen overflow-x-hidden">
