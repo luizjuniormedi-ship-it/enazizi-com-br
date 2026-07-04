@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { tryEU, mapToEURequest, euToSupabaseResponse } from "@/lib/eu/euClient";
 
 /**
  * ENAZIZI TUTOR V3 OFFICIAL CLIENT
