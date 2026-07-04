@@ -16,6 +16,21 @@ export async function callTutorV3(payload: any, options: {
   
   // 1. Logs Forenses (Requirements)
   console.log(`[TUTOR_V3_OFFICIAL_CLIENT_CALL] id=${requestId} func=${functionName}`);
+
+  // ═══════════════════════════════════════════════════════════
+  // EU (Claude via Railway) — PRIMARY. Supabase = FALLBACK.
+  // Only for non-streaming requests (Railway API is JSON, not SSE).
+  // ═══════════════════════════════════════════════════════════
+  if (!options.stream) {
+    const euReq = mapToEURequest(functionName, payload);
+    if (euReq) {
+      const euData = await tryEU(euReq.path, euReq.body);
+      if (euData && (euData as any).message) {
+        return euToSupabaseResponse(functionName, euData as any);
+      }
+    }
+  }
+
   
   try {
     // 2. Auth Session Check
