@@ -29,8 +29,9 @@ jobs:
         VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
     - name: Run Playwright tests
+      if: env.E2E_USER_EMAIL != '' && env.E2E_USER_PASSWORD != '' && env.VITE_SUPABASE_URL != '' && env.VITE_SUPABASE_ANON_KEY != ''
       run: |
-        npm run preview &
+        npm run preview -- --host 127.0.0.1 --port 4173 &
         npx wait-on http://localhost:4173 --timeout 60000
         npm run test:e2e:tutor > test-output.log 2>&1 || (cat test-output.log && exit 1)
       env:
@@ -41,11 +42,22 @@ jobs:
         PLAYWRIGHT_TEST_BASE_URL: http://localhost:4173
         CI: true
 
+    - name: Report missing E2E configuration
+      if: env.E2E_USER_EMAIL == '' || env.E2E_USER_PASSWORD == '' || env.VITE_SUPABASE_URL == '' || env.VITE_SUPABASE_ANON_KEY == ''
+      run: echo "::warning::E2E Tutor skipped because repository secrets are not configured."
+      env:
+        E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+        E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
     - name: Save logs and results
       if: always()
       run: |
         mkdir -p artifacts
-        [ -f test-output.log ] && cp test-output.log artifacts/test-output.log
+        if [ -f test-output.log ]; then
+          cp test-output.log artifacts/test-output.log
+        fi
 
     - uses: actions/upload-artifact@v4
       if: always()

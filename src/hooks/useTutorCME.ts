@@ -8,6 +8,7 @@ import { useCMEAnalytics } from "./useCMEAnalytics";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useEducationalMemory } from "./useEducationalMemory";
 import { findRecommendedVideoForTutorContext } from "@/services/tutorVideoRecommendationService";
+import { humanizeCMEMessage } from "@/components/cinematic/cmeUserMessages";
 
 
 type CmeAggregationStatus = Database['public']['Enums']['cme_aggregation_status'];
@@ -647,7 +648,6 @@ export const useTutorCME = () => {
     } catch (err: any) {
       console.error("CME Transform Error:", err);
       // Override freeze: cme-ux-correct-fix — humanizar erro para o usuário.
-      const { humanizeCMEMessage } = await import("@/components/cinematic/cmeUserMessages");
       const friendly = humanizeCMEMessage(err?.message);
       setState(s => ({ ...s, status: 'failed', error: friendly, message: friendly }));
       toast.error(friendly, { id: "cme-transform-error" });

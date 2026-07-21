@@ -43,7 +43,7 @@ export const AmbientPersistenceLayer: React.FC = () => {
       {previous && (
         <div
           key={`prev-${previous}`}
-          className="absolute inset-0 transition-opacity duration-[1200ms] ease-out"
+          className="absolute inset-0 transition-opacity [transition-duration:1200ms] ease-out"
           style={{ opacity: 0 }}
           ref={(el) => {
             // Fade-out: começa em 1, vai para 0 no próximo frame
@@ -68,7 +68,7 @@ export const AmbientPersistenceLayer: React.FC = () => {
       {/* Camada atual — entra suavemente */}
       <div
         key={`curr-${current}`}
-        className="absolute inset-0 transition-opacity duration-[1200ms] ease-out"
+        className="absolute inset-0 transition-opacity [transition-duration:1200ms] ease-out"
         style={{ opacity: 0 }}
         ref={(el) => {
           if (el) {

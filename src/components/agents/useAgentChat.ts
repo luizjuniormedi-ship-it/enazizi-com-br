@@ -13,6 +13,7 @@ import { useTutorAdaptiveContext } from "./hooks/useTutorAdaptiveContext";
 import { usePedagogicalSession } from "@/hooks/usePedagogicalSession";
 import { useTutorMemoryBridge } from "./hooks/useTutorMemoryBridge";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
+import { adjustMemoryQuality } from "@/lib/tutor/tutorMemory";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
 
 interface UseAgentChatOptions {
@@ -621,9 +622,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       // Penaliza a memória cuja resposta o usuário rejeitou.
       const last = messages[messages.length - 1];
       if (last?.role === "assistant" && last.memoryId) {
-        import("@/lib/tutor/tutorMemory")
-          .then(({ adjustMemoryQuality }) => adjustMemoryQuality(last.memoryId!, -10))
-          .catch(() => {});
+        void adjustMemoryQuality(last.memoryId, -10).catch(() => {});
       }
       telemetry.track("tutor_response_regenerated", {
         memory_id: last?.memoryId ?? null,

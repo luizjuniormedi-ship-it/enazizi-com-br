@@ -30,7 +30,6 @@ jobs:
           serve -s dist -l 3000 &
           sleep 5
           lhci collect --url=http://localhost:3000 --url=http://localhost:3000/dashboard/simulados --url=http://localhost:3000/dashboard/mentor
-          lhci report --format=html
           
       - name: Upload Report
         uses: actions/upload-artifact@v4

@@ -39,24 +39,8 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Start preview server
-        run: |
-          npx vite preview --port 4173 --host 127.0.0.1 &
-          echo $! > .preview.pid
-          for i in $(seq 1 40); do
-            curl -sf http://127.0.0.1:4173 > /dev/null && exit 0
-            sleep 2
-          done
-          echo "Preview server failed to start" >&2
-          exit 1
-
       - name: Run FSRS + TRI E2E
-        run: npx playwright test tests/e2e/fsrs-tri-integration.spec.ts --reporter=html
-
-      - name: Stop preview server
-        if: always()
-        run: |
-          if [ -f .preview.pid ]; then kill "$(cat .preview.pid)" || true; fi
+        run: npx playwright test --config=playwright.fsrs-tri.config.ts
 
       - name: Upload Playwright report
         if: always()
