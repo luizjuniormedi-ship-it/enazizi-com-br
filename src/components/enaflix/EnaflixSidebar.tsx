@@ -264,7 +264,7 @@ export function EnaflixSidebar({ className, isMobile }: { className?: string; is
             <div className="space-y-1">
               {section.items.map((item) => (
                 <SidebarItem
-                  key={item.to}
+                  key={`${item.to}:${item.label}`}
                   {...item}
                   label={isCollapsed && !isMobile ? "" : item.label}
                   active={location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(item.to))}

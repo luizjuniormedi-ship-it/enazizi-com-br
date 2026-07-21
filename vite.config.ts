@@ -99,6 +99,9 @@ export default defineConfig(({ mode }) => ({
     }),
   ].filter(Boolean),
   build: {
+    // hls.js is intentionally isolated and weighs ~525 kB raw (~162 kB gzip).
+    // Keep warnings actionable for any chunk that grows beyond this known vendor ceiling.
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks: {
