@@ -55,7 +55,9 @@ jobs:
       if: always()
       run: |
         mkdir -p artifacts
-        [ -f test-output.log ] && cp test-output.log artifacts/test-output.log
+        if [ -f test-output.log ]; then
+          cp test-output.log artifacts/test-output.log
+        fi
 
     - uses: actions/upload-artifact@v4
       if: always()
