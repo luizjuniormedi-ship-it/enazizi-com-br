@@ -4,18 +4,30 @@ import type { Msg, Conversation } from "@/components/tutor/TutorConstants";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
 import { dualWriteTutorSession, dualWriteTutorMessage } from "@/lib/tutorDualWrite";
 import { trackStudyActivity } from "@/lib/educationalEngine";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
+/**
+ * Hook de persistência do chat do Tutor (path legado `/dashboard/tutor-legacy`).
+ *
+ * A partir da Fase 2/3 (recuperação do Mentor IA v25):
+ * - `createConversation` aceita `specialty` e `topic` e SEMPRE sincroniza
+ *   com `tutor_sessions` para que o backend enxergue o contexto pedagógico
+ *   (o gate anterior por feature-flag deixava tutor_sessions vazio para
+ *   quem estivesse fora do rollout, o que quebrava a Fase 2).
+ * - `saveMessage` continua sendo a única gravação primária em `chat_messages`
+ *   e faz espelhamento fire-and-forget em `tutor_messages` via dualWrite.
+ * - RLS já garante isolamento por `auth.uid()`; nunca passamos user_id
+ *   vindo do frontend em consultas que dependem do dono.
+ */
 export function useChatMessages(userId: string | undefined) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const { isEnabled } = useFeatureFlags();
-  const tutorDualWriteEnabled = isEnabled("new_tutor_flow_enabled");
 
   const loadConversations = useCallback(async () => {
     if (!userId) return;
+    // RLS: filtra por user_id = auth.uid() no servidor;
+    // o .eq aqui é apenas otimização de índice.
     const { data } = await supabase
       .from("chat_conversations")
       .select("id, title, created_at")
@@ -33,60 +45,98 @@ export function useChatMessages(userId: string | undefined) {
       .eq("conversation_id", convId)
       .order("created_at", { ascending: true });
     if (data && data.length > 0) {
-      setMessages(data.map(m => ({ role: m.role as "user" | "assistant", content: m.content })));
+      setMessages(data.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })));
+    } else {
+      setMessages([]);
     }
     setActiveConversationId(convId);
     setShowHistory(false);
     return data && data.length > 0;
   }, []);
 
-  const createConversation = useCallback(async (title: string) => {
-    if (!userId) return null;
-    const { data: newConv } = await supabase
-      .from("chat_conversations")
-      .insert({ user_id: userId, agent_type: FUNCTION_NAME, title: title.slice(0, 60) })
-      .select("id")
-      .single();
-    if (newConv) {
+  const createConversation = useCallback(
+    async (title: string, opts?: { specialty?: string; topic?: string; mode?: "free" | "mission"; missionId?: string; phase?: string }) => {
+      if (!userId) return null;
+      const { data: newConv, error } = await supabase
+        .from("chat_conversations")
+        .insert({
+          user_id: userId,
+          agent_type: FUNCTION_NAME,
+          title: title.slice(0, 60),
+        })
+        .select("id")
+        .single();
+
+      if (error || !newConv) {
+        console.warn("[useChatMessages] createConversation failed:", error?.message);
+        return null;
+      }
+
       setActiveConversationId(newConv.id);
-      // Dual-write: create tutor_session (flag-gated)
-      if (tutorDualWriteEnabled) dualWriteTutorSession({ userId, conversationId: newConv.id });
-      return newConv.id;
-    }
-    return null;
-  }, [userId]);
 
-  const saveMessage = useCallback(async (convId: string, role: "user" | "assistant", content: string) => {
-    if (!userId) return;
-    await supabase.from("chat_messages").insert({
-      conversation_id: convId, user_id: userId, role, content,
-    });
-    await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
-    // Dual-write: mirror to tutor_messages (flag-gated)
-    if (tutorDualWriteEnabled) dualWriteTutorMessage({ userId, conversationId: convId, role, content });
-    
-    // Rastreamento pedagógico para automação ENAFLIX
-    if (role === "user" && content.length > 10) {
-      // Tentativa simples de extrair o tema do título da conversa ou do conteúdo
-      const conversation = conversations.find(c => c.id === convId);
-      const topic = conversation?.title || "Estudo Geral";
-      trackStudyActivity({
+      // Sincroniza tutor_sessions com o contexto pedagógico (specialty/topic).
+      // Sempre executa: sem esse mirror, o Tutor V3 recebe topic vazio.
+      dualWriteTutorSession({
         userId,
-        topic,
-        interactionCount: 1,
-        studyTimeSeconds: 30 // Estimativa por mensagem
+        conversationId: newConv.id,
+        mode: opts?.mode || "free",
+        topic: opts?.topic,
+        specialty: opts?.specialty,
+        missionId: opts?.missionId,
+        phase: opts?.phase,
       });
-    }
-  }, [userId]);
 
-  const deleteConversation = useCallback(async (convId: string) => {
-    await supabase.from("chat_conversations").delete().eq("id", convId);
-    if (activeConversationId === convId) {
-      setActiveConversationId(null);
-      setMessages([]);
-    }
-    loadConversations();
-  }, [activeConversationId, loadConversations]);
+      return newConv.id;
+    },
+    [userId]
+  );
+
+  const saveMessage = useCallback(
+    async (convId: string, role: "user" | "assistant", content: string) => {
+      if (!userId) return;
+      const { error } = await supabase.from("chat_messages").insert({
+        conversation_id: convId,
+        user_id: userId,
+        role,
+        content,
+      });
+      if (error) {
+        console.warn("[useChatMessages] saveMessage failed:", error.message);
+        return;
+      }
+      await supabase
+        .from("chat_conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", convId);
+
+      // Mirror fire-and-forget para tutor_messages.
+      dualWriteTutorMessage({ userId, conversationId: convId, role, content });
+
+      if (role === "user" && content.length > 10) {
+        const conversation = conversations.find((c) => c.id === convId);
+        const topic = conversation?.title || "Estudo Geral";
+        trackStudyActivity({
+          userId,
+          topic,
+          interactionCount: 1,
+          studyTimeSeconds: 30,
+        });
+      }
+    },
+    [userId, conversations]
+  );
+
+  const deleteConversation = useCallback(
+    async (convId: string) => {
+      await supabase.from("chat_conversations").delete().eq("id", convId);
+      if (activeConversationId === convId) {
+        setActiveConversationId(null);
+        setMessages([]);
+      }
+      loadConversations();
+    },
+    [activeConversationId, loadConversations]
+  );
 
   const startNewSession = useCallback(() => {
     setActiveConversationId(null);
@@ -95,10 +145,18 @@ export function useChatMessages(userId: string | undefined) {
   }, []);
 
   return {
-    messages, setMessages,
-    conversations, activeConversationId, setActiveConversationId,
-    showHistory, setShowHistory,
-    loadConversations, loadConversation, createConversation,
-    saveMessage, deleteConversation, startNewSession,
+    messages,
+    setMessages,
+    conversations,
+    activeConversationId,
+    setActiveConversationId,
+    showHistory,
+    setShowHistory,
+    loadConversations,
+    loadConversation,
+    createConversation,
+    saveMessage,
+    deleteConversation,
+    startNewSession,
   };
 }
