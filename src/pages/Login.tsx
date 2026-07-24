@@ -60,14 +60,18 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionExpired = searchParams.get("expired") === "1";
+  const nextParam = searchParams.get("next");
+  const safeNext =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
+  const postLoginTarget = safeNext ?? "/enaflix";
   const { user, session, loading: authLoading, signIn, resetPassword } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (session && !authLoading) {
-      navigate("/enaflix", { replace: true });
+      navigate(postLoginTarget, { replace: true });
     }
-  }, [session, authLoading, navigate]);
+  }, [session, authLoading, navigate, postLoginTarget]);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,7 +117,7 @@ const Login = () => {
       // The session change will be detected by AuthProvider, 
       // which will trigger the useEffect for navigation above.
       // But we also do an explicit navigate here just in case.
-      navigate("/enaflix", { replace: true });
+      navigate(postLoginTarget, { replace: true });
     } catch (err: any) {
       console.error("Login unexpected error:", err);
       setLoading(false);
