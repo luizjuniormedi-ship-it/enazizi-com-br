@@ -108,7 +108,6 @@ const StudySessionContent = () => {
       
       const data = await response.json();
       setMessages(prev => [...prev, { role: "assistant", content: data.content || data.message || "" }]);
-      setMessages(prev => [...prev, { role: "assistant", content: data.content || data.message || "" }]);
     } catch (err) {
       console.error(err);
       toast({ title: "Erro no chat", description: "Não foi possível obter resposta.", variant: "destructive" });
