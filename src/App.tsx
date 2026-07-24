@@ -376,23 +376,23 @@ const App = () => (
                   <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="plano-estudos" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="revisoes" element={<Navigate to="/dashboard/planner" replace />} />
-                  <Route path="estudar" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="chat" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="estudar" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+                  <Route path="tutor" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+                  <Route path="chat" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="simulado" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="error-bank" element={<Navigate to="/dashboard/banco-erros" replace />} />
                   <Route path="desempenho" element={<Navigate to="/dashboard/analytics" replace />} />
                   <Route path="performance" element={<Navigate to="/dashboard/analytics" replace />} />
                   <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="missao" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="missao-do-dia" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="missao" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+                  <Route path="missao-do-dia" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="mnemonic-studio" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
                   <Route path="mnemonic-studio-v2" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
                   <Route path="mapas-mentais" element={<Navigate to="/dashboard/mapas-mentais" replace />} />
                   <Route path="minha-jornada" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
                   <Route path="radar-trajetoria" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
-                  <Route path="mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="mission" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="daily-plan" element={<Navigate to="/dashboard/plano-dia" replace />} />
                   <Route path="plano-dia" element={<DailyPlan />} />
                   <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
