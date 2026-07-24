@@ -32,6 +32,7 @@ const AdminLayout = lazyWithRetry(() => import("./components/layout/AdminLayout"
 const Index = lazyWithRetry(() => import("./pages/Index"), "Index");
 const DemoImageQuestions = lazyWithRetry(() => import("./pages/DemoImageQuestions"), "DemoImageQuestions");
 const Login = lazyWithRetry(() => import("./pages/Login"), "Login");
+const OAuthConsent = lazyWithRetry(() => import("./pages/OAuthConsent"), "OAuthConsent");
 const Register = lazyWithRetry(() => import("./pages/Register"), "Register");
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Flashcards = lazyWithRetry(() => import("./pages/Flashcards"), "Flashcards");
@@ -267,6 +268,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/auth" element={<Navigate to="/login" replace />} />
               <Route path="/loguin" element={<Navigate to="/login" replace />} />
               <Route path="/entrar" element={<Navigate to="/login" replace />} />

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Brain, Mail, Lock, User, GraduationCap, Building, Phone, ArrowLeft } from "lucide-react";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,12 @@ const Register = () => {
   const [periodo, setPeriodo] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const safeNext =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
+  const postAuthTarget = safeNext ?? "/enaflix";
+  const loginHref = safeNext ? `/login?next=${encodeURIComponent(safeNext)}` : "/login";
   const { signUp } = useAuth();
   const { toast } = useToast();
 
@@ -90,7 +96,7 @@ const Register = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => navigate("/login")}
+                onClick={() => navigate(loginHref)}
                 className="bg-primary/20 hover:bg-primary/30 border-primary/30 text-white text-[10px] font-black uppercase tracking-widest"
               >
                 Fazer Login
@@ -107,7 +113,7 @@ const Register = () => {
       } else if (data?.user && data?.session) {
         // Se já está logado (confirmação desativada)
         toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
-        navigate("/enaflix");
+        navigate(postAuthTarget);
       } else {
         // Se precisa confirmar e-mail ou aguardar aprovação
         toast({ 
@@ -115,7 +121,7 @@ const Register = () => {
           description: "Verifique seu e-mail para confirmar a conta. Seu acesso será liberado após a aprovação do administrador.",
           duration: 8000
         });
-        navigate("/login");
+        navigate(loginHref);
       }
     } catch (err: any) {
       console.error("Erro inesperado no fluxo de cadastro:", err);

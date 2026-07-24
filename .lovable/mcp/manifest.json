@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://qszsyskumcmuknumwxtk.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "enazizi-mcp",
+      "version": "0.1.0",
+      "title": "ENAZIZI"
+    },
+    "tools": [
+      {
+        "name": "whoami",
+        "title": "Who am I",
+        "description": "Return the authenticated ENAZIZI user id and email.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_recent_errors",
+        "title": "List recent study errors",
+        "description": "Return the signed-in user's most recent items from the ENAZIZI Banco de Erros (error_bank), newest first. Useful to review weak topics.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "default": 10,
+              "description": "Maximum number of errors to return (1-50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "only_undominated": {
+              "default": true,
+              "description": "If true, return only errors the user has not yet mastered (dominado = false).",
+              "type": "boolean"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_tutor_memory",
+        "title": "Search tutor memory",
+        "description": "Full-text search in the ENAZIZI tutor_knowledge_memory for entries visible to the signed-in user (own entries + promoted global knowledge). Returns question, topic, and a short answer summary.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 2,
+              "description": "Search text (matches topic, subtopic, question, or answer summary)."
+            },
+            "limit": {
+              "default": 10,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_flashcard",
+        "title": "Create flashcard",
+        "description": "Create a new flashcard in the ENAZIZI deck for the signed-in user. Use short, high-yield medical Q&A in pt-BR.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "minLength": 3
+            },
+            "answer": {
+              "type": "string",
+              "minLength": 1
+            },
+            "topic": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Clinical topic, e.g. 'Cardiologia'."
+            },
+            "subtopic": {
+              "type": "string"
+            },
+            "explanation": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "question",
+            "answer",
+            "topic"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
