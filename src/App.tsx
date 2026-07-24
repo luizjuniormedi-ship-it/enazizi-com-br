@@ -494,10 +494,10 @@ const App = () => (
               <Route path="/institucional" element={<InstitutionalRoute><EnaflixDashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
               </Route>
-              <Route path="/mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/mission" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/study-hub" element={<Navigate to="/enaflix" replace />} />
               {/* Canonical redirects — /study/* → /dashboard/* */}
-              <Route path="/study/tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/study/tutor" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/study/flashcards" element={<Navigate to="/dashboard/flashcards" replace />} />
               <Route path="/study/simulado" element={<Navigate to="/dashboard/simulados" replace />} />
               <Route path="/study/clinical" element={<Navigate to="/dashboard/simulacao-clinica" replace />} />
@@ -506,8 +506,8 @@ const App = () => (
               <Route path="/study/anamnese" element={<Navigate to="/dashboard/anamnese" replace />} />
               <Route path="/study/banco-erros" element={<Navigate to="/dashboard/banco-erros" replace />} />
               <Route path="/study/erros" element={<Navigate to="/dashboard/banco-erros" replace />} />
-              <Route path="/mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/daily-plan" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/mission" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+              <Route path="/daily-plan" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
