@@ -285,11 +285,11 @@ const App = () => (
               <Route path="/privacy" element={<Navigate to="/privacidade" replace />} />
               <Route path="/suporte" element={<Navigate to="/support" replace />} />
               
-              <Route path="/chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/mentor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/ai-mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/chatgpt" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+              <Route path="/mentor-ai" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+              <Route path="/ai-mentor" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/study" element={<Navigate to="/dashboard/cronograma" replace />} />
-              <Route path="/study-session" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/study-session" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/simulations" element={<Navigate to="/dashboard/simulados" replace />} />
               <Route path="/questions" element={<Navigate to="/dashboard/questoes" replace />} />
               <Route path="/planner" element={<Navigate to="/dashboard/cronograma" replace />} />
@@ -326,8 +326,8 @@ const App = () => (
                   <Route path="simulados" element={<ModuleBoundary name="Simulados"><Simulados /></ModuleBoundary>} />
                   <Route path="flashcards" element={<ModuleBoundary name="FSRS"><Flashcards /></ModuleBoundary>} />
                   <Route path="banco-erros" element={<ModuleBoundary name="ErrorBank"><ErrorBank /></ModuleBoundary>} />
-                  <Route path="chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="chatgpt" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+                  <Route path="mentor" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="agentes" element={<AgentsHub />} />
                   <Route path="banco-questoes" element={<QuestionsBank />} />
                   <Route path="gerador-questoes" element={<QuestionGenerator />} />
@@ -367,7 +367,7 @@ const App = () => (
 
                   {/* Redirecionamentos de conveniência / Legados */}
                   <Route path="home" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="study" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="study" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="biblioteca-enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
                   <Route path="video-lessons" element={<Navigate to="/dashboard/videoaulas" replace />} />
                   <Route path="fsrs" element={<Navigate to="/dashboard/flashcards" replace />} />
@@ -376,23 +376,23 @@ const App = () => (
                   <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="plano-estudos" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="revisoes" element={<Navigate to="/dashboard/planner" replace />} />
-                  <Route path="estudar" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="chat" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="estudar" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+                  <Route path="tutor" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+                  <Route path="chat" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="simulado" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="error-bank" element={<Navigate to="/dashboard/banco-erros" replace />} />
                   <Route path="desempenho" element={<Navigate to="/dashboard/analytics" replace />} />
                   <Route path="performance" element={<Navigate to="/dashboard/analytics" replace />} />
                   <Route path="notificacoes" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="missao" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="missao-do-dia" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="missao" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+                  <Route path="missao-do-dia" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="mnemonic-studio" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
                   <Route path="mnemonic-studio-v2" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
                   <Route path="mapas-mentais" element={<Navigate to="/dashboard/mapas-mentais" replace />} />
                   <Route path="minha-jornada" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
                   <Route path="radar-trajetoria" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
-                  <Route path="mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="mission" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="daily-plan" element={<Navigate to="/dashboard/plano-dia" replace />} />
                   <Route path="plano-dia" element={<DailyPlan />} />
                   <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
@@ -494,10 +494,10 @@ const App = () => (
               <Route path="/institucional" element={<InstitutionalRoute><EnaflixDashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
               </Route>
-              <Route path="/mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/mission" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/study-hub" element={<Navigate to="/enaflix" replace />} />
               {/* Canonical redirects — /study/* → /dashboard/* */}
-              <Route path="/study/tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/study/tutor" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/study/flashcards" element={<Navigate to="/dashboard/flashcards" replace />} />
               <Route path="/study/simulado" element={<Navigate to="/dashboard/simulados" replace />} />
               <Route path="/study/clinical" element={<Navigate to="/dashboard/simulacao-clinica" replace />} />
@@ -506,8 +506,8 @@ const App = () => (
               <Route path="/study/anamnese" element={<Navigate to="/dashboard/anamnese" replace />} />
               <Route path="/study/banco-erros" element={<Navigate to="/dashboard/banco-erros" replace />} />
               <Route path="/study/erros" element={<Navigate to="/dashboard/banco-erros" replace />} />
-              <Route path="/mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/daily-plan" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/mission" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+              <Route path="/daily-plan" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
