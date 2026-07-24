@@ -32,6 +32,7 @@
   "dependencies": {
     "@capacitor/cli": "^8.2.0",
     "@hookform/resolvers": "^3.10.0",
+    "@lovable.dev/mcp-js": "^0.24.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -93,7 +94,7 @@
     "tus-js-client": "^4.3.1",
     "vaul": "^0.9.9",
     "vite-plugin-pwa": "^1.2.0",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
