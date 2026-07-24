@@ -367,7 +367,7 @@ const App = () => (
 
                   {/* Redirecionamentos de conveniência / Legados */}
                   <Route path="home" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="study" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="study" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="biblioteca-enaflix" element={<Navigate to="/dashboard/enaflix" replace />} />
                   <Route path="video-lessons" element={<Navigate to="/dashboard/videoaulas" replace />} />
                   <Route path="fsrs" element={<Navigate to="/dashboard/flashcards" replace />} />
