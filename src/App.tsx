@@ -285,11 +285,11 @@ const App = () => (
               <Route path="/privacy" element={<Navigate to="/privacidade" replace />} />
               <Route path="/suporte" element={<Navigate to="/support" replace />} />
               
-              <Route path="/chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/mentor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-              <Route path="/ai-mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/chatgpt" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+              <Route path="/mentor-ai" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+              <Route path="/ai-mentor" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/study" element={<Navigate to="/dashboard/cronograma" replace />} />
-              <Route path="/study-session" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/study-session" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
               <Route path="/simulations" element={<Navigate to="/dashboard/simulados" replace />} />
               <Route path="/questions" element={<Navigate to="/dashboard/questoes" replace />} />
               <Route path="/planner" element={<Navigate to="/dashboard/cronograma" replace />} />
@@ -326,8 +326,8 @@ const App = () => (
                   <Route path="simulados" element={<ModuleBoundary name="Simulados"><Simulados /></ModuleBoundary>} />
                   <Route path="flashcards" element={<ModuleBoundary name="FSRS"><Flashcards /></ModuleBoundary>} />
                   <Route path="banco-erros" element={<ModuleBoundary name="ErrorBank"><ErrorBank /></ModuleBoundary>} />
-                  <Route path="chatgpt" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                  <Route path="mentor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                  <Route path="chatgpt" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
+                  <Route path="mentor" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="agentes" element={<AgentsHub />} />
                   <Route path="banco-questoes" element={<QuestionsBank />} />
                   <Route path="gerador-questoes" element={<QuestionGenerator />} />
