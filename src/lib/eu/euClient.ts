@@ -1,8 +1,15 @@
 /**
- * EU (Claude via Railway) - Primary AI Client
- * Tries Railway API first, callers handle Supabase fallback on null.
+ * EU (Claude Gateway) — Primary AI Client.
+ *
+ * Roteia todas as chamadas pelo Edge Function `eu-ai`, que agora é um proxy
+ * Anthropic-nativo para o Claude Gateway do plano Max 50x (v2026-06 hardening):
+ *  - Segredos (ANTHROPIC_BASE_URL / ANTHROPIC_API_KEY) permanecem SEMPRE server-side.
+ *  - Fallback interno: Claude Gateway → Railway → success:false (caller decide Supabase).
+ *  - Interface pública mantida (tryEU / mapToEURequest / euToSupabaseResponse) para
+ *    não quebrar `tutorClient` e demais chamadores.
  */
-const EU_BASE_URL = "https://enazizi-com-br-production.up.railway.app";
+import { supabase } from "@/integrations/supabase/client";
+
 const EU_TIMEOUT_MS = 60_000;
 
 export interface EUResponse {
@@ -12,46 +19,56 @@ export interface EUResponse {
   [key: string]: any;
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = EU_TIMEOUT_MS): Promise<Response> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(id);
-  }
-}
-
 /**
- * Try to call the EU (Claude/Railway) API. Returns null on any failure
- * so the caller can fallback to Supabase transparently.
+ * Chama o Edge Function `eu-ai` (proxy Claude Gateway).
+ * Retorna null em qualquer falha para o caller cair no fallback tradicional.
  */
 export async function tryEU<T = EUResponse>(path: string, body: Record<string, unknown>): Promise<T | null> {
-  const url = `${EU_BASE_URL}${path}`;
-  try {
-    console.log("🤖 [EU] Tentando Claude via Railway...", path);
-    const resp = await fetchWithTimeout(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), EU_TIMEOUT_MS);
 
-    if (!resp.ok) {
-      console.warn(`🔄 [FALLBACK] EU respondeu ${resp.status}, usando Supabase...`);
+  try {
+    console.log("🤖 [EU] Claude Gateway ▶", path);
+    // Anexa o path lógico para telemetria (o backend ignora se não usar).
+    const { data, error } = await supabase.functions.invoke("eu-ai", {
+      body: { ...body, __path: path },
+    });
+    clearTimeout(timer);
+
+    if (error) {
+      console.warn(`🔄 [FALLBACK] EU invoke error: ${error.message}`);
+      return null;
+    }
+    if (!data || (data as any).success === false) {
+      console.warn("🔄 [FALLBACK] EU respondeu success:false — fallback Supabase.");
       return null;
     }
 
-    const data = (await resp.json()) as T;
-    console.log("✅ [EU] Claude respondeu!", path);
-    return data;
+    // Normaliza para a forma esperada { message, provider, ... }
+    const normalized: any = {
+      message: (data as any).message ?? (data as any).content ?? (data as any).response ?? "",
+      provider: (data as any).provider ?? "claude-gateway",
+      model: (data as any).model,
+      source: (data as any).source ?? "claude-gateway",
+      ...data,
+    };
+
+    if (!normalized.message) {
+      console.warn("🔄 [FALLBACK] EU respondeu sem conteúdo — fallback Supabase.");
+      return null;
+    }
+
+    console.log("✅ [EU] Claude Gateway respondeu!", normalized.model || "");
+    return normalized as T;
   } catch (err: any) {
-    const reason = err?.name === "AbortError" ? "timeout" : (err?.message || "erro");
+    clearTimeout(timer);
+    const reason = err?.name === "AbortError" ? "timeout" : err?.message || "erro";
     console.warn(`🔄 [FALLBACK] EU falhou (${reason}), usando Supabase...`);
     return null;
   }
 }
 
-/** Map an internal Edge Function name → EU endpoint + body transformer. */
+/** Mapeia o nome da Edge Function alvo → payload compatível com o Claude Gateway. */
 export function mapToEURequest(
   functionName: string,
   payload: any,
@@ -59,26 +76,56 @@ export function mapToEURequest(
   switch (functionName) {
     case "tutor-v3-premium":
     case "tutor-v2-chat": {
+      const messages = Array.isArray(payload?.messages) ? payload.messages : undefined;
       const message = payload?.message ?? payload?.prompt ?? "";
-      if (!message) return null;
-      return { path: "/api/v1/chat", body: { message, topic: payload?.topic ?? payload?.newTopic ?? "Medicina" } };
+      if (!messages && !message) return null;
+      return {
+        path: "/api/v1/chat",
+        body: {
+          messages,
+          message,
+          topic: payload?.topic ?? payload?.newTopic ?? "Medicina",
+          system: payload?.system ?? payload?.systemPrompt,
+        },
+      };
     }
     case "generate-flashcards":
-      return { path: "/api/v1/flashcards/generate", body: { topic: payload?.topic ?? "", count: payload?.quantity ?? 10 } };
+      return {
+        path: "/api/v1/flashcards/generate",
+        body: {
+          message: `Gere ${payload?.quantity ?? 10} flashcards de alta qualidade em pt-BR sobre "${payload?.topic ?? ""}", formato Q/A objetivo com bibliografia.`,
+          topic: payload?.topic ?? "",
+        },
+      };
     case "generate-mnemonic":
-      return { path: "/api/v1/mnemonic/generate", body: { concept: payload?.tema ?? payload?.concept ?? "" } };
+      return {
+        path: "/api/v1/mnemonic/generate",
+        body: {
+          message: `Crie um mnemônico brasileiro memorável para: ${payload?.tema ?? payload?.concept ?? ""}. Traga acrônimo + explicação linha a linha.`,
+        },
+      };
     case "plantao":
     case "clinical-simulation":
-      return { path: "/api/v1/plantao", body: { scenario: payload?.scenario ?? payload?.message ?? "" } };
+      return {
+        path: "/api/v1/plantao",
+        body: {
+          message: payload?.scenario ?? payload?.message ?? "Inicie uma simulação de plantão de emergência.",
+        },
+      };
     case "question-generator":
     case "generate-adaptive-simulado":
-      return { path: "/api/v1/questions/generate", body: { specialty: payload?.specialty ?? payload?.topic ?? "", count: payload?.count ?? payload?.quantity ?? 10 } };
+      return {
+        path: "/api/v1/questions/generate",
+        body: {
+          message: `Gere ${payload?.count ?? payload?.quantity ?? 10} questões estilo prova de residência em pt-BR sobre ${payload?.specialty ?? payload?.topic ?? ""}, com alternativas A-E e comentário fundamentado.`,
+        },
+      };
     default:
       return null;
   }
 }
 
-/** Build a Response that mimics the Supabase Edge Function shape from an EU payload. */
+/** Constrói uma Response com o shape esperado pelo restante do app. */
 export function euToSupabaseResponse(functionName: string, eu: EUResponse): Response {
   let body: Record<string, unknown>;
   switch (functionName) {
@@ -87,13 +134,15 @@ export function euToSupabaseResponse(functionName: string, eu: EUResponse): Resp
       body = {
         content: eu.message,
         response: eu.message,
-        provider: eu.provider ?? "claude",
-        source: "eu-railway",
+        message: eu.message,
+        provider: eu.provider ?? "claude-gateway",
+        model: (eu as any).model,
+        source: eu.source ?? "claude-gateway",
         success: true,
       };
       break;
     default:
-      body = { ...eu, success: true, source: "eu-railway" };
+      body = { ...eu, success: true, source: eu.source ?? "claude-gateway" };
   }
   return new Response(JSON.stringify(body), {
     status: 200,
