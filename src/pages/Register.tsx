@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Brain, Mail, Lock, User, GraduationCap, Building, Phone, ArrowLeft } from "lucide-react";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
