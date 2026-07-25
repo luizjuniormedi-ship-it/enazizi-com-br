@@ -407,19 +407,23 @@ const Dashboard = () => {
         </div>
 
 
-        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
-          <div className="space-y-6">
+        {/*
+          Bloco duas-colunas: empilha em mobile/tablet, split em ≥lg.
+          Gap fluido evita espaço morto em 375px e mantém respiração em 1440px.
+        */}
+        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 pt-8 sm:pt-12">
+          <div className="space-y-6 min-w-0">
             <EnaflixSectionTitle kicker="MATRIZ ENAMED 2026" title="Motor de Aprovação" />
             <Suspense fallback={<LocalSectionSkeleton />}>
               <ApprovalIntelligenceDashboard />
             </Suspense>
-            
-            <EnaflixSectionTitle kicker="INTELIGÊNCIA PREDITIVA" title="Chance de Aprovação" className="mt-12" />
+
+            <EnaflixSectionTitle kicker="INTELIGÊNCIA PREDITIVA" title="Chance de Aprovação" className="mt-8 sm:mt-12" />
             <Suspense fallback={<LocalSectionSkeleton />}>
               <ApprovalChanceDashboard />
             </Suspense>
             <Suspense fallback={<LocalSectionSkeleton />}>
-              <div className="mt-6">
+              <div className="mt-6 space-y-6">
                 <HighImpactThemesCard />
                 <EnamedImpactDashboard />
               </div>
@@ -430,7 +434,7 @@ const Dashboard = () => {
               </div>
             </Suspense>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
             {dashData && (
               <Suspense fallback={<LocalSectionSkeleton />}>
@@ -440,7 +444,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="px-4 sm:px-8 lg:px-14 pb-12">
+        <div className="px-4 sm:px-8 lg:px-14 pb-8 sm:pb-12">
           <EnaflixSectionTitle kicker="ENAMED EVIDENCE ENGINE" title="Evidência de Performance" />
           <div className="mt-6">
             <Suspense fallback={<LocalSectionSkeleton />}>
@@ -449,29 +453,31 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="px-4 sm:px-8 lg:px-14 pb-24">
+        <div className="px-4 sm:px-8 lg:px-14 pb-16 sm:pb-24">
           <EnaflixSectionTitle kicker="SCALABILITY OF EVIDENCE" title="Validação de Motores" />
           <div className="mt-6">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <EvidenceValidationDashboard />
             </Suspense>
           </div>
-          <div className="mt-12">
+          {/* Separações verticais fluidas: mt-8..mt-24 conforme viewport (evita "buraco" em mobile). */}
+          <div className="mt-8 sm:mt-12">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <EvidenceGovernanceDashboard />
             </Suspense>
           </div>
-          <div className="mt-24">
+          <div className="mt-12 sm:mt-24">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <OutcomeValidationDashboard />
             </Suspense>
           </div>
-          <div className="mt-24">
+          <div className="mt-12 sm:mt-24">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <OutcomeScienceDashboard />
             </Suspense>
           </div>
         </div>
+
 
         <div className="px-4 sm:px-8 lg:px-14 pb-12">
           <EnaflixSectionTitle kicker="MÉTRICAS DETALHADAS" title="Estatísticas de Estudo" />
