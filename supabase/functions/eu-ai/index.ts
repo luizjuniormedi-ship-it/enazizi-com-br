@@ -24,6 +24,11 @@ const CLAUDE_API_KEY =
   "";
 const EU_API_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
 
+// Lovable AI Gateway (fallback universal — chave sempre válida)
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
+const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const LOVABLE_DEFAULT_MODEL = Deno.env.get("LOVABLE_DEFAULT_MODEL") || "google/gemini-3.6-flash";
+
 // Modelo padrão: Sonnet 4.6 (BALANCED) confirmado no /v1/models do gateway.
 const DEFAULT_MODEL = Deno.env.get("CLAUDE_DEFAULT_MODEL") || "claude-sonnet-4.6";
 const FALLBACK_MODEL = "claude-sonnet-4"; // 2ª escolha se o padrão for rejeitado
@@ -139,12 +144,53 @@ async function callRailwayFallback(body: InPayload): Promise<{ ok: boolean; text
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok || data?.success === false) return { ok: false, status: resp.status };
-    return { ok: true, text: data.message || data.content || "", provider: data.provider || "railway", status: 200 };
+    const text = String(data.message || data.content || "").trim();
+    // Railway às vezes retorna 200 com literal "Todas as IAs falharam" — tratar como falha.
+    if (!text || /todas as ias falharam/i.test(text)) return { ok: false, status: resp.status };
+    return { ok: true, text, provider: data.provider || "railway", status: 200 };
   } catch (err: any) {
     console.warn("[EU-AI][Railway] fallback error:", err?.message);
     return { ok: false, status: 0 };
   }
 }
+
+async function callLovableGateway(body: InPayload): Promise<{ ok: boolean; text?: string; provider?: string; model?: string; status: number; raw?: any }> {
+  if (!LOVABLE_API_KEY) {
+    return { ok: false, status: 0, raw: { error: "LOVABLE_API_KEY ausente" } };
+  }
+  const { messages, system } = extractUserContent(body);
+  const openaiMessages: Array<{ role: string; content: string }> = [];
+  if (system) openaiMessages.push({ role: "system", content: system });
+  for (const m of messages) openaiMessages.push({ role: m.role, content: m.content });
+
+  const model = LOVABLE_DEFAULT_MODEL;
+  try {
+    const resp = await fetch(LOVABLE_GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: openaiMessages,
+        max_tokens: body.max_tokens ?? 2000,
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      console.warn(`[EU-AI][Lovable] ${resp.status}`, JSON.stringify(data).slice(0, 300));
+      return { ok: false, status: resp.status, raw: data };
+    }
+    const text = String(data?.choices?.[0]?.message?.content ?? "").trim();
+    if (!text) return { ok: false, status: 200, raw: data };
+    return { ok: true, text, provider: "lovable-ai", model: data?.model || model, status: 200, raw: data };
+  } catch (err: any) {
+    console.error("[EU-AI][Lovable] fetch error:", err?.message);
+    return { ok: false, status: 0, raw: { error: err?.message } };
+  }
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -197,7 +243,26 @@ serve(async (req) => {
       );
     }
 
-    // 3) Sem sucesso — devolve success:false para o app decidir fallback (Supabase/Lovable AI)
+    // 3) Fallback universal: Lovable AI Gateway (chave gerenciada, sempre disponível)
+    console.warn("[EU-AI] Railway falhou, tentando Lovable AI Gateway…");
+    const lov = await callLovableGateway(body);
+    if (lov.ok && lov.text) {
+      return new Response(
+        JSON.stringify({
+          content: lov.text,
+          response: lov.text,
+          message: lov.text,
+          provider: lov.provider,
+          model: lov.model,
+          source: "lovable-ai",
+          success: true,
+          timestamp: new Date().toISOString(),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
+    // 4) Todas as camadas falharam
     return new Response(
       JSON.stringify({
         content: "",
@@ -205,7 +270,10 @@ serve(async (req) => {
         success: false,
         provider: "none",
         source: "eu-ai",
-        error: result?.raw?.error || "Gateway indisponível",
+        error:
+          lov?.raw?.error ||
+          result?.raw?.error ||
+          "Gateway indisponível",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
