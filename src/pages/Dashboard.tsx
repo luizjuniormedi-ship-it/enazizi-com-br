@@ -220,14 +220,17 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="pb-32 pt-6 space-y-8 relative min-h-screen overflow-x-hidden">
+    // Container root: min-h-dvh (respeita chrome mobile) + overflow-x-hidden
+    // (barra rígida contra scroll horizontal indesejado). Padding vertical
+    // fluido para dar respiro em desktop sem sufocar mobile.
+    <div className="pb-24 sm:pb-32 pt-4 sm:pt-6 space-y-6 sm:space-y-8 relative min-h-dvh overflow-x-hidden">
       <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
 
       {debugPanel}
 
       {isDebug && (
-        <div className="mx-4 sm:mx-8 lg:mx-14 relative z-10 space-y-8">
+        <div className="mx-4 sm:mx-8 lg:mx-14 relative z-10 space-y-6 sm:space-y-8">
           <Suspense fallback={null}>
             <CurriculumReconstructionDashboard />
           </Suspense>
@@ -241,15 +244,17 @@ const Dashboard = () => {
       )}
 
       {cockpitTimedOut && isDataMissing && (
-        <div className="mx-4 sm:mx-8 lg:mx-14 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+        // Banner de sincronização: em mobile empilha (flex-col) e reduz padding.
+        // Botões ganham min-h-11 para respeitar touch target 44x44px.
+        <div className="mx-4 sm:mx-8 lg:mx-14 px-4 sm:px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
-            <RefreshCw className="h-4 w-4 text-amber-500 animate-spin-slow" />
+            <RefreshCw className="h-4 w-4 shrink-0 text-amber-500 animate-spin-slow" />
             <p className="text-sm font-medium text-amber-200/80">
               Algumas métricas ainda estão sincronizando. Você já pode estudar.
             </p>
           </div>
-          <div className="flex gap-3">
-            <button 
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+            <button
               aria-label="Atualizar métricas"
               data-testid="dashboard-retry-sync"
               onClick={() => {
@@ -257,21 +262,22 @@ const Dashboard = () => {
                 refreshSnapshot();
                 refreshDash();
               }}
-              className="text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors"
+              className="inline-flex items-center justify-center min-h-11 px-3 rounded-lg text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-colors"
             >
               Tentar atualizar
             </button>
-            <button 
+            <button
               aria-label="Iniciar sessão agora"
               data-testid="dashboard-start-session-anyway"
               onClick={() => navigate("/dashboard/sessao-estudo")}
-              className="text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors"
+              className="inline-flex items-center justify-center min-h-11 px-3 rounded-lg text-xs font-bold uppercase tracking-wider text-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors"
             >
               Iniciar sessão mesmo assim
             </button>
           </div>
         </div>
       )}
+
 
       <TargetExamBanner />
 
