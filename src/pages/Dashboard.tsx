@@ -182,7 +182,9 @@ const Dashboard = () => {
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
 
   const debugPanel = isDebug && (
-    <div className="fixed top-20 right-4 z-[999] p-4 rounded-2xl bg-black/80 border border-primary/20 backdrop-blur-xl text-[10px] font-mono space-y-2 shadow-2xl">
+    // Hierarquia: painel diagnóstico → sobreposto, canto superior. Em mobile
+    // desce para não colidir com o header e reduz tipografia/padding.
+    <div className="fixed top-16 right-2 sm:top-20 sm:right-4 z-[999] max-w-[calc(100vw-1rem)] p-3 sm:p-4 rounded-2xl bg-black/80 border border-primary/20 backdrop-blur-xl text-[10px] font-mono space-y-2 shadow-2xl">
       <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-2">
         <Activity className="h-3 w-3 text-primary" />
         <span className="font-bold text-primary uppercase">Cockpit Diagnostic</span>
@@ -208,6 +210,7 @@ const Dashboard = () => {
       )}
     </div>
   );
+
 
   if (initialLoading) return (
     <>
