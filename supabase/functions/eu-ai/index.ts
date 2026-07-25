@@ -24,6 +24,11 @@ const CLAUDE_API_KEY =
   "";
 const EU_API_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
 
+// Lovable AI Gateway (fallback universal — chave sempre válida)
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
+const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const LOVABLE_DEFAULT_MODEL = Deno.env.get("LOVABLE_DEFAULT_MODEL") || "google/gemini-3.6-flash";
+
 // Modelo padrão: Sonnet 4.6 (BALANCED) confirmado no /v1/models do gateway.
 const DEFAULT_MODEL = Deno.env.get("CLAUDE_DEFAULT_MODEL") || "claude-sonnet-4.6";
 const FALLBACK_MODEL = "claude-sonnet-4"; // 2ª escolha se o padrão for rejeitado
