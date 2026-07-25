@@ -48,8 +48,7 @@ describe("evaluateProtocolCompliance", () => {
   });
 
   it("handles null/undefined-ish safely", () => {
-    // @ts-expect-error intentional null
-    const r = evaluateProtocolCompliance(null);
+    const r = evaluateProtocolCompliance(null as unknown as string);
     expect(r.score).toBe(0);
     expect(r.missingStageIds.length).toBe(15);
   });
