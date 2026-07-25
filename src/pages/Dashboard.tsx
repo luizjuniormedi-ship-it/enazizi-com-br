@@ -182,7 +182,9 @@ const Dashboard = () => {
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
 
   const debugPanel = isDebug && (
-    <div className="fixed top-20 right-4 z-[999] p-4 rounded-2xl bg-black/80 border border-primary/20 backdrop-blur-xl text-[10px] font-mono space-y-2 shadow-2xl">
+    // Hierarquia: painel diagnóstico → sobreposto, canto superior. Em mobile
+    // desce para não colidir com o header e reduz tipografia/padding.
+    <div className="fixed top-16 right-2 sm:top-20 sm:right-4 z-[999] max-w-[calc(100vw-1rem)] p-3 sm:p-4 rounded-2xl bg-black/80 border border-primary/20 backdrop-blur-xl text-[10px] font-mono space-y-2 shadow-2xl">
       <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-2">
         <Activity className="h-3 w-3 text-primary" />
         <span className="font-bold text-primary uppercase">Cockpit Diagnostic</span>
@@ -209,6 +211,7 @@ const Dashboard = () => {
     </div>
   );
 
+
   if (initialLoading) return (
     <>
       {debugPanel}
@@ -217,14 +220,17 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="pb-32 pt-6 space-y-8 relative min-h-screen overflow-x-hidden">
+    // Container root: min-h-dvh (respeita chrome mobile) + overflow-x-hidden
+    // (barra rígida contra scroll horizontal indesejado). Padding vertical
+    // fluido para dar respiro em desktop sem sufocar mobile.
+    <div className="pb-24 sm:pb-32 pt-4 sm:pt-6 space-y-6 sm:space-y-8 relative min-h-dvh overflow-x-hidden">
       <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
 
       {debugPanel}
 
       {isDebug && (
-        <div className="mx-4 sm:mx-8 lg:mx-14 relative z-10 space-y-8">
+        <div className="mx-4 sm:mx-8 lg:mx-14 relative z-10 space-y-6 sm:space-y-8">
           <Suspense fallback={null}>
             <CurriculumReconstructionDashboard />
           </Suspense>
@@ -238,15 +244,17 @@ const Dashboard = () => {
       )}
 
       {cockpitTimedOut && isDataMissing && (
-        <div className="mx-4 sm:mx-8 lg:mx-14 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+        // Banner de sincronização: em mobile empilha (flex-col) e reduz padding.
+        // Botões ganham min-h-11 para respeitar touch target 44x44px.
+        <div className="mx-4 sm:mx-8 lg:mx-14 px-4 sm:px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-3">
-            <RefreshCw className="h-4 w-4 text-amber-500 animate-spin-slow" />
+            <RefreshCw className="h-4 w-4 shrink-0 text-amber-500 animate-spin-slow" />
             <p className="text-sm font-medium text-amber-200/80">
               Algumas métricas ainda estão sincronizando. Você já pode estudar.
             </p>
           </div>
-          <div className="flex gap-3">
-            <button 
+          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+            <button
               aria-label="Atualizar métricas"
               data-testid="dashboard-retry-sync"
               onClick={() => {
@@ -254,21 +262,22 @@ const Dashboard = () => {
                 refreshSnapshot();
                 refreshDash();
               }}
-              className="text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors"
+              className="inline-flex items-center justify-center min-h-11 px-3 rounded-lg text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-colors"
             >
               Tentar atualizar
             </button>
-            <button 
+            <button
               aria-label="Iniciar sessão agora"
               data-testid="dashboard-start-session-anyway"
               onClick={() => navigate("/dashboard/sessao-estudo")}
-              className="text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors"
+              className="inline-flex items-center justify-center min-h-11 px-3 rounded-lg text-xs font-bold uppercase tracking-wider text-white/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors"
             >
               Iniciar sessão mesmo assim
             </button>
           </div>
         </div>
       )}
+
 
       <TargetExamBanner />
 
@@ -281,42 +290,51 @@ const Dashboard = () => {
         adaptiveJustification={adaptiveState?.justification}
       />
 
-      <div className="enaflix-stagger space-y-16 pb-24">
+      {/*
+        Espaçamento vertical fluido: 40px em mobile → 64px em ≥sm. Preserva
+        a "respiração cinematográfica" desktop sem desperdício em telas curtas.
+      */}
+      <div className="enaflix-stagger space-y-10 sm:space-y-16 pb-16 sm:pb-24">
         <EnaflixRow title="Atalhos Rápidos">
-          <Link to="/dashboard/enaflix" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
-            <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+          {/*
+            Cards de atalho: min-w-[11rem] (era 200px fixo) permite 2 cards
+            aparecerem side-by-side em 375px sem overflow. min-h-16 garante
+            área táctil >= 44x44px em qualquer densidade de fonte.
+          */}
+          <Link to="/dashboard/enaflix" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-xl min-w-[11rem] min-h-16">
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-red-500/10 flex items-center justify-center">
               <Play className="h-5 w-5 text-red-500" />
             </div>
-            <div>
-              <p className="font-medium text-sm">ENAFLIX</p>
-              <p className="text-xs text-muted-foreground">Biblioteca de conteúdo</p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">ENAFLIX</p>
+              <p className="text-xs text-muted-foreground truncate">Biblioteca de conteúdo</p>
             </div>
           </Link>
-          <Link to="/dashboard/flashcards" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
-            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+          <Link to="/dashboard/flashcards" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-xl min-w-[11rem] min-h-16">
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-amber-500/10 flex items-center justify-center">
               <Clock className="h-5 w-5 text-amber-500" />
             </div>
-            <div>
-              <p className="font-medium text-sm">Flashcards</p>
-              <p className="text-xs text-muted-foreground">Repetição Espaçada</p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">Flashcards</p>
+              <p className="text-xs text-muted-foreground truncate">Repetição Espaçada</p>
             </div>
           </Link>
-          <Link to="/dashboard/simulados" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
-            <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+          <Link to="/dashboard/simulados" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-xl min-w-[11rem] min-h-16">
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <BookOpen className="h-5 w-5 text-blue-500" />
             </div>
-            <div>
-              <p className="font-medium text-sm">Simulados</p>
-              <p className="text-xs text-muted-foreground">Provas & Questões</p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">Simulados</p>
+              <p className="text-xs text-muted-foreground truncate">Provas & Questões</p>
             </div>
           </Link>
-          <Link to="/dashboard/proficiencia" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
-            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+          <Link to="/dashboard/proficiencia" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-xl min-w-[11rem] min-h-16">
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-emerald-500/10 flex items-center justify-center">
               <GraduationCap className="h-5 w-5 text-emerald-500" />
             </div>
-            <div>
-              <p className="font-medium text-sm">Proficiência</p>
-              <p className="text-xs text-muted-foreground">Avaliações Atribuídas</p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">Proficiência</p>
+              <p className="text-xs text-muted-foreground truncate">Avaliações Atribuídas</p>
             </div>
           </Link>
         </EnaflixRow>
@@ -324,6 +342,7 @@ const Dashboard = () => {
         {continueModules.length > 0 && (
           <EnaflixRow title="Continuar Estudando">
             {continueModules.map(m => (
+
               <EnaflixContinueCard
                 key={m.id}
                 title={m.title}
@@ -336,9 +355,15 @@ const Dashboard = () => {
         )}
 
         <EnaflixRow title="Tutor IA & Co-Pilot">
-           <EnaflixCinematicCard 
-             variant="tutor" 
-             className="col-span-full h-48 flex items-center p-8 gap-8"
+           {/*
+             Card cinematográfico "Tutor": em mobile empilha (flex-col),
+             padding/gap reduzidos e altura auto para acomodar texto sem clip.
+             O mascote encolhe via wrapper (scale-75) para não roubar 40%
+             da largura no viewport 375px.
+           */}
+           <EnaflixCinematicCard
+             variant="tutor"
+             className="col-span-full flex flex-col sm:flex-row items-start sm:items-center h-auto min-h-[12rem] sm:h-48 p-5 sm:p-8 gap-5 sm:gap-8"
              onClick={async () => {
                const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
                if (user) {
@@ -349,13 +374,14 @@ const Dashboard = () => {
                navigate("/dashboard/sessao-estudo?mode=tutor")
              }}
            >
-              <div className="shrink-0 group-hover:scale-110 transition-transform duration-500">
+              <div className="shrink-0 origin-left scale-75 sm:scale-100 group-hover:scale-90 sm:group-hover:scale-110 transition-transform duration-500">
                 <MascotAvatar state="teaching" size="xl" />
               </div>
-              <div className="space-y-4 flex-1">
+              <div className="space-y-3 sm:space-y-4 flex-1 min-w-0">
                 <div>
-                  <h3 className="text-3xl font-black text-white">Tutor IA V3</h3>
-                  <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
+                  {/* Tipografia fluida via clamp: 20px..30px conforme viewport. */}
+                  <h3 className="font-black text-white text-[clamp(1.25rem,2.5vw+1rem,1.875rem)] leading-tight">Tutor IA V3</h3>
+                  <p className="text-white/60 text-sm sm:text-base">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
                 <Enaflix3DButton variant="violet">
                   Iniciar Tutor IA V3
@@ -366,7 +392,8 @@ const Dashboard = () => {
 
         <div className="px-4 sm:px-8 lg:px-14">
           <EnaflixSectionTitle kicker="PAINEL DE CONTROLE" title="Módulos de Estudo" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          {/* Grid fluido: 1col mobile → 2col tablet → 3col desktop. Gap menor em mobile. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <PendingReviewsCard />
             </Suspense>
@@ -379,19 +406,24 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
-          <div className="space-y-6">
+
+        {/*
+          Bloco duas-colunas: empilha em mobile/tablet, split em ≥lg.
+          Gap fluido evita espaço morto em 375px e mantém respiração em 1440px.
+        */}
+        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 pt-8 sm:pt-12">
+          <div className="space-y-6 min-w-0">
             <EnaflixSectionTitle kicker="MATRIZ ENAMED 2026" title="Motor de Aprovação" />
             <Suspense fallback={<LocalSectionSkeleton />}>
               <ApprovalIntelligenceDashboard />
             </Suspense>
-            
-            <EnaflixSectionTitle kicker="INTELIGÊNCIA PREDITIVA" title="Chance de Aprovação" className="mt-12" />
+
+            <EnaflixSectionTitle kicker="INTELIGÊNCIA PREDITIVA" title="Chance de Aprovação" className="mt-8 sm:mt-12" />
             <Suspense fallback={<LocalSectionSkeleton />}>
               <ApprovalChanceDashboard />
             </Suspense>
             <Suspense fallback={<LocalSectionSkeleton />}>
-              <div className="mt-6">
+              <div className="mt-6 space-y-6">
                 <HighImpactThemesCard />
                 <EnamedImpactDashboard />
               </div>
@@ -402,7 +434,7 @@ const Dashboard = () => {
               </div>
             </Suspense>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
             {dashData && (
               <Suspense fallback={<LocalSectionSkeleton />}>
@@ -412,7 +444,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="px-4 sm:px-8 lg:px-14 pb-12">
+        <div className="px-4 sm:px-8 lg:px-14 pb-8 sm:pb-12">
           <EnaflixSectionTitle kicker="ENAMED EVIDENCE ENGINE" title="Evidência de Performance" />
           <div className="mt-6">
             <Suspense fallback={<LocalSectionSkeleton />}>
@@ -421,31 +453,33 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="px-4 sm:px-8 lg:px-14 pb-24">
+        <div className="px-4 sm:px-8 lg:px-14 pb-16 sm:pb-24">
           <EnaflixSectionTitle kicker="SCALABILITY OF EVIDENCE" title="Validação de Motores" />
           <div className="mt-6">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <EvidenceValidationDashboard />
             </Suspense>
           </div>
-          <div className="mt-12">
+          {/* Separações verticais fluidas: mt-8..mt-24 conforme viewport (evita "buraco" em mobile). */}
+          <div className="mt-8 sm:mt-12">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <EvidenceGovernanceDashboard />
             </Suspense>
           </div>
-          <div className="mt-24">
+          <div className="mt-12 sm:mt-24">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <OutcomeValidationDashboard />
             </Suspense>
           </div>
-          <div className="mt-24">
+          <div className="mt-12 sm:mt-24">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <OutcomeScienceDashboard />
             </Suspense>
           </div>
         </div>
 
-        <div className="px-4 sm:px-8 lg:px-14 pb-12">
+
+        <div className="px-4 sm:px-8 lg:px-14 pb-8 sm:pb-12">
           <EnaflixSectionTitle kicker="MÉTRICAS DETALHADAS" title="Estatísticas de Estudo" />
           <div className="mt-6">
             {dashData ? (
@@ -457,13 +491,26 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-2">
-        <MascotBubble speech={mascotSpeech} />
-        <MascotAvatar state={mascotState} size="lg" />
+      {/*
+        Mascote flutuante: safe-area-inset para respeitar barras iOS/Android.
+        Escala 90% em mobile evita colisão com bottom-nav; pointer-events-none
+        no wrapper deixa o balão de fala não bloquear scroll (só o avatar clica).
+      */}
+      <div
+        className="fixed z-[100] flex flex-col items-end gap-2 right-3 sm:right-8 pointer-events-none"
+        style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="pointer-events-auto">
+          <MascotBubble speech={mascotSpeech} />
+        </div>
+        <div className="pointer-events-auto origin-bottom-right scale-90 sm:scale-100">
+          <MascotAvatar state={mascotState} size="lg" />
+        </div>
       </div>
     </div>
   );
 };
+
 
 const LocalSectionSkeleton = () => (
   <div className="p-6 rounded-[32px] bg-white/5 border border-white/10 space-y-4 animate-pulse">
