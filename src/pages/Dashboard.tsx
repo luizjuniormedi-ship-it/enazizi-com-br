@@ -290,42 +290,51 @@ const Dashboard = () => {
         adaptiveJustification={adaptiveState?.justification}
       />
 
-      <div className="enaflix-stagger space-y-16 pb-24">
+      {/*
+        Espaçamento vertical fluido: 40px em mobile → 64px em ≥sm. Preserva
+        a "respiração cinematográfica" desktop sem desperdício em telas curtas.
+      */}
+      <div className="enaflix-stagger space-y-10 sm:space-y-16 pb-16 sm:pb-24">
         <EnaflixRow title="Atalhos Rápidos">
-          <Link to="/dashboard/enaflix" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
-            <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+          {/*
+            Cards de atalho: min-w-[11rem] (era 200px fixo) permite 2 cards
+            aparecerem side-by-side em 375px sem overflow. min-h-16 garante
+            área táctil >= 44x44px em qualquer densidade de fonte.
+          */}
+          <Link to="/dashboard/enaflix" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-xl min-w-[11rem] min-h-16">
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-red-500/10 flex items-center justify-center">
               <Play className="h-5 w-5 text-red-500" />
             </div>
-            <div>
-              <p className="font-medium text-sm">ENAFLIX</p>
-              <p className="text-xs text-muted-foreground">Biblioteca de conteúdo</p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">ENAFLIX</p>
+              <p className="text-xs text-muted-foreground truncate">Biblioteca de conteúdo</p>
             </div>
           </Link>
-          <Link to="/dashboard/flashcards" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
-            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+          <Link to="/dashboard/flashcards" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-xl min-w-[11rem] min-h-16">
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-amber-500/10 flex items-center justify-center">
               <Clock className="h-5 w-5 text-amber-500" />
             </div>
-            <div>
-              <p className="font-medium text-sm">Flashcards</p>
-              <p className="text-xs text-muted-foreground">Repetição Espaçada</p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">Flashcards</p>
+              <p className="text-xs text-muted-foreground truncate">Repetição Espaçada</p>
             </div>
           </Link>
-          <Link to="/dashboard/simulados" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
-            <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+          <Link to="/dashboard/simulados" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-xl min-w-[11rem] min-h-16">
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <BookOpen className="h-5 w-5 text-blue-500" />
             </div>
-            <div>
-              <p className="font-medium text-sm">Simulados</p>
-              <p className="text-xs text-muted-foreground">Provas & Questões</p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">Simulados</p>
+              <p className="text-xs text-muted-foreground truncate">Provas & Questões</p>
             </div>
           </Link>
-          <Link to="/dashboard/proficiencia" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors rounded-xl min-w-[200px]">
-            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+          <Link to="/dashboard/proficiencia" className="glass-card p-4 flex items-center gap-3 hover:bg-accent/50 active:bg-accent/70 transition-colors rounded-xl min-w-[11rem] min-h-16">
+            <div className="h-10 w-10 shrink-0 rounded-lg bg-emerald-500/10 flex items-center justify-center">
               <GraduationCap className="h-5 w-5 text-emerald-500" />
             </div>
-            <div>
-              <p className="font-medium text-sm">Proficiência</p>
-              <p className="text-xs text-muted-foreground">Avaliações Atribuídas</p>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">Proficiência</p>
+              <p className="text-xs text-muted-foreground truncate">Avaliações Atribuídas</p>
             </div>
           </Link>
         </EnaflixRow>
@@ -333,6 +342,7 @@ const Dashboard = () => {
         {continueModules.length > 0 && (
           <EnaflixRow title="Continuar Estudando">
             {continueModules.map(m => (
+
               <EnaflixContinueCard
                 key={m.id}
                 title={m.title}
