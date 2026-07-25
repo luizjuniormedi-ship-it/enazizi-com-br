@@ -3,14 +3,15 @@
 // Endpoint upstream: ANTHROPIC_BASE_URL/v1/messages (formato oficial Anthropic).
 // Autenticação: x-api-key = ANTHROPIC_API_KEY.
 //
-// Formato aceito na entrada (compatível com o cliente existente):
-//   { message?: string, prompt?: string, messages?: [{role,content}], topic?, system?, model?, max_tokens?, stream? }
-//
-// Formato devolvido (compatível com o restante do app):
-//   { content, response, message, provider, model, source, success, timestamp }
-//
-// Fallback: se o gateway falhar, tenta o legado Railway (EU_API_URL). Se ambos falharem,
-// devolve 200 com success:false para o app decidir seguir para o Supabase/Lovable AI.
+// Cadeia: Claude Gateway → Railway → Lovable AI Gateway.
+// A cadeia só AVANÇA quando o erro é classificado como retryable:
+//   - 401/403 (auth)
+//   - 408/425/429 (rate/timeout)
+//   - 5xx (upstream)
+//   - network error / timeout de fetch
+//   - 400 SOMENTE se o corpo confirmar "key expired" / "key acabou" / "key expirou"
+// Para outros 400 (payload inválido, modelo inválido não recuperável, etc.)
+// devolvemos 502 com detalhe estruturado — o app precisa corrigir a chamada, não trocar de provedor.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -24,14 +25,12 @@ const CLAUDE_API_KEY =
   "";
 const EU_API_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-production.up.railway.app";
 
-// Lovable AI Gateway (fallback universal — chave sempre válida)
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const LOVABLE_DEFAULT_MODEL = Deno.env.get("LOVABLE_DEFAULT_MODEL") || "google/gemini-3.6-flash";
 
-// Modelo padrão: Sonnet 4.6 (BALANCED) confirmado no /v1/models do gateway.
 const DEFAULT_MODEL = Deno.env.get("CLAUDE_DEFAULT_MODEL") || "claude-sonnet-4.6";
-const FALLBACK_MODEL = "claude-sonnet-4"; // 2ª escolha se o padrão for rejeitado
+const FALLBACK_MODEL = "claude-sonnet-4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +51,37 @@ interface InPayload {
   max_tokens?: number;
   stream?: boolean;
   [key: string]: unknown;
+}
+
+type AttemptResult = {
+  ok: boolean;
+  text?: string;
+  provider?: string;
+  model?: string;
+  status: number;
+  requestId?: string;
+  latencyMs: number;
+  errorCode?: string;
+  errorMessage?: string;
+  retryable: boolean;
+};
+
+// ---------- Error classifier ----------
+const KEY_EXPIRED_RX = /(key\s*(expired|acabou|expirou|invalid|revoked))|renov(ar|e)/i;
+
+function classify(status: number, bodyText: string): { retryable: boolean; code: string } {
+  if (status === 0) return { retryable: true, code: "network_error" };
+  if (status === 408 || status === 425 || status === 429) return { retryable: true, code: `http_${status}` };
+  if (status === 401 || status === 403) return { retryable: true, code: `auth_${status}` };
+  if (status >= 500) return { retryable: true, code: `upstream_${status}` };
+  if (status === 400 && KEY_EXPIRED_RX.test(bodyText)) return { retryable: true, code: "key_expired" };
+  if (status === 400) return { retryable: false, code: "bad_request" };
+  return { retryable: false, code: `http_${status}` };
+}
+
+function structuredLog(event: string, data: Record<string, unknown>) {
+  // Nunca logamos prompt/mensagem — só metadados.
+  console.log(`[EU-AI] ${event} ${JSON.stringify(data)}`);
 }
 
 function extractUserContent(body: InPayload): { messages: Array<{ role: "user" | "assistant"; content: string }>; system?: string } {
@@ -81,19 +111,19 @@ function extractUserContent(body: InPayload): { messages: Array<{ role: "user" |
   return { messages: anthropicMsgs, system };
 }
 
-async function callClaudeGateway(body: InPayload, modelOverride?: string): Promise<{ ok: boolean; text?: string; provider?: string; model?: string; status: number; raw?: any }> {
+async function callClaudeGateway(body: InPayload, modelOverride?: string): Promise<AttemptResult> {
+  const t0 = Date.now();
   if (!CLAUDE_BASE_URL || !CLAUDE_API_KEY) {
-    return { ok: false, status: 0, raw: { error: "Claude gateway não configurado (ANTHROPIC_BASE_URL/ANTHROPIC_API_KEY ausentes)" } };
+    return {
+      ok: false, status: 0, latencyMs: 0, retryable: true,
+      errorCode: "not_configured", errorMessage: "ANTHROPIC_BASE_URL/ANTHROPIC_API_KEY ausentes",
+    };
   }
 
   const { messages, system } = extractUserContent(body);
   const model = modelOverride || body.model || DEFAULT_MODEL;
 
-  const payload: Record<string, unknown> = {
-    model,
-    max_tokens: body.max_tokens ?? 2000,
-    messages,
-  };
+  const payload: Record<string, unknown> = { model, max_tokens: body.max_tokens ?? 2000, messages };
   if (system) payload.system = system;
 
   try {
@@ -106,34 +136,51 @@ async function callClaudeGateway(body: InPayload, modelOverride?: string): Promi
       },
       body: JSON.stringify(payload),
     });
+    const requestId = resp.headers.get("x-request-id") || resp.headers.get("request-id") || undefined;
+    const raw = await resp.text();
+    const latencyMs = Date.now() - t0;
+    const data = (() => { try { return JSON.parse(raw); } catch { return {}; } })();
 
-    const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
-      console.warn(`[EU-AI][Claude] ${resp.status}`, JSON.stringify(data).slice(0, 300));
-      return { ok: false, status: resp.status, raw: data };
+      const cls = classify(resp.status, raw);
+      structuredLog("claude.error", {
+        provider: "claude-gateway", model, status: resp.status, requestId,
+        latencyMs, errorCode: cls.code, retryable: cls.retryable,
+        bodySnippet: raw.slice(0, 200),
+      });
+      return {
+        ok: false, status: resp.status, latencyMs, requestId, retryable: cls.retryable,
+        errorCode: cls.code, errorMessage: data?.error?.message || raw.slice(0, 200),
+      };
     }
 
-    // Formato Anthropic: content: [{type:"text", text:"..."}]
     const text = Array.isArray(data?.content)
       ? data.content.filter((c: any) => c?.type === "text").map((c: any) => c.text).join("\n").trim()
       : (typeof data?.content === "string" ? data.content : "");
 
-    return { ok: true, text, provider: "claude-gateway", model: data?.model || model, status: 200, raw: data };
+    if (!text) {
+      structuredLog("claude.empty", { provider: "claude-gateway", model, status: 200, requestId, latencyMs });
+      return {
+        ok: false, status: 200, latencyMs, requestId, retryable: true,
+        errorCode: "empty_response", errorMessage: "resposta vazia do gateway",
+      };
+    }
+
+    structuredLog("claude.ok", { provider: "claude-gateway", model: data?.model || model, status: 200, requestId, latencyMs });
+    return { ok: true, text, provider: "claude-gateway", model: data?.model || model, status: 200, requestId, latencyMs, retryable: false };
   } catch (err: any) {
-    console.error("[EU-AI][Claude] fetch error:", err?.message);
-    return { ok: false, status: 0, raw: { error: err?.message } };
+    const latencyMs = Date.now() - t0;
+    structuredLog("claude.network_error", { provider: "claude-gateway", model, latencyMs, errorMessage: err?.message });
+    return { ok: false, status: 0, latencyMs, retryable: true, errorCode: "network_error", errorMessage: err?.message };
   }
 }
 
-async function callRailwayFallback(body: InPayload): Promise<{ ok: boolean; text?: string; provider?: string; status: number }> {
+async function callRailwayFallback(body: InPayload): Promise<AttemptResult> {
+  const t0 = Date.now();
   try {
     const message =
-      body.message ||
-      body.prompt ||
-      body.text ||
-      (Array.isArray(body.messages)
-        ? [...body.messages].reverse().find((m) => m?.role === "user")?.content
-        : "") ||
+      body.message || body.prompt || body.text ||
+      (Array.isArray(body.messages) ? [...body.messages].reverse().find((m) => m?.role === "user")?.content : "") ||
       "Olá";
     const topic = body.topic || body.especialidade || body.subject || "Medicina";
 
@@ -142,21 +189,34 @@ async function callRailwayFallback(body: InPayload): Promise<{ ok: boolean; text
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, topic, stream: false }),
     });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok || data?.success === false) return { ok: false, status: resp.status };
+    const requestId = resp.headers.get("x-request-id") || undefined;
+    const raw = await resp.text();
+    const latencyMs = Date.now() - t0;
+    const data = (() => { try { return JSON.parse(raw); } catch { return {}; } })();
+
+    if (!resp.ok || data?.success === false) {
+      const cls = classify(resp.status, raw);
+      structuredLog("railway.error", { provider: "railway", status: resp.status, requestId, latencyMs, errorCode: cls.code });
+      return { ok: false, status: resp.status, latencyMs, requestId, retryable: cls.retryable, errorCode: cls.code };
+    }
     const text = String(data.message || data.content || "").trim();
-    // Railway às vezes retorna 200 com literal "Todas as IAs falharam" — tratar como falha.
-    if (!text || /todas as ias falharam/i.test(text)) return { ok: false, status: resp.status };
-    return { ok: true, text, provider: data.provider || "railway", status: 200 };
+    if (!text || /todas as ias falharam/i.test(text)) {
+      structuredLog("railway.empty_or_marker", { provider: "railway", status: resp.status, requestId, latencyMs });
+      return { ok: false, status: resp.status, latencyMs, requestId, retryable: true, errorCode: "empty_or_marker" };
+    }
+    structuredLog("railway.ok", { provider: data.provider || "railway", status: 200, requestId, latencyMs });
+    return { ok: true, text, provider: data.provider || "railway", status: 200, requestId, latencyMs, retryable: false };
   } catch (err: any) {
-    console.warn("[EU-AI][Railway] fallback error:", err?.message);
-    return { ok: false, status: 0 };
+    const latencyMs = Date.now() - t0;
+    structuredLog("railway.network_error", { provider: "railway", latencyMs, errorMessage: err?.message });
+    return { ok: false, status: 0, latencyMs, retryable: true, errorCode: "network_error", errorMessage: err?.message };
   }
 }
 
-async function callLovableGateway(body: InPayload): Promise<{ ok: boolean; text?: string; provider?: string; model?: string; status: number; raw?: any }> {
+async function callLovableGateway(body: InPayload): Promise<AttemptResult> {
+  const t0 = Date.now();
   if (!LOVABLE_API_KEY) {
-    return { ok: false, status: 0, raw: { error: "LOVABLE_API_KEY ausente" } };
+    return { ok: false, status: 0, latencyMs: 0, retryable: false, errorCode: "not_configured", errorMessage: "LOVABLE_API_KEY ausente" };
   }
   const { messages, system } = extractUserContent(body);
   const openaiMessages: Array<{ role: string; content: string }> = [];
@@ -167,126 +227,115 @@ async function callLovableGateway(body: InPayload): Promise<{ ok: boolean; text?
   try {
     const resp = await fetch(LOVABLE_GATEWAY_URL, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: openaiMessages,
-        max_tokens: body.max_tokens ?? 2000,
-      }),
+      headers: { "content-type": "application/json", "Authorization": `Bearer ${LOVABLE_API_KEY}` },
+      body: JSON.stringify({ model, messages: openaiMessages, max_tokens: body.max_tokens ?? 2000 }),
     });
-    const data = await resp.json().catch(() => ({}));
+    const requestId = resp.headers.get("x-lovable-aig-log-id") || resp.headers.get("x-request-id") || undefined;
+    const raw = await resp.text();
+    const latencyMs = Date.now() - t0;
+    const data = (() => { try { return JSON.parse(raw); } catch { return {}; } })();
     if (!resp.ok) {
-      console.warn(`[EU-AI][Lovable] ${resp.status}`, JSON.stringify(data).slice(0, 300));
-      return { ok: false, status: resp.status, raw: data };
+      const cls = classify(resp.status, raw);
+      structuredLog("lovable.error", { provider: "lovable-ai", model, status: resp.status, requestId, latencyMs, errorCode: cls.code, bodySnippet: raw.slice(0, 200) });
+      return { ok: false, status: resp.status, latencyMs, requestId, retryable: cls.retryable, errorCode: cls.code, errorMessage: data?.error?.message || raw.slice(0, 200) };
     }
     const text = String(data?.choices?.[0]?.message?.content ?? "").trim();
-    if (!text) return { ok: false, status: 200, raw: data };
-    return { ok: true, text, provider: "lovable-ai", model: data?.model || model, status: 200, raw: data };
+    if (!text) {
+      structuredLog("lovable.empty", { provider: "lovable-ai", model, status: 200, requestId, latencyMs });
+      return { ok: false, status: 200, latencyMs, requestId, retryable: false, errorCode: "empty_response" };
+    }
+    structuredLog("lovable.ok", { provider: "lovable-ai", model: data?.model || model, status: 200, requestId, latencyMs });
+    return { ok: true, text, provider: "lovable-ai", model: data?.model || model, status: 200, requestId, latencyMs, retryable: false };
   } catch (err: any) {
-    console.error("[EU-AI][Lovable] fetch error:", err?.message);
-    return { ok: false, status: 0, raw: { error: err?.message } };
+    const latencyMs = Date.now() - t0;
+    structuredLog("lovable.network_error", { provider: "lovable-ai", latencyMs, errorMessage: err?.message });
+    return { ok: false, status: 0, latencyMs, retryable: true, errorCode: "network_error", errorMessage: err?.message };
   }
 }
-
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const reqStart = Date.now();
   try {
     const body = (await req.json().catch(() => ({}))) as InPayload;
-    const shortMsg = (body.message || body.prompt || (body.messages?.at(-1)?.content ?? "")).toString().slice(0, 60);
-    console.log(`[EU-AI] ▶ Claude Gateway • "${shortMsg}"`);
+    structuredLog("request.in", { hasMessages: Array.isArray(body.messages), hasMessage: !!(body.message || body.prompt || body.text) });
 
-    // 1) Claude Gateway (IA principal)
+    // 1) Claude Gateway
     let result = await callClaudeGateway(body);
 
-    // Se o modelo padrão foi rejeitado (400 modelo inválido), tenta um alternativo.
-    if (!result.ok && result.status === 400 && result?.raw?.error?.message?.includes?.("Modelo")) {
-      console.warn(`[EU-AI] Modelo padrão rejeitado, retry com ${FALLBACK_MODEL}`);
+    // Retry com modelo alternativo se o padrão for rejeitado por modelo inválido
+    if (!result.ok && result.status === 400 && /modelo/i.test(result.errorMessage || "")) {
+      structuredLog("claude.model_retry", { fallbackModel: FALLBACK_MODEL });
       result = await callClaudeGateway(body, FALLBACK_MODEL);
     }
 
     if (result.ok && result.text) {
-      return new Response(
-        JSON.stringify({
-          content: result.text,
-          response: result.text,
-          message: result.text,
-          provider: result.provider,
-          model: result.model,
-          source: "claude-gateway",
-          success: true,
-          timestamp: new Date().toISOString(),
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-      );
+      return new Response(JSON.stringify({
+        content: result.text, response: result.text, message: result.text,
+        provider: result.provider, model: result.model, source: "claude-gateway",
+        requestId: result.requestId, latencyMs: result.latencyMs,
+        success: true, timestamp: new Date().toISOString(),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
-    // 2) Fallback Railway
-    console.warn("[EU-AI] Claude Gateway falhou, tentando Railway…");
+    // Claude falhou e NÃO é retryable → devolve erro de integração (502) sem tentar fallback.
+    if (!result.retryable) {
+      structuredLog("chain.abort_non_retryable", {
+        provider: "claude-gateway", status: result.status, errorCode: result.errorCode,
+        requestId: result.requestId, totalMs: Date.now() - reqStart,
+      });
+      return new Response(JSON.stringify({
+        success: false, source: "claude-gateway", provider: "claude-gateway",
+        status: result.status, errorCode: result.errorCode,
+        error: result.errorMessage || "erro de integração no gateway Claude — corrigir payload/modelo antes de reenviar",
+        requestId: result.requestId,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 502 });
+    }
+
+    // 2) Fallback Railway (só se Claude retornou erro retryable)
+    structuredLog("chain.next", { from: "claude-gateway", to: "railway", reason: result.errorCode });
     const rail = await callRailwayFallback(body);
     if (rail.ok && rail.text) {
-      return new Response(
-        JSON.stringify({
-          content: rail.text,
-          response: rail.text,
-          message: rail.text,
-          provider: rail.provider,
-          source: "eu-railway",
-          success: true,
-          timestamp: new Date().toISOString(),
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-      );
+      return new Response(JSON.stringify({
+        content: rail.text, response: rail.text, message: rail.text,
+        provider: rail.provider, source: "eu-railway",
+        requestId: rail.requestId, latencyMs: rail.latencyMs,
+        success: true, timestamp: new Date().toISOString(),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
-    // 3) Fallback universal: Lovable AI Gateway (chave gerenciada, sempre disponível)
-    console.warn("[EU-AI] Railway falhou, tentando Lovable AI Gateway…");
+    // 3) Fallback Lovable AI (só se Railway também falhou de forma retryable ou vazio)
+    structuredLog("chain.next", { from: "railway", to: "lovable-ai", reason: rail.errorCode });
     const lov = await callLovableGateway(body);
     if (lov.ok && lov.text) {
-      return new Response(
-        JSON.stringify({
-          content: lov.text,
-          response: lov.text,
-          message: lov.text,
-          provider: lov.provider,
-          model: lov.model,
-          source: "lovable-ai",
-          success: true,
-          timestamp: new Date().toISOString(),
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-      );
+      return new Response(JSON.stringify({
+        content: lov.text, response: lov.text, message: lov.text,
+        provider: lov.provider, model: lov.model, source: "lovable-ai",
+        requestId: lov.requestId, latencyMs: lov.latencyMs,
+        success: true, timestamp: new Date().toISOString(),
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
-    // 4) Todas as camadas falharam
-    return new Response(
-      JSON.stringify({
-        content: "",
-        response: "",
-        success: false,
-        provider: "none",
-        source: "eu-ai",
-        error:
-          lov?.raw?.error ||
-          result?.raw?.error ||
-          "Gateway indisponível",
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-    );
+    // Todas falharam
+    structuredLog("chain.all_failed", {
+      claude: { status: result.status, code: result.errorCode },
+      railway: { status: rail.status, code: rail.errorCode },
+      lovable: { status: lov.status, code: lov.errorCode },
+      totalMs: Date.now() - reqStart,
+    });
+    return new Response(JSON.stringify({
+      success: false, source: "eu-ai", provider: "none",
+      error: lov.errorMessage || rail.errorCode || result.errorMessage || "Gateway indisponível",
+      chain: {
+        claude: { status: result.status, code: result.errorCode, requestId: result.requestId },
+        railway: { status: rail.status, code: rail.errorCode, requestId: rail.requestId },
+        lovable: { status: lov.status, code: lov.errorCode, requestId: lov.requestId },
+      },
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 });
   } catch (error: any) {
-    console.error(`[EU-AI] fatal:`, error?.message);
-    return new Response(
-      JSON.stringify({
-        content: "",
-        response: "",
-        success: false,
-        error: error?.message || "erro desconhecido",
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-    );
+    structuredLog("fatal", { errorMessage: error?.message });
+    return new Response(JSON.stringify({ success: false, error: error?.message || "erro desconhecido" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 });
   }
 });
