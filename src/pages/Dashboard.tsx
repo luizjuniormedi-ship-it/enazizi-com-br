@@ -355,9 +355,15 @@ const Dashboard = () => {
         )}
 
         <EnaflixRow title="Tutor IA & Co-Pilot">
-           <EnaflixCinematicCard 
-             variant="tutor" 
-             className="col-span-full h-48 flex items-center p-8 gap-8"
+           {/*
+             Card cinematográfico "Tutor": em mobile empilha (flex-col),
+             padding/gap reduzidos e altura auto para acomodar texto sem clip.
+             O mascote encolhe via wrapper (scale-75) para não roubar 40%
+             da largura no viewport 375px.
+           */}
+           <EnaflixCinematicCard
+             variant="tutor"
+             className="col-span-full flex flex-col sm:flex-row items-start sm:items-center h-auto min-h-[12rem] sm:h-48 p-5 sm:p-8 gap-5 sm:gap-8"
              onClick={async () => {
                const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
                if (user) {
@@ -368,13 +374,14 @@ const Dashboard = () => {
                navigate("/dashboard/sessao-estudo?mode=tutor")
              }}
            >
-              <div className="shrink-0 group-hover:scale-110 transition-transform duration-500">
+              <div className="shrink-0 origin-left scale-75 sm:scale-100 group-hover:scale-90 sm:group-hover:scale-110 transition-transform duration-500">
                 <MascotAvatar state="teaching" size="xl" />
               </div>
-              <div className="space-y-4 flex-1">
+              <div className="space-y-3 sm:space-y-4 flex-1 min-w-0">
                 <div>
-                  <h3 className="text-3xl font-black text-white">Tutor IA V3</h3>
-                  <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
+                  {/* Tipografia fluida via clamp: 20px..30px conforme viewport. */}
+                  <h3 className="font-black text-white text-[clamp(1.25rem,2.5vw+1rem,1.875rem)] leading-tight">Tutor IA V3</h3>
+                  <p className="text-white/60 text-sm sm:text-base">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
                 <Enaflix3DButton variant="violet">
                   Iniciar Tutor IA V3
@@ -385,7 +392,8 @@ const Dashboard = () => {
 
         <div className="px-4 sm:px-8 lg:px-14">
           <EnaflixSectionTitle kicker="PAINEL DE CONTROLE" title="Módulos de Estudo" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+          {/* Grid fluido: 1col mobile → 2col tablet → 3col desktop. Gap menor em mobile. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
             <Suspense fallback={<LocalSectionSkeleton />}>
               <PendingReviewsCard />
             </Suspense>
@@ -397,6 +405,7 @@ const Dashboard = () => {
             </Suspense>
           </div>
         </div>
+
 
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
           <div className="space-y-6">
