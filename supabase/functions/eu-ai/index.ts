@@ -144,12 +144,53 @@ async function callRailwayFallback(body: InPayload): Promise<{ ok: boolean; text
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok || data?.success === false) return { ok: false, status: resp.status };
-    return { ok: true, text: data.message || data.content || "", provider: data.provider || "railway", status: 200 };
+    const text = String(data.message || data.content || "").trim();
+    // Railway às vezes retorna 200 com literal "Todas as IAs falharam" — tratar como falha.
+    if (!text || /todas as ias falharam/i.test(text)) return { ok: false, status: resp.status };
+    return { ok: true, text, provider: data.provider || "railway", status: 200 };
   } catch (err: any) {
     console.warn("[EU-AI][Railway] fallback error:", err?.message);
     return { ok: false, status: 0 };
   }
 }
+
+async function callLovableGateway(body: InPayload): Promise<{ ok: boolean; text?: string; provider?: string; model?: string; status: number; raw?: any }> {
+  if (!LOVABLE_API_KEY) {
+    return { ok: false, status: 0, raw: { error: "LOVABLE_API_KEY ausente" } };
+  }
+  const { messages, system } = extractUserContent(body);
+  const openaiMessages: Array<{ role: string; content: string }> = [];
+  if (system) openaiMessages.push({ role: "system", content: system });
+  for (const m of messages) openaiMessages.push({ role: m.role, content: m.content });
+
+  const model = LOVABLE_DEFAULT_MODEL;
+  try {
+    const resp = await fetch(LOVABLE_GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: openaiMessages,
+        max_tokens: body.max_tokens ?? 2000,
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      console.warn(`[EU-AI][Lovable] ${resp.status}`, JSON.stringify(data).slice(0, 300));
+      return { ok: false, status: resp.status, raw: data };
+    }
+    const text = String(data?.choices?.[0]?.message?.content ?? "").trim();
+    if (!text) return { ok: false, status: 200, raw: data };
+    return { ok: true, text, provider: "lovable-ai", model: data?.model || model, status: 200, raw: data };
+  } catch (err: any) {
+    console.error("[EU-AI][Lovable] fetch error:", err?.message);
+    return { ok: false, status: 0, raw: { error: err?.message } };
+  }
+}
+
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
