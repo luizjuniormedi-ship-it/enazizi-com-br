@@ -195,7 +195,11 @@ async function callRailwayFallback(body: InPayload): Promise<AttemptResult> {
     const data = (() => { try { return JSON.parse(raw); } catch { return {}; } })();
 
     if (!resp.ok || data?.success === false) {
-      const cls = classify(resp.status, raw);
+      // Se HTTP=200 mas success:false, é falha lógica do Railway → SEMPRE retryable
+      // (classify(200,...) cairia no default retryable:false e travaria a cadeia).
+      const cls = resp.ok
+        ? { retryable: true, code: "railway_success_false" }
+        : classify(resp.status, raw);
       structuredLog("railway.error", { provider: "railway", status: resp.status, requestId, latencyMs, errorCode: cls.code });
       return { ok: false, status: resp.status, latencyMs, requestId, retryable: cls.retryable, errorCode: cls.code };
     }
