@@ -67,7 +67,7 @@ type AttemptResult = {
 };
 
 // ---------- Error classifier ----------
-const KEY_EXPIRED_RX = /(key\s*(expired|acabou|expirou|invalid|revoked))|renov(ar|e)/i;
+const KEY_EXPIRED_RX = /(key|chave)\s*(expired|acabou|expirou|invalid|revoked|renov(ar|e|ada?))/i;
 
 function classify(status: number, bodyText: string): { retryable: boolean; code: string } {
   if (status === 0) return { retryable: true, code: "network_error" };
