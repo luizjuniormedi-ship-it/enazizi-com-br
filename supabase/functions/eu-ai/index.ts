@@ -67,7 +67,7 @@ type AttemptResult = {
 };
 
 // ---------- Error classifier ----------
-const KEY_EXPIRED_RX = /(key\s*(expired|acabou|expirou|invalid|revoked))|renov(ar|e)/i;
+const KEY_EXPIRED_RX = /(key|chave)\s*(expired|acabou|expirou|invalid|revoked|renov(ar|e|ada?))/i;
 
 function classify(status: number, bodyText: string): { retryable: boolean; code: string } {
   if (status === 0) return { retryable: true, code: "network_error" };
@@ -195,7 +195,11 @@ async function callRailwayFallback(body: InPayload): Promise<AttemptResult> {
     const data = (() => { try { return JSON.parse(raw); } catch { return {}; } })();
 
     if (!resp.ok || data?.success === false) {
-      const cls = classify(resp.status, raw);
+      // Se HTTP=200 mas success:false, é falha lógica do Railway → SEMPRE retryable
+      // (classify(200,...) cairia no default retryable:false e travaria a cadeia).
+      const cls = resp.ok
+        ? { retryable: true, code: "railway_success_false" }
+        : classify(resp.status, raw);
       structuredLog("railway.error", { provider: "railway", status: resp.status, requestId, latencyMs, errorCode: cls.code });
       return { ok: false, status: resp.status, latencyMs, requestId, retryable: cls.retryable, errorCode: cls.code };
     }
@@ -265,7 +269,7 @@ serve(async (req) => {
     let result = await callClaudeGateway(body);
 
     // Retry com modelo alternativo se o padrão for rejeitado por modelo inválido
-    if (!result.ok && result.status === 400 && /modelo/i.test(result.errorMessage || "")) {
+    if (!result.ok && result.status === 400 && /model(o)?/i.test(result.errorMessage || "")) {
       structuredLog("claude.model_retry", { fallbackModel: FALLBACK_MODEL });
       result = await callClaudeGateway(body, FALLBACK_MODEL);
     }
