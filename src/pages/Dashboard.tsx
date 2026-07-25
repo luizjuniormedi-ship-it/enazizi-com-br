@@ -479,7 +479,7 @@ const Dashboard = () => {
         </div>
 
 
-        <div className="px-4 sm:px-8 lg:px-14 pb-12">
+        <div className="px-4 sm:px-8 lg:px-14 pb-8 sm:pb-12">
           <EnaflixSectionTitle kicker="MÉTRICAS DETALHADAS" title="Estatísticas de Estudo" />
           <div className="mt-6">
             {dashData ? (
@@ -491,13 +491,26 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-2">
-        <MascotBubble speech={mascotSpeech} />
-        <MascotAvatar state={mascotState} size="lg" />
+      {/*
+        Mascote flutuante: safe-area-inset para respeitar barras iOS/Android.
+        Escala 90% em mobile evita colisão com bottom-nav; pointer-events-none
+        no wrapper deixa o balão de fala não bloquear scroll (só o avatar clica).
+      */}
+      <div
+        className="fixed z-[100] flex flex-col items-end gap-2 right-3 sm:right-8 pointer-events-none"
+        style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="pointer-events-auto">
+          <MascotBubble speech={mascotSpeech} />
+        </div>
+        <div className="pointer-events-auto origin-bottom-right scale-90 sm:scale-100">
+          <MascotAvatar state={mascotState} size="lg" />
+        </div>
       </div>
     </div>
   );
 };
+
 
 const LocalSectionSkeleton = () => (
   <div className="p-6 rounded-[32px] bg-white/5 border border-white/10 space-y-4 animate-pulse">
