@@ -269,7 +269,7 @@ serve(async (req) => {
     let result = await callClaudeGateway(body);
 
     // Retry com modelo alternativo se o padrão for rejeitado por modelo inválido
-    if (!result.ok && result.status === 400 && /modelo/i.test(result.errorMessage || "")) {
+    if (!result.ok && result.status === 400 && /model(o)?/i.test(result.errorMessage || "")) {
       structuredLog("claude.model_retry", { fallbackModel: FALLBACK_MODEL });
       result = await callClaudeGateway(body, FALLBACK_MODEL);
     }
