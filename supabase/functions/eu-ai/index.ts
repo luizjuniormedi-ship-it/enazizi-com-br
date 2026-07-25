@@ -243,7 +243,26 @@ serve(async (req) => {
       );
     }
 
-    // 3) Sem sucesso — devolve success:false para o app decidir fallback (Supabase/Lovable AI)
+    // 3) Fallback universal: Lovable AI Gateway (chave gerenciada, sempre disponível)
+    console.warn("[EU-AI] Railway falhou, tentando Lovable AI Gateway…");
+    const lov = await callLovableGateway(body);
+    if (lov.ok && lov.text) {
+      return new Response(
+        JSON.stringify({
+          content: lov.text,
+          response: lov.text,
+          message: lov.text,
+          provider: lov.provider,
+          model: lov.model,
+          source: "lovable-ai",
+          success: true,
+          timestamp: new Date().toISOString(),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
+    // 4) Todas as camadas falharam
     return new Response(
       JSON.stringify({
         content: "",
@@ -251,7 +270,10 @@ serve(async (req) => {
         success: false,
         provider: "none",
         source: "eu-ai",
-        error: result?.raw?.error || "Gateway indisponível",
+        error:
+          lov?.raw?.error ||
+          result?.raw?.error ||
+          "Gateway indisponível",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
