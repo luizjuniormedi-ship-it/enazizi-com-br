@@ -18,6 +18,10 @@ import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 
 const Landing = () => (
   <div className="min-h-screen bg-[#050508] relative overflow-hidden">
+    {/* Debug tag requested by user */}
+    <div className="fixed top-0 left-0 z-[9999] bg-primary text-primary-foreground text-[10px] px-2 py-0.5 font-bold uppercase pointer-events-none">
+      confira se esta resolvido
+    </div>
     <EnaflixBackgroundFX intensity="subtle" />
     <div className="relative z-10">
       <Navbar />
