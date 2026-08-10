@@ -308,9 +308,9 @@ O objetivo é validar autenticação real com contas reais, usando apenas secret
         <div>
           <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2">
             <Activity className="text-red-500" />
-            WAR ROOM: AUTHENTICATED QA HARNESS RECOVERY
+            WAR ROOM: E2E PERSONA SECRETS ACTIVATION & AUTH SMOKE
           </h1>
-          <p className="text-zinc-500 mt-1">Status: WAR ROOM — AUTHENTICATED QA HARNESS RECOVERY</p>
+          <p className="text-zinc-500 mt-1">Status: WAR ROOM — E2E PERSONA SECRETS ACTIVATION & AUTH SMOKE</p>
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className="bg-zinc-900 border-zinc-800 text-zinc-400">READ-ONLY</Badge>
