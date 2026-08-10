@@ -50,3 +50,18 @@ export const NVIDIA_PROVIDER_META = {
     reasoning: { id: "meta/llama-3.3-70b-instruct", tier: "REASONING", vision: false, reasoning: true },
   },
 } as const;
+
+/* ------------------------------------------------------------------ */
+/* CEREBRAS (OPT-IN — registrado, NÃO ativo em nenhum módulo)           */
+/* ------------------------------------------------------------------ */
+export const CEREBRAS_PROVIDER_META = {
+  provider: "cerebras",
+  enabled: false,
+  baseUrlEnv: "CEREBRAS_BASE_URL",
+  apiKeyEnv: "CEREBRAS_API_KEY",
+  defaultBaseUrl: "https://api.cerebras.ai/v1",
+  models: {
+    fast: { id: "llama3.1-8b", tier: "FAST", vision: false, reasoning: false },
+    reasoning: { id: "llama3.1-70b", tier: "REASONING", vision: false, reasoning: true },
+  },
+} as const;
