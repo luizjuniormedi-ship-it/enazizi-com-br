@@ -235,7 +235,7 @@ export async function callCerebras(options: CerebrasCallOptions): Promise<Cerebr
     }
 
     const parsed = JSON.parse(text);
-    const content: string = parsed?.choices?.[0]?.message?.content ?? "";
+    const content: string = parsed?.choices?.[0]?.message?.content || parsed?.choices?.[0]?.message?.reasoning || "";
     recordCerebrasSuccess(model);
 
     return {
