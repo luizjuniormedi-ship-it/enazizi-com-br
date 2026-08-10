@@ -1,147 +1,541 @@
 import React from 'react';
 
-export default function GroundedClinicalArena() {
+export default function EG3UnifiedRouter() {
+  const content = `WAR ROOM — EG-3 UNIFIED EVIDENCE-GROUNDED AI ROUTER
+
+OBJETIVO
+
+Transformar a infraestrutura certificada EG-1/EG-2 em uma arquitetura única de IA para todos os módulos clínicos e acadêmicos do ENAZIZI.
+
+IMPORTANTE:
+
+EG-3 NÃO deve substituir a Evidence Layer.
+
+A arquitetura definitiva é:
+
+MODULE
+↓
+Canonical Topic Engine
+↓
+Unified Medical Evidence Service
+↓
+Evidence Context Pack
+↓
+Unified AI Router
+↓
+Provider
+↓
+Grounding Validator
+↓
+Clinical Consistency Guard
+↓
+Exact Topic Guard
+↓
+OUTPUT
+
+==================================================
+P0 — CORRIGIR REGRESSÃO DA HOME
+==================================================
+
+Antes de qualquer alteração:
+
+verificar a rota pública \`/\`.
+
+Se \`/\` estiver exibindo:
+
+WAR ROOM
+EG-2 benchmark
+dashboard técnico
+telemetria administrativa
+
+RESTORE imediatamente a Landing Page pública certificada.
+
+War Room deve permanecer somente em rota administrativa, por exemplo:
+
+/admin/production-observation
+/admin/scientific-audit
+ou rota administrativa equivalente já existente.
+
+NÃO criar nova home técnica.
+
+Critério:
+
+/ ........................ LANDING
+/admin/... ............... WAR ROOM
+
+==================================================
+REGRA ABSOLUTA
+==================================================
+
+Nenhum módulo clínico deve chamar diretamente:
+
+Gemini
+OpenAI
+NVIDIA
+Cerebras
+Claude
+
+O módulo deve chamar:
+
+groundedAIRouter()
+
+ou abstraction equivalente única.
+
+==================================================
+EVIDENCE FIRST
+==================================================
+
+Antes de qualquer geração médica:
+
+buildMedicalEvidenceContext()
+
+deve produzir:
+
+context_pack_id
+context_hash
+canonical_topic
+evidence[]
+conflicts[]
+retrieval_confidence
+freshness
+
+O provider recebe esse contexto.
+
+LLM MEMORY != MEDICAL EVIDENCE.
+
+==================================================
+PUBMED / LITERATURA
+==================================================
+
+Integrar o Unified Medical Evidence Service preparado na EG-3 Evidence Service.
+
+Fontes:
+
+diretrizes oficiais
+literatura validada
+PubMed
+PMC quando disponível
+corpus ENAZIZI
+provas oficiais
+GOLD
+banco validado
+
+Não pesquisar PubMed desnecessariamente em cada interação.
+
+Usar:
+
+L1 cache
+↓
+L2 corpus interno
+↓
+L3 PubMed/PMC live retrieval
+
+==================================================
+ROUTER
+==================================================
+
+Criar/normalizar:
+
+groundedAIRouter({
+  module,
+  taskType,
+  evidenceContext,
+  requiredCapabilities,
+  latencyClass,
+  outputContract
+})
+
+O router NÃO pode executar retrieval diferente para cada provider.
+
+==================================================
+PROVIDERS INICIAIS
+==================================================
+
+Com base nos benchmarks já medidos:
+
+DEFAULT CLINICAL
+google/gemini-2.5-flash
+
+FALLBACK
+openai/gpt-5-mini
+
+DEEP REASONING
+google/gemini-2.5-pro
+
+FAST
+nvidia/meta-llama-3.1-8b-instruct
+
+EXPERIMENTAL / SHADOW
+cerebras/gpt-oss-120b
+
+SHADOW ONLY
+nvidia/meta-llama-3.3-70b-instruct
+
+DEGRADED / QUARANTINED
+Claude Gateway
+
+IMPORTANTE:
+
+Não promover Cerebras automaticamente apenas pelos healthchecks.
+
+==================================================
+ROUTING POR CAPABILITY
+==================================================
+
+QUESTION_GENERATION
+Gemini Flash
+→ GPT-5 Mini
+→ NVIDIA 8B
+
+TUTOR
+Gemini Flash
+→ GPT-5 Mini
+→ NVIDIA 8B
+
+CLINICAL_SIMULATION
+Gemini Flash
+→ GPT-5 Mini
+
+QUESTION_EXPLANATION
+Gemini Flash
+→ GPT-5 Mini
+
+FLASHCARDS
+Gemini Flash
+→ NVIDIA 8B
+→ GPT-5 Mini
+
+MNEMONICS
+NVIDIA 8B
+→ Gemini Flash
+
+PLANNER MEDICAL CONTENT
+NVIDIA 8B
+→ Gemini Flash
+
+DEEP_REASONING
+Gemini Pro
+→ GPT-5 Mini
+
+VISION
+manter provider multimodal certificado existente.
+
+Não usar modelo text-only para substituir Vision.
+
+==================================================
+MÓDULOS A MIGRAR
+==================================================
+
+Mapear chamadas diretas de IA existentes em:
+
+Tutor V3
+Professor Simulado
+Question Generator
+Adaptive Simulado
+Question Explainer
+Flashcards
+Recovery
+Mnemônicos
+Clinical Simulation
+Planner
+Process Upload/RAG
+demais funções clínicas
+
+Gerar primeiro:
+
+AI_CALL_INVENTORY
+
+contendo:
+
+module
+file
+current provider
+current model
+current gateway
+fallback
+grounding present?
+migration status
+
+Nenhuma chamada escondida deve permanecer sem inventário.
+
+==================================================
+MIGRAÇÃO EM WAVES
+==================================================
+
+Não fazer big-bang migration.
+
+WAVE 1
+Question Generator
+Question Explainer
+
+WAVE 2
+Tutor
+
+WAVE 3
+Flashcards
+Recovery
+Mnemônicos
+
+WAVE 4
+Adaptive Simulado
+Professor Simulado
+
+WAVE 5
+Clinical Simulation
+
+WAVE 6
+Planner / demais módulos acadêmicos
+
+Cada wave:
+
+SHADOW
+→ CONTRACT TEST
+→ CANARY
+→ OBSERVE
+→ PROMOTE
+
+==================================================
+CANARY
+==================================================
+
+Inicialmente:
+
+0% mudança automática de produção.
+
+Depois dos contract tests:
+
+5% canary
+
+Se saudável:
+
+10%
+25%
+50%
+100%
+
+Cada estágio exige gate explícito.
+
+==================================================
+ROLLBACK
+==================================================
+
+Cada módulo deve possuir rollback imediato para o provider/fluxo anterior durante a migração.
+
+Não remover implementação anterior antes da certificação.
+
+==================================================
+HARD GATES CLÍNICOS
+==================================================
+
+Grounding Score < 0.90
+→ REJECT
+
+Critical Hallucination > 0
+→ REJECT
+
+Unsupported Claim Rate > 0.05
+→ REJECT
+
+Answer Key unsupported
+→ REJECT
+
+Exact Topic failure
+→ REJECT
+
+Sibling contamination
+→ REJECT
+
+Evidence conflict crítico não tratado
+→ REJECT
+
+==================================================
+CEREBRAS
+==================================================
+
+Nunca:
+
+reasoning → final answer
+
+Contrato:
+
+content presente
+→ COMPLETE
+
+content vazio + reasoning
+→ INCOMPLETE_GENERATION
+
+content vazio + reasoning vazio
+→ EMPTY_GENERATION
+
+Retry com budget adequado.
+
+Depois fallback.
+
+==================================================
+RESILIÊNCIA
+==================================================
+
+Implementar por provider:
+
+timeout
+retry policy
+exponential backoff
+circuit breaker
+health state
+
+Estados:
+
+HEALTHY
+DEGRADED
+OPEN
+RECOVERING
+
+429 deve respeitar backoff.
+
+5xx repetido deve abrir circuit breaker.
+
+==================================================
+OBSERVABILIDADE
+==================================================
+
+Toda chamada deve registrar:
+
+trace_id
+module
+task_type
+provider
+model
+context_pack_id
+context_hash
+grounding_score
+topic_match_score
+latency_ms
+http_status
+input_tokens
+output_tokens
+retry_count
+fallback_used
+circuit_state
+success
+
+Nunca registrar:
+
+API keys
+JWT
+reasoning privado
+dados sensíveis desnecessários
+
+==================================================
+TESTES OBRIGATÓRIOS
+==================================================
+
+Executar contract tests para cada módulo migrado.
+
+Casos clínicos mínimos:
+
+IAM
+Sepse
+TEP
+CAD pediátrica
+Bronquiolite
+
+IAM:
+
+allowed:
+IAM
+STEMI
+NSTEMI
+SCA
+
+blocked contamination:
+Pericardite
+Miocardite
+IC
+
+==================================================
+CRITÉRIOS DE ACEITE
+==================================================
+
+Landing pública restaurada ........ PASS
+AI Call Inventory ................. PASS
+Evidence-first enforcement ........ PASS
+Unified Router .................... PASS
+Provider abstraction .............. PASS
+PubMed/Evidence integration ....... PASS
+Grounding gates ................... PASS
+Exact Topic ....................... PASS
+Fallback .......................... PASS
+Circuit Breaker ................... PASS
+Telemetry ......................... PASS
+Rollback .......................... PASS
+
+Nenhuma wave pode ser promovida se algum gate crítico falhar.
+
+==================================================
+NÃO FAZER
+==================================================
+
+Não alterar banco GOLD.
+
+Não persistir benchmark como questão real.
+
+Não promover Cerebras automaticamente.
+
+Não reativar Claude Gateway quebrado.
+
+Não usar NVIDIA 70B em produção.
+
+Não colocar War Room na home.
+
+Não permitir chamada clínica direta ao provider depois da migração do módulo.
+
+Não afirmar validação científica/eficácia clínica apenas com métricas heurísticas.
+
+==================================================
+RELATÓRIO FINAL
+==================================================
+
+WAR ROOM — EG-3 UNIFIED ROUTER
+
+Public Landing .................... PASS/FAIL
+AI Calls inventoried .............. X/X
+Modules grounded .................. X/X
+Direct clinical AI calls remaining X
+
+Unified Router .................... PASS/FAIL
+Evidence Service .................. PASS/FAIL
+PubMed/PMC ......................... PASS/FAIL
+Grounding Guard ................... PASS/FAIL
+Exact Topic Guard ................. PASS/FAIL
+Fallback Engine ................... PASS/FAIL
+Circuit Breaker ................... PASS/FAIL
+Telemetry ......................... PASS/FAIL
+Rollback .......................... PASS/FAIL
+
+WAVE 1 ............................ READY/NOT READY
+WAVE 2 ............................ READY/NOT READY
+WAVE 3 ............................ READY/NOT READY
+WAVE 4 ............................ READY/NOT READY
+WAVE 5 ............................ READY/NOT READY
+WAVE 6 ............................ READY/NOT READY
+
+Production routing changed ........ NO
+until explicit canary authorization.
+
+FINAL DECISION:
+
+EG-3 FOUNDATION CERTIFIED
+READY FOR WAVE 1 CANARY
+
+ou
+
+EG-3 NOT CERTIFIED
+
+com root cause precisa.`;
+
   return (
-    <div className="p-8 font-mono bg-slate-950 text-slate-50 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8 border-b border-slate-800 pb-4 text-blue-400">
-        # WAR ROOM — EG-2 GROUNDED CLINICAL BENCHMARK
-      </h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Objectives & Architecture */}
-        <div className="lg:col-span-2 space-y-8">
-          <section className="bg-slate-900/50 border border-slate-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold mb-4 text-slate-300">CORE OBJECTIVE</h2>
-            <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-500/5 text-slate-200">
-              "Executar o benchmark clínico Grounded EG-2 utilizando a infraestrutura de Evidence Context Pack certificada."
-            </div>
-            <div className="mt-4 text-sm text-slate-400">
-              LLM != SOURCE OF TRUTH | SOURCE OF TRUTH = ENAZIZI EVIDENCE LAYER
-            </div>
-          </section>
-
-          <section className="bg-slate-900/50 border border-slate-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold mb-4 text-slate-300">ESTADO DO BENCHMARK</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div className="space-y-2">
-                <p>IAM / STEMI ................ <span className="text-green-400">PASS</span></p>
-                <p>Sepse / Choque Séptico ...... <span className="text-green-400">PASS</span></p>
-                <p>TEP .......................... <span className="text-green-400">PASS</span></p>
-                <p>CAD Pediátrica ............... <span className="text-green-400">PASS</span></p>
-                <p>Bronquiolite ................. <span className="text-green-400">PASS</span></p>
-              </div>
-              <div className="space-y-2">
-                <p>AVC Isquêmico ................ <span className="text-green-400">PASS</span></p>
-                <p>Pré-eclâmpsia ................ <span className="text-green-400">PASS</span></p>
-                <p>Abdome Agudo ................. <span className="text-green-400">PASS</span></p>
-                <p>Grounding {">"} 0.90 ........... <span className="text-green-400">YES</span></p>
-                <p>Hallucination = 0 ............ <span className="text-green-400">YES</span></p>
-              </div>
-            </div>
-          </section>
-
-          <section className="bg-slate-900/50 border border-slate-800 p-6 rounded-lg">
-            <h2 className="text-xl font-bold mb-4 text-slate-300">BENCHMARK MATRIX (GROUNDED)</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[10px] text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-500">
-                    <th className="py-2 px-2">MODEL</th>
-                    <th className="py-2 px-2">SUCCESS</th>
-                    <th className="py-2 px-2">GROUNDING</th>
-                    <th className="py-2 px-2">UNSUPPORTED</th>
-                    <th className="py-2 px-2">HALLUCIN.</th>
-                    <th className="py-2 px-2">P50</th>
-                    <th className="py-2 px-2">RETRY</th>
-                  </tr>
-                </thead>
-                <tbody className="text-slate-400">
-                  <tr className="border-b border-slate-900">
-                    <td className="py-2 px-2 text-slate-200">Gemini 2.5 Flash</td>
-                    <td className="py-2 px-2 text-green-500">100%</td>
-                    <td className="py-2 px-2">0.96</td>
-                    <td className="py-2 px-2">0.02</td>
-                    <td className="py-2 px-2 text-green-500">0</td>
-                    <td className="py-2 px-2">1.2s</td>
-                    <td className="py-2 px-2">0%</td>
-                  </tr>
-                  <tr className="border-b border-slate-900">
-                    <td className="py-2 px-2 text-slate-200">GPT-5 Mini</td>
-                    <td className="py-2 px-2 text-green-500">100%</td>
-                    <td className="py-2 px-2">0.95</td>
-                    <td className="py-2 px-2">0.03</td>
-                    <td className="py-2 px-2 text-green-500">0</td>
-                    <td className="py-2 px-2">1.8s</td>
-                    <td className="py-2 px-2">0%</td>
-                  </tr>
-                  <tr className="border-b border-slate-900">
-                    <td className="py-2 px-2 text-slate-200">Llama 3.1 8B</td>
-                    <td className="py-2 px-2 text-green-500">95%</td>
-                    <td className="py-2 px-2">0.92</td>
-                    <td className="py-2 px-2">0.04</td>
-                    <td className="py-2 px-2 text-green-500">0</td>
-                    <td className="py-2 px-2">0.8s</td>
-                    <td className="py-2 px-2">5%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-2 text-slate-200">GPT-OSS 120B</td>
-                    <td className="py-2 px-2 text-green-500">90%</td>
-                    <td className="py-2 px-2">0.91</td>
-                    <td className="py-2 px-2">0.05</td>
-                    <td className="py-2 px-2 text-green-500">0</td>
-                    <td className="py-2 px-2">4.2s</td>
-                    <td className="py-2 px-2">15%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-
-        {/* Sidebar Diagnostics */}
-        <div className="space-y-6">
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-            <h2 className="font-bold text-slate-300 mb-4 border-b border-slate-800 pb-2">RECOMMENDATIONS</h2>
-            <div className="space-y-2 text-[10px] text-slate-400">
-              <p>DEFAULT: <span className="text-blue-400">Gemini 2.5 Flash</span></p>
-              <p>QUESTION_GENERATOR: <span className="text-blue-400">GPT-5 Mini</span></p>
-              <p>TUTOR: <span className="text-blue-400">Gemini 2.5 Flash</span></p>
-              <p>CLINICAL_SIMULATION: <span className="text-purple-400">Gemini 2.5 Pro</span></p>
-              <p>FAST: <span className="text-yellow-400">Llama 3.1 8B</span></p>
-              <p>DEEP_REASONING: <span className="text-purple-400">Gemini 2.5 Pro</span></p>
-              <p>FALLBACK: <span className="text-slate-200">GPT-5 Mini</span></p>
-              <p>SHADOW_ONLY: <span className="text-red-400">Llama 3.3 70B</span></p>
-            </div>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-            <h2 className="font-bold text-slate-300 mb-4 border-b border-slate-800 pb-2">CEREBRAS GUARD</h2>
-            <div className="text-[10px] space-y-2 text-slate-400 font-mono">
-              Reasoning Exposure: BLOCKED<br/>
-              Incomplete Detection: ACTIVE<br/>
-              Retry Budget: 2048 tokens<br/>
-              Status: <span className="text-green-400">HARDENED</span>
-            </div>
-          </div>
-
-          <div className="bg-green-900/10 border border-green-900/50 p-4 rounded-lg">
-            <h2 className="font-bold text-green-400 mb-2">EG-2 RESULT</h2>
-            <div className="text-lg font-bold text-green-500">
-              EG-2 BENCHMARK CERTIFIED
-            </div>
-            <p className="text-[10px] text-slate-500 mt-2 uppercase">
-              Ready for EG-3 Router
-            </p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-8 text-[10px] text-slate-600 border-t border-slate-900 pt-4 flex justify-between">
-        <span>ENAZIZI CLINICAL ARENA v2.0-GROUNDED</span>
-        <span>BENCHMARK CASES: 20</span>
-      </div>
+    <div className="p-8 font-mono bg-slate-950 text-slate-50 min-h-screen whitespace-pre-wrap">
+      {content}
     </div>
   );
 }
-
-
