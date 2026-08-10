@@ -44,6 +44,13 @@ const AI_MODELS = {
 const DEFAULT_MODEL = AI_MODELS.claude.primary;
 const FALLBACK_MODEL = AI_MODELS.claude.fallback;
 
+// P0-2: Circuit Breaker State para Auto-Disable
+let claudeFailureCount = 0;
+let claudeDisabledUntil = 0;
+const CLAUDE_MAX_FAILURES = 3;
+const CLAUDE_COOLDOWN_MS = 300000; // 5 minutos
+
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
