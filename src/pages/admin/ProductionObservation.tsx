@@ -6,1068 +6,519 @@ import { Activity, AlertTriangle, ShieldCheck, Cpu } from "lucide-react";
 
 const ProductionObservationPage = () => {
   const content = `
-# WAR ROOM — D1 AUTHENTICATED PRODUCTION DOGFOOD EXECUTION
+# ENAZIZI — D1 QUALITY ASSURANCE VALIDATION
 
-## MISSÃO
+## OBJETIVO
 
-Executar a auditoria D1 real do ENAZIZI após a restauração da Production Baseline.
+Realizar uma validação funcional e pedagógica do ENAZIZI em ambiente autorizado, simulando jornadas normais de usuários da plataforma.
 
-Estado obrigatório de partida:
+Esta tarefa é exclusivamente de QA.
 
-\`\`\`text
-PRODUCTION BASELINE ........ RESTORED
-D1 OBSERVATION ............. SAFE
-FEATURE FREEZE ............. ACTIVE
-RELIABILITY HARDENING ...... CERTIFIED
-\`\`\`
+Não alterar código, banco, configurações, RLS, Edge Functions, prompts, providers ou interface.
 
-Objetivo:
+Não implementar este documento como página.
 
-\`\`\`text
-SIMULAR USUÁRIOS REAIS
-↓
-EXECUTAR JORNADAS REAIS
-↓
-CAPTURAR FALHAS
-↓
-REPRODUZIR
-↓
-CLASSIFICAR
-↓
-NÃO CORRIGIR
-\`\`\`
+Apenas executar os testes disponíveis e apresentar os resultados.
 
 ---
 
-# REGRA ABSOLUTA — READ ONLY
-
-Durante esta execução:
-
-\`\`\`text
-NÃO editar código
-NÃO criar migration
-NÃO alterar banco manualmente
-NÃO alterar RLS
-NÃO alterar cron
-NÃO alterar provider
-NÃO alterar model
-NÃO alterar prompt
-NÃO alterar feature flag
-NÃO alterar UI
-NÃO criar dashboard
-NÃO corrigir bug
-\`\`\`
-
-São permitidas apenas alterações de dados que um usuário real produziria naturalmente pela própria UI durante o teste:
-
-\`\`\`text
-sessão de estudo
-resposta de questão
-revisão de flashcard
-simulado de teste
-mensagem ao Tutor
-simulação clínica
-\`\`\`
-
-Não executar INSERT/UPDATE manual para fazer um teste "passar".
-
----
-
-# REGRA DE EVIDÊNCIA
-
-Existem 4 estados possíveis:
-
-\`\`\`text
-PASSOU
-FALHOU
-NÃO TESTADO
-DADOS INSUFICIENTES
-\`\`\`
-
-PASSOU exige evidência real.
-
-Não aceitar:
-
-\`\`\`text
-"o código parece correto"
-"o arquivo existe"
-"build passou"
-"healthcheck = 200"
-"provavelmente funciona"
-\`\`\`
-
-como validação E2E.
-
----
-
-# 0 — PRÉ-FLIGHT
-
-Antes dos testes registrar:
-
-\`\`\`text
-commit SHA atual
-timestamp
-ambiente
-URL testada
-auth status
-browser
-viewport
-\`\`\`
-
-Confirmar que:
-
-\`\`\`text
-Index original está restaurado
-Landing original está ativa
-Dashboard não foi alterado pelo WAR ROOM
-\`\`\`
-
-Comparar com:
-
-\`\`\`text
-FASE_2_CERTIFICATION_REPORT.md
-PRODUCTION_OBSERVATION_GUARD.md
-\`\`\`
-
----
-
-# 1 — PERSONA ALUNO
-
-Utilizar uma conta de teste legítima.
-
-Não usar admin como substituto de aluno quando isso alterar RLS ou experiência.
-
----
-
-# 1.1 LOGIN
-
-Executar:
-
-\`\`\`text
-/logout
-↓
-/login
-↓
-login
-↓
-/dashboard
-\`\`\`
-
-Capturar:
-
-\`\`\`text
-HTTP
-latência
-redirect
-console
-network
-\`\`\`
-
-Esperado:
-
-\`\`\`text
-sessão válida
-dashboard carregado
-sem loop de redirect
-\`\`\`
-
----
-
-# 1.2 DASHBOARD
-
-Auditar visualmente:
-
-\`\`\`text
-saudação
-missão do dia
-readiness
-flashcards
-FSRS
-revisões
-planner
-recomendações
-\`\`\`
-
-Procurar:
-
-\`\`\`text
-NaN
-undefined
-zero falso
-placeholder
-dados impossíveis
-loading infinito
-\`\`\`
-
-Comparar métricas críticas com banco em SELECT read-only.
-
----
-
-# 1.3 FLASHCARDS — CERTIFICAÇÃO REAL
-
-Abrir:
-
-\`\`\`text
-/dashboard/flashcards
-\`\`\`
-
-Registrar separadamente:
-
-\`\`\`text
-AVAILABLE
-MATERIALIZED
-DUE
-LEARNING
-REVIEW
-\`\`\`
-
-Consultar:
-
-\`\`\`sql
-SELECT count(*)
-FROM fsrs_cards
-WHERE user_id = :user_id
-AND due <= now();
-\`\`\`
-
-Comparar com a UI.
-
-Critério:
-
-\`\`\`text
-UI Due = DB Due
-\`\`\`
-
----
-
-# 1.4 REVISÃO PRIORITÁRIA
-
-Clicar realmente.
-
-Se due = 0:
-
-\`\`\`text
-botão desabilitado ou mensagem adequada
-\`\`\`
-
-Se due > 0:
-
-\`\`\`text
-sessão deve iniciar
-\`\`\`
-
-Responder pelo menos um card.
-
-Confirmar depois:
-
-\`\`\`text
-fsrs_cards atualizado
-fsrs_review_log inserido
-\`\`\`
-
-Recarregar a página.
-
-Confirmar persistência.
-
----
-
-# 1.5 SPRINT
-
-Executar Sprint.
-
-Validar:
-
-\`\`\`text
-sessão inicia
-cards carregam
-não depende de due > 0
-resposta funciona
-\`\`\`
-
----
-
-# 1.6 TODOS
-
-Executar modo Todos.
-
-Avaliar:
-
-\`\`\`text
-tempo de carregamento
-paginação
-memória
-responsividade
-\`\`\`
-
-Não aceitar loading infinito.
-
----
-
-# 1.7 TUTOR V3 — IAM
-
-Abrir sessão nova.
-
-Perguntar exatamente:
-
-\`\`\`text
-Paciente com dor torácica há 90 minutos e supra de ST em DII, DIII e aVF. Explique diagnóstico e conduta inicial.
-\`\`\`
+## 1. PRÉ-VALIDAÇÃO
 
 Registrar:
 
-\`\`\`text
-traceId
-HTTP
-provider
-model
-latency
-fallback_used
-\`\`\`
+* ambiente testado;
+* URL;
+* horário;
+* commit atual;
+* status da sessão;
+* viewport.
 
-Auditar conteúdo.
+Comparar os resultados com:
 
-Esperado:
+\`FASE_2_CERTIFICATION_REPORT.md\`
 
-\`\`\`text
-IAM com supra
-contexto apropriado
-resposta não vazia
-\`\`\`
+e
 
-Proibido:
-
-\`\`\`text
-Sepse
-Critérios de Light
-fallback genérico
-tema aleatório
-\`\`\`
+\`PRODUCTION_OBSERVATION_GUARD.md\`.
 
 ---
 
-# 1.8 TROCA IAM → SEPSE
+## 2. JORNADA DO ALUNO
 
-Usar o fluxo real "Mudar de Tema".
+Utilizar somente uma conta de teste autorizada.
 
-Novo tema:
+Validar:
 
-\`\`\`text
-Sepse
-\`\`\`
+Login → Dashboard → Planner → Tutor → Simulados → Flashcards → Banco de Erros → Mnemônicos → Modo Plantão.
+
+Para cada etapa registrar:
+
+* PASSOU;
+* FALHOU;
+* NÃO TESTADO;
+* DADOS INSUFICIENTES.
+
+Registrar também tempo aproximado de resposta e erros visíveis de console/network quando disponíveis.
+
+---
+
+## 3. DASHBOARD
+
+Abrir \`/dashboard\`.
+
+Confirmar:
+
+* saudação;
+* Missão do Dia;
+* Readiness;
+* Planner;
+* flashcards;
+* revisões;
+* recomendações.
+
+Verificar se existem:
+
+* valores zerados indevidamente;
+* \`NaN\`;
+* \`undefined\`;
+* placeholders;
+* loading infinito;
+* inconsistência evidente entre métricas.
+
+Quando possível, comparar os valores da UI com consultas somente leitura.
+
+---
+
+## 4. FLASHCARDS / FSRS
+
+Abrir \`/dashboard/flashcards\`.
+
+Validar separadamente:
+
+* acervo disponível;
+* cards materializados no FSRS;
+* revisões pendentes.
+
+Confirmar que cards nunca iniciados não aparecem como revisões vencidas.
+
+### Revisão Prioritária
+
+Iniciar normalmente.
+
+Se existirem revisões pendentes:
+
+* abrir card;
+* responder;
+* avançar;
+* recarregar a página;
+* verificar persistência.
+
+Quando permitido, confirmar por consulta somente leitura que o estado FSRS foi atualizado pela própria ação do usuário.
+
+### Sprint
+
+Confirmar que uma sessão pode ser iniciada normalmente.
+
+### Todos
+
+Confirmar:
+
+* carregamento;
+* paginação;
+* responsividade;
+* ausência de loading infinito.
+
+---
+
+## 5. TUTOR V3 — IAM
+
+Criar sessão normal do Tutor.
 
 Perguntar:
 
-\`\`\`text
-Paciente hipotenso após volume, lactato elevado e suspeita de infecção. Qual a abordagem inicial?
-\`\`\`
+“Paciente com dor torácica há 90 minutos e supra de ST em DII, DIII e aVF. Explique o diagnóstico e a conduta inicial.”
 
-Verificar se o Tutor resetou corretamente o contexto.
+Validar:
 
-Falha se conteúdo relevante do IAM contaminar a nova sessão.
+* resposta não vazia;
+* coerência com IAM com supra;
+* ausência de conteúdo de tema não relacionado;
+* tempo de resposta;
+* persistência da conversa.
 
----
+Quando os metadados estiverem disponíveis, registrar:
 
-# 1.9 TUTOR AUTH SECURITY
+* provider;
+* model;
+* fallback;
+* traceId.
 
-Fora da sessão autenticada, chamar tutor-v3-premium sem JWT.
-
-Esperado:
-
-\`\`\`text
-HTTP 401
-zero conteúdo médico
-\`\`\`
-
-HTTP 200:
-
-\`\`\`text
-P0
-\`\`\`
+Não inferir provider apenas pela configuração.
 
 ---
 
-# 1.10 SIMULADO IAM — RUN 1
+## 6. TROCA DE TEMA
 
-Criar simulado:
+Utilizar o fluxo normal “Mudar de Tema”.
 
-\`\`\`text
-IAM
-10 questões
-\`\`\`
+Selecionar:
 
-Não aceitar simplesmente que o simulado abriu.
+\`Sepse\`
 
-Auditar todas as questões.
+Perguntar:
+
+“Paciente com suspeita de infecção, lactato elevado e hipotensão persistente após reposição volêmica. Qual a abordagem inicial?”
+
+Confirmar que a nova resposta utiliza contexto de Sepse e não mantém indevidamente o contexto anterior de IAM.
+
+---
+
+## 7. SIMULADO — IAM
+
+Criar pela interface um simulado de IAM.
+
+Quantidade:
+
+\`10 questões\`
+
+Auditar as questões geradas.
+
+Aceitar aliases oficiais cadastrados, como:
+
+* IAM;
+* Infarto Agudo do Miocárdio;
+* SCA;
+* Síndrome Coronariana Aguda;
+* STEMI;
+* NSTEMI.
+
+Identificar qualquer questão predominantemente pertencente a:
+
+* Pericardite;
+* Miocardite;
+* Insuficiência Cardíaca;
+* Arritmias;
+* Valvopatias.
 
 Registrar:
 
-\`\`\`text
-question_id
-topic
-subtopic
-curriculum_theme
-canonical topic
-topic match score
-\`\`\`
-
-Permitido:
-
-\`\`\`text
-IAM
-Infarto Agudo do Miocárdio
-SCA
-Síndrome Coronariana Aguda
-STEMI
-NSTEMI
-aliases oficiais
-\`\`\`
-
-Proibido:
-
-\`\`\`text
-Pericardite
-Miocardite
-Endocardite
-IC
-Arritmias
-Valvopatias
-\`\`\`
-
-Calcular:
-
-\`\`\`text
-sibling_leakage_rate
-\`\`\`
-
-Meta:
-
-\`\`\`text
-0%
-\`\`\`
+\`questões fora do escopo = X/10\`
 
 ---
 
-# 1.11 SIMULADO IAM — RUN 2
+## 8. REPETIÇÃO
 
-Repetir imediatamente:
+Gerar um segundo simulado IAM.
 
-\`\`\`text
-IAM
-10 questões
-\`\`\`
+Comparar os IDs das questões dos dois simulados.
 
-Comparar IDs.
+Registrar:
 
-Calcular:
+* quantidade repetida;
+* percentual de sobreposição.
 
-\`\`\`text
-overlap_count
-overlap_rate
-\`\`\`
-
-Identificar repetição indevida.
+Não declarar deduplicação aprovada sem apresentar os números.
 
 ---
 
-# 1.12 SIMULADO COMPLETO
+## 9. SIMULADO COMPLETO
 
-Executar um simulado até o final.
+Executar normalmente:
 
-Responder questões reais.
+Criar → iniciar → responder → finalizar.
 
-Errar propositalmente pelo menos uma questão de teste.
+Confirmar:
+
+* resultado;
+* acurácia;
+* persistência;
+* possibilidade de reabrir resultado.
+
+Quando ocorrer um erro do aluno, verificar se o Banco de Erros recebe o evento esperado.
+
+---
+
+## 10. RECOVERY LOOP
+
+A partir de um erro produzido durante o teste, verificar a jornada:
+
+Erro → Banco de Erros → Recuperação → Flashcard → FSRS.
+
+Não alterar registros manualmente.
+
+Somente observar os dados produzidos naturalmente pelo fluxo.
+
+Registrar qualquer etapa ausente.
+
+---
+
+## 11. PLANNER
+
+Abrir o Planner.
+
+Executar uma ação normal disponível para o usuário.
+
+Recarregar a página.
+
+Confirmar persistência e ausência de tarefas duplicadas ou vazias.
+
+---
+
+## 12. MNEMÔNICOS
+
+Executar uma geração normal.
 
 Validar:
 
-\`\`\`text
-simulado_sessions
-simulado_questions
-practice_attempts
-resultado
-acurácia
-persistência
-\`\`\`
-
-Recarregar resultado.
-
-Deve permanecer.
+* resposta;
+* tempo;
+* conteúdo;
+* integração com Flashcards, quando disponível.
 
 ---
 
-# 1.13 RECOVERY LOOP
+## 13. MODO PLANTÃO
 
-Usar o erro produzido anteriormente.
-
-Confirmar cadeia:
-
-\`\`\`text
-Erro
-↓
-Error Bank
-↓
-Recovery
-↓
-Flashcard
-↓
-FSRS
-\`\`\`
-
-Consultar:
-
-\`\`\`text
-error_bank
-recovery_audit_log
-flashcards
-fsrs_cards
-\`\`\`
-
-Falha silenciosa:
-
-\`\`\`text
-P1
-\`\`\`
-
----
-
-# 1.14 PLANNER
-
-Abrir missão do dia.
-
-Executar uma ação válida.
-
-Recarregar.
-
-Validar:
-
-\`\`\`text
-estado persistido
-sem duplicidade
-sem missão vazia
-\`\`\`
-
----
-
-# 1.15 MNEMÔNICOS
-
-Executar geração real.
-
-Capturar:
-
-\`\`\`text
-provider
-latência
-HTTP
-resultado
-\`\`\`
-
-Testar ação para flashcard se disponível.
-
----
-
-# 1.16 MODO PLANTÃO
-
-Iniciar caso.
+Iniciar uma simulação clínica normalmente.
 
 Executar:
 
-\`\`\`text
-HDA
-↓
-exame físico
-↓
-exame complementar
-↓
-conduta
-\`\`\`
+HDA → avaliação → exame/conduta disponível.
 
-Monitorar sinais vitais.
+Observar:
+
+* respostas;
+* sinais vitais;
+* evolução do caso;
+* estabilidade da interface.
+
+Registrar qualquer:
+
+* falha de carregamento;
+* resposta vazia;
+* estado congelado;
+* inconsistência clínica evidente.
+
+---
+
+## 14. PROFESSOR
+
+Com conta autorizada de professor, validar \`/professor\`.
+
+Confirmar:
+
+* BI;
+* lista de alunos;
+* métricas;
+* matriz cognitiva;
+* simulados.
+
+Criar um simulado de teste sem distribuí-lo para alunos reais quando isso não for necessário.
+
+Validar geração, preview e persistência.
+
+Se houver metadados de provider, registrar o provider realmente utilizado.
+
+---
+
+## 15. ADMIN
+
+Com conta admin autorizada, validar:
+
+* \`/admin\`;
+* \`/admin/dogfood-monitor\`;
+* \`/admin/alpha-cohort\`;
+* \`/admin/official-outcomes\`;
+* \`/admin/scientific-audit\`;
+* \`/admin/production-observation\`.
+
+Confirmar que as telas carregam dados reais.
+
+Procurar indicadores explicitamente identificados como mock, placeholder ou demonstração.
+
+Não alterar configurações administrativas durante esta validação.
+
+---
+
+## 16. ALPHA COHORT
+
+Comparar a tela com os dados existentes da \`ALPHA_2026\`.
 
 Validar:
 
-\`\`\`text
-clinical-simulation
-physiology engine
-persistência
-\`\`\`
-
-Procurar:
-
-\`\`\`text
-Failed to fetch
-contradição fisiológica
-estado parado
-resposta vazia
-\`\`\`
+* meta;
+* membros;
+* checkpoints disponíveis;
+* snapshots apresentados.
 
 ---
 
-# 2 — PERSONA PROFESSOR
+## 17. RESULTADOS OFICIAIS
 
-Utilizar conta com role professor.
+Confirmar visualmente a diferenciação entre:
 
-Abrir:
+* não verificado;
+* documento verificado;
+* instituição verificada.
 
-\`\`\`text
-/professor
-\`\`\`
-
-Validar:
-
-\`\`\`text
-BI
-lista de alunos
-métricas
-matriz cognitiva
-simulados
-\`\`\`
+Um resultado reportado pelo próprio aluno nunca deve aparecer visualmente como institucionalmente validado.
 
 ---
 
-# 2.1 PROFESSOR SIMULADO
+## 18. MOBILE
 
-Criar simulado de teste.
+Repetir as jornadas principais em viewport móvel:
 
-Tema:
-
-\`\`\`text
-IAM
-\`\`\`
-
-Registrar:
-
-\`\`\`text
-provider
-model
-HTTP
-latência
-traceId
-\`\`\`
-
-Validar:
-
-\`\`\`text
-geração
-JSON
-persistência
-preview
-\`\`\`
-
-Auditar topic fidelity.
-
----
-
-# 2.2 PROVIDER CLAUDE
-
-Se configuração atual indicar Claude como primário:
-
-não considerar PASSOU até confirmar nos logs reais:
-
-\`\`\`text
-provider=claude
-\`\`\`
-
-Registrar também:
-
-\`\`\`text
-model
-fallback_used
-provider_error
-\`\`\`
-
-Se terminar no OpenAI:
-
-\`\`\`text
-CLAUDE NÃO VALIDADO
-\`\`\`
-
-mesmo que o simulado tenha sido gerado.
-
----
-
-# 3 — PERSONA ADMIN
-
-Utilizar conta admin legítima.
+\`390 × 844\`
 
 Testar:
 
-\`\`\`text
-/admin
-/admin/dogfood-monitor
-/admin/alpha-cohort
-/admin/official-outcomes
-/admin/scientific-audit
-/admin/production-observation
-\`\`\`
-
----
-
-# 3.1 DOGFOOD MONITOR
-
-Auditar origem das métricas.
-
-Procurar no código e runtime:
-
-\`\`\`text
-mock
-Math.random
-placeholder
-hardcoded health
-\`\`\`
-
-Qualquer métrica artificial apresentada como real:
-
-\`\`\`text
-P1
-\`\`\`
-
----
-
-# 3.2 ALPHA COHORT
-
-Comparar UI × banco:
-
-\`\`\`text
-coorte
-meta
-membros
-D0
-D30
-D60
-D90
-\`\`\`
-
-Não considerar UUID artificial sem profile como usuário real.
-
----
-
-# 3.3 OFFICIAL OUTCOMES
-
-Validar:
-
-\`\`\`text
-student_reported
-document_verified
-institution_verified
-\`\`\`
-
-Garantir:
-
-\`\`\`text
-student_reported
-≠
-resultado validado
-\`\`\`
-
----
-
-# 4 — AI PROVIDERS
-
-Testar health dos providers.
+* Dashboard;
+* Tutor;
+* Flashcards;
+* Simulados;
+* Plantão.
 
 Registrar:
 
-| Provider | Model | HTTP | Latência | Circuit | Status |
-| -------- | ----- | ---: | -------: | ------- | ------ |
-| Claude   | ?     |    ? |        ? | ?       | ?      |
-| OpenAI   | ?     |    ? |        ? | ?       | ?      |
-| Gemini   | ?     |    ? |        ? | ?       | ?      |
-
-Não mascarar provider indisponível por fallback.
+* overflow;
+* modal cortado;
+* botão inacessível;
+* sidebar problemática;
+* campo de texto coberto.
 
 ---
 
-# 5 — EDGE FUNCTIONS
+## 19. CONSOLE E NETWORK
 
-Validar em uso real:
+Durante os testes, registrar erros funcionais observados.
 
-\`\`\`text
-tutor-v3-premium
-generate-adaptive-simulado
-question-generator
-generate-flashcards
-generate-recovery-flashcard
-clinical-simulation
-professor-simulado
-study-orchestrator
-eu-ai
-\`\`\`
+Priorizar:
 
-Capturar:
+* requisições 4xx inesperadas;
+* 5xx;
+* timeout;
+* Failed to fetch;
+* respostas vazias;
+* erros React;
+* duplicate keys;
+* promises não tratadas.
 
-\`\`\`text
-401 inesperado
-403
-429
-500
-502
-503
-504
-timeout
-\`\`\`
+Não executar testes de segurança ofensivos.
 
 ---
 
-# 6 — CONSOLE
+## 20. REPRODUÇÃO
 
-Durante toda auditoria registrar:
-
-\`\`\`text
-console.error
-console.warn
-Unhandled Promise
-duplicate key
-undefined
-NaN
-\`\`\`
-
-Warnings conhecidos devem ser separados de erros novos.
-
----
-
-# 7 — MOBILE DOGFOOD
-
-Viewport:
-
-\`\`\`text
-390 × 844
-\`\`\`
-
-Testar pelo menos:
-
-\`\`\`text
-Dashboard
-Tutor
-Simulados
-Flashcards
-Plantão
-\`\`\`
-
-Auditar:
-
-\`\`\`text
-overflow
-modal cortado
-input coberto
-botão inacessível
-sidebar
-scroll
-\`\`\`
-
----
-
-# 8 — PERFORMANCE
-
-Registrar aproximadamente:
-
-\`\`\`text
-Dashboard load
-Tutor response
-Simulado generation
-Flashcard start
-Plantão response
-Professor load
-\`\`\`
+Se uma falha funcional aparecer durante uma jornada normal, repetir a mesma ação uma segunda vez.
 
 Classificar:
 
-\`\`\`text
-<2s excelente
-2–5s aceitável
-5–10s atenção
->10s investigar
-\`\`\`
+* REPRODUZÍVEL;
+* INTERMITENTE;
+* NÃO REPRODUZIDO.
 
-Não aplicar automaticamente esses thresholds a geração de IA sem contextualizar o tipo de operação.
+Não corrigir nesta execução.
 
 ---
 
-# 9 — REPRODUÇÃO
+# SAÍDA OBRIGATÓRIA
 
-Toda falha:
+Responder com:
 
-\`\`\`text
-Tentativa 1
-↓
-Tentativa 2
-\`\`\`
+\`D1 PRODUCTION QA — EXECUÇÃO CONCLUÍDA\`
 
-Se P0/P1:
+ou:
 
-\`\`\`text
-Tentativa 3
-\`\`\`
+\`D1 PRODUCTION QA — BLOQUEADO\`
 
-quando seguro.
-
-Classificar:
-
-\`\`\`text
-REPRODUZÍVEL
-INTERMITENTE
-NÃO REPRODUZIDO
-\`\`\`
+Nunca responder que este protocolo foi “implementado”.
 
 ---
 
-# 10 — PROIBIDO DURANTE O D1
+## RESUMO
 
-Se encontrar bug:
+Apresentar:
 
-\`\`\`text
-NÃO CORRIGIR
-\`\`\`
+P0 = ?
+P1 = ?
+P2 = ?
+P3 = ?
 
-Primeiro entregar relatório.
-
-Hotfix será autorizado separadamente.
-
----
-
-# RELATÓRIO OBRIGATÓRIO
-
-## EXECUTIVE STATUS
-
-\`\`\`text
-D1 PRODUCTION DOGFOOD
-
-P0 ........ ?
-P1 ........ ?
-P2 ........ ?
-P3 ........ ?
-
-5xx ....... ?
-Failed Fetch ... ?
-Empty 200 ...... ?
-Auth Bypass .... ?
-\`\`\`
+5xx observados = ?
+Failed to fetch = ?
+Loadings infinitos = ?
+Botões inoperantes = ?
+Inconsistências pedagógicas = ?
 
 ---
 
 ## MATRIZ
 
-| Jornada             | Status | Latência | HTTP | Persistência | Evidência |
-| ------------------- | ------ | -------: | ---- | ------------ | --------- |
-| Login               |        |          |      |              |           |
-| Dashboard           |        |          |      |              |           |
-| Planner             |        |          |      |              |           |
-| Tutor IAM           |        |          |      |              |           |
-| Tutor Sepse         |        |          |      |              |           |
-| Simulado IAM #1     |        |          |      |              |           |
-| Simulado IAM #2     |        |          |      |              |           |
-| Recovery            |        |          |      |              |           |
-| Flashcards Priority |        |          |      |              |           |
-| Flashcards Sprint   |        |          |      |              |           |
-| Flashcards All      |        |          |      |              |           |
-| Plantão             |        |          |      |              |           |
-| Professor           |        |          |      |              |           |
-| Professor Simulado  |        |          |      |              |           |
-| Admin               |        |          |      |              |           |
-| Alpha Cohort        |        |          |      |              |           |
-| Outcomes            |        |          |      |              |           |
-| Mobile              |        |          |      |              |           |
+| Jornada                | Status | Tempo | Persistência | Observação |
+| ---------------------- | ------ | ----: | ------------ | ---------- |
+| Login                  |        |       |              |            |
+| Dashboard              |        |       |              |            |
+| Planner                |        |       |              |            |
+| Tutor IAM              |        |       |              |            |
+| Tutor Sepse            |        |       |              |            |
+| Simulado IAM #1        |        |       |              |            |
+| Simulado IAM #2        |        |       |              |            |
+| Simulado completo      |        |       |              |            |
+| Recovery               |        |       |              |            |
+| Flashcards Prioritária |        |       |              |            |
+| Flashcards Sprint      |        |       |              |            |
+| Flashcards Todos       |        |       |              |            |
+| Mnemônicos             |        |       |              |            |
+| Plantão                |        |       |              |            |
+| Professor              |        |       |              |            |
+| Professor Simulado     |        |       |              |            |
+| Admin                  |        |       |              |            |
+| Alpha Cohort           |        |       |              |            |
+| Outcomes               |        |       |              |            |
+| Mobile                 |        |       |              |            |
 
 ---
 
-# INCIDENT REPORT
+## PARA CADA FALHA
 
-Para cada falha:
+Informar:
 
-\`\`\`text
-INCIDENT ID
-SEVERITY
-PERSONA
-ROUTE
-TIMESTAMP
-
-STEPS TO REPRODUCE
-
-EXPECTED
-
-OBSERVED
-
-HTTP
-
-TRACE ID
-
-CONSOLE
-
-NETWORK
-
-DB EVIDENCE
-
-REPRODUCTION RATE
-
-LIKELY ROOT LAYER
-
-USER IMPACT
-\`\`\`
+* severidade;
+* persona;
+* rota;
+* passos de reprodução;
+* comportamento esperado;
+* comportamento observado;
+* evidência disponível;
+* reprodução 1/2 ou 2/2;
+* provável camada;
+* impacto no usuário.
 
 ---
 
-# COMPARAÇÃO COM BASELINE
+# DECISÃO
 
-Comparar obrigatoriamente com:
+Se houver problema bloqueante de operação:
 
-\`\`\`text
-FASE_2_CERTIFICATION_REPORT.md
-PRODUCTION_OBSERVATION_GUARD.md
-\`\`\`
+\`D1 CRITICAL — REVIEW REQUIRED\`
 
-Marcar:
+Se houver falha relevante de funcionalidade principal:
 
-\`\`\`text
-REGRESSION
-NEW ISSUE
-KNOWN ISSUE
-\`\`\`
+\`D1 NEEDS HOTFIX\`
 
----
+Se não houver falhas críticas/relevantes reproduzíveis:
 
-# DECISÃO D1
+\`D1 PASSED — CONTINUE OBSERVATION\`
 
-## Caso exista P0
+## REGRA FINAL
 
-\`\`\`text
-D1 CRITICAL
-GO-LIVE HOLD
-\`\`\`
+Não modificar o produto.
 
-## P0 = 0 e P1 > 0
+Não implementar este protocolo.
 
-\`\`\`text
-D1 NEEDS HOTFIX
-PRODUCTION OBSERVATION CONTINUES
-\`\`\`
-
-## P0 = 0 e P1 = 0
-
-\`\`\`text
-D1 PASSED
-PRODUCTION OBSERVATION CONTINUES TO D7
-\`\`\`
-
----
-
-# REGRA FINAL
-
-Não tente provar que o ENAZIZI está funcionando.
-
-Tente provar que ele está quebrado.
-
-Somente se a tentativa falhar em encontrar P0/P1 reproduzível, considerar o D1 aprovado.
-
-Objetivo:
-
-\`\`\`text
-USUÁRIO REAL
-↓
-JORNADA REAL
-↓
-PRODUÇÃO REAL
-↓
-EVIDÊNCIA REAL
-\`\`\`
-  `;
+Executar apenas jornadas normais e autorizadas de QA e retornar os resultados observados.
+  \`;
 
   return (
     <div className="p-8 bg-zinc-950 text-zinc-100 min-h-screen font-mono text-sm space-y-8">
