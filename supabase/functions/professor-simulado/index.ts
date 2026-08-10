@@ -368,8 +368,13 @@ serve(async (req) => {
               turma_id: id,
               student_id: sid
             }));
-            await sb.from("professor_turma_students").insert(studentLinks);
+            const { error: linkError } = await sb.from("professor_turma_students").insert(studentLinks);
+            if (linkError) {
+              console.error(`[PROFESSOR_SIMULADO_UPDATE_ERROR] erro ao vincular alunos:`, linkError);
+              throw linkError;
+            }
           }
+
         }
 
         return ok({ success: true });

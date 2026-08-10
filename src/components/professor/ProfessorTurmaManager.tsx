@@ -382,14 +382,11 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
                               disabled={isAlreadySelected}
                               className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50 text-left group"
                             >
-                              <div className="flex flex-col">
-                                <span className="text-sm font-bold">{s.display_name}</span>
-                                <span className="text-[10px] text-white/40">{s.email} • {s.faculdade || "Sem faculdade"} {s.periodo ? `• ${s.periodo}º` : ""}</span>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{s.display_name}</p>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{s.display_name}</p>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <p className="text-[10px] text-muted-foreground truncate">{s.email}</p>
+                                  <span className="text-[10px] text-white/40">• {s.faculdade || "Sem faculdade"}</span>
                                   {s.periodo && (
                                     <Badge variant="outline" className="h-4 px-1 text-[8px] border-white/10 text-muted-foreground">
                                       {s.periodo}º
@@ -397,6 +394,7 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
                                   )}
                                 </div>
                               </div>
+
                               {isAlreadySelected ? (
                                 <Badge variant="secondary" className="h-6 bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">
                                   Adicionado
