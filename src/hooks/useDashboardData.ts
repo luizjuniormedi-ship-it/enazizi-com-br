@@ -101,7 +101,8 @@ export const useDashboardData = () => {
           gamificationStreak: Number(uni.metrics?.streak || 0),
           gamificationXp: cd.gamification?.xp || 0,
           gamificationLevel: cd.gamification?.level || 1,
-          globalFlashcards: Number(uni.metrics?.global_flashcards || uni.fsrs_cards_count || 0),
+          // HOTFIX 2: Contract normalization. Use flashcards_count for available and fsrs_materialized_count for progress.
+          globalFlashcards: Number(uni.flashcards_count || uni.fsrs_cards_count || 0),
           globalQuestions: Number(uni.metrics?.global_questions || 0),
           questionsCreated: 0,
           clinicalSimulations: cd.simulationSessionsCount || 0,

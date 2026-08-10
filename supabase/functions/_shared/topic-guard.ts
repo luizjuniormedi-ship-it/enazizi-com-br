@@ -17,7 +17,8 @@ export function validateFinalQuestionTopic(
   question: any,
   requestedTopic: string,
   requestedCompetency?: string,
-  minScore = 90
+  minScore = 90,
+  allowedAliases: string[] = [] // HOTFIX 3: Explicit aliases allowed
 ): TopicGuardResult {
   const qTopic = (question.topic || "").toLowerCase();
   const qSubtopic = (question.subtopic || "").toLowerCase();
@@ -39,11 +40,16 @@ export function validateFinalQuestionTopic(
 
   // 2. Exact Topic/Theme Match (Priority 2)
   if (score < 100 && reqTopicLower.length > 0) {
-    if ([qTopic, qTheme].some(val => val === reqTopicLower)) {
+    const isTopicMatch = [qTopic, qTheme].some(val => val === reqTopicLower) || 
+                         allowedAliases.some(alias => [qTopic, qTheme].includes(alias.toLowerCase()));
+    
+    const isSubtopicMatch = [qSubtopic, qSubtheme].some(val => val === reqTopicLower) ||
+                            allowedAliases.some(alias => [qSubtopic, qSubtheme].includes(alias.toLowerCase()));
+
+    if (isTopicMatch) {
       matchedFields.push("topic");
-      // Se houver uma competência solicitada e NÃO batemos nela, o score do tópico pai deve ser baixo
       score = (reqCompLower && reqCompLower.length > 0) ? 70 : 100;
-    } else if ([qSubtopic, qSubtheme].some(val => val === reqTopicLower)) {
+    } else if (isSubtopicMatch) {
       matchedFields.push("subtopic");
       score = (reqCompLower && reqCompLower.length > 0) ? 60 : 95;
     }

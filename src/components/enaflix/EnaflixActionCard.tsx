@@ -10,6 +10,7 @@ interface Props {
   variant?: "primary" | "secondary" | "danger" | "violet" | "mint";
   badge?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function EnaflixActionCard({ 
@@ -19,7 +20,8 @@ export function EnaflixActionCard({
   onClick, 
   variant = "secondary", 
   badge,
-  className
+  className,
+  disabled
 }: Props) {
   const accentClass = cn(
     "card-pixar",
@@ -46,10 +48,12 @@ export function EnaflixActionCard({
       }}
       whileTap={{ scale: 0.96 }}
       transition={{ type: "spring", stiffness: 350, damping: 15 }}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={cn(
         accentClass,
         "relative flex flex-col p-8 text-left group min-h-[190px] overflow-hidden perspective-1000",
+        disabled && "opacity-50 grayscale cursor-not-allowed pointer-events-none hover:translate-y-0 hover:scale-100"
       )}
     >
       {/* Background Ambient Glow */}

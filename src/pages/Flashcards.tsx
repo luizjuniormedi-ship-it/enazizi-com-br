@@ -149,9 +149,11 @@ const Flashcards = () => {
       setFsrsStates(stateMap);
 
       const now = new Date().toISOString();
+      // HOTFIX 1: Semantic separation. Only cards with FSRS state and due <= now are "DUE".
+      // Cards without FSRS state (!fsrs) are "AVAILABLE/NEW", not "OVERDUE".
       const due = merged.filter((c) => {
         const fsrs = stateMap.get(c.id);
-        return !fsrs || fsrs.due <= now;
+        return fsrs && fsrs.due <= now;
       });
       setDueCards(due);
     } catch (err) {
@@ -615,11 +617,12 @@ const Flashcards = () => {
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-3 gap-6">
           <EnaflixActionCard
             title="Revisão Prioritária"
-            description={`${dueCards.length} cards com alto risco de esquecimento.`}
+            description={dueCards.length > 0 ? `${dueCards.length} cards com alto risco de esquecimento.` : "Nenhuma revisão prioritária pendente."}
             icon={Brain}
             variant="primary"
-            badge="IA Recomendou"
+            badge={dueCards.length > 0 ? "IA Recomendou" : undefined}
             onClick={() => handleStartSession("due")}
+            disabled={dueCards.length === 0}
           />
           <EnaflixActionCard
             title="Modo Sprint"
