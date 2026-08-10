@@ -73,9 +73,7 @@ Deno.test("Evidence Grounding EG-2 - assertTopicIsolation", async () => {
   const pack = await buildEvidenceContextPack("test-req", "IAM", data);
   const result = assertTopicIsolation(pack, "IAM");
   
-  assertEquals(result.isolated, true); // Since 1/2 is 50%, and threshold is < 30% for FAIL in current heuristic logic
-  // Wait, in my engine.ts I put: contaminations.length < (contextPack.evidence.length * 0.3)
-  // So for 2 items, 1 contamination = 0.5. 0.5 < 0.3 is false. So isolated should be false.
+  assertEquals(result.isolated, false); // Now strictly fails if any contamination exists
 });
 
 Deno.test("Evidence Grounding EG-2 - validateGroundedOutput", async () => {
