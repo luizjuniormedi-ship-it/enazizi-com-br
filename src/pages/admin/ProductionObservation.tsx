@@ -5,46 +5,224 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Activity, AlertTriangle, ShieldCheck, Cpu } from "lucide-react";
 
 const ProductionObservationPage = () => {
-  const content = `# WAR ROOM — E2E PERSONA SECRETS ACTIVATION & AUTH SMOKE
+  const content = `# WAR ROOM — QA PERSONA PROVISIONING FOR E2E AUTH
 
 ## MISSÃO
 
-Completar a ativação do Authenticated QA Harness configurando as credenciais E2E em secrets seguros e executar os primeiros smoke tests autenticados.
-
-Estado atual:
+Provisionar três contas QA reais e separadas no Supabase Auth para viabilizar os testes E2E autenticados do ENAZIZI:
 
 \`\`\`text
-QA HARNESS ....................... READY
-HARDCODED CREDENTIALS ............ REMOVED
-STORAGE STATE .................... IGNORED
-D1.2 ............................. BLOCKED BY SECRETS
+STUDENT
+PROFESSOR
+ADMIN
+\`\`\`
+
+Objetivo:
+
+\`\`\`text
+QA Users
+↓
+Supabase Auth
+↓
+RBAC correto
+↓
+Secrets seguros
+↓
+Playwright Auth Smoke
 \`\`\`
 
 ---
 
-# REGRA DE SEGURANÇA
+# REGRAS ABSOLUTAS
 
-NÃO escrever credenciais em:
+NÃO:
+
+\`\`\`text
+usar uma única conta para as três personas
+usar service_role no frontend
+criar bypass de autenticação
+alterar RLS para facilitar teste
+hardcodar senha no código
+commitar credenciais
+expor tokens/JWT
+usar usuários reais como QA
+\`\`\`
+
+As contas devem ser exclusivas de QA.
+
+---
+
+# 1. VERIFICAR SE JÁ EXISTEM CONTAS QA
+
+Antes de criar qualquer usuário, pesquisar no Supabase Auth / profiles por contas QA existentes.
+
+Preferir naming convention:
+
+\`\`\`text
+qa.student
+qa.professor
+qa.admin
+\`\`\`
+
+Se contas adequadas já existirem:
+
+\`\`\`text
+REUTILIZAR
+\`\`\`
+
+Não criar duplicatas.
+
+---
+
+# 2. CRIAR PERSONA STUDENT
+
+Criar usuário QA exclusivo:
+
+\`\`\`text
+role = student/user
+status = approved
+\`\`\`
+
+Garantir:
+
+\`\`\`text
+/admin = NEGADO
+/professor = NEGADO
+/dashboard = PERMITIDO
+\`\`\`
+
+Não atribuir:
+
+\`\`\`text
+admin
+professor
+\`\`\`
+
+---
+
+# 3. CRIAR PERSONA PROFESSOR
+
+Criar usuário QA exclusivo:
+
+\`\`\`text
+role = professor
+status = approved
+\`\`\`
+
+Garantir:
+
+\`\`\`text
+/professor = PERMITIDO
+/admin = NEGADO
+\`\`\`
+
+Não atribuir admin.
+
+---
+
+# 4. CRIAR PERSONA ADMIN
+
+Criar usuário QA exclusivo:
+
+\`\`\`text
+role = admin
+status = approved
+\`\`\`
+
+Garantir:
+
+\`\`\`text
+/admin = PERMITIDO
+\`\`\`
+
+---
+
+# 5. SENHAS
+
+Gerar senhas fortes individualmente.
+
+NÃO escrever as senhas em:
 
 \`\`\`text
 source code
-git
-yaml
 markdown
-console
+commit
 logs
-database migrations
+console
+migration
 \`\`\`
 
-Não imprimir valores dos secrets.
+NÃO retornar as senhas no relatório.
 
-Nunca retornar senha, token, cookie ou JWT na resposta.
+Se o ambiente não permitir armazenar secrets diretamente, parar após provisioning e informar:
+
+\`\`\`text
+PERSONAS CREATED
+SECRETS MANUAL CONFIGURATION REQUIRED
+\`\`\`
 
 ---
 
-# SECRETS OBRIGATÓRIOS
+# 6. PERFIS / RBAC
 
-Configurar no ambiente seguro:
+Para cada conta, confirmar coerência entre:
+
+\`\`\`text
+auth.users
+profiles
+user_roles
+\`\`\`
+
+Nunca deixar estados contraditórios.
+
+Exemplo:
+
+\`\`\`text
+profile.role = student
+user_roles = [student]
+\`\`\`
+
+e não:
+
+\`\`\`text
+profile.role = student
+user_roles = [admin]
+\`\`\`
+
+---
+
+# 7. RLS / ROUTE GUARD VALIDATION
+
+Após criar cada conta, validar pelo fluxo normal da aplicação:
+
+## Student
+
+\`\`\`text
+/dashboard ........ PASS
+/professor ........ BLOCKED
+/admin ............ BLOCKED
+\`\`\`
+
+## Professor
+
+\`\`\`text
+/professor ........ PASS
+/admin ............ BLOCKED
+\`\`\`
+
+## Admin
+
+\`\`\`text
+/admin ............ PASS
+\`\`\`
+
+Não ajustar permissões para fazer o teste passar.
+
+---
+
+# 8. NOMES DOS SECRETS
+
+Preparar exatamente estes nomes:
 
 \`\`\`text
 E2E_STUDENT_EMAIL
@@ -59,184 +237,87 @@ E2E_ADMIN_PASSWORD
 
 ---
 
-# PERSONAS
+# 9. CONFIGURAÇÃO DOS SECRETS
 
-Garantir que cada credencial corresponda a uma conta real e separada:
+Se o Lovable permitir configuração segura de secrets pelo ambiente/tooling:
+
+configurar os 6 secrets.
+
+Nunca imprimir os valores.
+
+Se não houver capacidade direta para isso:
+
+retornar:
 
 \`\`\`text
-STUDENT
-PROFESSOR
-ADMIN
+SECRETS CONFIGURATION REQUIRED IN LOVABLE UI
 \`\`\`
 
-Não reutilizar uma conta admin nas três personas.
+e listar apenas os NOMES das variáveis.
 
 ---
 
-# VALIDAÇÃO DE PAPÉIS
+# 10. NÃO ALTERAR O PRODUTO
 
-Student:
-
-\`\`\`text
-/dashboard ........ permitido
-/professor ........ negado
-/admin ............ negado
-\`\`\`
-
-Professor:
+Não modificar:
 
 \`\`\`text
-/professor ........ permitido
-/admin ............ negado
+Login.tsx
+AuthProvider
+App.tsx
+ProtectedRoute
+RLS
+Edge Functions
+Dashboard
+Professor
+Admin
+ProductionObservation
 \`\`\`
 
-Admin:
-
-\`\`\`text
-/admin ............ permitido
-\`\`\`
-
-Se qualquer persona tiver privilégios maiores que o necessário:
-
-\`\`\`text
-E2E PERSONA MISCONFIGURED
-\`\`\`
+Exceto se for descoberto um bug real independente do provisioning — nesse caso, apenas documentar, não corrigir nesta tarefa.
 
 ---
 
-# TESTE 1 — STUDENT AUTH SMOKE
+# 11. VALIDAR CONTAS VIA LOGIN NORMAL
 
-Executar via Playwright:
+Se os secrets estiverem disponíveis, executar smoke básico:
+
+### Student
 
 \`\`\`text
 /login
-↓
-E2E_STUDENT_EMAIL
-+
-E2E_STUDENT_PASSWORD
-↓
-Entrar
-↓
-/dashboard
+→ student
+→ /dashboard
 \`\`\`
 
-Validar:
-
-\`\`\`text
-login success
-dashboard loaded
-session persisted
-\`\`\`
-
-Depois:
-
-\`\`\`text
-reload
-\`\`\`
-
-Esperado:
-
-\`\`\`text
-permanece autenticado
-\`\`\`
-
-Depois tentar acessar:
-
-\`\`\`text
-/admin
-\`\`\`
-
-Esperado:
-
-\`\`\`text
-access denied / redirect
-\`\`\`
-
----
-
-# TESTE 2 — PROFESSOR AUTH SMOKE
-
-Executar:
+### Professor
 
 \`\`\`text
 /login
-↓
-professor credentials
-↓
-/professor
+→ professor
+→ /professor
 \`\`\`
 
-Validar:
-
-\`\`\`text
-professor dashboard loaded
-session persisted after reload
-\`\`\`
-
-Tentar:
-
-\`\`\`text
-/admin
-\`\`\`
-
-Esperado:
-
-\`\`\`text
-negado
-\`\`\`
-
----
-
-# TESTE 3 — ADMIN AUTH SMOKE
-
-Executar:
+### Admin
 
 \`\`\`text
 /login
-↓
-admin credentials
-↓
-/admin
-\`\`\`
-
-Validar:
-
-\`\`\`text
-admin loaded
-session persisted after reload
+→ admin
+→ /admin
 \`\`\`
 
 ---
 
-# STORAGE STATE
-
-Gerar:
-
-\`\`\`text
-playwright/.auth/student.json
-playwright/.auth/professor.json
-playwright/.auth/admin.json
-\`\`\`
+# 12. SECURITY CHECK
 
 Confirmar:
 
 \`\`\`text
-git ignored = YES
-committed = NO
-\`\`\`
-
----
-
-# NÃO EXECUTAR AINDA
-
-Não rodar o D1.2 completo antes dos três Auth Smoke tests passarem.
-
-Primeiro validar apenas:
-
-\`\`\`text
-login
-session reuse
-RBAC
+Hardcoded credentials .......... 0
+Service role frontend .......... 0
+Shared persona account ......... 0
+Admin privilege leakage ........ 0
+Credentials logged ............. 0
 \`\`\`
 
 ---
@@ -246,61 +327,93 @@ RBAC
 Retornar:
 
 \`\`\`text
-WAR ROOM — E2E AUTH ACTIVATION
+WAR ROOM — QA PERSONA PROVISIONING
 
-Secrets available ............... YES/NO
+Student Account
+Exists/Created ................. YES
+Auth User ...................... YES
+Profile ........................ YES
+Role ........................... STUDENT
+Approved ....................... YES
+/admin access .................. BLOCKED
+/professor access .............. BLOCKED
 
-Student Login ................... PASS/FAIL
-Student Session Reuse ........... PASS/FAIL
-Student RBAC .................... PASS/FAIL
+Professor Account
+Exists/Created ................. YES
+Auth User ...................... YES
+Profile ........................ YES
+Role ........................... PROFESSOR
+Approved ....................... YES
+/professor access .............. PASS
+/admin access .................. BLOCKED
 
-Professor Login ................. PASS/FAIL
-Professor Session Reuse ......... PASS/FAIL
-Professor RBAC .................. PASS/FAIL
+Admin Account
+Exists/Created ................. YES
+Auth User ...................... YES
+Profile ........................ YES
+Role ........................... ADMIN
+Approved ....................... YES
+/admin access .................. PASS
 
-Admin Login ..................... PASS/FAIL
-Admin Session Reuse ............. PASS/FAIL
+Security
+Hardcoded credentials .......... NO
+Shared account ................. NO
+RLS modified ................... NO
+Auth bypass .................... NO
 
-StorageState Generated .......... YES/NO
-StorageState Git Ignored ........ YES/NO
-Secrets Exposed ................. NO
+Secrets
+E2E_STUDENT_EMAIL .............. READY/PENDING
+E2E_STUDENT_PASSWORD ........... READY/PENDING
+E2E_PROFESSOR_EMAIL ............ READY/PENDING
+E2E_PROFESSOR_PASSWORD ......... READY/PENDING
+E2E_ADMIN_EMAIL ................ READY/PENDING
+E2E_ADMIN_PASSWORD ............. READY/PENDING
 
-D1.2 READY ...................... YES/NO
+D1.2 READY ..................... YES/NO
 \`\`\`
 
 ---
 
 # DECISÃO
 
-Se todos passarem:
+Se contas + secrets estiverem prontos:
 
 \`\`\`text
-AUTHENTICATED QA HARNESS CERTIFIED
-D1.2 AUTHENTICATED DOGFOOD READY
+QA PERSONAS CERTIFIED
+E2E AUTH SMOKE READY
 \`\`\`
 
-Se algum falhar:
+Se contas estiverem prontas mas secrets ainda não:
 
 \`\`\`text
-AUTH HARNESS NEEDS FIX
+QA PERSONAS READY
+SECRETS CONFIGURATION REQUIRED
 \`\`\`
 
-e indicar apenas:
+Se houver inconsistência de role/RBAC:
+
+\`\`\`text
+QA PERSONA PROVISIONING FAILED
+\`\`\`
+
+e informar somente:
 
 \`\`\`text
 persona
-stage
-expected
-observed
+expected role
+observed role
+blocked route result
 \`\`\`
 
-sem expor segredos.
+sem expor credenciais.
 
 ## REGRA FINAL
 
-Não alterar segurança para fazer o teste passar.
+Criar usuários QA separados e reais.
 
-O objetivo é validar autenticação real com contas reais, usando apenas secrets seguros e Playwright.`;
+Não reduzir segurança para viabilizar o teste.
+
+O harness deve validar exatamente o mesmo login, RBAC e RLS que um usuário normal do ENAZIZI utiliza.`;
 
   return (
     <div className="p-8 bg-zinc-950 text-zinc-100 min-h-screen font-mono text-sm space-y-8">
@@ -308,9 +421,9 @@ O objetivo é validar autenticação real com contas reais, usando apenas secret
         <div>
           <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2">
             <Activity className="text-red-500" />
-            WAR ROOM: E2E PERSONA SECRETS ACTIVATION & AUTH SMOKE
+            WAR ROOM — QA PERSONA PROVISIONING FOR E2E AUTH
           </h1>
-          <p className="text-zinc-500 mt-1">Status: WAR ROOM — E2E PERSONA SECRETS ACTIVATION & AUTH SMOKE</p>
+          <p className="text-zinc-500 mt-1">Status: WAR ROOM — QA PERSONA PROVISIONING FOR E2E AUTH</p>
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className="bg-zinc-900 border-zinc-800 text-zinc-400">READ-ONLY</Badge>
@@ -326,7 +439,7 @@ O objetivo é validar autenticação real com contas reais, usando apenas secret
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-zinc-400">PENDING SECRETS</div>
+            <div className="text-lg font-bold text-zinc-400">PROVISIONING</div>
           </CardContent>
         </Card>
         <Card className="bg-zinc-900/50 border-zinc-800">
@@ -354,7 +467,7 @@ O objetivo é validar autenticação real com contas reais, usando apenas secret
             <CardTitle className="text-xs uppercase text-zinc-500">E2E Personas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-blue-500">3 DEFINED</div>
+            <div className="text-lg font-bold text-blue-500">3 PENDING</div>
           </CardContent>
         </Card>
       </div>
