@@ -148,11 +148,11 @@ const ProfessorTurmaManager = ({ callAPI }: { callAPI: (body: Record<string, unk
 
   const addStudent = (student: Student) => {
     if (!selectedStudents.find(s => s.id === student.id)) {
-      setSelectedStudents([...selectedStudents, student]);
+      setSelectedStudents(prev => [...prev, student]);
     }
-    setStudentSearch("");
-    setSearchResults([]);
+    // Don't clear search automatically so professor can add multiple students faster
   };
+
 
   const addAllStudents = () => {
     const newStudents = searchResults.filter(s => !selectedStudents.some(sel => sel.id === s.id));
