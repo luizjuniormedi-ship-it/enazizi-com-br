@@ -802,16 +802,23 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("[study-orchestrator-v2]", e);
+    const msg = e instanceof Error ? e.message : "Erro interno";
+    const status = msg.includes("Autenticação falhou") || msg.includes("Token ausente") ? 401 : 500;
+    
+    if (status === 401) {
+      return errorResponse(msg, 401);
+    }
+
     const fallback = safeRec("study_session", {
       reason: "Orquestrador indisponível — usando sessão guiada padrão.",
       priority: 5, confidence: 0.3,
     });
     return jsonResponse({
       success: false,
-      error: e instanceof Error ? e.message : "Erro interno",
+      error: msg,
       recommendation: fallback,
       alternatives: [], adaptiveState: null, rulesTrace: [],
       shadowMode: true, generatedAt,
-    });
+    }, 200); // 200 para erros lógicos recuperáveis, mas 401 para segurança.
   }
 });
