@@ -5,62 +5,52 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Activity, AlertTriangle, ShieldCheck, Cpu } from "lucide-react";
 
 const ProductionObservationPage = () => {
-  const content = `# WAR ROOM — D1.1 AUTHENTICATED DOGFOOD COMPLETION
+  const content = `# D1.2 — AUTHENTICATED QA SESSION HANDOFF
 
-## MISSÃO
+## OBJETIVO
 
-Completar exclusivamente as jornadas autenticadas que ficaram \`NÃO TESTADO\` no D1 Production Dogfood.
-
-O D1 anterior já certificou:
+Completar o D1 Production Dogfood que está atualmente:
 
 \`\`\`text
-Landing pública .............. PASSOU
-Login UI ..................... PASSOU
-Route Guards ................. PASSOU
-Tutor sem JWT = 401 .......... PASSOU
-Mobile público ............... PASSOU
-Production Baseline .......... PASSOU
+D1 PUBLIC VALIDATION ............ PASSOU
+D1 AUTHENTICATED VALIDATION ..... PENDENTE
+BLOCKER ......................... AUTH_STATUS=signed_out
 \`\`\`
 
-NÃO repetir esses testes.
+Esta execução NÃO deve alterar o produto.
 
-Agora validar:
-
-\`\`\`text
-ALUNO AUTENTICADO
-PROFESSOR AUTENTICADO
-ADMIN AUTENTICADO
-\`\`\`
+O único objetivo inicial é detectar uma sessão autenticada legítima disponibilizada pelo usuário no Preview do Lovable e, quando ela existir, executar as jornadas autenticadas pendentes.
 
 ---
 
-# REGRA PRINCIPAL
+# REGRA 1 — NÃO SOLICITAR CREDENCIAIS NO CHAT
 
-NÃO implementar este protocolo.
+Não pedir:
 
-NÃO editar páginas.
+\`\`\`text
+senha
+token JWT
+refresh token
+service_role key
+session cookie
+OTP
+\`\`\`
 
-NÃO atualizar o War Room.
+Não imprimir ou registrar segredos.
 
-NÃO alterar código.
+Não criar bypass de autenticação.
 
-NÃO alterar banco manualmente.
+Não modificar RLS.
 
-NÃO alterar RLS.
+Não criar usuário privilegiado.
 
-NÃO alterar cron.
-
-NÃO alterar providers.
-
-NÃO corrigir bugs durante esta execução.
-
-Executar somente QA funcional autorizado.
+Não utilizar service_role para simular usuário.
 
 ---
 
-# GATE 0 — AUTH OBRIGATÓRIO
+# REGRA 2 — SESSION HANDOFF
 
-Antes de qualquer teste verificar:
+Verificar:
 
 \`\`\`text
 LOVABLE_BROWSER_AUTH_STATUS
@@ -72,112 +62,124 @@ Se:
 signed_out
 \`\`\`
 
-PARAR as jornadas autenticadas.
-
-Retornar:
+responder exclusivamente:
 
 \`\`\`text
-D1.1 BLOCKED — AUTH SESSION REQUIRED
+AUTH SESSION REQUIRED
+
+Abra o Preview do projeto no Lovable.
+
+Faça login normalmente com a conta de teste autorizada.
+
+Mantenha a sessão aberta.
+
+Depois solicite novamente:
+"Continue D1.2 authenticated dogfood."
 \`\`\`
 
-Não declarar:
+Não executar alterações.
 
-\`\`\`text
-PASSOU
-D1 PASSED
-CONTINUE TO D7
-\`\`\`
-
-Se houver sessão autenticada, identificar apenas:
-
-\`\`\`text
-role
-user_id
-\`\`\`
-
-sem expor tokens ou credenciais.
+Não declarar D1 aprovado.
 
 ---
 
-# PERSONA 1 — ALUNO
+# REGRA 3 — QUANDO AUTH ESTIVER ATIVO
 
-Confirmar role apropriada.
+Quando:
 
-Abrir:
+\`\`\`text
+LOVABLE_BROWSER_AUTH_STATUS != signed_out
+\`\`\`
+
+identificar através da própria aplicação:
+
+\`\`\`text
+user_id
+role
+\`\`\`
+
+Não exibir dados sensíveis.
+
+Registrar:
+
+\`\`\`text
+AUTH SESSION DETECTED
+ROLE = ?
+\`\`\`
+
+---
+
+# PERSONA A — ALUNO
+
+Se role permitir jornada normal de aluno, executar:
 
 \`\`\`text
 /dashboard
-\`\`\`
-
-Esperado:
-
-\`\`\`text
-HTTP 200
-dashboard real
-dados do usuário
-\`\`\`
-
----
-
-# TESTE A1 — DASHBOARD
-
-Registrar os valores apresentados:
-
-\`\`\`text
-Readiness
-Flashcards disponíveis
-FSRS materializados
-Revisões pendentes
-Missão do Dia
-\`\`\`
-
-Comparar métricas críticas com SELECT read-only quando possível.
-
-Resultado:
-
-\`\`\`text
-UI_VALUE
-DB_VALUE
-DIVERGENCE
-\`\`\`
-
-Zero falso:
-
-\`\`\`text
-FALHA
-\`\`\`
-
----
-
-# TESTE A2 — FLASHCARDS
-
-Abrir:
-
-\`\`\`text
 /dashboard/flashcards
+/dashboard/simulados
+/dashboard/planner
+/dashboard/sessao-estudo
+/dashboard/resultados-oficiais
+\`\`\`
+
+e módulos acessíveis correspondentes.
+
+---
+
+# A1 — DASHBOARD
+
+Validar:
+
+\`\`\`text
+Dashboard carregou
+Missão do Dia carregou
+Readiness carregou
+Planner carregou
+Métricas carregaram
 \`\`\`
 
 Registrar:
 
 \`\`\`text
-available
-materialized
-due
-learning
-review
-\`\`\`
-
-Executar SELECT read-only equivalente para \`due\`.
-
-Critério:
-
-\`\`\`text
-UI due = DB due
+HTTP
+tempo
+console errors
+network errors
 \`\`\`
 
 ---
 
-# TESTE A3 — REVISÃO PRIORITÁRIA
+# A2 — FSRS
+
+Abrir Flashcards.
+
+Capturar:
+
+\`\`\`text
+AVAILABLE
+MATERIALIZED
+DUE
+\`\`\`
+
+Executar SELECT read-only correspondente ao usuário autenticado.
+
+Produzir:
+
+\`\`\`text
+UI_DUE = ?
+DB_DUE = ?
+DIVERGENCE = ?
+\`\`\`
+
+Critério:
+
+\`\`\`text
+DIVERGENCE = 0
+\`\`\`
+
+---
+
+# A3 — PRIORITY
 
 Se \`due > 0\`:
 
@@ -187,93 +189,75 @@ clicar em:
 Revisão Prioritária
 \`\`\`
 
-Responder 1 card pela UI.
+Responder um card normalmente.
 
-Depois verificar via SELECT:
+Confirmar posteriormente por SELECT:
 
 \`\`\`text
 fsrs_cards
 fsrs_review_log
 \`\`\`
 
-Confirmar:
+Recarregar página.
 
-\`\`\`text
-review criado
-due atualizado
-state atualizado
-\`\`\`
-
-Recarregar.
-
-Estado deve permanecer.
+Confirmar persistência.
 
 Se \`due = 0\`:
 
-validar apenas que a UI não informa milhares de cards como vencidos.
+validar que a UI não apresenta cards nunca iniciados como revisões vencidas.
 
 ---
 
-# TESTE A4 — SPRINT
+# A4 — SPRINT
 
-Clicar:
+Executar Sprint.
 
-\`\`\`text
-Sprint
-\`\`\`
-
-Confirmar:
+Resultado esperado:
 
 \`\`\`text
-sessão inicia
-cards aparecem
-resposta funciona
+session_started = true
+card_rendered = true
+interaction_working = true
 \`\`\`
 
 ---
 
-# TESTE A5 — TODOS
+# A5 — TODOS
 
-Clicar:
+Abrir Todos.
 
-\`\`\`text
-Todos
-\`\`\`
-
-Validar:
+Registrar:
 
 \`\`\`text
-acervo carrega
-paginação funciona
-sem loading infinito
+load_time
+pagination
+UI responsiveness
 \`\`\`
-
-Registrar tempo aproximado.
 
 ---
 
-# TESTE A6 — TUTOR IAM
+# A6 — TUTOR IAM
 
-Criar sessão limpa.
+Criar sessão nova.
 
-Perguntar:
+Enviar:
 
 \`\`\`text
-Paciente com dor torácica há 90 minutos e supra de ST em DII, DIII e aVF. Explique o diagnóstico e a conduta inicial.
+Paciente com dor torácica há 90 minutos e supra de ST em DII, DIII e aVF. Explique diagnóstico e conduta inicial.
 \`\`\`
 
 Registrar:
 
 \`\`\`text
 HTTP
-latência
+latency
 provider
 model
 fallback
 traceId
 \`\`\`
 
-Validar conteúdo.
+Auditar resposta.
 
 Esperado:
 
@@ -281,27 +265,18 @@ Esperado:
 IAM com supra
 \`\`\`
 
-Falha se a resposta for predominantemente:
-
-\`\`\`text
-Sepse
-Critérios de Light
-Derrame pleural
-tema não relacionado
-\`\`\`
-
 ---
 
-# TESTE A7 — TUTOR TOPIC SWITCH
+# A7 — TROCA DE TEMA
 
-Usar o botão/fluxo normal:
+Usar o fluxo real:
 
 \`\`\`text
 Mudar de Tema
 → Sepse
 \`\`\`
 
-Perguntar:
+Enviar:
 
 \`\`\`text
 Paciente com suspeita de infecção, lactato elevado e hipotensão persistente após reposição volêmica. Qual a abordagem inicial?
@@ -310,62 +285,40 @@ Paciente com suspeita de infecção, lactato elevado e hipotensão persistente a
 Registrar:
 
 \`\`\`text
-IAM leakage = SIM/NÃO
+IAM_CONTEXT_LEAK = YES/NO
 \`\`\`
 
 Esperado:
 
 \`\`\`text
-IAM leakage = NÃO
+NO
 \`\`\`
 
 ---
 
-# TESTE A8 — PERSISTÊNCIA TUTOR
+# A8 — SIMULADO IAM RUN 1
 
-Recarregar a sessão.
-
-Confirmar que mensagens anteriores continuam disponíveis quando esse for o comportamento esperado do produto.
-
-Validar banco via SELECT quando possível.
-
----
-
-# TESTE A9 — SIMULADO IAM #1
-
-Pela interface:
-
-\`\`\`text
-Tema = IAM
-Quantidade = 10
-\`\`\`
-
-Gerar.
-
-Registrar:
-
-| # | Question ID | Topic | Subtopic | Match/Alias | Aceita |
-| - | ----------- | ----- | -------- | ----------- | ------ |
-
-Aliases permitidos:
+Gerar pela UI:
 
 \`\`\`text
 IAM
-Infarto Agudo do Miocárdio
-SCA
-Síndrome Coronariana Aguda
-STEMI
-NSTEMI
-aliases oficiais cadastrados
+10 questões
 \`\`\`
 
-Temas irmãos proibidos:
+Auditar todas.
+
+Produzir:
+
+| # | ID | Topic | Subtopic | Alias/Canonical | Valid |
+| - | -- | ----- | -------- | --------------- | ----- |
+
+Procurar especificamente:
 
 \`\`\`text
 Pericardite
 Miocardite
 Endocardite
-IC
+Insuficiência Cardíaca
 Arritmias
 Valvopatias
 \`\`\`
@@ -373,54 +326,39 @@ Valvopatias
 Resultado obrigatório:
 
 \`\`\`text
-Sibling Leakage = X/10
-\`\`\`
-
-Meta:
-
-\`\`\`text
-0/10
+SIBLING_LEAKAGE = X/10
 \`\`\`
 
 ---
 
-# TESTE A10 — SIMULADO IAM #2
+# A9 — SIMULADO IAM RUN 2
 
-Gerar novamente:
+Gerar novamente.
 
-\`\`\`text
-IAM
-10 questões
-\`\`\`
-
-Registrar IDs.
-
-Comparar:
+Produzir:
 
 \`\`\`text
-RUN1 IDs
-RUN2 IDs
+RUN_1_IDS = [...]
+RUN_2_IDS = [...]
 
-OVERLAP COUNT = ?
-OVERLAP RATE = ?%
+OVERLAP = ?
+OVERLAP_RATE = ?%
 \`\`\`
-
-Não declarar dedupe aprovado sem números.
 
 ---
 
-# TESTE A11 — SIMULADO COMPLETO
+# A10 — SIMULADO E2E
 
-Executar pela UI:
+Executar:
 
 \`\`\`text
 iniciar
 → responder
-→ errar propositalmente pelo menos 1
+→ produzir pelo menos um erro normal de teste
 → finalizar
 \`\`\`
 
-Confirmar:
+Validar:
 
 \`\`\`text
 resultado
@@ -428,20 +366,16 @@ acurácia
 persistência
 \`\`\`
 
-Recarregar página de resultado.
-
-Deve permanecer.
+Recarregar resultado.
 
 ---
 
-# TESTE A12 — RECOVERY LOOP
+# A11 — RECOVERY
 
-A partir do erro anterior verificar:
+Acompanhar o erro anterior:
 
 \`\`\`text
-Erro
-↓
-Banco de Erros
+Error Bank
 ↓
 Recovery
 ↓
@@ -450,7 +384,7 @@ Flashcard
 FSRS
 \`\`\`
 
-Consultar somente leitura:
+Verificar com SELECT:
 
 \`\`\`text
 error_bank
@@ -459,33 +393,18 @@ flashcards
 fsrs_cards
 \`\`\`
 
-Não aceitar somente feedback visual.
+Produzir:
 
-Resultado deve mostrar quais etapas realmente ocorreram.
+\`\`\`text
+ERROR_CAPTURED = ?
+RECOVERY_CREATED = ?
+FLASHCARD_CREATED = ?
+FSRS_CREATED = ?
+\`\`\`
 
 ---
 
-# TESTE A13 — BANCO DE ERROS
-
-Abrir:
-
-\`\`\`text
-Banco de Erros
-\`\`\`
-
-Confirmar presença do erro produzido no teste.
-
-Executar:
-
-\`\`\`text
-Treinar Agora
-\`\`\`
-
-Validar tema e questão.
-
----
-
-# TESTE A14 — PLANNER
+# A12 — PLANNER
 
 Abrir Planner.
 
@@ -493,171 +412,112 @@ Executar uma ação normal.
 
 Recarregar.
 
-Validar:
-
-\`\`\`text
-persistência
-sem duplicação
-sem tarefa vazia
-\`\`\`
-
----
-
-# TESTE A15 — MNEMÔNICOS
-
-Gerar um mnemônico.
-
 Registrar:
 
 \`\`\`text
-HTTP
-latência
-provider se disponível
-resultado
+PERSISTED = YES/NO
+DUPLICATED = YES/NO
 \`\`\`
-
-Testar integração com Flashcards quando disponível.
 
 ---
 
-# TESTE A16 — MODO PLANTÃO
+# A13 — PLANTÃO
 
-Iniciar caso clínico.
+Iniciar caso.
 
-Executar normalmente:
+Executar:
 
 \`\`\`text
 HDA
 → avaliação
-→ exame
 → conduta
-\`\`\`
-
-Observar:
-
-\`\`\`text
-sinais vitais
-evolução
-resposta clínica
 \`\`\`
 
 Registrar:
 
 \`\`\`text
 HTTP
-latência
-Failed to fetch
-console errors
+latency
+vital_signs_working
+physiology_state_change
+errors
 \`\`\`
 
 ---
 
-# PERSONA 2 — PROFESSOR
+# PERSONA B — PROFESSOR
 
-A sessão deve possuir role professor ou acesso legítimo equivalente.
+Se a sessão atual não tiver permissões de professor:
 
-Não utilizar permissões administrativas como substituto silencioso caso isso altere o comportamento da aplicação.
+\`\`\`text
+PROFESSOR PERSONA = PENDING
+\`\`\`
 
-Abrir:
+Não elevar privilégios.
+
+Quando uma sessão legítima de professor estiver disponível, executar:
 
 \`\`\`text
 /professor
 \`\`\`
 
----
-
-# TESTE P1 — PROFESSOR BI
-
 Validar:
 
 \`\`\`text
+BI
 lista de alunos
 métricas
 matriz cognitiva
-scores
-\`\`\`
-
-Procurar:
-
-\`\`\`text
-NaN
-undefined
-zeros impossíveis
-loading infinito
+simulados
 \`\`\`
 
 ---
 
-# TESTE P2 — PROFESSOR SIMULADO
+# PROFESSOR SIMULADO
 
-Criar simulado de teste:
-
-\`\`\`text
-IAM
-dificuldade alta
-quantidade mínima adequada
-\`\`\`
+Gerar um simulado IAM de teste.
 
 Registrar:
 
 \`\`\`text
 HTTP
-latência
+latency
 provider
 model
 fallback
 traceId
+persisted
 \`\`\`
 
-Confirmar:
+Se Claude estiver configurado como primário:
+
+confirmar pelo runtime.
+
+Resultado obrigatório:
 
 \`\`\`text
-geração
-preview
-persistência
+CONFIGURED_PROVIDER = ?
+ACTUAL_PROVIDER = ?
+ACTUAL_MODEL = ?
+FALLBACK_USED = ?
 \`\`\`
-
-Não distribuir para alunos reais quando desnecessário.
 
 ---
 
-# TESTE P3 — CLAUDE REAL
+# PERSONA C — ADMIN
 
-Se Claude estiver configurado como primário para esse fluxo:
-
-comprovar por:
+Se a sessão não tiver role admin:
 
 \`\`\`text
-log
-trace
-response metadata
+ADMIN PERSONA = PENDING
 \`\`\`
 
-Resultado:
+Não elevar privilégios.
 
-\`\`\`text
-PROVIDER ACTUAL = ?
-MODEL ACTUAL = ?
-FALLBACK = ?
-\`\`\`
-
-Configuração não é evidência de uso.
-
----
-
-# PERSONA 3 — ADMIN
-
-Utilizar sessão admin autorizada.
-
-Abrir:
+Quando houver sessão admin legítima testar:
 
 \`\`\`text
 /admin
-\`\`\`
-
-Depois:
-
-\`\`\`text
 /admin/dogfood-monitor
 /admin/alpha-cohort
 /admin/official-outcomes
@@ -667,81 +527,46 @@ Depois:
 
 ---
 
-# TESTE ADM1 — DOGFOOD MONITOR
-
-Validar se indicadores apresentados correspondem a fontes reais.
-
-Não considerar ausência de atividade como saúde perfeita.
-
-Se não houver volume suficiente:
-
-\`\`\`text
-DADOS INSUFICIENTES
-\`\`\`
-
----
-
-# TESTE ADM2 — ALPHA COHORT
+# ADMIN — ALPHA COHORT
 
 Comparar UI × banco:
 
 \`\`\`text
-ALPHA_2026
-target size
-membros
-D0
-D30
-D60
-D90
-\`\`\`
+UI_MEMBERS = ?
+DB_MEMBERS = ?
 
-Registrar:
-
-\`\`\`text
-UI MEMBERS = ?
-DB MEMBERS = ?
-
-UI SNAPSHOTS = ?
-DB SNAPSHOTS = ?
+UI_SNAPSHOTS = ?
+DB_SNAPSHOTS = ?
 \`\`\`
 
 ---
 
-# TESTE ADM3 — OFFICIAL OUTCOMES
+# ADMIN — OUTCOMES
 
-Validar tiers:
+Validar representação:
 
 \`\`\`text
 student_reported
+→ não verificado
+
 document_verified
+→ documento verificado
+
 institution_verified
+→ instituição verificada
 \`\`\`
-
-Confirmar visualmente:
-
-\`\`\`text
-student_reported = não verificado
-\`\`\`
-
----
-
-# TESTE ADM4 — SCIENTIFIC AUDIT
-
-Validar somente carregamento e coerência dos dados existentes.
-
-Não executar recalibração, promoção, rebaixamento ou qualquer ação que altere produção.
 
 ---
 
 # MOBILE AUTHENTICATED
 
-Viewport:
+Com sessão de aluno:
 
 \`\`\`text
-390 × 844
+viewport = 390x844
 \`\`\`
 
-Executar com aluno autenticado:
+Testar:
 
 \`\`\`text
 Dashboard
@@ -751,256 +576,102 @@ Simulados
 Plantão
 \`\`\`
 
-Registrar:
-
-\`\`\`text
-overflow
-modal cortado
-input coberto
-botão inacessível
-sidebar
-scroll
-\`\`\`
+Registrar apenas problemas observados.
 
 ---
 
-# NETWORK
+# INCIDENT HANDLING
 
-Durante todos os testes contabilizar:
-
-\`\`\`text
-400
-401 inesperado
-403 inesperado
-404 inesperado
-409
-429
-500
-502
-503
-504
-\`\`\`
-
-Também:
-
-\`\`\`text
-Failed to fetch
-timeout
-CORS
-empty response
-\`\`\`
-
----
-
-# CONSOLE
-
-Registrar:
-
-\`\`\`text
-console.error
-Unhandled Promise
-duplicate key
-NaN
-undefined
-\`\`\`
-
-Warnings não bloqueantes devem ser separados.
-
----
-
-# REPRODUÇÃO
-
-Toda falha funcional encontrada:
-
-\`\`\`text
-executar 2 vezes
-\`\`\`
-
-P0/P1:
-
-\`\`\`text
-2/2 = reproduzível
-1/2 = intermitente
-\`\`\`
-
-Terceira tentativa quando segura e necessária.
-
----
-
-# PROIBIDO
-
-Durante esta execução:
-
-\`\`\`text
-code edit
-migration
-INSERT manual
-UPDATE manual
-DELETE
-ALTER
-RLS change
-cron change
-provider change
-prompt change
-feature flag change
-\`\`\`
-
----
-
-# OUTPUT OBRIGATÓRIO
-
-Começar a resposta com:
-
-\`\`\`text
-D1.1 AUTHENTICATED DOGFOOD — EXECUÇÃO CONCLUÍDA
-\`\`\`
-
-Se não existir sessão autenticada:
-
-\`\`\`text
-D1.1 AUTHENTICATED DOGFOOD — BLOCKED: AUTH REQUIRED
-\`\`\`
-
-Nesse caso NÃO declarar D1 aprovado.
-
----
-
-# MATRIZ
-
-| Jornada            | Status | HTTP | Latência | Persistência | Evidência |
-| ------------------ | ------ | ---: | -------: | ------------ | --------- |
-| Dashboard Auth     |        |      |          |              |           |
-| Flashcards         |        |      |          |              |           |
-| Priority           |        |      |          |              |           |
-| Sprint             |        |      |          |              |           |
-| Todos              |        |      |          |              |           |
-| Tutor IAM          |        |      |          |              |           |
-| Tutor Sepse        |        |      |          |              |           |
-| Tutor Persistence  |        |      |          |              |           |
-| IAM Run #1         |        |      |          |              |           |
-| IAM Run #2         |        |      |          |              |           |
-| Simulado E2E       |        |      |          |              |           |
-| Recovery           |        |      |          |              |           |
-| Error Bank         |        |      |          |              |           |
-| Planner            |        |      |          |              |           |
-| Mnemonics          |        |      |          |              |           |
-| Plantão            |        |      |          |              |           |
-| Professor BI       |        |      |          |              |           |
-| Professor Simulado |        |      |          |              |           |
-| Claude Actual      |        |      |          |              |           |
-| Admin              |        |      |          |              |           |
-| Alpha Cohort       |        |      |          |              |           |
-| Outcomes           |        |      |          |              |           |
-| Scientific Audit   |        |      |          |              |           |
-| Mobile Auth        |        |      |          |              |           |
-
----
-
-# INCIDENTES
+Não corrigir bugs nesta execução.
 
 Para cada falha:
 
 \`\`\`text
-ID:
-SEVERIDADE:
-PERSONA:
-ROTA:
+INCIDENT_ID
+SEVERITY
+PERSONA
+ROUTE
+EXPECTED
+OBSERVED
+HTTP
+TRACE_ID
+CONSOLE
+NETWORK
+DB_EVIDENCE
+REPRODUCTION
+\`\`\`
 
-PASSOS:
+Repetir falha funcional uma segunda vez quando seguro.
 
-ESPERADO:
+---
 
-OBSERVADO:
+# OUTPUT
 
-HTTP:
+Quando a persona aluno terminar:
 
-TRACE ID:
+\`\`\`text
+D1.2 STUDENT AUTHENTICATED QA — COMPLETE
+\`\`\`
 
-CONSOLE:
+Quando professor terminar:
 
-DB EVIDENCE:
+\`\`\`text
+D1.2 PROFESSOR AUTHENTICATED QA — COMPLETE
+\`\`\`
 
-REPRODUÇÃO:
+Quando admin terminar:
 
-CAMADA PROVÁVEL:
+\`\`\`text
+D1.2 ADMIN AUTHENTICATED QA — COMPLETE
+\`\`\`
 
-IMPACTO:
+Somente quando as três estiverem concluídas:
+
+\`\`\`text
+D1 AUTHENTICATED VALIDATION — COMPLETE
 \`\`\`
 
 ---
 
-# EXECUTIVE RESULT
+# DECISÃO
 
-Informar:
-
-\`\`\`text
-P0 = ?
-P1 = ?
-P2 = ?
-P3 = ?
-
-5xx = ?
-429 = ?
-Failed to Fetch = ?
-Empty Responses = ?
-
-IAM Sibling Leakage = ?/?
-IAM Run Overlap = ?%
-
-FSRS UI Due = ?
-FSRS DB Due = ?
-FSRS Divergence = ?
-
-Tutor Provider = ?
-Professor Simulado Provider = ?
-\`\`\`
-
----
-
-# DECISÃO FINAL D1
-
-Somente se:
-
-\`\`\`text
-D1 público = PASSOU
-+
-D1.1 autenticado = PASSOU
-\`\`\`
-
-poderá retornar:
+Somente declarar:
 
 \`\`\`text
 D1 FULLY PASSED
-PRODUCTION OBSERVATION CONTINUES TO D7
 \`\`\`
 
-Se autenticação continuar indisponível:
+quando:
 
 \`\`\`text
-D1 PARTIAL PASS
-AUTHENTICATED VALIDATION PENDING
+PUBLIC QA = PASS
+STUDENT QA = PASS
+PROFESSOR QA = PASS
+ADMIN QA = PASS
+P0 = 0
+P1 = 0
 \`\`\`
 
-Se encontrar P0:
+Caso apenas aluno tenha sido testado:
 
 \`\`\`text
-D1 CRITICAL
-GO-LIVE HOLD
+D1 PARTIAL
+PROFESSOR + ADMIN PENDING
 \`\`\`
 
-Se encontrar P1:
+Caso não exista sessão:
 
 \`\`\`text
-D1 NEEDS HOTFIX
+D1.2 BLOCKED — AUTH SESSION REQUIRED
 \`\`\`
 
 ## REGRA FINAL
 
-O objetivo desta execução não é validar novamente as rotas públicas.
+Não contornar autenticação.
 
-É responder com evidência:
+Não usar privilégios maiores para substituir uma persona.
 
-**O ENAZIZI funciona quando um aluno, professor e administrador realmente entram e usam o sistema?**
+A validação precisa representar exatamente o que um usuário daquele papel consegue fazer pela interface normal.
 `;
 
   return (
@@ -1011,7 +682,7 @@ O objetivo desta execução não é validar novamente as rotas públicas.
             <Activity className="text-red-500" />
             WAR ROOM: PRODUCTION OBSERVATION
           </h1>
-          <p className="text-zinc-500 mt-1">Status: D1.1 — Authenticated Dogfood Completion</p>
+          <p className="text-zinc-500 mt-1">Status: D1.2 — Authenticated QA Session Handoff</p>
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className="bg-zinc-900 border-zinc-800 text-zinc-400">READ-ONLY</Badge>
