@@ -202,6 +202,11 @@ export async function callCerebras(options: CerebrasCallOptions): Promise<Cerebr
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
 
+  // Hardening EG-2: retry budget for specific models
+  const effectiveMaxTokens = (model.includes("zai-glm-4.7") || model.includes("oss")) && maxTokens < 1000 
+    ? 1000 
+    : maxTokens;
+
   try {
     const res = await fetch(`${getCerebrasBaseUrl(options.baseUrl)}/chat/completions`, {
       method: "POST",
@@ -214,7 +219,7 @@ export async function callCerebras(options: CerebrasCallOptions): Promise<Cerebr
         model, 
         messages, 
         temperature, 
-        max_tokens: maxTokens, 
+        max_tokens: effectiveMaxTokens, 
         stream: false 
       }),
     });
@@ -235,7 +240,31 @@ export async function callCerebras(options: CerebrasCallOptions): Promise<Cerebr
     }
 
     const parsed = JSON.parse(text);
-    const content: string = parsed?.choices?.[0]?.message?.content || parsed?.choices?.[0]?.message?.reasoning || "";
+    const content: string = parsed?.choices?.[0]?.message?.content || "";
+    const reasoning: string = parsed?.choices?.[0]?.message?.reasoning || "";
+
+    // EG-2 Guard: Handle INCOMPLETE_GENERATION
+    if (content === "" && reasoning !== "") {
+      // Se tivermos apenas reasoning, consideramos INCOMPLETE e tentamos um retry rápido com mais tokens
+      // se ainda não tivermos esgotado o tempo total.
+      const timeRemaining = timeoutMs - (Date.now() - started);
+      if (timeRemaining > 5000) { // pelo menos 5s para o retry
+         return callCerebras({
+           ...options,
+           maxTokens: Math.max(effectiveMaxTokens * 2, 2048),
+           timeoutMs: timeRemaining
+         });
+      }
+      // Se não der tempo de retry, falhamos para o fallback
+      recordCerebrasFailure(model);
+      throw new CerebrasProviderError("INCOMPLETE_GENERATION: reasoning present but content empty", "incomplete", res.status, latencyMs, model);
+    }
+
+    if (content === "" && reasoning === "") {
+      recordCerebrasFailure(model);
+      throw new CerebrasProviderError("EMPTY_GENERATION", "empty", res.status, latencyMs, model);
+    }
+
     recordCerebrasSuccess(model);
 
     return {
