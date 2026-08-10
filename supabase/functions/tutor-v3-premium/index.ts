@@ -938,8 +938,17 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
   } catch (err: any) {
     logger.critical("HARDENED_RUNTIME_CRASH", err.message);
-    console.log("[TUTOR_SAFE_MODE]");
-    const safeResponse = normalizeTutorResponse(null, "safe_mode");
+    
+    // P0-1: Fallback Contextual (Não-genérico)
+    // Tenta resolver o tópico do corpo original para dar uma resposta útil mesmo em crash
+    let topicForFallback = "Medicina Geral";
+    try {
+      const body = await req.clone().json().catch(() => ({}));
+      topicForFallback = body.topic || "Medicina Geral";
+    } catch { /* ignore */ }
+    
+    console.log(`[TUTOR_SAFE_MODE] topic=${topicForFallback}`);
+    const safeResponse = getContextualFallback(topicForFallback);
     
     // [FIX] Persist safe mode message
     waitUntil((async () => {
