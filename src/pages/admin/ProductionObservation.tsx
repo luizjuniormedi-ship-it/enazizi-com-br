@@ -35,11 +35,11 @@ Registrar:
 
 Comparar os resultados com:
 
-\\`FASE_2_CERTIFICATION_REPORT.md\\`
+\`FASE_2_CERTIFICATION_REPORT.md\`
 
 e
 
-\\`PRODUCTION_OBSERVATION_GUARD.md\\`.
+\`PRODUCTION_OBSERVATION_GUARD.md\`.
 
 ---
 
@@ -64,7 +64,7 @@ Registrar também tempo aproximado de resposta e erros visíveis de console/netw
 
 ## 3. DASHBOARD
 
-Abrir \\`/dashboard\\`.
+Abrir \`/dashboard\`.
 
 Confirmar:
 
@@ -79,8 +79,8 @@ Confirmar:
 Verificar se existem:
 
 * valores zerados indevidamente;
-* \\`NaN\\`;
-* \\`undefined\\`;
+* \`NaN\`;
+* \`undefined\`;
 * placeholders;
 * loading infinito;
 * inconsistência evidente entre métricas.
@@ -91,7 +91,7 @@ Quando possível, comparar os valores da UI com consultas somente leitura.
 
 ## 4. FLASHCARDS / FSRS
 
-Abrir \\`/dashboard/flashcards\\`.
+Abrir \`/dashboard/flashcards\`.
 
 Validar separadamente:
 
@@ -163,7 +163,7 @@ Utilizar o fluxo normal “Mudar de Tema”.
 
 Selecionar:
 
-\\`Sepse\\`
+\`Sepse\`
 
 Perguntar:
 
@@ -179,7 +179,7 @@ Criar pela interface um simulado de IAM.
 
 Quantidade:
 
-\\`10 questões\\`
+\`10 questões\`
 
 Auditar as questões geradas.
 
@@ -202,7 +202,7 @@ Identificar qualquer questão predominantemente pertencente a:
 
 Registrar:
 
-\\`questões fora do escopo = X/10\\`
+\`questões fora do escopo = X/10\`
 
 ---
 
@@ -303,7 +303,7 @@ Registrar qualquer:
 
 ## 14. PROFESSOR
 
-Com conta autorizada de professor, validar \\`/professor\\`.
+Com conta autorizada de professor, validar \`/professor\`.
 
 Confirmar:
 
@@ -325,12 +325,12 @@ Se houver metadados de provider, registrar o provider realmente utilizado.
 
 Com conta admin autorizada, validar:
 
-* \\`/admin\\`;
-* \\`/admin/dogfood-monitor\\`;
-* \\`/admin/alpha-cohort\\`;
-* \\`/admin/official-outcomes\\`;
-* \\`/admin/scientific-audit\\`;
-* \\`/admin/production-observation\\`.
+* \`/admin\`;
+* \`/admin/dogfood-monitor\`;
+* \`/admin/alpha-cohort\`;
+* \`/admin/official-outcomes\`;
+* \`/admin/scientific-audit\`;
+* \`/admin/production-observation\`.
 
 Confirmar que as telas carregam dados reais.
 
@@ -342,7 +342,7 @@ Não alterar configurações administrativas durante esta validação.
 
 ## 16. ALPHA COHORT
 
-Comparar a tela com os dados existentes da \\`ALPHA_2026\\`.
+Comparar a tela com os dados existentes da \`ALPHA_2026\`.
 
 Validar:
 
@@ -369,7 +369,7 @@ Um resultado reportado pelo próprio aluno nunca deve aparecer visualmente como 
 
 Repetir as jornadas principais em viewport móvel:
 
-\\`390 × 844\\`
+\`390 × 844\`
 
 Testar:
 
@@ -426,11 +426,11 @@ Não corrigir nesta execução.
 
 Responder com:
 
-\\`D1 PRODUCTION QA — EXECUÇÃO CONCLUÍDA\\`
+\`D1 PRODUCTION QA — EXECUÇÃO CONCLUÍDA\`
 
 ou:
 
-\\`D1 PRODUCTION QA — BLOQUEADO\\`
+\`D1 PRODUCTION QA — BLOQUEADO\`
 
 Nunca responder que este protocolo foi “implementado”.
 
@@ -501,15 +501,15 @@ Informar:
 
 Se houver problema bloqueante de operação:
 
-\\`D1 CRITICAL — REVIEW REQUIRED\\`
+\`D1 CRITICAL — REVIEW REQUIRED\`
 
 Se houver falha relevante de funcionalidade principal:
 
-\\`D1 NEEDS HOTFIX\\`
+\`D1 NEEDS HOTFIX\`
 
 Se não houver falhas críticas/relevantes reproduzíveis:
 
-\\`D1 PASSED — CONTINUE OBSERVATION\\`
+\`D1 PASSED — CONTINUE OBSERVATION\`
 
 ## REGRA FINAL
 
@@ -518,7 +518,7 @@ Não modificar o produto.
 Não implementar este protocolo.
 
 Executar apenas jornadas normais e autorizadas de QA e retornar os resultados observados.
-  \\`;
+`;
 
   return (
     <div className="p-8 bg-zinc-950 text-zinc-100 min-h-screen font-mono text-sm space-y-8">
