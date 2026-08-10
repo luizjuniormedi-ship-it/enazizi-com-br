@@ -617,11 +617,12 @@ const Flashcards = () => {
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-3 gap-6">
           <EnaflixActionCard
             title="Revisão Prioritária"
-            description={`${dueCards.length} cards com alto risco de esquecimento.`}
+            description={dueCards.length > 0 ? `${dueCards.length} cards com alto risco de esquecimento.` : "Nenhuma revisão prioritária pendente."}
             icon={Brain}
             variant="primary"
-            badge="IA Recomendou"
+            badge={dueCards.length > 0 ? "IA Recomendou" : undefined}
             onClick={() => handleStartSession("due")}
+            disabled={dueCards.length === 0}
           />
           <EnaflixActionCard
             title="Modo Sprint"
