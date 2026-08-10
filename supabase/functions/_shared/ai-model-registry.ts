@@ -63,5 +63,7 @@ export const CEREBRAS_PROVIDER_META = {
   models: {
     fast: { id: "llama3.1-8b", tier: "FAST", vision: false, reasoning: false },
     reasoning: { id: "llama3.1-70b", tier: "REASONING", vision: false, reasoning: true },
+    clinical_arena: { id: "gpt-oss-120b", tier: "ARENA", vision: false, reasoning: true },
+    glm_reasoning: { id: "zai-glm-4.7", tier: "REASONING", vision: false, reasoning: true },
   },
 } as const;

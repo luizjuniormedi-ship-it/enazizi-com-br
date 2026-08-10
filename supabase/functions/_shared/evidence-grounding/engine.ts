@@ -1,22 +1,26 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
 import { 
-  EvidenceSource, 
+  EvidenceItem, 
   EvidenceContextPack, 
   EvidenceSourceType, 
   GroundedOutput, 
   GroundingScore, 
-  ClinicalClaim 
+  ClinicalClaim,
+  EvidenceConflict,
+  GoldQuestionReference,
+  OfficialExamReference
 } from './types.ts';
 import { validateFinalQuestionTopic } from '../topic-guard.ts';
+import { createEmbedding } from "../ai-embeddings.ts";
 
-const EVIDENCE_HIERARCHY: EvidenceSourceType[] = [
-  'official_guideline',
-  'medical_literature',
-  'validated_corpus',
-  'official_exam',
-  'gold_question',
-  'validated_question'
-];
+const AUTHORITY_HIERARCHY: Record<EvidenceSourceType, number> = {
+  'guideline': 6,
+  'literature': 5,
+  'validated_corpus': 4,
+  'official_exam': 3,
+  'gold_question': 2,
+  'validated_question': 1
+};
 
 /**
  * Retrieves evidence from various sources based on the input.
@@ -25,70 +29,127 @@ export async function retrieveEvidence(
   supabase: any,
   input: {
     topic: string;
-    subtopic?: string;
+    specialty?: string;
     limit?: number;
     minSimilarity?: number;
   }
-): Promise<EvidenceSource[]> {
-  const { topic, subtopic, limit = 5, minSimilarity = 0.78 } = input;
-  const sources: EvidenceSource[] = [];
+): Promise<{ 
+  evidence: EvidenceItem[], 
+  goldQuestions: GoldQuestionReference[], 
+  officialExams: OfficialExamReference[],
+  conflicts: EvidenceConflict[]
+}> {
+  const { topic, limit = 10, minSimilarity = 0.78 } = input;
+  const evidence: EvidenceItem[] = [];
+  const goldQuestions: GoldQuestionReference[] = [];
+  const officialExams: OfficialExamReference[] = [];
+  const conflicts: EvidenceConflict[] = [];
 
   // 1. RAG Retrieval (Literature/Corpus)
-  // We need to generate embeddings for the topic first (usually done upstream, but here we assume it's part of the retrieval flow)
-  // For FASE EG-1, we will mock the embedding generation or use a placeholder if not available.
-  // Actually, let's try to use the match_rag_chunks RPC if we had embeddings.
+  try {
+    const embedding = await createEmbedding(topic);
+    const { data: chunks, error: ragError } = await supabase.rpc('match_rag_chunks', {
+      embedding: embedding,
+      match_threshold: minSimilarity,
+      match_count: limit
+    });
+
+    if (chunks) {
+      chunks.forEach((c: any) => {
+        evidence.push({
+          evidenceId: `RAG-${c.id}`,
+          sourceType: 'literature', // Default to literature if not specified in chunk
+          title: c.document_title || 'Medical Literature',
+          excerpt: c.content,
+          topic: topic,
+          canonicalTopic: c.canonical_topic || topic,
+          sourceId: c.document_id || c.id,
+          authorityTier: AUTHORITY_HIERARCHY['literature'],
+          relevanceScore: c.similarity || 0.8
+        });
+      });
+    }
+  } catch (err) {
+    console.warn("[RETRIEVAL] RAG failed, falling back to database search:", err);
+  }
   
-  // 2. Query Official Exams & GOLD Questions (Structured retrieval)
-  const { data: questions } = await supabase
+  // 2. Query Questions Bank (GOLD & Official)
+  const { data: qData } = await supabase
     .from('questions_bank')
     .select('*')
-    .or(`topic.ilike.%${topic}%,subtopic.ilike.%${topic}%`)
+    .or(`topic.ilike.%${topic}%,curriculum_theme.ilike.%${topic}%`)
     .limit(limit);
 
-  if (questions) {
-    questions.forEach((q: any) => {
-      sources.push({
-        id: q.id,
-        type: q.is_official_exam ? 'official_exam' : (q.gold_tier ? 'gold_question' : 'validated_question'),
-        title: q.exam_name || `Question ${q.id}`,
-        content: `${q.enunciado} ${q.comentario || ''}`,
-        canonical_topic: q.topic,
-        metadata: { specialty: q.specialty, year: q.year },
-        gold_tier: q.gold_tier
+  if (qData) {
+    qData.forEach((q: any) => {
+      if (q.gold_tier) {
+        goldQuestions.push({
+          id: q.id,
+          correct_answer: q.gabarito,
+          topic: q.topic,
+          tier: 'GOLD'
+        });
+      }
+      if (q.is_official_exam) {
+        officialExams.push({
+          id: q.id,
+          institution: q.instituicao || q.banca || 'Official',
+          year: q.ano || 2024,
+          topic: q.topic
+        });
+      }
+
+      // Also add to evidence items if relevant
+      evidence.push({
+        evidenceId: `QB-${q.id}`,
+        sourceType: q.gold_tier ? 'gold_question' : 'validated_question',
+        excerpt: `${q.enunciado} (Gabarito: ${q.gabarito})`,
+        topic: topic,
+        canonicalTopic: q.topic || topic,
+        sourceId: q.id,
+        authorityTier: q.gold_tier ? AUTHORITY_HIERARCHY['gold_question'] : AUTHORITY_HIERARCHY['validated_question'],
+        relevanceScore: 0.75
       });
     });
   }
 
-  // 3. RAG Chunks (if embeddings are handled)
-  // This is a placeholder for actual vector search implementation
-  // const { data: chunks } = await supabase.rpc('match_rag_chunks', { ... });
-
-  return sources;
+  return { evidence, goldQuestions, officialExams, conflicts };
 }
 
 /**
  * Builds a Context Pack from retrieved sources.
  */
-export function buildEvidenceContextPack(
+export async function buildEvidenceContextPack(
   requestId: string,
   canonicalTopic: string,
-  sources: EvidenceSource[]
-): EvidenceContextPack {
-  const typeCounts: Record<string, number> = {};
-  sources.forEach(s => {
-    typeCounts[s.type] = (typeCounts[s.type] || 0) + 1;
-  });
+  data: {
+    evidence: EvidenceItem[],
+    goldQuestions: GoldQuestionReference[],
+    officialExams: OfficialExamReference[],
+    conflicts: EvidenceConflict[]
+  },
+  specialty: string = "Clínica Médica"
+): Promise<EvidenceContextPack> {
+  
+  // Generate a deterministic hash of the evidence for cross-provider parity
+  const contentToHash = data.evidence.map(e => e.excerpt).join('|');
+  // Simple hash for demonstration in Deno (crypto is available)
+  const encoder = new TextEncoder();
+  const rawHash = await crypto.subtle.digest("SHA-256", encoder.encode(contentToHash));
+  const contextHash = Array.from(new Uint8Array(rawHash)).map(b => b.toString(16).padStart(2, '0')).join('');
 
   return {
-    request_id: requestId,
-    canonical_topic: canonicalTopic,
-    sources,
-    hierarchy: EVIDENCE_HIERARCHY,
-    metadata: {
-      source_count: sources.length,
-      source_type_counts: typeCounts,
-      topic_match_score: sources.length > 0 ? 100 : 0 // Placeholder
-    }
+    requestId,
+    canonicalTopic,
+    specialty,
+    aliases: [canonicalTopic], // Would be fetched from a topic registry in production
+    evidence: data.evidence.sort((a, b) => (b.authorityTier || 0) - (a.authorityTier || 0)),
+    goldQuestions: data.goldQuestions,
+    officialExamReferences: data.officialExams,
+    conflicts: data.conflicts,
+    retrievalConfidence: data.evidence.length > 0 ? 0.9 : 0.1,
+    generatedAt: new Date().toISOString(),
+    contextHash
   };
 }
 
@@ -102,16 +163,21 @@ export function assertTopicIsolation(
 ): { isolated: boolean; contaminations: string[] } {
   const contaminations: string[] = [];
   
-  // Logic: check if sources belong to a different topic that is NOT an alias or child of the canonical topic
-  contextPack.sources.forEach(source => {
-    if (source.canonical_topic && source.canonical_topic.toLowerCase() !== canonicalTopic.toLowerCase()) {
-      // In a real scenario, check aliases here.
-      contaminations.push(`${source.id}: ${source.canonical_topic}`);
+  const reqTopicLower = canonicalTopic.toLowerCase();
+
+  contextPack.evidence.forEach(item => {
+    const itemTopic = item.canonicalTopic.toLowerCase();
+    
+    // Check if the source topic is a "sibling" that shouldn't be here
+    // Example: If searching for IAM, Pericardite shouldn't dominate.
+    if (itemTopic !== reqTopicLower && !contextPack.aliases.map(a => a.toLowerCase()).includes(itemTopic)) {
+       // Heuristic: If similarity is low or topic name is distinct enough, flag it
+       contaminations.push(`${item.evidenceId}: ${item.canonicalTopic}`);
     }
   });
 
   return {
-    isolated: contaminations.length === 0,
+    isolated: contaminations.length === 0, // Strict isolation for EG-2 Arena tests
     contaminations
   };
 }
@@ -121,60 +187,78 @@ export function assertTopicIsolation(
  */
 export async function validateGroundedOutput(
   output: string,
-  contextPack: EvidenceContextPack
-): Promise<{ claims: ClinicalClaim[], score: GroundingScore }> {
-  // In EG-1, this is a deterministic/heuristic validation.
-  // We extract "claims" (sentences) and check for keyword presence in sources.
+  contextPack: EvidenceContextPack,
+  isQuestion: boolean = false
+): Promise<GroundedOutput> {
+  // 1. Extract clinical claims (rough heuristic for Phase EG-2)
+  const sentences = output.split(/[.!?]/).filter(s => s.trim().length > 30);
   
-  const sentences = output.split(/[.!?]/).filter(s => s.trim().length > 20);
   const claims: ClinicalClaim[] = sentences.map(s => {
-    const supportedSources = contextPack.sources.filter(source => 
-      source.content.toLowerCase().includes(s.toLowerCase().split(' ').slice(0, 5).join(' '))
-    );
+    const cleanSentence = s.trim().toLowerCase();
+    
+    // Check support in evidence
+    const supportedSources = contextPack.evidence.filter(ev => {
+      const excerpt = ev.excerpt.toLowerCase();
+      // Look for significant keyword overlap
+      const words = cleanSentence.split(' ').filter(w => w.length > 4);
+      const matches = words.filter(w => excerpt.includes(w)).length;
+      return matches >= Math.min(words.length, 3);
+    });
 
     return {
       claim: s.trim(),
       status: supportedSources.length > 0 ? 'supported' : 'unsupported',
-      evidence_ids: supportedSources.map(ss => ss.id)
+      evidence_ids: supportedSources.map(ss => ss.evidenceId)
     };
   });
 
   const unsupportedCount = claims.filter(c => c.status === 'unsupported').length;
   const conflictingCount = claims.filter(c => c.status === 'conflicting').length;
   
-  const score: GroundingScore = {
-    overall_score: Math.max(0, 100 - (unsupportedCount * 10) - (conflictingCount * 50)),
+  // 2. Check for critical hallucinations (heuristic)
+  const criticalKeywords = ['dose', 'contraindicado', 'indicação', 'tratamento', 'gabarito'];
+  const hasCriticalHallucination = claims.some(c => 
+    c.status === 'unsupported' && criticalKeywords.some(kw => c.claim.toLowerCase().includes(kw))
+  );
+
+  // 3. Answer Key Validation (if question)
+  let answerKeySupport = true;
+  if (isQuestion) {
+    // Attempt to verify if the correct answer matches evidence
+    // This is hard to do deterministically without structured answers, 
+    // but in EG-2 we check if any GOLD question or exam source supports the statement.
+    answerKeySupport = contextPack.evidence.some(ev => 
+      ['gold_question', 'official_exam', 'guideline'].includes(ev.sourceType)
+    );
+  }
+
+  const grounding: GroundingScore = {
+    overall_score: Math.max(0, 100 - (unsupportedCount * 15) - (conflictingCount * 50)),
     topic_fidelity: 100, // Placeholder
     source_adherence: 100, // Placeholder
     unsupported_claims_count: unsupportedCount,
     conflicting_claims_count: conflictingCount,
-    evidence_status: contextPack.sources.length === 0 ? 'insufficient_evidence' : 
+    critical_hallucination: hasCriticalHallucination,
+    evidence_status: contextPack.evidence.length === 0 ? 'insufficient_evidence' : 
                      (conflictingCount > 0 ? 'conflicting_evidence' : 
                      (unsupportedCount > 0 ? 'sufficient' : 'robust'))
   };
 
-  return { claims, score };
+  return {
+    data: output,
+    grounding,
+    claims,
+    source_ids: [...new Set(claims.flatMap(c => c.evidence_ids))],
+    answer_key_support: answerKeySupport
+  };
 }
 
 /**
- * Scores the grounding of the output.
+ * Scores the grounding of the output (Legacy support / internal scoring).
  */
 export function scoreGrounding(
-  output: any,
+  output: GroundedOutput,
   contextPack: EvidenceContextPack
 ): GroundingScore {
-  // Heuristic score calculation
-  const sourceIds = new Set(contextPack.sources.map(s => s.id));
-  const mentionedIds = (output.source_ids || []).filter((id: string) => sourceIds.has(id));
-  
-  const adherence = contextPack.sources.length > 0 ? (mentionedIds.length / contextPack.sources.length) * 100 : 0;
-  
-  return {
-    overall_score: adherence,
-    topic_fidelity: output.topic_match_score || 0,
-    source_adherence: adherence,
-    unsupported_claims_count: output.unsupported_claims_count || 0,
-    conflicting_claims_count: output.conflicting_claims_count || 0,
-    evidence_status: output.evidence_status || 'insufficient_evidence'
-  };
+  return output.grounding;
 }
