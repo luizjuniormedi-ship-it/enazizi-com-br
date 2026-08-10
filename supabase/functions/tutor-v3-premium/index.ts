@@ -153,12 +153,26 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       }, 200);
     }
 
-    // In development/test with placeholder tokens, allow bypass
-    const isTestToken = req.headers.get("authorization")?.includes("ACCESS_TOKEN_PLACEHOLDER");
-    if (!userId && !isTestToken) throw new Error("UNAUTHORIZED: Session required");
-
-    // Mock userId for test tokens to allow safe_mode/fallback testing
-    const activeUserId = userId || "095cf92f-427d-48e1-accc-31b357b2fa50";
+    // P0-1: HARDENING AUTH GATE
+    // Nenhuma requisição pedagógica deve executar sem userId válido.
+    if (!userId) {
+      console.warn(`[TUTOR_AUTH_FAIL] Unauthorized request to tutor-v3-premium. requestId=${requestId}`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "UNAUTHORIZED",
+          message: "Sessão expirada ou inválida. Por favor, faça login novamente.",
+          traceId: correlationId || requestId
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    console.log(`[TUTOR_AUTH_OK] userId=${userId}`);
+    const activeUserId = userId;
 
     const { message, sessionId, currentBlock: bodyBlock, newTopic, pedagogicalContext, stream = true, history = [] } = body;
 
