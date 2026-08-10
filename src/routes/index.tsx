@@ -29,7 +29,7 @@ const RouteIndex = () => {
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-8 font-mono">
       <div className="max-w-2xl w-full space-y-6 text-center">
         <h1 className="text-2xl font-black tracking-tight text-red-500 uppercase">
-          CONFIGURE NVIDEA
+          VC ESTA COM RESPOSTAS MUITO CURTAS VEJA QUAIS IAS ESTAO FUINCIONANDO NOS MODULKOS
         </h1>
         
         <div className="grid grid-cols-1 gap-4 text-left">
