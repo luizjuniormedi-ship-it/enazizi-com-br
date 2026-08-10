@@ -5,119 +5,46 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Activity, AlertTriangle, ShieldCheck, Cpu } from "lucide-react";
 
 const ProductionObservationPage = () => {
-  const content = `# WAR ROOM — AUTHENTICATED QA HARNESS RECOVERY
+  const content = `# WAR ROOM — E2E PERSONA SECRETS ACTIVATION & AUTH SMOKE
 
 ## MISSÃO
 
-Eliminar o bloqueio técnico que impede o D1.1/D1.2 Authenticated Dogfood.
+Completar a ativação do Authenticated QA Harness configurando as credenciais E2E em secrets seguros e executar os primeiros smoke tests autenticados.
 
-O problema confirmado é:
+Estado atual:
 
 \`\`\`text
-ENAZIZI Auth .................... OPERACIONAL
-Public/Auth Guards .............. CERTIFICADOS
-Lovable Browser Harness ......... signed_out
-Authenticated Dogfood ........... BLOQUEADO
+QA HARNESS ....................... READY
+HARDCODED CREDENTIALS ............ REMOVED
+STORAGE STATE .................... IGNORED
+D1.2 ............................. BLOCKED BY SECRETS
 \`\`\`
-
-O objetivo desta tarefa NÃO é alterar a autenticação do ENAZIZI.
-
-O objetivo é criar um mecanismo seguro, reproduzível e isolado para executar testes E2E autenticados com Playwright usando usuários QA legítimos.
 
 ---
 
-# REGRA CRÍTICA
+# REGRA DE SEGURANÇA
 
-NÃO criar:
+NÃO escrever credenciais em:
 
 \`\`\`text
-auth bypass
-backdoor
-magic admin route
-JWT hardcoded
-service_role no frontend
-RLS bypass
-login automático em produção
-credenciais no Git
+source code
+git
+yaml
+markdown
+console
+logs
+database migrations
 \`\`\`
 
-NÃO modificar o fluxo normal de login dos usuários.
+Não imprimir valores dos secrets.
+
+Nunca retornar senha, token, cookie ou JWT na resposta.
 
 ---
 
-# ACHADO DE SEGURANÇA EXISTENTE
+# SECRETS OBRIGATÓRIOS
 
-Auditar imediatamente o arquivo existente:
-
-\`\`\`text
-create_audit_user.ts
-\`\`\`
-
-Existe histórico de infraestrutura de auditoria contendo credenciais estáticas.
-
-Tratar isso como dívida de segurança.
-
-## AÇÃO
-
-Remover qualquer:
-
-\`\`\`text
-email QA hardcoded
-password hardcoded
-service_role dependency insegura
-\`\`\`
-
-do código versionado.
-
-Não imprimir os valores encontrados em logs ou relatório.
-
-Se qualquer credencial versionada puder ter sido utilizada anteriormente, registrar:
-
-\`\`\`text
-[QA_HARDCODED_CREDENTIAL_DETECTED]
-\`\`\`
-
-e recomendar rotação do segredo correspondente.
-
-Não realizar rotação automática sem autorização.
-
----
-
-# ARQUITETURA ALVO
-
-Implementar:
-
-\`\`\`text
-QA Credentials
-      ↓
-Environment Secrets
-      ↓
-Playwright Login
-      ↓
-Supabase Auth normal
-      ↓
-Session Cookie / Local Storage
-      ↓
-Playwright storageState
-      ↓
-Authenticated Test
-\`\`\`
-
-O Playwright deve entrar pela aplicação da mesma forma que um usuário normal.
-
----
-
-# PERSONAS
-
-Criar suporte a três personas independentes:
-
-\`\`\`text
-student
-professor
-admin
-\`\`\`
-
-Variáveis esperadas:
+Configurar no ambiente seguro:
 
 \`\`\`text
 E2E_STUDENT_EMAIL
@@ -130,472 +57,187 @@ E2E_ADMIN_EMAIL
 E2E_ADMIN_PASSWORD
 \`\`\`
 
-Nunca incluir valores reais no código.
+---
+
+# PERSONAS
+
+Garantir que cada credencial corresponda a uma conta real e separada:
+
+\`\`\`text
+STUDENT
+PROFESSOR
+ADMIN
+\`\`\`
+
+Não reutilizar uma conta admin nas três personas.
 
 ---
 
-# REGRA DE USUÁRIOS QA
+# VALIDAÇÃO DE PAPÉIS
 
-Antes de criar qualquer usuário, verificar se já existem contas QA apropriadas.
-
-Se existirem:
+Student:
 
 \`\`\`text
-REUTILIZAR
+/dashboard ........ permitido
+/professor ........ negado
+/admin ............ negado
 \`\`\`
 
-Não criar duplicatas.
-
-Se não existirem, preparar mecanismo administrativo controlado para provisioning exclusivamente de QA.
-
-Não executar criação em produção sem necessidade.
-
----
-
-# ISOLAMENTO
-
-Todos os usuários QA devem ser identificáveis como:
+Professor:
 
 \`\`\`text
-environment = QA
-purpose = E2E
+/professor ........ permitido
+/admin ............ negado
 \`\`\`
 
-quando a estrutura atual permitir isso sem migration.
-
-Não criar schema novo apenas para marcar QA.
-
-Se não existir campo adequado:
+Admin:
 
 \`\`\`text
-documentar
+/admin ............ permitido
 \`\`\`
 
-e usar naming convention.
-
----
-
-# RBAC
-
-Cada usuário deve possuir somente o papel necessário.
-
-## Student
+Se qualquer persona tiver privilégios maiores que o necessário:
 
 \`\`\`text
-student/user
-\`\`\`
-
-Não:
-
-\`\`\`text
-professor
-admin
-\`\`\`
-
-## Professor
-
-\`\`\`text
-professor
-\`\`\`
-
-Não receber admin automaticamente.
-
-## Admin
-
-\`\`\`text
-admin
+E2E PERSONA MISCONFIGURED
 \`\`\`
 
 ---
 
-# PROIBIDO
+# TESTE 1 — STUDENT AUTH SMOKE
 
-Não criar uma única conta:
+Executar via Playwright:
 
 \`\`\`text
-admin + professor + student
+/login
+↓
+E2E_STUDENT_EMAIL
++
+E2E_STUDENT_PASSWORD
+↓
+Entrar
+↓
+/dashboard
 \`\`\`
 
-para substituir as três personas.
-
-Isso impediria validação real de:
+Validar:
 
 \`\`\`text
-RLS
-RBAC
-route guards
-permissions
+login success
+dashboard loaded
+session persisted
+\`\`\`
+
+Depois:
+
+\`\`\`text
+reload
+\`\`\`
+
+Esperado:
+
+\`\`\`text
+permanece autenticado
+\`\`\`
+
+Depois tentar acessar:
+
+\`\`\`text
+/admin
+\`\`\`
+
+Esperado:
+
+\`\`\`text
+access denied / redirect
 \`\`\`
 
 ---
 
-# PLAYWRIGHT AUTH SETUP
+# TESTE 2 — PROFESSOR AUTH SMOKE
 
-Criar estrutura semelhante a:
+Executar:
 
 \`\`\`text
-tests/e2e/auth/
-    student.setup.ts
-    professor.setup.ts
-    admin.setup.ts
+/login
+↓
+professor credentials
+↓
+/professor
 \`\`\`
 
-ou adaptar a estrutura E2E existente do projeto.
+Validar:
 
-Não duplicar infraestrutura se já houver equivalente.
+\`\`\`text
+professor dashboard loaded
+session persisted after reload
+\`\`\`
+
+Tentar:
+
+\`\`\`text
+/admin
+\`\`\`
+
+Esperado:
+
+\`\`\`text
+negado
+\`\`\`
 
 ---
 
-# LOGIN
+# TESTE 3 — ADMIN AUTH SMOKE
 
-Cada setup deve:
+Executar:
 
 \`\`\`text
-1. abrir /login
-2. preencher email
-3. preencher senha
-4. clicar Entrar
-5. aguardar autenticação
-6. confirmar rota autorizada
-7. salvar storageState
+/login
+↓
+admin credentials
+↓
+/admin
 \`\`\`
 
-Exemplo conceitual:
+Validar:
 
 \`\`\`text
-student
-→ login
-→ /dashboard
-→ student.json
-
-professor
-→ login
-→ /professor
-→ professor.json
-
-admin
-→ login
-→ /admin
-→ admin.json
+admin loaded
+session persisted after reload
 \`\`\`
 
 ---
 
 # STORAGE STATE
 
-Armazenar somente em diretório temporário/ignorado:
+Gerar:
 
 \`\`\`text
-playwright/.auth/
+playwright/.auth/student.json
+playwright/.auth/professor.json
+playwright/.auth/admin.json
 \`\`\`
 
-Garantir \`.gitignore\`.
-
-Nunca commitar:
+Confirmar:
 
 \`\`\`text
-cookies
-access_token
-refresh_token
-storageState
+git ignored = YES
+committed = NO
 \`\`\`
-
----
-
-# PROJECTS PLAYWRIGHT
-
-Configurar projetos separados:
-
-\`\`\`text
-setup-student
-student
-
-setup-professor
-professor
-
-setup-admin
-admin
-\`\`\`
-
-Com dependências:
-
-\`\`\`text
-student
-dependsOn setup-student
-
-professor
-dependsOn setup-professor
-
-admin
-dependsOn setup-admin
-\`\`\`
-
----
-
-# SESSION VALIDATION
-
-Antes de executar testes, confirmar pela própria aplicação:
-
-### Student
-
-\`\`\`text
-/dashboard = autorizado
-/admin = negado
-\`\`\`
-
-### Professor
-
-\`\`\`text
-/professor = autorizado
-/admin = negado
-\`\`\`
-
-### Admin
-
-\`\`\`text
-/admin = autorizado
-\`\`\`
-
-Não alterar permissões para fazer teste passar.
-
-Se role estiver incorreta:
-
-\`\`\`text
-QA PERSONA MISCONFIGURED
-\`\`\`
-
----
-
-# TESTE RLS BÁSICO
-
-Com Student:
-
-confirmar que consegue acessar apenas os próprios dados.
-
-Não executar tentativa ofensiva.
-
-Apenas verificar comportamento normal das telas autenticadas.
-
----
-
-# TESTE DE SESSION REUSE
-
-Após gerar \`storageState\`:
-
-\`\`\`text
-fechar browser
-↓
-abrir novo context
-↓
-carregar storageState
-↓
-abrir dashboard
-\`\`\`
-
-Esperado:
-
-\`\`\`text
-authenticated = true
-\`\`\`
-
-Se redirecionar para \`/login\`:
-
-\`\`\`text
-AUTH HARNESS FAILED
-\`\`\`
-
----
-
-# SESSION EXPIRATION
-
-Não implementar refresh customizado se Supabase já gerencia refresh.
-
-O harness deve usar o comportamento normal da aplicação.
-
----
-
-# CI
-
-Integrar com GitHub Actions somente utilizando:
-
-\`\`\`text
-GitHub Secrets
-\`\`\`
-
-Nunca:
-
-\`\`\`text
-plaintext
-.env commitado
-password no YAML
-JWT no YAML
-\`\`\`
-
----
-
-# LOCAL / LOVABLE
-
-Se os secrets E2E não estiverem disponíveis no ambiente atual:
-
-NÃO inventar credenciais.
-
-Retornar:
-
-\`\`\`text
-QA HARNESS READY
-E2E SECRETS REQUIRED
-\`\`\`
-
-com a lista apenas dos NOMES das variáveis necessárias.
-
----
-
-# NÃO DEPENDER DE LOVABLE_BROWSER_AUTH_STATUS
-
-Após implementação, o dogfood automatizado não deve depender de:
-
-\`\`\`text
-LOVABLE_BROWSER_AUTH_STATUS
-\`\`\`
-
-A autenticação deve ser criada pelo próprio setup Playwright através do login normal.
-
----
-
-# PRIMEIRO TESTE
-
-Depois que secrets legítimos estiverem disponíveis:
-
-executar somente:
-
-\`\`\`text
-STUDENT AUTH SMOKE
-\`\`\`
-
-Fluxo:
-
-\`\`\`text
-/login
-↓
-credenciais E2E
-↓
-/dashboard
-↓
-reload
-↓
-continua autenticado
-\`\`\`
-
-Depois verificar:
-
-\`\`\`text
-/admin
-\`\`\`
-
-Esperado:
-
-\`\`\`text
-ACCESS DENIED / REDIRECT
-\`\`\`
-
----
-
-# SEGUNDO TESTE
-
-Professor:
-
-\`\`\`text
-/login
-↓
-/professor
-↓
-reload
-↓
-continua autenticado
-\`\`\`
-
-Validar que não recebe admin indevidamente.
-
----
-
-# TERCEIRO TESTE
-
-Admin:
-
-\`\`\`text
-/login
-↓
-/admin
-↓
-reload
-↓
-continua autenticado
-\`\`\`
-
----
-
-# GATE
-
-Somente considerar o Auth Harness aprovado quando:
-
-\`\`\`text
-Student login ............... PASS
-Student session reuse ....... PASS
-Student RBAC ................ PASS
-
-Professor login ............. PASS
-Professor session reuse ..... PASS
-Professor RBAC .............. PASS
-
-Admin login ................. PASS
-Admin session reuse ......... PASS
-
-Credentials in Git .......... 0
-StorageState in Git ......... 0
-Auth bypass ................. 0
-\`\`\`
-
----
-
-# DEPOIS DO GATE
-
-Somente depois disso executar:
-
-\`\`\`text
-D1.2 AUTHENTICATED DOGFOOD
-\`\`\`
-
-com:
-
-\`\`\`text
-Student
-Professor
-Admin
-\`\`\`
-
-utilizando os respectivos Playwright projects.
 
 ---
 
 # NÃO EXECUTAR AINDA
 
-Não executar automaticamente toda a bateria:
+Não rodar o D1.2 completo antes dos três Auth Smoke tests passarem.
+
+Primeiro validar apenas:
 
 \`\`\`text
-Tutor
-Simulados
-FSRS
-Recovery
-Plantão
-Professor Simulado
-Admin Scientific Audit
+login
+session reuse
+RBAC
 \`\`\`
-
-antes do Auth Harness passar.
-
-Primeiro certificar autenticação.
-
-Depois executar o D1.2 completo.
 
 ---
 
@@ -604,83 +246,61 @@ Depois executar o D1.2 completo.
 Retornar:
 
 \`\`\`text
-WAR ROOM — AUTHENTICATED QA HARNESS
+WAR ROOM — E2E AUTH ACTIVATION
 
-Existing QA infrastructure ....... FOUND/NOT FOUND
-Hardcoded credential risk ........ FOUND/NOT FOUND
-Credentials committed ............ YES/NO
-StorageState ignored ............. YES/NO
+Secrets available ............... YES/NO
 
-Student Account .................. READY/PENDING
-Student Login .................... PASS/FAIL/NOT RUN
-Student Session Reuse ............ PASS/FAIL/NOT RUN
-Student RBAC ..................... PASS/FAIL/NOT RUN
+Student Login ................... PASS/FAIL
+Student Session Reuse ........... PASS/FAIL
+Student RBAC .................... PASS/FAIL
 
-Professor Account ................ READY/PENDING
-Professor Login .................. PASS/FAIL/NOT RUN
-Professor Session Reuse .......... PASS/FAIL/NOT RUN
-Professor RBAC ................... PASS/FAIL/NOT RUN
+Professor Login ................. PASS/FAIL
+Professor Session Reuse ......... PASS/FAIL
+Professor RBAC .................. PASS/FAIL
 
-Admin Account .................... READY/PENDING
-Admin Login ...................... PASS/FAIL/NOT RUN
-Admin Session Reuse .............. PASS/FAIL/NOT RUN
+Admin Login ..................... PASS/FAIL
+Admin Session Reuse ............. PASS/FAIL
 
-LOVABLE_BROWSER_AUTH dependency .. REMOVED/STILL REQUIRED
+StorageState Generated .......... YES/NO
+StorageState Git Ignored ........ YES/NO
+Secrets Exposed ................. NO
 
-D1.2 READY ....................... YES/NO
+D1.2 READY ...................... YES/NO
 \`\`\`
 
 ---
 
 # DECISÃO
 
-Se autenticação das três personas funcionar:
+Se todos passarem:
 
 \`\`\`text
 AUTHENTICATED QA HARNESS CERTIFIED
-
-D1.2 AUTHENTICATED DOGFOOD
-READY TO EXECUTE
+D1.2 AUTHENTICATED DOGFOOD READY
 \`\`\`
 
-Se faltar apenas secrets:
-
-\`\`\`text
-QA HARNESS READY
-E2E SECRETS REQUIRED
-\`\`\`
-
-Se houver falha de login/RBAC:
+Se algum falhar:
 
 \`\`\`text
 AUTH HARNESS NEEDS FIX
 \`\`\`
 
-e informar exatamente:
+e indicar apenas:
 
 \`\`\`text
-ROOT CAUSE
-AFFECTED PERSONA
-EXPECTED
-OBSERVED
+persona
+stage
+expected
+observed
 \`\`\`
 
----
+sem expor segredos.
 
-# REGRA FINAL
+## REGRA FINAL
 
-Não resolva a ausência de sessão diminuindo a segurança.
+Não alterar segurança para fazer o teste passar.
 
-Resolva criando um harness de QA que autentique exatamente como um usuário real e que possa ser repetido automaticamente em:
-
-\`\`\`text
-Lovable
-Local
-CI
-\`\`\`
-
-sem credenciais hardcoded e sem depender de uma sessão manual do navegador.
-`;
+O objetivo é validar autenticação real com contas reais, usando apenas secrets seguros e Playwright.`;
 
   return (
     <div className="p-8 bg-zinc-950 text-zinc-100 min-h-screen font-mono text-sm space-y-8">
@@ -688,9 +308,9 @@ sem credenciais hardcoded e sem depender de uma sessão manual do navegador.
         <div>
           <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2">
             <Activity className="text-red-500" />
-            WAR ROOM: AUTHENTICATED QA HARNESS RECOVERY
+            WAR ROOM: E2E PERSONA SECRETS ACTIVATION & AUTH SMOKE
           </h1>
-          <p className="text-zinc-500 mt-1">Status: WAR ROOM — AUTHENTICATED QA HARNESS RECOVERY</p>
+          <p className="text-zinc-500 mt-1">Status: WAR ROOM — E2E PERSONA SECRETS ACTIVATION & AUTH SMOKE</p>
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className="bg-zinc-900 border-zinc-800 text-zinc-400">READ-ONLY</Badge>
