@@ -9,7 +9,7 @@ const RouteIndex = () => {
         </h1>
         <div className="p-6 border border-zinc-800 bg-zinc-900/50 rounded-2xl">
           <p className="text-sm tracking-widest opacity-80 uppercase">
-            VEJA SE A IA NVIDEA ESTA CONFIGURADA
+            QUE IAS ESTAO CONFIGURADAS
           </p>
         </div>
       </div>
