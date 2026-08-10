@@ -33,3 +33,20 @@ export const PRODUCTION_MODELS = [
   "google/gemini-2.5-pro",
   "openai/text-embedding-3-small",
 ];
+
+/* ------------------------------------------------------------------ */
+/* NVIDIA (OPT-IN — registrado, NÃO ativo em nenhum módulo)            */
+/* Fonte única de capability metadata para o futuro AI Router.         */
+/* Ativação depende do secret NVIDIA_API_KEY + healthcheck WORKING.    */
+/* ------------------------------------------------------------------ */
+export const NVIDIA_PROVIDER_META = {
+  provider: "nvidia",
+  enabled: false, // ativado somente após healthcheck real aprovado
+  baseUrlEnv: "NVIDIA_BASE_URL",
+  apiKeyEnv: "NVIDIA_API_KEY",
+  defaultBaseUrl: "https://integrate.api.nvidia.com/v1",
+  models: {
+    fast: { id: "meta/llama-3.1-8b-instruct", tier: "FAST", vision: false, reasoning: false },
+    reasoning: { id: "meta/llama-3.3-70b-instruct", tier: "REASONING", vision: false, reasoning: true },
+  },
+} as const;
