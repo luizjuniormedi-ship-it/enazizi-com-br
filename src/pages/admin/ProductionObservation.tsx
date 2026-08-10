@@ -151,7 +151,7 @@ Garantir dados reais.
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-green-500">DADOS INSUFICIENTES</div>
+            <div className="text-lg font-bold text-zinc-400">DADOS INSUFICIENTES</div>
           </CardContent>
         </Card>
         <Card className="bg-zinc-900/50 border-zinc-800">
