@@ -44,7 +44,7 @@ Deno.test("Evidence Grounding - validateGroundedOutput (Basic Heuristic)", async
   const output = "O tratamento do IAM com supra de ST deve incluir AAS.";
   const result = await validateGroundedOutput(output, pack);
   
-  assertEquals(result.score.evidence_status, "sufficient");
+  assertEquals(result.score.evidence_status, "robust");
   assertEquals(result.claims[0].status, "supported");
   
   // Unsupported claim
