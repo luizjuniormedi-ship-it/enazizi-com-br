@@ -142,11 +142,16 @@ export function useUpdateProficiencyTaskStatus() {
       };
       
       // 1. Database Update
+      console.log(`[useUpdateProficiencyTaskStatus] Updating taskId=${taskId} to status=${status}`);
       const { error } = await supabase
         .from("professor_plan_daily_tasks")
         .update(update)
-        .eq("id", taskId);
-      if (error) throw error;
+        .eq("id", taskId)
+        .select(); // Forçar retorno para garantir que a escrita foi confirmada
+      if (error) {
+        console.error("[useUpdateProficiencyTaskStatus] DB Update Error:", error);
+        throw error;
+      }
 
       // 2. Telemetry/FSRS signal (only if completing)
       if (status === "completed" && task) {

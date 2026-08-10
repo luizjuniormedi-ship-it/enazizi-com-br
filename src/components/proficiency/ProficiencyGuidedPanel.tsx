@@ -93,11 +93,23 @@ function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
 
   // Recálculo automático de progresso (1x por mount) — pode disparar replan missed_goal.
   useEffect(() => {
-    if (progressRecalcRef.current) return;
-    if (weekQ.isLoading || dailyQ.isLoading) return;
-    if (weekTasks.length === 0 && dailyTasks.length === 0) return;
-    progressRecalcRef.current = true;
-    recalcProgress.mutate({ planId: plan.id });
+    const handleRecalc = async () => {
+      if (progressRecalcRef.current) return;
+      if (weekQ.isLoading || dailyQ.isLoading) return;
+      if (weekTasks.length === 0 && dailyTasks.length === 0) return;
+      
+      progressRecalcRef.current = true;
+      try {
+        console.log("[ProficiencyGuidedPanel] Triggering progress recalc...");
+        await recalcProgress.mutateAsync({ planId: plan.id });
+      } catch (e) {
+        console.error("[ProficiencyGuidedPanel] Recalc failed:", e);
+        // Em caso de erro, permitimos tentar de novo no próximo mount
+        progressRecalcRef.current = false;
+      }
+    };
+    
+    handleRecalc();
   }, [plan.id, weekQ.isLoading, dailyQ.isLoading, weekTasks.length, dailyTasks.length, recalcProgress]);
 
   const grouped = useMemo(() => groupByDate(weekTasks), [weekTasks]);
