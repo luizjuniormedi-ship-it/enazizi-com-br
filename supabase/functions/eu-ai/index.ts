@@ -29,8 +29,21 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const LOVABLE_DEFAULT_MODEL = Deno.env.get("LOVABLE_DEFAULT_MODEL") || "google/gemini-2.0-flash";
 
-const DEFAULT_MODEL = Deno.env.get("CLAUDE_DEFAULT_MODEL") || "claude-3-5-sonnet-20241022";
-const FALLBACK_MODEL = "claude-3-5-haiku-20241022";
+// P0-2: MODEL REGISTRY - Centralizando modelos válidos para o gateway
+const AI_MODELS = {
+  claude: {
+    primary: Deno.env.get("CLAUDE_PRIMARY_MODEL") || "claude-3-5-sonnet-20241022",
+    fallback: Deno.env.get("CLAUDE_FALLBACK_MODEL") || "claude-3-5-haiku-20241022"
+  },
+  openai: {
+    primary: "gpt-4o",
+    fallback: "gpt-4o-mini"
+  }
+};
+
+const DEFAULT_MODEL = AI_MODELS.claude.primary;
+const FALLBACK_MODEL = AI_MODELS.claude.fallback;
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
