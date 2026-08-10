@@ -1,733 +1,547 @@
 import React from 'react';
 
 export default function EG3Foundation() {
-  const content = `WAR ROOM — FINAL AI ROUTING DECISION TEST
-EVIDENCE-GROUNDED PROVIDER ARENA
+  const content = `WAR ROOM — EG-3 UNIFIED MEDICAL EVIDENCE SERVICE + PUBMED/PMC
 
-OBJETIVO
+MISSÃO
 
-Executar UM ÚNICO benchmark final e controlado para definir o roteamento de IA do ENAZIZI.
+Criar uma camada científica única e obrigatória para todos os módulos clínicos e acadêmicos do ENAZIZI.
 
-Este teste deve utilizar obrigatoriamente a infraestrutura EG-3 já certificada.
+A partir desta fase, nenhum módulo médico deve chamar diretamente Gemini, OpenAI, NVIDIA, Cerebras ou Claude para produzir conteúdo clínico sem antes construir um Evidence Context Pack com base em fontes controladas.
 
-NÃO implementar nova arquitetura.
-NÃO alterar módulos.
-NÃO alterar produção.
-NÃO promover providers.
-NÃO modificar prompts produtivos.
-NÃO modificar RLS.
-NÃO alterar banco GOLD.
-NÃO substituir a Landing Page.
+PRINCÍPIO CENTRAL
 
-A missão é somente TESTAR, MEDIR e RECOMENDAR.
+LLM != FONTE DA VERDADE
 
-==================================================
-PERGUNTA QUE O TESTE DEVE RESPONDER
-==================================================
+FONTE DA VERDADE =
+1. diretrizes oficiais
+2. literatura médica validada
+3. PubMed
+4. PubMed Central quando full text estiver disponível
+5. corpus ENAZIZI
+6. banco GOLD
+7. provas oficiais
+8. banco validado
 
-Considerando que todos os modelos recebem exatamente:
+A memória paramétrica do modelo não conta como evidência.
 
-- mesmo banco ENAZIZI
-- mesmas questões GOLD
-- mesma literatura
-- mesmos resultados PubMed
-- mesmos documentos PMC disponíveis
-- mesmas diretrizes
-- mesmas provas oficiais
-- mesmo Evidence Context Pack
-- mesmo context_hash
+ARQUITETURA OBRIGATÓRIA
 
-qual provider/modelo apresenta a melhor combinação de:
-
-1. fidelidade científica
-2. utilização correta das fontes
-3. precisão da resposta suportada
-4. fidelidade ao tema
-5. qualidade pedagógica
-6. estabilidade
-7. velocidade
-
-para cada função do ENAZIZI?
-
-==================================================
-PROVIDERS
-==================================================
-
-Testar:
-
-A.
-google/gemini-2.5-flash
-
-B.
-openai/gpt-5-mini
-
-C.
-google/gemini-2.5-pro
-
-D.
-NVIDIA
-meta/llama-3.1-8b-instruct
-
-E.
-Cerebras
-gpt-oss-120b
-
-Não incluir NVIDIA Llama 70B na competição principal.
-
-Status:
-
-NVIDIA 70B = SHADOW ONLY
-
-Claude Gateway também não participa enquanto permanecer DEGRADED.
-
-==================================================
-REGRA MAIS IMPORTANTE
-==================================================
-
-RETRIEVAL DEVE ACONTECER UMA ÚNICA VEZ POR CASO.
-
-Fluxo obrigatório:
-
-CASE
+MÓDULO
 ↓
 Canonical Topic Engine
 ↓
 Unified Medical Evidence Service
 ↓
-Internal Corpus
-+
-GOLD
-+
-Official Exams
-+
-Guidelines
-+
-PubMed
-+
-PMC quando disponível
+Evidence Context Pack
 ↓
-FREEZE EvidenceContextPack
+Unified AI Router
 ↓
-GENERATE context_hash
+Grounding Validator
 ↓
-ENVIAR O MESMO PACK PARA TODOS OS MODELOS
+Clinical Consistency Guard
+↓
+Exact Topic Guard
+↓
+OUTPUT
 
-É PROIBIDO executar retrieval diferente para cada provider.
+MÓDULOS QUE DEVEM SER MAPEADOS
 
-==================================================
-CONTEXT HASH PARITY
-==================================================
+Tutor V3
+Question Generator
+Generate Adaptive Simulado
+Professor Simulado
+Question Explainer
+Flashcards
+Recovery
+Mnemônicos
+Clinical Simulation / Plantão
+Professor tools
+Planner quando gerar conteúdo médico
+Process Upload / RAG
 
-Para cada caso:
+Não migrar todos em produção de uma vez.
 
-Gemini Flash context_hash
-GPT context_hash
-Gemini Pro context_hash
-NVIDIA context_hash
-Cerebras context_hash
+Primeiro criar a camada comum e adapters shadow/feature flags.
 
-devem ser:
+PUBMED
 
-IDENTICAL.
+Implementar integração backend usando NCBI E-utilities.
 
-Se houver qualquer diferença:
+Não fazer scraping HTML.
 
-BENCHMARK INVALID
+Criar:
 
-Não continuar produzindo ranking daquele caso.
+supabase/functions/_shared/pubmed-client.ts
 
-==================================================
-CONJUNTO DE TESTE
-==================================================
+Implementar:
 
-Executar 30 casos clínicos.
+searchPubMed()
+fetchPubMedRecords()
+fetchPubMedAbstracts()
+linkPubMedToPMC()
+fetchPMCMetadata()
 
-Distribuir entre:
+Usar NCBI_API_KEY se existir.
 
-Cardiologia
-Infectologia
-Pediatria
-Cirurgia
-Ginecologia/Obstetrícia
-Pneumologia
-Endocrinologia
-Neurologia
-Clínica Médica
+Se não existir, operar dentro dos limites públicos permitidos.
 
-Casos obrigatórios:
+PUBMED CENTRAL
 
-IAM / STEMI
-NSTEMI
-Sepse
-Choque Séptico
-TEP
-Cetoacidose Diabética
-CAD pediátrica
-Bronquiolite
-AVC Isquêmico
-Pré-eclâmpsia
-Eclâmpsia
-Abdome Agudo
-Apendicite
-Pneumonia
-Insuficiência Cardíaca
+Quando houver PMCID relacionado ao PMID:
 
-==================================================
-BANCO + LITERATURA
-==================================================
+full_text_available = true
 
-Cada caso deve utilizar prioritariamente:
+Nunca assumir que todo artigo PubMed possui texto completo.
 
-1. diretrizes oficiais disponíveis
-2. literatura médica validada
-3. PubMed
-4. PMC quando disponível
-5. corpus ENAZIZI
-6. provas oficiais
-7. questões GOLD
-8. banco validado
+EVIDENCE RETRIEVAL TIERS
 
-A memória paramétrica do LLM NÃO é evidence source.
+L1 — CACHE LOCAL
+evidência já materializada
 
-==================================================
-TRÊS TAREFAS POR CASO
-==================================================
+L2 — CORPUS INTERNO
+literatura, guidelines, banco, GOLD, provas oficiais
 
-Cada modelo deve executar:
+L3 — LIVE RETRIEVAL
+PubMed / PMC
 
-A — QUESTION GENERATION
+Executar L3 somente quando:
+- evidência local insuficiente
+- tema novo
+- informação potencialmente desatualizada
+- conflito de evidência
+- solicitação explícita de atualização científica
 
-Gerar questão estilo ENARE.
+Não consultar PubMed a cada clique sem necessidade.
 
-B — TUTOR
+CANONICAL QUERY BUILDER
 
-Explicar o caso de maneira pedagógica e tecnicamente correta.
+Toda busca deve partir do Canonical Topic Engine.
 
-C — CLINICAL DECISION
+Exemplo:
 
-Executar raciocínio/conduta equivalente ao Modo Plantão.
+IAM
+→ acute myocardial infarction
+→ myocardial infarction
+→ STEMI
+→ NSTEMI
+→ acute coronary syndrome
 
-Portanto:
+Sibling blocker continua obrigatório.
 
-30 casos
-×
-3 tarefas
-×
-5 modelos
+Selecionar IAM não deve recuperar pericardite, miocardite ou insuficiência cardíaca como tema dominante.
 
-= 450 execuções principais.
+EVIDENCE NORMALIZATION
 
-Executar em batches controlados para não provocar rate limit.
+Normalizar resultados em contrato comum:
 
-==================================================
-RATE LIMIT CONTROL
-==================================================
+{
+  evidence_id,
+  source_type,
+  PMID,
+  PMCID,
+  DOI,
+  title,
+  abstract,
+  publication_year,
+  journal,
+  study_type,
+  canonical_topic,
+  specialty,
+  relevance_score,
+  evidence_level,
+  full_text_available,
+  retrieved_at
+}
 
-Não disparar chamadas massivamente em paralelo.
+Deduplicar por:
 
-Aplicar concorrência controlada por provider.
+PMID
+DOI
+source_id
+
+STUDY TYPE
+
+Quando a metadata permitir, classificar:
+
+guideline
+systematic_review
+meta_analysis
+randomized_trial
+cohort
+case_control
+cross_sectional
+case_series
+case_report
+review
+other
+
+Não inventar tipo de estudo.
+
+EVIDENCE HIERARCHY
+
+Priorizar:
+
+1. guideline atual
+2. revisão sistemática/meta-análise
+3. ensaio clínico
+4. estudo observacional robusto
+5. literatura de referência
+6. PubMed abstract
+7. provas oficiais
+8. GOLD
+9. banco validado
+
+Um case report isolado não pode superar guideline ou revisão sistemática sem justificativa explícita.
+
+CONFLICT ENGINE
+
+Quando fontes relevantes divergirem:
+
+EVIDENCE_CONFLICT = true
 
 Registrar:
 
-429
-503
-504
-timeout
-retry
-circuit breaker
+source_ids
+claim
+conflict_type
+authority_difference
 
-Não prejudicar o resultado de um provider artificialmente por excesso de concorrência gerado pelo próprio benchmark.
+Não permitir que o modelo escolha silenciosamente uma fonte.
 
-==================================================
-CEREBRAS
-==================================================
+CONTEXT PACK
 
-Contrato obrigatório:
+Criar função única:
 
-content presente
-→ COMPLETE
+buildMedicalEvidenceContext()
 
-content vazio + reasoning presente
-→ INCOMPLETE_GENERATION
+Entrada:
 
-content vazio + reasoning vazio
-→ EMPTY_GENERATION
+{
+  userId?,
+  module,
+  specialty,
+  topic,
+  subtopic?,
+  canonicalTopic,
+  requestIntent,
+  freshnessRequirement?
+}
 
-NUNCA:
+Saída:
 
-reasoning → final answer
+{
+  context_pack_id,
+  context_hash,
+  canonical_topic,
+  aliases,
+  evidence[],
+  gold_questions[],
+  official_exam_refs[],
+  conflicts[],
+  retrieval_confidence,
+  freshness,
+  created_at
+}
 
-Se INCOMPLETE_GENERATION:
+Todos os providers devem receber exatamente o mesmo Context Pack.
 
-retry com token budget adequado.
+CONTEXT HASH
 
-Se continuar incompleto:
+O mesmo caso enviado a diferentes modelos precisa manter o mesmo:
 
-FAIL
-ou fallback apenas para análise operacional.
+context_hash
 
-Não utilizar fallback para atribuir score ao modelo original.
+Se hashes diferirem:
 
-==================================================
-AVALIAÇÃO CIENTÍFICA
-==================================================
+BENCHMARK INVALID
 
-Avaliar cada resposta contra o EvidenceContextPack congelado.
+GROUNDING
 
-Medir:
+Toda afirmação clínica relevante deve ser rastreável para:
 
-GROUNDING_SCORE
+source_ids[]
 
-SUPPORTED_CLAIM_RATE
+Calcular:
 
-UNSUPPORTED_CLAIM_RATE
+grounding_score =
+supported_clinical_claims / total_clinical_claims
+
+Calcular também:
+
+unsupported_claim_rate
+
+Criar:
 
 CRITICAL_HALLUCINATION
 
-ANSWER_KEY_SUPPORTED
+para claims não sustentados envolvendo:
 
-EVIDENCE_COVERAGE
+diagnóstico
+tratamento
+dose
+contraindicação
+indicação
+urgência
+prognóstico
+gabarito
 
-EVIDENCE_CONFLICT_HANDLING
-
-EXACT_TOPIC_FIDELITY
-
-SIBLING_CONTAMINATION
-
-==================================================
 HARD GATES
-==================================================
 
-Estes critérios têm precedência sobre qualquer score.
+Se:
 
-Grounding Score < 0.90
+context pack vazio
 → FAIL
 
-Critical Hallucination > 0
+retrieval_confidence insuficiente
+→ FAIL ou resposta com incerteza explícita
+
+critical hallucination > 0
 → FAIL
 
-Unsupported Claim Rate > 5%
+unsupported_claim_rate > 0.05
 → FAIL
 
-Question Answer Key unsupported
+exact topic falhou
 → FAIL
 
-Exact Topic failure
+sibling contamination
 → FAIL
 
-Sibling contamination relevante
+answer key sem suporte
 → FAIL
 
-Evidence conflict crítico ignorado
-→ FAIL
+QUESTION GENERATOR
 
-Context hash diferente
-→ BENCHMARK INVALID
+Antes de gerar questão:
+Evidence Context Pack obrigatório.
 
-Nenhuma vantagem de velocidade pode compensar esses erros.
+Depois da geração validar:
 
-==================================================
-IAM STRESS TEST
-==================================================
+ANSWER_KEY_SUPPORTED
+GROUNDING_SCORE
+TOPIC_MATCH_SCORE
+SIBLING_CONTAMINATION
+JSON_VALID
 
-Executar validação específica.
+Se qualquer hard gate falhar:
 
-Canonical topic:
+REJECT QUESTION
 
-INFARTO AGUDO DO MIOCÁRDIO
+TUTOR
 
-Aliases permitidos:
+Antes da resposta médica:
+Evidence Context Pack obrigatório.
+
+A resposta deve citar internamente source_ids.
+
+Se evidência insuficiente:
+não responder com falsa certeza.
+
+PLANTÃO
+
+LLM usa Evidence Context Pack para diagnóstico e conduta pedagógica.
+
+Deterministic Physiology Engine permanece independente.
+
+A IA não pode sobrescrever sinais vitais determinísticos.
+
+FLASHCARDS / MNEMÔNICOS / RECOVERY
+
+Conteúdo médico também deve vir do Evidence Context Pack.
+
+Tarefas puramente pedagógicas ou organizacionais podem usar rota mais leve, mas qualquer afirmação clínica deve ser grounded.
+
+CEREBRAS HARDENING
+
+Não usar reasoning como resposta final.
+
+Implementar:
+
+if content exists:
+  COMPLETE
+
+if content empty && reasoning exists:
+  INCOMPLETE_GENERATION
+
+if content empty && reasoning empty:
+  EMPTY_GENERATION
+
+Nunca mostrar reasoning interno ao usuário.
+
+Retry com budget adequado.
+
+Para zai-glm-4.7 em resposta clínica longa:
+
+max_tokens >= 1000
+
+Se continuar sem content final:
+
+fallback.
+
+PROVIDERS
+
+Não alterar roteamento de produção nesta fase.
+
+Manter candidatos atuais:
+
+Gemini 2.5 Flash
+GPT-5 Mini
+NVIDIA Llama 3.1 8B
+Cerebras gpt-oss-120b
+Gemini 2.5 Pro
+
+NVIDIA Llama 3.3 70B:
+SHADOW ONLY
+
+Claude Gateway:
+DEGRADED / fora da cadeia crítica
+
+TELEMETRIA
+
+Registrar:
+
+[MED_EVIDENCE_REQUEST]
+[MED_EVIDENCE_CACHE_HIT]
+[MED_EVIDENCE_INTERNAL_HIT]
+[PUBMED_SEARCH_STARTED]
+[PUBMED_SEARCH_COMPLETED]
+[PMC_LINK_FOUND]
+[EVIDENCE_CONTEXT_BUILT]
+[EVIDENCE_CONFLICT_DETECTED]
+[GROUNDING_VALIDATED]
+[GROUNDING_REJECTED]
+
+Guardar:
+
+module
+canonical_topic
+context_pack_id
+context_hash
+evidence_count
+pubmed_count
+pmc_count
+gold_count
+retrieval_latency_ms
+grounding_score
+unsupported_claim_rate
+critical_hallucination
+topic_match_score
+
+CACHE
+
+Criar cache por:
+
+canonical_topic
+query_hash
+retrieval_version
+freshness_window
+
+Evitar consultas repetitivas ao PubMed.
+
+TESTES OBRIGATÓRIOS
+
+Executar:
 
 IAM
-STEMI
-NSTEMI
-SCA
-Acute Myocardial Infarction
-Acute Coronary Syndrome
+Sepse
+TEP
+Cetoacidose diabética pediátrica
+Bronquiolite
 
-Monitorar contaminação indevida por:
+Para cada caso validar:
+
+Canonical Topic
+Internal Retrieval
+PubMed Retrieval
+PMC Link quando disponível
+Context Pack
+Context Hash
+Evidence Count
+Retrieval Confidence
+Sibling Contamination
+Grounding
+
+IAM deve bloquear como tema dominante:
 
 Pericardite
 Miocardite
 Insuficiência Cardíaca
-Endocardite
 
-Menção legítima em diagnóstico diferencial é permitida.
+Não bloquear menção clínica legítima em diagnóstico diferencial quando necessária.
 
-Substituição do tema principal:
+NÃO ALTERAR
 
-FAIL.
-
-==================================================
-QUALIDADE PEDAGÓGICA
-==================================================
-
-Depois dos hard gates científicos, medir:
-
-ENARE fidelity
-clinical reasoning structure
-distractor quality
-explanation quality
-instruction following
-pt-BR compliance
-JSON compliance
-
-Não usar comprimento da resposta como proxy de qualidade.
-
-==================================================
-MÉTRICAS OPERACIONAIS
-==================================================
-
-Registrar:
-
-HTTP success rate
-p50
-p95
-p99 quando possível
-input tokens
-output tokens
-total tokens
-429 rate
-5xx rate
-timeout rate
-retry rate
-empty response rate
-incomplete generation rate
-
-Se custo estiver disponível de forma confiável:
-
-cost/request
-cost/1M tokens
-estimated cost/1000 student interactions
-
-Se custo não estiver disponível:
-
-marcar NOT MEASURED.
-
-Não inventar valores.
-
-==================================================
-PESOS
-==================================================
-
-Somente respostas que passaram pelos HARD GATES entram no score.
-
-Score:
-
-Grounding / Evidence Fidelity .... 25%
-
-Clinical Support /
-Answer-Key Support ............... 20%
-
-Exact Topic Fidelity ............. 15%
-
-Evidence Coverage ................ 10%
-
-Pedagogical Quality .............. 10%
-
-Reliability ...................... 10%
-
-Latency .......................... 5%
-
-Contract / JSON .................. 5%
-
-==================================================
-ESTABILIDADE
-==================================================
-
-Não utilizar somente média.
-
-Calcular:
-
-mean
-median
-standard deviation
-p50
-p95
-failure rate
-
-Modelo rápido mas instável não deve vencer automaticamente.
-
-==================================================
-RESULTADO POR TAREFA
-==================================================
-
-Gerar ranking separado para:
-
-QUESTION GENERATION
-
-TUTOR
-
-CLINICAL SIMULATION
-
-FAST TASKS
-
-DEEP REASONING
-
-Não gerar apenas um vencedor global.
-
-==================================================
-DECISÃO DE ROTEAMENTO
-==================================================
-
-Ao final recomendar exatamente:
-
-DEFAULT_CLINICAL = ?
-
-QUESTION_GENERATOR = ?
-
-TUTOR = ?
-
-CLINICAL_SIMULATION = ?
-
-FAST = ?
-
-DEEP_REASONING = ?
-
-FALLBACK_1 = ?
-
-FALLBACK_2 = ?
-
-SHADOW_ONLY = ?
-
-REJECTED = ?
-
-==================================================
-IMPORTANTE
-==================================================
-
-É permitido que o mesmo modelo vença várias categorias.
-
-NÃO distribuir providers artificialmente apenas para usar todos.
-
-Se Gemini Flash vencer:
-
-Question Generator
-Tutor
-Plantão
-
-ele pode ser recomendado para os três.
-
-Se Cerebras ou NVIDIA realmente vencerem determinada categoria, recomendar com base nos dados.
-
-==================================================
-ANÁLISE DE RESILIÊNCIA
-==================================================
-
-Além de qualidade, simular indisponibilidade do provider vencedor.
-
-Exemplo:
-
-PRIMARY unavailable
-↓
-FALLBACK_1
-↓
-FALLBACK_2
-
-Verificar se a cadeia continua:
-
-Evidence Pack
-↓
-Provider
-↓
-Grounding Guard
-
-O fallback nunca pode ignorar a Evidence Layer.
-
-==================================================
-NÃO ALTERAR PRODUÇÃO
-==================================================
-
-Mesmo após identificar vencedores:
-
-DO NOT CHANGE ROUTING.
-
-DO NOT ENABLE NVIDIA.
-
-DO NOT ENABLE CEREBRAS.
-
-DO NOT CHANGE GEMINI.
-
-DO NOT CHANGE OPENAI.
-
-DO NOT MODIFY CLAUDE.
-
-Somente recomendar.
-
-==================================================
-NÃO ALTERAR A INTERFACE
-==================================================
-
-Não alterar:
-
-/
 Landing
-Dashboard
 Index
-War Room público
+Dashboard público
+ProductionObservation
+roteamento global dos providers
+RLS sem necessidade
+banco de questões produtivo
 
-O relatório pode ser gravado como artefato técnico ou exibido em rota administrativa existente.
+Não transformar relatório técnico em home page.
 
-==================================================
-RELATÓRIO FINAL OBRIGATÓRIO
-==================================================
+NÃO PERSISTIR CONTEÚDO DE TESTE
 
-WAR ROOM — FINAL AI ROUTING DECISION
+Questões/respostas usadas em benchmark não entram em:
 
-Cases ........................ 30
-Tasks per case ............... 3
-Providers .................... 5
-Executions planned ........... 450
-Executions completed ......... ?
+questions_bank
+GOLD
+simulados reais
 
-Context Hash Parity .......... PASS/FAIL
-Evidence Retrieval ........... PASS/FAIL
-PubMed/PMC ................... PASS/FAIL
-Grounding Validation ......... PASS/FAIL
+SAÍDA OBRIGATÓRIA
 
-TABELA POR MODELO:
+WAR ROOM — EG-3 UNIFIED MEDICAL EVIDENCE SERVICE
 
-MODEL
-SUCCESS RATE
-HARD-GATE PASS RATE
-GROUNDING
-UNSUPPORTED CLAIM RATE
-CRITICAL HALLUCINATIONS
-ANSWER KEY SUPPORT
-TOPIC FIDELITY
-SIBLING CONTAMINATION
-EVIDENCE COVERAGE
-JSON VALIDITY
-P50
-P95
-429
-5XX
-TIMEOUT
-RETRY RATE
+Unified Evidence Service ........ PASS/FAIL
+PubMed E-utilities .............. PASS/FAIL
+PMC Linking ..................... PASS/FAIL
+Canonical Query Builder ......... PASS/FAIL
+Cache ........................... PASS/FAIL
+PMID/DOI Dedup .................. PASS/FAIL
+Evidence Hierarchy .............. PASS/FAIL
+Conflict Engine ................. PASS/FAIL
+Evidence Context Pack ........... PASS/FAIL
+Context Hash .................... PASS/FAIL
+Grounding Validator ............. PASS/FAIL
+Exact Topic Guard ............... PASS/FAIL
+Sibling Blocker ................. PASS/FAIL
+Cerebras Final Content Guard .... PASS/FAIL
+Production Routing Changed ...... NO
 
-==================================================
-RANKING
-==================================================
+TESTES
 
-QUESTION GENERATION
+IAM ............................. PASS/FAIL
+Sepse ........................... PASS/FAIL
+TEP ............................. PASS/FAIL
+CAD Pediátrica .................. PASS/FAIL
+Bronquiolite .................... PASS/FAIL
 
-1.
-2.
-3.
-4.
-5.
+RESULTADO
 
-TUTOR
+Se tudo passar:
 
-1.
-2.
-3.
-4.
-5.
+EG-3 EVIDENCE SERVICE CERTIFIED
+READY FOR MODULE MIGRATION
 
-CLINICAL SIMULATION
+Se houver falha:
 
-1.
-2.
-3.
-4.
-5.
+EG-3 NOT CERTIFIED
 
-FAST
-
-1.
-2.
-3.
-4.
-5.
-
-DEEP REASONING
-
-1.
-2.
-3.
-4.
-5.
-
-==================================================
-ROUTING RECOMMENDATION
-==================================================
-
-DEFAULT_CLINICAL .............. ?
-
-QUESTION_GENERATOR ............ ?
-
-TUTOR ......................... ?
-
-CLINICAL_SIMULATION ........... ?
-
-FAST .......................... ?
-
-DEEP_REASONING ................ ?
-
-FALLBACK_1 .................... ?
-
-FALLBACK_2 .................... ?
-
-SHADOW_ONLY ................... ?
-
-REJECTED ...................... ?
-
-==================================================
-DECISÃO
-==================================================
-
-Se o teste possuir:
-
-same context
-+
-evidence retrieval validado
-+
-amostra completa
-+
-hard gates funcionando
-+
-resultados reproduzíveis
-
-retornar:
-
-FINAL AI ROUTING BENCHMARK CERTIFIED
-READY FOR ROUTING IMPLEMENTATION
-
-Caso contrário:
-
-FINAL AI ROUTING BENCHMARK NOT CERTIFIED
-
-e informar exatamente:
-
-failed gate
-provider
-case
-task
+informar:
+component
+expected
+observed
 root cause
 
-==================================================
 REGRA FINAL
 
-NÃO escolha a IA que demonstra possuir mais conhecimento médico de memória.
+O conhecimento médico do ENAZIZI deve vir da Evidence Layer.
 
-Escolha a IA que demonstra utilizar melhor:
+Gemini, GPT, NVIDIA, Cerebras ou qualquer outro LLM são motores substituíveis de raciocínio.
 
-LITERATURA
-+
-PUBMED/PMC
-+
-DIRETRIZES
-+
-PROVAS
-+
-BANCO ENAZIZI
-
-fornecidos pelo Evidence Engine.
-
-A Evidence Layer é a fonte da verdade.
-
-Os modelos são motores substituíveis.`;
+Nenhum LLM é fonte primária de conhecimento médico.`;
 
   return (
     <div className="p-8 font-mono bg-slate-950 text-slate-50 min-h-screen whitespace-pre-wrap">
