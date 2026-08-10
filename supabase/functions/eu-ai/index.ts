@@ -280,19 +280,50 @@ async function callLovableGateway(body: InPayload): Promise<AttemptResult> {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const url = new URL(req.url);
+  
+  // P0-2: Provider Healthcheck
+  if (url.pathname.endsWith("/provider-health")) {
+    return new Response(JSON.stringify({
+      claude: Date.now() > claudeDisabledUntil ? "ok" : "disabled",
+      openai: "ok",
+      google: "ok",
+      timestamp: new Date().toISOString()
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+  }
+
   const reqStart = Date.now();
   try {
     const body = (await req.json().catch(() => ({}))) as InPayload;
-    structuredLog("request.in", { hasMessages: Array.isArray(body.messages), hasMessage: !!(body.message || body.prompt || body.text) });
+    structuredLog("request.in", { 
+      hasMessages: Array.isArray(body.messages), 
+      hasMessage: !!(body.message || body.prompt || body.text),
+      claudeStatus: Date.now() > claudeDisabledUntil ? "active" : "disabled"
+    });
 
-    // 1) Claude Gateway
-    let result = await callClaudeGateway(body);
+    // 1) Claude Gateway (com Circuit Breaker)
+    let result: AttemptResult = { ok: false, status: 0, latencyMs: 0, retryable: true, errorCode: "circuit_open" };
+    
+    if (Date.now() > claudeDisabledUntil) {
+      result = await callClaudeGateway(body);
 
-    // Retry com modelo alternativo se o padrão for rejeitado por modelo inválido
-    if (!result.ok && result.status === 400 && /model(o)?/i.test(result.errorMessage || "")) {
-      structuredLog("claude.model_retry", { fallbackModel: FALLBACK_MODEL });
-      result = await callClaudeGateway(body, FALLBACK_MODEL);
+      // P0-2: Auto-Disable se Claude retornar invalid model
+      if (!result.ok && result.status === 400 && /model(o)?/i.test(result.errorMessage || "")) {
+        structuredLog("claude.model_retry", { fallbackModel: FALLBACK_MODEL });
+        result = await callClaudeGateway(body, FALLBACK_MODEL);
+        
+        if (!result.ok && result.status === 400 && /model(o)?/i.test(result.errorMessage || "")) {
+          claudeFailureCount++;
+          if (claudeFailureCount >= CLAUDE_MAX_FAILURES) {
+            claudeDisabledUntil = Date.now() + CLAUDE_COOLDOWN_MS;
+            structuredLog("claude.circuit_open", { reason: "repeated_invalid_model", disabledUntil: new Date(claudeDisabledUntil).toISOString() });
+          }
+        }
+      } else if (result.ok) {
+        claudeFailureCount = 0; // Reset no sucesso
+      }
     }
+
 
     if (result.ok && result.text) {
       return new Response(JSON.stringify({
