@@ -341,8 +341,13 @@ serve(async (req) => {
             turma_id: turma.id,
             student_id: sid
           }));
-          await sb.from("professor_turma_students").insert(studentLinks);
+          const { error: linkError } = await sb.from("professor_turma_students").insert(studentLinks);
+          if (linkError) {
+            console.error(`[PROFESSOR_SIMULADO_CREATE_ERROR] erro ao vincular alunos:`, linkError);
+            throw linkError;
+          }
         }
+
 
         console.log(`[PROFESSOR_SIMULADO_CREATE_OK] traceId=${traceId} turmaId=${turma.id}`);
         return ok({ success: true, turma });
@@ -363,8 +368,13 @@ serve(async (req) => {
               turma_id: id,
               student_id: sid
             }));
-            await sb.from("professor_turma_students").insert(studentLinks);
+            const { error: linkError } = await sb.from("professor_turma_students").insert(studentLinks);
+            if (linkError) {
+              console.error(`[PROFESSOR_SIMULADO_UPDATE_ERROR] erro ao vincular alunos:`, linkError);
+              throw linkError;
+            }
           }
+
         }
 
         return ok({ success: true });
