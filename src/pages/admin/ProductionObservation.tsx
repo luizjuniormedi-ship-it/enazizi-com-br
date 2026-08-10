@@ -5,673 +5,681 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Activity, AlertTriangle, ShieldCheck, Cpu } from "lucide-react";
 
 const ProductionObservationPage = () => {
-  const content = `# D1.2 — AUTHENTICATED QA SESSION HANDOFF
+  const content = `# WAR ROOM — AUTHENTICATED QA HARNESS RECOVERY
 
-## OBJETIVO
+## MISSÃO
 
-Completar o D1 Production Dogfood que está atualmente:
+Eliminar o bloqueio técnico que impede o D1.1/D1.2 Authenticated Dogfood.
+
+O problema confirmado é:
 
 \`\`\`text
-D1 PUBLIC VALIDATION ............ PASSOU
-D1 AUTHENTICATED VALIDATION ..... PENDENTE
-BLOCKER ......................... AUTH_STATUS=signed_out
+ENAZIZI Auth .................... OPERACIONAL
+Public/Auth Guards .............. CERTIFICADOS
+Lovable Browser Harness ......... signed_out
+Authenticated Dogfood ........... BLOQUEADO
 \`\`\`
 
-Esta execução NÃO deve alterar o produto.
+O objetivo desta tarefa NÃO é alterar a autenticação do ENAZIZI.
 
-O único objetivo inicial é detectar uma sessão autenticada legítima disponibilizada pelo usuário no Preview do Lovable e, quando ela existir, executar as jornadas autenticadas pendentes.
+O objetivo é criar um mecanismo seguro, reproduzível e isolado para executar testes E2E autenticados com Playwright usando usuários QA legítimos.
 
 ---
 
-# REGRA 1 — NÃO SOLICITAR CREDENCIAIS NO CHAT
+# REGRA CRÍTICA
 
-Não pedir:
+NÃO criar:
 
 \`\`\`text
-senha
-token JWT
-refresh token
-service_role key
-session cookie
-OTP
+auth bypass
+backdoor
+magic admin route
+JWT hardcoded
+service_role no frontend
+RLS bypass
+login automático em produção
+credenciais no Git
 \`\`\`
 
-Não imprimir ou registrar segredos.
-
-Não criar bypass de autenticação.
-
-Não modificar RLS.
-
-Não criar usuário privilegiado.
-
-Não utilizar service_role para simular usuário.
+NÃO modificar o fluxo normal de login dos usuários.
 
 ---
 
-# REGRA 2 — SESSION HANDOFF
+# ACHADO DE SEGURANÇA EXISTENTE
 
-Verificar:
+Auditar imediatamente o arquivo existente:
+
+\`\`\`text
+create_audit_user.ts
+\`\`\`
+
+Existe histórico de infraestrutura de auditoria contendo credenciais estáticas.
+
+Tratar isso como dívida de segurança.
+
+## AÇÃO
+
+Remover qualquer:
+
+\`\`\`text
+email QA hardcoded
+password hardcoded
+service_role dependency insegura
+\`\`\`
+
+do código versionado.
+
+Não imprimir os valores encontrados em logs ou relatório.
+
+Se qualquer credencial versionada puder ter sido utilizada anteriormente, registrar:
+
+\`\`\`text
+[QA_HARDCODED_CREDENTIAL_DETECTED]
+\`\`\`
+
+e recomendar rotação do segredo correspondente.
+
+Não realizar rotação automática sem autorização.
+
+---
+
+# ARQUITETURA ALVO
+
+Implementar:
+
+\`\`\`text
+QA Credentials
+      ↓
+Environment Secrets
+      ↓
+Playwright Login
+      ↓
+Supabase Auth normal
+      ↓
+Session Cookie / Local Storage
+      ↓
+Playwright storageState
+      ↓
+Authenticated Test
+\`\`\`
+
+O Playwright deve entrar pela aplicação da mesma forma que um usuário normal.
+
+---
+
+# PERSONAS
+
+Criar suporte a três personas independentes:
+
+\`\`\`text
+student
+professor
+admin
+\`\`\`
+
+Variáveis esperadas:
+
+\`\`\`text
+E2E_STUDENT_EMAIL
+E2E_STUDENT_PASSWORD
+
+E2E_PROFESSOR_EMAIL
+E2E_PROFESSOR_PASSWORD
+
+E2E_ADMIN_EMAIL
+E2E_ADMIN_PASSWORD
+\`\`\`
+
+Nunca incluir valores reais no código.
+
+---
+
+# REGRA DE USUÁRIOS QA
+
+Antes de criar qualquer usuário, verificar se já existem contas QA apropriadas.
+
+Se existirem:
+
+\`\`\`text
+REUTILIZAR
+\`\`\`
+
+Não criar duplicatas.
+
+Se não existirem, preparar mecanismo administrativo controlado para provisioning exclusivamente de QA.
+
+Não executar criação em produção sem necessidade.
+
+---
+
+# ISOLAMENTO
+
+Todos os usuários QA devem ser identificáveis como:
+
+\`\`\`text
+environment = QA
+purpose = E2E
+\`\`\`
+
+quando a estrutura atual permitir isso sem migration.
+
+Não criar schema novo apenas para marcar QA.
+
+Se não existir campo adequado:
+
+\`\`\`text
+documentar
+\`\`\`
+
+e usar naming convention.
+
+---
+
+# RBAC
+
+Cada usuário deve possuir somente o papel necessário.
+
+## Student
+
+\`\`\`text
+student/user
+\`\`\`
+
+Não:
+
+\`\`\`text
+professor
+admin
+\`\`\`
+
+## Professor
+
+\`\`\`text
+professor
+\`\`\`
+
+Não receber admin automaticamente.
+
+## Admin
+
+\`\`\`text
+admin
+\`\`\`
+
+---
+
+# PROIBIDO
+
+Não criar uma única conta:
+
+\`\`\`text
+admin + professor + student
+\`\`\`
+
+para substituir as três personas.
+
+Isso impediria validação real de:
+
+\`\`\`text
+RLS
+RBAC
+route guards
+permissions
+\`\`\`
+
+---
+
+# PLAYWRIGHT AUTH SETUP
+
+Criar estrutura semelhante a:
+
+\`\`\`text
+tests/e2e/auth/
+    student.setup.ts
+    professor.setup.ts
+    admin.setup.ts
+\`\`\`
+
+ou adaptar a estrutura E2E existente do projeto.
+
+Não duplicar infraestrutura se já houver equivalente.
+
+---
+
+# LOGIN
+
+Cada setup deve:
+
+\`\`\`text
+1. abrir /login
+2. preencher email
+3. preencher senha
+4. clicar Entrar
+5. aguardar autenticação
+6. confirmar rota autorizada
+7. salvar storageState
+\`\`\`
+
+Exemplo conceitual:
+
+\`\`\`text
+student
+→ login
+→ /dashboard
+→ student.json
+
+professor
+→ login
+→ /professor
+→ professor.json
+
+admin
+→ login
+→ /admin
+→ admin.json
+\`\`\`
+
+---
+
+# STORAGE STATE
+
+Armazenar somente em diretório temporário/ignorado:
+
+\`\`\`text
+playwright/.auth/
+\`\`\`
+
+Garantir \`.gitignore\`.
+
+Nunca commitar:
+
+\`\`\`text
+cookies
+access_token
+refresh_token
+storageState
+\`\`\`
+
+---
+
+# PROJECTS PLAYWRIGHT
+
+Configurar projetos separados:
+
+\`\`\`text
+setup-student
+student
+
+setup-professor
+professor
+
+setup-admin
+admin
+\`\`\`
+
+Com dependências:
+
+\`\`\`text
+student
+dependsOn setup-student
+
+professor
+dependsOn setup-professor
+
+admin
+dependsOn setup-admin
+\`\`\`
+
+---
+
+# SESSION VALIDATION
+
+Antes de executar testes, confirmar pela própria aplicação:
+
+### Student
+
+\`\`\`text
+/dashboard = autorizado
+/admin = negado
+\`\`\`
+
+### Professor
+
+\`\`\`text
+/professor = autorizado
+/admin = negado
+\`\`\`
+
+### Admin
+
+\`\`\`text
+/admin = autorizado
+\`\`\`
+
+Não alterar permissões para fazer teste passar.
+
+Se role estiver incorreta:
+
+\`\`\`text
+QA PERSONA MISCONFIGURED
+\`\`\`
+
+---
+
+# TESTE RLS BÁSICO
+
+Com Student:
+
+confirmar que consegue acessar apenas os próprios dados.
+
+Não executar tentativa ofensiva.
+
+Apenas verificar comportamento normal das telas autenticadas.
+
+---
+
+# TESTE DE SESSION REUSE
+
+Após gerar \`storageState\`:
+
+\`\`\`text
+fechar browser
+↓
+abrir novo context
+↓
+carregar storageState
+↓
+abrir dashboard
+\`\`\`
+
+Esperado:
+
+\`\`\`text
+authenticated = true
+\`\`\`
+
+Se redirecionar para \`/login\`:
+
+\`\`\`text
+AUTH HARNESS FAILED
+\`\`\`
+
+---
+
+# SESSION EXPIRATION
+
+Não implementar refresh customizado se Supabase já gerencia refresh.
+
+O harness deve usar o comportamento normal da aplicação.
+
+---
+
+# CI
+
+Integrar com GitHub Actions somente utilizando:
+
+\`\`\`text
+GitHub Secrets
+\`\`\`
+
+Nunca:
+
+\`\`\`text
+plaintext
+.env commitado
+password no YAML
+JWT no YAML
+\`\`\`
+
+---
+
+# LOCAL / LOVABLE
+
+Se os secrets E2E não estiverem disponíveis no ambiente atual:
+
+NÃO inventar credenciais.
+
+Retornar:
+
+\`\`\`text
+QA HARNESS READY
+E2E SECRETS REQUIRED
+\`\`\`
+
+com a lista apenas dos NOMES das variáveis necessárias.
+
+---
+
+# NÃO DEPENDER DE LOVABLE_BROWSER_AUTH_STATUS
+
+Após implementação, o dogfood automatizado não deve depender de:
 
 \`\`\`text
 LOVABLE_BROWSER_AUTH_STATUS
 \`\`\`
 
-Se:
-
-\`\`\`text
-signed_out
-\`\`\`
-
-responder exclusivamente:
-
-\`\`\`text
-AUTH SESSION REQUIRED
-
-Abra o Preview do projeto no Lovable.
-
-Faça login normalmente com a conta de teste autorizada.
-
-Mantenha a sessão aberta.
-
-Depois solicite novamente:
-"Continue D1.2 authenticated dogfood."
-\`\`\`
-
-Não executar alterações.
-
-Não declarar D1 aprovado.
+A autenticação deve ser criada pelo próprio setup Playwright através do login normal.
 
 ---
 
-# REGRA 3 — QUANDO AUTH ESTIVER ATIVO
+# PRIMEIRO TESTE
 
-Quando:
+Depois que secrets legítimos estiverem disponíveis:
+
+executar somente:
 
 \`\`\`text
-LOVABLE_BROWSER_AUTH_STATUS != signed_out
+STUDENT AUTH SMOKE
 \`\`\`
 
-identificar através da própria aplicação:
+Fluxo:
 
 \`\`\`text
-user_id
-role
-\`\`\`
-
-Não exibir dados sensíveis.
-
-Registrar:
-
-\`\`\`text
-AUTH SESSION DETECTED
-ROLE = ?
-\`\`\`
-
----
-
-# PERSONA A — ALUNO
-
-Se role permitir jornada normal de aluno, executar:
-
-\`\`\`text
+/login
+↓
+credenciais E2E
+↓
 /dashboard
-/dashboard/flashcards
-/dashboard/simulados
-/dashboard/planner
-/dashboard/sessao-estudo
-/dashboard/resultados-oficiais
-\`\`\`
-
-e módulos acessíveis correspondentes.
-
----
-
-# A1 — DASHBOARD
-
-Validar:
-
-\`\`\`text
-Dashboard carregou
-Missão do Dia carregou
-Readiness carregou
-Planner carregou
-Métricas carregaram
-\`\`\`
-
-Registrar:
-
-\`\`\`text
-HTTP
-tempo
-console errors
-network errors
-\`\`\`
-
----
-
-# A2 — FSRS
-
-Abrir Flashcards.
-
-Capturar:
-
-\`\`\`text
-AVAILABLE
-MATERIALIZED
-DUE
-\`\`\`
-
-Executar SELECT read-only correspondente ao usuário autenticado.
-
-Produzir:
-
-\`\`\`text
-UI_DUE = ?
-DB_DUE = ?
-DIVERGENCE = ?
-\`\`\`
-
-Critério:
-
-\`\`\`text
-DIVERGENCE = 0
-\`\`\`
-
----
-
-# A3 — PRIORITY
-
-Se \`due > 0\`:
-
-clicar em:
-
-\`\`\`text
-Revisão Prioritária
-\`\`\`
-
-Responder um card normalmente.
-
-Confirmar posteriormente por SELECT:
-
-\`\`\`text
-fsrs_cards
-fsrs_review_log
-\`\`\`
-
-Recarregar página.
-
-Confirmar persistência.
-
-Se \`due = 0\`:
-
-validar que a UI não apresenta cards nunca iniciados como revisões vencidas.
-
----
-
-# A4 — SPRINT
-
-Executar Sprint.
-
-Resultado esperado:
-
-\`\`\`text
-session_started = true
-card_rendered = true
-interaction_working = true
-\`\`\`
-
----
-
-# A5 — TODOS
-
-Abrir Todos.
-
-Registrar:
-
-\`\`\`text
-load_time
-pagination
-UI responsiveness
-\`\`\`
-
----
-
-# A6 — TUTOR IAM
-
-Criar sessão nova.
-
-Enviar:
-
-\`\`\`text
-Paciente com dor torácica há 90 minutos e supra de ST em DII, DIII e aVF. Explique diagnóstico e conduta inicial.
-\`\`\`
-
-Registrar:
-
-\`\`\`text
-HTTP
-latency
-provider
-model
-fallback
-traceId
-\`\`\`
-
-Auditar resposta.
-
-Esperado:
-
-\`\`\`text
-IAM com supra
-\`\`\`
-
----
-
-# A7 — TROCA DE TEMA
-
-Usar o fluxo real:
-
-\`\`\`text
-Mudar de Tema
-→ Sepse
-\`\`\`
-
-Enviar:
-
-\`\`\`text
-Paciente com suspeita de infecção, lactato elevado e hipotensão persistente após reposição volêmica. Qual a abordagem inicial?
-\`\`\`
-
-Registrar:
-
-\`\`\`text
-IAM_CONTEXT_LEAK = YES/NO
-\`\`\`
-
-Esperado:
-
-\`\`\`text
-NO
-\`\`\`
-
----
-
-# A8 — SIMULADO IAM RUN 1
-
-Gerar pela UI:
-
-\`\`\`text
-IAM
-10 questões
-\`\`\`
-
-Auditar todas.
-
-Produzir:
-
-| # | ID | Topic | Subtopic | Alias/Canonical | Valid |
-| - | -- | ----- | -------- | --------------- | ----- |
-
-Procurar especificamente:
-
-\`\`\`text
-Pericardite
-Miocardite
-Endocardite
-Insuficiência Cardíaca
-Arritmias
-Valvopatias
-\`\`\`
-
-Resultado obrigatório:
-
-\`\`\`text
-SIBLING_LEAKAGE = X/10
-\`\`\`
-
----
-
-# A9 — SIMULADO IAM RUN 2
-
-Gerar novamente.
-
-Produzir:
-
-\`\`\`text
-RUN_1_IDS = [...]
-RUN_2_IDS = [...]
-
-OVERLAP = ?
-OVERLAP_RATE = ?%
-\`\`\`
-
----
-
-# A10 — SIMULADO E2E
-
-Executar:
-
-\`\`\`text
-iniciar
-→ responder
-→ produzir pelo menos um erro normal de teste
-→ finalizar
-\`\`\`
-
-Validar:
-
-\`\`\`text
-resultado
-acurácia
-persistência
-\`\`\`
-
-Recarregar resultado.
-
----
-
-# A11 — RECOVERY
-
-Acompanhar o erro anterior:
-
-\`\`\`text
-Error Bank
 ↓
-Recovery
+reload
 ↓
-Flashcard
-↓
-FSRS
+continua autenticado
 \`\`\`
 
-Verificar com SELECT:
-
-\`\`\`text
-error_bank
-recovery_audit_log
-flashcards
-fsrs_cards
-\`\`\`
-
-Produzir:
-
-\`\`\`text
-ERROR_CAPTURED = ?
-RECOVERY_CREATED = ?
-FLASHCARD_CREATED = ?
-FSRS_CREATED = ?
-\`\`\`
-
----
-
-# A12 — PLANNER
-
-Abrir Planner.
-
-Executar uma ação normal.
-
-Recarregar.
-
-Registrar:
-
-\`\`\`text
-PERSISTED = YES/NO
-DUPLICATED = YES/NO
-\`\`\`
-
----
-
-# A13 — PLANTÃO
-
-Iniciar caso.
-
-Executar:
-
-\`\`\`text
-HDA
-→ avaliação
-→ conduta
-\`\`\`
-
-Registrar:
-
-\`\`\`text
-HTTP
-latency
-vital_signs_working
-physiology_state_change
-errors
-\`\`\`
-
----
-
-# PERSONA B — PROFESSOR
-
-Se a sessão atual não tiver permissões de professor:
-
-\`\`\`text
-PROFESSOR PERSONA = PENDING
-\`\`\`
-
-Não elevar privilégios.
-
-Quando uma sessão legítima de professor estiver disponível, executar:
-
-\`\`\`text
-/professor
-\`\`\`
-
-Validar:
-
-\`\`\`text
-BI
-lista de alunos
-métricas
-matriz cognitiva
-simulados
-\`\`\`
-
----
-
-# PROFESSOR SIMULADO
-
-Gerar um simulado IAM de teste.
-
-Registrar:
-
-\`\`\`text
-HTTP
-latency
-provider
-model
-fallback
-traceId
-persisted
-\`\`\`
-
-Se Claude estiver configurado como primário:
-
-confirmar pelo runtime.
-
-Resultado obrigatório:
-
-\`\`\`text
-CONFIGURED_PROVIDER = ?
-ACTUAL_PROVIDER = ?
-ACTUAL_MODEL = ?
-FALLBACK_USED = ?
-\`\`\`
-
----
-
-# PERSONA C — ADMIN
-
-Se a sessão não tiver role admin:
-
-\`\`\`text
-ADMIN PERSONA = PENDING
-\`\`\`
-
-Não elevar privilégios.
-
-Quando houver sessão admin legítima testar:
+Depois verificar:
 
 \`\`\`text
 /admin
-/admin/dogfood-monitor
-/admin/alpha-cohort
-/admin/official-outcomes
-/admin/scientific-audit
-/admin/production-observation
+\`\`\`
+
+Esperado:
+
+\`\`\`text
+ACCESS DENIED / REDIRECT
 \`\`\`
 
 ---
 
-# ADMIN — ALPHA COHORT
+# SEGUNDO TESTE
 
-Comparar UI × banco:
+Professor:
 
 \`\`\`text
-UI_MEMBERS = ?
-DB_MEMBERS = ?
+/login
+↓
+/professor
+↓
+reload
+↓
+continua autenticado
+\`\`\`
 
-UI_SNAPSHOTS = ?
-DB_SNAPSHOTS = ?
+Validar que não recebe admin indevidamente.
+
+---
+
+# TERCEIRO TESTE
+
+Admin:
+
+\`\`\`text
+/login
+↓
+/admin
+↓
+reload
+↓
+continua autenticado
 \`\`\`
 
 ---
 
-# ADMIN — OUTCOMES
+# GATE
 
-Validar representação:
+Somente considerar o Auth Harness aprovado quando:
 
 \`\`\`text
-student_reported
-→ não verificado
+Student login ............... PASS
+Student session reuse ....... PASS
+Student RBAC ................ PASS
 
-document_verified
-→ documento verificado
+Professor login ............. PASS
+Professor session reuse ..... PASS
+Professor RBAC .............. PASS
 
-institution_verified
-→ instituição verificada
+Admin login ................. PASS
+Admin session reuse ......... PASS
+
+Credentials in Git .......... 0
+StorageState in Git ......... 0
+Auth bypass ................. 0
 \`\`\`
 
 ---
 
-# MOBILE AUTHENTICATED
+# DEPOIS DO GATE
 
-Com sessão de aluno:
+Somente depois disso executar:
 
 \`\`\`text
-viewport = 390x844
+D1.2 AUTHENTICATED DOGFOOD
 \`\`\`
 
-Testar:
+com:
 
 \`\`\`text
-Dashboard
+Student
+Professor
+Admin
+\`\`\`
+
+utilizando os respectivos Playwright projects.
+
+---
+
+# NÃO EXECUTAR AINDA
+
+Não executar automaticamente toda a bateria:
+
+\`\`\`text
 Tutor
-Flashcards
 Simulados
+FSRS
+Recovery
 Plantão
+Professor Simulado
+Admin Scientific Audit
 \`\`\`
 
-Registrar apenas problemas observados.
+antes do Auth Harness passar.
+
+Primeiro certificar autenticação.
+
+Depois executar o D1.2 completo.
 
 ---
 
-# INCIDENT HANDLING
+# RELATÓRIO OBRIGATÓRIO
 
-Não corrigir bugs nesta execução.
-
-Para cada falha:
+Retornar:
 
 \`\`\`text
-INCIDENT_ID
-SEVERITY
-PERSONA
-ROUTE
-EXPECTED
-OBSERVED
-HTTP
-TRACE_ID
-CONSOLE
-NETWORK
-DB_EVIDENCE
-REPRODUCTION
-\`\`\`
+WAR ROOM — AUTHENTICATED QA HARNESS
 
-Repetir falha funcional uma segunda vez quando seguro.
+Existing QA infrastructure ....... FOUND/NOT FOUND
+Hardcoded credential risk ........ FOUND/NOT FOUND
+Credentials committed ............ YES/NO
+StorageState ignored ............. YES/NO
 
----
+Student Account .................. READY/PENDING
+Student Login .................... PASS/FAIL/NOT RUN
+Student Session Reuse ............ PASS/FAIL/NOT RUN
+Student RBAC ..................... PASS/FAIL/NOT RUN
 
-# OUTPUT
+Professor Account ................ READY/PENDING
+Professor Login .................. PASS/FAIL/NOT RUN
+Professor Session Reuse .......... PASS/FAIL/NOT RUN
+Professor RBAC ................... PASS/FAIL/NOT RUN
 
-Quando a persona aluno terminar:
+Admin Account .................... READY/PENDING
+Admin Login ...................... PASS/FAIL/NOT RUN
+Admin Session Reuse .............. PASS/FAIL/NOT RUN
 
-\`\`\`text
-D1.2 STUDENT AUTHENTICATED QA — COMPLETE
-\`\`\`
+LOVABLE_BROWSER_AUTH dependency .. REMOVED/STILL REQUIRED
 
-Quando professor terminar:
-
-\`\`\`text
-D1.2 PROFESSOR AUTHENTICATED QA — COMPLETE
-\`\`\`
-
-Quando admin terminar:
-
-\`\`\`text
-D1.2 ADMIN AUTHENTICATED QA — COMPLETE
-\`\`\`
-
-Somente quando as três estiverem concluídas:
-
-\`\`\`text
-D1 AUTHENTICATED VALIDATION — COMPLETE
+D1.2 READY ....................... YES/NO
 \`\`\`
 
 ---
 
 # DECISÃO
 
-Somente declarar:
+Se autenticação das três personas funcionar:
 
 \`\`\`text
-D1 FULLY PASSED
+AUTHENTICATED QA HARNESS CERTIFIED
+
+D1.2 AUTHENTICATED DOGFOOD
+READY TO EXECUTE
 \`\`\`
 
-quando:
+Se faltar apenas secrets:
 
 \`\`\`text
-PUBLIC QA = PASS
-STUDENT QA = PASS
-PROFESSOR QA = PASS
-ADMIN QA = PASS
-P0 = 0
-P1 = 0
+QA HARNESS READY
+E2E SECRETS REQUIRED
 \`\`\`
 
-Caso apenas aluno tenha sido testado:
+Se houver falha de login/RBAC:
 
 \`\`\`text
-D1 PARTIAL
-PROFESSOR + ADMIN PENDING
+AUTH HARNESS NEEDS FIX
 \`\`\`
 
-Caso não exista sessão:
+e informar exatamente:
 
 \`\`\`text
-D1.2 BLOCKED — AUTH SESSION REQUIRED
+ROOT CAUSE
+AFFECTED PERSONA
+EXPECTED
+OBSERVED
 \`\`\`
 
-## REGRA FINAL
+---
 
-Não contornar autenticação.
+# REGRA FINAL
 
-Não usar privilégios maiores para substituir uma persona.
+Não resolva a ausência de sessão diminuindo a segurança.
 
-A validação precisa representar exatamente o que um usuário daquele papel consegue fazer pela interface normal.
+Resolva criando um harness de QA que autentique exatamente como um usuário real e que possa ser repetido automaticamente em:
+
+\`\`\`text
+Lovable
+Local
+CI
+\`\`\`
+
+sem credenciais hardcoded e sem depender de uma sessão manual do navegador.
 `;
 
   return (
@@ -680,9 +688,9 @@ A validação precisa representar exatamente o que um usuário daquele papel con
         <div>
           <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2">
             <Activity className="text-red-500" />
-            WAR ROOM: PRODUCTION OBSERVATION
+            WAR ROOM: AUTHENTICATED QA HARNESS RECOVERY
           </h1>
-          <p className="text-zinc-500 mt-1">Status: D1.2 — Authenticated QA Session Handoff</p>
+          <p className="text-zinc-500 mt-1">Status: WAR ROOM — AUTHENTICATED QA HARNESS RECOVERY</p>
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className="bg-zinc-900 border-zinc-800 text-zinc-400">READ-ONLY</Badge>
@@ -694,39 +702,39 @@ A validação precisa representar exatamente o que um usuário daquele papel con
         <Card className="bg-zinc-900/50 border-zinc-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs uppercase text-zinc-500 flex items-center gap-2">
-              <Cpu className="h-3 w-3" /> Edge Health
+              <Cpu className="h-3 w-3" /> QA Readiness
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-zinc-400">DADOS INSUFICIENTES</div>
+            <div className="text-lg font-bold text-zinc-400">PENDING SECRETS</div>
           </CardContent>
         </Card>
         <Card className="bg-zinc-900/50 border-zinc-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs uppercase text-zinc-500 flex items-center gap-2">
-              <ShieldCheck className="h-3 w-3" /> Auth Integrity
+              <ShieldCheck className="h-3 w-3" /> Auth Harness
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-green-500">OPERATIONAL</div>
+            <div className="text-lg font-bold text-red-500">BLOCKED</div>
           </CardContent>
         </Card>
         <Card className="bg-zinc-900/50 border-zinc-800">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs uppercase text-zinc-500 flex items-center gap-2">
-              <AlertTriangle className="h-3 w-3" /> Active Incidents
+              <AlertTriangle className="h-3 w-3" /> Security Debt
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-zinc-400">0 P0 / 0 P1</div>
+            <div className="text-lg font-bold text-amber-500">AUDITED</div>
           </CardContent>
         </Card>
         <Card className="bg-zinc-900/50 border-zinc-800">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase text-zinc-500">Session Drift</CardTitle>
+            <CardTitle className="text-xs uppercase text-zinc-500">E2E Personas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-blue-500">STABLE</div>
+            <div className="text-lg font-bold text-blue-500">3 DEFINED</div>
           </CardContent>
         </Card>
       </div>
