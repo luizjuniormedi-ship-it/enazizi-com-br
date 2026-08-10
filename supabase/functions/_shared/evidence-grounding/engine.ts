@@ -8,22 +8,27 @@ import {
   ClinicalClaim,
   EvidenceConflict,
   GoldQuestionReference,
-  OfficialExamReference
+  OfficialExamReference,
+  StudyType
 } from './types.ts';
 import { validateFinalQuestionTopic } from '../topic-guard.ts';
 import { createEmbedding } from "../ai-embeddings.ts";
+import { searchPubMed, fetchPubMedRecords, fetchPubMedAbstracts, linkPubMedToPMC } from "../pubmed-client.ts";
 
 const AUTHORITY_HIERARCHY: Record<EvidenceSourceType, number> = {
-  'guideline': 6,
-  'literature': 5,
-  'validated_corpus': 4,
-  'official_exam': 3,
-  'gold_question': 2,
-  'validated_question': 1
+  'guideline': 10,
+  'literature': 8,
+  'pubmed_central_fulltext': 7,
+  'pubmed_abstract': 6,
+  'validated_corpus': 5,
+  'official_exam': 4,
+  'gold_question': 3,
+  'validated_question': 2
 };
 
 /**
  * Retrieves evidence from various sources based on the input.
+ * EG-3 Implementation: Internal RAG + PubMed Live Retrieval
  */
 export async function retrieveEvidence(
   supabase: any,
@@ -32,6 +37,8 @@ export async function retrieveEvidence(
     specialty?: string;
     limit?: number;
     minSimilarity?: number;
+    useLiveRetrieval?: boolean;
+    canonicalTopic?: string;
   }
 ): Promise<{ 
   evidence: EvidenceItem[], 
@@ -39,13 +46,13 @@ export async function retrieveEvidence(
   officialExams: OfficialExamReference[],
   conflicts: EvidenceConflict[]
 }> {
-  const { topic, limit = 10, minSimilarity = 0.78 } = input;
+  const { topic, limit = 10, minSimilarity = 0.78, useLiveRetrieval = false, canonicalTopic = topic } = input;
   const evidence: EvidenceItem[] = [];
   const goldQuestions: GoldQuestionReference[] = [];
   const officialExams: OfficialExamReference[] = [];
   const conflicts: EvidenceConflict[] = [];
 
-  // 1. RAG Retrieval (Literature/Corpus)
+  // 1. RAG Retrieval (L2 - Corpus Interno)
   try {
     const embedding = await createEmbedding(topic);
     const { data: chunks, error: ragError } = await supabase.rpc('match_rag_chunks', {
@@ -58,22 +65,62 @@ export async function retrieveEvidence(
       chunks.forEach((c: any) => {
         evidence.push({
           evidenceId: `RAG-${c.id}`,
-          sourceType: 'literature', // Default to literature if not specified in chunk
+          sourceType: 'literature',
           title: c.document_title || 'Medical Literature',
           excerpt: c.content,
           topic: topic,
-          canonicalTopic: c.canonical_topic || topic,
+          canonicalTopic: c.canonical_topic || canonicalTopic,
           sourceId: c.document_id || c.id,
           authorityTier: AUTHORITY_HIERARCHY['literature'],
-          relevanceScore: c.similarity || 0.8
+          relevanceScore: c.similarity || 0.8,
+          fullTextAvailable: true,
+          retrievedAt: new Date().toISOString()
         });
       });
     }
   } catch (err) {
-    console.warn("[RETRIEVAL] RAG failed, falling back to database search:", err);
+    console.warn("[RETRIEVAL] RAG failed:", err);
+  }
+
+  // 2. Live Retrieval (L3 - PubMed / PMC)
+  if (useLiveRetrieval || evidence.length < 3) {
+    console.log(`[RETRIEVAL] L3 Live Retrieval triggered for: ${topic}`);
+    try {
+      const { ids } = await searchPubMed(topic, 5);
+      if (ids.length > 0) {
+        const records = await fetchPubMedRecords(ids);
+        const abstracts = await fetchPubMedAbstracts(ids);
+        const pmcLinks = await linkPubMedToPMC(ids);
+        
+        records.forEach(rec => {
+          const hasPMC = !!pmcLinks[rec.pmid];
+          evidence.push({
+            evidenceId: `PMID-${rec.pmid}`,
+            sourceType: hasPMC ? 'pubmed_central_fulltext' : 'pubmed_abstract',
+            PMID: rec.pmid,
+            PMCID: pmcLinks[rec.pmid],
+            DOI: rec.doi,
+            title: rec.title,
+            excerpt: abstracts[rec.pmid] || "",
+            abstract: abstracts[rec.pmid],
+            publicationYear: rec.pubYear,
+            journal: rec.journal,
+            topic: topic,
+            canonicalTopic: canonicalTopic,
+            sourceId: rec.pmid,
+            authorityTier: hasPMC ? AUTHORITY_HIERARCHY['pubmed_central_fulltext'] : AUTHORITY_HIERARCHY['pubmed_abstract'],
+            relevanceScore: 0.85,
+            fullTextAvailable: hasPMC,
+            retrievedAt: new Date().toISOString()
+          });
+        });
+      }
+    } catch (err) {
+      console.error("[RETRIEVAL] PubMed L3 failed:", err);
+    }
   }
   
-  // 2. Query Questions Bank (GOLD & Official)
+  // 3. Questions Bank (L2)
   const { data: qData } = await supabase
     .from('questions_bank')
     .select('*')
@@ -85,9 +132,9 @@ export async function retrieveEvidence(
       if (q.gold_tier) {
         goldQuestions.push({
           id: q.id,
-          correct_answer: q.gabarito,
+          correctAnswer: q.gabarito,
           topic: q.topic,
-          tier: 'GOLD'
+          tier: q.gold_tier === 'GOLD' ? 'GOLD' : 'SILVER'
         });
       }
       if (q.is_official_exam) {
@@ -99,25 +146,31 @@ export async function retrieveEvidence(
         });
       }
 
-      // Also add to evidence items if relevant
       evidence.push({
         evidenceId: `QB-${q.id}`,
         sourceType: q.gold_tier ? 'gold_question' : 'validated_question',
         excerpt: `${q.enunciado} (Gabarito: ${q.gabarito})`,
+        title: `Questão: ${q.topic}`,
         topic: topic,
-        canonicalTopic: q.topic || topic,
+        canonicalTopic: q.topic || canonicalTopic,
         sourceId: q.id,
         authorityTier: q.gold_tier ? AUTHORITY_HIERARCHY['gold_question'] : AUTHORITY_HIERARCHY['validated_question'],
-        relevanceScore: 0.75
+        relevanceScore: 0.75,
+        fullTextAvailable: false,
+        retrievedAt: new Date().toISOString()
       });
     });
   }
 
-  return { evidence, goldQuestions, officialExams, conflicts };
+  // Deduplicate by source_id
+  const uniqueEvidence = Array.from(new Map(evidence.map(e => [e.sourceId, e])).values());
+
+  return { evidence: uniqueEvidence, goldQuestions, officialExams, conflicts };
 }
 
 /**
  * Builds a Context Pack from retrieved sources.
+ * EG-3 Implementation: Context Hash Parity + Hierarchy Sort
  */
 export async function buildEvidenceContextPack(
   requestId: string,
@@ -131,76 +184,75 @@ export async function buildEvidenceContextPack(
   specialty: string = "Clínica Médica"
 ): Promise<EvidenceContextPack> {
   
-  // Generate a deterministic hash of the evidence for cross-provider parity
-  const contentToHash = data.evidence.map(e => e.excerpt).join('|');
-  // Simple hash for demonstration in Deno (crypto is available)
+  // Sort by authority tier
+  const sortedEvidence = [...data.evidence].sort((a, b) => (b.authorityTier || 0) - (a.authorityTier || 0));
+
+  // Generate deterministic hash for cross-provider parity (EG-3)
+  const contentToHash = sortedEvidence.map(e => `${e.sourceId}:${e.excerpt}`).join('|');
   const encoder = new TextEncoder();
   const rawHash = await crypto.subtle.digest("SHA-256", encoder.encode(contentToHash));
   const contextHash = Array.from(new Uint8Array(rawHash)).map(b => b.toString(16).padStart(2, '0')).join('');
 
   return {
-    requestId,
+    contextPackId: `ctx-${requestId}`,
+    contextHash,
     canonicalTopic,
     specialty,
-    aliases: [canonicalTopic], // Would be fetched from a topic registry in production
-    evidence: data.evidence.sort((a, b) => (b.authorityTier || 0) - (a.authorityTier || 0)),
+    aliases: [canonicalTopic], 
+    evidence: sortedEvidence,
     goldQuestions: data.goldQuestions,
-    officialExamReferences: data.officialExams,
+    officialExamRefs: data.officialExams,
     conflicts: data.conflicts,
-    retrievalConfidence: data.evidence.length > 0 ? 0.9 : 0.1,
-    generatedAt: new Date().toISOString(),
-    contextHash
+    retrievalConfidence: sortedEvidence.length > 2 ? 0.95 : (sortedEvidence.length > 0 ? 0.6 : 0.1),
+    freshness: new Date().toISOString(),
+    createdAt: new Date().toISOString()
   };
 }
 
 /**
  * Asserts that the context pack is isolated to the canonical topic.
- * Prevents "sibling contamination".
+ * EG-3: Sibling Blocker (Strict isolation)
  */
 export function assertTopicIsolation(
   contextPack: EvidenceContextPack,
   canonicalTopic: string
 ): { isolated: boolean; contaminations: string[] } {
   const contaminations: string[] = [];
-  
   const reqTopicLower = canonicalTopic.toLowerCase();
 
   contextPack.evidence.forEach(item => {
     const itemTopic = item.canonicalTopic.toLowerCase();
+    const isAlias = contextPack.aliases.some(a => a.toLowerCase() === itemTopic);
     
-    // Check if the source topic is a "sibling" that shouldn't be here
-    // Example: If searching for IAM, Pericardite shouldn't dominate.
-    if (itemTopic !== reqTopicLower && !contextPack.aliases.map(a => a.toLowerCase()).includes(itemTopic)) {
-       // Heuristic: If similarity is low or topic name is distinct enough, flag it
+    if (itemTopic !== reqTopicLower && !isAlias) {
        contaminations.push(`${item.evidenceId}: ${item.canonicalTopic}`);
     }
   });
 
   return {
-    isolated: contaminations.length === 0, // Strict isolation for EG-2 Arena tests
+    isolated: contaminations.length === 0,
     contaminations
   };
 }
 
 /**
- * Validates the grounded output against the context pack.
+ * Validates grounded output.
+ * EG-3: Critical Hallucination detection + Grounding Score.
  */
 export async function validateGroundedOutput(
   output: string,
   contextPack: EvidenceContextPack,
   isQuestion: boolean = false
 ): Promise<GroundedOutput> {
-  // 1. Extract clinical claims (rough heuristic for Phase EG-2)
-  const sentences = output.split(/[.!?]/).filter(s => s.trim().length > 30);
+  const sentences = output.split(/[.!?]/).filter(s => s.trim().length > 20);
   
   const claims: ClinicalClaim[] = sentences.map(s => {
     const cleanSentence = s.trim().toLowerCase();
     
-    // Check support in evidence
     const supportedSources = contextPack.evidence.filter(ev => {
       const excerpt = ev.excerpt.toLowerCase();
-      // Look for significant keyword overlap
       const words = cleanSentence.split(' ').filter(w => w.length > 4);
+      if (words.length === 0) return false;
       const matches = words.filter(w => excerpt.includes(w)).length;
       return matches >= Math.min(words.length, 3);
     });
@@ -208,57 +260,35 @@ export async function validateGroundedOutput(
     return {
       claim: s.trim(),
       status: supportedSources.length > 0 ? 'supported' : 'unsupported',
-      evidence_ids: supportedSources.map(ss => ss.evidenceId)
+      evidenceIds: supportedSources.map(ss => ss.evidenceId)
     };
   });
 
+  const supportedCount = claims.filter(c => c.status === 'supported').length;
   const unsupportedCount = claims.filter(c => c.status === 'unsupported').length;
-  const conflictingCount = claims.filter(c => c.status === 'conflicting').length;
   
-  // 2. Check for critical hallucinations (heuristic)
-  const criticalKeywords = ['dose', 'contraindicado', 'indicação', 'tratamento', 'gabarito'];
+  const criticalKeywords = ['dose', 'contraindicado', 'indicação', 'tratamento', 'gabarito', 'urgência', 'prognóstico'];
   const hasCriticalHallucination = claims.some(c => 
     c.status === 'unsupported' && criticalKeywords.some(kw => c.claim.toLowerCase().includes(kw))
   );
 
-  // 3. Answer Key Validation (if question)
-  let answerKeySupport = true;
-  if (isQuestion) {
-    // Attempt to verify if the correct answer matches evidence
-    // This is hard to do deterministically without structured answers, 
-    // but in EG-2 we check if any GOLD question or exam source supports the statement.
-    answerKeySupport = contextPack.evidence.some(ev => 
-      ['gold_question', 'official_exam', 'guideline'].includes(ev.sourceType)
-    );
-  }
+  const groundingScore = claims.length > 0 ? supportedCount / claims.length : 0;
 
-  const grounding: GroundingScore = {
-    overall_score: Math.max(0, 100 - (unsupportedCount * 15) - (conflictingCount * 50)),
-    topic_fidelity: 100, // Placeholder
-    source_adherence: 100, // Placeholder
-    unsupported_claims_count: unsupportedCount,
-    conflicting_claims_count: conflictingCount,
+  const score: GroundingScore = {
+    overall_score: Math.round(groundingScore * 100),
+    grounding_score: groundingScore,
+    unsupported_claim_rate: claims.length > 0 ? unsupportedCount / claims.length : 0,
+    topic_match_score: 100, // Heuristic
     critical_hallucination: hasCriticalHallucination,
     evidence_status: contextPack.evidence.length === 0 ? 'insufficient_evidence' : 
-                     (conflictingCount > 0 ? 'conflicting_evidence' : 
-                     (unsupportedCount > 0 ? 'sufficient' : 'robust'))
+                     (groundingScore > 0.8 ? 'robust' : 'sufficient')
   };
 
   return {
     data: output,
-    grounding,
+    grounding: score,
     claims,
-    source_ids: [...new Set(claims.flatMap(c => c.evidence_ids))],
-    answer_key_support: answerKeySupport
+    sourceIds: [...new Set(claims.flatMap(c => c.evidenceIds))],
+    answerKeySupported: isQuestion ? contextPack.evidence.some(e => ['gold_question', 'official_exam', 'guideline'].includes(e.sourceType)) : undefined
   };
-}
-
-/**
- * Scores the grounding of the output (Legacy support / internal scoring).
- */
-export function scoreGrounding(
-  output: GroundedOutput,
-  contextPack: EvidenceContextPack
-): GroundingScore {
-  return output.grounding;
 }

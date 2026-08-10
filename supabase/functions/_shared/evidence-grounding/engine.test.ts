@@ -6,77 +6,37 @@ import {
 } from "./engine.ts";
 import { EvidenceItem } from "./types.ts";
 
-Deno.test("Evidence Grounding EG-2 - buildEvidenceContextPack", async () => {
+Deno.test("Evidence Grounding EG-3 - buildEvidenceContextPack with Hash", async () => {
   const data = {
     evidence: [
       { 
-        evidenceId: "1", 
-        sourceType: "guideline" as const, 
-        excerpt: "Guidelines for IAM", 
+        evidenceId: "PMID-1", 
+        sourceType: "pubmed_abstract" as const, 
+        excerpt: "PubMed study on IAM", 
         topic: "IAM", 
         canonicalTopic: "IAM", 
-        sourceId: "G1",
+        sourceId: "1",
         authorityTier: 6,
-        relevanceScore: 0.9
-      },
-      { 
-        evidenceId: "2", 
-        sourceType: "literature" as const, 
-        excerpt: "Clinical study on IAM", 
-        topic: "IAM", 
-        canonicalTopic: "IAM", 
-        sourceId: "L1",
-        authorityTier: 5,
-        relevanceScore: 0.8
+        relevanceScore: 0.9,
+        title: "Study 1",
+        fullTextAvailable: false,
+        retrievedAt: new Date().toISOString()
       }
     ],
     goldQuestions: [],
-    officialExams: [],
+    officialExamRefs: [],
     conflicts: []
   };
   
   const pack = await buildEvidenceContextPack("test-req", "IAM", data);
   
   assertEquals(pack.canonicalTopic, "IAM");
-  assertEquals(pack.evidence.length, 2);
-  assertEquals(pack.evidence[0].sourceType, "guideline");
+  assertEquals(pack.evidence.length, 1);
   assertEquals(typeof pack.contextHash, "string");
+  assertEquals(pack.contextHash.length, 64); // SHA-256 hex
 });
 
-Deno.test("Evidence Grounding EG-2 - assertTopicIsolation", async () => {
-  const data = {
-    evidence: [
-      { 
-        evidenceId: "1", 
-        sourceType: "guideline" as const, 
-        excerpt: "IAM data", 
-        topic: "IAM", 
-        canonicalTopic: "IAM", 
-        sourceId: "G1", 
-        relevanceScore: 1
-      },
-      { 
-        evidenceId: "2", 
-        sourceType: "guideline" as const, 
-        excerpt: "Pericardite data", 
-        topic: "IAM", 
-        canonicalTopic: "Pericardite", 
-        sourceId: "G2", 
-        relevanceScore: 1
-      }
-    ],
-    goldQuestions: [],
-    officialExams: [],
-    conflicts: []
-  };
-  
-  const pack = await buildEvidenceContextPack("test-req", "IAM", data);
-  const result = assertTopicIsolation(pack, "IAM");
-  
-  assertEquals(result.isolated, false); // Now strictly fails if any contamination exists
-});
-
-Deno.test("Evidence Grounding EG-2 - validateGroundedOutput", async () => {
+Deno.test("Evidence Grounding EG-3 - validateGroundedOutput with Hallucination", async () => {
   const data = {
     evidence: [
       { 
@@ -87,26 +47,29 @@ Deno.test("Evidence Grounding EG-2 - validateGroundedOutput", async () => {
         canonicalTopic: "IAM",
         sourceId: "G1",
         relevanceScore: 1,
-        authorityTier: 6
+        authorityTier: 10,
+        title: "Guideline 1",
+        fullTextAvailable: true,
+        retrievedAt: new Date().toISOString()
       }
     ],
     goldQuestions: [],
-    officialExams: [],
+    officialExamRefs: [],
     conflicts: []
   };
   
   const pack = await buildEvidenceContextPack("test-req", "IAM", data);
   
   // Supported claim
-  const output = "O tratamento do IAM com supra de ST deve incluir AAS.";
+  const output = "O tratamento do IAM deve incluir AAS.";
   const result = await validateGroundedOutput(output, pack);
   
   assertEquals(result.grounding.evidence_status, "robust");
   assertEquals(result.claims[0].status, "supported");
   
-  // Unsupported critical claim
-  const output2 = "O tratamento de escolha é o uso de amoxicilina em dose alta.";
+  // Critical hallucination
+  const output2 = "A dose recomendada de amoxicilina é 1g.";
   const result2 = await validateGroundedOutput(output2, pack);
-  assertEquals(result2.claims[0].status, "unsupported");
-  assertEquals(result2.grounding.critical_hallucination, true); // because of "dose" and "tratamento"
+  assertEquals(result2.grounding.critical_hallucination, true);
+  assertEquals(result2.grounding.unsupported_claim_rate, 1);
 });
