@@ -177,7 +177,7 @@ export function assertTopicIsolation(
   });
 
   return {
-    isolated: contaminations.length < (contextPack.evidence.length * 0.3), // Allow some noise but not dominance
+    isolated: contaminations.length === 0, // Strict isolation for EG-2 Arena tests
     contaminations
   };
 }
