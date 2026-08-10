@@ -1,33 +1,58 @@
 export type EvidenceSourceType = 
-  | 'medical_literature' 
-  | 'official_guideline' 
+  | 'literature' 
+  | 'guideline' 
   | 'official_exam' 
   | 'gold_question' 
   | 'validated_corpus'
   | 'validated_question';
 
-export interface EvidenceSource {
-  id: string;
-  type: EvidenceSourceType;
+export interface EvidenceItem {
+  evidenceId: string;
+  sourceType: EvidenceSourceType;
   title?: string;
-  content: string;
-  canonical_topic?: string;
-  metadata?: Record<string, any>;
+  excerpt: string;
+  topic: string;
+  canonicalTopic: string;
+  sourceId: string;
   version?: string;
-  timestamp?: string;
-  gold_tier?: boolean;
+  publicationYear?: number;
+  authorityTier?: number; // Higher number = higher authority
+  relevanceScore: number; // 0-1
+}
+
+export interface EvidenceConflict {
+  sourceA: string;
+  sourceB: string;
+  topic: string;
+  nature: string;
+}
+
+export interface GoldQuestionReference {
+  id: string;
+  correct_answer: string;
+  topic: string;
+  tier: 'GOLD' | 'SILVER';
+}
+
+export interface OfficialExamReference {
+  id: string;
+  institution: string;
+  year: number;
+  topic: string;
 }
 
 export interface EvidenceContextPack {
-  request_id: string;
-  canonical_topic: string;
-  sources: EvidenceSource[];
-  hierarchy: EvidenceSourceType[];
-  metadata: {
-    source_count: number;
-    source_type_counts: Record<string, number>;
-    topic_match_score: number;
-  };
+  requestId: string;
+  canonicalTopic: string;
+  specialty: string;
+  aliases: string[];
+  evidence: EvidenceItem[];
+  goldQuestions: GoldQuestionReference[];
+  officialExamReferences: OfficialExamReference[];
+  conflicts: EvidenceConflict[];
+  retrievalConfidence: number;
+  generatedAt: string;
+  contextHash: string; // Hash of the evidence content to ensure cross-provider parity
 }
 
 export interface ClinicalClaim {
@@ -43,6 +68,7 @@ export interface GroundingScore {
   source_adherence: number;
   unsupported_claims_count: number;
   conflicting_claims_count: number;
+  critical_hallucination: boolean;
   evidence_status: 'robust' | 'sufficient' | 'insufficient_evidence' | 'conflicting_evidence';
 }
 
