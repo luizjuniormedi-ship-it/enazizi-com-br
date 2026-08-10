@@ -149,9 +149,11 @@ const Flashcards = () => {
       setFsrsStates(stateMap);
 
       const now = new Date().toISOString();
+      // HOTFIX 1: Semantic separation. Only cards with FSRS state and due <= now are "DUE".
+      // Cards without FSRS state (!fsrs) are "AVAILABLE/NEW", not "OVERDUE".
       const due = merged.filter((c) => {
         const fsrs = stateMap.get(c.id);
-        return !fsrs || fsrs.due <= now;
+        return fsrs && fsrs.due <= now;
       });
       setDueCards(due);
     } catch (err) {
