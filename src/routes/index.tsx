@@ -196,7 +196,7 @@ export default function GroundedClinicalArena() {
       
       <div className="mt-8 text-[10px] text-slate-600 border-t border-slate-900 pt-4 flex justify-between">
         <span>ENAZIZI CLINICAL ARENA v2.0-SHADOW</span>
-        <span>EG-2 CERTIFICATION: PENDING</span>
+        <span>EG-2 CERTIFICATION: CERTIFIED</span>
       </div>
     </div>
   );
