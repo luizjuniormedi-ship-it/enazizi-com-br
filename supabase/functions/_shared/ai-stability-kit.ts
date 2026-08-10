@@ -245,6 +245,34 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
 }
 
 /**
+ * P0-1: Fallback Contextual por Tema
+ * Evita respostas genéricas em caso de falha da IA.
+ */
+export function getContextualFallback(topic: string): TutorResponse {
+  const staticData = getStaticFallback(topic);
+  if (staticData && staticData.fallback) {
+    return {
+      content: staticData.content,
+      teachingPhase: staticData.teachingPhase || "ENSINAR",
+      socraticQuestion: staticData.socraticQuestion || "",
+      source: "fallback",
+      confidence: 1.0,
+      metadata: staticData
+    };
+  }
+  
+  // Se não encontrar tema específico, usa o safe mode padrão mas loga o gap
+  console.warn(`[TUTOR_FALLBACK_GAP] No specific fallback for topic: ${topic}`);
+  return {
+    content: `### 🏥 Revisão de Segurança: ${topic}\n\nO sistema está operando em modo de contingência para este tema.\n\n**Fundamentos:**\n1. Estabilização e ABCDE.\n2. Avaliação de critérios de gravidade.\n3. Conduta baseada em evidências.\n\n(Aguardando normalização dos provedores de IA para profundidade total).`,
+    teachingPhase: "ENSINAR",
+    socraticQuestion: `Quais são os primeiros passos que você tomaria num caso de ${topic}?`,
+    source: "safe_mode",
+    confidence: 0.4
+  };
+}
+
+/**
  * PROTOCOLO ÚNICO DE RESPOSTA DO TUTOR
  * Garante envelope consistente em TODOS os caminhos (cache, IA, fallback, safe-mode).
  * Use este helper em vez de montar o objeto manualmente.

@@ -12,7 +12,8 @@ export function jsonResponse(body: unknown, status = 200): Response {
 }
 
 export function errorResponse(msg: string, status = 400): Response {
-  return jsonResponse({ success: false, error: msg }, status);
+  const code = status === 401 ? "UNAUTHORIZED" : status === 403 ? "FORBIDDEN" : "ERROR";
+  return jsonResponse({ success: false, error: code, message: msg }, status);
 }
 
 export function getServiceClient(): SupabaseClient {
