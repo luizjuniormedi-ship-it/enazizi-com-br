@@ -143,7 +143,7 @@ async function callClaudeGateway(body: InPayload, modelOverride?: string): Promi
   const { messages, system } = extractUserContent(body);
   const model = modelOverride || body.model || DEFAULT_MODEL;
 
-  const payload: Record<string, unknown> = { model, max_tokens: body.max_tokens ?? 2000, messages };
+  const payload: Record<string, unknown> = { model, max_tokens: body.max_tokens ?? 4096, messages };
   if (system) payload.system = system;
 
   try {
@@ -252,7 +252,7 @@ async function callLovableGateway(body: InPayload): Promise<AttemptResult> {
     const resp = await fetch(LOVABLE_GATEWAY_URL, {
       method: "POST",
       headers: { "content-type": "application/json", "Authorization": `Bearer ${LOVABLE_API_KEY}` },
-      body: JSON.stringify({ model, messages: openaiMessages, max_tokens: body.max_tokens ?? 2000 }),
+      body: JSON.stringify({ model, messages: openaiMessages, max_tokens: body.max_tokens ?? 4096 }),
     });
     const requestId = resp.headers.get("x-lovable-aig-log-id") || resp.headers.get("x-request-id") || undefined;
     const raw = await resp.text();
