@@ -146,6 +146,8 @@ const Historico = lazyWithRetry(() => import("./pages/Historico"), "Historico");
 const DogfoodMonitor = lazyWithRetry(() => import("./pages/DogfoodMonitor"), "DogfoodMonitor");
 
 
+const ProductionObservation = lazyWithRetry(() => import("./pages/admin/ProductionObservation"), "ProductionObservation");
+
 const PageLoader = () => {
   const [timedOut, setTimedOut] = useState(false);
   const mountTime = useRef(Date.now());
@@ -465,6 +467,7 @@ const App = () => (
                 <Route path="drive-corpus" element={<DriveCorpusAdmin />} />
                 <Route path="alpha-cohort" element={<AlphaCohort />} />
                 <Route path="official-outcomes" element={<OfficialOutcomes />} />
+                <Route path="production-observation" element={<ProductionObservation />} />
 
 
 
