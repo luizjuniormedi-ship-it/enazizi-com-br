@@ -642,6 +642,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       totalInputChars: 0,
       contextTrimmed: false,
       trimReason: null as string | null,
+      contract_integrity: {
+        version: "V3.RESTORED",
+        chars_before_transport: pedagogicalHeader.length
+      }
     };
     contextStats.totalInputChars =
       contextStats.pedagogicalChars +
