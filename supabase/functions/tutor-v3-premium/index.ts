@@ -181,6 +181,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     let session = null;
     let topic = newTopic || pedagogicalContext?.topic || body.topic;
     
+    // P0: MEDICAL DOMAIN LOCK (IAM semantic resolution)
+    const medicalRes = resolveMedicalDomain(message || "");
+    if (medicalRes.isMedical && medicalRes.canonical) {
+      console.log(`[P0_MEDICAL_LOCK] Overriding topic "${topic}" with canonical "${medicalRes.canonical}"`);
+      topic = medicalRes.canonical;
+    }
+    
+    
     if (sessionId) {
       const { data, error } = await supabaseAdmin
         .from("tutor_sessions")
@@ -223,7 +231,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     if (qr.isQuestionReview) {
       console.log("[QR_MODE_ACTIVATED]", { reason: qr.reason, signals: qr.signals, partial: qr.partial });
 
-      const qrSystemPrompt = `${PROMPT_COMPLETO}\n\n${buildQRInstruction(qr.context, qr.partial)}`;
+      const qrSystemPrompt = `${PROMPT_COMPLETO}\n\n${buildQRInstruction(qr.context, qr.partial)}\n\nIMPORTANT: Respond strictly in Portuguese (pt-BR).`;
       const qrAiConfig: any = {
         taskType: "tutor_deep",
         complexity: "alta",
