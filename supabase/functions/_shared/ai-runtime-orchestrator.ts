@@ -423,7 +423,20 @@ async function callOnce(
         message: lastUser,
         topic: "Tutor ENAZIZI",
         stream: false,
-        context: { source: "ai-runtime-orchestrator", system_prompt: systemMsg },
+        context: { 
+          source: "ai-runtime-orchestrator", 
+          system_prompt: systemMsg,
+          contract_integrity: {
+            version: "V3.RESTORED",
+            hash_source: await (async () => {
+              const encoder = new TextEncoder();
+              const data = encoder.encode(systemMsg);
+              const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+              return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            })(),
+            chars_at_transport: systemMsg.length
+          }
+        },
       };
       const res = await fetchWithTimeout(
         `${EU_AI_URL}/api/v1/chat`,
