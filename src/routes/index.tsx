@@ -1074,7 +1074,7 @@ EXECUTE WAVE 1 PRIMEIRO.
 Depois prossiga automaticamente pelas waves somente quando
 a wave anterior passar nos critérios de regressão.
 
-vc perdeu todas as diretrizes do tutor ia  resolva iso`;
+vc esta respondendo em ingles no tutor ia pesquise na sua memoria todas as diretizes e organização do tutor ia`;
 
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono p-8 overflow-auto selection:bg-green-500 selection:text-black">
