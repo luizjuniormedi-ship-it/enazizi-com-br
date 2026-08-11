@@ -1000,7 +1000,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     return corsResponse(buildTutorEnvelope(safeResponse, {
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
-      topic: (correlation as any)?.topic || "geral",
+      topic: (err as any).topic || topic || "geral",
       correlation_id: (correlation as any)?.correlationId,
       error: err.message,
       request_id: requestId,
