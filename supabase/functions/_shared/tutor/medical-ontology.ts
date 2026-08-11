@@ -81,6 +81,12 @@ const MEDICAL_REGISTRY: Record<string, MedicalResolution> = {
     specialty: "Infectologia",
     aliases: ["sepse", "sepsis", "choque séptico"],
     priority: 10,
+  },
+  "bronquiolite": {
+    canonical: "Bronquiolite",
+    specialty: "Pediatria",
+    aliases: ["bronquiolite", "bronqueolite", "bronchiolitis"],
+    priority: 10,
   }
 };
 
