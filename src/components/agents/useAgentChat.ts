@@ -307,10 +307,33 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         requestId
       });
 
+      // P0 FIX: `isLoading` era lido do closure obsoleto (sempre false) → watchdog nunca disparava.
+      // Agora usamos um flag local `settled`, atualizado por finalizeLoading().
+      let settled = false;
+
+      // P0 FIX: preflight (persistência/adaptive) rodava FORA de try/finally e sem timeout.
+      // Qualquer hang de rede deixava a UI presa em "pensando" para sempre.
+      const withTimeout = async <T,>(p: Promise<T>, ms: number, label: string): Promise<T | null> => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          return await Promise.race([
+            p,
+            new Promise<never>((_, rej) => {
+              timer = setTimeout(() => rej(new Error(`PREFLIGHT_TIMEOUT_${label}`)), ms);
+            }),
+          ]);
+        } catch (err) {
+          console.warn(`[TUTOR_PREFLIGHT_DEGRADED] ${label}`, err);
+          return null;
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      };
+
       // Watchdog implementation (Hardened: Checks for partial content)
       const watchdogTimeout = setTimeout(() => {
-        if (isLoading) {
-          console.error(`[TUTOR_TIMEOUT] id=${requestId} - Stage: ${loadingStage} - ContentLen: ${assistantSoFar.length}`);
+        if (!settled) {
+          console.error(`[TUTOR_TIMEOUT] id=${requestId} - ContentLen: ${assistantSoFar.length}`);
           
           if (assistantSoFar.length > 50) {
             // We have enough content, just finalize gracefully
@@ -319,6 +342,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             return;
           }
 
+          try { controller.abort(); } catch { /* noop */ }
           finalizeLoading();
           const fallbackMsg = "O Tutor está demorando mais que o esperado para processar esta complexidade médica. Por favor, tente uma pergunta mais específica ou tente novamente em alguns instantes.";
           
@@ -341,12 +365,11 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
       }, 45000); 
 
-
-
-      const convId = await history.ensureConversation(text);
+      const convId = await withTimeout(history.ensureConversation(text), 8000, "ensureConversation");
       if (convId) {
-        await history.persistUserMessage(convId, text);
+        await withTimeout(history.persistUserMessage(convId, text), 8000, "persistUserMessage");
       }
+
 
       let assistantSoFar = "";
       let assistantMsgCreated = false;
@@ -356,8 +379,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       try {
         setLoadingStage("🧠 Verificando memória pedagógica...");
-        const reuse = await memory.lookup(text, user?.id ?? null);
+        const reuse = await withTimeout(memory.lookup(text, user?.id ?? null), 10000, "memoryLookup");
         if (reuse && reuse.markdown) {
+          settled = true;
           clearTimeout(watchdogTimeout);
           setLoadingStage("✨ Recuperando resposta da memória...");
           const md = reuse.markdown;
@@ -371,12 +395,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             memoryScope: reuse.hit.scope,
             memoryBlocks: reuse.hit.blocks,
           }]);
-          if (convId) {
-            await history.persistAssistantMessage(convId, md);
-            history.loadConversations();
-          }
           setIsLoading(false);
           setLoadingStage("");
+          if (convId) {
+            // Persistência NUNCA pode bloquear a liberação da UI.
+            void withTimeout(history.persistAssistantMessage(convId, md), 8000, "persistAssistantMemory")
+              .then(() => history.loadConversations())
+              .catch(() => {});
+          }
           return;
         }
       } catch (err) {
@@ -389,12 +415,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       let adaptiveStatus: "off" | "ok" | "failed" | "skipped" = "off";
 
       if (isAdaptiveEnabled) {
-        const adaptive = await fetchAdaptive({
+        const adaptive = await withTimeout(fetchAdaptive({
           message: text,
           conversationId: convId ?? null,
-        });
-        adaptiveStatus = adaptive.status;
-        adaptiveContext = adaptive.context;
+        }), 12000, "fetchAdaptive");
+        adaptiveStatus = adaptive?.status ?? "failed";
+        adaptiveContext = adaptive?.context;
       }
 
       const applyDelta = (fullText: string, data?: any) => {
@@ -437,6 +463,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       };
 
       const finalizeLoading = () => {
+        settled = true;
         clearTimeout(watchdogTimeout);
         setIsLoading(false);
         // [TUTOR_27_LOADING_FALSE]
@@ -556,6 +583,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           contentLength: result?.content?.length 
         });
 
+        settled = true;
         clearTimeout(watchdogTimeout);
 
         const finalContent = result?.content || assistantSoFar;
@@ -564,6 +592,21 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         // Reset circuit breaker on success
         consecutiveErrorsRef.current = 0;
 
+        // P0: backend pode responder 200 com conteúdo vazio → não deixar a UI muda.
+        if (!finalContent || !finalContent.trim()) {
+          console.error(`[TUTOR_EMPTY_200] id=${requestId} backend respondeu sem conteúdo`);
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.role === "assistant" && !last.content) {
+              return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMessage, isError: true } : m);
+            }
+            return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
+          });
+          setIsLoading(false);
+          setLoadingStage("");
+          return;
+        }
+
         if (metrics) {
           setMessages(prev => prev.map((m, i) => 
             (i === prev.length - 1 && m.role === "assistant") ? { ...m, metrics } : m
@@ -571,8 +614,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
 
         if (convId && finalContent) {
-          await history.persistAssistantMessage(convId, finalContent);
-          history.loadConversations();
+          // Persistência assíncrona: nunca bloqueia a finalização da UI.
+          void withTimeout(history.persistAssistantMessage(convId, finalContent), 8000, "persistAssistant")
+            .then(() => history.loadConversations())
+            .catch(() => {});
         }
 
         if (finalContent && finalContent.trim().length > 0) {
@@ -603,6 +648,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
         });
       } finally {
+        settled = true;
+        clearTimeout(watchdogTimeout);
         setIsLoading(false);
         setLoadingStage("");
         if (abortControllerRef.current === controller) {
