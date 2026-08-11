@@ -1069,12 +1069,7 @@ RLS
 segurança
 qualidade clínica.
 
-EXECUTE WAVE 1 PRIMEIRO.
-
-Depois prossiga automaticamente pelas waves somente quando
-a wave anterior passar nos critérios de regressão.
-
-sua resposta para ave   "AVE" can mean a few things! Could you tell me a little more about what you're referring to?
+faca o teste de uso no tutor ia
 
 It commonly means:
 
