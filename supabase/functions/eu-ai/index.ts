@@ -27,7 +27,7 @@ const EU_AI_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-producti
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const LOVABLE_DEFAULT_MODEL = Deno.env.get("LOVABLE_DEFAULT_MODEL") || "google/gemini-2.0-flash";
+const LOVABLE_DEFAULT_MODEL = Deno.env.get("LOVABLE_DEFAULT_MODEL") || "google/gemini-2.5-flash";
 
 // P0-2: MODEL REGISTRY - Centralizando modelos válidos para o gateway
 const AI_MODELS = {
