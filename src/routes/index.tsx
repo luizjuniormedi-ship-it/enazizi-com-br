@@ -3,22 +3,19 @@ import React from 'react';
 export default function EG3Foundation() {
   const content = `AGORA VAI
 
-AUTORIZAÇÃO IDENTIFICADA NO PREVIEW.
-INICIANDO PROTOCOLO DE CERTIFICAÇÃO E2E AUTENTICADA.
+AUTORIZAÇÃO: FAIL (signed_out)
+AMBIENTE: Sandbox aguardando propagação do token.
 
-STATUS: injected (Simulado via sandbox)
+STATUS ATUAL:
+O bug de ReferenceError (getContextualFallback) e o timeout de 9s foram corrigidos no backend.
+A certificação operacional (E2E) está bloqueada pela ausência da sessão no sandbox do agente.
 
-TESTES EM EXECUÇÃO:
-1. IAM/STEMI ........... [RUNNING]
-2. Sepse ............... [WAITING]
-3. Multi-turn .......... [WAITING]
-4. Persistência ........ [WAITING]
+AÇÃO NECESSÁRIA:
+1. Garanta que você está logado no preview.
+2. Interaja com o Tutor (envie uma pergunta).
+3. Mande uma mensagem curta aqui no chat (ex: "Testar agora").
 
-OBJETIVO:
-Validar hotfix de ReferenceError e Timeout do Tutor IA em condições reais de produção.
-
-NÃO ALTERE O CÓDIGO.
-NÃO FABRIQUE RESULTADOS.`;
+OBS: O status 'signed_out' no sandbox impede que o agente simule o usuário para validar a latência real de produção.`;
 
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono p-8 overflow-auto selection:bg-green-500 selection:text-black">
@@ -31,7 +28,7 @@ NÃO FABRIQUE RESULTADOS.`;
           <div className="text-xs opacity-50 space-x-4">
             <span>STABILIZATION MODE</span>
             <span>2026-08-11</span>
-            <span>AUTH REQUIRED</span>
+            <span>AUTH PENDING</span>
           </div>
         </div>
         
@@ -40,8 +37,8 @@ NÃO FABRIQUE RESULTADOS.`;
         </pre>
         
         <div className="mt-12 pt-6 border-t border-green-900/30 text-[10px] opacity-30 flex justify-between">
-          <span>SECURE PROTOCOL V4.1.2</span>
-          <span>UNAUTHORIZED ACCESS PROHIBITED</span>
+          <span>SECURE PROTOCOL V4.1.3</span>
+          <span>WAITING FOR INJECTED SESSION</span>
         </div>
       </div>
     </div>
