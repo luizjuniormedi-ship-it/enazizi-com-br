@@ -81,6 +81,12 @@ export interface AIRunInput extends AISelectInput {
   preferEuAI?: boolean;
   /** When provided, log row is written via this Supabase client. */
   supabase?: any;
+  /** BENCHMARK MODE: When true, disables fallback and requires exact model match. */
+  benchmarkMode?: boolean;
+  /** Override the selected model. */
+  modelOverride?: string;
+  /** Override the provider. */
+  providerOverride?: "lovable-ai" | "openai" | "eu-ai" | "anthropic";
 }
 
 export interface AIRunResult {
