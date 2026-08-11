@@ -367,6 +367,9 @@ async function callOnce(
   maxTokens: number = AI_MAX_TOKENS,
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
+  const traceId = crypto.randomUUID();
+  console.log(`[AI_TRACE_START] ${traceId} provider=${ref.provider} model=${ref.model}`);
+
   try {
     // ---- Branch: anthropic (Claude via hudapi.cloud / OpenAI-compatible proxy) ----
     if (ref.provider === "anthropic") {
