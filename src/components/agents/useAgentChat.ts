@@ -379,8 +379,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       try {
         setLoadingStage("🧠 Verificando memória pedagógica...");
-        const reuse = await memory.lookup(text, user?.id ?? null);
+        const reuse = await withTimeout(memory.lookup(text, user?.id ?? null), 10000, "memoryLookup");
         if (reuse && reuse.markdown) {
+          settled = true;
           clearTimeout(watchdogTimeout);
           setLoadingStage("✨ Recuperando resposta da memória...");
           const md = reuse.markdown;
@@ -394,12 +395,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             memoryScope: reuse.hit.scope,
             memoryBlocks: reuse.hit.blocks,
           }]);
-          if (convId) {
-            await history.persistAssistantMessage(convId, md);
-            history.loadConversations();
-          }
           setIsLoading(false);
           setLoadingStage("");
+          if (convId) {
+            // Persistência NUNCA pode bloquear a liberação da UI.
+            void withTimeout(history.persistAssistantMessage(convId, md), 8000, "persistAssistantMemory")
+              .then(() => history.loadConversations())
+              .catch(() => {});
+          }
           return;
         }
       } catch (err) {
@@ -412,12 +415,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       let adaptiveStatus: "off" | "ok" | "failed" | "skipped" = "off";
 
       if (isAdaptiveEnabled) {
-        const adaptive = await fetchAdaptive({
+        const adaptive = await withTimeout(fetchAdaptive({
           message: text,
           conversationId: convId ?? null,
-        });
-        adaptiveStatus = adaptive.status;
-        adaptiveContext = adaptive.context;
+        }), 12000, "fetchAdaptive");
+        adaptiveStatus = adaptive?.status ?? "failed";
+        adaptiveContext = adaptive?.context;
       }
 
       const applyDelta = (fullText: string, data?: any) => {
