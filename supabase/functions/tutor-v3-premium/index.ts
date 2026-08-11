@@ -189,7 +189,6 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       topic = medicalRes.canonical;
     }
     
-    
     if (sessionId) {
       const { data, error } = await supabaseAdmin
         .from("tutor_sessions")
@@ -199,7 +198,15 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       
       if (!error && data) {
         session = data;
-        if (!topic) topic = session?.topic;
+        
+        // P0: TOPIC LOCK - If session has a locked topic, prioritize it to prevent drift
+        // unless a "newTopic" was explicitly provided.
+        if (session.topic && !newTopic) {
+          console.log(`[P0_TOPIC_LOCK] Using session locked topic: ${session.topic}`);
+          topic = session.topic;
+        } else if (!topic) {
+          topic = session.topic;
+        }
       }
     }
     mark("sessionMs");
