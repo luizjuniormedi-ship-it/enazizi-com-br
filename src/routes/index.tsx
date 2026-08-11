@@ -942,12 +942,12 @@ EXECUTE.`;
         <div className="flex justify-between items-center mb-12 border-b border-green-900/50 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-            <h1 className="text-2xl font-bold tracking-tighter">WAR ROOM — PERFORMANCE RECOVERY</h1>
+            <h1 className="text-2xl font-bold tracking-tighter">WAR ROOM — AI PERFORMANCE RECOVERY V2</h1>
           </div>
           <div className="text-xs opacity-50 space-x-4">
-            <span>AI PERFORMANCE RECOVERY V1</span>
+            <span>AI PERFORMANCE RECOVERY V2</span>
             <span>2026-08-11</span>
-            <span>WAVE 1 ACTIVE</span>
+            <span>WAVE 1 PENDING</span>
           </div>
         </div>
         
