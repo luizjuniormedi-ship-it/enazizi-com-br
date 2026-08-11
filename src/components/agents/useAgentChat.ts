@@ -307,10 +307,33 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         requestId
       });
 
+      // P0 FIX: `isLoading` era lido do closure obsoleto (sempre false) → watchdog nunca disparava.
+      // Agora usamos um flag local `settled`, atualizado por finalizeLoading().
+      let settled = false;
+
+      // P0 FIX: preflight (persistência/adaptive) rodava FORA de try/finally e sem timeout.
+      // Qualquer hang de rede deixava a UI presa em "pensando" para sempre.
+      const withTimeout = async <T,>(p: Promise<T>, ms: number, label: string): Promise<T | null> => {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          return await Promise.race([
+            p,
+            new Promise<never>((_, rej) => {
+              timer = setTimeout(() => rej(new Error(`PREFLIGHT_TIMEOUT_${label}`)), ms);
+            }),
+          ]);
+        } catch (err) {
+          console.warn(`[TUTOR_PREFLIGHT_DEGRADED] ${label}`, err);
+          return null;
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      };
+
       // Watchdog implementation (Hardened: Checks for partial content)
       const watchdogTimeout = setTimeout(() => {
-        if (isLoading) {
-          console.error(`[TUTOR_TIMEOUT] id=${requestId} - Stage: ${loadingStage} - ContentLen: ${assistantSoFar.length}`);
+        if (!settled) {
+          console.error(`[TUTOR_TIMEOUT] id=${requestId} - ContentLen: ${assistantSoFar.length}`);
           
           if (assistantSoFar.length > 50) {
             // We have enough content, just finalize gracefully
@@ -319,6 +342,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             return;
           }
 
+          try { controller.abort(); } catch { /* noop */ }
           finalizeLoading();
           const fallbackMsg = "O Tutor está demorando mais que o esperado para processar esta complexidade médica. Por favor, tente uma pergunta mais específica ou tente novamente em alguns instantes.";
           
@@ -341,12 +365,11 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
       }, 45000); 
 
-
-
-      const convId = await history.ensureConversation(text);
+      const convId = await withTimeout(history.ensureConversation(text), 8000, "ensureConversation");
       if (convId) {
-        await history.persistUserMessage(convId, text);
+        await withTimeout(history.persistUserMessage(convId, text), 8000, "persistUserMessage");
       }
+
 
       let assistantSoFar = "";
       let assistantMsgCreated = false;
