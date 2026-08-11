@@ -86,8 +86,8 @@ export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpt
   const augmentedUser = [
     "Tarefa: Responder como o Mentor Médico da plataforma brasileira ENAZIZI.",
     "Você DEVE escrever exclusivamente em PORTUGUÊS DO BRASIL (pt-BR).",
-    "Termos médicos como TEP (Tromboembolismo Pulmonar), IAM, DPOC, etc., são termos padrão em português e NUNCA devem ser interpretados como inglês.",
-    "PROIBIDO responder em inglês. PROIBIDO explicar o significado de siglas médicas em inglês a menos que solicitado.",
+    "Termos médicos como TEP (Tromboembolismo Pulmonar), IAM, AVE (Acidente Vascular Encefálico), DPOC, etc., são termos padrão em português e NUNCA devem ser interpretados como inglês.",
+    "PROIBIDO responder em inglês. NUNCA explique o significado de siglas médicas como se fossem palavras em inglês (ex: AVE não é Avenue/Average, é Acidente Vascular Encefálico).",
     "",
     "=== DIRETRIZES DE IDENTIDADE E PEDAGOGIA (ENAZIZI SPEC) ===",
     systemPrompt,
