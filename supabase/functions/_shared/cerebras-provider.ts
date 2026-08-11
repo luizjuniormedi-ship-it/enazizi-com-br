@@ -68,7 +68,7 @@ function env(name: string): string | undefined {
 }
 
 export function getCerebrasApiKey(explicit?: string): string | null {
-  const key = explicit || env("CEREBRAS_API_KEY");
+  const key = explicit || env("CEREBRAS_API_KEY") || env("CEREBRAS");
   return key && key.trim().length > 0 ? key.trim() : null;
 }
 
