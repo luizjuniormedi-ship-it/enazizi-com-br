@@ -8,7 +8,7 @@ AUDITORIA DE CÓDIGO FINALIZADA
 ESTADO ATUAL:
 1. P0 Hotfix: Aplicado (getContextualFallback importado, timeout 42s).
 2. P0 Modelos: Aplicado (aliases Claude-3.5-sonnet-latest).
-3. P0 Auth: Sandbox signed_out (Bloqueio de certificação E2E).
+3. P0 Provider Test: NVIDIA (Llama 3.1 8B) forçado como primário para o Tutor.
 
 DIAGNÓSTICO TÉCNICO:
 A "tela branca" ou falha no Tutor IA em produção foi sanada pelo hotfix de importação 
