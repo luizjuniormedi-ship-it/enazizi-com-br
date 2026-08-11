@@ -33,14 +33,21 @@ export function useTutorV2Messages(sessionId?: string) {
         { event: 'INSERT', schema: 'public', table: 'tutor_messages', filter: `tutor_session_id=eq.${sessionId}` },
         (payload) => {
           setMessages(prev => {
-            const exists = prev.some(m => m.id === payload.new.id);
+            const requestId = payload.new.metadata?.request_id || payload.new.id;
+            
+            // 1. Dedupe by canonical ID
+            const exists = prev.some(m => 
+              m.id === payload.new.id || 
+              (m.metadata?.request_id && m.metadata.request_id === requestId) ||
+              (m.id === requestId)
+            );
             if (exists) return prev;
-
-            // Filtro de duplicatas por conteúdo (proteção extra para streaming/race conditions)
+ 
+            // 2. Dedupe by content hash (safety for older messages or missing metadata)
             const isContentDuplicate = prev.some(m => 
               m.role === payload.new.role && 
               m.content === payload.new.content && 
-              Math.abs(new Date(m.created_at).getTime() - new Date(payload.new.created_at).getTime()) < 2000
+              Math.abs(new Date(m.created_at).getTime() - new Date(payload.new.created_at).getTime()) < 10000
             );
             if (isContentDuplicate) return prev;
 
