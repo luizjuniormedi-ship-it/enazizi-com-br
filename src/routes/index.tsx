@@ -1069,14 +1069,10 @@ RLS
 segurança
 qualidade clínica.
 
-faca o teste de uso no tutor ia
+EXECUTE WAVE 1 PRIMEIRO.
 
-It commonly means:
-
-A greeting: (From Latin) meaning "Hail!" or "Hello!" (e.g., "Ave Caesar!").
-An abbreviation for "Avenue": (e.g., "5th Ave").
-An abbreviation for "Average": (less common than "avg.", but sometimes used).
-Let me know if one of these fits, or if it's something else!`;
+Depois prossiga automaticamente pelas waves somente quando
+a wave anterior passar nos critérios de regressão.`;
 
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono p-8 overflow-auto selection:bg-green-500 selection:text-black">
