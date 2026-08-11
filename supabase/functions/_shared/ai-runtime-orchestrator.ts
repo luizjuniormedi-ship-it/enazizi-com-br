@@ -500,6 +500,8 @@ async function callOnce(
     }
     const content = parsed?.choices?.[0]?.message?.content;
     if (!content || typeof content !== "string") {
+      const latency_ms = Date.now() - start;
+      console.log(`[AI_TRACE_END] ${traceId} success=false code=AI_EMPTY_RESPONSE latency=${latency_ms}ms`);
       return {
         attempt: {
           ...ref,
@@ -511,6 +513,10 @@ async function callOnce(
         },
       };
     }
+    const latency_ms = Date.now() - start;
+    console.log(`[AI_TRACE_END] ${traceId} success=true latency=${latency_ms}ms`);
+    return { content, usage: parsed?.usage, attempt: { ...ref, success: true, status: res.status, latency_ms } };
+
     return {
       content,
       usage: parsed?.usage,
