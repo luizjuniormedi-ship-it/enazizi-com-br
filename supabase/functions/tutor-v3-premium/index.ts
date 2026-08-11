@@ -182,9 +182,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     let topic = newTopic || pedagogicalContext?.topic || body.topic;
     
     // P0: MEDICAL DOMAIN LOCK (IAM semantic resolution)
-    const medicalRes = resolveMedicalDomain(message || "");
+    // Fix: If topic is provided, try to resolve its canonical version immediately.
+    const medicalRes = resolveMedicalDomain(topic || message || "");
     if (medicalRes.isMedical && medicalRes.canonical) {
-      console.log(`[P0_MEDICAL_LOCK] Overriding topic "${topic}" with canonical "${medicalRes.canonical}"`);
+      console.log(`[P0_MEDICAL_LOCK] Resolved topic "${topic || message}" to canonical "${medicalRes.canonical}"`);
       topic = medicalRes.canonical;
     }
     
@@ -799,9 +800,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         aiTimings.fallbackMs = Math.round(performance.now() - fbStart);
         const fbReason = openaiErr?.message?.slice(0, 200) || "unknown";
         if (fbReason.includes("_TIMEOUT")) aiTimings.timedOut = true;
-        console.warn("[TUTOR_AI_UNAVAILABLE]", { fbReason });
-        // Re-throw para cair no safe_mode existente (preserva contrato)
-        throw new Error(`AI_UNAVAILABLE:${fbReason}`);
+        console.warn("[TUTOR_AI_UNAVAILABLE]", { fbReason, topic });
+        // Re-throw with topic context preserved for fallback
+        const err = new Error(`AI_UNAVAILABLE:${fbReason}`);
+        (err as any).topic = topic;
+        throw err;
       }
     }
     aiTimings.totalAiMs = Math.round(performance.now() - aiStart);
@@ -965,13 +968,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
   } catch (err: any) {
     logger.critical("HARDENED_RUNTIME_CRASH", err.message);
     
-    // P0-1: Fallback Contextual (Não-genérico)
-    // Tenta resolver o tópico do corpo original para dar uma resposta útil mesmo em crash
-    let topicForFallback = "Medicina Geral";
-    try {
-      const body = await req.clone().json().catch(() => ({}));
-      topicForFallback = body.topic || "Medicina Geral";
-    } catch { /* ignore */ }
+    // P0 Fix: Use the canonical topic resolved earlier instead of default "Medicina Geral"
+    const topicForFallback = (err as any).topic || topic || "Medicina Geral";
     
     console.log(`[TUTOR_SAFE_MODE] topic=${topicForFallback}`);
     const safeResponse = getContextualFallback(topicForFallback);
@@ -1002,7 +1000,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     return corsResponse(buildTutorEnvelope(safeResponse, {
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
-      topic: (correlation as any)?.topic || "geral",
+      topic: (err as any).topic || topic || "geral",
       correlation_id: (correlation as any)?.correlationId,
       error: err.message,
       request_id: requestId,
