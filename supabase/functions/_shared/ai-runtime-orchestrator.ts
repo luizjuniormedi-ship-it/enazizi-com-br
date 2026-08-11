@@ -423,7 +423,7 @@ async function callOnce(
         message: lastUser,
         topic: "Tutor ENAZIZI",
         stream: false,
-        context: { source: "ai-runtime-orchestrator", system_prompt: systemMsg.slice(0, 2000) },
+        context: { source: "ai-runtime-orchestrator", system_prompt: systemMsg },
       };
       const res = await fetchWithTimeout(
         `${EU_AI_URL}/api/v1/chat`,
