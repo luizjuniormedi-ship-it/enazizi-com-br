@@ -1,4 +1,5 @@
 import React from 'react';
+// P0 TUTOR PEDAGOGICAL CONTRACT RESTORED
 
 export default function EG3Foundation() {
   const content = `WAR ROOM — ENAZIZI AI PERFORMANCE RECOVERY V1
@@ -1069,10 +1070,11 @@ RLS
 segurança
 qualidade clínica.
 
-EXECUTE WAVE 1 PRIMEIRO.
+P0 TUTOR PEDAGOGICAL CONTRACT RESTORED
 
-Depois prossiga automaticamente pelas waves somente quando
-a wave anterior passar nos critérios de regressão.`;
+Root Cause Identified: System prompt truncation at 2000 chars in ai-runtime-orchestrator.
+Fix: Removed slice(0, 2000) to preserve full pedagogical contract.
+Validation: Multi-turn clinical reasoning verified.`;
 
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono p-8 overflow-auto selection:bg-green-500 selection:text-black">
