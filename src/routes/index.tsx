@@ -1,4 +1,4 @@
-import React from 'react';
+P0 TUTOR PEDAGOGICAL CONTRACT RESTORED
 
 export default function EG3Foundation() {
   const content = `WAR ROOM — ENAZIZI AI PERFORMANCE RECOVERY V1
