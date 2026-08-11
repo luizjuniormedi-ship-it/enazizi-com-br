@@ -10,7 +10,7 @@ export const TutorV2Service = {
       pedagogicalInteraction, 
       newTopic,
       currentBlock,
-      topic: newTopic || null, // Ensure topic is passed if it's a new subject
+      topic: newTopic || message || null, // Ensure topic is passed for resolution if it's the first message
       fsrsContext: {},
       masteryState: "initial",
       history: []
