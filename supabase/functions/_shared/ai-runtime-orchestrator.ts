@@ -104,15 +104,14 @@ export interface AIRunResult {
 // Registry inline (Fase 1)
 // ---------------------------------------------------------------------------
 
-// Modelos validados em produção via Lovable AI Gateway.
 // Modelos validados em produção. Prioridade para OpenAI Direto (sem gateway).
 const MODELS = {
   flash: { provider: "openai", model: "gpt-4o" } as ModelRef,
   flashStable: { provider: "openai", model: "gpt-4o" } as ModelRef,
   flashLite: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
   pro: { provider: "openai", model: "gpt-4o" } as ModelRef,
-  gpt5Mini: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
-  gpt5: { provider: "openai", model: "gpt-4o" } as ModelRef,
+  gpt5Mini: { provider: "openai", model: "gpt-5-mini" } as ModelRef, // Permitir tentativa real do gpt-5-mini
+  gpt5: { provider: "openai", model: "gpt-5" } as ModelRef,
   geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
   openaiFallback: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
 };
