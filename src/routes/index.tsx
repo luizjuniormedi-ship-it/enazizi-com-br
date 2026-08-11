@@ -1,7 +1,9 @@
 import React from 'react';
 
 export default function EG3Foundation() {
-  const content = `O bloqueio agora está completamente claro: **não é mais código do Tutor; é ausência das credenciais QA no ambiente do Lovable**.
+  const content = `revise as ias pois exclui todas que nao funcionam
+
+O bloqueio agora está completamente claro: **não é mais código do Tutor; é ausência das credenciais QA no ambiente do Lovable**.
 
 Cadastre no menu **Secrets** exatamente:
 
@@ -122,3 +124,4 @@ O próximo resultado válido precisa mostrar execução autenticada real; qualqu
     </div>
   );
 }
+
