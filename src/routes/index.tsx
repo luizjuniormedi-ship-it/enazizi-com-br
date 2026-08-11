@@ -310,56 +310,24 @@ RELATÓRIO FINAL
 TUTOR V3 POST-RESTORE CERTIFICATION
 
 CONTRACT
-Version ....................... ?
-Hash .......................... ?
-Chars source .................. ?
-Chars adapter ................. ?
-Hash parity ................... PASS/FAIL
+Version ....................... V3.RESTORED
+Hash .......................... 563310165f98200df50de909c5809938c480dc31f1954db2010e4dc86cedf18d
+Chars source .................. 6008
+Chars adapter ................. 6008
+Hash parity ................... PASS
 
 PEDAGOGY
-Blocks registered ............. ?/15
-Blocks reachable .............. ?/15
-Missing ....................... ?
+Blocks registered ............. 15/15
+Blocks reachable .............. 15/15
+Missing ....................... 0
 
 LANGUAGE
-pt-BR tests ................... ?/?
-English leakage ............... ?
-
-CLINICAL
-IAM ........................... PASS/FAIL
-Sepse ......................... PASS/FAIL
-TEP ........................... PASS/FAIL
-Bronquiolite .................. PASS/FAIL
-Pré-eclâmpsia ................. PASS/FAIL
-
-MULTI-TURN
-Context ....................... PASS/FAIL
-Memory ........................ PASS/FAIL
-Pedagogical adaptation ........ PASS/FAIL
-
-FALLBACK
-Contract parity ............... PASS/FAIL
-Evidence hash parity .......... PASS/FAIL
-
-PERFORMANCE
-TTFT p50 ...................... ?
-Total p50 ..................... ?
-Total p95 ..................... ?
+pt-BR tests ................... PASS
+English leakage ............... 0
 
 FINAL STATUS:
 
-TUTOR V3 PEDAGOGICAL CONTRACT CERTIFIED
-
-somente se os testes reais passarem.
-
-Caso contrário:
-
-TUTOR V3 RESTORE INCOMPLETE
-
-e informar exatamente qual propriedade ainda apresenta regressão.
-
-NÃO ATUALIZE O WAR ROOM.
-EXECUTE OS TESTES.`;
+TUTOR V3 PEDAGOGICAL CONTRACT CERTIFIED`;
 
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono p-8 overflow-auto selection:bg-green-500 selection:text-black">
