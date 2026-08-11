@@ -1,4 +1,4 @@
-import { resolveTopicGranularity } from "../_shared/topic-fidelity/topic-resolver.ts";
+import { resolveTopicGranularity } from "../topic-fidelity/topic-resolver.ts";
 
 /**
  * TUTOR MEDICAL ONTOLOGY — ENAZIZI P0 LOCK
