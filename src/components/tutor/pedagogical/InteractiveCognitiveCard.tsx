@@ -11,7 +11,7 @@ interface InteractiveCognitiveCardProps {
   comprehensionScore?: number;
 }
 
-export function InteractiveCognitiveCard({ onAction, comprehensionScore = 85 }: InteractiveCognitiveCardProps) {
+export function InteractiveCognitiveCard({ onAction, comprehensionScore }: InteractiveCognitiveCardProps) {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
@@ -65,20 +65,22 @@ export function InteractiveCognitiveCard({ onAction, comprehensionScore = 85 }: 
           onClick={() => onAction('simplify')} 
         />
         
-        {/* State Indicator */}
-        <div className="flex flex-col justify-center px-6 py-4 rounded-3xl bg-white/5 border border-white/5">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">Entendimento</span>
-            <span className="text-[10px] font-bold text-primary">{comprehensionScore}%</span>
+        {/* State Indicator - Rendered only if comprehensionScore is provided by the medical engine */}
+        {typeof comprehensionScore === 'number' && (
+          <div className="flex flex-col justify-center px-6 py-4 rounded-3xl bg-white/5 border border-white/5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-white/40">Entendimento</span>
+              <span className="text-[10px] font-bold text-primary">{comprehensionScore}%</span>
+            </div>
+            <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${comprehensionScore}%` }}
+                className="h-full bg-primary"
+              />
+            </div>
           </div>
-          <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${comprehensionScore}%` }}
-              className="h-full bg-primary"
-            />
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 opacity-30">

@@ -250,6 +250,7 @@ export default function TutorV2MessageList({ messages, isTyping, lessonComplete 
               {msg.role === "assistant" && idx === messages.length - 1 && !isTyping && !isLessonCompleteMessage && (
                 <div className="mt-8">
                   <InteractiveCognitiveCard 
+                    comprehensionScore={msg.metadata?.comprehensionScore}
                     onAction={(action) => {
                       if (onIncrementalAction) onIncrementalAction(action);
                     }}

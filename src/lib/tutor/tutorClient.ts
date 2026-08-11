@@ -18,18 +18,11 @@ export async function callTutorV3(payload: any, options: {
   console.log(`[TUTOR_V3_OFFICIAL_CLIENT_CALL] id=${requestId} func=${functionName}`);
 
   // ═══════════════════════════════════════════════════════════
-  // EU (Claude via Railway) — PRIMARY. Supabase = FALLBACK.
-  // Only for non-streaming requests (Railway API is JSON, not SSE).
+  // P0 REWIRE: O motor médico (tutor-v3-premium) DEVE ser o entrypoint.
+  // O eu-ai (Railway/Claude) NUNCA deve ser chamado diretamente pelo frontend
+  // para fluxos pedagógicos, pois ignora a ontologia médica e o grounding.
   // ═══════════════════════════════════════════════════════════
-  if (!options.stream) {
-    const euReq = mapToEURequest(functionName, payload);
-    if (euReq) {
-      const euData = await tryEU(euReq.path, euReq.body);
-      if (euData && (euData as any).message) {
-        return euToSupabaseResponse(functionName, euData as any);
-      }
-    }
-  }
+  // tryEU bypass removed to restore architectural integrity.
 
   
   try {
