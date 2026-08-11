@@ -30,7 +30,7 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-5-sonnet-latest',
         max_tokens: 100,
         messages: [
           { role: 'user', content: 'Diga oi em portugues' }
