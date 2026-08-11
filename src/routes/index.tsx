@@ -1,61 +1,381 @@
 import React from 'react';
 
 export default function EG3Foundation() {
-  const content = `WAR ROOM — EXACT PROVIDER PREFLIGHT
+  const content = `WAR ROOM — FINAL BENCHMARK RECOVERY
+PHASE A — DATASET FREEZE + VALID PROVIDERS EXECUTION
+
+OBJETIVO
+
+Preservar a validade científica do FINAL REAL AI ROUTING BENCHMARK enquanto os providers Google/OpenAI são regularizados.
+
+NÃO retomar a execução indiscriminada das 450 chamadas.
+
+Executar duas trilhas independentes:
+
+TRACK A
+Freeze definitivo do benchmark dataset.
+
+TRACK B
+Execução real apenas dos providers atualmente válidos:
+- NVIDIA meta/llama-3.1-8b-instruct
+- Cerebras gpt-oss-120b
+
+Em paralelo, diagnosticar Google/OpenAI sem usar fallback.
 
 ==================================================
-RESULTADOS DO PREFLIGHT (GATE 0)
+1 — FREEZE DO DATASET
 ==================================================
 
-1. google/gemini-2.5-flash
-   Status: FAIL
-   Requested: google/gemini-2.5-flash
-   Effective: GPT-4o fallback
-   Original Error: [402] Quota exceeded on Google Cloud Project
-   Action: Invalidated
+Construir definitivamente os 30 casos clínicos.
 
-2. openai/gpt-5-mini
-   Status: FAIL
-   Requested: openai/gpt-5-mini
-   Effective: GPT-4o
-   Original Error: [404] Model gpt-5-mini not found in this organization
-   Action: Invalidated
+Para cada caso gerar uma única vez:
 
-3. google/gemini-2.5-pro
-   Status: FAIL
-   Requested: google/gemini-2.5-pro
-   Effective: GPT-4o fallback
-   Original Error: [402] Quota exceeded
-   Action: Invalidated
+Canonical Topic
+Evidence Retrieval
+Internal Corpus
+GOLD
+Official Exams
+Guidelines
+PubMed
+Content pack metadata
 
-4. nvidia/meta/llama-3.1-8b-instruct
-   Status: PASS
-   Requested: nvidia/meta/llama-3.1-8b-instruct
-   Effective: meta/llama-3.1-8b-instruct
-   Latency: 1240ms
-   Action: VALID
+Criar os três tasks:
 
-5. cerebras/gpt-oss-120b
-   Status: PASS
-   Requested: cerebras/gpt-oss-120b
-   Effective: gpt-oss-120b
-   Latency: 853ms
-   Action: VALID
+QUESTION_GENERATION
+TUTOR
+CLINICAL_SIMULATION
+
+Resultado esperado:
+
+30 casos
+x
+3 tasks
+
+= 90 benchmark units.
+
+Cada unit deve possuir:
+
+benchmark_dataset_version
+case_id
+task_id
+context_pack_id
+context_hash
+canonical_topic
+evidence_ids
+PMIDs
+PMCIDs
+gold_question_ids
+official_exam_refs
+retrieval_timestamp
+
+Definir:
+
+benchmark_dataset_version =
+FINAL_ROUTING_V1
+
+Depois do freeze:
+
+NÃO executar novo retrieval individual por provider.
+
+Todos os providers atuais ou futuros deverão usar exatamente esses mesmos 90 context_hashes.
 
 ==================================================
-ROOT CAUSE ANALYSIS (P0)
+2 — DATASET IMMUTABILITY
 ==================================================
-A infraestrutura 'ai-runtime-orchestrator' estava configurada com cadeias de fallback agressivas que mascaravam erros de cota e indisponibilidade de modelos, redirecionando silenciosamente para GPT-4o.
+
+Depois de congelado:
+
+context_hash não pode mudar.
+
+Se qualquer EvidenceContextPack mudar:
+
+BENCHMARK_DATASET_MUTATION
+
+e bloquear comparação.
+
+Criar checksum global do dataset:
+
+dataset_hash
+
+Todos os providers devem informar:
+
+dataset_version = FINAL_ROUTING_V1
+dataset_hash = SAME
 
 ==================================================
-CORREÇÕES APLICADAS
+3 — EXECUTAR NVIDIA
 ==================================================
-1. Implementado 'benchmarkMode: true' no Orchestrator.
-2. Desabilitado 'cross-provider fallback' quando em modo benchmark.
-3. Forçada identidade estrita: requested_model === effective_model.
-4. Interrompida a execução dos 450 casos até a regularização das identidades 1, 2 e 3.
 
-STATUS ATUAL: FINAL BENCHMARK = NOT CERTIFIED / PREFLIGHT = FAILED`;
+Executar:
+
+90 primary executions
+
+Provider:
+NVIDIA
+
+Requested:
+meta/llama-3.1-8b-instruct
+
+Require:
+
+requested_model == effective_model
+
+Sem cross-provider fallback.
+
+Medir todos os hard gates EG-3.
+
+==================================================
+4 — EXECUTAR CEREBRAS
+==================================================
+
+Executar:
+
+90 primary executions
+
+Provider:
+Cerebras
+
+Requested:
+gpt-oss-120b
+
+Require:
+
+requested_model == effective_model
+
+Contrato:
+
+content present
+→ COMPLETE
+
+content empty + reasoning present
+→ INCOMPLETE_GENERATION
+
+Nunca:
+
+reasoning → final answer.
+
+Retry controlado é permitido.
+
+Fallback para outro provider:
+
+PROIBIDO PARA SCORE.
+
+==================================================
+5 — EXECUTION COUNT
+==================================================
+
+Ao final desta fase exigir:
+
+NVIDIA primary executions .... 90
+Cerebras primary executions .. 90
+
+Total primary real ........... 180
+
+Retries devem ser contados separadamente.
+
+==================================================
+6 — GOOGLE ACCESS DIAGNOSTIC
+==================================================
+
+NÃO usar fallback.
+
+Diagnosticar separadamente:
+
+gemini-2.5-flash
+gemini-2.5-pro
+
+Descobrir:
+
+client utilizado
+endpoint
+credential source
+project
+requested model
+original HTTP
+original error
+gateway involved?
+fallback involved?
+quota source
+quota scope
+
+Verificar se a chamada está passando por:
+
+Lovable AI Gateway
+ou
+Google provider direto.
+
+Não revelar secrets.
+
+Retornar somente metadata segura.
+
+Se existir capacidade de consulta do catálogo de modelos com a credencial atual:
+
+listar somente os IDs de modelos disponíveis.
+
+Não inventar disponibilidade.
+
+==================================================
+7 — OPENAI ACCESS DIAGNOSTIC
+==================================================
+
+NÃO usar fallback.
+
+Diagnosticar:
+
+requested:
+gpt-5-mini
+
+Retornar:
+
+endpoint
+organization/project context se disponível sem segredo
+requested model
+original HTTP
+original error
+model visible in available model catalogue?
+alias involved?
+gateway involved?
+fallback involved?
+
+Se gpt-5-mini NÃO estiver disponível na credencial atual:
+
+NÃO mapear para GPT-4o.
+
+Listar quais modelos OpenAI estão REALMENTE acessíveis à credencial de benchmark.
+
+A substituição de candidato requer decisão explícita posterior.
+
+==================================================
+8 — NÃO ALTERAR ROTEAMENTO PRODUTIVO
+==================================================
+
+Nenhuma dessas ações pode modificar:
+
+Tutor
+Simulado
+Question Generator
+Plantão
+Flashcards
+Planner
+Production Router
+Feature Flags
+Landing
+Dashboard
+RLS
+
+==================================================
+9 — GROUNDING HARD GATES
+==================================================
+
+Para NVIDIA e Cerebras:
+
+Grounding < 0.90
+→ FAIL
+
+Unsupported Claim Rate > 0.05
+→ FAIL
+
+Critical Hallucination > 0
+→ FAIL
+
+Unsupported Answer Key
+→ FAIL
+
+Exact Topic failure
+→ FAIL
+
+Sibling contamination relevante
+→ FAIL
+
+Evidence conflict crítico ignorado
+→ FAIL
+
+==================================================
+10 — RESULTADO PARCIAL
+==================================================
+
+Gerar:
+
+WAR ROOM — FINAL BENCHMARK RECOVERY
+
+Dataset
+--------------------------------
+Version ................ FINAL_ROUTING_V1
+Cases .................. 30
+Tasks .................. 90
+Dataset frozen ......... YES/NO
+Dataset hash ........... <hash>
+Context hashes frozen .. 90/90
+
+NVIDIA
+--------------------------------
+Primary executions ..... ?/90
+Effective identity ..... PASS/FAIL
+Success rate ........... ?
+Hard-gate pass ......... ?
+Grounding .............. ?
+Unsupported claims ..... ?
+Critical hallucinations ?
+Topic fidelity ......... ?
+Answer key support ..... ?
+p50 .................... ?
+p95 .................... ?
+429 .................... ?
+5xx .................... ?
+
+Cerebras
+--------------------------------
+Primary executions ..... ?/90
+Effective identity ..... PASS/FAIL
+Success rate ........... ?
+Hard-gate pass ......... ?
+Grounding .............. ?
+Unsupported claims ..... ?
+Critical hallucinations ?
+Topic fidelity ......... ?
+Answer key support ..... ?
+p50 .................... ?
+p95 .................... ?
+Incomplete generation .. ?
+Retries ................. ?
+
+Google Diagnostic
+--------------------------------
+Gemini Flash ........... AVAILABLE/BLOCKED
+Gemini Pro ............. AVAILABLE/BLOCKED
+Root cause ............. ?
+Gateway ................ DIRECT/INTERMEDIATE
+Required correction .... ?
+
+OpenAI Diagnostic
+--------------------------------
+GPT-5 Mini ............. AVAILABLE/UNAVAILABLE
+Root cause ............. ?
+Gateway ................ DIRECT/INTERMEDIATE
+Accessible models ...... [...]
+
+==================================================
+CERTIFICATION
+==================================================
+
+NÃO declarar FINAL BENCHMARK CERTIFIED.
+
+Nesta fase o status máximo é:
+
+PARTIAL REAL BENCHMARK COMPLETE
+WAITING FOR GOOGLE/OPENAI
+
+Somente depois que todos os candidatos aprovados forem executados contra FINAL_ROUTING_V1 será possível produzir o ranking final.
+
+==================================================
+REGRA FINAL
+==================================================
+
+Não mudar o EvidenceContextPack depois do freeze.
+
+Isso é essencial.
+
+Quando Google/OpenAI forem regularizados, deverão competir exatamente contra os mesmos context_hashes já utilizados por NVIDIA e Cerebras.`;
 
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono p-8 overflow-auto selection:bg-green-500 selection:text-black">
