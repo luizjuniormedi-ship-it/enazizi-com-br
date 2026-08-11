@@ -1,7 +1,7 @@
 import React from 'react';
 
 export default function EG3Foundation() {
-  const content = `revise as ias pois exclui todas que nao funcionam
+  const content = `pq esta tao lenta a resposta do tutor ia
 
 O bloqueio agora está completamente claro: **não é mais código do Tutor; é ausência das credenciais QA no ambiente do Lovable**.
 
