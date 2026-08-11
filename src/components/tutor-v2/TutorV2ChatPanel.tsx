@@ -135,40 +135,49 @@ export default function TutorV2ChatPanel({
       );
 
       if (!response?.ok && response?.success !== true) throw new Error(response?.error || "Erro na resposta da IA");
-      if (response?.fallback) {
-        toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
-      }
+      
       const responseLessonComplete = !!(
         response?.lessonComplete ||
         response?.metadata?.lessonComplete ||
         response?.actionsContext?.lessonComplete
       );
+      
       if (response?.currentBlock) setLiveCurrentBlock(response.currentBlock);
       if (responseLessonComplete) setLessonComplete(true);
 
+      // [FIX] IDEMPOTENCY: Check if message already exists in UI to prevent duplication
       if (response?.content) {
         setMessages((prev) => {
-          const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === response.content);
-          if (alreadyVisible) return prev;
+          const requestId = response.requestId || response.request_id;
+          const alreadyVisible = prev.some((m) => 
+            (requestId && m.id === requestId) || 
+            (m.role === "assistant" && m.content === response.content && Math.abs(new Date(m.created_at).getTime() - Date.now()) < 5000)
+          );
+          
+          if (alreadyVisible) {
+            console.log("[TUTOR_UI_DEDUPE] Assistant message already visible, skipping append.");
+            return prev;
+          }
+          
           return [
             ...prev,
             {
-              id: response.requestId || crypto.randomUUID(),
+              id: requestId || crypto.randomUUID(),
               role: "assistant",
               content: response.content,
               tutor_session_id: session.id,
               user_id: user.id,
               created_at: new Date().toISOString(),
               metadata: { 
-                fallback_used: !!response.fallback, 
-                provider: response.provider,
+                fallback_used: response.source === 'fallback' || !!response.fallback, 
+                provider: response.provider || response.debug?.provider,
+                source: response.source,
                 blockTitle: response.blockTitle,
                 currentBlock: response.currentBlock,
                 socraticQuestion: response.socraticQuestion,
                 actionsContext: response.actionsContext,
                 lessonComplete: responseLessonComplete
               },
-
             },
           ];
         });
