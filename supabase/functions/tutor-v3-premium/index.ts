@@ -837,9 +837,19 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
 
 
-    // ── 4. STABILITY & PARSING ───────────────────────────────
-    const normalized = normalizeTutorResponse(
-      aiResponse,
+    // ── 4. STABILITY & QUALITY GATE ───────────────────────────────
+    const normalized = normalizeTutorResponse(aiResponse, aiProviderUsed as any);
+
+    // P0: SEMANTIC & TOPIC VALIDATION GATE
+    const isTopicValid = !normalized.content.toLowerCase().includes("how can i help") && 
+                        !normalized.content.toLowerCase().includes("i am") &&
+                        normalized.content.length > 150;
+
+    if (!isTopicValid) {
+      console.error("[P0_QUALITY_FAIL] Rejecting invalid output:", normalized.content.slice(0, 100));
+      throw new Error("P0_SEMANTIC_INVALID_OUTPUT");
+    }
+
       aiProviderUsed === "claude" ? "claude" : aiResponse.choices ? "openai" : "fallback"
     );
     
