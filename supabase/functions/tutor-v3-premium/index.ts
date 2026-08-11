@@ -383,47 +383,44 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     const searchTerms = [message || "", topic || ""].join(" ");
     const localFallback = getStaticFallback(searchTerms);
     
-    // If we have a premium local summary and the user is asking a basic question
+    // [FIX] SINGLE RESPONSE OWNERSHIP: Local Fallback
     if (localFallback && !localFallback.generic && (studentIntent === "doubt" || studentIntent === "new_topic") && searchTerms.length < 100) {
       console.log("[LOCAL_KNOWLEDGE_USED]", { topic: localFallback.tema });
-      
       const normalizedLocal = normalizeTutorResponse(localFallback, "fallback");
       
       // AI Cost Validation: Log saved cost for local fallback
       waitUntil((async () => {
         try {
+          // Persist fallback message ONLY in this branch
+          if (sessionId && activeUserId) {
+            await supabaseAdmin.from("tutor_messages").insert({
+              tutor_session_id: sessionId,
+              user_id: activeUserId,
+              role: "assistant",
+              content: normalizedLocal.content,
+              metadata: { 
+                request_id: requestId, 
+                correlation_id: correlationId,
+                block: nextBlock,
+                source: "fallback",
+                topic
+              }
+            });
+          }
+
           await supabaseAdmin.from("ai_usage_logs").insert({
             user_id: activeUserId,
             model: "local_premium_fallback",
             module: "tutor-v3-premium",
             cache_status: "fallback",
             cache_hit: true,
-            cost_saved: 0.01, // Est. value of a tutor call
+            cost_saved: 0.01,
             success: true,
             latency_ms: 5,
             prompt_type: "doubt_fallback"
           });
         } catch (e) {
           console.warn("[LOG_SAVINGS_FAIL]", (e as any)?.message);
-        }
-      })());
-
-      // [FIX] Persist fallback message to ensure history consistency
-      waitUntil((async () => {
-        if (sessionId && activeUserId) {
-          await supabaseAdmin.from("tutor_messages").insert({
-            tutor_session_id: sessionId,
-            user_id: activeUserId,
-            role: "assistant",
-            content: normalizedLocal.content,
-            metadata: { 
-              request_id: requestId, 
-              correlation_id: correlationId,
-              block: nextBlock,
-              source: "fallback",
-              topic
-            }
-          });
         }
       })());
 
@@ -986,16 +983,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     console.log(`[TUTOR_SAFE_MODE] topic=${topicForFallback}`);
     const safeResponse = getContextualFallback(topicForFallback);
     
-    // [FIX] Persist safe mode message
+    // [FIX] SINGLE RESPONSE OWNERSHIP: Safe Mode
+    // Only persist if we haven't sent a terminal response already
     waitUntil((async () => {
       try {
-        const body = await req.clone().json().catch(() => ({}));
-        const sId = body.sessionId;
-        const uId = correlation.userId;
-        if (sId && uId) {
+        if (sessionId && activeUserId) {
           await supabaseAdmin.from("tutor_messages").insert({
-            tutor_session_id: sId,
-            user_id: uId,
+            tutor_session_id: sessionId,
+            user_id: activeUserId,
             role: "assistant",
             content: safeResponse.content,
             metadata: { 
@@ -1012,8 +1007,8 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     return corsResponse(buildTutorEnvelope(safeResponse, {
       currentBlock: "BLOCO_1_MISSAO_CLINICA",
-      topic: (err as any).topic || topic || "geral",
-      correlation_id: (correlation as any)?.correlationId,
+      topic: topicForFallback,
+      correlation_id: correlationId,
       error: err.message,
       request_id: requestId,
       debug: { stage: "safe_mode_emergency" },
