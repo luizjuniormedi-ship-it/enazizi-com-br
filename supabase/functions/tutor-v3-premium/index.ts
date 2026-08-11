@@ -127,6 +127,7 @@ console.log("[TUTOR_V3_BOOT] Function module loaded");
  */
 Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supabaseAdmin, ai, correlation, waitUntil }) => {
   const { requestId, correlationId, userId } = correlation;
+  let isTerminal = false;
 
   // ── Latency instrumentation (Wave Perf-1) — passive, opt-in via body.debug ──
   const t0 = performance.now();
@@ -358,6 +359,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       })());
 
       console.log(`[TUTOR_LESSON_COMPLETE] session=${sessionId || "none"} topic=${topic}`);
+      isTerminal = true;
       return corsResponse({
         success: true,
         ok: true,
@@ -373,6 +375,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         confidence: 1,
         lessonComplete: true,
         correlation_id: correlationId,
+        request_id: requestId,
         debug: { studentIntent, nextBlock, lessonComplete: true, terminal: true },
       }, 200);
     }
@@ -424,6 +427,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         }
       })());
 
+      isTerminal = true;
       return corsResponse({
         success: true,
         ok: true,
@@ -436,6 +440,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         actionsContext: { topic, block: nextBlock },
         topic,
         correlation_id: correlationId,
+        request_id: requestId,
         source: "fallback",
         debug: { hybrid_hit: true }
       }, 200);
@@ -956,11 +961,13 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
 
     mark("totalMs");
     const includeTimings = ENABLE_TIMINGS || body?.debug === true;
+    isTerminal = true;
     return corsResponse(buildTutorEnvelope(normalized, {
       currentBlock: activeBlock,
       blockTitle: activeBlockConfig.title,
       topic,
       correlation_id: correlationId,
+      request_id: requestId,
       actionsContext: (normalized.metadata as any)?.actionsContext || { topic, block: activeBlock },
       lessonComplete: !!lessonComplete,
       debug: {
@@ -984,35 +991,41 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     const safeResponse = getContextualFallback(topicForFallback);
     
     // [FIX] SINGLE RESPONSE OWNERSHIP: Safe Mode
-    // Only persist if we haven't sent a terminal response already
-    waitUntil((async () => {
-      try {
-        if (sessionId && activeUserId) {
-          await supabaseAdmin.from("tutor_messages").insert({
-            tutor_session_id: sessionId,
-            user_id: activeUserId,
-            role: "assistant",
-            content: safeResponse.content,
-            metadata: { 
-              request_id: requestId, 
-              source: "safe_mode",
-              error: err.message
-            }
-          });
+    // Only persist and respond if we haven't sent a terminal response already
+    if (!isTerminal) {
+      isTerminal = true;
+      waitUntil((async () => {
+        try {
+          if (sessionId && activeUserId) {
+            await supabaseAdmin.from("tutor_messages").insert({
+              tutor_session_id: sessionId,
+              user_id: activeUserId,
+              role: "assistant",
+              content: safeResponse.content,
+              metadata: { 
+                request_id: requestId, 
+                source: "safe_mode",
+                error: err.message
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("[SAFE_MODE_PERSIST_FAIL]", e.message);
         }
-      } catch (e) {
-        console.warn("[SAFE_MODE_PERSIST_FAIL]", e.message);
-      }
-    })());
+      })());
 
-    return corsResponse(buildTutorEnvelope(safeResponse, {
-      currentBlock: "BLOCO_1_MISSAO_CLINICA",
-      topic: topicForFallback,
-      correlation_id: correlationId,
-      error: err.message,
-      request_id: requestId,
-      debug: { stage: "safe_mode_emergency" },
-    }), 200);
+      return corsResponse(buildTutorEnvelope(safeResponse, {
+        currentBlock: "BLOCO_1_MISSAO_CLINICA",
+        topic: topicForFallback,
+        correlation_id: correlationId,
+        error: err.message,
+        request_id: requestId,
+        debug: { stage: "safe_mode_emergency" },
+      }), 200);
+    } else {
+      console.log("[TUTOR_DUPLICATE_PREVENTED] Safe Mode suppressed as terminal response already sent.");
+      return new Response(null, { status: 204 }); // No content, already handled
+    }
   }
 
 

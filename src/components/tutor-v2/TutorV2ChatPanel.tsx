@@ -145,17 +145,21 @@ export default function TutorV2ChatPanel({
       if (response?.currentBlock) setLiveCurrentBlock(response.currentBlock);
       if (responseLessonComplete) setLessonComplete(true);
 
-      // [FIX] IDEMPOTENCY: Check if message already exists in UI to prevent duplication
+      // [FIX] SINGLE-RESPONSE IDEMPOTENCY: Reconcile UI with terminal response
       if (response?.content) {
         setMessages((prev) => {
           const requestId = response.requestId || response.request_id;
+          
+          // 1. Primary Dedupe: Check by canonical execution/request ID
+          // 2. Secondary Dedupe: Content hash within small window (fallback)
           const alreadyVisible = prev.some((m) => 
             (requestId && m.id === requestId) || 
-            (m.role === "assistant" && m.content === response.content && Math.abs(new Date(m.created_at).getTime() - Date.now()) < 5000)
+            (requestId && m.metadata?.request_id === requestId) ||
+            (m.role === "assistant" && m.content === response.content && Math.abs(new Date(m.created_at).getTime() - Date.now()) < 30000)
           );
           
           if (alreadyVisible) {
-            console.log("[TUTOR_UI_DEDUPE] Assistant message already visible, skipping append.");
+            console.log("[TUTOR_UI_DEDUPE] Terminal response already reconciled via Realtime or previous append.");
             return prev;
           }
           
@@ -169,6 +173,7 @@ export default function TutorV2ChatPanel({
               user_id: user.id,
               created_at: new Date().toISOString(),
               metadata: { 
+                request_id: requestId,
                 fallback_used: response.source === 'fallback' || !!response.fallback, 
                 provider: response.provider || response.debug?.provider,
                 source: response.source,
