@@ -10,14 +10,18 @@ Deno.serve(async (req) => {
   }
   
   const body = await req.json();
-  const { provider, model } = body;
-  
-  const { data, error } = await supabase
-    .from('ai_runtime_logs')
-    .select('provider, model, success, latency_ms, error_code, metadata')
-    .eq('task_type', 'benchmark_v1')
-    .order('created_at', { ascending: false })
-    .limit(10);
+  const { action = 'results' } = body;
 
-  return new Response(JSON.stringify({ data, error }), { headers: { "Content-Type": "application/json" } });
+  if (action === 'results') {
+    const { data, error } = await supabase
+      .from('ai_runtime_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    return new Response(JSON.stringify({ data, error }), { headers: { "Content-Type": "application/json" } });
+  }
+
+  // Fallback para qualquer outro post
+  return new Response(JSON.stringify({ status: "ready", timestamp: new Date().toISOString() }), { headers: { "Content-Type": "application/json" } });
 });
