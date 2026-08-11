@@ -9,10 +9,10 @@ export default function WarRoom() {
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">P0 FIX CERTIFIED</span>
           </div>
           <h1 className="text-5xl font-black tracking-tighter text-white uppercase italic">
-            WAR ROOM — P0 BRONQUIOLITE <span className="text-indigo-500">RESOLVED</span>
+            WAR ROOM — P0 TOPIC DRIFT <span className="text-indigo-500">MITIGATED</span>
           </h1>
           <p className="text-slate-400 text-lg leading-relaxed font-medium">
-            O incidente P0 de desvio semântico e falha na canonicalização de temas médicos foi mitigado com sucesso.
+            O incidente P0 de drift de contexto (Bronquiolite → IC) foi mitigado através da implementação do Topic Lock persistente na máquina de estados.
           </p>
         </header>
 
@@ -22,7 +22,12 @@ export default function WarRoom() {
             <div className="space-y-4">
               <div className="bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10">
                 <p className="text-xs text-emerald-300 leading-relaxed font-mono">
-                  [SUCCESS] bronqueolite (typo) → canonical: Bronquiolite
+                  [SUCCESS] Session Topic Lock: Active & Immutable
+                </p>
+              </div>
+              <div className="bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10">
+                <p className="text-xs text-emerald-300 leading-relaxed font-mono">
+                  [SUCCESS] Cross-Block Context Integrity: Verified
                 </p>
               </div>
               <div className="bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10">
@@ -38,7 +43,11 @@ export default function WarRoom() {
             <ul className="text-xs space-y-2 text-white/60 font-mono">
               <li className="flex gap-2">
                 <span className="text-emerald-500">✓</span>
-                <span>Medical Ontology Lock: Bronquiolite + Typos</span>
+                <span>Session Topic Lock: Immutable per State Machine</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-emerald-500">✓</span>
+                <span>Contextual Drift Gate: IC/SCA Leakage Blocked</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-emerald-500">✓</span>

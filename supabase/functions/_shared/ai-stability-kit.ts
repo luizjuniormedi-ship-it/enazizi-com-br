@@ -343,6 +343,11 @@ export function getStaticFallback(tema: string): any {
   // P0 Fix: Preserve the canonical topic if it was already identified, 
   // do not overwrite with "Medicina Geral" in the fallback UI message.
   const displayTopic = tema || "o tema solicitado";
+  
+  // P0: SIBLING TOPIC DRIFT PROTECTION
+  // Rejects topics that are known to "leak" into others during fallbacks
+  const isGenericLeak = displayTopic.toLowerCase().includes("medicina geral") || 
+                        displayTopic.toLowerCase().includes("emergência");
 
   return {
     content: `### 🏥 Sistema em Modo de Resiliência: ${displayTopic}\n\nO motor principal de IA está temporariamente indisponível. Para não interromper seu estudo, estamos utilizando o conteúdo médico validado disponível.\n\nEm instantes, a profundidade total de IA será restaurada.`,
