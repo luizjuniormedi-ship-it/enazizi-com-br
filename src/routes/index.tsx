@@ -1074,7 +1074,16 @@ EXECUTE WAVE 1 PRIMEIRO.
 Depois prossiga automaticamente pelas waves somente quando
 a wave anterior passar nos critérios de regressão.
 
-vc esta respondendo em ingles no tutor ia pesquise na sua memoria todas as diretizes e organização do tutor ia`;
+olha o que vc esta respondendo em tep "tep" isn't a standard English word. It could be:
+
+A typo for a word like "step," "tap," "top," "temp," "test," "type," "team," etc.
+An abbreviation or acronym (though not a very common one in general use).
+Part of a name or a technical term.
+Could you provide more context or tell me what you meant by "tep"?
+
+Salvar no FSRS
+Gerar Flashcard
+Error Bank`;
 
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono p-8 overflow-auto selection:bg-green-500 selection:text-black">
