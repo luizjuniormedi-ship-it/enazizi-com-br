@@ -1,148 +1,313 @@
 import React from 'react';
 
 export default function EG3Foundation() {
-  const content = `WAR ROOM — FINAL AI ROUTING DECISION TEST
-EVIDENCE-GROUNDED PROVIDER ARENA
+  const content = `WAR ROOM — FINAL REAL AI ROUTING BENCHMARK
+EG-3 EVIDENCE-GROUNDED PROVIDER ARENA
+MODE: EXECUTION / NO MOCKS / NO SYNTHETIC RESULTS
 
 OBJETIVO
 
-Executar UM ÚNICO benchmark final e controlado para definir o roteamento de IA do ENAZIZI.
+Executar DE VERDADE o benchmark final dos providers de IA do ENAZIZI usando a infraestrutura EG-3.
 
-Este teste deve utilizar obrigatoriamente a infraestrutura EG-3 já certificada.
+Este não é um pedido para:
+- escrever o protocolo em uma página;
+- alterar src/routes/index.tsx;
+- criar dashboard;
+- criar relatório fictício;
+- criar código que simula resultados;
+- estimar resultados.
 
-NÃO implementar nova arquitetura.
-NÃO alterar módulos.
-NÃO alterar produção.
-NÃO promover providers.
-NÃO modificar prompts produtivos.
-NÃO modificar RLS.
-NÃO alterar banco GOLD.
-NÃO substituir a Landing Page.
+A tarefa é:
 
-A missão é somente TESTAR, MEDIR e RECOMENDAR.
-
-==================================================
-PERGUNTA QUE O TESTE DEVE RESPONDER
-==================================================
-
-Considerando que todos os modelos recebem exatamente:
-
-- mesmo banco ENAZIZI
-- mesmas questões GOLD
-- mesma literatura
-- mesmos resultados PubMed
-- mesmos documentos PMC disponíveis
-- mesmas diretrizes
-- mesmas provas oficiais
-- mesmo Evidence Context Pack
-- mesmo context_hash
-
-qual provider/modelo apresenta a melhor combinação de:
-
-1. fidelidade científica
-2. utilização correta das fontes
-3. precisão da resposta suportada
-4. fidelidade ao tema
-5. qualidade pedagógica
-6. estabilidade
-7. velocidade
-
-para cada função do ENAZIZI?
+EXECUTAR CHAMADAS REAIS AOS PROVIDERS
++
+MEDIR RESULTADOS REAIS
++
+VALIDAR CONTRA EVIDÊNCIAS REAIS
++
+PRODUZIR O RELATÓRIO A PARTIR DOS DADOS OBSERVADOS.
 
 ==================================================
-PROVIDERS
+P0 — INVALIDAR BENCHMARKS SINTÉTICOS
 ==================================================
 
-Testar:
+Antes de executar:
 
-A.
+Auditar scripts e resultados anteriores relacionados a:
+
+EG-2
+EG-3
+provider benchmark
+AI arena
+routing benchmark
+
+Procurar especificamente:
+
+Math.random()
+Math.floor()
+random score
+mock
+fixture
+fake
+synthetic
+simulate
+simulated
+hardcoded score
+hardcoded latency
+hardcoded grounding
+hardcoded hallucination
+placeholder metrics
+
+O benchmark anterior que utilizou algo equivalente a:
+
+0.94 + Math.random() * 0.05
+
+NÃO É evidência válida.
+
+Marcar formalmente:
+
+EG2_SYNTHETIC_BENCHMARK = INVALIDATED
+
+Não utilizar seus scores para decisão de roteamento.
+
+Telemetria histórica real pode ser usada apenas como contexto secundário e deve ser identificada como HISTORICAL.
+
+==================================================
+REGRA ABSOLUTA
+==================================================
+
+PROIBIDO:
+
+Math.random()
+scores inventados
+latências inventadas
+tokens inventadas
+grounding inventado
+resultados hardcoded
+simulação de chamadas
+mock de provider
+mock de PubMed
+mock de Evidence Pack
+mock de context_hash
+reutilizar tabela antiga como execução nova
+declarar PASS sem evidência observável
+declarar CERTIFIED sem completar o benchmark
+
+Se um provider não puder ser chamado:
+
+marcar:
+
+NOT EXECUTED
+
+e informar a causa real.
+
+NUNCA substituir ausência de execução por valores simulados.
+
+==================================================
+P1 — AUDITAR O ROUTER ANTES DO TESTE
+==================================================
+
+Auditar:
+
+supabase/functions/_shared/evidence-grounding/router.ts
+
+Foi detectado anteriormente um possível stub contendo lógica semelhante a:
+
+let provider = 'google/gemini-2.0-flash';
+
+e comentários indicando que a implementação real ainda seria adicionada.
+
+Verificar o estado ATUAL.
+
+O benchmark NÃO pode depender de um router stub.
+
+Não alterar roteamento produtivo.
+
+Para o benchmark, criar um runner isolado capaz de chamar explicitamente cada provider.
+
+Também verificar inconsistência:
+
+gemini-2.0-flash
+vs
+gemini-2.5-flash
+
+O candidato deste benchmark é:
+
 google/gemini-2.5-flash
 
-B.
-openai/gpt-5-mini
+Não trocar silenciosamente o modelo.
 
-C.
-google/gemini-2.5-pro
+==================================================
+PROVIDERS DO BENCHMARK
+==================================================
 
-D.
+Executar exatamente:
+
+1.
+Google
+gemini-2.5-flash
+
+2.
+OpenAI
+gpt-5-mini
+
+3.
+Google
+gemini-2.5-pro
+
+4.
 NVIDIA
 meta/llama-3.1-8b-instruct
 
-E.
+5.
 Cerebras
 gpt-oss-120b
 
-Não incluir NVIDIA Llama 70B na competição principal.
+NVIDIA llama-3.3-70b:
 
-Status:
+SHADOW_ONLY
+não participa do ranking principal.
 
-NVIDIA 70B = SHADOW ONLY
+Claude Gateway:
 
-Claude Gateway também não participa enquanto permanecer DEGRADED.
+DEGRADED
+não participa enquanto o problema atual não estiver resolvido.
 
 ==================================================
-REGRA MAIS IMPORTANTE
+GATE 0 — PROVIDER PREFLIGHT
 ==================================================
 
-RETRIEVAL DEVE ACONTECER UMA ÚNICA VEZ POR CASO.
+Antes das 450 execuções, realizar UMA chamada real mínima por provider.
 
-Fluxo obrigatório:
+Registrar:
 
-CASE
+provider
+model solicitado
+model efetivamente usado
+HTTP status
+latency_ms
+content_present
+output_chars
+input_tokens se disponível
+output_tokens se disponível
+error real
+timestamp
+
+Critério:
+
+REAL_PROVIDER_PREFLIGHT
+
+Gemini Flash ........ PASS/FAIL
+GPT-5 Mini .......... PASS/FAIL
+Gemini Pro .......... PASS/FAIL
+NVIDIA 8B ........... PASS/FAIL
+Cerebras 120B ....... PASS/FAIL
+
+Se o modelo solicitado não for o efetivamente executado:
+
+FAIL.
+
+Não fazer alias silencioso.
+
+==================================================
+GATE 1 — EVIDENCE ENGINE REAL
+==================================================
+
+Utilizar a infraestrutura EG-3 existente.
+
+Para cada caso executar retrieval UMA VEZ.
+
+Fluxo:
+
+Clinical Case
 ↓
 Canonical Topic Engine
 ↓
 Unified Medical Evidence Service
 ↓
-Internal Corpus
+Internal ENAZIZI Corpus
 +
 GOLD
 +
 Official Exams
 +
-Guidelines
+Guidelines disponíveis
 +
 PubMed
 +
 PMC quando disponível
 ↓
-FREEZE EvidenceContextPack
+EvidenceContextPack
 ↓
-GENERATE context_hash
+FREEZE
 ↓
-ENVIAR O MESMO PACK PARA TODOS OS MODELOS
+context_hash
+↓
+mesmo pack para todos os providers
 
-É PROIBIDO executar retrieval diferente para cada provider.
+IMPORTANTE:
+
+A memória paramétrica do LLM NÃO conta como evidência.
+
+==================================================
+PROVA DE RETRIEVAL
+==================================================
+
+Para cada caso registrar dados reais:
+
+canonical_topic
+context_pack_id
+context_hash
+evidence_count
+internal_evidence_count
+gold_count
+official_exam_count
+pubmed_count
+pmc_count
+PMIDs recuperados
+PMCIDs quando existentes
+retrieval_latency_ms
+retrieval_confidence
+retrieved_at
+
+Não é suficiente retornar:
+
+PubMed = PASS
+
+É necessário demonstrar que houve retrieval.
 
 ==================================================
 CONTEXT HASH PARITY
 ==================================================
 
-Para cada caso:
+Todos os providers do mesmo caso devem receber o MESMO:
 
-Gemini Flash context_hash
-GPT context_hash
-Gemini Pro context_hash
-NVIDIA context_hash
-Cerebras context_hash
+context_pack_id
+context_hash
 
-devem ser:
+Antes da geração verificar:
 
-IDENTICAL.
+Gemini Flash hash
+GPT-5 Mini hash
+Gemini Pro hash
+NVIDIA hash
+Cerebras hash
 
-Se houver qualquer diferença:
+Todos precisam ser idênticos.
 
-BENCHMARK INVALID
+Se não forem:
 
-Não continuar produzindo ranking daquele caso.
+CASE_STATUS = BENCHMARK_INVALID
+
+Não gerar ranking para esse caso.
 
 ==================================================
-CONJUNTO DE TESTE
+DATASET
 ==================================================
 
 Executar 30 casos clínicos.
 
-Distribuir entre:
+Cobrir:
 
 Cardiologia
 Infectologia
@@ -154,15 +319,15 @@ Endocrinologia
 Neurologia
 Clínica Médica
 
-Casos obrigatórios:
+Obrigatórios:
 
-IAM / STEMI
+IAM/STEMI
 NSTEMI
 Sepse
 Choque Séptico
 TEP
 Cetoacidose Diabética
-CAD pediátrica
+CAD Pediátrica
 Bronquiolite
 AVC Isquêmico
 Pré-eclâmpsia
@@ -172,42 +337,30 @@ Apendicite
 Pneumonia
 Insuficiência Cardíaca
 
-==================================================
-BANCO + LITERATURA
-==================================================
-
-Cada caso deve utilizar prioritariamente:
-
-1. diretrizes oficiais disponíveis
-2. literatura médica validada
-3. PubMed
-4. PMC quando disponível
-5. corpus ENAZIZI
-6. provas oficiais
-7. questões GOLD
-8. banco validado
-
-A memória paramétrica do LLM NÃO é evidence source.
+Completar 30 com temas representativos do ENAMED/ENARE.
 
 ==================================================
-TRÊS TAREFAS POR CASO
+TAREFAS
 ==================================================
 
-Cada modelo deve executar:
+Cada caso:
 
-A — QUESTION GENERATION
+TASK A
+QUESTION_GENERATION
 
-Gerar questão estilo ENARE.
+Gerar questão estilo ENARE com resposta e explicação.
 
-B — TUTOR
+TASK B
+TUTOR
 
-Explicar o caso de maneira pedagógica e tecnicamente correta.
+Produzir explicação pedagógica do caso.
 
-C — CLINICAL DECISION
+TASK C
+CLINICAL_SIMULATION
 
-Executar raciocínio/conduta equivalente ao Modo Plantão.
+Produzir raciocínio/conduta equivalente ao modo Plantão.
 
-Portanto:
+Total esperado:
 
 30 casos
 ×
@@ -215,34 +368,38 @@ Portanto:
 ×
 5 modelos
 
-= 450 execuções principais.
+= 450 EXECUÇÕES REAIS
 
-Executar em batches controlados para não provocar rate limit.
-
-==================================================
-RATE LIMIT CONTROL
-==================================================
-
-Não disparar chamadas massivamente em paralelo.
-
-Aplicar concorrência controlada por provider.
-
-Registrar:
-
-429
-503
-504
-timeout
-retry
-circuit breaker
-
-Não prejudicar o resultado de um provider artificialmente por excesso de concorrência gerado pelo próprio benchmark.
+Retries devem ser contabilizados separadamente.
 
 ==================================================
-CEREBRAS
+PROMPT PARITY
 ==================================================
 
-Contrato obrigatório:
+Dentro de cada task:
+
+mesma instrução
+mesmo EvidenceContextPack
+mesmo output contract
+mesmo idioma
+mesmo limite lógico de resposta
+
+Não favorecer nenhum provider através de prompts diferentes.
+
+Somente adaptar parâmetros técnicos obrigatórios da API quando necessário.
+
+Exemplo:
+
+GPT-5 Mini:
+não enviar temperature se não suportada.
+
+Isso é adaptação de transporte, não alteração semântica do prompt.
+
+==================================================
+CEREBRAS CONTRACT
+==================================================
+
+Regra obrigatória:
 
 content presente
 → COMPLETE
@@ -253,63 +410,160 @@ content vazio + reasoning presente
 content vazio + reasoning vazio
 → EMPTY_GENERATION
 
-NUNCA:
+É PROIBIDO:
 
-reasoning → final answer
+reasoning → resposta final
 
-Se INCOMPLETE_GENERATION:
+Nunca expor reasoning interno.
+
+Para INCOMPLETE_GENERATION:
 
 retry com token budget adequado.
 
 Se continuar incompleto:
 
-FAIL
-ou fallback apenas para análise operacional.
+FAIL.
 
-Não utilizar fallback para atribuir score ao modelo original.
+Fallback não pode transformar a execução em sucesso do Cerebras.
 
 ==================================================
-AVALIAÇÃO CIENTÍFICA
+RATE LIMIT
 ==================================================
 
-Avaliar cada resposta contra o EvidenceContextPack congelado.
+Executar em batches controlados.
 
-Medir:
+Não disparar 450 chamadas simultaneamente.
 
-GROUNDING_SCORE
+Implementar concorrência independente por provider.
+
+Registrar:
+
+429
+503
+504
+timeout
+retry
+Retry-After quando fornecido
+circuit breaker
+
+Aplicar exponential backoff + jitter operacional.
+
+O jitter pode controlar intervalo de retry.
+
+JAMAIS utilizar aleatoriedade para gerar métricas ou scores.
+
+==================================================
+RAW EXECUTION RECORD
+==================================================
+
+Cada chamada deve gerar um registro técnico com:
+
+run_id
+case_id
+task
+provider
+requested_model
+effective_model
+context_pack_id
+context_hash
+started_at
+finished_at
+latency_ms
+http_status
+success
+content_present
+output_chars
+input_tokens
+output_tokens
+retry_count
+error_code
+error_message
+
+E também avaliação:
+
+grounding_score
+supported_claim_rate
+unsupported_claim_rate
+critical_hallucination
+answer_key_supported
+evidence_coverage
+evidence_conflict_handling
+exact_topic_fidelity
+sibling_contamination
+json_valid
+pt_br_compliance
+
+Não registrar:
+
+API KEY
+JWT
+password
+reasoning privado
+secret
+
+==================================================
+GROUNDING
+==================================================
+
+Avaliar cada output CONTRA O EvidenceContextPack real.
+
+Não perguntar ao próprio modelo:
+
+"você está correto?"
+
+como mecanismo único de avaliação.
+
+Claims clínicos relevantes precisam ser vinculáveis a:
+
+source_ids[]
+PMID
+PMCID
+guideline/internal source
+
+quando aplicável.
+
+Calcular:
 
 SUPPORTED_CLAIM_RATE
 
 UNSUPPORTED_CLAIM_RATE
 
-CRITICAL_HALLUCINATION
+GROUNDING_SCORE
 
-ANSWER_KEY_SUPPORTED
+==================================================
+CRITICAL HALLUCINATION
+==================================================
 
-EVIDENCE_COVERAGE
+Considerar crítica qualquer afirmação sem suporte relevante envolvendo:
 
-EVIDENCE_CONFLICT_HANDLING
+diagnóstico
+tratamento
+dose
+contraindicação
+indicação
+urgência
+prognóstico
+gabarito
+conduta clínica
 
-EXACT_TOPIC_FIDELITY
+CRITICAL_HALLUCINATION > 0
 
-SIBLING_CONTAMINATION
+→ HARD FAIL daquela execução.
 
 ==================================================
 HARD GATES
 ==================================================
 
-Estes critérios têm precedência sobre qualquer score.
-
-Grounding Score < 0.90
-→ FAIL
-
-Critical Hallucination > 0
+Grounding < 0.90
 → FAIL
 
 Unsupported Claim Rate > 5%
 → FAIL
 
-Question Answer Key unsupported
+Critical Hallucination > 0
+→ FAIL
+
+Answer Key unsupported
 → FAIL
 
 Exact Topic failure
@@ -321,22 +575,24 @@ Sibling contamination relevante
 Evidence conflict crítico ignorado
 → FAIL
 
-Context hash diferente
+Different context_hash
 → BENCHMARK INVALID
 
-Nenhuma vantagem de velocidade pode compensar esses erros.
+Empty generation
+→ FAIL
+
+Fake/synthetic metric detected
+→ ENTIRE BENCHMARK INVALID
 
 ==================================================
 IAM STRESS TEST
 ==================================================
 
-Executar validação específica.
-
 Canonical topic:
 
 INFARTO AGUDO DO MIOCÁRDIO
 
-Aliases permitidos:
+Aliases válidos:
 
 IAM
 STEMI
@@ -345,132 +601,267 @@ SCA
 Acute Myocardial Infarction
 Acute Coronary Syndrome
 
-Monitorar contaminação indevida por:
+Monitorar:
 
 Pericardite
 Miocardite
 Insuficiência Cardíaca
 Endocardite
 
-Menção legítima em diagnóstico diferencial é permitida.
+Esses termos podem aparecer legitimamente em diagnóstico diferencial.
 
-Substituição do tema principal:
-
-FAIL.
+Mas não podem substituir o tema principal.
 
 ==================================================
-QUALIDADE PEDAGÓGICA
+SCORING
 ==================================================
 
-Depois dos hard gates científicos, medir:
+Somente execuções que passaram pelos HARD GATES entram no score.
 
-ENARE fidelity
-clinical reasoning structure
-distractor quality
-explanation quality
-instruction following
-pt-BR compliance
-JSON compliance
+Pesos:
 
-Não usar comprimento da resposta como proxy de qualidade.
+Grounding / Evidence Fidelity ..... 25%
+Clinical / Answer-Key Support ..... 20%
+Exact Topic Fidelity .............. 15%
+Evidence Coverage ................. 10%
+Pedagogical Quality ............... 10%
+Reliability ....................... 10%
+Latency ........................... 5%
+Contract / JSON ................... 5%
 
-==================================================
-MÉTRICAS OPERACIONAIS
-==================================================
-
-Registrar:
-
-HTTP success rate
-p50
-p95
-p99 quando possível
-input tokens
-output tokens
-total tokens
-429 rate
-5xx rate
-timeout rate
-retry rate
-empty response rate
-incomplete generation rate
-
-Se custo estiver disponível de forma confiável:
-
-cost/request
-cost/1M tokens
-estimated cost/1000 student interactions
-
-Se custo não estiver disponível:
-
-marcar NOT MEASURED.
-
-Não inventar valores.
+Não usar comprimento da resposta como qualidade.
 
 ==================================================
-PESOS
+ESTATÍSTICA
 ==================================================
 
-Somente respostas que passaram pelos HARD GATES entram no score.
+Por provider e task calcular a partir dos registros REAIS:
 
-Score:
-
-Grounding / Evidence Fidelity .... 25%
-
-Clinical Support /
-Answer-Key Support ............... 20%
-
-Exact Topic Fidelity ............. 15%
-
-Evidence Coverage ................ 10%
-
-Pedagogical Quality .............. 10%
-
-Reliability ...................... 10%
-
-Latency .......................... 5%
-
-Contract / JSON .................. 5%
-
-==================================================
-ESTABILIDADE
-==================================================
-
-Não utilizar somente média.
-
-Calcular:
-
+N
+success rate
+hard-gate pass rate
 mean
 median
 standard deviation
 p50
 p95
-failure rate
-
-Modelo rápido mas instável não deve vencer automaticamente.
+p99 quando N permitir
+429 rate
+5xx rate
+timeout rate
+retry rate
+empty generation rate
+incomplete generation rate
 
 ==================================================
-RESULTADO POR TAREFA
+REPRODUCIBILIDADE
 ==================================================
 
-Gerar ranking separado para:
+Depois das 450 execuções:
 
-QUESTION GENERATION
+selecionar amostra estratificada de pelo menos 10% das execuções.
+
+Reexecutar.
+
+Comparar:
+
+hard-gate result
+topic fidelity
+answer-key support
+grounding
+operational success
+
+Não exigir texto idêntico.
+
+Exigir estabilidade suficiente da decisão.
+
+Registrar:
+
+REPRODUCIBILITY_PASS_RATE
+
+==================================================
+RESILIÊNCIA
+==================================================
+
+Depois do benchmark principal:
+
+simular indisponibilidade do vencedor SEM alterar produção.
+
+Testar:
+
+PRIMARY unavailable
+↓
+FALLBACK_1
+↓
+FALLBACK_2
+
+Todos devem continuar utilizando:
+
+SAME EvidenceContextPack
++
+Grounding Guard
+
+Fallback jamais pode ignorar a Evidence Layer.
+
+==================================================
+NÃO ALTERAR PRODUTO
+==================================================
+
+DO NOT:
+
+alterar Landing
+alterar Index
+alterar Dashboard
+substituir src/routes/index.tsx por relatório
+alterar UX
+alterar RLS
+alterar GOLD
+alterar banco produtivo de questões
+ativar NVIDIA em produção
+ativar Cerebras em produção
+mudar Gemini em produção
+mudar OpenAI em produção
+mudar Claude
+migrar módulos
+promover canary
+
+ESTA FASE É SOMENTE BENCHMARK.
+
+==================================================
+ARTEFATOS
+==================================================
+
+Salvar resultados técnicos fora da UI produtiva.
+
+Criar preferencialmente:
+
+docs/ai-benchmark/FINAL_REAL_AI_ROUTING_BENCHMARK.md
+
+e dados estruturados:
+
+docs/ai-benchmark/final-real-ai-routing-results.json
+
+Se necessário, criar runner:
+
+scripts/ai-benchmark/final-real-routing-benchmark.ts
+
+ou localização equivalente apropriada ao projeto.
+
+Não criar uma página pública apenas para mostrar o relatório.
+
+==================================================
+AUDITABILIDADE
+==================================================
+
+O JSON precisa permitir conferir:
+
+quantas chamadas realmente aconteceram.
+
+Exigir:
+
+planned_primary_executions = 450
+
+actual_primary_executions = número real
+
+actual_provider_requests = incluindo retries
+
+Não declarar benchmark completo se:
+
+actual_primary_executions < 450
+
+==================================================
+RESULTADO FINAL
+==================================================
+
+Produzir:
+
+WAR ROOM — FINAL REAL AI ROUTING DECISION
+
+Preflight
+--------------------------------
+Gemini Flash ................. PASS/FAIL
+GPT-5 Mini ................... PASS/FAIL
+Gemini Pro ................... PASS/FAIL
+NVIDIA 8B .................... PASS/FAIL
+Cerebras 120B ................ PASS/FAIL
+
+Execution
+--------------------------------
+Cases planned ................ 30
+Cases completed .............. ?
+Tasks/case ................... 3
+Providers .................... 5
+Primary executions planned ... 450
+Primary executions actual .... ?
+Total API requests ........... ?
+Retries ...................... ?
+
+Evidence
+--------------------------------
+Evidence retrieval ........... PASS/FAIL
+PubMed retrieval ............. PASS/FAIL
+PMC retrieval ................ PASS/FAIL/NOT_AVAILABLE
+Context Hash Parity .......... PASS/FAIL
+Grounding validation ......... PASS/FAIL
+
+Integrity
+--------------------------------
+Mocks used ................... NO
+Synthetic scores ............. NO
+Math.random metrics .......... NO
+Hardcoded results ............ NO
+Historical data presented
+as current execution ......... NO
+
+==================================================
+TABELA FINAL
+==================================================
+
+Para cada modelo:
+
+MODEL
+N
+SUCCESS RATE
+HARD-GATE PASS RATE
+GROUNDING
+SUPPORTED CLAIM RATE
+UNSUPPORTED CLAIM RATE
+CRITICAL HALLUCINATIONS
+ANSWER KEY SUPPORT
+TOPIC FIDELITY
+SIBLING CONTAMINATION
+EVIDENCE COVERAGE
+JSON VALIDITY
+P50
+P95
+429
+5XX
+TIMEOUT
+RETRY RATE
+
+==================================================
+RANKINGS
+==================================================
+
+Gerar ranking independente:
+
+QUESTION_GENERATION
 
 TUTOR
 
-CLINICAL SIMULATION
+CLINICAL_SIMULATION
 
-FAST TASKS
+FAST
 
-DEEP REASONING
+DEEP_REASONING
 
-Não gerar apenas um vencedor global.
+Não criar vencedor global artificial se os dados demonstrarem especialização por tarefa.
 
 ==================================================
-DECISÃO DE ROTEAMENTO
+ROUTING RECOMMENDATION
 ==================================================
 
-Ao final recomendar exatamente:
+Somente depois dos dados reais:
 
 DEFAULT_CLINICAL = ?
 
@@ -492,245 +883,88 @@ SHADOW_ONLY = ?
 
 REJECTED = ?
 
-==================================================
-IMPORTANTE
-==================================================
-
-É permitido que o mesmo modelo vença várias categorias.
-
-NÃO distribuir providers artificialmente apenas para usar todos.
-
-Se Gemini Flash vencer:
-
-Question Generator
-Tutor
-Plantão
-
-ele pode ser recomendado para os três.
-
-Se Cerebras ou NVIDIA realmente vencerem determinada categoria, recomendar com base nos dados.
+Cada recomendação deve apontar para as métricas que justificam a escolha.
 
 ==================================================
-ANÁLISE DE RESILIÊNCIA
+CERTIFICATION GATE
 ==================================================
 
-Além de qualidade, simular indisponibilidade do provider vencedor.
+Somente retornar:
 
-Exemplo:
-
-PRIMARY unavailable
-↓
-FALLBACK_1
-↓
-FALLBACK_2
-
-Verificar se a cadeia continua:
-
-Evidence Pack
-↓
-Provider
-↓
-Grounding Guard
-
-O fallback nunca pode ignorar a Evidence Layer.
-
-==================================================
-NÃO ALTERAR PRODUÇÃO
-==================================================
-
-Mesmo após identificar vencedores:
-
-DO NOT CHANGE ROUTING.
-
-DO NOT ENABLE NVIDIA.
-
-DO NOT ENABLE CEREBRAS.
-
-DO NOT CHANGE GEMINI.
-
-DO NOT CHANGE OPENAI.
-
-DO NOT MODIFY CLAUDE.
-
-Somente recomendar.
-
-==================================================
-NÃO ALTERAR A INTERFACE
-==================================================
-
-Não alterar:
-
-/
-Landing
-Dashboard
-Index
-War Room público
-
-O relatório pode ser gravado como artefato técnico ou exibido em rota administrativa existente.
-
-==================================================
-RELATÓRIO FINAL OBRIGATÓRIO
-==================================================
-
-WAR ROOM — FINAL AI ROUTING DECISION
-
-Cases ........................ 30
-Tasks per case ............... 3
-Providers .................... 5
-Executions planned ........... 450
-Executions completed ......... ?
-
-Context Hash Parity .......... PASS/FAIL
-Evidence Retrieval ........... PASS/FAIL
-PubMed/PMC ................... PASS/FAIL
-Grounding Validation ......... PASS/FAIL
-
-TABELA POR MODELO:
-
-MODEL
-SUCCESS RATE
-HARD-GATE PASS RATE
-GROUNDING
-UNSUPPORTED CLAIM RATE
-CRITICAL HALLUCINATIONS
-ANSWER KEY SUPPORT
-TOPIC FIDELITY
-SIBLING CONTAMINATION
-EVIDENCE COVERAGE
-JSON VALIDITY
-P50
-P95
-429
-5XX
-TIMEOUT
-RETRY RATE
-
-==================================================
-RANKING
-==================================================
-
-QUESTION GENERATION
-
-1.
-2.
-3.
-4.
-5.
-
-TUTOR
-
-1.
-2.
-3.
-4.
-5.
-
-CLINICAL SIMULATION
-
-1.
-2.
-3.
-4.
-5.
-
-FAST
-
-1.
-2.
-3.
-4.
-5.
-
-DEEP REASONING
-
-1.
-2.
-3.
-4.
-5.
-
-==================================================
-ROUTING RECOMMENDATION
-==================================================
-
-DEFAULT_CLINICAL .............. ?
-
-QUESTION_GENERATOR ............ ?
-
-TUTOR ......................... ?
-
-CLINICAL_SIMULATION ........... ?
-
-FAST .......................... ?
-
-DEEP_REASONING ................ ?
-
-FALLBACK_1 .................... ?
-
-FALLBACK_2 .................... ?
-
-SHADOW_ONLY ................... ?
-
-REJECTED ...................... ?
-
-==================================================
-DECISÃO
-==================================================
-
-Se o teste possuir:
-
-same context
-+
-evidence retrieval validado
-+
-amostra completa
-+
-hard gates funcionando
-+
-resultados reproduzíveis
-
-retornar:
-
-FINAL AI ROUTING BENCHMARK CERTIFIED
+FINAL REAL AI ROUTING BENCHMARK CERTIFIED
 READY FOR ROUTING IMPLEMENTATION
 
-Caso contrário:
+SE:
 
-FINAL AI ROUTING BENCHMARK NOT CERTIFIED
+450/450 execuções primárias reais concluídas
++
+providers realmente chamados
++
+EvidenceContextPack real
++
+PubMed/PMC realmente testados
++
+context hash parity confirmada
++
+hard gates realmente calculados
++
+nenhuma métrica sintética
++
+resultados auditáveis
++
+reproducibilidade executada
 
-e informar exatamente:
+Caso qualquer condição falhe:
 
-failed gate
+FINAL REAL AI ROUTING BENCHMARK NOT CERTIFIED
+
+Informar:
+
+failed_gate
 provider
 case
 task
-root cause
+expected
+observed
+root_cause
+recommended_fix
 
 ==================================================
 REGRA FINAL
+==================================================
 
-NÃO escolha a IA que demonstra possuir mais conhecimento médico de memória.
+NÃO ESCREVA O PROTOCOLO NA INTERFACE.
 
-Escolha a IA que demonstra utilizar melhor:
+NÃO RESPONDA APENAS QUE "FOI IMPLEMENTADO".
+
+EXECUTE O BENCHMARK.
+
+Se houver impedimento técnico, PARE e reporte o impedimento real.
+
+Não invente o resultado para completar a tarefa.
+
+O objetivo é descobrir qual modelo utiliza melhor:
 
 LITERATURA
 +
-PUBMED/PMC
-+
 DIRETRIZES
 +
-PROVAS
+PUBMED/PMC
++
+PROVAS OFICIAIS
++
+GOLD
 +
 BANCO ENAZIZI
 
-fornecidos pelo Evidence Engine.
+sob exatamente o mesmo EvidenceContextPack.
 
 A Evidence Layer é a fonte da verdade.
 
-Os modelos são motores substituíveis.`;
+Os LLMs são motores substituíveis.`;
 
   return (
-    <div className="p-8 font-mono bg-slate-950 text-slate-50 min-h-screen whitespace-pre-wrap">
+    <div className="min-h-screen bg-black text-green-500 font-mono p-8 whitespace-pre-wrap">
       {content}
     </div>
   );
