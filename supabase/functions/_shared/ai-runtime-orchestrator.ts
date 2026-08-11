@@ -16,7 +16,7 @@ const EU_AI_URL = Deno.env.get("EU_API_URL") || "https://enazizi-com-br-producti
 const EU_AI_TIMEOUT_MS = 15_000; // Increased from 8s to accommodate complex medical responses
 const AI_TIMEOUT_MS = 30_000;
 const AI_MAX_TOKENS = 4096;
-const AI_MAX_TOKENS_DEEP = 6000; // For tutor_chat high complexity & clinical_reasoning
+const AI_MAX_TOKENS_DEEP = 8000; // For tutor_chat high complexity & clinical_reasoning
 
 // ---------------------------------------------------------------------------
 // Tipos públicos
