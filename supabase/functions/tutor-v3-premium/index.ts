@@ -719,7 +719,10 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     // ── Caminho A: tenta Claude (eu-ai) com extrator JSON tolerante; fallback automático p/ OpenAI ──
     // Perf-2: timeout hard por provider + medição diferenciada
     const CLAUDE_TIMEOUT_MS = Number(Deno.env.get("TUTOR_CLAUDE_TIMEOUT_MS") || 9000);
-    const OPENAI_TIMEOUT_MS = Number(Deno.env.get("TUTOR_OPENAI_TIMEOUT_MS") || 9000);
+    // P0 HOTFIX 2026-08-11: 9s era menor que o 1º timeout interno do gateway (openai 25s),
+    // abortando a cadeia ANTES do fallback Google (que responde em ~7s). Budget agora cobre
+    // openai timeout + fallback gemini.
+    const OPENAI_TIMEOUT_MS = Number(Deno.env.get("TUTOR_OPENAI_TIMEOUT_MS") || 42000);
     const aiTimings: Record<string, any> = {
       providerPrimary: "unknown",
       totalAiMs: 0,
