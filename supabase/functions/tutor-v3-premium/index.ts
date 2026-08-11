@@ -643,9 +643,14 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
             }
           }
           
-          TEMA ATUAL: ${topic}
+          TEMA ATUAL (FIXO): ${topic}
           CONTEXTO ENAMED 2026: ${JSON.stringify(body.enamedContext || {})}
-          CONTESTO DE MEMÓRIA: ${memoryContextTrimmed}${ragContextTrimmed}`;
+          CONTESTO DE MEMÓRIA: ${memoryContextTrimmed}${ragContextTrimmed}
+          
+          # AVISO DE INTEGRIDADE:
+          Você deve focar EXCLUSIVAMENTE em ${topic}. 
+          Não desvie para outros temas (como Insuficiência Cardíaca ou Emergências Gerais) a menos que sejam diferenciais diretos.
+          Toda a explicação técnica, fisiopatologia e conduta deve ser sobre ${topic}.`;
 
     const contextStats: Record<string, any> = {
       historyChars,
