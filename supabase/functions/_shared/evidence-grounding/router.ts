@@ -14,8 +14,8 @@ export async function groundedAIRouter(config: RouterConfig) {
   const { mission, topic, contextPack } = config;
   
   // Wave 1 Strategy: EG-3 Unified Routing
-  let provider = 'google/gemini-2.0-flash'; // DEFAULT
-  let model = 'gemini-2.0-flash';
+  let provider = 'google/gemini-2.5-flash'; // DEFAULT
+  let model = 'google/gemini-2.5-flash';
   
   if (mission === 'CLINICAL_SIMULATION' || mission === 'DEEP_REASONING') {
     provider = 'google/gemini-2.5-pro';

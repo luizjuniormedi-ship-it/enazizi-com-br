@@ -72,7 +72,7 @@ serve(async (req) => {
         hallucination_check: result.hallucination_check,
         coherence_score: result.coherence_score,
         audit_notes: result.audit_notes,
-        auditor_model: "gemini-2.0-flash-pedagogical-v1"
+        auditor_model: "google/gemini-2.5-flash"
       });
 
     if (insertErr) throw insertErr;
