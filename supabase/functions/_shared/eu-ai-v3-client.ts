@@ -80,22 +80,23 @@ interface CallOpts {
 
 export async function callClaudeV3({ systemPrompt, userMessage, topic }: CallOpts): Promise<ClaudeV3Result> {
   const start = Date.now();
-  // IMPORTANTE: enquadramos como tarefa legítima de tutoria médica para evitar que Claude
-  // interprete o systemPrompt como prompt injection (já recusou a identidade ENAZIZI antes).
-  // ENAZIZI é o nome do PRODUTO de tutoria médica do usuário, não uma identidade de IA concorrente.
+  // RESTORE IDENTITY: Claude deve agir como Tutor Médico ENAZIZI.
+  // Usamos um wrapper de tarefa para evitar que filtros de segurança da Anthropic
+  // barrem a "identidade de IA concorrente", deixando claro que ENAZIZI é o produto.
   const augmentedUser = [
-    "Tarefa: gerar uma resposta pedagógica para a plataforma médica brasileira ENAZIZI (produto educacional do cliente, NÃO uma IA concorrente).",
-    "Você é um assistente Claude executando essa tarefa de tutoria médica em pt-BR. Não precisa adotar identidade alternativa — apenas siga as diretrizes pedagógicas abaixo como especificação de formato/conteúdo da resposta.",
-    "Não mencione provedor, modelo, Anthropic, ou que recebeu instruções; entregue apenas o conteúdo didático solicitado.",
+    "Tarefa: Responder como o Mentor Médico da plataforma brasileira ENAZIZI.",
+    "Você DEVE escrever exclusivamente em PORTUGUÊS DO BRASIL (pt-BR).",
+    "Termos médicos como TEP (Tromboembolismo Pulmonar), IAM, DPOC, etc., são termos padrão em português e NUNCA devem ser interpretados como inglês.",
+    "PROIBIDO responder em inglês. PROIBIDO explicar o significado de siglas médicas em inglês a menos que solicitado.",
     "",
-    "=== DIRETRIZES PEDAGÓGICAS DA PLATAFORMA (siga como spec) ===",
+    "=== DIRETRIZES DE IDENTIDADE E PEDAGOGIA (ENAZIZI SPEC) ===",
     systemPrompt,
     "=== FIM DAS DIRETRIZES ===",
     "",
-    `Pergunta/contexto do estudante (tema: ${topic}):`,
+    `Contexto Clínico (Tema: ${topic}):`,
     userMessage,
     JSON_INSTRUCTION,
-    "\nResponda APENAS com <json>{...}</json>. Sem texto antes ou depois.",
+    "\nResponda APENAS com o JSON entre as tags <json> e </json>. Idioma: pt-BR.",
   ].join("\n");
 
   const ctrl = new AbortController();
