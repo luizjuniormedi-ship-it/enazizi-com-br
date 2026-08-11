@@ -583,6 +583,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           contentLength: result?.content?.length 
         });
 
+        settled = true;
         clearTimeout(watchdogTimeout);
 
         const finalContent = result?.content || assistantSoFar;
@@ -591,6 +592,21 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         // Reset circuit breaker on success
         consecutiveErrorsRef.current = 0;
 
+        // P0: backend pode responder 200 com conteúdo vazio → não deixar a UI muda.
+        if (!finalContent || !finalContent.trim()) {
+          console.error(`[TUTOR_EMPTY_200] id=${requestId} backend respondeu sem conteúdo`);
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.role === "assistant" && !last.content) {
+              return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMessage, isError: true } : m);
+            }
+            return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
+          });
+          setIsLoading(false);
+          setLoadingStage("");
+          return;
+        }
+
         if (metrics) {
           setMessages(prev => prev.map((m, i) => 
             (i === prev.length - 1 && m.role === "assistant") ? { ...m, metrics } : m
@@ -598,8 +614,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
 
         if (convId && finalContent) {
-          await history.persistAssistantMessage(convId, finalContent);
-          history.loadConversations();
+          // Persistência assíncrona: nunca bloqueia a finalização da UI.
+          void withTimeout(history.persistAssistantMessage(convId, finalContent), 8000, "persistAssistant")
+            .then(() => history.loadConversations())
+            .catch(() => {});
         }
 
         if (finalContent && finalContent.trim().length > 0) {
