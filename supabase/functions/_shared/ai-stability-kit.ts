@@ -339,13 +339,18 @@ export function getStaticFallback(tema: string): any {
   
   // Generic fallback with better messaging
   console.log(`[TUTOR_FALLBACK_GENERIC] No local summary for "${tema}"`);
+  
+  // P0 Fix: Preserve the canonical topic if it was already identified, 
+  // do not overwrite with "Medicina Geral" in the fallback UI message.
+  const displayTopic = tema || "o tema solicitado";
+
   return {
-    content: `### 🏥 Sistema em Manutenção Cognitiva\n\nIdentificamos uma alta demanda no tema **${tema}**. Estamos utilizando nosso motor de resiliência local para garantir que seu estudo não seja interrompido.\n\nEm instantes, o Tutor V3 voltará com profundidade total de IA.`,
-    socraticQuestion: "Podemos revisar os conceitos base deste tema enquanto os servidores escalam?",
+    content: `### 🏥 Sistema em Modo de Resiliência: ${displayTopic}\n\nO motor principal de IA está temporariamente indisponível. Para não interromper seu estudo, estamos utilizando o conteúdo médico validado disponível.\n\nEm instantes, a profundidade total de IA será restaurada.`,
+    socraticQuestion: `Podemos revisar os fundamentos de **${displayTopic}** enquanto aguardamos o restabelecimento total?`,
     teachingPhase: "ENSINAR",
     sigla: "FIX",
     fallback: true,
     generic: true,
-    tema
+    tema: displayTopic
   };
 }
