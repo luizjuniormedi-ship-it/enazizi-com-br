@@ -14,7 +14,7 @@ async function testAcronyms() {
   for (const c of cases) {
     const res = resolveMedicalDomain(c.input);
     const success = res.canonical === c.expected;
-    console.log(`Input: ${c.input} | Expected: ${c.expected} | Got: ${c.canonical} | ${success ? "✅ PASS" : "❌ FAIL"}`);
+    console.log(`Input: ${c.input} | Expected: ${c.expected} | Got: ${res.canonical} | ${success ? "✅ PASS" : "❌ FAIL"}`);
     if (success) passCount++;
   }
   
