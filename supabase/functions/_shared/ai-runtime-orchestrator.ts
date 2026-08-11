@@ -110,10 +110,11 @@ const MODELS = {
   flashStable: { provider: "openai", model: "gpt-4o" } as ModelRef,
   flashLite: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
   pro: { provider: "openai", model: "gpt-4o" } as ModelRef,
-  gpt5Mini: { provider: "openai", model: "gpt-5-mini" } as ModelRef, // Permitir tentativa real do gpt-5-mini
+  gpt5Mini: { provider: "openai", model: "gpt-5-mini" } as ModelRef,
   gpt5: { provider: "openai", model: "gpt-5" } as ModelRef,
   geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
   openaiFallback: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
+  nvidia: { provider: "openai", model: "nvidia/llama-3.1-8b-instruct" } as ModelRef, // Mapeado via Gateway compatível
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
@@ -209,53 +210,11 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
   switch (input.taskType) {
     case "tutor_chat": {
-      // Pergunta simples → modelo mais barato
-      if (complexity === "low") {
-        return wrap(
-          MODELS.flashLite,
-          [MODELS.flash, MODELS.geminiFallback],
-          "tutor_chat low complexity → flash mini",
-          PROMPT_PROFILES.fast_review,
-        );
-      }
-
-      // Farmacologia → precisão
-      if (/farmaco|farmacologia|drug|posolog/i.test(specialty)) {
-        const primary = MODELS.gpt5;
-        return wrap(
-          primary,
-          [MODELS.flash, MODELS.geminiFallback],
-          "tutor_chat farmacologia → reasoning preciso",
-          PROMPT_PROFILES.pharmacology_deep,
-        );
-      }
-
-      // Preventiva / SUS
-      if (/preventiv|sus|saúde\s+coletiva|saude\s+coletiva|epidemio/i.test(specialty)) {
-        return wrap(
-          MODELS.flash,
-          [MODELS.flashLite, MODELS.geminiFallback],
-          "tutor_chat preventiva/SUS → openai/gpt-4o",
-          PROMPT_PROFILES.preventive_sus,
-        );
-      }
-
-      // Raciocínio clínico profundo
-      if (input.requiresReasoning || complexity === "high") {
-        const primary = MODELS.gpt5;
-        return wrap(
-          primary,
-          [MODELS.flash, MODELS.geminiFallback],
-          "tutor_chat reasoning profundo",
-          PROMPT_PROFILES.clinical_reasoning,
-        );
-      }
-
-      // Default tutor
+      // Prioridade P0: NVIDIA forçado para teste do usuário
       return wrap(
-        MODELS.flash,
-        [MODELS.flashLite, MODELS.geminiFallback],
-        "tutor_chat default balanced",
+        MODELS.nvidia,
+        [MODELS.flash, MODELS.flashLite, MODELS.geminiFallback],
+        "USER_REQUEST: FORCE_NVIDIA_TUTOR_TEST",
         PROMPT_PROFILES.feynman_full,
       );
     }
