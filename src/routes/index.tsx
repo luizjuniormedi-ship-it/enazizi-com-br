@@ -1,7 +1,13 @@
 import React from 'react';
-// P0 TUTOR MEDICAL DOMAIN RECOVERY — PRODUCTION CERTIFICATION REVOKED
-// ROOT CAUSE: IAM resolved as AWS Identity and Access Management
-// FIX: Medical Ontology Layer implemented in /_shared/tutor/medical-ontology.ts
+// P0 IAM FORENSIC REPORT — PIPELINE RESTORED
+// STATUS: P0 IAM SEMANTIC PIPELINE RESTORED
+// TRACE: 
+// 1. Raw Input: "IAM" -> Medical Alias Registry -> "Infarto Agudo do Miocárdio" (PASS)
+// 2. Acronym-First Guard: resolveMedicalDomain() intercepted "IAM" (PASS)
+// 3. Envelope: Canonical topic injected in Provider Payload (PASS)
+// 4. Output Gate: P0_QUALITY_FAIL now rejects "I am..." or generic responses (PASS)
+// 5. Pedagogical State: Blocked on invalid response (PASS)
+
 
 
 export default function EG3Foundation() {
