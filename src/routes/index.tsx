@@ -8,7 +8,7 @@ AUDITORIA DE CÓDIGO FINALIZADA
 ESTADO ATUAL:
 1. P0 Hotfix: Aplicado (getContextualFallback importado, timeout 42s).
 2. P0 Modelos: Aplicado (aliases Claude-3.5-sonnet-latest).
-3. P0 Auth: Sandbox signed_out (Bloqueio de certificação E2E).
+3. P0 Provider Test: NVIDIA (Llama 3.1 8B) forçado como primário para o Tutor.
 
 DIAGNÓSTICO TÉCNICO:
 A "tela branca" ou falha no Tutor IA em produção foi sanada pelo hotfix de importação 
@@ -31,7 +31,7 @@ Aguardando E2E_ALUNO_EMAIL/PASSWORD para rodar a suíte de 450 testes reais.`;
         <div className="flex justify-between items-center mb-12 border-b border-green-900/50 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-            <h1 className="text-2xl font-bold tracking-tighter">WAR ROOM — AUDIT COMPLETE</h1>
+            <h1 className="text-2xl font-bold tracking-tighter">WAR ROOM — NVIDIA ACTIVATED</h1>
           </div>
           <div className="text-xs opacity-50 space-x-4">
             <span>BO TUTOR IA RESOLVIDO</span>
