@@ -1,29 +1,99 @@
 import React from 'react';
 
 export default function EG3Foundation() {
-  const content = `Identifique falhas, erros de lógica e bugs no código fornecido. Forneça a correção exata para cada problema encontrado, acompanhada de uma explicação clara sobre a causa raiz e a solução aplicada, garantindo que o código funcione perfeitamente e sem erros. BO TUTOR IA
+  const content = `O bloqueio agora está completamente claro: **não é mais código do Tutor; é ausência das credenciais QA no ambiente do Lovable**.
 
-AUDITORIA DE CÓDIGO FINALIZADA
---------------------------------------------------
-ESTADO ATUAL:
-1. P0 Hotfix: Aplicado (getContextualFallback importado, timeout 42s).
-2. P0 Modelos: Aplicado (aliases Claude-3.5-sonnet-latest).
-3. P0 Provider Test: NVIDIA (Llama 3.1 8B) forçado como primário para o Tutor.
+Cadastre no menu **Secrets** exatamente:
 
-DIAGNÓSTICO TÉCNICO:
-A "tela branca" ou falha no Tutor IA em produção foi sanada pelo hotfix de importação 
-no arquivo 'supabase/functions/tutor-v3-premium/index.ts'.
+\`\`\`text
+E2E_ALUNO_EMAIL
+E2E_ALUNO_PASSWORD
+\`\`\`
 
-ERROS DE LÓGICA IDENTIFICADOS:
-- A lógica de fallback em '_shared/ai-fetch.ts' ignorava timeouts se menores que 9s.
-- O detector de QR Mode em 'tutor-v3-premium' causava 500 se o JSON de resposta fosse malformado.
+Use uma conta de teste real com papel de aluno e sem privilégios administrativos. Não use conta pessoal, \`service_role\` ou credenciais compartilhadas com produção.
 
-CORREÇÕES APLICADAS:
-- Centralização de timeouts no 'ai-runtime-orchestrator.ts'.
-- Sanitização de JSON em QR Mode com try/catch e default values.
+Depois disso, envie ao Lovable apenas:
 
-PRÓXIMOS PASSOS:
-Aguardando E2E_ALUNO_EMAIL/PASSWORD para rodar a suíte de 450 testes reais.`;
+\`\`\`text
+EXECUTE TUTOR FINAL AUTHENTICATED E2E NOW.
+
+Os secrets E2E_ALUNO_EMAIL e E2E_ALUNO_PASSWORD já foram configurados.
+
+Não altere código, UI, routing, Evidence Layer, benchmark ou providers.
+
+Execute imediatamente:
+1. geração do storageState;
+2. validação de /dashboard;
+3. validação de acesso ao Tutor;
+4. IAM/STEMI;
+5. Sepse;
+6. follow-up multi-turn;
+7. reload/persistência.
+
+Retorne somente resultados reais:
+
+AUTH
+Supabase login
+auth.uid()
+student role
+storageState
+session reuse
+
+IAM
+HTTP
+latency
+context_pack_id
+context_hash
+evidence_count
+grounding_score
+unsupported_claim_rate
+critical_hallucination
+requested provider/model
+effective provider/model
+fallback chain
+safe_mode
+
+SEPSE
+mesmas métricas
+
+MULTI-TURN
+conversation preserved
+clinical context preserved
+persisted
+
+RELOAD
+history preserved
+conversation_id preserved
+duplicates
+
+ERRORS
+500
+502
+503
+504
+Failed to Fetch
+blank screen
+ReferenceError
+
+FINAL STATUS apenas:
+
+P0 TUTOR PRODUCTION CERTIFIED
+
+ou
+
+P0 TUTOR PRODUCTION CERTIFIED
+P1 ROUTING PERFORMANCE HARDENING REQUIRED
+
+ou
+
+P0 TUTOR INCIDENT NOT RESOLVED
+
+Não invente resultados.
+Não atualize War Room.
+Não faça novas alterações antes de concluir os testes.
+\`\`\`
+
+O próximo resultado válido precisa mostrar execução autenticada real; qualquer resposta apenas dizendo “infraestrutura pronta” ainda não fecha o P0.`;
 
   return (
     <div className="min-h-screen bg-black text-green-500 font-mono p-8 overflow-auto selection:bg-green-500 selection:text-black">
