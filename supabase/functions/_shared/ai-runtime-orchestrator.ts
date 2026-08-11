@@ -363,7 +363,7 @@ function getAIKey(provider: string): string {
 }
 
 const ANTHROPIC_BASE_URL = (Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.anthropic.com").replace(/\/+$/, "");
-const ANTHROPIC_DEFAULT_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
+const ANTHROPIC_DEFAULT_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-latest";
 
 function extractProviderError(status: number | undefined, bodyText: string, err?: unknown) {
   const fallbackMessage = err instanceof Error ? err.message : bodyText || "Provider unavailable";

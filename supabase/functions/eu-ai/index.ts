@@ -32,8 +32,8 @@ const LOVABLE_DEFAULT_MODEL = Deno.env.get("LOVABLE_DEFAULT_MODEL") || "google/g
 // P0-2: MODEL REGISTRY - Centralizando modelos válidos para o gateway
 const AI_MODELS = {
   claude: {
-    primary: Deno.env.get("CLAUDE_PRIMARY_MODEL") || "claude-3-5-sonnet-20241022",
-    fallback: Deno.env.get("CLAUDE_FALLBACK_MODEL") || "claude-3-5-haiku-20241022"
+    primary: Deno.env.get("CLAUDE_PRIMARY_MODEL") || "claude-3-5-sonnet-latest",
+    fallback: Deno.env.get("CLAUDE_FALLBACK_MODEL") || "claude-3-5-haiku-latest"
   },
   openai: {
     primary: "gpt-4o",
@@ -95,6 +95,7 @@ function classify(status: number, bodyText: string): { retryable: boolean; code:
   if (status === 401 || status === 403) return { retryable: true, code: `auth_${status}` };
   if (status >= 500) return { retryable: true, code: `upstream_${status}` };
   if (status === 400 && KEY_EXPIRED_RX.test(bodyText)) return { retryable: true, code: "key_expired" };
+  if (status === 400 && /model(o)?/i.test(bodyText)) return { retryable: true, code: "model_invalid" };
   if (status === 400) return { retryable: false, code: "bad_request" };
   return { retryable: false, code: `http_${status}` };
 }
