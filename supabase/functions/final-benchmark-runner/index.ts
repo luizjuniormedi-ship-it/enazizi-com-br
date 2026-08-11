@@ -95,9 +95,15 @@ Deno.serve(async (req) => {
           error: call.error
         };
 
+        // Telemetria persistente para auditoria real
         await supabase.from('ai_runtime_logs').insert({
           task_type: 'benchmark',
           request_id: runId,
+          provider: m.provider,
+          model: m.model,
+          success: !call.error,
+          latency_ms: call.latency,
+          error_code: call.error ? call.error.substring(0, 50) : null,
           metadata: res
         });
 
