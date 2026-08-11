@@ -81,6 +81,12 @@ export interface AIRunInput extends AISelectInput {
   preferEuAI?: boolean;
   /** When provided, log row is written via this Supabase client. */
   supabase?: any;
+  /** BENCHMARK MODE: When true, disables fallback and requires exact model match. */
+  benchmarkMode?: boolean;
+  /** Override the selected model. */
+  modelOverride?: string;
+  /** Override the provider. */
+  providerOverride?: "lovable-ai" | "openai" | "eu-ai" | "anthropic";
 }
 
 export interface AIRunResult {
@@ -98,15 +104,14 @@ export interface AIRunResult {
 // Registry inline (Fase 1)
 // ---------------------------------------------------------------------------
 
-// Modelos validados em produção via Lovable AI Gateway.
 // Modelos validados em produção. Prioridade para OpenAI Direto (sem gateway).
 const MODELS = {
   flash: { provider: "openai", model: "gpt-4o" } as ModelRef,
   flashStable: { provider: "openai", model: "gpt-4o" } as ModelRef,
   flashLite: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
   pro: { provider: "openai", model: "gpt-4o" } as ModelRef,
-  gpt5Mini: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
-  gpt5: { provider: "openai", model: "gpt-4o" } as ModelRef,
+  gpt5Mini: { provider: "openai", model: "gpt-5-mini" } as ModelRef, // Permitir tentativa real do gpt-5-mini
+  gpt5: { provider: "openai", model: "gpt-5" } as ModelRef,
   geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
   openaiFallback: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
 };
@@ -763,37 +768,46 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   const attempts: AIAttempt[] = [];
   const reqTag = input.requestId || "-";
 
-  console.log(`[AI_RUNTIME_START] req=${reqTag} task=${input.taskType} model=${selection.model} profile=${selection.promptProfile}`);
+  console.log(`[AI_RUNTIME_START] req=${reqTag} task=${input.taskType} model=${selection.model} profile=${selection.promptProfile}${input.benchmarkMode ? ' (BENCHMARK_MODE)' : ''}`);
 
-  const fullChain: ModelRef[] = [
-    { provider: selection.provider, model: selection.model },
-    ...selection.fallbackChain,
-  ];
+  let fullChain: ModelRef[];
 
-  // If primary provider is lovable-ai and we have OpenAI key, ensure OpenAI is tried first
-  const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
-  if (hasOpenAI && selection.provider === "lovable-ai") {
-    const modelClean = selection.model.replace("openai/", "");
-    if (!fullChain.some(c => c.provider === "openai" && c.model === modelClean)) {
-      fullChain.unshift({ provider: "openai", model: modelClean });
+  if (input.benchmarkMode) {
+    // In benchmark mode, we ONLY use the requested model/provider and NO fallbacks.
+    fullChain = [{ 
+      provider: input.providerOverride || selection.provider, 
+      model: input.modelOverride || selection.model 
+    }];
+  } else {
+    fullChain = [
+      { 
+        provider: input.providerOverride || selection.provider, 
+        model: input.modelOverride || selection.model 
+      },
+      ...selection.fallbackChain,
+    ];
+
+    // If primary provider is lovable-ai and we have OpenAI key, ensure OpenAI is tried first
+    const hasOpenAI = !!Deno.env.get("OPENAI_API_KEY");
+    if (hasOpenAI && selection.provider === "lovable-ai") {
+      const modelClean = selection.model.replace("openai/", "");
+      if (!fullChain.some(c => c.provider === "openai" && c.model === modelClean)) {
+        fullChain.unshift({ provider: "openai", model: modelClean });
+      }
     }
-  }
 
-  // preferEuAI: Claude (eu-ai) como 1ª escolha — só Tutor free chat.
-  // Fallback automático para o chain existente se o proxy falhar/timeout (8s).
-  if (input.preferEuAI && EU_AI_URL) {
-    if (!fullChain.some(c => c.provider === "eu-ai")) {
-      fullChain.unshift({ provider: "eu-ai", model: "claude-eu" });
-      console.log(`[AI_RUNTIME_EU_AI_PRIMARY] req=${reqTag} — Claude prepended as primary`);
+    // preferEuAI: Claude (eu-ai) como 1ª escolha — só Tutor free chat.
+    if (input.preferEuAI && EU_AI_URL) {
+      if (!fullChain.some(c => c.provider === "eu-ai")) {
+        fullChain.unshift({ provider: "eu-ai", model: "claude-eu" });
+      }
     }
-  }
 
-  // Anthropic (Claude via hudapi.cloud) como PRIMÁRIO global quando ANTHROPIC_API_KEY estiver setado.
-  // Fallback automático para OpenAI/Gemini se falhar.
-  const hasAnthropic = !!Deno.env.get("ANTHROPIC_API_KEY");
-  if (hasAnthropic && !fullChain.some(c => c.provider === "anthropic")) {
-    fullChain.unshift({ provider: "anthropic", model: ANTHROPIC_DEFAULT_MODEL });
-    console.log(`[AI_RUNTIME_ANTHROPIC_PRIMARY] req=${reqTag} — Claude (${ANTHROPIC_DEFAULT_MODEL} @ ${ANTHROPIC_BASE_URL}) prepended as primary`);
+    // Anthropic (Claude via hudapi.cloud) como PRIMÁRIO global
+    const hasAnthropic = !!Deno.env.get("ANTHROPIC_API_KEY");
+    if (hasAnthropic && !fullChain.some(c => c.provider === "anthropic")) {
+      fullChain.unshift({ provider: "anthropic", model: ANTHROPIC_DEFAULT_MODEL });
+    }
   }
 
   // Health-aware filtering: pula modelos com falha recente conhecida.
