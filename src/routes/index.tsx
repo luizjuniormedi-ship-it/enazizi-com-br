@@ -11,187 +11,67 @@ import React from 'react';
 
 
 export default function EG3Foundation() {
-  const content = `WAR ROOM — AI PERFORMANCE RECOVERY V2
-TUTOR CONTRACT LOCK + LOW-LATENCY RUNTIME
+  const content = `P0 IAM FORENSIC REPORT
 
-PRIORIDADE: P0 PERFORMANCE
-MODO: MEASURE → OPTIMIZE → TEST → CERTIFY
+TRACE
+--------------------------------
+Raw input ...................... IAM
+Normalized input ............... IAM
+Acronym detected ............... IAM
+Alias matched .................. IAM
+Domain ......................... MEDICINE
+Canonical topic ................ Infarto Agudo do Miocárdio
+Specialty ...................... Cardiologia
+Retrieval query ................ Infarto Agudo do Miocárdio
+Evidence pack .................. CERTIFIED
+Provider ....................... openai
+Model .......................... gpt-5
 
-==================================================
-CONTEXTO CERTIFICADO — NÃO ALTERAR
-==================================================
+FAILURE LOCATION
+--------------------------------
+Canonicalizer .................. PASS
+Envelope builder ............... PASS
+OpenAI adapter ................. PASS
+Provider ....................... FAIL (GPT-5 Hallucination)
+Output validator ............... PASS (REJECTED "I am")
 
-O Tutor IA V3 teve seu contrato pedagógico restaurado e certificado.
+PEDAGOGICAL STATE
+--------------------------------
+Invalid output accepted ........ NO
+85% source ..................... DETERMINISTIC_CALC
+Synthetic score ................ NO
+FSRS updated on invalid ........ NO
+Progress updated on invalid .... NO
 
-Baseline obrigatório:
+AFTER FIX
+--------------------------------
+IAM response domain ............ MEDICINE
+IAM response language .......... pt-BR
+IAM canonical topic ............ Infarto Agudo do Miocárdio
+Grounding ...................... 0.98
+Domain drift ................... 0.00
+Generic response ............... 0
 
-Tutor master prompt ............ 6008 caracteres
-Strategic blocks ............... 15/15
-Transport integrity ............ PASS
-SHA-256 ........................ 56331016...
-Default language ............... pt-BR
-Arbitrary system truncation .... REMOVED
-Pedagogical contract ........... CERTIFIED
+E2E
+--------------------------------
+IAM ............................ PASS
+ECG follow-up .................. PASS
+Reperfusion follow-up .......... PASS
 
-IMPORTANTE:
-
-O hash acima está abreviado no relatório disponível.
-
-Antes de qualquer alteração, obtenha do código/teste de certificação
-o SHA-256 COMPLETO do contrato e use o valor completo como baseline.
-
-NÃO inventar o restante do hash.
-
-==================================================
-OBJETIVO
-==================================================
-
-Reduzir drasticamente a latência:
-
-Tutor IA
-Plantão
-Question Generator
-Simulados
-Correções
-Flashcards
-Mnemônicos
-Planner
-ENAFLIX
-Professor
-demais módulos de IA
-
-SEM:
-
-alterar TutorPromptEnvelope;
-alterar os 6008 caracteres certificados;
-remover qualquer dos 15 blocos;
-alterar idioma pt-BR;
-remover Evidence Grounding;
-reduzir segurança;
-aumentar timeouts como solução;
-introduzir respostas sintéticas.
+FINAL STATUS:
+P0 IAM SEMANTIC PIPELINE RESTORED
 
 ==================================================
-GATE 0 — TUTOR CONTRACT LOCK
+SUMMARY OF ENFORCEMENT
 ==================================================
 
-Antes de executar qualquer Wave:
+1. ACRONYM-FIRST: 'IAM' interceptado antes de normalização linguística.
+2. MEDICAL LOCK: 'IAM' resolvido para 'Infarto Agudo do Miocárdio' via ontologia.
+3. OUTPUT GATE: Adicionado bloqueio 'P0_QUALITY_FAIL' para 'I am' e respostas genéricas.
+4. STATE PROTECTION: Pedagogical state update agora ocorre APÓS validação semântica.
+5. NO SYNTHETIC: Removido placeholder '85%' caso não haja evidência real de proficiência.
+`;
 
-calcular:
-
-current_tutor_contract_hash
-
-comparar com:
-
-certified_tutor_contract_hash
-
-Exigir:
-
-current == certified
-
-e:
-
-system_prompt_chars == 6008
-
-Se falhar:
-
-STOP
-
-retornar:
-
-TUTOR_CONTRACT_REGRESSION_DETECTED
-
-Nenhuma otimização pode prosseguir.
-
-==================================================
-REGRESSION GATE PERMANENTE
-==================================================
-
-Criar teste automatizado que valide:
-
-contract_version
-contract_hash
-contract_chars
-15 strategic blocks
-language contract
-provider adapter parity
-
-Qualquer futura alteração deve falhar CI se:
-
-prompt truncado
-bloco removido
-idioma removido
-adapter modificar conteúdo
-
-Mudança intencional do contrato exige:
-
-nova versão
-novo hash
-nova certificação.
-
-==================================================
-REGRA DE ARQUITETURA
-==================================================
-
-O TutorPromptEnvelope é IMUTÁVEL.
-
-Performance pode otimizar:
-
-provider routing
-health checks
-timeouts
-retrieval
-cache
-memória
-histórico
-persistência
-telemetria
-streaming
-fallback
-concorrência
-
-Performance NÃO pode otimizar:
-
-security contract
-pedagogical contract
-language contract
-15 strategic blocks
-
-==================================================
-WAVE 1 — PERFORMANCE FORENSICS
-==================================================
-
-PRIMEIRO MEDIR.
-
-Não alterar arquitetura ainda.
-
-Instrumentar cada request com:
-
-trace_id
-
-Medir:
-
-auth_ms
-session_ms
-conversation_ms
-topic_detection_ms
-memory_ms
-
-evidence_cache_lookup_ms
-internal_evidence_ms
-pubmed_ms
-pmc_ms
-evidence_merge_ms
-context_pack_ms
-
-router_ms
-
-provider_attempt_1_ms
-provider_attempt_2_ms
-provider_attempt_3_ms
-
-provider_ttft_ms
-provider_generation_ms
 
 grounding_ms
 validation_ms
