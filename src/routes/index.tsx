@@ -93,8 +93,8 @@ export default function WarRoom() {
               <h3 className="text-white font-bold border-b border-white/10 pb-2 italic">TEST 3, 4 & 5 — CONTINUITY & CHANGE</h3>
               <ul className="space-y-2 text-slate-400">
                 <li><span className="text-indigo-400">Continue:</span> Não deve mudar tema.</li>
-                <li><span className="text-indigo-400">Diferencial:</span> "Como diferencio de asma?" -> Tema deve continuar Bronquiolite.</li>
-                <li><span className="text-indigo-400">Mudança Explícita:</span> "Quero estudar IC" -> Deve atualizar lock.</li>
+                <li><span className="text-indigo-400">Diferencial:</span> "Como diferencio de asma?" {'->'} Tema deve continuar Bronquiolite.</li>
+                <li><span className="text-indigo-400">Mudança Explícita:</span> "Quero estudar IC" {'->'} Deve atualizar lock.</li>
               </ul>
             </div>
 
