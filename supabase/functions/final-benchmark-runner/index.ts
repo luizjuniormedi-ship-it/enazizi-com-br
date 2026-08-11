@@ -28,7 +28,15 @@ async function callProvider(modelRef: typeof MODELS[0], messages: any[]) {
       const res = await callCerebras({ model: modelRef.model, messages, maxTokens: 1024 });
       return { content: res.content, status: 200, latency: res.latencyMs, tokens: res.usage.inputTokens + res.usage.outputTokens, effective_model: res.model };
     } else {
-      const res = await runAI({ taskType: 'clinical_reasoning', messages, budgetMode: 'premium', supabase });
+      const res = await runAI({ 
+        taskType: 'clinical_reasoning', 
+        messages, 
+        budgetMode: 'premium', 
+        supabase,
+        benchmarkMode: true,
+        providerOverride: modelRef.provider as any,
+        modelOverride: modelRef.model
+      });
       return { content: res.content, status: 200, latency: res.latencyMs, tokens: 0, effective_model: res.model };
     }
   } catch (err: any) {
