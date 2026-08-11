@@ -648,6 +648,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
         });
       } finally {
+        settled = true;
+        clearTimeout(watchdogTimeout);
         setIsLoading(false);
         setLoadingStage("");
         if (abortControllerRef.current === controller) {
