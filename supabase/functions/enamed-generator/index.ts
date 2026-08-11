@@ -15,7 +15,7 @@ const corsHeaders = {
 const OPENAI_API = "https://api.openai.com/v1/chat/completions";
 const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const ANTHROPIC_API = `${Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.anthropic.com"}/v1/chat/completions`;
-const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-20241022";
+const ANTHROPIC_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-latest";
 
 const ENAMED_THEMES = [
   { specialty: "Clínica Médica", topics: ["IAM e SCA", "Insuficiência Cardíaca", "DPOC e Asma", "Pneumonia Comunitária", "TEP", "AVC Isquêmico e Hemorrágico", "Diabetes Mellitus", "Cetoacidose Diabética", "Hipotireoidismo e Hipertireoidismo", "Sepse e Choque Séptico", "Insuficiência Renal Aguda", "Doença Renal Crônica", "Distúrbios Hidroeletrolíticos", "Cirrose e Hepatopatias", "Anemia Falciforme", "Lúpus Eritematoso Sistêmico", "Artrite Reumatoide", "Meningite Bacteriana", "HIV/AIDS", "Tuberculose Pulmonar e Extrapulmonar"] },
