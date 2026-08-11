@@ -463,6 +463,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       };
 
       const finalizeLoading = () => {
+        settled = true;
         clearTimeout(watchdogTimeout);
         setIsLoading(false);
         // [TUTOR_27_LOADING_FALSE]
