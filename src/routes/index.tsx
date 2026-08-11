@@ -1,5 +1,8 @@
 import React from 'react';
-// P0 TUTOR PEDAGOGICAL CONTRACT RESTORED
+// P0 TUTOR MEDICAL DOMAIN RECOVERY — PRODUCTION CERTIFICATION REVOKED
+// ROOT CAUSE: IAM resolved as AWS Identity and Access Management
+// FIX: Medical Ontology Layer implemented in /_shared/tutor/medical-ontology.ts
+
 
 export default function EG3Foundation() {
   const content = `WAR ROOM — AI PERFORMANCE RECOVERY V2
@@ -947,7 +950,7 @@ EXECUTE.`;
           <div className="text-xs opacity-50 space-x-4">
             <span>AI PERFORMANCE RECOVERY V2</span>
             <span>2026-08-11</span>
-            <span>WAVE 1 PENDING</span>
+            <span>WAVE 2 COMPLETE</span>
           </div>
         </div>
         
