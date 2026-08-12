@@ -32,10 +32,10 @@ export default function WarRoom() {
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 italic">P0 ARCHITECTURAL AUDIT COMPLETED</span>
           </div>
           <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">
-            WAR ROOM — P0 TUTOR <span className="text-emerald-500">SINGLE-RESPONSE ARCHITECTURE RESOLVED</span>
+            WAR ROOM — P0 SINGLE-RESPONSE <span className="text-emerald-500">FINAL HARDENING & REAL CERTIFICATION</span>
           </h1>
           <p className="text-emerald-400 text-xs font-bold uppercase tracking-[0.2em]">
-            DUPLICATE RESPONSE + SAFE MODE RACE + PEDAGOGICAL STATE CORRUPTION MITIGATED
+            A guarda temporal de 5 segundos NÃO pode ser a garantia principal. Precisamos tornar a arquitetura deterministicamente idempotente.
           </p>
         </header>
 
