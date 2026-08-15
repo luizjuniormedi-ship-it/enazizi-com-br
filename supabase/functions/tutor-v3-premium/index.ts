@@ -7,6 +7,15 @@ import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
 import { normalizeTutorResponse, TutorResponse, getStaticFallback, getContextualFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
+import {
+  callNvidia,
+  isNvidiaEnabled,
+  NVIDIA_MODEL_REGISTRY,
+} from "../_shared/nvidia-provider.ts";
+import {
+  callCerebras,
+  isCerebrasEnabled,
+} from "../_shared/cerebras-provider.ts";
 import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
 import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { resolveMedicalDomain } from "../_shared/tutor/medical-ontology.ts";
@@ -744,8 +753,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       complexity: "high" as any
     };
 
-    // ── Caminho A: tenta Claude (eu-ai) com extrator JSON tolerante; fallback automático p/ OpenAI ──
+    // Preferência canônica: NVIDIA → Cerebras → Claude → OpenAI.
+    // Providers opt-in são ignorados quando o secret correspondente não existe.
     // Perf-2: timeout hard por provider + medição diferenciada
+    const NVIDIA_TIMEOUT_MS = Number(Deno.env.get("TUTOR_NVIDIA_TIMEOUT_MS") || 20000);
+    const CEREBRAS_TIMEOUT_MS = Number(Deno.env.get("TUTOR_CEREBRAS_TIMEOUT_MS") || 20000);
     const CLAUDE_TIMEOUT_MS = Number(Deno.env.get("TUTOR_CLAUDE_TIMEOUT_MS") || 9000);
     // P0 HOTFIX 2026-08-11: 9s era menor que o 1º timeout interno do gateway (openai 25s),
     // abortando a cadeia ANTES do fallback Google (que responde em ~7s). Budget agora cobre
@@ -759,11 +771,86 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     };
 
     let aiResponse: any;
-    let aiProviderUsed = "openai";
+    let aiProviderUsed = "unknown";
     const aiStart = performance.now();
+
+    const providerMessages = aiConfigToRun.messages
+      .filter((m: any) => ["system", "user", "assistant"].includes(m.role))
+      .map((m: any) => ({ role: m.role, content: String(m.content || "") }));
+
+    if (isNvidiaEnabled()) {
+      try {
+        aiTimings.providerPrimary = "nvidia";
+        const started = performance.now();
+        const result = await withTimeout(
+          callNvidia({
+            // O modelo FAST foi comprovado no health check real; o 70B excedeu
+            // o timeout e permanece disponível apenas por override explícito.
+            model: Deno.env.get("TUTOR_NVIDIA_MODEL") || NVIDIA_MODEL_REGISTRY.fast.id,
+            messages: providerMessages,
+            maxTokens: 4096,
+            timeoutMs: NVIDIA_TIMEOUT_MS,
+          }),
+          NVIDIA_TIMEOUT_MS,
+          "nvidia",
+        );
+        const qualityIssue = detectTutorQualityIssue(result.content);
+        if (qualityIssue) throw new Error(`NVIDIA_QUALITY_REJECT:${qualityIssue}`);
+        aiTimings.primaryMs = Math.round(performance.now() - started);
+        aiResponse = {
+          content: result.content,
+          model: result.model,
+          provider: result.provider,
+          usage: {
+            prompt_tokens: result.usage.inputTokens,
+            completion_tokens: result.usage.outputTokens,
+          },
+        };
+        aiProviderUsed = "nvidia";
+      } catch (error: any) {
+        aiTimings.nvidiaError = error?.message?.slice(0, 200) || "unknown";
+        console.warn("[TUTOR_NVIDIA_FALLBACK]", { reason: aiTimings.nvidiaError, topic });
+      }
+    }
+
+    if (!aiResponse && isCerebrasEnabled()) {
+      try {
+        if (aiTimings.providerPrimary === "unknown") aiTimings.providerPrimary = "cerebras";
+        const started = performance.now();
+        const result = await withTimeout(
+          callCerebras({
+            model: Deno.env.get("TUTOR_CEREBRAS_MODEL") || "gpt-oss-120b",
+            messages: providerMessages,
+            maxTokens: 4096,
+            timeoutMs: CEREBRAS_TIMEOUT_MS,
+          }),
+          CEREBRAS_TIMEOUT_MS,
+          "cerebras",
+        );
+        const qualityIssue = detectTutorQualityIssue(result.content);
+        if (qualityIssue) throw new Error(`CEREBRAS_QUALITY_REJECT:${qualityIssue}`);
+        aiTimings.cerebrasMs = Math.round(performance.now() - started);
+        aiResponse = {
+          content: result.content,
+          model: result.model,
+          provider: result.provider,
+          usage: {
+            prompt_tokens: result.usage.inputTokens,
+            completion_tokens: result.usage.outputTokens,
+          },
+        };
+        aiProviderUsed = "cerebras";
+        aiTimings.fallbackUsed = aiTimings.providerPrimary !== "cerebras";
+        if (aiTimings.fallbackUsed) aiTimings.fallbackProvider = "cerebras";
+      } catch (error: any) {
+        aiTimings.cerebrasError = error?.message?.slice(0, 200) || "unknown";
+        console.warn("[TUTOR_CEREBRAS_FALLBACK]", { reason: aiTimings.cerebrasError, topic });
+      }
+    }
+
     try {
-      if (isClaudeV3Enabled()) {
-        aiTimings.providerPrimary = "claude";
+      if (!aiResponse && isClaudeV3Enabled()) {
+        if (aiTimings.providerPrimary === "unknown") aiTimings.providerPrimary = "claude";
         const sys = aiConfigToRun.messages.find((m: any) => m.role === "system")?.content || "";
         const lastUser = [...aiConfigToRun.messages].reverse().find((m: any) => m.role === "user")?.content || "";
         const primaryStart = performance.now();
@@ -789,9 +876,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           usage: claude.usage,
         };
         aiProviderUsed = "claude";
+        aiTimings.fallbackUsed = aiTimings.providerPrimary !== "claude";
+        if (aiTimings.fallbackUsed) aiTimings.fallbackProvider = "claude";
         console.log("[TUTOR_CLAUDE_OK]", { latency_ms: claude._latencyMs, content_len: claude.content.length });
-      } else {
-        aiTimings.providerPrimary = "openai";
+      } else if (!aiResponse) {
+        if (aiTimings.providerPrimary === "unknown") aiTimings.providerPrimary = "openai";
         throw new Error("CLAUDE_V3_DISABLED");
       }
     } catch (claudeErr: any) {
@@ -799,7 +888,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       const wasTimeout = reason.includes("_TIMEOUT");
       if (wasTimeout) aiTimings.timedOut = true;
       console.log("[TUTOR_CLAUDE_FALLBACK_OPENAI]", { reason, timedOut: wasTimeout });
-      aiTimings.fallbackUsed = aiTimings.providerPrimary === "claude";
+      aiTimings.fallbackUsed = aiTimings.providerPrimary !== "openai";
       aiTimings.fallbackProvider = "openai";
       const fbStart = performance.now();
       try {
