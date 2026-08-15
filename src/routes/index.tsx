@@ -32,10 +32,10 @@ export default function WarRoom() {
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 italic">P0 ARCHITECTURAL AUDIT COMPLETED</span>
           </div>
           <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">
-            execute teste na configuração das ias pois nao estao respondendo fica em looping tanto no tutor qquanto gerador de simulados
+            utilize o perfil de adm logado
           </h1>
           <p className="text-emerald-400 text-xs font-bold uppercase tracking-[0.2em]">
-            execute teste na configuração das ias pois nao estao respondendo fica em looping tanto no tutor qquanto gerador de simulados
+            utilize o perfil de adm logado
           </p>
         </header>
 
