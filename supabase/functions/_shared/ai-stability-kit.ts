@@ -9,7 +9,7 @@ export interface TutorResponse {
   content: string;
   teachingPhase: string;
   socraticQuestion: string;
-  source: "openai" | "claude" | "lovable" | "fallback" | "safe_mode" | "cache";
+  source: "nvidia" | "cerebras" | "openai" | "claude" | "lovable" | "fallback" | "safe_mode" | "cache";
   confidence: number;
   metadata?: any;
 }
@@ -233,7 +233,20 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
     };
   }
 
-  // 4. Emergency Last Resort (Safe Mode Premium)
+  // 4. Handle provider adapters that return normalized text plus model metadata.
+  if (raw && typeof raw === "object" && typeof raw.content === "string" && raw.content.trim()) {
+    console.log("[TUTOR_NORMALIZED_OK] Provider text format detected");
+    return {
+      content: raw.content,
+      teachingPhase: raw.teachingPhase || "ENSINAR",
+      socraticQuestion: raw.socraticQuestion || "O que você achou dessa explicação?",
+      source,
+      confidence: raw.confidence ?? 0.9,
+      metadata: { ...(raw.metadata ?? {}), model: raw.model, provider: raw.provider },
+    };
+  }
+
+  // 5. Emergency Last Resort (Safe Mode Premium)
   console.error("[TUTOR_NORMALIZED_FAIL] Using Emergency Safe Mode");
   return {
     content: "### 🏥 Atendimento de Emergência Cognitiva\n\n⚠ **Estamos utilizando conteúdo validado localmente.**\n\nEnquanto os provedores de IA escalam, preparamos uma revisão essencial dos fundamentos clínicos para você não perder o ritmo.\n\n**Pontos Críticos:**\n- Priorize a estabilização hemodinâmica.\n- Siga os protocolos de 1ª hora (Sepse/IAM/AVC).\n- Reavalie o paciente a cada intervenção.",
