@@ -8,7 +8,7 @@ import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 Deno.serve(enterpriseEdgeHandler("generate-study-plan", async ({ req, logger, waitUntil, supabaseAdmin }) => {
   const { user } = await requireAuth(req);
   const body = await req.json().catch(() => ({}));
-  const { examDate, hoursPerDay, daysPerWeek, editalText, strictMode, performanceData, existingSubjects, durationDays, plannerType } = body;
+  const { examDate, hoursPerDay, daysPerWeek, editalText, strictMode, performanceData, existingSubjects } = body;
 
   logger.info("PLAN_GEN_START", "Starting Master Planner Generation", { 
     userId: user.id, 
@@ -251,7 +251,7 @@ Retorne APENAS um JSON no seguinte formato:
       const startDate = new Date().toISOString().split("T")[0];
       const totalAvailableMinutes = (hoursPerDay || 4) * (daysPerWeek || 5) * weeksUntilExam * 60;
       
-      await supabaseAdmin.from("study_plans").update({ 
+      const { error: planUpdateError } = await supabaseAdmin.from("study_plans").update({
         plan_json: planJson, 
         status: "completed",
         current_step: "Master Planner Concluído com Sucesso",
@@ -262,10 +262,12 @@ Retorne APENAS um JSON no seguinte formato:
         total_available_minutes: totalAvailableMinutes,
         start_date: startDate,
         end_date: finalExamDate,
-        source: extractedTopics && extractedTopics.length > 0 ? "pdf_edital" : "manual",
-        duration_days: durationDays || daysUntilExam,
-        planner_type: plannerType || "longitudinal"
+        source: extractedTopics && extractedTopics.length > 0 ? "pdf_edital" : "manual"
       }).eq("id", plan.id);
+
+      if (planUpdateError) {
+        throw new Error(`Falha ao concluir o plano: ${planUpdateError.message}`);
+      }
 
       // Populate study_plan_items from the full longitudinal schedule
       const fullSchedule = planJson.fullSchedule || [];
