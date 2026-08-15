@@ -54,7 +54,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   } | null>(null);
 
   // Form básico
-  const [title, setTitle] = useState("Simulado");
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [newTopicInput, setNewTopicInput] = useState("");
@@ -105,20 +105,6 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   const [topicDistribution, setTopicDistribution] = useState<Record<string, number>>({});
   const [useDistribution, setUseDistribution] = useState(false);
 
-  const allExamTopics = useMemo(() => {
-    const topics = new Set<string>();
-    Object.values(EXAM_PROFILES).forEach((profile) => {
-      Object.keys(profile.specialtyWeights || {}).forEach((topic) => topics.add(topic));
-    });
-    return [...topics];
-  }, []);
-
-  // Auto-preencher temas quando "Todas as bancas"
-  useEffect(() => {
-    if (!open || questionMode !== "ai" || examBoard !== "all") return;
-    setSelectedTopics((prev) => (prev.length > 0 ? prev : allExamTopics));
-  }, [allExamTopics, examBoard, questionMode, open]);
-
   // Reset successData or initialize on open
   useEffect(() => {
     if (open) {
@@ -126,7 +112,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       setShowConfirm(false);
       
       if (initialData) {
-        setTitle(initialData.title || "Simulado");
+        setTitle(initialData.title || "");
         setDescription(initialData.description || "");
         if (initialData.total_questions) setQuestionCount(String(initialData.total_questions));
         if (initialData.time_limit_minutes) setTimeLimit(String(initialData.time_limit_minutes));
@@ -161,7 +147,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         if (initialData.faculdade_filters) setFaculdadeFilters(initialData.faculdade_filters);
         if (initialData.periodo_filters) setPeriodoFilters(initialData.periodo_filters.map((p: any) => String(p)));
       } else {
-        setTitle("Simulado");
+        setTitle("");
+        setSelectedTopics([]);
         setDescription("");
         setQuestionCount("10");
         setTimeLimit("60");

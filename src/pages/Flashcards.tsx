@@ -61,6 +61,7 @@ const Flashcards = () => {
   const [dueCards, setDueCards] = useState<FlashcardItem[]>([]);
   const [fsrsStates, setFsrsStates] = useState<Map<string, FsrsReviewState>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<"due" | "all" | "sprint">(studyCtx?.topic ? "all" : "due");
   const [topicSearch, setTopicSearch] = useState(studyCtx?.topic || "");
@@ -108,13 +109,14 @@ const Flashcards = () => {
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    setLoadError(null);
     try {
       // Paginated fetch to bypass PostgREST default 1000-row cap.
       // Cap elevado para 20.000 globais para refletir o banco real (16k+).
       const PAGE = 1000;
       const fetchPaged = async (filter: (q: any) => any, maxRows: number) => {
         const out: any[] = [];
-        for (let from = 0; from < maxRows; from += PAGE) {
+        const fetchPage = async (from: number) => {
           const to = Math.min(from + PAGE - 1, maxRows - 1);
           const q = filter(
             supabase
@@ -125,8 +127,21 @@ const Flashcards = () => {
           );
           const { data, error } = await q;
           if (error) throw error;
-          out.push(...(data || []));
-          if (!data || data.length < PAGE) break;
+          return data || [];
+        };
+
+        // Carrega páginas em pequenos lotes paralelos. A implementação anterior
+        // aguardava até 20 requests em série e mantinha a tela vazia por dezenas
+        // de segundos em bases grandes.
+        const CONCURRENT_PAGES = 4;
+        for (let from = 0; from < maxRows; from += PAGE * CONCURRENT_PAGES) {
+          const offsets = Array.from(
+            { length: Math.min(CONCURRENT_PAGES, Math.ceil((maxRows - from) / PAGE)) },
+            (_, index) => from + index * PAGE,
+          );
+          const pages = await Promise.all(offsets.map(fetchPage));
+          pages.forEach((page) => out.push(...page));
+          if (pages.some((page) => page.length < PAGE)) break;
         }
         return out;
       };
@@ -158,6 +173,7 @@ const Flashcards = () => {
       setDueCards(due);
     } catch (err) {
       console.error("Erro ao carregar flashcards:", err);
+      setLoadError("Não foi possível carregar seus flashcards.");
       toast({
         title: "Erro",
         description: "Não foi possível carregar os flashcards. Tente novamente.",
@@ -411,8 +427,21 @@ const Flashcards = () => {
   // ── Loading ──
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex flex-col items-center justify-center h-64 gap-3" role="status" aria-live="polite">
         <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <p className="text-sm text-muted-foreground">Carregando seus flashcards...</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[20rem] gap-4 px-6 text-center" role="alert">
+        <div>
+          <h2 className="text-lg font-bold">Falha ao carregar Flashcards</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{loadError}</p>
+        </div>
+        <Button onClick={() => void fetchData()}>Tentar novamente</Button>
       </div>
     );
   }
