@@ -74,6 +74,13 @@ function detectTutorQualityIssue(content: string): string | null {
     console.warn("[LANGUAGE_CHECK_FAIL] reason=clinical_contradiction rule=iam_nervous_system");
     return "clinical_contradiction:iam_nervous_system";
   }
+  if (
+    /\biam\b|infarto (?:agudo )?do miocardio/.test(normalizedMedicalText) &&
+    /qrs.{0,80}(?:deslocamento|desvio) (?:para )?a esquerda.{0,80}(?:suger|indic|diagnostic)/.test(normalizedMedicalText)
+  ) {
+    console.warn("[LANGUAGE_CHECK_FAIL] reason=clinical_contradiction rule=iam_qrs_left_shift");
+    return "clinical_contradiction:iam_qrs_left_shift";
+  }
 
   console.log(`[LANGUAGE_CHECK_PASS] score=0 len=${text.length} elapsedMs=${Date.now() - t0}`);
   return null;
@@ -647,7 +654,11 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
     const { trimmed: historyTrimmed, chars: historyChars } = trimHistoryForBudget(history);
     const userMessageContent = newTopic ? `Olá. Vamos iniciar o tema ${topic}.` : (message || "Continuar aula");
 
-    const pedagogicalHeader = `${PROMPT_COMPLETO}
+    const clinicalSafetyRules = /\b(?:iam|infarto|supra de st|stemi)\b/i.test(topic)
+      ? `\n# REGRA CLÍNICA OBRIGATÓRIA — IAM COM SUPRA DE ST\nO diagnóstico eletrocardiográfico deve se basear em supradesnivelamento do segmento ST em derivações contíguas, conforme sexo, idade e território, ou equivalentes reconhecidos. Nunca use desvio ou deslocamento do QRS para a esquerda como critério diagnóstico de IAM anterior. Se não houver dados suficientes, declare a incerteza; não invente achados.`
+      : "";
+
+    const pedagogicalHeader = `${PROMPT_COMPLETO}${clinicalSafetyRules}
           
           # OBJETIVO OBRIGATÓRIO DO MOMENTO:
           Você está no ${activeBlock}: ${activeBlockConfig.title}.
