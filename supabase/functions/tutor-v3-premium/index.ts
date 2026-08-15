@@ -63,6 +63,18 @@ function detectTutorQualityIssue(content: string): string | null {
     return "provider_leak";
   }
 
+  const normalizedMedicalText = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (
+    /\biam\b|infarto (?:agudo )?do miocardio/.test(normalizedMedicalText) &&
+    /interacao entre (?:o )?sistema cardiovascular e (?:o )?sistema nervoso/.test(normalizedMedicalText)
+  ) {
+    console.warn("[LANGUAGE_CHECK_FAIL] reason=clinical_contradiction rule=iam_nervous_system");
+    return "clinical_contradiction:iam_nervous_system";
+  }
+
   console.log(`[LANGUAGE_CHECK_PASS] score=0 len=${text.length} elapsedMs=${Date.now() - t0}`);
   return null;
 }
@@ -998,6 +1010,7 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           user_id: activeUserId,
           role: "assistant",
           content: normalized.content,
+          model_used: aiResponse?.model || null,
           metadata: { 
             request_id: requestId, 
             correlation_id: correlationId,
@@ -1005,7 +1018,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
             blockTitle: activeBlockConfig.title,
             intent: studentIntent,
             socraticQuestion: normalized.socraticQuestion,
-            source: normalized.source
+            source: normalized.source,
+            provider: aiProviderUsed,
+            model: aiResponse?.model || null
           }
         });
       }
