@@ -26,7 +26,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-const canonical = "enazizi.com.br";
+const canonical = "enazizi.com";
 
 const isLocalHost = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
 const isPreviewHost = 
@@ -40,8 +40,7 @@ const shouldRedirectToCanonical =
   !isLocalHost &&
   !isPreviewHost &&
   window.location.hostname !== canonical &&
-  window.location.hostname !== `www.${canonical}` &&
-  window.location.hostname !== "enazizi.com"; // Accept both .com and .com.br for now if needed
+  window.location.hostname !== `www.${canonical}`;
 
 const isInIframe = (() => {
   try {
