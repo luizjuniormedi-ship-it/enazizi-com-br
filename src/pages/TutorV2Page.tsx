@@ -145,6 +145,7 @@ export default function TutorV2Page() {
           cognitive_state: "stable",
           metadata: hydrationMetadata,
         })
+        .abortSignal(AbortSignal.timeout(8_000))
         .select()
         .single();
 
@@ -165,6 +166,7 @@ export default function TutorV2Page() {
             pedagogical_session_id: pedSession?.id,
           },
         })
+        .abortSignal(AbortSignal.timeout(8_000))
         .select()
         .single();
 
