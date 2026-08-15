@@ -50,6 +50,16 @@ interface TopicMapItem {
 
 interface PlanJson {
   weeklySchedule?: DaySchedule[];
+  fullSchedule?: Array<{
+    week_number?: number;
+    focus?: string;
+    topics?: Array<{
+      topic?: string;
+      discipline?: string;
+      estimated_minutes?: number;
+      task_type?: string;
+    }>;
+  }>;
   subjects?: string[];
   topicMap?: TopicMapItem[];
   tips?: string;
@@ -69,6 +79,20 @@ interface PlanJson {
     daysPerWeek: number;
     hasEdital: boolean;
   };
+}
+
+function scheduleFromPlan(plan: PlanJson): DaySchedule[] {
+  if (plan.weeklySchedule?.length) return plan.weeklySchedule;
+  return (plan.fullSchedule || []).map((week, weekIndex) => ({
+    day: `Semana ${week.week_number || weekIndex + 1}${week.focus ? ` — ${week.focus}` : ""}`,
+    tasks: (week.topics || []).map((item, itemIndex) => ({
+      time: `Bloco ${itemIndex + 1}`,
+      subject: item.topic || item.discipline || "Tema de estudo",
+      duration: `${item.estimated_minutes || 60}min`,
+      type: item.task_type || "study",
+      details: item.discipline || undefined,
+    })),
+  }));
 }
 
 interface SyncSummary {
@@ -137,7 +161,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       if (data?.plan_json) {
         const plan = data.plan_json as PlanJson;
         setPlanId(data.id);
-        setSchedule(plan.weeklySchedule || []);
+        setSchedule(scheduleFromPlan(plan));
         setSubjects(plan.subjects || []);
         setTopicMap(plan.topicMap || []);
         setDetectedSpecialty(plan.detectedSpecialty || "");
@@ -352,7 +376,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
         if (planData.status === "completed" && planData.plan_json) {
           clearInterval(pollInterval);
           const plan = planData.plan_json as PlanJson;
-          setSchedule(plan.weeklySchedule || []);
+          setSchedule(scheduleFromPlan(plan));
           setSubjects(plan.subjects || []);
           setTopicMap(plan.topicMap || []);
           setDetectedSpecialty(plan.detectedSpecialty || "");
@@ -880,7 +904,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
           ))}
         </div>
         </>
-      ) : !showConfig ? (
+      ) : !showConfig && !syncSummary ? (
         <div className="glass-card p-12 text-center">
           <GraduationCap className="h-12 w-12 text-primary/30 mx-auto mb-4" />
           <p className="text-lg font-medium mb-2">Nenhum plano configurado</p>

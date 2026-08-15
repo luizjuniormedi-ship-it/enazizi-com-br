@@ -1,4 +1,7 @@
 // ============================================================================
+
+import { callNvidia, NVIDIA_MODEL_REGISTRY } from "./nvidia-provider.ts";
+import { callCerebras } from "./cerebras-provider.ts";
 // AI Runtime Orchestrator — ENAZIZI (Fase 1)
 // ----------------------------------------------------------------------------
 // Cérebro central de roteamento de IA. Decide modelo, executa, faz fallback
@@ -52,7 +55,7 @@ export interface AISelectInput {
 }
 
 export interface ModelRef {
-  provider: "lovable-ai" | "openai" | "eu-ai" | "anthropic";
+  provider: "lovable-ai" | "openai" | "eu-ai" | "anthropic" | "nvidia" | "cerebras";
   model: string;
 }
 
@@ -86,7 +89,7 @@ export interface AIRunInput extends AISelectInput {
   /** Override the selected model. */
   modelOverride?: string;
   /** Override the provider. */
-  providerOverride?: "lovable-ai" | "openai" | "eu-ai" | "anthropic";
+  providerOverride?: "lovable-ai" | "openai" | "eu-ai" | "anthropic" | "nvidia" | "cerebras";
 }
 
 export interface AIRunResult {
@@ -114,7 +117,8 @@ const MODELS = {
   gpt5: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
   geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
   openaiFallback: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
-  nvidia: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef, 
+  nvidia: { provider: "nvidia", model: NVIDIA_MODEL_REGISTRY.fast.id } as ModelRef,
+  cerebras: { provider: "cerebras", model: "gpt-oss-120b" } as ModelRef,
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
@@ -260,9 +264,9 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
     case "planner":
       return wrap(
-        MODELS.flash,
-        [MODELS.flashLite, MODELS.geminiFallback],
-        "planner → reasoning leve",
+        MODELS.nvidia,
+        [MODELS.cerebras, MODELS.flash, MODELS.geminiFallback],
+        "planner → NVIDIA primário, Cerebras secundário",
         PROMPT_PROFILES.clinical_reasoning,
       );
 
@@ -305,6 +309,12 @@ function wrap(
 // ---------------------------------------------------------------------------
 
 function getAIKey(provider: string): string {
+  if (provider === "nvidia") {
+    return Deno.env.get("NVIDIA_API_KEY") || Deno.env.get("NVIDIA") || "";
+  }
+  if (provider === "cerebras") {
+    return Deno.env.get("CEREBRAS_API_KEY") || Deno.env.get("CEREBRAS") || "";
+  }
   if (provider === "openai") {
     return Deno.env.get("OPENAI_API_KEY") || "";
   }
@@ -372,6 +382,24 @@ async function callOnce(
   console.log(`[AI_TRACE_START] ${traceId} provider=${ref.provider} model=${ref.model}`);
 
   try {
+    if (ref.provider === "nvidia") {
+      const result = await callNvidia({ model: ref.model, messages: messages as any, maxTokens, apiKey });
+      return {
+        content: result.content,
+        usage: { prompt_tokens: result.usage.inputTokens, completion_tokens: result.usage.outputTokens },
+        attempt: { ...ref, success: true, latency_ms: result.latencyMs },
+      };
+    }
+
+    if (ref.provider === "cerebras") {
+      const result = await callCerebras({ model: ref.model, messages: messages as any, maxTokens, apiKey });
+      return {
+        content: result.content,
+        usage: { prompt_tokens: result.usage.inputTokens, completion_tokens: result.usage.outputTokens },
+        attempt: { ...ref, success: true, latency_ms: result.latencyMs },
+      };
+    }
+
     // ---- Branch: anthropic (Claude via hudapi.cloud / OpenAI-compatible proxy) ----
     if (ref.provider === "anthropic") {
       const body: Record<string, unknown> = {
@@ -785,7 +813,7 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
 
     // Anthropic (Claude via hudapi.cloud) como PRIMÁRIO global
     const hasAnthropic = !!Deno.env.get("ANTHROPIC_API_KEY");
-    if (hasAnthropic && !fullChain.some(c => c.provider === "anthropic")) {
+    if (hasAnthropic && !["nvidia", "cerebras"].includes(selection.provider) && !fullChain.some(c => c.provider === "anthropic")) {
       fullChain.unshift({ provider: "anthropic", model: ANTHROPIC_DEFAULT_MODEL });
     }
   }
