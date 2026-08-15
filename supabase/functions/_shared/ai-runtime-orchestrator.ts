@@ -406,11 +406,9 @@ async function callOnce(
         || (Array.isArray(parsed?.content) ? parsed.content.map((p: any) => p?.text || "").join("") : parsed?.content)
         || parsed?.message;
       if (!content || typeof content !== "string") {
-        const latency_ms = Date.now() - start;
         console.log(`[AI_TRACE_END] ${traceId} success=false code=AI_EMPTY_RESPONSE latency=${latency_ms}ms`);
         return { attempt: { ...ref, success: false, status: res.status, code: "AI_EMPTY_RESPONSE", message: "anthropic returned no content", latency_ms } };
       }
-      const latency_ms = Date.now() - start;
       console.log(`[AI_TRACE_END] ${traceId} success=true latency=${latency_ms}ms`);
       return { content, usage: parsed?.usage, attempt: { ...ref, success: true, status: res.status, latency_ms } };
 
@@ -460,11 +458,9 @@ async function callOnce(
       }
       const content = parsed?.message || parsed?.content || parsed?.response;
       if (!content || typeof content !== "string" || parsed?.success === false) {
-        const latency_ms = Date.now() - start;
         console.log(`[AI_TRACE_END] ${traceId} success=false code=AI_EMPTY_RESPONSE latency=${latency_ms}ms`);
         return { attempt: { ...ref, success: false, status: res.status, code: "AI_EMPTY_RESPONSE", message: parsed?.error || "eu-ai returned no content", latency_ms } };
       }
-      const latency_ms = Date.now() - start;
       console.log(`[AI_TRACE_END] ${traceId} success=true latency=${latency_ms}ms`);
       return { content, usage: undefined, attempt: { ...ref, success: true, status: res.status, latency_ms } };
 
@@ -514,7 +510,6 @@ async function callOnce(
     }
     const content = parsed?.choices?.[0]?.message?.content;
     if (!content || typeof content !== "string") {
-      const latency_ms = Date.now() - start;
       console.log(`[AI_TRACE_END] ${traceId} success=false code=AI_EMPTY_RESPONSE latency=${latency_ms}ms`);
       return {
         attempt: {
@@ -527,15 +522,8 @@ async function callOnce(
         },
       };
     }
-    const latency_ms = Date.now() - start;
     console.log(`[AI_TRACE_END] ${traceId} success=true latency=${latency_ms}ms`);
     return { content, usage: parsed?.usage, attempt: { ...ref, success: true, status: res.status, latency_ms } };
-
-    return {
-      content,
-      usage: parsed?.usage,
-      attempt: { ...ref, success: true, status: res.status, latency_ms },
-    };
   } catch (err) {
     const latency_ms = Date.now() - start;
     const e = extractProviderError(undefined, "", err);
