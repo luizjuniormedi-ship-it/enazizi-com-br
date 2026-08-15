@@ -106,15 +106,15 @@ export interface AIRunResult {
 
 // Modelos validados em produção. Prioridade para OpenAI Direto (sem gateway).
 const MODELS = {
-  flash: { provider: "openai", model: "gpt-4o" } as ModelRef,
-  flashStable: { provider: "openai", model: "gpt-4o" } as ModelRef,
-  flashLite: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
-  pro: { provider: "openai", model: "gpt-4o" } as ModelRef,
-  gpt5Mini: { provider: "openai", model: "gpt-5-mini" } as ModelRef,
-  gpt5: { provider: "openai", model: "gpt-5" } as ModelRef,
+  flash: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+  flashStable: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+  flashLite: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
+  pro: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+  gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
+  gpt5: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
   geminiFallback: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
-  openaiFallback: { provider: "openai", model: "gpt-4o-mini" } as ModelRef,
-  nvidia: { provider: "openai", model: "nvidia/llama-3.1-8b-instruct" } as ModelRef, // Mapeado via Gateway compatível
+  openaiFallback: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
+  nvidia: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef, 
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
@@ -123,8 +123,8 @@ const COST_TIER: Record<string, "low" | "medium" | "high"> = {
   "google/gemini-2.5-pro": "medium",
   "gpt-4o-mini": "low",
   "gpt-4o": "medium",
-  "openai/gpt-5-mini": "low",
-  "openai/gpt-5": "medium",
+  "openai/gpt-4o-mini": "low",
+  "openai/gpt-4o": "medium",
 };
 
 // ---------------------------------------------------------------------------
@@ -133,8 +133,8 @@ const COST_TIER: Record<string, "low" | "medium" | "high"> = {
 const COST_RATES: Record<string, { input: number; output: number }> = {
   "gpt-4o":               { input: 2.50e-6,  output: 10.00e-6 },
   "gpt-4o-mini":          { input: 0.15e-6,  output: 0.60e-6  },
-  "openai/gpt-5":        { input: 2.50e-6,  output: 10.00e-6 },
-  "openai/gpt-5-mini":   { input: 0.15e-6,  output: 0.60e-6  },
+  "openai/gpt-4o":        { input: 2.50e-6,  output: 10.00e-6 },
+  "openai/gpt-4o-mini":   { input: 0.15e-6,  output: 0.60e-6  },
   "google/gemini-2.5-flash":      { input: 0.30e-6, output: 2.50e-6 },
   "google/gemini-2.5-flash-lite": { input: 0.10e-6, output: 0.40e-6 },
   "google/gemini-2.5-pro":        { input: 1.25e-6, output: 5.00e-6 },
@@ -210,11 +210,12 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
   switch (input.taskType) {
     case "tutor_chat": {
-      // Prioridade P0: NVIDIA forçado para teste do usuário
+      // P0 HOTFIX: NVIDIA Llama-3.1-8b via Gateway parece estar instável ou em loop.
+      // Revertendo para GPT-4o (MODELS.flash) como primário para restaurar serviço.
       return wrap(
-        MODELS.nvidia,
-        [MODELS.flash, MODELS.flashLite, MODELS.geminiFallback],
-        "USER_REQUEST: FORCE_NVIDIA_TUTOR_TEST",
+        MODELS.flash,
+        [MODELS.gpt5Mini, MODELS.geminiFallback],
+        "STABILITY_RECOVERY: Switching from NVIDIA to GPT-4o due to reported looping",
         PROMPT_PROFILES.feynman_full,
       );
     }
