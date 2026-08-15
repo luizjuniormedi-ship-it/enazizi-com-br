@@ -784,7 +784,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         const started = performance.now();
         const result = await withTimeout(
           callNvidia({
-            model: Deno.env.get("TUTOR_NVIDIA_MODEL") || NVIDIA_MODEL_REGISTRY.reasoning.id,
+            // O modelo FAST foi comprovado no health check real; o 70B excedeu
+            // o timeout e permanece disponível apenas por override explícito.
+            model: Deno.env.get("TUTOR_NVIDIA_MODEL") || NVIDIA_MODEL_REGISTRY.fast.id,
             messages: providerMessages,
             maxTokens: 4096,
             timeoutMs: NVIDIA_TIMEOUT_MS,
