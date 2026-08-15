@@ -176,6 +176,7 @@ export default function TutorV2ChatPanel({
                 request_id: requestId,
                 fallback_used: response.source === 'fallback' || !!response.fallback, 
                 provider: response.provider || response.debug?.provider,
+                model: response.metadata?.model || response.model || response.provider || response.debug?.provider,
                 source: response.source,
                 blockTitle: response.blockTitle,
                 currentBlock: response.currentBlock,
