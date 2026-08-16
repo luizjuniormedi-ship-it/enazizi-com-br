@@ -45,7 +45,7 @@ function renderWithProviders(ui: React.ReactNode, route = "/dashboard") {
 describe("Navigation smoke — EnaflixMobileNav (mobile)", () => {
   it("renderiza os 5 itens cardeais", () => {
     renderWithProviders(<EnaflixMobileNav />);
-    for (const label of ["Início", "Missão", "Estudar", "Simulados", "Flashcards"]) {
+    for (const label of ["Início", "Enaflix", "Missão", "Simulados", "Flashcards"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
@@ -53,9 +53,9 @@ describe("Navigation smoke — EnaflixMobileNav (mobile)", () => {
   it("aponta cada item para a rota correta", () => {
     renderWithProviders(<EnaflixMobileNav />);
     const expected: Record<string, string> = {
-      Início: "/enaflix",
+      Início: "/dashboard",
+      Enaflix: "/dashboard/enaflix",
       Missão: "/dashboard/sessao-estudo",
-      Estudar: "/dashboard/sessao-estudo",
       Simulados: "/dashboard/simulados",
       Flashcards: "/dashboard/flashcards",
     };

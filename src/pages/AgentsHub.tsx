@@ -179,7 +179,7 @@ export default function AgentsHub() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {items.map((a) => (
                 <AgentPosterCard
-                  key={a.to}
+                  key={`${a.to}:${a.title}`}
                   to={a.to}
                   icon={a.icon}
                   title={a.title}

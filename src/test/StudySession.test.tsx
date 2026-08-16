@@ -22,22 +22,15 @@ vi.mock("@/hooks/useAuth", () => ({
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          order: () => ({
-            limit: () => Promise.resolve({ data: [] }),
-          }),
-          not: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [] }),
-            }),
-          }),
-          single: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
-      insert: () => Promise.resolve({ data: null, error: null }),
-    }),
+    from: () => {
+      const chain: Record<string, any> = {};
+      for (const method of ["select", "eq", "not", "order", "limit", "single", "insert", "update", "delete"]) {
+        chain[method] = vi.fn(() => chain);
+      }
+      chain.then = (resolve: (value: { data: unknown[]; error: null }) => unknown) =>
+        resolve({ data: [], error: null });
+      return chain;
+    },
     auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       getUser: () => Promise.resolve({ data: { user: { id: "test-user-id" } }, error: null }),
