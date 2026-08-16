@@ -130,9 +130,13 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       ? await supabaseAdmin.from("simulado_questions").select("question_id").in("session_id", sessionIds)
       : { data: [] };
 
+    const requestAvoidIds = Array.isArray(body.avoidIds)
+      ? body.avoidIds.filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
+      : [];
     const excludedIds = Array.from(new Set([
       ...(practiceHistory || []).map(p => p.question_id),
-      ...(simuladoHistory || []).map(s => s.question_id)
+      ...(simuladoHistory || []).map(s => s.question_id),
+      ...requestAvoidIds,
     ].filter(Boolean))).slice(0, 500);
 
     console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] count=${excludedIds.length}`);
@@ -158,6 +162,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         .join(",");
 
       let q = buildBaseQuery().or(topicOr);
+      if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
+        q = q.ilike("board", String(examBoard));
+      }
       q = applyExclusion(q);
       const { data } = await q.limit(requestedCount * 10);
       candidates = data || [];
