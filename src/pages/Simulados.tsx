@@ -263,9 +263,10 @@ async function generateBatch(
 
     // [QUESTION_GEN_FINAL_OK]
     console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount} (${durationMs}ms)`);
-    const requestedScopeTopics = specificTopic ? [...topics, specificTopic] : topics;
     return { 
-      questions: mapQuestions(data.questions || [], requestedScopeTopics, selectedSubtopics),
+      // Keep the transport payload raw here. The caller performs the single
+      // canonical scope/shape mapping after both primary and fallback paths.
+      questions: (data.questions || []) as SimQuestion[],
       sessionId: data.session_id || null,
       insufficientQuestions: data.insufficientQuestions,
       message: data.message,
