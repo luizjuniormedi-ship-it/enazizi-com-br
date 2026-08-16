@@ -693,7 +693,7 @@ const Simulados = () => {
       let allGenerated: SimQuestion[] = config.existingQuestions || [];
       
       // Para simulados grandes (50 ou 100), criar um job no banco se não estiver retomando
-      if (requestedTotal >= 50 && user && !currentJobId) {
+      if (requestedTotal >= 50 && user && !currentJobId && !isMontarBancoFlow) {
         console.log("[Simulados] criando job", {
           user_id: user.id,
           total_questions: requestedTotal,
