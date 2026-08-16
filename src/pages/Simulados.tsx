@@ -291,13 +291,22 @@ function repairQuestionEncoding(value: unknown): string {
 }
 
 function questionMatchesRequestedScope(q: any, topics: string[], subtopics: string[]): boolean {
-  const requested = (subtopics.length > 0 ? subtopics : topics).filter(Boolean);
-  if (requested.length === 0) return false;
-
-  const candidates = [q.topic, q.specialty, q.subtopic, q.curriculum_theme, q.curriculum_subtheme]
+  const usableCandidates = (candidates: unknown[]) => candidates
     .filter((value): value is string => typeof value === "string" && normalize(value).length > 0);
 
-  return requested.some((term) => candidates.some((candidate) =>
+  const primaryTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
+    ? q.topic
+    : q.curriculum_theme;
+  const topicCandidates = usableCandidates([primaryTopic]);
+  const effectiveTopicCandidates = topicCandidates.length > 0 ? topicCandidates : [q.specialty];
+  const topicMatches = usableCandidates(effectiveTopicCandidates).some((candidate) =>
+    topics.some((term) => textEquals(candidate, term) || textContains(candidate, term) || textContains(term, candidate))
+  );
+  if (!topicMatches) return false;
+
+  if (subtopics.length === 0) return true;
+  const subtopicCandidates = usableCandidates([q.subtopic, q.curriculum_subtheme]);
+  return subtopics.some((term) => subtopicCandidates.some((candidate) =>
     textEquals(candidate, term) || textContains(candidate, term) || textContains(term, candidate)
   ));
 }
@@ -311,7 +320,11 @@ function mapQuestions(arr: any[], topics: string[], subtopics: string[] = []): S
       statement: repairQuestionEncoding(q.statement),
       options: Array.isArray(q.options) ? q.options.map(repairQuestionEncoding) : [],
       correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
-      topic: repairQuestionEncoding(q.topic || q.curriculum_theme || topics[0]),
+      topic: repairQuestionEncoding(
+        typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
+          ? q.topic
+          : q.curriculum_theme || topics[0]
+      ),
       explanation: repairQuestionEncoding(q.explanation),
       image_url: q.image_url,
     }))
