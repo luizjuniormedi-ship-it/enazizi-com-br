@@ -861,6 +861,13 @@ export type Database = {
             foreignKeyName: "adversarial_sampling_log_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adversarial_sampling_log_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -3667,6 +3674,13 @@ export type Database = {
           test_run_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ccpv_topic_integrity_audit_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ccpv_topic_integrity_audit_question_id_fkey"
             columns: ["question_id"]
@@ -9837,6 +9851,13 @@ export type Database = {
             foreignKeyName: "cognitive_telemetry_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cognitive_telemetry_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -10397,6 +10418,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_exact_topic_coverage_audit"
             referencedColumns: ["registry_id"]
+          },
+          {
+            foreignKeyName: "curriculum_golden_set_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "curriculum_golden_set_question_id_fkey"
@@ -11010,6 +11038,13 @@ export type Database = {
             foreignKeyName: "cvrp_orphan_reconstruction_log_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cvrp_orphan_reconstruction_log_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -11057,6 +11092,13 @@ export type Database = {
           specialty_consistency?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "cvrp_topic_link_audit_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cvrp_topic_link_audit_question_id_fkey"
             columns: ["question_id"]
@@ -15326,6 +15368,13 @@ export type Database = {
             foreignKeyName: "gold_promotion_candidates_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gold_promotion_candidates_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -15502,6 +15551,13 @@ export type Database = {
           reasoning_pattern?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "golden_question_reference_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "golden_question_reference_question_id_fkey"
             columns: ["question_id"]
@@ -16634,6 +16690,13 @@ export type Database = {
             foreignKeyName: "human_audit_queue_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "human_audit_queue_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -17389,6 +17452,13 @@ export type Database = {
           target_exposure?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "item_exposure_control_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "item_exposure_control_question_id_fkey"
             columns: ["question_id"]
@@ -21516,6 +21586,13 @@ export type Database = {
             foreignKeyName: "outcome_registry_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outcome_registry_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -23069,6 +23146,13 @@ export type Database = {
             foreignKeyName: "practice_attempts_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -24179,6 +24263,13 @@ export type Database = {
             foreignKeyName: "question_audit_logs_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_audit_logs_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -24522,6 +24613,13 @@ export type Database = {
             foreignKeyName: "question_classification_staging_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_staging_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -24572,6 +24670,13 @@ export type Database = {
             foreignKeyName: "question_clusters_cluster_representative_id_fkey"
             columns: ["cluster_representative_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_clusters_cluster_representative_id_fkey"
+            columns: ["cluster_representative_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -24616,6 +24721,13 @@ export type Database = {
           structural_drift?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "question_drift_monitor_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "question_drift_monitor_question_id_fkey"
             columns: ["question_id"]
@@ -24712,6 +24824,13 @@ export type Database = {
             foreignKeyName: "question_external_metrics_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_external_metrics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -24777,6 +24896,13 @@ export type Database = {
           success_rate_low_performers?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "question_forensics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "question_forensics_question_id_fkey"
             columns: ["question_id"]
@@ -24941,6 +25067,13 @@ export type Database = {
           transfer_contribution_score?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "question_impact_metrics_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "question_impact_metrics_question_id_fkey"
             columns: ["question_id"]
@@ -25120,6 +25253,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "question_topic_map_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "question_topic_map_question_id_fkey"
             columns: ["question_id"]
@@ -25541,6 +25681,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_original_question_id_fkey"
+            columns: ["original_question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
             referencedColumns: ["id"]
           },
           {
@@ -26994,6 +27141,13 @@ export type Database = {
             foreignKeyName: "simulado_answers_question_id_fkey"
             columns: ["question_id"]
             isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulado_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
             referencedRelation: "questions_bank"
             referencedColumns: ["id"]
           },
@@ -27141,6 +27295,13 @@ export type Database = {
           time_spent_seconds?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "simulado_questions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "simulado_questions_question_id_fkey"
             columns: ["question_id"]
@@ -33512,6 +33673,48 @@ export type Database = {
         }
         Relationships: []
       }
+      eligible_questions_bank: {
+        Row: {
+          board: string | null
+          correct_index: number | null
+          curriculum_subtheme: string | null
+          curriculum_theme: string | null
+          difficulty: number | null
+          explanation: string | null
+          id: string | null
+          options: Json | null
+          statement: string | null
+          subtopic: string | null
+          topic: string | null
+        }
+        Insert: {
+          board?: string | null
+          correct_index?: number | null
+          curriculum_subtheme?: string | null
+          curriculum_theme?: string | null
+          difficulty?: number | null
+          explanation?: string | null
+          id?: string | null
+          options?: Json | null
+          statement?: string | null
+          subtopic?: string | null
+          topic?: string | null
+        }
+        Update: {
+          board?: string | null
+          correct_index?: number | null
+          curriculum_subtheme?: string | null
+          curriculum_theme?: string | null
+          difficulty?: number | null
+          explanation?: string | null
+          id?: string | null
+          options?: Json | null
+          statement?: string | null
+          subtopic?: string | null
+          topic?: string | null
+        }
+        Relationships: []
+      }
       ghost_competency_registry: {
         Row: {
           competency_id: string | null
@@ -34542,6 +34745,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_original_question_id_fkey"
+            columns: ["original_question_id"]
+            isOneToOne: false
+            referencedRelation: "eligible_questions_bank"
             referencedColumns: ["id"]
           },
           {
