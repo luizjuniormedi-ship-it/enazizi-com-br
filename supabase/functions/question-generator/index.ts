@@ -138,6 +138,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       ...(simuladoHistory || []).map(s => s.question_id),
       ...requestAvoidIds,
     ].filter(Boolean))).slice(0, 500);
+    const excludedIdSet = new Set(excludedIds);
 
     console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] count=${excludedIds.length}`);
 
@@ -151,9 +152,6 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       const buildBaseQuery = () => supabaseAdmin
         .from("eligible_questions_bank")
         .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board");
-
-      const applyExclusion = (q: any) =>
-        excludedIds.length > 0 ? q.not("id", "in", `(${excludedIds.join(",")})`) : q;
 
       let candidates: any[] = [];
       // Keep topic and subtopic scopes in their canonical columns. Mixing topic
@@ -170,7 +168,6 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
         q = q.ilike("board", String(examBoard));
       }
-      q = applyExclusion(q);
       // The eligible view is not ordered by topic relevance. A 200-row window
       // can be exhausted by rows rejected by the final integrity guard while
       // valid rows for the same board still exist later in the result set.
@@ -181,6 +178,11 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
       for (const q of candidates) {
         if (finalQuestions.length >= requestedCount) break;
+        // Applying hundreds of UUIDs through PostgREST's URL-based `not.in`
+        // can exceed the request-line limit and was previously misreported as
+        // an empty bank. The candidate window is bounded, so enforce the same
+        // historical exclusion safely in memory.
+        if (excludedIdSet.has(q.id)) continue;
         
         const matchResult = topicEngine.calculateScore(q, topics, subtopics);
         
