@@ -206,6 +206,19 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
   },
 };
 
+export function getOfficialBoardBlockReason(
+  profileKey: string | null | undefined,
+  mode: string,
+): string | null {
+  if (!["prova_real", "tri"].includes(mode) || !profileKey || ["all", "GERAL"].includes(profileKey)) {
+    return null;
+  }
+
+  const profile = EXAM_PROFILES[profileKey];
+  if (!profile) return "Esta banca ainda não possui perfil e corpus homologados.";
+  return profile.canGenerate ? null : profile.availabilityMessage;
+}
+
 export interface TopicDistributionItem {
   topic: string;
   count: number;
