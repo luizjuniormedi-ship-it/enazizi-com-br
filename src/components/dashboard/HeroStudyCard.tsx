@@ -77,7 +77,7 @@ export default function HeroStudyCard() {
 
   const isLoading = engineLoading || starting || recLoading;
   const tasks = recommendations || [];
-  const totalStudyMinutes = tasks.reduce((s: number, t: StudyRecommendation) => s + (t.estimatedMinutes || 0), 0);
+  const totalStudyMinutes = (tasks as StudyRecommendation[]).reduce((s: number, t: StudyRecommendation) => s + (t.estimatedMinutes || 0), 0);
   const isMissionActive = state.status === "active";
   const isMissionPaused = state.status === "paused";
   const isNewUser = dashData
