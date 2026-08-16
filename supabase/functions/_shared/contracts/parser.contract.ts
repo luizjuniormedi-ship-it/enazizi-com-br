@@ -16,6 +16,14 @@ export const CONTRACT_VERSION = "v1";
 export function cleanQuestionText(input: unknown): string {
   if (input == null) return "";
   let s = typeof input === "string" ? input : String(input);
+  if (/[ÃÂâ]/.test(s)) {
+    try {
+      const bytes = Uint8Array.from(s, (character) => character.charCodeAt(0));
+      s = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    } catch (_) {
+      // Preserve the original when it is not a reversible UTF-8/Latin-1 error.
+    }
+  }
   // strip control chars except \n \r \t
   s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
   // strip markdown code fences
@@ -28,6 +36,10 @@ export function cleanQuestionText(input: unknown): string {
   s = s.replace(/\*{0,2}\s*(?:resposta\s+correta|gabarito)\s*:?\s*[a-eA-E]\s*\*{0,2}/g, "");
   s = s.replace(/\s*-?\s*\*{0,2}correta\*{0,2}\s*$/gi, "");
   return s.trim();
+}
+
+export function hasCorruptQuestionText(input: unknown): boolean {
+  return cleanQuestionText(input).includes("�");
 }
 
 

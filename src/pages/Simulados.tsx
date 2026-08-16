@@ -48,6 +48,7 @@ import { useNavigate } from "react-router-dom";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { evaluateCognitivePressure } from "@/lib/pedagogical/cognitive-pressure-engine";
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
+import { normalize, textContains, textEquals } from "@/lib/questionTopicMatching";
 
 async function computeRealPerformance(userId: string) {
   const { data: rows } = await supabase
@@ -260,7 +261,7 @@ async function generateBatch(
     // [QUESTION_GEN_FINAL_OK]
     console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount} (${durationMs}ms)`);
     return { 
-      questions: mapQuestions(data.questions || [], topics), 
+      questions: mapQuestions(data.questions || [], topics, selectedSubtopics),
       sessionId: data.session_id || null,
       insufficientQuestions: data.insufficientQuestions,
       message: data.message,
@@ -276,19 +277,51 @@ async function generateBatch(
 }
 
 
-function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
+function repairQuestionEncoding(value: unknown): string {
+  const text = String(value ?? "");
+  if (!/[ÃÂâ]/.test(text)) return text.trim();
+
+  try {
+    const bytes = Uint8Array.from(text, (character) => character.charCodeAt(0));
+    const repaired = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return repaired.trim();
+  } catch {
+    return text.trim();
+  }
+}
+
+function questionMatchesRequestedScope(q: any, topics: string[], subtopics: string[]): boolean {
+  const requested = (subtopics.length > 0 ? subtopics : topics).filter(Boolean);
+  if (requested.length === 0) return false;
+
+  const candidates = [q.topic, q.specialty, q.subtopic, q.curriculum_theme, q.curriculum_subtheme]
+    .filter((value): value is string => typeof value === "string" && normalize(value).length > 0);
+
+  return requested.some((term) => candidates.some((candidate) =>
+    textEquals(candidate, term) || textContains(candidate, term) || textContains(term, candidate)
+  ));
+}
+
+function mapQuestions(arr: any[], topics: string[], subtopics: string[] = []): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
+    .filter((q: any) => questionMatchesRequestedScope(q, topics, subtopics))
     .map((q: any) => ({
       id: q.id,
       bankId: q.id,
-      statement: String(q.statement || ""),
-      options: Array.isArray(q.options) ? q.options.map(String) : [],
+      statement: repairQuestionEncoding(q.statement),
+      options: Array.isArray(q.options) ? q.options.map(repairQuestionEncoding) : [],
       correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
-      topic: String(q.topic || topics[0]),
-      explanation: String(q.explanation || ""),
+      topic: repairQuestionEncoding(q.topic || q.curriculum_theme || topics[0]),
+      explanation: repairQuestionEncoding(q.explanation),
       image_url: q.image_url,
     }))
-    .filter(q => q.options.length >= 4 && q.statement.length > 10);
+    .filter(q =>
+      q.options.length >= 4 &&
+      q.statement.length > 10 &&
+      !q.statement.includes("�") &&
+      !q.options.some((option) => option.includes("�")) &&
+      !q.explanation?.includes("�")
+    );
 }
 
 function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
@@ -895,10 +928,11 @@ const Simulados = () => {
             throw new Error(batchData?.error || "Falha na geração das questões pela IA.");
           }
 
-          const batchQs = (batchData.questions || []).map((q: any) => ({
-            ...q,
-            topic: q.topic || q.specialty || (config.topics && config.topics[0]) || "Geral"
-          }));
+          const batchQs = mapQuestions(
+            batchData.questions || [],
+            config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+            config.selectedSubtopics || [],
+          );
           
           if (batchQs.length === 0) {
             console.warn("[Simulados] Lote retornado vazio (após mapeamento).");
