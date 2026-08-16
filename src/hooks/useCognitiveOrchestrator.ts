@@ -69,5 +69,5 @@ export function useCognitiveOrchestrator() {
     },
   });
 
-  return { ...query, updateMode };
+  return Object.assign(Object.create(query) as typeof query, { updateMode });
 }

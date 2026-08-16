@@ -123,5 +123,5 @@ export function useStudyNext() {
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["study-next"] });
 
-  return { ...query, refresh };
+  return Object.assign(Object.create(query) as typeof query, { refresh });
 }
