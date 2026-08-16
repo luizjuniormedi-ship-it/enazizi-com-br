@@ -145,4 +145,25 @@ describe("official board governance", () => {
     expect(result.exact).toBe(false);
     expect(Object.values(result.topicShortage || {}).reduce((sum, count) => sum + count, 0)).toBe(88);
   });
+
+  it("keeps global difficulty exact when a specialty has no hard questions", () => {
+    const weights = [
+      { topic: "Clínica Médica", weight: 50 },
+      { topic: "Terapia Intensiva", weight: 50 },
+    ];
+    const candidates = [
+      ...Array.from({ length: 30 }, (_, index) => ({ id: `c-e-${index}`, difficulty: 3, _topic_bucket: "Clínica Médica" })),
+      ...Array.from({ length: 50 }, (_, index) => ({ id: `c-m-${index}`, difficulty: 4, _topic_bucket: "Clínica Médica" })),
+      ...Array.from({ length: 20 }, (_, index) => ({ id: `c-h-${index}`, difficulty: 5, _topic_bucket: "Clínica Médica" })),
+      ...Array.from({ length: 50 }, (_, index) => ({ id: `t-e-${index}`, difficulty: 3, _topic_bucket: "Terapia Intensiva" })),
+      ...Array.from({ length: 50 }, (_, index) => ({ id: `t-m-${index}`, difficulty: 4, _topic_bucket: "Terapia Intensiva" })),
+    ];
+
+    const result = selectByTopicAndDifficultyQuota(candidates, 100, { easy: 30, medium: 50, hard: 20 }, weights);
+
+    expect(result.exact).toBe(true);
+    expect(result.actual).toEqual({ easy: 30, medium: 50, hard: 20 });
+    expect(result.topicActual).toEqual({ "Clínica Médica": 50, "Terapia Intensiva": 50 });
+    expect(result.questions).toHaveLength(100);
+  });
 });
