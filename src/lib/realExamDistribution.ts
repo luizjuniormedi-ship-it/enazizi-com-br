@@ -45,9 +45,9 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     timeMinutes: 300,
     cutoffEstimate: 62,
     difficultyMix: { easy: 25, medium: 50, hard: 25 },
-    availability: "limited",
-    canGenerate: true,
-    availabilityMessage: "Validação limitada: dificuldade relativa ao corpus em calibração experimental.",
+    availability: "suspended",
+    canGenerate: false,
+    availabilityMessage: "Temporariamente suspenso: o runtime de 100 questões ainda não foi homologado.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },
