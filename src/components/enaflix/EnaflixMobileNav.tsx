@@ -3,20 +3,18 @@ import { cn } from "@/lib/utils";
 import { 
   Home, 
   Brain,
-  PlayCircle, 
-  User,
-  MonitorPlay,
   LayoutGrid,
-  Clock
+  Clock,
+  BrainCircuit
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const MOBILE_ITEMS = [
-  { to: "/dashboard", label: "Início", icon: Home },
-  { to: "/dashboard/enaflix", label: "Enaflix", icon: MonitorPlay },
-  { to: "/dashboard/sessao-estudo", label: "Missão", icon: Brain },
-  { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
-  { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
+  { to: "/dashboard", label: "Hoje", icon: Home },
+  { to: "/dashboard/sessao-estudo", label: "Estudar", icon: Brain },
+  { to: "/dashboard/simulados", label: "Praticar", icon: LayoutGrid },
+  { to: "/dashboard/flashcards", label: "Revisar", icon: Clock },
+  { to: "/dashboard/progress", label: "Progresso", icon: BrainCircuit },
 ];
 
 export function EnaflixMobileNav() {

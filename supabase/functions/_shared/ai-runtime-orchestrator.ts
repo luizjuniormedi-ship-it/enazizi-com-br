@@ -214,12 +214,10 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
   switch (input.taskType) {
     case "tutor_chat": {
-      // P0 HOTFIX: NVIDIA Llama-3.1-8b via Gateway parece estar instável ou em loop.
-      // Revertendo para GPT-4o (MODELS.flash) como primário para restaurar serviço.
       return wrap(
-        MODELS.flash,
-        [MODELS.gpt5Mini, MODELS.geminiFallback],
-        "STABILITY_RECOVERY: Switching from NVIDIA to GPT-4o due to reported looping",
+        MODELS.nvidia,
+        [MODELS.cerebras, MODELS.flash, MODELS.geminiFallback],
+        "tutor → NVIDIA primário, Cerebras secundário",
         PROMPT_PROFILES.feynman_full,
       );
     }

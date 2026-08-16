@@ -2,7 +2,7 @@
  * Navigation Smoke Test
  * ------------------------------------------------------------------
  * Validação leve da integridade dos pontos cardeais de navegação:
- *   • Rotas principais (Visão Geral, Estudar, *   • Rotas principais (Hoje, Continuar, Simulados) registradas
+ *   • Rotas principais da jornada do aluno registradas
  *   • BottomTabBar com os 5 itens corretos e rotas certas
  *
  * NÃO é E2E. É apenas uma rede de segurança contra remoções acidentais
@@ -45,7 +45,7 @@ function renderWithProviders(ui: React.ReactNode, route = "/dashboard") {
 describe("Navigation smoke — EnaflixMobileNav (mobile)", () => {
   it("renderiza os 5 itens cardeais", () => {
     renderWithProviders(<EnaflixMobileNav />);
-    for (const label of ["Início", "Enaflix", "Missão", "Simulados", "Flashcards"]) {
+    for (const label of ["Hoje", "Estudar", "Praticar", "Revisar", "Progresso"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
@@ -53,11 +53,11 @@ describe("Navigation smoke — EnaflixMobileNav (mobile)", () => {
   it("aponta cada item para a rota correta", () => {
     renderWithProviders(<EnaflixMobileNav />);
     const expected: Record<string, string> = {
-      Início: "/dashboard",
-      Enaflix: "/dashboard/enaflix",
-      Missão: "/dashboard/sessao-estudo",
-      Simulados: "/dashboard/simulados",
-      Flashcards: "/dashboard/flashcards",
+      Hoje: "/dashboard",
+      Estudar: "/dashboard/sessao-estudo",
+      Praticar: "/dashboard/simulados",
+      Revisar: "/dashboard/flashcards",
+      Progresso: "/dashboard/progress",
     };
     for (const [label, href] of Object.entries(expected)) {
       const link = screen.getByText(label).closest("a");
@@ -77,6 +77,8 @@ describe("Navigation smoke — App routes (estática)", () => {
     ['path="/dashboard"', "Hoje (layout)"],
     ['path="sessao-estudo"', "Continuar (rota filha do dashboard)"],
     ['path="simulados"', "Simulados (rota filha do dashboard)"],
+    ['path="flashcards"', "Revisão (rota filha do dashboard)"],
+    ['path="progress"', "Progresso (rota filha do dashboard)"],
   ])("rota %s (%s) está registrada em App.tsx", (needle) => {
     expect(appSrc).toContain(needle);
   });
