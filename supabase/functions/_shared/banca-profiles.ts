@@ -25,9 +25,9 @@ export interface OfficialBoardAvailability {
 
 const OFFICIAL_BOARD_AVAILABILITY: Record<string, OfficialBoardAvailability> = {
   enare: {
-    status: "limited",
-    canGenerateOfficialExam: true,
-    reason: "Banco ENARE disponível, com dificuldade relativa ao corpus ainda em calibração experimental.",
+    status: "suspended",
+    canGenerateOfficialExam: false,
+    reason: "ENARE temporariamente suspenso: o runtime ainda não conclui a prova de 100 questões com retorno explícito.",
   },
   usp: {
     status: "limited",

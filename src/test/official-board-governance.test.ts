@@ -3,15 +3,15 @@ import { EXAM_PROFILES } from "@/lib/realExamDistribution";
 import { getOfficialBoardAvailability } from "../../supabase/functions/_shared/banca-profiles";
 
 describe("official board governance", () => {
-  it("keeps only ENARE available as a limited official board", () => {
+  it("blocks every official board until its runtime is homologated", () => {
     const officialProfiles = Object.entries(EXAM_PROFILES).filter(([key]) => key !== "GERAL");
     const enabled = officialProfiles.filter(([, profile]) => profile.canGenerate);
 
-    expect(enabled.map(([key]) => key)).toEqual(["ENARE"]);
-    expect(EXAM_PROFILES.ENARE.availability).toBe("limited");
+    expect(enabled.map(([key]) => key)).toEqual([]);
+    expect(EXAM_PROFILES.ENARE.availability).toBe("suspended");
     expect(getOfficialBoardAvailability("ENARE")).toMatchObject({
-      status: "limited",
-      canGenerateOfficialExam: true,
+      status: "suspended",
+      canGenerateOfficialExam: false,
     });
   });
 
