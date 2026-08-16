@@ -316,14 +316,15 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       appendValidatedQuestions(aiResult);
 
       // A provider can return syntactically valid but clinically rejected
-      // questions. Retry once with the existing independent fallback provider;
+      // questions. Retry once with the available Cerebras provider and a
+      // corrective prompt; the Lovable gateway rejects this payload with 400.
       // never expose the rejected batch and never loop indefinitely.
       if (finalQuestions.length === 0) {
         console.warn(`[AI_QUALITY_RETRY] provider=${aiResult.provider} model=${aiResult.model}`);
         const qualityRetry = await runAI({
           ...aiInput,
-          providerOverride: "lovable-ai",
-          modelOverride: "openai/gpt-4o",
+          providerOverride: "cerebras",
+          modelOverride: "gpt-oss-120b",
           benchmarkMode: true,
           messages: [
             ...generationMessages,
