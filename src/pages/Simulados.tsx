@@ -96,7 +96,7 @@ const AUTH_SESSION_FALLBACK_TIMEOUT_MS = 2000;
 // The canonical AI chain may spend up to 30s on NVIDIA before falling back to
 // Cerebras and running the clinical-quality retry. Keep the UI alive for the
 // complete server-side attempt instead of abandoning a valid generation.
-const QUESTION_GENERATOR_TIMEOUT_MS = 90000;
+const QUESTION_GENERATOR_TIMEOUT_MS = 140000;
 
 class TimeoutError extends Error {
   constructor(message: string) {
@@ -190,7 +190,8 @@ async function generateBatch(
   includePreviousErrors?: boolean,
   mode: SimuladoMode | "ai_generation" = "estudo",
   avoidIds?: string[],
-  selectedSubtopics: string[] = []
+  selectedSubtopics: string[] = [],
+  correlationId?: string,
 ): Promise<{ 
   questions: SimQuestion[]; 
   sessionId: string | null; 
@@ -206,7 +207,10 @@ async function generateBatch(
   try {
     const { data, error } = await withTimeout(
       supabase.functions.invoke("question-generator", {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        headers: {
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(correlationId ? { "x-correlation-id": correlationId } : {}),
+        },
         body: {
           count,
           difficulty,
@@ -220,8 +224,10 @@ async function generateBatch(
           generationContext: {
             subtopic: specificTopic,
             topicWeights,
-            autoDistribution
-          }
+            autoDistribution,
+            customDistribution,
+          },
+          correlationId,
         }
       }),
       QUESTION_GENERATOR_TIMEOUT_MS,
@@ -841,7 +847,8 @@ const Simulados = () => {
               config.includePreviousErrors,
               generatorMode,
               avoidIds,
-              (config as any).selectedSubtopics || []
+              (config as any).selectedSubtopics || [],
+              correlationId,
             );
             batchData = { 
               success: true, 
@@ -896,6 +903,11 @@ const Simulados = () => {
               }
             }
 
+            // A segunda chamada repetia a mesma montagem enquanto a primeira
+            // ainda podia estar processando no Edge, criando sessões duplicadas.
+            // No fluxo de banco, propague a falha e mantenha uma única tentativa.
+            if (isMontarBancoFlow) throw e;
+
             console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL] Tentando rota alternativa...", {
               user_id: user?.id ?? null,
               batch: batchNum,
@@ -915,7 +927,10 @@ const Simulados = () => {
               supabase.functions.invoke(
                 "question-generator",
                 {
-                  headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+                  headers: {
+                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                    "x-correlation-id": correlationId,
+                  },
                   body: {
                     count: currentBatchSize,
                     difficulty: config.difficulty || "misto",
@@ -936,6 +951,7 @@ const Simulados = () => {
                     avoidIds: avoidIds,
                     jobId: currentJobId,
                     batchNumber: batchNum,
+                    correlationId,
                   },
                 }
               ),

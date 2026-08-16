@@ -13,11 +13,10 @@ import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 import { NVIDIA_MODEL_REGISTRY } from "../_shared/nvidia-provider.ts";
 import {
-  calculateDifficultyTargets,
-  ENARE_DIFFICULTY_MIX,
-  normalizeEnareCorpusDifficulty,
+  getCorpusDifficultyPlan,
   selectByDifficultyQuota,
-  shouldApplyEnareQuota,
+  selectByTopicAndDifficultyQuota,
+  type TopicWeight,
 } from "./difficulty-quota.ts";
 
 /**
@@ -91,6 +90,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       : [];
     const examBoard = body.targetExam || body.examBoard;
     const difficulty = body.difficulty || "misto";
+    const rawTopicWeights = body.generationContext?.customDistribution ??
+      body.generationContext?.topicWeights ?? body.topicWeights;
+    const requestedTopicWeights: TopicWeight[] = Array.isArray(rawTopicWeights)
+      ? rawTopicWeights
+          .filter((item: any) => typeof item?.topic === "string" && item.topic.trim() && Number(item.weight) > 0)
+          .map((item: any) => ({ topic: item.topic.trim(), weight: Number(item.weight) }))
+          .filter((item: TopicWeight) => topics.includes(item.topic))
+      : [];
 
     const topicEngine = new TopicEngine(supabaseAdmin);
     await topicEngine.loadAliases(topics, subtopics);
@@ -162,19 +169,20 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const requestAvoidIds = Array.isArray(body.avoidIds)
       ? body.avoidIds.filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
       : [];
-    const excludedIds = Array.from(new Set([
+    const historicalExcludedIds = Array.from(new Set([
       ...(practiceHistory || []).map(p => p.question_id),
       ...(simuladoHistory || []).map(s => s.question_id),
-      ...requestAvoidIds,
     ].filter(Boolean))).slice(0, 500);
-    const excludedIdSet = new Set(excludedIds);
+    const historicalExcludedIdSet = new Set(historicalExcludedIds);
+    const requestAvoidIdSet = new Set(requestAvoidIds);
 
-    console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] count=${excludedIds.length}`);
+    console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] historical=${historicalExcludedIds.length} request=${requestAvoidIds.length}`);
 
     // 2. Fetch from Bank (Strict filtering)
     step = "bank_fetch";
     let finalQuestions: any[] = [];
     let difficultyDistribution: ReturnType<typeof selectByDifficultyQuota<any>> | null = null;
+    const difficultyPlan = getCorpusDifficultyPlan(examBoard, difficulty);
     const seenHashes = new Set<string>();
     const seenNormalized = new Set<string>();
 
@@ -203,28 +211,56 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       // Applying a 20+ clause ILIKE OR over the eligibility view is redundant
       // and can exceed the UI timeout for 100-question exams. Keep that filter
       // only for genuine topic/subtopic selections.
-      let q = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(topicOr);
-      if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
-        q = q.ilike("board", String(examBoard));
+      const buildScopedQuery = (difficultyScore?: number) => {
+        let query = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(topicOr);
+        if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
+          query = query.ilike("board", String(examBoard));
+        }
+        if (difficultyScore) query = query.eq("difficulty", difficultyScore);
+        return query;
+      };
+
+      const fetchDifficultyStratum = async (difficultyScore: number) => {
+        const rows: any[] = [];
+        const pageSize = 200;
+        const maxPages = 5;
+        for (let page = 0; page < maxPages; page++) {
+          const from = page * pageSize;
+          const { data, error } = await buildScopedQuery(difficultyScore)
+            .order("id", { ascending: true })
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          rows.push(...(data || []));
+          if (!data || data.length < pageSize) break;
+        }
+        return rows;
+      };
+
+      if (difficultyPlan) {
+        const strata = await Promise.all([3, 4, 5].map(fetchDifficultyStratum));
+        candidates = strata.flat();
+      } else {
+        const { data, error } = await buildScopedQuery()
+          .order("id", { ascending: true })
+          .limit(Math.max(requestedCount * 4, 200));
+        if (error) throw error;
+        candidates = data || [];
       }
-      // The eligible view is not ordered by topic relevance. A 200-row window
-      // can be exhausted by rows rejected by the final integrity guard while
-      // valid rows for the same board still exist later in the result set.
-      const { data } = await q.limit(Math.max(requestedCount * 10, 1000));
-      candidates = data || [];
       
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
 
       const eligibleQuestions: any[] = [];
-      const enforceEnareQuota = shouldApplyEnareQuota(examBoard, difficulty);
-      const quotaTargets = calculateDifficultyTargets(requestedCount, ENARE_DIFFICULTY_MIX);
-      const quotaEligible = { easy: 0, medium: 0, hard: 0 };
       for (const q of candidates) {
         // Applying hundreds of UUIDs through PostgREST's URL-based `not.in`
         // can exceed the request-line limit and was previously misreported as
         // an empty bank. The candidate window is bounded, so enforce the same
         // historical exclusion safely in memory.
-        if (excludedIdSet.has(q.id)) continue;
+        if (requestAvoidIdSet.has(q.id)) continue;
+        const historicalReuse = historicalExcludedIdSet.has(q.id);
+        // Small study sessions remain freshness-first. A 100-question quota
+        // may reuse historical items only as a last resort; duplicates inside
+        // the current exam are still forbidden by requestAvoidIdSet/hashes.
+        if (historicalReuse && !difficultyPlan) continue;
         
         const matchResult = topicEngine.calculateScore(q, topics, subtopics);
         
@@ -232,10 +268,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const requestedPairs = subtopics.length > 0
           ? topics.flatMap((topic) => subtopics.map((subtopic) => ({ topic, subtopic })))
           : topics.map((topic) => ({ topic, subtopic: undefined }));
-        const guardResults = requestedPairs.map(({ topic, subtopic }) =>
-          validateFinalQuestionTopic(q, topic, subtopic)
-        );
-        const guardResult = guardResults.find((result) => result.allowed) ?? guardResults[0];
+        const guardResults = requestedPairs.map((pair) => ({
+          pair,
+          result: validateFinalQuestionTopic(q, pair.topic, pair.subtopic),
+        }));
+        const allowedGuard = guardResults.find((entry) => entry.result.allowed) ?? guardResults[0];
+        const guardResult = allowedGuard?.result;
         const primaryVisibleTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalizeStatement(q.topic))
           ? q.topic
           : q.curriculum_theme;
@@ -270,31 +308,23 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           _source: "bank",
           _topic_match_score: matchResult.score,
           _match_type: matchResult.matchType,
-          _guard: guardResult
+          _guard: guardResult,
+          _historical_reuse: historicalReuse,
+          _requested_topic: allowedGuard?.pair.topic,
         });
         
         seenHashes.add(hash);
         seenNormalized.add(norm);
 
-        if (enforceEnareQuota) {
-          const bucket = normalizeEnareCorpusDifficulty(q.difficulty);
-          if (bucket !== "unclassified") quotaEligible[bucket]++;
-          if (
-            quotaEligible.easy >= quotaTargets.easy &&
-            quotaEligible.medium >= quotaTargets.medium &&
-            quotaEligible.hard >= quotaTargets.hard
-          ) break;
-        } else if (eligibleQuestions.length >= requestedCount) {
+        if (!difficultyPlan && eligibleQuestions.length >= requestedCount) {
           break;
         }
       }
 
-      if (enforceEnareQuota) {
-        difficultyDistribution = selectByDifficultyQuota(
-          eligibleQuestions,
-          requestedCount,
-          ENARE_DIFFICULTY_MIX,
-        );
+      if (difficultyPlan) {
+        difficultyDistribution = requestedTopicWeights.length > 0
+          ? selectByTopicAndDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix, requestedTopicWeights)
+          : selectByDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix);
         finalQuestions = difficultyDistribution.questions;
         console.log(`[SIM_DIFFICULTY_QUOTA] target=${JSON.stringify(difficultyDistribution.target)} actual=${JSON.stringify(difficultyDistribution.actual)} available=${JSON.stringify(difficultyDistribution.available)} shortage=${JSON.stringify(difficultyDistribution.shortage)} exact=${difficultyDistribution.exact}`);
       } else {
@@ -433,8 +463,24 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     // 4. Persistence
     step = "persist";
     let sessionId = null;
-    
-    const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
+    const difficultyMetadata = difficultyDistribution
+      ? {
+          target: difficultyDistribution.target,
+          actual: difficultyDistribution.actual,
+          available: difficultyDistribution.available,
+          shortage: difficultyDistribution.shortage,
+          exact: difficultyDistribution.exact,
+          scale: difficultyPlan?.scale,
+          calibrationStatus: difficultyPlan?.calibrationStatus,
+          historicalReuseCount: difficultyDistribution.historicalReuseCount,
+          historicalReuseIds: difficultyDistribution.questions.filter((q) => q._historical_reuse).map((q) => q.id),
+          topicTarget: difficultyDistribution.topicTarget,
+          topicActual: difficultyDistribution.topicActual,
+          topicShortage: difficultyDistribution.topicShortage,
+        }
+      : null;
+
+    const { data: sess, error: sessionError } = await supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'study',
       total_questions: finalQuestions.length,
@@ -448,35 +494,25 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         requested: requestedCount, 
         insufficientQuestions,
         correlation_id: correlationId,
-        difficulty_distribution: difficultyDistribution
-          ? {
-              target: difficultyDistribution.target,
-              actual: difficultyDistribution.actual,
-              available: difficultyDistribution.available,
-              shortage: difficultyDistribution.shortage,
-              exact: difficultyDistribution.exact,
-              scale: "enare-corpus-relative-3-4-5-v1",
-              calibrationStatus: "experimental",
-            }
-          : null,
+        difficulty_distribution: difficultyMetadata,
       }
     }).select().single();
 
-    if (sess) {
-      sessionId = sess.id;
-      const persistenceTasks: PromiseLike<any>[] = [];
-      const bankQuestions = finalQuestions.filter((q) => q.id);
-      if (bankQuestions.length > 0) {
-        persistenceTasks.push(supabaseAdmin.from("simulado_questions").insert(
-          bankQuestions.map((q, idx) => ({
-            session_id: sessionId,
-            question_id: q.id,
-            order_index: idx,
-            is_ai_generated: q._source === "generated"
-          }))
-        ));
-      }
-      persistenceTasks.push(supabaseAdmin.from("topic_generation_logs").insert({
+    if (sessionError || !sess) throw sessionError || new Error("Falha ao persistir sessão do simulado");
+    sessionId = sess.id;
+    const persistenceTasks: PromiseLike<any>[] = [];
+    const bankQuestions = finalQuestions.filter((q) => q.id);
+    if (bankQuestions.length > 0) {
+      persistenceTasks.push(supabaseAdmin.from("simulado_questions").insert(
+        bankQuestions.map((q, idx) => ({
+          session_id: sessionId,
+          question_id: q.id,
+          order_index: idx,
+          is_ai_generated: q._source === "generated"
+        }))
+      ));
+    }
+    persistenceTasks.push(supabaseAdmin.from("topic_generation_logs").insert({
           user_id: userId,
           requested_topic: topics[0],
           canonical_topic: topicEngine.identifyCanonical(topics[0]),
@@ -490,8 +526,19 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             match_types: finalQuestions.map(q => q._match_type),
             guard_forensics: finalQuestions.map(q => q._guard)
           }
-        }));
-      await Promise.all(persistenceTasks);
+      }));
+    const persistenceResults = await Promise.all(persistenceTasks);
+    const persistenceError = persistenceResults.find((result) => result?.error)?.error;
+    if (persistenceError) throw persistenceError;
+    if (bankQuestions.length > 0) {
+      const { count: persistedCount, error: countError } = await supabaseAdmin
+        .from("simulado_questions")
+        .select("question_id", { count: "exact", head: true })
+        .eq("session_id", sessionId);
+      if (countError) throw countError;
+      if (persistedCount !== bankQuestions.length) {
+        throw new Error(`Persistência incompleta: ${persistedCount ?? 0}/${bankQuestions.length} questões vinculadas`);
+      }
     }
 
     return new Response(JSON.stringify({
@@ -507,17 +554,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       model: finalQuestions[0]?._model || null,
       correlationId,
       insufficientQuestions,
-      difficultyDistribution: difficultyDistribution
-        ? {
-            target: difficultyDistribution.target,
-            actual: difficultyDistribution.actual,
-            available: difficultyDistribution.available,
-            shortage: difficultyDistribution.shortage,
-            exact: difficultyDistribution.exact,
-            scale: "enare-corpus-relative-3-4-5-v1",
-            calibrationStatus: "experimental",
-          }
-        : null,
+      difficultyDistribution: difficultyMetadata,
       message: insufficientQuestions ? `Encontramos apenas ${finalQuestions.length} questões para os filtros selecionados.` : undefined
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
