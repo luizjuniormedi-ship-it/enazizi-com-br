@@ -92,7 +92,6 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
 
-const AUTH_SESSION_FALLBACK_TIMEOUT_MS = 2000;
 // The canonical AI chain may spend up to 30s on NVIDIA before falling back to
 // Cerebras and running the clinical-quality retry. Keep the UI alive for the
 // complete server-side attempt instead of abandoning a valid generation.
@@ -142,19 +141,14 @@ function logMontarBancoEvent(
   });
 }
 
-async function getAccessTokenForSimulado(cachedToken?: string | null): Promise<string | undefined> {
+function getAccessTokenForSimulado(cachedToken?: string | null): string {
   if (cachedToken) return cachedToken;
 
-  try {
-    const result = await Promise.race([
-      supabase.auth.getSession(),
-      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), AUTH_SESSION_FALLBACK_TIMEOUT_MS)),
-    ]);
-    return result?.data.session?.access_token;
-  } catch (error) {
-    console.warn("[Simulados] Falha ao obter sessão sem bloquear geração:", error);
-    return undefined;
-  }
+  // AuthProvider is the single owner of session bootstrap. Starting another
+  // getSession() here can wait on the same Web Lock indefinitely; the
+  // Functions client then never issues the HTTP request. Fail before loading
+  // instead of presenting a false 140-second generator timeout.
+  throw new Error("AUTH_SESSION_UNAVAILABLE: entre novamente para iniciar o simulado.");
 }
 
 function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {

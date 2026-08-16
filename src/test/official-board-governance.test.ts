@@ -48,6 +48,8 @@ describe("official board governance", () => {
     expect(source).toContain("topicWeights: EXAM_PROFILES.GERAL.topicWeights");
     expect(source).toContain('realExamProfile: "GERAL"');
     expect(source).not.toContain('realExamProfile: "ENAMED"');
+    expect(source).not.toContain("supabase.auth.getSession()");
+    expect(source).toContain("AUTH_SESSION_UNAVAILABLE");
   });
 
   it("exposes difficulty and generation timing for browser audit", () => {
