@@ -2,7 +2,7 @@ import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/e
 import { cleanQuestionText, hasCorruptQuestionText, parseAiJson } from "../_shared/contracts/parser.contract.ts";
 import { SIMULADO_MOTOR_PREMIUM, QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
-import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { resolveBanca, buildBancaBlock, getOfficialBoardAvailability } from "../_shared/banca-profiles.ts";
 import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
@@ -114,6 +114,28 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     const bancaResolution = resolveBanca(examBoard);
     const profile = bancaResolution.profile;
+
+    const officialAvailability = body.mode === "prova_real"
+      ? getOfficialBoardAvailability(typeof examBoard === "string" ? examBoard : null)
+      : null;
+    if (officialAvailability && !officialAvailability.canGenerateOfficialExam) {
+      logger.warn("OFFICIAL_BOARD_NOT_READY", officialAvailability.reason, {
+        board: examBoard,
+        status: officialAvailability.status,
+        correlationId,
+      });
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: "BOARD_NOT_READY",
+        error: officialAvailability.reason,
+        board: examBoard,
+        boardStatus: officialAvailability.status,
+        correlationId,
+      }), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // 1. Historical Dedup (Last 7 days)
     step = "historical_dedup";
