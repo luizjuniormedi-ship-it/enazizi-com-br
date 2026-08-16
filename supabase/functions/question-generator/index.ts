@@ -172,7 +172,16 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       ]
         .join(",");
 
-      let q = buildBaseQuery().or(topicOr);
+      const profileTopicCount = Object.keys(profile.specialtyWeights || {}).length;
+      const isFullOfficialBlueprint = Boolean(examBoard) &&
+        subtopics.length === 0 &&
+        profileTopicCount > 0 &&
+        topics.length >= profileTopicCount;
+      // A full official-exam card already scopes the corpus by exact board.
+      // Applying a 20+ clause ILIKE OR over the eligibility view is redundant
+      // and can exceed the UI timeout for 100-question exams. Keep that filter
+      // only for genuine topic/subtopic selections.
+      let q = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(topicOr);
       if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
         q = q.ilike("board", String(examBoard));
       }
