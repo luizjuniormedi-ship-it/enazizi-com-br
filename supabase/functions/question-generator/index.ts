@@ -156,9 +156,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         excludedIds.length > 0 ? q.not("id", "in", `(${excludedIds.join(",")})`) : q;
 
       let candidates: any[] = [];
-      const allTerms = [...topics, ...subtopics];
-      const topicOr = allTerms
-        .flatMap((t: string) => [`topic.ilike.%${t}%`, `curriculum_theme.ilike.%${t}%`, `subtopic.ilike.%${t}%`, `curriculum_subtheme.ilike.%${t}%`])
+      // Keep topic and subtopic scopes in their canonical columns. Mixing topic
+      // terms into subtopic columns produced large false-positive candidate
+      // windows; the final guard then rejected the whole next page even when
+      // the requested board still had enough eligible questions.
+      const topicOr = [
+        ...topics.flatMap((t: string) => [`topic.ilike.%${t}%`, `curriculum_theme.ilike.%${t}%`]),
+        ...subtopics.flatMap((t: string) => [`subtopic.ilike.%${t}%`, `curriculum_subtheme.ilike.%${t}%`]),
+      ]
         .join(",");
 
       let q = buildBaseQuery().or(topicOr);
