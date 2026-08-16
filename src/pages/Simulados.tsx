@@ -93,7 +93,10 @@ type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 const BATCH_SIZE = 10;
 
 const AUTH_SESSION_FALLBACK_TIMEOUT_MS = 2000;
-const QUESTION_GENERATOR_TIMEOUT_MS = 45000;
+// The canonical AI chain may spend up to 30s on NVIDIA before falling back to
+// Cerebras and running the clinical-quality retry. Keep the UI alive for the
+// complete server-side attempt instead of abandoning a valid generation.
+const QUESTION_GENERATOR_TIMEOUT_MS = 90000;
 
 class TimeoutError extends Error {
   constructor(message: string) {
