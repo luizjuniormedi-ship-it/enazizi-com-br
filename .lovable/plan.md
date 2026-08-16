@@ -1,32 +1,51 @@
-# Diagnóstico BOOT_ERROR — tutor-v2-chat (somente leitura)
+# AUDITORIA SOMENTE LEITURA — Capacidade de deploy da `question-generator`
 
-## Evidência coletada
+Resposta objetiva às 4 perguntas, com fatos do estado atual do repositório e do projeto conectado.
 
-Smoke real em produção (`qszsyskumcmuknumwxtk`), 2026-08-16 13:14:56 UTC:
+## (1) Supabase project ref conectado
 
-```text
-POST /functions/v1/tutor-v2-chat  -> HTTP 503
-sb-error-code: BOOT_ERROR
-sb-request-id: 01a00ab6-0525-7b49-b038-08ce53377dc1
-body: {"code":"BOOT_ERROR","message":"Function failed to start (please check logs)"}
-OPTIONS /functions/v1/tutor-v2-chat -> HTTP 503 (falha antes do handler CORS)
+- **Ref:** `qszsyskumcmuknumwxtk`
+- Confirmado em `supabase/config.toml` → `project_id = "qszsyskumcmuknumwxtk"` (único `config.toml`, auto-gerado, não alterado).
+- Este é o mesmo ref do painel de backend do projeto. Nenhum outro projeto Supabase está referenciado no código.
+
+## (2) Capacidade/autorização para implantar a `question-generator` a partir do código no GitHub
+
+- **Sim, sem criar projeto/rota/função paralela.** A função já existe no repositório:
+  - `supabase/functions/question-generator/index.ts` (23.576 bytes)
+  - `supabase/functions/question-generator/difficulty-quota.ts`
+  - `supabase/functions/question-generator/__tests__/contract.test.ts`
+- `supabase/config.toml` já contém o bloco `[functions.question-generator]` com `verify_jwt = false` (mantém o padrão do projeto).
+- **Worktree está limpa** (`git status --short` vazio); HEAD = `9a38a4556 Fast Visual Edit`. O código no GitHub == código local; um deploy implantaria exatamente o que está versionado.
+- **Sem `deno.lock`** em `supabase/` nem na raiz → menor risco de falha por lockfile incompatível.
+- Último commit que tocou `question-generator/index.ts`: `ad6dc6be6 fix(simulados): govern official board readiness (#40)`.
+
+> Observação de capacidade: o deploy de Edge Functions neste ambiente é feito pela ferramenta `supabase functions deploy` (Lovable Cloud). O `service_role` key e a senha do banco **não estão disponíveis** no Lovable Cloud, mas **não são necessários** para `functions deploy` — este usa as credenciais de gerenciamento do projeto, já configuradas. Portanto a implantação é viável.
+
+## (3) Ação exata para implantar somente essa função
+
+Uma única ação, sem tocar em código, migrations, rotas ou outras funções:
+
+```bash
+supabase functions deploy question-generator \
+  --project-ref qszsyskumcmuknumwxtk \
+  --no-verify-jwt
 ```
 
-Logs: as consultas de log/analytics para `tutor-v2-chat` retornaram vazio (`function_logs` e `function_edge_logs` sem linhas) — o worker morre antes de emitir log, então não há stack trace do runtime disponível. A falha ocorre também no OPTIONS, o que confirma erro de módulo/boot, não de runtime do handler.
+Pontos:
+- Implanta **apenas** `question-generator` (as 220+ outras funções não são afetadas).
+- `--no-verify-jwt` mantém `verify_jwt = false` (já é o estado atual e o padrão do projeto — não introduz regressão).
+- Não cria nova rota nem função paralela: a rota `https://qszsyskumcmuknumwxtk.functions.supabase.co/question-generator` já existe e seria apenas atualizada.
+- Não exige `service_role` key nem senha do banco.
+- Não exige alteração no `config.toml` (o bloco já existe).
 
-## Reprodução local do módulo canônico
+## (4) Deploy/publish do frontend também implanta Edge Functions?
 
-- `deno run -A --check=none supabase/functions/tutor-v2-chat/index.ts` → **boota com sucesso** ("Listening on http://localhost:8000/"). Todos os 9 imports (`require-auth`, `enazizi-prompt`, `ai-runtime-orchestrator`, `knowledge-cache`, `tutor-memory`, `injection-guard`, `cors`) resolvem e exportam os símbolos usados.
-- `deno check` acusa apenas 3 erros de **tipo** (não bloqueiam boot no edge-runtime, que não faz typecheck):
-  - `_shared/ai-runtime-orchestrator.ts:646` e `:647` — `result.success` não existe em `Omit<AIRunResult,"selection">`
-  - `tutor-v2-chat/index.ts:203` — `auth.userId` acessado antes do narrowing `if (!auth.ok)` (só existe no ramo `ok: true`)
+- **Não.** Publish do frontend (Vite/React) implanta apenas os artefatos estáticos do cliente (HTML/JS/CSS) no host do preview/published. É uma pipeline separada e não aciona `supabase functions deploy`.
+- Edge Functions só são implantadas via `supabase functions deploy` (explicitamente, por função), ou, em projetos gerenciados, pelo fluxo gerenciado pelo Lovable Cloud que orquestra o deploy de funções — **independente** do publish do frontend.
+- Portanto, para atualizar a `question-generator` no backend é necessário executar o deploy da função (item 3); um publish do frontend **não** o fará.
 
-Conclusão factual: o código canônico atual **não** contém erro de import/sintaxe capaz de causar BOOT_ERROR. O artefato publicado em produção é uma versão anterior (stale) — `tutor-v2-chat` não foi reimplantado após as mudanças recentes em `_shared/ai-runtime-orchestrator.ts` (commits `630c64b6`, `94cc074f`), enquanto `tutor-v3-premium` foi. Diagnóstico da causa exata do bundle antigo permanece **não confirmado** por ausência de logs.
+## Proposta de ação (uma única etapa, read-only respeitado)
 
-## Correção mínima (não executada)
+Se aprovado, executar **somente** o deploy da função `question-generator` conforme item (3), sem editar arquivos, sem criar migration e sem publish de frontend. Nada mais.
 
-1. Reimplantar somente a Edge Function existente `tutor-v2-chat` no ref `qszsyskumcmuknumwxtk`, preservando `verify_jwt = false` (linha 82-83 de `supabase/config.toml`). Nenhum arquivo novo, nenhuma rota nova.
-2. Se após o redeploy o BOOT_ERROR persistir, aí sim aplicar a única correção de arquivo canônico necessária, em `supabase/functions/tutor-v2-chat/index.ts` linha 203: mover o log `[TUTOR_V2_AUTH_STATUS]` para depois de `if (!auth.ok) return auth.response;` (ou logar apenas `auth.ok`), eliminando o acesso a `auth.userId` no tipo sem essa propriedade.
-3. Validação: `OPTIONS` deve responder 200 e `POST` sem Authorization deve responder 401 (não 503), com `sb-error-code` ausente.
-
-Nada acima foi executado: nenhum deploy, nenhuma edição de código, nenhuma mudança de secret/configuração.
+Se preferir manter read-only total: ignorar/skipar — nenhum deploy será feito.
