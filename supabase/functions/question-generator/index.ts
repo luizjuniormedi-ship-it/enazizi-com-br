@@ -136,9 +136,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     if (body.mode !== 'ai_generation') {
       const buildBaseQuery = () => supabaseAdmin
-        .from("questions_bank")
-        .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board")
-        .eq("review_status", "approved");
+        .from("eligible_questions_bank")
+        .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board");
 
       const applyExclusion = (q: any) =>
         excludedIds.length > 0 ? q.not("id", "in", `(${excludedIds.join(",")})`) : q;
