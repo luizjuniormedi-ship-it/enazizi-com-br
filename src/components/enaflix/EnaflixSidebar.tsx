@@ -16,7 +16,8 @@ import {
   UserCheck,
   Upload,
   Brain,
-  Clock
+  Clock,
+  Sparkles
 } from "lucide-react";
 
 
