@@ -15,6 +15,47 @@ export interface BancaProfile {
   mode?: "mcq" | "ce"; // Multiple Choice vs Certo/Errado
 }
 
+export type OfficialBoardStatus = "validated" | "limited" | "suspended" | "draft";
+
+export interface OfficialBoardAvailability {
+  status: OfficialBoardStatus;
+  canGenerateOfficialExam: boolean;
+  reason: string;
+}
+
+const OFFICIAL_BOARD_AVAILABILITY: Record<string, OfficialBoardAvailability> = {
+  enare: {
+    status: "limited",
+    canGenerateOfficialExam: true,
+    reason: "Banco ENARE disponível, com dificuldade relativa ao corpus ainda em calibração experimental.",
+  },
+  usp: {
+    status: "limited",
+    canGenerateOfficialExam: false,
+    reason: "Banco USP-SP ainda não possui questões elegíveis suficientes para uma prova completa.",
+  },
+  cebraspe: {
+    status: "suspended",
+    canGenerateOfficialExam: false,
+    reason: "Formato CEBRASPE e corpus disponível ainda não foram homologados.",
+  },
+  fgv: {
+    status: "limited",
+    canGenerateOfficialExam: false,
+    reason: "Banco FGV ainda não possui questões elegíveis suficientes para uma prova completa.",
+  },
+  fcc: {
+    status: "limited",
+    canGenerateOfficialExam: false,
+    reason: "Banco FCC ainda não possui questões elegíveis suficientes para uma prova completa.",
+  },
+  enamed: {
+    status: "draft",
+    canGenerateOfficialExam: false,
+    reason: "Banco ENAMED ainda não possui corpus elegível homologado.",
+  },
+};
+
 export const PROFILES: Record<string, BancaProfile> = {
   enamed: {
     key: "enamed", label: "ENAMED", difficulty: 3, osceEmphasis: false,
@@ -133,6 +174,16 @@ export function resolveBanca(key: string | null | undefined): BancaResolution {
 
 export function getBancaProfile(key: string | null | undefined): BancaProfile {
   return resolveBanca(key).profile;
+}
+
+export function getOfficialBoardAvailability(key: string | null | undefined): OfficialBoardAvailability | null {
+  if (!key || ["all", "geral"].includes(key.toLowerCase().trim())) return null;
+  const resolution = resolveBanca(key);
+  return OFFICIAL_BOARD_AVAILABILITY[resolution.profileKey] ?? {
+    status: "draft",
+    canGenerateOfficialExam: false,
+    reason: "Esta banca ainda não possui perfil e corpus homologados.",
+  };
 }
 
 /** Build prompt block to inject into AI system prompts */

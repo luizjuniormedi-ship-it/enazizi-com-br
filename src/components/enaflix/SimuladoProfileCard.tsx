@@ -10,12 +10,13 @@ interface Props {
   difficulty?: "facil" | "intermediario" | "dificil" | "misto";
   image?: string;
   badge?: string;
+  disabled?: boolean;
   onClick: () => void;
   dataTestId?: string;
   "data-testid"?: string;
 }
 
-export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, difficulty, image, badge, onClick, dataTestId, "data-testid": dataTestIdAttr }: Props) {
+export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, difficulty, image, badge, disabled = false, onClick, dataTestId, "data-testid": dataTestIdAttr }: Props) {
   const diffLabels = {
     facil: "Iniciante",
     intermediario: "Intermediário",
@@ -25,17 +26,18 @@ export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, diffi
 
   return (
     <motion.div
-      whileHover={{ y: -5, scale: 1.02 }}
-      className="group relative flex-shrink-0 w-[300px] h-[200px] cursor-pointer overflow-hidden rounded-2xl bg-[#1a1a1e] border border-white/5 transition-all duration-500"
-      onClick={onClick}
+      whileHover={disabled ? undefined : { y: -5, scale: 1.02 }}
+      className={cn("group relative flex-shrink-0 w-[300px] h-[200px] overflow-hidden rounded-2xl bg-[#1a1a1e] border border-white/5 transition-all duration-500", disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer")}
+      onClick={disabled ? undefined : onClick}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          onClick();
+          if (!disabled) onClick();
         }
       }}
       role="button"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
       data-testid={dataTestId || dataTestIdAttr}
       aria-label={`Gerar simulado: ${title}`}
     >
@@ -93,7 +95,7 @@ export function SimuladoProfileCard({ title, subtitle, count, timeMinutes, diffi
         </div>
 
         {/* Play Button Hover */}
-        <div className="absolute right-5 bottom-5 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+        <div className={cn("absolute right-5 bottom-5 opacity-0 transition-all translate-y-2", !disabled && "group-hover:opacity-100 group-hover:translate-y-0")}>
           <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shadow-glow-md">
             <Play className="h-4 w-4 text-white fill-current" />
           </div>

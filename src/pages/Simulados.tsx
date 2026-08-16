@@ -243,7 +243,18 @@ async function generateBatch(
       timeoutTriggered: false,
     });
 
-    if (error) throw error;
+    if (error) {
+      const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
+      if (context?.json) {
+        try {
+          const payload = await context.json() as { error?: string; errorCode?: string };
+          if (payload?.error) throw new Error(`${payload.errorCode ? `${payload.errorCode}: ` : ""}${payload.error}`);
+        } catch (contextError) {
+          if (contextError instanceof Error && contextError.message !== "Unexpected end of JSON input") throw contextError;
+        }
+      }
+      throw error;
+    }
     if (!data?.success) {
       console.error("[SIMULADO_GEN] Generator failed:", data);
       throw new Error(data?.error || "Falha na geração");
@@ -1498,21 +1509,38 @@ const Simulados = () => {
                   />
                 </div>
 
-                <EnaflixSection title="Bancas Oficiais" subtitle="Simule o ambiente real das maiores provas do país.">
+                <EnaflixSection title="Bancas Oficiais" subtitle="Somente bancas com corpus disponível podem ser iniciadas.">
                   <EnaflixRow title="">
-                    {Object.entries(EXAM_PROFILES).slice(0, 8).map(([id, profile]) => (
+                    {Object.entries(EXAM_PROFILES).filter(([id]) => id !== "GERAL").map(([id, profile]) => (
                       <div key={id} className="flex-none w-[280px] sm:w-[320px]">
                         <SimuladoProfileCard
                           title={profile.name}
-                          subtitle="Padrão oficial da banca"
-                          count={Math.min(profile.totalQuestions, 100)}
+                          subtitle={profile.availabilityMessage}
+                          count={profile.totalQuestions}
                           timeMinutes={profile.timeMinutes}
                           image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
-                          onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: Math.min(profile.totalQuestions, 100), difficulty: "misto", mode: "prova_real", realExamProfile: id, forceStart: true })}
+                          badge={profile.canGenerate ? "Validação limitada" : profile.availability === "suspended" ? "Suspensa" : "Em preparação"}
+                          disabled={!profile.canGenerate}
+                          onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: profile.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: id, forceStart: true })}
                           data-testid={`banca-${id.toLowerCase()}-button`}
                         />
                       </div>
                     ))}
+                  </EnaflixRow>
+                </EnaflixSection>
+
+                <EnaflixSection title="Simulado Geral" subtitle="Treino amplo com questões disponíveis no banco, sem alegação de padrão oficial.">
+                  <EnaflixRow title="">
+                    <SimuladoProfileCard
+                      title={EXAM_PROFILES.GERAL.name}
+                      subtitle={EXAM_PROFILES.GERAL.availabilityMessage}
+                      count={EXAM_PROFILES.GERAL.totalQuestions}
+                      timeMinutes={EXAM_PROFILES.GERAL.timeMinutes}
+                      badge="Banco geral"
+                      image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
+                      onClick={() => handleStart({ topics: EXAM_PROFILES.GERAL.topicWeights.map(t => t.topic), count: EXAM_PROFILES.GERAL.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: "GERAL", forceStart: true })}
+                      data-testid="banca-geral-button"
+                    />
                   </EnaflixRow>
                 </EnaflixSection>
 

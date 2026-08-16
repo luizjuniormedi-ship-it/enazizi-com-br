@@ -21,6 +21,9 @@ export interface ExamProfile {
   cutoffEstimate: number;
   topicWeights: TopicWeight[];
   difficultyMix: { easy: number; medium: number; hard: number };
+  availability: "validated" | "limited" | "suspended" | "draft" | "general";
+  canGenerate: boolean;
+  availabilityMessage: string;
 }
 
 const CLINICA_MEDICA_SUBTOPICS: SubtopicWeight[] = [
@@ -42,6 +45,9 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     timeMinutes: 300,
     cutoffEstimate: 62,
     difficultyMix: { easy: 25, medium: 50, hard: 25 },
+    availability: "limited",
+    canGenerate: true,
+    availabilityMessage: "Validação limitada: dificuldade relativa ao corpus em calibração experimental.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },
@@ -64,6 +70,9 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     timeMinutes: 300,
     cutoffEstimate: 68,
     difficultyMix: { easy: 20, medium: 45, hard: 35 },
+    availability: "limited",
+    canGenerate: false,
+    availabilityMessage: "Em preparação: banco ainda insuficiente para uma prova completa.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 22, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 18 },
@@ -86,6 +95,9 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     timeMinutes: 210,
     cutoffEstimate: 55,
     difficultyMix: { easy: 30, medium: 40, hard: 30 },
+    availability: "suspended",
+    canGenerate: false,
+    availabilityMessage: "Indisponível: formato e corpus ainda não homologados.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },
@@ -105,6 +117,9 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     timeMinutes: 300,
     cutoffEstimate: 65,
     difficultyMix: { easy: 20, medium: 40, hard: 40 },
+    availability: "limited",
+    canGenerate: false,
+    availabilityMessage: "Em preparação: banco ainda insuficiente para uma prova completa.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },
@@ -124,6 +139,9 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     timeMinutes: 240,
     cutoffEstimate: 70,
     difficultyMix: { easy: 40, medium: 40, hard: 20 },
+    availability: "limited",
+    canGenerate: false,
+    availabilityMessage: "Em preparação: banco ainda insuficiente para uma prova completa.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },
@@ -142,6 +160,9 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     timeMinutes: 240,
     cutoffEstimate: 60,
     difficultyMix: { easy: 30, medium: 50, hard: 20 },
+    availability: "draft",
+    canGenerate: false,
+    availabilityMessage: "Em preparação: ainda não há corpus elegível homologado.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },
@@ -159,11 +180,14 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     ],
   },
   GERAL: {
-    name: "Prova Geral",
+    name: "Simulado Geral",
     totalQuestions: 100,
     timeMinutes: 300,
     cutoffEstimate: 60,
     difficultyMix: { easy: 30, medium: 50, hard: 20 },
+    availability: "general",
+    canGenerate: true,
+    availabilityMessage: "Seleção ampla do banco; não representa o padrão oficial de uma banca.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },
