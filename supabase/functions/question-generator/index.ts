@@ -1,5 +1,5 @@
 import { enterpriseEdgeHandler, corsHeaders } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
-import { cleanQuestionText, parseAiJson } from "../_shared/contracts/parser.contract.ts";
+import { cleanQuestionText, hasCorruptQuestionText, parseAiJson } from "../_shared/contracts/parser.contract.ts";
 import { SIMULADO_MOTOR_PREMIUM, QUESTION_MOTOR_PREMIUM } from "../_shared/premium-motors.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
@@ -161,11 +161,26 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         
         const matchResult = topicEngine.calculateScore(q, topics, subtopics);
         
-        // FINAL TOPIC GUARD - Mandatory enforcement
-        const guardResult = validateFinalQuestionTopic(q, topics[0], subtopics[0]);
+        // FINAL TOPIC GUARD - accept only a match in the complete requested scope.
+        const requestedPairs = subtopics.length > 0
+          ? topics.flatMap((topic) => subtopics.map((subtopic) => ({ topic, subtopic })))
+          : topics.map((topic) => ({ topic, subtopic: undefined }));
+        const guardResults = requestedPairs.map(({ topic, subtopic }) =>
+          validateFinalQuestionTopic(q, topic, subtopic)
+        );
+        const guardResult = guardResults.find((result) => result.allowed) ?? guardResults[0];
         
-        if (!guardResult.allowed) {
-          console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult.reason} requested=${topics[0]}`);
+        if (!guardResult?.allowed) {
+          console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult?.reason} requested=${topics.join("|")}`);
+          continue;
+        }
+
+        if (
+          hasCorruptQuestionText(q.statement) ||
+          hasCorruptQuestionText(q.explanation) ||
+          (Array.isArray(q.options) && q.options.some(hasCorruptQuestionText))
+        ) {
+          console.log(`[SIM_TEXT_QUALITY_REJECTED] question_id=${q.id} reason=invalid_encoding`);
           continue;
         }
 
