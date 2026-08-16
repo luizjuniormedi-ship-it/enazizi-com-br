@@ -20,33 +20,6 @@ export default defineConfig(({ mode }) => ({
     allowedHosts: true,
   },
   plugins: [
-    {
-      name: "lodash-safe-raw-tag-restore",
-      enforce: "pre" as const,
-      transform(code: string, id: string) {
-        if (!/[\\/]lodash[\\/]_getRawTag\.js$/.test(id)) return null;
-
-        const unsafeRestore = `if (unmasked) {
-    if (isOwn) {
-      value[symToStringTag] = tag;
-    } else {
-      delete value[symToStringTag];
-    }
-  }`;
-        const safeRestore = `if (unmasked) {
-    try {
-      if (isOwn) {
-        value[symToStringTag] = tag;
-      } else {
-        delete value[symToStringTag];
-      }
-    } catch (e) {}
-  }`;
-
-        if (!code.includes(unsafeRestore)) return null;
-        return code.replace(unsafeRestore, safeRestore);
-      },
-    },
     react(),
     mcpPlugin(),
     mode === "development" && componentTagger(),

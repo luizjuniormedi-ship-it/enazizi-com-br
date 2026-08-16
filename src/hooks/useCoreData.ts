@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -147,9 +147,8 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
 
 export function useCoreData() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  const query = useQuery({
+  return useQuery({
     queryKey: ["core-data", user?.id],
     queryFn: () => fetchCoreData(user!.id),
     enabled: !!user,
@@ -159,7 +158,4 @@ export function useCoreData() {
     retry: 1,
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["core-data"] });
-
-  return { ...query, refresh };
 }
