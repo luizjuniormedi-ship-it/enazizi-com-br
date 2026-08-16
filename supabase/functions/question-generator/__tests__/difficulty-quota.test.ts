@@ -1,6 +1,8 @@
 import {
   calculateDifficultyTargets,
   ENARE_DIFFICULTY_MIX,
+  GENERAL_DIFFICULTY_MIX,
+  getCorpusDifficultyPlan,
   normalizeEnareCorpusDifficulty,
   selectByDifficultyQuota,
   shouldApplyEnareQuota,
@@ -76,4 +78,23 @@ Deno.test("fluxo real prova_real ativa a cota ENARE sem aceitar banca manipulada
   assertEquals(shouldApplyEnareQuota("enare", "misto"), true);
   assertEquals(shouldApplyEnareQuota("FGV", "prova_real"), false);
   assertEquals(shouldApplyEnareQuota("ENARE", "dificil"), false);
+});
+
+Deno.test("Simulado Geral 100 aplica 30/50/20 sem alegar calibração oficial", () => {
+  const candidates = [
+    ...Array.from({ length: 60 }, (_, i) => ({ id: `ge-${i}`, difficulty: 3 })),
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `gm-${i}`, difficulty: 4 })),
+    ...Array.from({ length: 40 }, (_, i) => ({ id: `gh-${i}`, difficulty: 5 })),
+  ];
+  const plan = getCorpusDifficultyPlan("GERAL", "misto");
+  if (!plan) throw new Error("plano geral ausente");
+  const result = selectByDifficultyQuota(candidates, 100, plan.mix);
+
+  assertEquals(GENERAL_DIFFICULTY_MIX, { easy: 30, medium: 50, hard: 20 });
+  assertEquals(result.target, { easy: 30, medium: 50, hard: 20 });
+  assertEquals(result.actual, result.target);
+  assertEquals(result.questions.length, 100);
+  assertEquals(new Set(result.questions.map((question) => question.id)).size, 100);
+  assertEquals(plan.calibrationStatus, "experimental");
+  assertEquals(plan.scale, "corpus-relative-3-4-5-v1");
 });

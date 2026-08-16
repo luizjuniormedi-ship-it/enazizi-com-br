@@ -9,6 +9,7 @@ export interface DifficultyQuotaResult<T> {
   available: Record<DifficultyBucket, number>;
   shortage: Record<DifficultyBucket, number>;
   exact: boolean;
+  historicalReuseCount: number;
 }
 
 export const ENARE_DIFFICULTY_MIX: DifficultyMix = {
@@ -16,6 +17,18 @@ export const ENARE_DIFFICULTY_MIX: DifficultyMix = {
   medium: 50,
   hard: 25,
 };
+
+export const GENERAL_DIFFICULTY_MIX: DifficultyMix = {
+  easy: 30,
+  medium: 50,
+  hard: 20,
+};
+
+export interface CorpusDifficultyPlan {
+  mix: DifficultyMix;
+  scale: "corpus-relative-3-4-5-v1";
+  calibrationStatus: "experimental";
+}
 
 const BUCKETS: DifficultyBucket[] = ["easy", "medium", "hard"];
 
@@ -49,7 +62,7 @@ export function calculateDifficultyTargets(total: number, mix: DifficultyMix) {
   return Object.fromEntries(BUCKETS.map((bucket, index) => [bucket, targets[index]])) as Record<DifficultyBucket, number>;
 }
 
-export function selectByDifficultyQuota<T extends { id?: unknown; difficulty?: unknown }>(
+export function selectByDifficultyQuota<T extends { id?: unknown; difficulty?: unknown; _historical_reuse?: boolean }>(
   candidates: T[],
   total: number,
   mix: DifficultyMix,
@@ -57,7 +70,10 @@ export function selectByDifficultyQuota<T extends { id?: unknown; difficulty?: u
   const target = calculateDifficultyTargets(total, mix);
   const indexed = candidates
     .map((question, index) => ({ question, index, bucket: normalizeEnareCorpusDifficulty(question.difficulty) }))
-    .sort((a, b) => String(a.question.id ?? a.index).localeCompare(String(b.question.id ?? b.index)));
+    .sort((a, b) =>
+      Number(Boolean(a.question._historical_reuse)) - Number(Boolean(b.question._historical_reuse)) ||
+      String(a.question.id ?? a.index).localeCompare(String(b.question.id ?? b.index))
+    );
   const queues = Object.fromEntries(BUCKETS.map((bucket) => [bucket, indexed.filter((item) => item.bucket === bucket)])) as Record<DifficultyBucket, typeof indexed>;
   const available = Object.fromEntries(BUCKETS.map((bucket) => [bucket, queues[bucket].length])) as Record<DifficultyBucket, number>;
   const selected: typeof indexed = [];
@@ -88,6 +104,7 @@ export function selectByDifficultyQuota<T extends { id?: unknown; difficulty?: u
     available,
     shortage,
     exact: BUCKETS.every((bucket) => actual[bucket] === target[bucket]),
+    historicalReuseCount: questions.filter((question) => question._historical_reuse).length,
   };
 }
 
@@ -95,4 +112,24 @@ export function shouldApplyEnareQuota(examBoard: unknown, difficulty: unknown): 
   const board = String(examBoard ?? "").trim().toLowerCase();
   const mode = String(difficulty ?? "misto").trim().toLowerCase();
   return board === "enare" && ["misto", "prova_real"].includes(mode);
+}
+
+export function getCorpusDifficultyPlan(
+  examBoard: unknown,
+  difficulty: unknown,
+): CorpusDifficultyPlan | null {
+  const board = String(examBoard ?? "").trim().toLowerCase();
+  const mode = String(difficulty ?? "misto").trim().toLowerCase();
+  if (!["misto", "prova_real"].includes(mode)) return null;
+
+  const mix = board === "enare"
+    ? ENARE_DIFFICULTY_MIX
+    : (["geral", "all"].includes(board) ? GENERAL_DIFFICULTY_MIX : null);
+  if (!mix) return null;
+
+  return {
+    mix,
+    scale: "corpus-relative-3-4-5-v1",
+    calibrationStatus: "experimental",
+  };
 }

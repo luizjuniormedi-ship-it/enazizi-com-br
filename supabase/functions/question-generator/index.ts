@@ -14,10 +14,9 @@ import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 import { NVIDIA_MODEL_REGISTRY } from "../_shared/nvidia-provider.ts";
 import {
   calculateDifficultyTargets,
-  ENARE_DIFFICULTY_MIX,
+  getCorpusDifficultyPlan,
   normalizeEnareCorpusDifficulty,
   selectByDifficultyQuota,
-  shouldApplyEnareQuota,
 } from "./difficulty-quota.ts";
 
 /**
@@ -162,19 +161,20 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const requestAvoidIds = Array.isArray(body.avoidIds)
       ? body.avoidIds.filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
       : [];
-    const excludedIds = Array.from(new Set([
+    const historicalExcludedIds = Array.from(new Set([
       ...(practiceHistory || []).map(p => p.question_id),
       ...(simuladoHistory || []).map(s => s.question_id),
-      ...requestAvoidIds,
     ].filter(Boolean))).slice(0, 500);
-    const excludedIdSet = new Set(excludedIds);
+    const historicalExcludedIdSet = new Set(historicalExcludedIds);
+    const requestAvoidIdSet = new Set(requestAvoidIds);
 
-    console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] count=${excludedIds.length}`);
+    console.log(`[SIM_GENERATOR_RECENT_EXCLUDED] historical=${historicalExcludedIds.length} request=${requestAvoidIds.length}`);
 
     // 2. Fetch from Bank (Strict filtering)
     step = "bank_fetch";
     let finalQuestions: any[] = [];
     let difficultyDistribution: ReturnType<typeof selectByDifficultyQuota<any>> | null = null;
+    const difficultyPlan = getCorpusDifficultyPlan(examBoard, difficulty);
     const seenHashes = new Set<string>();
     const seenNormalized = new Set<string>();
 
@@ -203,28 +203,51 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       // Applying a 20+ clause ILIKE OR over the eligibility view is redundant
       // and can exceed the UI timeout for 100-question exams. Keep that filter
       // only for genuine topic/subtopic selections.
-      let q = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(topicOr);
-      if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
-        q = q.ilike("board", String(examBoard));
+      const buildScopedQuery = (difficultyScore?: number) => {
+        let query = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(topicOr);
+        if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
+          query = query.ilike("board", String(examBoard));
+        }
+        if (difficultyScore) query = query.eq("difficulty", difficultyScore);
+        return query;
+      };
+
+      if (difficultyPlan) {
+        const targets = calculateDifficultyTargets(requestedCount, difficultyPlan.mix);
+        const strata = await Promise.all([
+          buildScopedQuery(3).limit(Math.max(targets.easy * 4, 60)),
+          buildScopedQuery(4).limit(Math.max(targets.medium * 4, 100)),
+          buildScopedQuery(5).limit(Math.max(targets.hard * 4, 60)),
+        ]);
+        const queryError = strata.find((result) => result.error)?.error;
+        if (queryError) throw queryError;
+        candidates = strata.flatMap((result) => result.data || []);
+      } else {
+        const { data, error } = await buildScopedQuery().limit(Math.max(requestedCount * 4, 200));
+        if (error) throw error;
+        candidates = data || [];
       }
-      // The eligible view is not ordered by topic relevance. A 200-row window
-      // can be exhausted by rows rejected by the final integrity guard while
-      // valid rows for the same board still exist later in the result set.
-      const { data } = await q.limit(Math.max(requestedCount * 10, 1000));
-      candidates = data || [];
       
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
 
       const eligibleQuestions: any[] = [];
-      const enforceEnareQuota = shouldApplyEnareQuota(examBoard, difficulty);
-      const quotaTargets = calculateDifficultyTargets(requestedCount, ENARE_DIFFICULTY_MIX);
+      const enforceDifficultyQuota = Boolean(difficultyPlan);
+      const quotaTargets = calculateDifficultyTargets(
+        requestedCount,
+        difficultyPlan?.mix ?? { easy: 0, medium: 0, hard: 0 },
+      );
       const quotaEligible = { easy: 0, medium: 0, hard: 0 };
       for (const q of candidates) {
         // Applying hundreds of UUIDs through PostgREST's URL-based `not.in`
         // can exceed the request-line limit and was previously misreported as
         // an empty bank. The candidate window is bounded, so enforce the same
         // historical exclusion safely in memory.
-        if (excludedIdSet.has(q.id)) continue;
+        if (requestAvoidIdSet.has(q.id)) continue;
+        const historicalReuse = historicalExcludedIdSet.has(q.id);
+        // Small study sessions remain freshness-first. A 100-question quota
+        // may reuse historical items only as a last resort; duplicates inside
+        // the current exam are still forbidden by requestAvoidIdSet/hashes.
+        if (historicalReuse && !difficultyPlan) continue;
         
         const matchResult = topicEngine.calculateScore(q, topics, subtopics);
         
@@ -270,13 +293,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           _source: "bank",
           _topic_match_score: matchResult.score,
           _match_type: matchResult.matchType,
-          _guard: guardResult
+          _guard: guardResult,
+          _historical_reuse: historicalReuse,
         });
         
         seenHashes.add(hash);
         seenNormalized.add(norm);
 
-        if (enforceEnareQuota) {
+        if (enforceDifficultyQuota) {
           const bucket = normalizeEnareCorpusDifficulty(q.difficulty);
           if (bucket !== "unclassified") quotaEligible[bucket]++;
           if (
@@ -289,11 +313,11 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         }
       }
 
-      if (enforceEnareQuota) {
+      if (difficultyPlan) {
         difficultyDistribution = selectByDifficultyQuota(
           eligibleQuestions,
           requestedCount,
-          ENARE_DIFFICULTY_MIX,
+          difficultyPlan.mix,
         );
         finalQuestions = difficultyDistribution.questions;
         console.log(`[SIM_DIFFICULTY_QUOTA] target=${JSON.stringify(difficultyDistribution.target)} actual=${JSON.stringify(difficultyDistribution.actual)} available=${JSON.stringify(difficultyDistribution.available)} shortage=${JSON.stringify(difficultyDistribution.shortage)} exact=${difficultyDistribution.exact}`);
@@ -455,8 +479,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
               available: difficultyDistribution.available,
               shortage: difficultyDistribution.shortage,
               exact: difficultyDistribution.exact,
-              scale: "enare-corpus-relative-3-4-5-v1",
-              calibrationStatus: "experimental",
+              scale: difficultyPlan?.scale,
+              calibrationStatus: difficultyPlan?.calibrationStatus,
+              historicalReuseCount: difficultyDistribution.historicalReuseCount,
             }
           : null,
       }
@@ -514,8 +539,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             available: difficultyDistribution.available,
             shortage: difficultyDistribution.shortage,
             exact: difficultyDistribution.exact,
-            scale: "enare-corpus-relative-3-4-5-v1",
-            calibrationStatus: "experimental",
+            scale: difficultyPlan?.scale,
+            calibrationStatus: difficultyPlan?.calibrationStatus,
+            historicalReuseCount: difficultyDistribution.historicalReuseCount,
           }
         : null,
       message: insufficientQuestions ? `Encontramos apenas ${finalQuestions.length} questões para os filtros selecionados.` : undefined
