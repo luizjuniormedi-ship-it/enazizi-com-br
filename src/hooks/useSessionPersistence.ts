@@ -100,15 +100,18 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     }
 
     try {
+      let synced = false;
       if (sessionIdRef.current) {
         // Hardened Update: Ensures we don't duplicate on same key
-        await supabase
+        const { error } = await supabase
           .from("module_sessions")
           .update({ 
             session_data: sessionData as any, 
             updated_at: new Date().toISOString() 
           })
           .eq("id", sessionIdRef.current);
+        if (error) throw error;
+        synced = true;
       } else {
         // Hardened Insert: Uses single row guarantee
         const { data, error } = await supabase
@@ -125,7 +128,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         
         if (error) {
            // Fallback to simple insert if unique constraint doesn't exist
-           const { data: retryData } = await supabase
+           const { data: retryData, error: retryError } = await supabase
             .from("module_sessions")
             .insert({
               user_id: user.id,
@@ -135,14 +138,19 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
             })
             .select("id")
             .single();
-           if (retryData) sessionIdRef.current = retryData.id;
+           if (retryError) throw retryError;
+           if (retryData) {
+             sessionIdRef.current = retryData.id;
+             synced = true;
+           }
         } else if (data) {
           sessionIdRef.current = data.id;
+          synced = true;
         }
       }
       
-      // Clear backup on successful server sync
-      localStorage.removeItem(backupKey);
+      // Keep the crash-safe backup unless the server actually accepted the write.
+      if (synced) localStorage.removeItem(backupKey);
     } catch (e) {
       console.warn("[SessionPersistence] saveSession error:", e);
     }
@@ -160,18 +168,22 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
 
   // Complete session
   const completeSession = useCallback(async () => {
-    if (!sessionIdRef.current) return;
+    if (!user) return;
+    const backupKey = `enazizi_session_backup_${moduleKey}_${user.id}`;
     try {
-      await supabase
-        .from("module_sessions")
-        .update({ status: "completed" })
-        .eq("id", sessionIdRef.current);
+      if (sessionIdRef.current) {
+        await supabase
+          .from("module_sessions")
+          .update({ status: "completed" })
+          .eq("id", sessionIdRef.current);
+      }
+      localStorage.removeItem(backupKey);
       sessionIdRef.current = null;
       setPendingSession(null);
     } catch (e) {
       console.warn("[SessionPersistence] completeSession error:", e);
     }
-  }, []);
+  }, [user, moduleKey]);
 
   // Abandon session
   const abandonSession = useCallback(async () => {
@@ -183,17 +195,20 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         .from("module_sessions")
         .update({ status: "abandoned" })
         .eq("id", id);
+      if (user) localStorage.removeItem(`enazizi_session_backup_${moduleKey}_${user.id}`);
       sessionIdRef.current = null;
       setPendingSession(null);
     } catch (e) {
       console.warn("[SessionPersistence] abandonSession error:", e);
     }
-  }, [pendingSession]);
+  }, [pendingSession, user, moduleKey]);
 
   // Register getState callback for auto-save
   const registerAutoSave = useCallback((getState: () => Record<string, any>) => {
     getStateRef.current = getState;
-  }, []);
+    const state = getState();
+    if (state && Object.keys(state).length > 0) void saveSession(state);
+  }, [saveSession]);
 
   // Auto-save interval + beforeunload with authenticated keepalive fetch
   useEffect(() => {
@@ -209,7 +224,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     }, intervalMs);
 
     const handleBeforeUnload = () => {
-      if (!getStateRef.current || !sessionIdRef.current) return;
+      if (!getStateRef.current) return;
       const state = getStateRef.current();
       if (!state || Object.keys(state).length === 0) return;
 
