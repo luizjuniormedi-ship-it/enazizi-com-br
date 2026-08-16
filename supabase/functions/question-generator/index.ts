@@ -179,7 +179,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       // The eligible view is not ordered by topic relevance. A 200-row window
       // can be exhausted by rows rejected by the final integrity guard while
       // valid rows for the same board still exist later in the result set.
-      const { data } = await q.order("id", { ascending: true }).limit(Math.max(requestedCount * 10, 1000));
+      const { data } = await q.limit(Math.max(requestedCount * 10, 1000));
       candidates = data || [];
       
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
