@@ -31,6 +31,20 @@ export interface SimQuestion {
   _questionMode?: string;
 }
 
+export interface DifficultyAudit {
+  target: { easy: number; medium: number; hard: number };
+  actual: { easy: number; medium: number; hard: number };
+  exact: boolean;
+  scale?: string;
+  calibrationStatus?: string;
+}
+
+export interface GenerationAudit {
+  clientDurationMs: number;
+  serverDurationMs?: number;
+  difficulty?: DifficultyAudit | null;
+}
+
 interface SimuladoExamProps {
   questions: SimQuestion[];
   timeSeconds: number;
@@ -39,9 +53,10 @@ interface SimuladoExamProps {
   onStateChange?: (state: { current: number; selectedAnswers: Record<number, number>; timeLeft: number; flaggedQuestions: number[]; revealedQuestions: number[] }) => void;
   initialState?: { current?: number; selectedAnswers?: Record<number, number>; timeLeft?: number; flaggedQuestions?: number[]; revealedQuestions?: number[] };
   mode: SimuladoMode;
+  generationAudit?: GenerationAudit | null;
 }
 
-const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, onStateChange }: SimuladoExamProps) => {
+const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, onStateChange, generationAudit }: SimuladoExamProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [current, setCurrent] = useState(initialState?.current ?? 0);
@@ -217,6 +232,29 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
         />
       </div>
 
+      {generationAudit?.difficulty && (
+        <div
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-white/5 bg-white/5 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground"
+          data-testid="simulation-generation-audit"
+          data-difficulty-exact={String(generationAudit.difficulty.exact)}
+          data-difficulty-easy={generationAudit.difficulty.actual.easy}
+          data-difficulty-medium={generationAudit.difficulty.actual.medium}
+          data-difficulty-hard={generationAudit.difficulty.actual.hard}
+          data-generation-server-duration-ms={generationAudit.serverDurationMs ?? ""}
+          data-generation-client-duration-ms={generationAudit.clientDurationMs}
+        >
+          <span>Dificuldade experimental:</span>
+          <span>{generationAudit.difficulty.actual.easy} fáceis</span>
+          <span>{generationAudit.difficulty.actual.medium} médias</span>
+          <span>{generationAudit.difficulty.actual.hard} difíceis</span>
+          <span>{generationAudit.difficulty.exact ? "cota exata" : "cota parcial"}</span>
+          {generationAudit.serverDurationMs !== undefined && (
+            <span>Servidor: {(generationAudit.serverDurationMs / 1000).toFixed(1)}s</span>
+          )}
+          <span>Total: {(generationAudit.clientDurationMs / 1000).toFixed(1)}s</span>
+        </div>
+      )}
+
       {/* Question Card — Cockpit 2.0 */}
       <div className="rounded-3xl border-0 bg-card/40 backdrop-blur-md p-6 sm:p-8 shadow-sm relative overflow-hidden group" data-testid="question-card">
         <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
@@ -226,6 +264,17 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
             <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary font-black text-[10px] uppercase tracking-widest px-2.5 h-6 rounded-lg">
               {String(q.topic || "").replace(/\s*\(.*$/, "").trim() || q.topic}
             </Badge>
+            {q.difficultyBucket && q.difficultyBucket !== "unclassified" && (
+              <Badge
+                variant="outline"
+                className="bg-sky-500/5 border-sky-500/20 text-sky-600 font-black text-[10px] uppercase tracking-widest px-2.5 h-6 rounded-lg"
+                data-testid="question-difficulty"
+                data-difficulty-bucket={q.difficultyBucket}
+                data-difficulty-raw={String(q.difficulty ?? "")}
+              >
+                {q.difficultyBucket === "easy" ? "Fácil" : q.difficultyBucket === "medium" ? "Média" : "Difícil"}
+              </Badge>
+            )}
             {!isRevealed && userAnswer === undefined && (
               <Badge variant="outline" className="bg-amber-500/5 border-amber-500/20 text-amber-600 font-black text-[10px] uppercase tracking-widest px-2.5 h-6 rounded-lg">
                 PENDENTE
