@@ -316,6 +316,11 @@ function questionMatchesRequestedScope(q: any, topics: string[], subtopics: stri
   const usableCandidates = (candidates: unknown[]) => candidates
     .filter((value): value is string => typeof value === "string" && normalize(value).length > 0);
 
+  const auditedTopicBucket = typeof q._topic_bucket === "string" ? q._topic_bucket : q.topicBucket;
+  if (subtopics.length === 0 && typeof auditedTopicBucket === "string" && normalize(auditedTopicBucket).length > 0) {
+    return topics.some((topic) => textEquals(auditedTopicBucket, topic));
+  }
+
   const primaryTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
     ? q.topic
     : q.curriculum_theme;
@@ -349,6 +354,10 @@ function mapQuestions(arr: any[], topics: string[], subtopics: string[] = []): S
       ),
       explanation: repairQuestionEncoding(q.explanation),
       image_url: q.image_url,
+      visibleTopic: repairQuestionEncoding(q._visible_topic || q.topic || q.curriculum_theme),
+      topicBucket: repairQuestionEncoding(q._topic_bucket || q.topicBucket),
+      difficulty: q.difficulty,
+      difficultyBucket: q._difficulty_bucket || q.difficultyBucket,
     }))
     .filter(q =>
       q.options.length >= 4 &&
@@ -571,13 +580,18 @@ const Simulados = () => {
       console.log("[Simulados] Tópicos recuperados da distribuição:", config.topics);
     }
     
-    // Se ainda estiver vazio e tivermos uma banca selecionada, tentamos carregar o blueprint
-    if ((!config.topics || config.topics.length === 0) && selectedExam && selectedExam !== "all") {
+    // A prova completa precisa carregar também os pesos. Enviar apenas a lista
+    // de temas permite que o backend cumpra a quantidade sem cumprir as cotas.
+    if (selectedExam && selectedExam !== "all") {
       const profile = EXAM_PROFILES[selectedExam as keyof typeof EXAM_PROFILES];
       if (profile) {
-        config.topics = profile.topicWeights.map(t => t.topic);
-        config.topicWeights = profile.topicWeights;
-        console.log("[Simulados] Tópicos carregados do blueprint da banca:", selectedExam, config.topics);
+        if (!hasAutoDistribution && !hasCustomDistribution) {
+          config.topicWeights = profile.topicWeights;
+        }
+        if (!config.topics || config.topics.length === 0) {
+          config.topics = profile.topicWeights.map(t => t.topic);
+        }
+        console.log("[Simulados] Blueprint carregado para a banca:", selectedExam, config.topics);
       }
     }
 

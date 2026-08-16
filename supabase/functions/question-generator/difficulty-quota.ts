@@ -18,6 +18,44 @@ export interface DifficultyQuotaResult<T> {
 export interface TopicWeight {
   topic: string;
   weight: number;
+  subtopics?: Array<{ name: string }>;
+}
+
+const VISIBLE_TOPIC_EQUIVALENTS: Record<string, string[]> = {
+  "Cirurgia": ["Cirurgia Geral"],
+  "Ginecologia e Obstetrícia": ["Ginecologia", "Obstetrícia"],
+  "Medicina de Emergência": ["Emergência", "Urgência e Emergência"],
+};
+
+const normalizeTopicLabel = (value: unknown) => String(value ?? "")
+  .trim()
+  .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/\s+/g, " ");
+
+export function classifyVisibleTopicBucket(
+  question: { topic?: unknown; curriculum_theme?: unknown },
+  weights: TopicWeight[],
+): { bucket: string; visibleTopic: string } | null {
+  const rawTopic = typeof question.topic === "string" && !["geral", "general"].includes(normalizeTopicLabel(question.topic))
+    ? question.topic.trim()
+    : (typeof question.curriculum_theme === "string" ? question.curriculum_theme.trim() : "");
+  const visible = normalizeTopicLabel(rawTopic);
+  if (!visible) return null;
+
+  for (const weight of weights) {
+    const acceptedLabels = [
+      weight.topic,
+      ...(weight.subtopics || []).map((subtopic) => subtopic.name),
+      ...(VISIBLE_TOPIC_EQUIVALENTS[weight.topic] || []),
+    ].map(normalizeTopicLabel);
+    if (acceptedLabels.includes(visible)) {
+      return { bucket: weight.topic, visibleTopic: rawTopic };
+    }
+  }
+
+  return null;
 }
 
 export const ENARE_DIFFICULTY_MIX: DifficultyMix = {
@@ -158,7 +196,7 @@ export function calculateWeightedTopicTargets(total: number, weights: TopicWeigh
 }
 
 export function selectByTopicAndDifficultyQuota<
-  T extends { id?: unknown; difficulty?: unknown; _historical_reuse?: boolean; _requested_topic?: string },
+  T extends { id?: unknown; difficulty?: unknown; _historical_reuse?: boolean; _topic_bucket?: string },
 >(candidates: T[], total: number, mix: DifficultyMix, weights: TopicWeight[]): DifficultyQuotaResult<T> {
   const target = calculateDifficultyTargets(total, mix);
   const topicTarget = calculateWeightedTopicTargets(total, weights);
@@ -170,7 +208,7 @@ export function selectByTopicAndDifficultyQuota<
     const topicDifficultyTarget = calculateDifficultyTargets(topicCount, remainingDifficulty);
     for (const bucket of BUCKETS) {
       const pool = candidates
-        .filter((question) => question._requested_topic === topic && normalizeEnareCorpusDifficulty(question.difficulty) === bucket)
+        .filter((question) => question._topic_bucket === topic && normalizeEnareCorpusDifficulty(question.difficulty) === bucket)
         .sort((a, b) =>
           Number(Boolean(a._historical_reuse)) - Number(Boolean(b._historical_reuse)) ||
           String(a.id ?? "").localeCompare(String(b.id ?? ""))
@@ -186,7 +224,7 @@ export function selectByTopicAndDifficultyQuota<
   for (const question of selected) {
     const bucket = normalizeEnareCorpusDifficulty(question.difficulty);
     if (bucket !== "unclassified") actual[bucket]++;
-    if (question._requested_topic && question._requested_topic in topicActual) topicActual[question._requested_topic]++;
+    if (question._topic_bucket && question._topic_bucket in topicActual) topicActual[question._topic_bucket]++;
   }
   const shortage = Object.fromEntries(BUCKETS.map((bucket) => [bucket, Math.max(0, target[bucket] - actual[bucket])])) as Record<DifficultyBucket, number>;
   const topicShortage = Object.fromEntries(Object.entries(topicTarget).map(([topic, count]) => [topic, Math.max(0, count - topicActual[topic])]));

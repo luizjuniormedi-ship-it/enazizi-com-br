@@ -16,6 +16,10 @@ export interface SimQuestion {
   options: string[];
   correct: number;
   topic: string;
+  visibleTopic?: string;
+  topicBucket?: string;
+  difficulty?: number | string;
+  difficultyBucket?: "easy" | "medium" | "hard" | "unclassified";
   explanation?: string;
   bankId?: string;
   source?: string;

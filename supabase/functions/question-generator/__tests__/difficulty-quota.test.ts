@@ -6,6 +6,7 @@ import {
   normalizeEnareCorpusDifficulty,
   selectByDifficultyQuota,
   selectByTopicAndDifficultyQuota,
+  classifyVisibleTopicBucket,
   shouldApplyEnareQuota,
 } from "../difficulty-quota.ts";
 
@@ -111,9 +112,9 @@ Deno.test("Simulado Geral 100 respeita simultaneamente pesos temáticos e 30/50/
     { topic: "Medicina Legal", weight: 2 },
   ];
   const candidates = weights.flatMap(({ topic }) => [
-    ...Array.from({ length: 30 }, (_, i) => ({ id: `${topic}-e-${i}`, difficulty: 3, _requested_topic: topic })),
-    ...Array.from({ length: 50 }, (_, i) => ({ id: `${topic}-m-${i}`, difficulty: 4, _requested_topic: topic })),
-    ...Array.from({ length: 20 }, (_, i) => ({ id: `${topic}-h-${i}`, difficulty: 5, _requested_topic: topic })),
+    ...Array.from({ length: 30 }, (_, i) => ({ id: `${topic}-e-${i}`, difficulty: 3, _topic_bucket: topic })),
+    ...Array.from({ length: 50 }, (_, i) => ({ id: `${topic}-m-${i}`, difficulty: 4, _topic_bucket: topic })),
+    ...Array.from({ length: 20 }, (_, i) => ({ id: `${topic}-h-${i}`, difficulty: 5, _topic_bucket: topic })),
   ]);
 
   const result = selectByTopicAndDifficultyQuota(candidates, 100, GENERAL_DIFFICULTY_MIX, weights);
@@ -129,17 +130,69 @@ Deno.test("Simulado Geral 100 respeita simultaneamente pesos temáticos e 30/50/
 Deno.test("seleção temática prefere corpus fresco mesmo se histórico ordenar primeiro", () => {
   const weights = [{ topic: "Clínica Médica", weight: 100 }];
   const historical = [
-    ...Array.from({ length: 3 }, (_, i) => ({ id: `a-e-${i}`, difficulty: 3, _requested_topic: "Clínica Médica", _historical_reuse: true })),
-    ...Array.from({ length: 5 }, (_, i) => ({ id: `a-m-${i}`, difficulty: 4, _requested_topic: "Clínica Médica", _historical_reuse: true })),
-    ...Array.from({ length: 2 }, (_, i) => ({ id: `a-h-${i}`, difficulty: 5, _requested_topic: "Clínica Médica", _historical_reuse: true })),
+    ...Array.from({ length: 3 }, (_, i) => ({ id: `a-e-${i}`, difficulty: 3, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
+    ...Array.from({ length: 5 }, (_, i) => ({ id: `a-m-${i}`, difficulty: 4, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
+    ...Array.from({ length: 2 }, (_, i) => ({ id: `a-h-${i}`, difficulty: 5, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
   ];
   const fresh = [
-    ...Array.from({ length: 3 }, (_, i) => ({ id: `z-e-${i}`, difficulty: 3, _requested_topic: "Clínica Médica" })),
-    ...Array.from({ length: 5 }, (_, i) => ({ id: `z-m-${i}`, difficulty: 4, _requested_topic: "Clínica Médica" })),
-    ...Array.from({ length: 2 }, (_, i) => ({ id: `z-h-${i}`, difficulty: 5, _requested_topic: "Clínica Médica" })),
+    ...Array.from({ length: 3 }, (_, i) => ({ id: `z-e-${i}`, difficulty: 3, _topic_bucket: "Clínica Médica" })),
+    ...Array.from({ length: 5 }, (_, i) => ({ id: `z-m-${i}`, difficulty: 4, _topic_bucket: "Clínica Médica" })),
+    ...Array.from({ length: 2 }, (_, i) => ({ id: `z-h-${i}`, difficulty: 5, _topic_bucket: "Clínica Médica" })),
   ];
 
   const result = selectByTopicAndDifficultyQuota([...historical, ...fresh], 10, GENERAL_DIFFICULTY_MIX, weights);
   assertEquals(result.exact, true);
   assertEquals(result.historicalReuseCount, 0);
+});
+
+Deno.test("classificação temática usa o tema visível e a hierarquia explícita do blueprint", () => {
+  const weights = [
+    { topic: "Clínica Médica", weight: 20, subtopics: [{ name: "Cardiologia" }] },
+    { topic: "Pediatria", weight: 12 },
+    { topic: "Cirurgia", weight: 15 },
+  ];
+
+  assertEquals(classifyVisibleTopicBucket({ topic: "Cardiologia" }, weights), {
+    bucket: "Clínica Médica",
+    visibleTopic: "Cardiologia",
+  });
+  assertEquals(classifyVisibleTopicBucket({ topic: "Pediatria" }, weights), {
+    bucket: "Pediatria",
+    visibleTopic: "Pediatria",
+  });
+  assertEquals(classifyVisibleTopicBucket({ topic: "Cirurgia Geral" }, weights), {
+    bucket: "Cirurgia",
+    visibleTopic: "Cirurgia Geral",
+  });
+  assertEquals(classifyVisibleTopicBucket({ topic: "Anestesiologia" }, weights), null);
+});
+
+Deno.test("corpus adversarial com 76 Pediatria nunca produz falsa distribuição exata", () => {
+  const weights = [
+    { topic: "Clínica Médica", weight: 20 },
+    { topic: "Cirurgia", weight: 15 },
+    { topic: "Pediatria", weight: 12 },
+    { topic: "Ginecologia e Obstetrícia", weight: 12 },
+    { topic: "Medicina Preventiva", weight: 10 },
+    { topic: "Medicina de Emergência", weight: 8 },
+    { topic: "Terapia Intensiva", weight: 5 },
+    { topic: "Ortopedia", weight: 4 },
+    { topic: "Oncologia", weight: 4 },
+    { topic: "Angiologia", weight: 3 },
+    { topic: "Urologia", weight: 3 },
+    { topic: "Oftalmologia", weight: 2 },
+    { topic: "Otorrinolaringologia", weight: 2 },
+  ];
+  const pediatrics = [
+    ...Array.from({ length: 23 }, (_, i) => ({ id: `p-e-${i}`, difficulty: 3, _topic_bucket: "Pediatria", _requested_topic: "Clínica Médica" })),
+    ...Array.from({ length: 38 }, (_, i) => ({ id: `p-m-${i}`, difficulty: 4, _topic_bucket: "Pediatria", _requested_topic: "Cirurgia" })),
+    ...Array.from({ length: 15 }, (_, i) => ({ id: `p-h-${i}`, difficulty: 5, _topic_bucket: "Pediatria", _requested_topic: "Ginecologia e Obstetrícia" })),
+  ];
+
+  const result = selectByTopicAndDifficultyQuota(pediatrics, 100, GENERAL_DIFFICULTY_MIX, weights);
+
+  assertEquals(result.topicActual?.Pediatria, 12);
+  assertEquals(result.questions.length, 12);
+  assertEquals(result.exact, false);
+  assertEquals(Object.values(result.topicShortage || {}).reduce((sum, count) => sum + count, 0), 88);
 });
