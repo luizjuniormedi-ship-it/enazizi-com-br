@@ -8,7 +8,7 @@ import { recordQuestionAnalyticsBatch, classifyQuestionMode, type QuestionAnalyt
 import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
-import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
+import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots, getOfficialBoardBlockReason } from "@/lib/realExamDistribution";
 import type { ExamDistributionTree } from "@/lib/examDistributionFromCurriculum";
 import { selectImageQuestions, imageQuestionToSimQuestion, calculateImageSlots } from "@/lib/imageQuestionPipeline";
 import { generateAdaptiveBlueprint, type AdaptiveBlueprint } from "@/lib/adaptiveModalityEngine";
@@ -547,6 +547,17 @@ const Simulados = () => {
     const hasAutoDistribution = config.topicWeights && Array.isArray(config.topicWeights) && config.topicWeights.length > 0;
     const hasCustomDistribution = config.customDistribution && Array.isArray(config.customDistribution) && config.customDistribution.length > 0;
     const selectedExam = config.realExamProfile || config.examBoard;
+    const boardBlockReason = getOfficialBoardBlockReason(selectedExam, config.mode);
+
+    if (boardBlockReason) {
+      toast({
+        title: "Banca indisponível",
+        description: boardBlockReason,
+        variant: "destructive",
+        duration: 10000,
+      });
+      return;
+    }
 
     if (!hasManualTopics && (hasAutoDistribution || hasCustomDistribution)) {
       const weights = config.customDistribution || config.topicWeights;
@@ -1550,7 +1561,9 @@ const Simulados = () => {
                     <SimuladoSetup
                       onStart={(config) => {
                         console.log("[Simulados] Setup.onStart disparado:", config);
-                        handleStart(config);
+                        // SimuladoSetup already owns the complete board/configuration
+                        // flow. A second setup loses the selected board.
+                        handleStart({ ...config, forceStart: true });
                       }}
                       adaptiveLoading={adaptivePreviewLoading}
                       adaptiveMeta={adaptivePreviewMeta}

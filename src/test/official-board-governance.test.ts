@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EXAM_PROFILES } from "@/lib/realExamDistribution";
+import { EXAM_PROFILES, getOfficialBoardBlockReason } from "@/lib/realExamDistribution";
 import { getOfficialBoardAvailability } from "../../supabase/functions/_shared/banca-profiles";
 
 describe("official board governance", () => {
@@ -34,5 +34,16 @@ describe("official board governance", () => {
       status: "draft",
       canGenerateOfficialExam: false,
     });
+  });
+
+  it("blocks suspended boards from every real-exam entry point", () => {
+    expect(getOfficialBoardBlockReason("ENARE", "prova_real")).toContain("suspenso");
+    expect(getOfficialBoardBlockReason("USP-SP", "tri")).toContain("insuficiente");
+    expect(getOfficialBoardBlockReason("BANCA_DESCONHECIDA", "prova_real")).toContain("homologados");
+  });
+
+  it("keeps general and non-official study modes available", () => {
+    expect(getOfficialBoardBlockReason("GERAL", "prova_real")).toBeNull();
+    expect(getOfficialBoardBlockReason("ENARE", "estudo")).toBeNull();
   });
 });
