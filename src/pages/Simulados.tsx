@@ -263,8 +263,9 @@ async function generateBatch(
 
     // [QUESTION_GEN_FINAL_OK]
     console.log(`[QUESTION_GEN_FINAL_OK] Session: ${data.session_id} Questions: ${receivedCount} (${durationMs}ms)`);
+    const requestedScopeTopics = specificTopic ? [...topics, specificTopic] : topics;
     return { 
-      questions: mapQuestions(data.questions || [], topics, selectedSubtopics),
+      questions: mapQuestions(data.questions || [], requestedScopeTopics, selectedSubtopics),
       sessionId: data.session_id || null,
       insufficientQuestions: data.insufficientQuestions,
       message: data.message,
@@ -948,9 +949,13 @@ const Simulados = () => {
             throw new Error(batchData?.error || "Falha na geração das questões pela IA.");
           }
 
+          const requestedScopeTopics = [
+            ...(config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"]),
+            ...(config.specificTopic ? [config.specificTopic] : []),
+          ];
           const batchQs = mapQuestions(
             batchData.questions || [],
-            config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+            requestedScopeTopics,
             config.selectedSubtopics || [],
           );
           
