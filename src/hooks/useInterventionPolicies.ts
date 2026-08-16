@@ -42,5 +42,5 @@ export function useInterventionPolicies() {
     },
   });
 
-  return { ...query, togglePolicy };
+  return Object.assign(Object.create(query) as typeof query, { togglePolicy });
 }

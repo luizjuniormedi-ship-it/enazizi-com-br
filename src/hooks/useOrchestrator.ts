@@ -48,5 +48,5 @@ export function useOrchestrator(opts: UseOrchestratorOptions = {}) {
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["study-orchestrator"] });
 
-  return { ...query, refresh };
+  return Object.assign(Object.create(query) as typeof query, { refresh });
 }

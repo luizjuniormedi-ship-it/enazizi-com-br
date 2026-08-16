@@ -49,11 +49,10 @@ export const useStudyEngine = () => {
     void logBoostEvents(user.id, boosted);
   }, [user?.id, recommendations, coveragePriorityBoostEnabled]);
 
-  return {
-    ...query,
+  return Object.assign(Object.create(query) as typeof query, {
     /** The recommendation list (backward-compatible with old `data`) */
     data: recommendations,
     /** Full adaptive state */
     adaptive,
-  };
+  });
 };
