@@ -249,7 +249,7 @@ async function generateBatch(
     // [BATCH_EMPTY_GUARD] HTTP 200 + success: true com questions: [] NUNCA é sucesso.
     if (questionsLength === 0) {
       console.warn("[MONTAR_BANCO_EMPTY_BATCH]", { duration_ms: durationMs, requested: count });
-      throw new Error("BATCH_EMPTY: banco respondeu vazio (0 questões).");
+      throw new Error(`BATCH_EMPTY: ${data?.message || "Não encontramos questões para os filtros selecionados."}`);
     }
 
     // [QUESTION_GEN_COUNT] check
@@ -852,7 +852,8 @@ const Simulados = () => {
               if (allGenerated.length > 0) {
                 break; // Use what we have
               } else {
-                throw new Error("Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
+                const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
+                throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
               }
             }
 

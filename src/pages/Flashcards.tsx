@@ -212,22 +212,38 @@ const Flashcards = () => {
       const existingHashes = new Set((existing || []).map(f => f.question?.slice(0, 80).toLowerCase()));
 
       const limit = Math.min(generateQuantity + 15, 60);
-      const [{ data: bankQ }, { data: realQ }] = await Promise.all([
+      // Search by the indexed domain field. The previous OR with statement.ilike
+      // forced a broad text scan and regularly hit Postgres statement_timeout.
+      // Keep both canonical sources independent so one failure cannot discard
+      // valid results returned by the other source.
+      const [bankResult, realResult] = await Promise.all([
         supabase
           .from("questions_bank")
           .select("statement, explanation, options, correct_index, topic")
-          .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+          .ilike("topic", `%${search}%`)
           .eq("is_global", true)
           .limit(limit),
         supabase
           .from("real_exam_questions")
           .select("statement, explanation, options, correct_index, topic")
-          .or(`topic.ilike.%${search}%,statement.ilike.%${search}%`)
+          .ilike("topic", `%${search}%`)
           .eq("is_active", true)
           .limit(limit),
       ]);
 
-      const allQuestions = [...(bankQ || []), ...(realQ || [])];
+      const bankQ = bankResult.error ? [] : (bankResult.data || []);
+      const realQ = realResult.error ? [] : (realResult.data || []);
+      if (bankResult.error && realResult.error) {
+        throw new Error("O banco de questões não respondeu. Tente novamente em instantes.");
+      }
+      if (bankResult.error || realResult.error) {
+        console.warn("[FLASHCARDS_BANK_PARTIAL]", {
+          questionsBank: bankResult.error?.message || "ok",
+          realExamQuestions: realResult.error?.message || "ok",
+        });
+      }
+
+      const allQuestions = [...bankQ, ...realQ];
       const newCards: { user_id: string; question: string; answer: string; topic: string }[] = [];
       for (const q of allQuestions) {
         if (newCards.length >= generateQuantity) break;
