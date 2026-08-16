@@ -1496,10 +1496,10 @@ const Simulados = () => {
                         <SimuladoProfileCard
                           title={profile.name}
                           subtitle="Padrão oficial da banca"
-                          count={profile.totalQuestions}
+                          count={Math.min(profile.totalQuestions, 100)}
                           timeMinutes={profile.timeMinutes}
                           image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
-                          onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: profile.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: id })}
+                          onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: Math.min(profile.totalQuestions, 100), difficulty: "misto", mode: "prova_real", realExamProfile: id, forceStart: true })}
                           data-testid={`banca-${id.toLowerCase()}-button`}
                         />
                       </div>
