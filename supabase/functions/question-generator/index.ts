@@ -10,6 +10,7 @@ import { TopicEngine } from "../_shared/topic-engine.ts";
 import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
 import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
 import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
+import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
@@ -186,6 +187,83 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       }
     }
 
+    if (body.mode === "ai_generation") {
+      step = "ai_generation";
+      const specificTopic = typeof body.generationContext?.subtopic === "string"
+        ? body.generationContext.subtopic.trim()
+        : "";
+      const focus = [
+        `Especialidades: ${topics.join(", ")}`,
+        subtopics.length ? `Subtemas obrigatórios: ${subtopics.join(", ")}` : "",
+        specificTopic ? `Tema específico obrigatório: ${specificTopic}` : "",
+        examBoard ? `Estilo da banca: ${examBoard}` : "",
+        `Dificuldade: ${difficulty}`,
+      ].filter(Boolean).join("\n");
+
+      const aiResult = await runAI({
+        taskType: "question_generation",
+        specialty: topics[0],
+        topic: specificTopic || subtopics[0] || topics[0],
+        complexity: difficulty === "facil" ? "medium" : "high",
+        requiresReasoning: true,
+        requiresJSON: true,
+        budgetMode: "premium",
+        userId,
+        requestId: correlationId,
+        supabase: supabaseAdmin,
+        messages: [
+          {
+            role: "system",
+            content: `${QUESTION_MOTOR_PREMIUM}\n\n${SIMULADO_MOTOR_PREMIUM}\n\nRetorne SOMENTE JSON válido no formato {"questions":[{"statement":"...","options":["...","...","...","...","..."],"correct":0,"explanation":"...","topic":"...","subtopic":"...","difficulty":"..."}]}. correct é índice numérico de 0 a 4. Não use markdown.`,
+          },
+          {
+            role: "user",
+            content: `Gere exatamente ${requestedCount} questões inéditas de múltipla escolha em português brasileiro.\n${focus}`,
+          },
+        ],
+      });
+
+      if (aiResult.provider === "template" || aiResult.errorCode) {
+        throw new Error(aiResult.errorCode || "AI_PROVIDER_UNAVAILABLE");
+      }
+
+      const parsed = parseAiJson<any>(aiResult.content);
+      const generated = Array.isArray(parsed) ? parsed : parsed?.questions;
+      if (!Array.isArray(generated)) throw new Error("AI_INVALID_RESPONSE");
+
+      for (const raw of generated) {
+        if (finalQuestions.length >= requestedCount) break;
+        const statement = cleanQuestionText(raw?.statement || raw?.question || raw?.enunciado);
+        const options = Array.isArray(raw?.options || raw?.alternatives)
+          ? (raw.options || raw.alternatives).map((option: unknown) => cleanQuestionText(option))
+          : [];
+        const correct = Number(raw?.correct ?? raw?.correct_index ?? raw?.correctIndex);
+        const explanation = cleanQuestionText(raw?.explanation || raw?.rationale || raw?.explicacao);
+        if (!statement || options.length < 4 || !Number.isInteger(correct) || correct < 0 || correct >= options.length) continue;
+
+        const hash = makeHash(statement);
+        const norm = normalizeStatement(statement);
+        if (seenHashes.has(hash) || seenNormalized.has(norm)) continue;
+        finalQuestions.push({
+          statement,
+          options,
+          correct,
+          correct_index: correct,
+          explanation,
+          topic: cleanQuestionText(raw?.topic) || topics[0],
+          subtopic: cleanQuestionText(raw?.subtopic) || subtopics[0] || specificTopic || null,
+          difficulty: cleanQuestionText(raw?.difficulty) || difficulty,
+          _source: "generated",
+          _provider: aiResult.provider,
+          _model: aiResult.model,
+        });
+        seenHashes.add(hash);
+        seenNormalized.add(norm);
+      }
+
+      if (finalQuestions.length === 0) throw new Error("AI_INVALID_RESPONSE: nenhuma questão válida");
+    }
+
     console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
 
     let insufficientQuestions = finalQuestions.length < requestedCount;
@@ -217,22 +295,24 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     if (sess) {
       sessionId = sess.id;
-      await Promise.all([
-        supabaseAdmin.from("simulado_questions").insert(
-          finalQuestions.map((q, idx) => ({
+      const persistenceTasks: PromiseLike<any>[] = [];
+      const bankQuestions = finalQuestions.filter((q) => q.id);
+      if (bankQuestions.length > 0) {
+        persistenceTasks.push(supabaseAdmin.from("simulado_questions").insert(
+          bankQuestions.map((q, idx) => ({
             session_id: sessionId,
             question_id: q.id,
             order_index: idx,
             is_ai_generated: q._source === "generated"
           }))
-        ),
-        // REGRESSÃO PERMANENTE: Registro obrigatório de geração temática
-        supabaseAdmin.from("topic_generation_logs").insert({
+        ));
+      }
+      persistenceTasks.push(supabaseAdmin.from("topic_generation_logs").insert({
           user_id: userId,
           requested_topic: topics[0],
           canonical_topic: topicEngine.identifyCanonical(topics[0]),
           curriculum_competency: subtopics[0] || null,
-          matched_question_ids: finalQuestions.map(q => q.id),
+          matched_question_ids: finalQuestions.map(q => q.id).filter(Boolean),
           insufficient_bank_flag: insufficientQuestions,
           correlation_id: correlationId,
           metadata: {
@@ -241,8 +321,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             match_types: finalQuestions.map(q => q._match_type),
             guard_forensics: finalQuestions.map(q => q._guard)
           }
-        })
-      ]);
+        }));
+      await Promise.all(persistenceTasks);
     }
 
     return new Response(JSON.stringify({
@@ -252,6 +332,11 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       questions: finalQuestions,
       requestedCount,
       generatedCount: finalQuestions.length,
+      status: finalQuestions.length >= requestedCount ? "complete" : "partial",
+      source: body.mode === "ai_generation" ? "ai" : "bank",
+      provider: finalQuestions[0]?._provider || null,
+      model: finalQuestions[0]?._model || null,
+      correlationId,
       insufficientQuestions,
       message: insufficientQuestions ? `Encontramos apenas ${finalQuestions.length} questões para os filtros selecionados.` : undefined
     }), {

@@ -135,7 +135,7 @@ export default function TutorV2Page() {
         user.id
       );
 
-      const { data: pedSession, error: pedErr } = await supabase
+      void supabase
         .from("pedagogical_sessions")
         .insert({
           user_id: user.id,
@@ -145,11 +145,12 @@ export default function TutorV2Page() {
           cognitive_state: "stable",
           metadata: hydrationMetadata,
         })
-        .abortSignal(AbortSignal.timeout(8_000))
         .select()
-        .single();
-
-      if (pedErr) console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr);
+        .single()
+        .then(({ error: pedErr }) => {
+          if (pedErr) console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr);
+        })
+        .catch((pedErr) => console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr));
 
       setBootStatus("Consultando literatura médica...");
 
@@ -163,7 +164,6 @@ export default function TutorV2Page() {
           status: "active",
           metadata: {
             ...hydrationMetadata,
-            pedagogical_session_id: pedSession?.id,
           },
         })
         .abortSignal(AbortSignal.timeout(8_000))

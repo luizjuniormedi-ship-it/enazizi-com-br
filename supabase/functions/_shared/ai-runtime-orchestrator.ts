@@ -253,11 +253,10 @@ export function selectAIModel(input: AISelectInput): AISelection {
 
     case "question_generation":
     case "simulado_review": {
-      const primary = MODELS.flash;
       return wrap(
-        primary,
-        [MODELS.flashLite, MODELS.geminiFallback],
-        "questão/simulado → reasoning",
+        MODELS.nvidia,
+        [MODELS.cerebras, MODELS.flash, MODELS.geminiFallback],
+        "questão/simulado → NVIDIA primário, Cerebras secundário",
         PROMPT_PROFILES.question_explainer,
       );
     }
