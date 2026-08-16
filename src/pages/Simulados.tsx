@@ -185,7 +185,7 @@ async function generateBatch(
   customDistribution?: any[],
   includeWeakThemes?: boolean,
   includePreviousErrors?: boolean,
-  mode: SimuladoMode = "estudo",
+  mode: SimuladoMode | "ai_generation" = "estudo",
   avoidIds?: string[],
   selectedSubtopics: string[] = []
 ): Promise<{ 
@@ -491,10 +491,11 @@ const Simulados = () => {
     count: number; 
     difficulty: string; 
     timePerQuestion?: number; 
-    mode: SimuladoMode; 
-      specificTopic?: string; 
-      selectedSubtopics?: string[];
-      examBoard?: string; 
+    mode: SimuladoMode;
+    source?: "bank" | "ai";
+    specificTopic?: string;
+    selectedSubtopics?: string[];
+    examBoard?: string;
 
       realExamProfile?: string; 
       imagePercent?: number; 
@@ -509,7 +510,8 @@ const Simulados = () => {
       forceStart?: boolean; // New flag to bypass config step
     }) => {
     const montarBancoStartedAt = performance.now();
-    const isMontarBancoFlow = (config.mode as any) !== "ai_generation" && config.mode !== "adaptativo";
+    const isMontarBancoFlow = config.source !== "ai" && config.mode !== "adaptativo";
+    const generatorMode = config.source === "ai" ? "ai_generation" : config.mode;
     console.log("[Simulados] iniciar clicado", config);
     const correlationId = crypto.randomUUID();
     e2eCorrelationIdRef.current = correlationId;
@@ -703,6 +705,7 @@ const Simulados = () => {
               topics: config.topics,
               difficulty: config.difficulty,
               mode: config.mode,
+              source: config.source,
               realExamProfile: config.realExamProfile
             }
           })
@@ -800,7 +803,7 @@ const Simulados = () => {
               config.customDistribution,
               config.includeWeakThemes,
               config.includePreviousErrors,
-              config.mode || "estudo",
+              generatorMode,
               avoidIds,
               (config as any).selectedSubtopics || []
             );
@@ -884,7 +887,7 @@ const Simulados = () => {
                     topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
                     selectedSubtopics: (config as any).selectedSubtopics || [], // FIX: Ensure subtopics are passed
                     targetExam: config.realExamProfile || config.examBoard,
-                    mode: config.mode || "estudo",
+                    mode: generatorMode,
                     generationContext: {
                       subtopic: config.specificTopic,
                       topicWeights: config.topicWeights,
