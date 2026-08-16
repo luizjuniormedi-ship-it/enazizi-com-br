@@ -32,10 +32,10 @@ export default function WarRoom() {
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 italic">P0 ARCHITECTURAL AUDIT COMPLETED</span>
           </div>
           <h1 className="text-2xl font-black tracking-tighter text-white uppercase italic">
-            utilize o perfil de adm logado
+            como acessar o supabase do projeto diretamente
           </h1>
           <p className="text-emerald-400 text-xs font-bold uppercase tracking-[0.2em]">
-            utilize o perfil de adm logado
+            como acessar o supabase do projeto diretamente
           </p>
         </header>
 

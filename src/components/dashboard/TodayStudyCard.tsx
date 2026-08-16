@@ -96,7 +96,7 @@ export default function TodayStudyCard() {
   }
 
   const topTask = tasks[0];
-  const totalMinutes = tasks.reduce((s, t) => s + (t.estimatedMinutes || 0), 0);
+  const totalMinutes = (tasks as StudyRecommendation[]).reduce((s: number, t: StudyRecommendation) => s + (t.estimatedMinutes || 0), 0);
 
   return (
     <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-background shadow-[0_0_30px_hsl(var(--primary)/0.06)]">

@@ -135,7 +135,7 @@ export default function TutorV2Page() {
         user.id
       );
 
-      void supabase
+      const pedagogicalInsert = supabase
         .from("pedagogical_sessions")
         .insert({
           user_id: user.id,
@@ -144,13 +144,12 @@ export default function TutorV2Page() {
           tutor_mode: "normal",
           cognitive_state: "stable",
           metadata: hydrationMetadata,
-        })
-        .select()
-        .single()
-        .then(({ error: pedErr }) => {
-          if (pedErr) console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr);
-        })
-        .catch((pedErr) => console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr));
+        });
+
+      // Execute in background
+      pedagogicalInsert.then(({ error: pedErr }) => {
+        if (pedErr) console.warn("[TUTOR_ALOS] Failed to create pedagogical track:", pedErr);
+      });
 
       setBootStatus("Consultando literatura médica...");
 
