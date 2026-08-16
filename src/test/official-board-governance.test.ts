@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { EXAM_PROFILES, getOfficialBoardBlockReason } from "@/lib/realExamDistribution";
 import { getOfficialBoardAvailability } from "../../supabase/functions/_shared/banca-profiles";
 import {
+  classifyVisibleTopicBucket,
   getCorpusDifficultyPlan,
   selectByDifficultyQuota,
+  selectByTopicAndDifficultyQuota,
 } from "../../supabase/functions/question-generator/difficulty-quota";
 
 describe("official board governance", () => {
@@ -82,5 +84,36 @@ describe("official board governance", () => {
     expect(result.exact).toBe(true);
     expect(result.questions).toHaveLength(100);
     expect(result.historicalReuseCount).toBe(15);
+  });
+
+  it("classifies the visible corpus topic through the explicit General blueprint", () => {
+    expect(classifyVisibleTopicBucket(
+      { topic: "Cardiologia" },
+      EXAM_PROFILES.GERAL.topicWeights,
+    )).toEqual({ bucket: "Clínica Médica", visibleTopic: "Cardiologia" });
+    expect(classifyVisibleTopicBucket(
+      { topic: "Pediatria" },
+      EXAM_PROFILES.GERAL.topicWeights,
+    )).toEqual({ bucket: "Pediatria", visibleTopic: "Pediatria" });
+  });
+
+  it("does not report exact when 76 of 100 candidates are visibly Pediatrics", () => {
+    const candidates = [
+      ...Array.from({ length: 23 }, (_, index) => ({ id: `p-e-${index}`, difficulty: 3, _topic_bucket: "Pediatria" })),
+      ...Array.from({ length: 38 }, (_, index) => ({ id: `p-m-${index}`, difficulty: 4, _topic_bucket: "Pediatria" })),
+      ...Array.from({ length: 15 }, (_, index) => ({ id: `p-h-${index}`, difficulty: 5, _topic_bucket: "Pediatria" })),
+    ];
+
+    const result = selectByTopicAndDifficultyQuota(
+      candidates,
+      100,
+      EXAM_PROFILES.GERAL.difficultyMix,
+      EXAM_PROFILES.GERAL.topicWeights,
+    );
+
+    expect(result.questions).toHaveLength(12);
+    expect(result.topicActual?.Pediatria).toBe(12);
+    expect(result.exact).toBe(false);
+    expect(Object.values(result.topicShortage || {}).reduce((sum, count) => sum + count, 0)).toBe(88);
   });
 });

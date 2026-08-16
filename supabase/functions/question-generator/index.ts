@@ -13,6 +13,7 @@ import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 import { NVIDIA_MODEL_REGISTRY } from "../_shared/nvidia-provider.ts";
 import {
+  classifyVisibleTopicBucket,
   getCorpusDifficultyPlan,
   selectByDifficultyQuota,
   selectByTopicAndDifficultyQuota,
@@ -95,9 +96,31 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const requestedTopicWeights: TopicWeight[] = Array.isArray(rawTopicWeights)
       ? rawTopicWeights
           .filter((item: any) => typeof item?.topic === "string" && item.topic.trim() && Number(item.weight) > 0)
-          .map((item: any) => ({ topic: item.topic.trim(), weight: Number(item.weight) }))
+          .map((item: any) => ({
+            topic: item.topic.trim(),
+            weight: Number(item.weight),
+            subtopics: Array.isArray(item.subtopics)
+              ? item.subtopics
+                  .filter((subtopic: any) => typeof subtopic?.name === "string" && subtopic.name.trim())
+                  .map((subtopic: any) => ({ name: subtopic.name.trim() }))
+              : undefined,
+          }))
           .filter((item: TopicWeight) => topics.includes(item.topic))
       : [];
+
+    const isGeneralHundred = ["geral", "all"].includes(String(examBoard ?? "").trim().toLowerCase()) &&
+      requestedCount === 100 && body.mode !== "ai_generation";
+    if (isGeneralHundred && requestedTopicWeights.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: "TOPIC_BLUEPRINT_REQUIRED",
+        error: "O Simulado Geral de 100 questões exige o blueprint temático auditável.",
+        correlationId,
+      }), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const topicEngine = new TopicEngine(supabaseAdmin);
     await topicEngine.loadAliases(topics, subtopics);
@@ -283,8 +306,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const visibleTopicAllowed = topics.some((topic) =>
           validateFinalQuestionTopic(visibleTopic, topic).allowed
         );
+        const visibleTopicClassification = requestedTopicWeights.length > 0
+          ? classifyVisibleTopicBucket(q, requestedTopicWeights)
+          : null;
+        const topicAllowed = requestedTopicWeights.length > 0
+          ? Boolean(visibleTopicClassification)
+          : Boolean(guardResult?.allowed && visibleTopicAllowed);
         
-        if (!guardResult?.allowed || !visibleTopicAllowed) {
+        if (!topicAllowed) {
           console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult?.reason} visible_topic=${primaryVisibleTopic || "missing"} requested=${topics.join("|")}`);
           continue;
         }
@@ -310,7 +339,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           _match_type: matchResult.matchType,
           _guard: guardResult,
           _historical_reuse: historicalReuse,
-          _requested_topic: allowedGuard?.pair.topic,
+          _requested_topic: visibleTopicClassification?.bucket || allowedGuard?.pair.topic,
+          _visible_topic: visibleTopicClassification?.visibleTopic || primaryVisibleTopic,
+          _topic_bucket: visibleTopicClassification?.bucket || allowedGuard?.pair.topic,
+          _difficulty_bucket: difficultyPlan
+            ? (q.difficulty === 3 ? "easy" : q.difficulty === 4 ? "medium" : q.difficulty === 5 ? "hard" : "unclassified")
+            : undefined,
         });
         
         seenHashes.add(hash);
@@ -327,6 +361,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           : selectByDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix);
         finalQuestions = difficultyDistribution.questions;
         console.log(`[SIM_DIFFICULTY_QUOTA] target=${JSON.stringify(difficultyDistribution.target)} actual=${JSON.stringify(difficultyDistribution.actual)} available=${JSON.stringify(difficultyDistribution.available)} shortage=${JSON.stringify(difficultyDistribution.shortage)} exact=${difficultyDistribution.exact}`);
+        if (difficultyDistribution.topicTarget) {
+          console.log(`[SIM_TOPIC_QUOTA] target=${JSON.stringify(difficultyDistribution.topicTarget)} actual=${JSON.stringify(difficultyDistribution.topicActual)} shortage=${JSON.stringify(difficultyDistribution.topicShortage)} classification=visible-topic-blueprint-v1 exact=${difficultyDistribution.exact}`);
+        }
       } else {
         finalQuestions = eligibleQuestions.slice(0, requestedCount);
       }
@@ -477,6 +514,10 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           topicTarget: difficultyDistribution.topicTarget,
           topicActual: difficultyDistribution.topicActual,
           topicShortage: difficultyDistribution.topicShortage,
+          topicClassification: difficultyDistribution.topicTarget ? "visible-topic-blueprint-v1" : null,
+          unclassifiedTopicCount: difficultyDistribution.topicTarget
+            ? difficultyDistribution.questions.filter((q) => !q._topic_bucket).length
+            : 0,
         }
       : null;
 
