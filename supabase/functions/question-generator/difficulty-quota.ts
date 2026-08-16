@@ -10,6 +10,14 @@ export interface DifficultyQuotaResult<T> {
   shortage: Record<DifficultyBucket, number>;
   exact: boolean;
   historicalReuseCount: number;
+  topicTarget?: Record<string, number>;
+  topicActual?: Record<string, number>;
+  topicShortage?: Record<string, number>;
+}
+
+export interface TopicWeight {
+  topic: string;
+  weight: number;
 }
 
 export const ENARE_DIFFICULTY_MIX: DifficultyMix = {
@@ -131,5 +139,69 @@ export function getCorpusDifficultyPlan(
     mix,
     scale: "corpus-relative-3-4-5-v1",
     calibrationStatus: "experimental",
+  };
+}
+
+export function calculateWeightedTopicTargets(total: number, weights: TopicWeight[]): Record<string, number> {
+  const safe = weights
+    .filter((item) => item.topic?.trim() && Number(item.weight) > 0)
+    .map((item, index) => ({ ...item, index, weight: Number(item.weight) }));
+  if (safe.length === 0) return {};
+  const weightTotal = safe.reduce((sum, item) => sum + item.weight, 0);
+  const raw = safe.map((item) => Math.max(0, Math.floor(total)) * item.weight / weightTotal);
+  const counts = raw.map(Math.floor);
+  let remainder = Math.max(0, Math.floor(total)) - counts.reduce((sum, value) => sum + value, 0);
+  const order = raw.map((value, index) => ({ index, fraction: value - Math.floor(value) }))
+    .sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+  for (let index = 0; index < remainder; index++) counts[order[index % order.length].index]++;
+  return Object.fromEntries(safe.map((item, index) => [item.topic, counts[index]]));
+}
+
+export function selectByTopicAndDifficultyQuota<
+  T extends { id?: unknown; difficulty?: unknown; _historical_reuse?: boolean; _requested_topic?: string },
+>(candidates: T[], total: number, mix: DifficultyMix, weights: TopicWeight[]): DifficultyQuotaResult<T> {
+  const target = calculateDifficultyTargets(total, mix);
+  const topicTarget = calculateWeightedTopicTargets(total, weights);
+  const remainingDifficulty = { ...target };
+  const selected: T[] = [];
+
+  for (const { topic } of weights) {
+    const topicCount = topicTarget[topic] || 0;
+    const topicDifficultyTarget = calculateDifficultyTargets(topicCount, remainingDifficulty);
+    for (const bucket of BUCKETS) {
+      const pool = candidates
+        .filter((question) => question._requested_topic === topic && normalizeEnareCorpusDifficulty(question.difficulty) === bucket)
+        .sort((a, b) =>
+          Number(Boolean(a._historical_reuse)) - Number(Boolean(b._historical_reuse)) ||
+          String(a.id ?? "").localeCompare(String(b.id ?? ""))
+        );
+      const picked = pool.slice(0, topicDifficultyTarget[bucket]);
+      selected.push(...picked);
+      remainingDifficulty[bucket] = Math.max(0, remainingDifficulty[bucket] - picked.length);
+    }
+  }
+
+  const actual = { easy: 0, medium: 0, hard: 0 } satisfies Record<DifficultyBucket, number>;
+  const topicActual = Object.fromEntries(Object.keys(topicTarget).map((topic) => [topic, 0]));
+  for (const question of selected) {
+    const bucket = normalizeEnareCorpusDifficulty(question.difficulty);
+    if (bucket !== "unclassified") actual[bucket]++;
+    if (question._requested_topic && question._requested_topic in topicActual) topicActual[question._requested_topic]++;
+  }
+  const shortage = Object.fromEntries(BUCKETS.map((bucket) => [bucket, Math.max(0, target[bucket] - actual[bucket])])) as Record<DifficultyBucket, number>;
+  const topicShortage = Object.fromEntries(Object.entries(topicTarget).map(([topic, count]) => [topic, Math.max(0, count - topicActual[topic])]));
+  const available = Object.fromEntries(BUCKETS.map((bucket) => [bucket, candidates.filter((question) => normalizeEnareCorpusDifficulty(question.difficulty) === bucket).length])) as Record<DifficultyBucket, number>;
+
+  return {
+    questions: selected,
+    target,
+    actual,
+    available,
+    shortage,
+    exact: selected.length === total && BUCKETS.every((bucket) => actual[bucket] === target[bucket]) && Object.values(topicShortage).every((count) => count === 0),
+    historicalReuseCount: selected.filter((question) => question._historical_reuse).length,
+    topicTarget,
+    topicActual,
+    topicShortage,
   };
 }

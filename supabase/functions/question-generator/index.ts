@@ -13,10 +13,10 @@ import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 import { NVIDIA_MODEL_REGISTRY } from "../_shared/nvidia-provider.ts";
 import {
-  calculateDifficultyTargets,
   getCorpusDifficultyPlan,
-  normalizeEnareCorpusDifficulty,
   selectByDifficultyQuota,
+  selectByTopicAndDifficultyQuota,
+  type TopicWeight,
 } from "./difficulty-quota.ts";
 
 /**
@@ -90,6 +90,14 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       : [];
     const examBoard = body.targetExam || body.examBoard;
     const difficulty = body.difficulty || "misto";
+    const rawTopicWeights = body.generationContext?.customDistribution ??
+      body.generationContext?.topicWeights ?? body.topicWeights;
+    const requestedTopicWeights: TopicWeight[] = Array.isArray(rawTopicWeights)
+      ? rawTopicWeights
+          .filter((item: any) => typeof item?.topic === "string" && item.topic.trim() && Number(item.weight) > 0)
+          .map((item: any) => ({ topic: item.topic.trim(), weight: Number(item.weight) }))
+          .filter((item: TopicWeight) => topics.includes(item.topic))
+      : [];
 
     const topicEngine = new TopicEngine(supabaseAdmin);
     await topicEngine.loadAliases(topics, subtopics);
@@ -212,18 +220,29 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         return query;
       };
 
+      const fetchDifficultyStratum = async (difficultyScore: number) => {
+        const rows: any[] = [];
+        const pageSize = 200;
+        const maxPages = 5;
+        for (let page = 0; page < maxPages; page++) {
+          const from = page * pageSize;
+          const { data, error } = await buildScopedQuery(difficultyScore)
+            .order("id", { ascending: true })
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          rows.push(...(data || []));
+          if (!data || data.length < pageSize) break;
+        }
+        return rows;
+      };
+
       if (difficultyPlan) {
-        const targets = calculateDifficultyTargets(requestedCount, difficultyPlan.mix);
-        const strata = await Promise.all([
-          buildScopedQuery(3).limit(Math.max(targets.easy * 4, 60)),
-          buildScopedQuery(4).limit(Math.max(targets.medium * 4, 100)),
-          buildScopedQuery(5).limit(Math.max(targets.hard * 4, 60)),
-        ]);
-        const queryError = strata.find((result) => result.error)?.error;
-        if (queryError) throw queryError;
-        candidates = strata.flatMap((result) => result.data || []);
+        const strata = await Promise.all([3, 4, 5].map(fetchDifficultyStratum));
+        candidates = strata.flat();
       } else {
-        const { data, error } = await buildScopedQuery().limit(Math.max(requestedCount * 4, 200));
+        const { data, error } = await buildScopedQuery()
+          .order("id", { ascending: true })
+          .limit(Math.max(requestedCount * 4, 200));
         if (error) throw error;
         candidates = data || [];
       }
@@ -231,12 +250,6 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
 
       const eligibleQuestions: any[] = [];
-      const enforceDifficultyQuota = Boolean(difficultyPlan);
-      const quotaTargets = calculateDifficultyTargets(
-        requestedCount,
-        difficultyPlan?.mix ?? { easy: 0, medium: 0, hard: 0 },
-      );
-      const quotaEligible = { easy: 0, medium: 0, hard: 0 };
       for (const q of candidates) {
         // Applying hundreds of UUIDs through PostgREST's URL-based `not.in`
         // can exceed the request-line limit and was previously misreported as
@@ -255,10 +268,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const requestedPairs = subtopics.length > 0
           ? topics.flatMap((topic) => subtopics.map((subtopic) => ({ topic, subtopic })))
           : topics.map((topic) => ({ topic, subtopic: undefined }));
-        const guardResults = requestedPairs.map(({ topic, subtopic }) =>
-          validateFinalQuestionTopic(q, topic, subtopic)
-        );
-        const guardResult = guardResults.find((result) => result.allowed) ?? guardResults[0];
+        const guardResults = requestedPairs.map((pair) => ({
+          pair,
+          result: validateFinalQuestionTopic(q, pair.topic, pair.subtopic),
+        }));
+        const allowedGuard = guardResults.find((entry) => entry.result.allowed) ?? guardResults[0];
+        const guardResult = allowedGuard?.result;
         const primaryVisibleTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalizeStatement(q.topic))
           ? q.topic
           : q.curriculum_theme;
@@ -295,30 +310,21 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           _match_type: matchResult.matchType,
           _guard: guardResult,
           _historical_reuse: historicalReuse,
+          _requested_topic: allowedGuard?.pair.topic,
         });
         
         seenHashes.add(hash);
         seenNormalized.add(norm);
 
-        if (enforceDifficultyQuota) {
-          const bucket = normalizeEnareCorpusDifficulty(q.difficulty);
-          if (bucket !== "unclassified") quotaEligible[bucket]++;
-          if (
-            quotaEligible.easy >= quotaTargets.easy &&
-            quotaEligible.medium >= quotaTargets.medium &&
-            quotaEligible.hard >= quotaTargets.hard
-          ) break;
-        } else if (eligibleQuestions.length >= requestedCount) {
+        if (!difficultyPlan && eligibleQuestions.length >= requestedCount) {
           break;
         }
       }
 
       if (difficultyPlan) {
-        difficultyDistribution = selectByDifficultyQuota(
-          eligibleQuestions,
-          requestedCount,
-          difficultyPlan.mix,
-        );
+        difficultyDistribution = requestedTopicWeights.length > 0
+          ? selectByTopicAndDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix, requestedTopicWeights)
+          : selectByDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix);
         finalQuestions = difficultyDistribution.questions;
         console.log(`[SIM_DIFFICULTY_QUOTA] target=${JSON.stringify(difficultyDistribution.target)} actual=${JSON.stringify(difficultyDistribution.actual)} available=${JSON.stringify(difficultyDistribution.available)} shortage=${JSON.stringify(difficultyDistribution.shortage)} exact=${difficultyDistribution.exact}`);
       } else {
@@ -457,8 +463,24 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     // 4. Persistence
     step = "persist";
     let sessionId = null;
-    
-    const { data: sess } = await supabaseAdmin.from("simulado_sessions").insert({
+    const difficultyMetadata = difficultyDistribution
+      ? {
+          target: difficultyDistribution.target,
+          actual: difficultyDistribution.actual,
+          available: difficultyDistribution.available,
+          shortage: difficultyDistribution.shortage,
+          exact: difficultyDistribution.exact,
+          scale: difficultyPlan?.scale,
+          calibrationStatus: difficultyPlan?.calibrationStatus,
+          historicalReuseCount: difficultyDistribution.historicalReuseCount,
+          historicalReuseIds: difficultyDistribution.questions.filter((q) => q._historical_reuse).map((q) => q.id),
+          topicTarget: difficultyDistribution.topicTarget,
+          topicActual: difficultyDistribution.topicActual,
+          topicShortage: difficultyDistribution.topicShortage,
+        }
+      : null;
+
+    const { data: sess, error: sessionError } = await supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'study',
       total_questions: finalQuestions.length,
@@ -472,36 +494,25 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         requested: requestedCount, 
         insufficientQuestions,
         correlation_id: correlationId,
-        difficulty_distribution: difficultyDistribution
-          ? {
-              target: difficultyDistribution.target,
-              actual: difficultyDistribution.actual,
-              available: difficultyDistribution.available,
-              shortage: difficultyDistribution.shortage,
-              exact: difficultyDistribution.exact,
-              scale: difficultyPlan?.scale,
-              calibrationStatus: difficultyPlan?.calibrationStatus,
-              historicalReuseCount: difficultyDistribution.historicalReuseCount,
-            }
-          : null,
+        difficulty_distribution: difficultyMetadata,
       }
     }).select().single();
 
-    if (sess) {
-      sessionId = sess.id;
-      const persistenceTasks: PromiseLike<any>[] = [];
-      const bankQuestions = finalQuestions.filter((q) => q.id);
-      if (bankQuestions.length > 0) {
-        persistenceTasks.push(supabaseAdmin.from("simulado_questions").insert(
-          bankQuestions.map((q, idx) => ({
-            session_id: sessionId,
-            question_id: q.id,
-            order_index: idx,
-            is_ai_generated: q._source === "generated"
-          }))
-        ));
-      }
-      persistenceTasks.push(supabaseAdmin.from("topic_generation_logs").insert({
+    if (sessionError || !sess) throw sessionError || new Error("Falha ao persistir sessão do simulado");
+    sessionId = sess.id;
+    const persistenceTasks: PromiseLike<any>[] = [];
+    const bankQuestions = finalQuestions.filter((q) => q.id);
+    if (bankQuestions.length > 0) {
+      persistenceTasks.push(supabaseAdmin.from("simulado_questions").insert(
+        bankQuestions.map((q, idx) => ({
+          session_id: sessionId,
+          question_id: q.id,
+          order_index: idx,
+          is_ai_generated: q._source === "generated"
+        }))
+      ));
+    }
+    persistenceTasks.push(supabaseAdmin.from("topic_generation_logs").insert({
           user_id: userId,
           requested_topic: topics[0],
           canonical_topic: topicEngine.identifyCanonical(topics[0]),
@@ -515,8 +526,19 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             match_types: finalQuestions.map(q => q._match_type),
             guard_forensics: finalQuestions.map(q => q._guard)
           }
-        }));
-      await Promise.all(persistenceTasks);
+      }));
+    const persistenceResults = await Promise.all(persistenceTasks);
+    const persistenceError = persistenceResults.find((result) => result?.error)?.error;
+    if (persistenceError) throw persistenceError;
+    if (bankQuestions.length > 0) {
+      const { count: persistedCount, error: countError } = await supabaseAdmin
+        .from("simulado_questions")
+        .select("question_id", { count: "exact", head: true })
+        .eq("session_id", sessionId);
+      if (countError) throw countError;
+      if (persistedCount !== bankQuestions.length) {
+        throw new Error(`Persistência incompleta: ${persistedCount ?? 0}/${bankQuestions.length} questões vinculadas`);
+      }
     }
 
     return new Response(JSON.stringify({
@@ -532,18 +554,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       model: finalQuestions[0]?._model || null,
       correlationId,
       insufficientQuestions,
-      difficultyDistribution: difficultyDistribution
-        ? {
-            target: difficultyDistribution.target,
-            actual: difficultyDistribution.actual,
-            available: difficultyDistribution.available,
-            shortage: difficultyDistribution.shortage,
-            exact: difficultyDistribution.exact,
-            scale: difficultyPlan?.scale,
-            calibrationStatus: difficultyPlan?.calibrationStatus,
-            historicalReuseCount: difficultyDistribution.historicalReuseCount,
-          }
-        : null,
+      difficultyDistribution: difficultyMetadata,
       message: insufficientQuestions ? `Encontramos apenas ${finalQuestions.length} questões para os filtros selecionados.` : undefined
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
