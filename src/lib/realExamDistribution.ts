@@ -180,14 +180,14 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     ],
   },
   GERAL: {
-    name: "Simulado Geral",
+    name: "Preparatório ENAMED",
     totalQuestions: 100,
     timeMinutes: 300,
     cutoffEstimate: 60,
     difficultyMix: { easy: 30, medium: 50, hard: 20 },
     availability: "general",
     canGenerate: true,
-    availabilityMessage: "Seleção ampla do banco; não representa o padrão oficial de uma banca.",
+    availabilityMessage: "Treino para residência médica com matriz temática ENAMED; distribuição de dificuldade experimental, sem alegação de prova oficial.",
     topicWeights: [
       { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },

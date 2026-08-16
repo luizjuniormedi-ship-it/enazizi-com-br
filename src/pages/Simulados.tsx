@@ -37,7 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import SimuladoSetup from "@/components/simulados/SimuladoSetup";
 import type { SimuladoMode } from "@/components/simulados/SimuladoSetup";
 import SimuladoExam from "@/components/simulados/SimuladoExam";
-import type { SimQuestion } from "@/components/simulados/SimuladoExam";
+import type { DifficultyAudit, GenerationAudit, SimQuestion } from "@/components/simulados/SimuladoExam";
 import SimuladoResult from "@/components/simulados/SimuladoResult";
 import TRIResult from "@/components/simulados/TRIResult";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
@@ -199,6 +199,9 @@ async function generateBatch(
   message?: string;
   requestedCount?: number;
   generatedCount?: number;
+  durationMs: number;
+  serverDurationMs?: number;
+  difficultyDistribution?: DifficultyAudit | null;
 }> {
   // [SIM_UI_FILTERS_SUBMITTED]
   console.log("[SIM_UI_FILTERS_SUBMITTED] Config:", { topics, count, difficulty, examBoard, mode, selectedSubtopics });
@@ -288,7 +291,10 @@ async function generateBatch(
       insufficientQuestions: data.insufficientQuestions,
       message: data.message,
       requestedCount: data.requestedCount,
-      generatedCount: data.generatedCount
+      generatedCount: data.generatedCount,
+      durationMs,
+      serverDurationMs: data.generationDurationMs,
+      difficultyDistribution: data.difficultyDistribution,
     };
   } catch (e) {
     const durationMs = Math.round(performance.now() - startedAt);
@@ -400,6 +406,7 @@ const Simulados = () => {
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<SimQuestion[]>([]);
+  const [generationAudit, setGenerationAudit] = useState<GenerationAudit | null>(null);
   const [finalAnswers, setFinalAnswers] = useState<Record<number, number>>({});
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [restoredState, setRestoredState] = useState<any>(null);
@@ -492,8 +499,8 @@ const Simulados = () => {
 
   const getExamState = useCallback(() => {
     if (phase !== "exam") return {};
-    return { phase, questions, selectedTopics, mode, examState: examStateRef.current };
-  }, [phase, questions, selectedTopics, mode]);
+    return { phase, questions, selectedTopics, mode, generationAudit, examState: examStateRef.current };
+  }, [phase, questions, selectedTopics, mode, generationAudit]);
 
   useEffect(() => { registerAutoSave(getExamState); }, [getExamState, registerAutoSave]);
 
@@ -503,6 +510,7 @@ const Simulados = () => {
     if (data.questions) setQuestions(data.questions);
     if (data.selectedTopics) setSelectedTopics(data.selectedTopics);
     if (data.mode) setMode(data.mode);
+    if (data.generationAudit) setGenerationAudit(data.generationAudit);
     if (data.examState) setRestoredState(data.examState);
     startTimeRef.current = new Date();
     setPhase("exam");
@@ -633,6 +641,7 @@ const Simulados = () => {
 
     configRef.current = config;
     simuladoSessionIdRef.current = null;
+    setGenerationAudit(null);
     setMode(config.mode || "estudo");
     if (!config.resumeJobId) {
       setQuestions([]);
@@ -869,7 +878,10 @@ const Simulados = () => {
               questions: batchQs.questions, 
               session_id: batchQs.sessionId,
               insufficientQuestions: batchQs.insufficientQuestions,
-              message: batchQs.message
+              message: batchQs.message,
+              generationDurationMs: batchQs.serverDurationMs,
+              clientDurationMs: batchQs.durationMs,
+              difficultyDistribution: batchQs.difficultyDistribution,
             };
 
             if (batchQs.insufficientQuestions) {
@@ -1009,6 +1021,14 @@ const Simulados = () => {
           if (!batchData?.success) {
             console.error("[Simulados] Resposta da API sem sucesso:", batchData);
             throw new Error(batchData?.error || "Falha na geração das questões pela IA.");
+          }
+
+          if (batchData.difficultyDistribution) {
+            setGenerationAudit({
+              clientDurationMs: batchData.clientDurationMs ?? batchData.generationDurationMs ?? 0,
+              serverDurationMs: batchData.generationDurationMs,
+              difficulty: batchData.difficultyDistribution,
+            });
           }
 
           const requestedScopeTopics = [
@@ -1570,16 +1590,16 @@ const Simulados = () => {
                   </EnaflixRow>
                 </EnaflixSection>
 
-                <EnaflixSection title="Simulado Geral" subtitle="Treino amplo com questões disponíveis no banco, sem alegação de padrão oficial.">
+                <EnaflixSection title="Preparatório ENAMED" subtitle="Treino para a prova de residência médica, com matriz temática auditável e sem alegação de prova oficial.">
                   <EnaflixRow title="">
                     <SimuladoProfileCard
                       title={EXAM_PROFILES.GERAL.name}
                       subtitle={EXAM_PROFILES.GERAL.availabilityMessage}
                       count={EXAM_PROFILES.GERAL.totalQuestions}
                       timeMinutes={EXAM_PROFILES.GERAL.timeMinutes}
-                      badge="Banco geral"
+                      badge="Residência médica"
                       image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
-                      onClick={() => handleStart({ topics: EXAM_PROFILES.GERAL.topicWeights.map(t => t.topic), count: EXAM_PROFILES.GERAL.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: "GERAL", forceStart: true })}
+                      onClick={() => handleStart({ topics: EXAM_PROFILES.GERAL.topicWeights.map(t => t.topic), topicWeights: EXAM_PROFILES.GERAL.topicWeights, count: EXAM_PROFILES.GERAL.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: "GERAL", forceStart: true })}
                       data-testid="banca-geral-button"
                     />
                   </EnaflixRow>
@@ -1760,9 +1780,10 @@ const Simulados = () => {
             });
             if (checkpointKey === examCheckpointKeyRef.current) return;
             examCheckpointKeyRef.current = checkpointKey;
-            checkpointSession({ phase, questions, selectedTopics, mode, examState });
+            checkpointSession({ phase, questions, selectedTopics, mode, generationAudit, examState });
           }}
           mode={mode}
+          generationAudit={generationAudit}
         />
       </main>
     </div>

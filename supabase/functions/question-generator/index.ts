@@ -60,6 +60,7 @@ const makeHash = (statement: string, len = 100): string => {
 Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext) => {
   const { req, logger, supabaseAdmin, ai, correlation } = enterpriseContext;
   const { correlationId } = correlation;
+  const requestStartedAt = Date.now();
   let step = "start";
 
   try {
@@ -500,6 +501,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     // 4. Persistence
     step = "persist";
     let sessionId = null;
+    const generationDurationMs = Date.now() - requestStartedAt;
     const difficultyMetadata = difficultyDistribution
       ? {
           target: difficultyDistribution.target,
@@ -535,6 +537,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         requested: requestedCount, 
         insufficientQuestions,
         correlation_id: correlationId,
+        generation_duration_ms: generationDurationMs,
         difficulty_distribution: difficultyMetadata,
       }
     }).select().single();
@@ -595,6 +598,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       model: finalQuestions[0]?._model || null,
       correlationId,
       insufficientQuestions,
+      generationDurationMs,
       difficultyDistribution: difficultyMetadata,
       message: insufficientQuestions ? `Encontramos apenas ${finalQuestions.length} questões para os filtros selecionados.` : undefined
     }), {

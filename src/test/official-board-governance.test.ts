@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { EXAM_PROFILES, getOfficialBoardBlockReason } from "@/lib/realExamDistribution";
 import { getOfficialBoardAvailability } from "../../supabase/functions/_shared/banca-profiles";
 import {
@@ -30,9 +32,34 @@ describe("official board governance", () => {
   );
 
   it("treats GERAL as a non-official simulation", () => {
-    expect(EXAM_PROFILES.GERAL.name).toBe("Simulado Geral");
+    expect(EXAM_PROFILES.GERAL.name).toBe("Preparatório ENAMED");
     expect(EXAM_PROFILES.GERAL.availability).toBe("general");
+    expect(EXAM_PROFILES.GERAL.availabilityMessage).toContain("dificuldade experimental");
+    expect(EXAM_PROFILES.ENAMED.canGenerate).toBe(false);
     expect(getOfficialBoardAvailability("GERAL")).toBeNull();
+  });
+
+  it("submits the ENAMED preparatory blueprint through the canonical General entry point", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/pages/Simulados.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("topicWeights: EXAM_PROFILES.GERAL.topicWeights");
+    expect(source).toContain('realExamProfile: "GERAL"');
+    expect(source).not.toContain('realExamProfile: "ENAMED"');
+  });
+
+  it("exposes difficulty and generation timing for browser audit", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/components/simulados/SimuladoExam.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain('data-testid="simulation-generation-audit"');
+    expect(source).toContain("data-generation-server-duration-ms");
+    expect(source).toContain('data-testid="question-difficulty"');
+    expect(source).toContain("Dificuldade experimental:");
   });
 
   it("fails closed for unknown official boards", () => {
