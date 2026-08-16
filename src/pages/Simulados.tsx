@@ -691,7 +691,11 @@ const Simulados = () => {
         const totalBatchesNum = Math.ceil(requestedTotal / BATCH_SIZE_AI);
         
         console.log(`[Simulados] Gerando lote ${batchNum}/${totalBatchesNum} (total acumulado: ${allGenerated.length}/${requestedTotal})`);
-        setLoadingProgress(`Carregando lote ${batchNum} de ${totalBatchesNum} do banco...`);
+        setLoadingProgress(
+          isMontarBancoFlow
+            ? `Carregando lote ${batchNum} de ${totalBatchesNum} do banco...`
+            : `Gerando lote ${batchNum} de ${totalBatchesNum} com IA...`
+        );
         setLoadingPercent(Math.max(isMontarBancoFlow ? 25 : 5, Math.round((allGenerated.length / requestedTotal) * 100)));
         
         // Add data-testid for E2E progress monitoring
