@@ -591,6 +591,11 @@ const Simulados = () => {
     configRef.current = config;
     simuladoSessionIdRef.current = null;
     setMode(config.mode || "estudo");
+    if (!config.resumeJobId) {
+      setQuestions([]);
+      setPartialCount(0);
+      setPartialMessage(null);
+    }
     
     setLoadingProgress("Iniciando geração...");
     setLoadingPercent(5);
@@ -728,7 +733,10 @@ const Simulados = () => {
         else currentJobId = job.id;
       }
 
-      const BATCH_SIZE_AI = 20; // Increased batch size to reduce calls
+      // Bank-backed simulations are deterministic database reads and the
+      // canonical Edge Function accepts up to 100 questions. Fetch them in one
+      // request; only AI generation needs smaller provider-sized batches.
+      const batchSize = isMontarBancoFlow ? Math.min(requestedTotal, 100) : 20;
       let currentTry = 0;
       
       while (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
@@ -740,9 +748,9 @@ const Simulados = () => {
         currentTry++;
 
         const remaining = requestedTotal - allGenerated.length;
-        const currentBatchSize = Math.min(BATCH_SIZE_AI, remaining);
-        const batchNum = Math.floor(allGenerated.length / BATCH_SIZE_AI) + 1;
-        const totalBatchesNum = Math.ceil(requestedTotal / BATCH_SIZE_AI);
+        const currentBatchSize = Math.min(batchSize, remaining);
+        const batchNum = Math.floor(allGenerated.length / batchSize) + 1;
+        const totalBatchesNum = Math.ceil(requestedTotal / batchSize);
         
         console.log(`[Simulados] Gerando lote ${batchNum}/${totalBatchesNum} (total acumulado: ${allGenerated.length}/${requestedTotal})`);
         setLoadingProgress(
