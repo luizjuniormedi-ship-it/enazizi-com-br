@@ -13,9 +13,10 @@ import { test, expect } from "@playwright/test";
  */
 
 const SUPABASE_URL =
-  process.env.VITE_SUPABASE_URL ?? "https://qszsyskumcmuknumwxtk.supabase.co";
+  process.env.VITE_SUPABASE_URL?.trim() || "https://qszsyskumcmuknumwxtk.supabase.co";
 const ANON =
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ||
+  process.env.VITE_SUPABASE_ANON_KEY?.trim() ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzenN5c2t1bWNtdWtudW13eHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NDUwNjUsImV4cCI6MjA4NjIyMTA2NX0.B2Si8zb8YJcDhIsyj6edriyXsG3p2rP-NLrGfBFAoZw";
 
 const FUNCTIONS = [
