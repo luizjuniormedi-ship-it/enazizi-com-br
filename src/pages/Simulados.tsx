@@ -403,7 +403,7 @@ const Simulados = () => {
   const [adaptivePreviewLoading, setAdaptivePreviewLoading] = useState(false);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
 
-  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
+  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, checkpointSession, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
 
   useEffect(() => {
     if (user && phase === "setup") {
@@ -462,6 +462,7 @@ const Simulados = () => {
   };
 
   const examStateRef = useRef<any>(null);
+  const examCheckpointKeyRef = useRef("");
 
   const getExamState = useCallback(() => {
     if (phase !== "exam") return {};
@@ -1677,7 +1678,19 @@ const Simulados = () => {
           timeSeconds={restoredState?.timeLeft ?? 0}
           onFinish={handleFinish}
           onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
-          onStateChange={() => {}}
+          initialState={restoredState ?? undefined}
+          onStateChange={(examState) => {
+            examStateRef.current = examState;
+            const checkpointKey = JSON.stringify({
+              current: examState.current,
+              selectedAnswers: examState.selectedAnswers,
+              flaggedQuestions: examState.flaggedQuestions,
+              revealedQuestions: examState.revealedQuestions,
+            });
+            if (checkpointKey === examCheckpointKeyRef.current) return;
+            examCheckpointKeyRef.current = checkpointKey;
+            checkpointSession({ phase, questions, selectedTopics, mode, examState });
+          }}
           mode={mode}
         />
       </main>

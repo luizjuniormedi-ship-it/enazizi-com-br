@@ -23,6 +23,14 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
   const getStateRef = useRef<(() => Record<string, any>) | null>(null);
   const sessionIdRef = useRef<string | null>(null);
 
+  const checkpointSession = useCallback((sessionData: Record<string, any>) => {
+    if (!user || !enabled) return;
+    localStorage.setItem(`enazizi_session_backup_${moduleKey}_${user.id}`, JSON.stringify({
+      data: sessionData,
+      ts: Date.now(),
+    }));
+  }, [user, enabled, moduleKey]);
+
   // Check for existing active session
   const checkForSession = useCallback(async () => {
     if (!user || !enabled) { setChecked(true); return null; }
@@ -89,10 +97,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     
     // Save to localStorage as backup (offline-safe)
     const backupKey = `enazizi_session_backup_${moduleKey}_${user.id}`;
-    localStorage.setItem(backupKey, JSON.stringify({
-      data: sessionData,
-      ts: Date.now()
-    }));
+    checkpointSession(sessionData);
 
     if (!navigator.onLine) {
       console.info("[SessionPersistence] Device offline, using local backup only.");
@@ -154,7 +159,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     } catch (e) {
       console.warn("[SessionPersistence] saveSession error:", e);
     }
-  }, [user, moduleKey, enabled]);
+  }, [user, moduleKey, enabled, checkpointSession]);
 
 
   // Save NOW (immediate, returns promise)
@@ -286,6 +291,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     checked,
     saveSession,
     saveNow,
+    checkpointSession,
     completeSession,
     abandonSession,
     registerAutoSave,
