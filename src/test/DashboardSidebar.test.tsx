@@ -50,7 +50,7 @@ describe("DashboardSidebar", () => {
     expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
   });
 
-  it("renders Tutor IA link", async () => {
+  it("renders only the five canonical student areas", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const DashboardSidebar = (await import("@/components/enaflix/EnaflixSidebar")).EnaflixSidebar;
     render(
@@ -60,7 +60,11 @@ describe("DashboardSidebar", () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    expect(screen.getByText("Tutor IA V3")).toBeInTheDocument();
+    for (const label of ["Hoje", "Estudar", "Praticar", "Revisar", "Progresso"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+    expect(screen.queryByText("Ciência de Aprendizado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Modo Plantão")).not.toBeInTheDocument();
   });
 
   it("renders without crashing", async () => {

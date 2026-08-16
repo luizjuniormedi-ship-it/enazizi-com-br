@@ -3,36 +3,20 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { 
   Home, 
-  Calendar, 
-  Target, 
-  PlayCircle, 
-  Clock, 
-  FileText, 
-  AlertTriangle, 
-  Sparkles, 
-  User, 
-  Heart, 
-  History, 
   Shield, 
   GraduationCap,
-  LayoutDashboard,
   Search,
   Bell,
   Settings,
   ChevronRight,
-  MonitorPlay,
   BrainCircuit,
   LayoutGrid,
   Users,
   Activity,
   UserCheck,
-  ImageIcon,
-  Star,
   Upload,
   Brain,
-  Stethoscope,
-  ScrollText,
-  Beaker
+  Clock
 } from "lucide-react";
 
 
@@ -46,48 +30,13 @@ import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 const NAV_SECTIONS = [
   {
-    title: "PANORAMA",
+    title: "SUA JORNADA",
     items: [
-      { to: "/dashboard", label: "Início", icon: Home },
-      { to: "/dashboard/metrics", label: "Painel de Métricas", icon: LayoutDashboard },
-      { to: "/dashboard/planner", label: "Hoje (Planner)", icon: Calendar },
-      { to: "/dashboard/progress", label: "Meu Progresso", icon: BrainCircuit },
-      { to: "/dashboard/enaflix", label: "Biblioteca ENAFLIX", icon: MonitorPlay },
-      { to: "/dashboard/learning-science", label: "Ciência de Aprendizado", icon: Beaker },
-      { to: "/dashboard/clinical-evidence", label: "Evidência Clínica", icon: Activity },
-
-
-    ]
-  },
-  {
-    title: "ESTUDAR",
-    items: [
-      { to: "/dashboard/sessao-estudo", label: "Missão do Dia", icon: PlayCircle },
-      { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: PlayCircle },
-      { to: "/dashboard/flashcards", label: "Flashcards", icon: Clock },
-      { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
-      { to: "/dashboard/proficiencia", label: "Proficiência", icon: GraduationCap },
-      { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
-      
-      { to: "/dashboard/sessao-estudo", label: "Tutor IA V3", icon: Sparkles, badge: "Premium" },
-    ]
-  },
-  {
-    title: "PRÁTICA",
-    items: [
-      { to: "/dashboard/simulacao-clinica", label: "Simulação Clínica", icon: Stethoscope },
-      { to: "/dashboard/plantao", label: "Modo Plantão", icon: Activity },
-      
-    ]
-  },
-  {
-    title: "MINHA ÁREA",
-    items: [
-      { to: "/dashboard/videoaulas", label: "Minhas Aulas", icon: LayoutDashboard },
-      { to: "/dashboard/favoritos", label: "Favoritos", icon: Heart },
-      { to: "/dashboard/historico", label: "Histórico", icon: History },
-      { to: "/dashboard/perfil", label: "Meu Perfil", icon: User },
-      { to: "/dashboard/uploads", label: "Meus Uploads", icon: Upload },
+      { to: "/dashboard", label: "Hoje", icon: Home },
+      { to: "/dashboard/sessao-estudo", label: "Estudar", icon: Brain },
+      { to: "/dashboard/simulados", label: "Praticar", icon: LayoutGrid },
+      { to: "/dashboard/flashcards", label: "Revisar", icon: Clock },
+      { to: "/dashboard/progress", label: "Progresso", icon: BrainCircuit },
     ]
   }
 ];
