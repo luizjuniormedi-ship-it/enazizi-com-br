@@ -60,7 +60,7 @@ describe("DashboardSidebar", () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    expect(screen.getByText("Tutor IA")).toBeInTheDocument();
+    expect(screen.getByText("Tutor IA V3")).toBeInTheDocument();
   });
 
   it("renders without crashing", async () => {
