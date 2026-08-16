@@ -232,7 +232,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         `Dificuldade: ${difficulty}`,
       ].filter(Boolean).join("\n");
 
-      const aiResult = await runAI({
+      const generationMessages = [
+        {
+          role: "system",
+          content: `${QUESTION_MOTOR_PREMIUM}\n\n${SIMULADO_MOTOR_PREMIUM}\n\nSEGURANÇA CLÍNICA OBRIGATÓRIA: cada questão deve ter exatamente cinco alternativas distintas, uma única resposta inequivocamente correta e explicação que justifique a correta e descarte as demais. Não invente doses, indicações, contraindicações, achados de exame ou recomendações. Não associe tratamento a achado sem relação causal. PROIBIDO usar a expressão inexistente "nitrogênio óxido"; quando clinicamente indicado, o fármaco antianginoso correto é nitroglicerina, enquanto "óxido nítrico" é outro composto e não deve ser confundido com ela. Se não tiver segurança factual, não gere a questão. Revise internamente coerência entre caso, pergunta, resposta e explicação antes de retornar.\n\nRetorne SOMENTE JSON válido no formato {"questions":[{"statement":"...","options":["...","...","...","...","..."],"correct":0,"explanation":"...","topic":"...","subtopic":"...","difficulty":"..."}]}. correct é índice numérico de 0 a 4. Não use markdown.`,
+        },
+        {
+          role: "user",
+          content: `Gere exatamente ${requestedCount} questões inéditas de múltipla escolha em português brasileiro.\n${focus}`,
+        },
+      ];
+
+      const aiInput: Parameters<typeof runAI>[0] = {
         taskType: "question_generation",
         // Clinical questions require the reasoning-tier NVIDIA model. Provider
         // fallback remains NVIDIA -> Cerebras -> existing safe fallbacks.
@@ -246,27 +257,15 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         userId,
         requestId: correlationId,
         supabase: supabaseAdmin,
-        messages: [
-          {
-            role: "system",
-            content: `${QUESTION_MOTOR_PREMIUM}\n\n${SIMULADO_MOTOR_PREMIUM}\n\nSEGURANÇA CLÍNICA OBRIGATÓRIA: cada questão deve ter exatamente cinco alternativas distintas, uma única resposta inequivocamente correta e explicação que justifique a correta e descarte as demais. Não invente doses, indicações, contraindicações, achados de exame ou recomendações. Não associe tratamento a achado sem relação causal. PROIBIDO usar a expressão inexistente "nitrogênio óxido"; quando clinicamente indicado, o fármaco antianginoso correto é nitroglicerina, enquanto "óxido nítrico" é outro composto e não deve ser confundido com ela. Se não tiver segurança factual, não gere a questão. Revise internamente coerência entre caso, pergunta, resposta e explicação antes de retornar.\n\nRetorne SOMENTE JSON válido no formato {"questions":[{"statement":"...","options":["...","...","...","...","..."],"correct":0,"explanation":"...","topic":"...","subtopic":"...","difficulty":"..."}]}. correct é índice numérico de 0 a 4. Não use markdown.`,
-          },
-          {
-            role: "user",
-            content: `Gere exatamente ${requestedCount} questões inéditas de múltipla escolha em português brasileiro.\n${focus}`,
-          },
-        ],
-      });
+        messages: generationMessages,
+      };
 
-      if (aiResult.provider === "template" || aiResult.errorCode) {
-        throw new Error(aiResult.errorCode || "AI_PROVIDER_UNAVAILABLE");
-      }
+      const appendValidatedQuestions = (aiResult: any): boolean => {
+        const parsed = parseAiJson<any>(aiResult.content);
+        const generated = Array.isArray(parsed) ? parsed : parsed?.questions;
+        if (!Array.isArray(generated)) return false;
 
-      const parsed = parseAiJson<any>(aiResult.content);
-      const generated = Array.isArray(parsed) ? parsed : parsed?.questions;
-      if (!Array.isArray(generated)) throw new Error("AI_INVALID_RESPONSE");
-
-      for (const raw of generated) {
+        for (const raw of generated) {
         if (finalQuestions.length >= requestedCount) break;
         const statement = cleanQuestionText(raw?.statement || raw?.question || raw?.enunciado);
         const options = Array.isArray(raw?.options || raw?.alternatives)
@@ -305,6 +304,35 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         });
         seenHashes.add(hash);
         seenNormalized.add(norm);
+      }
+
+        return finalQuestions.length > 0;
+      };
+
+      const aiResult = await runAI(aiInput);
+      if (aiResult.provider === "template" || aiResult.errorCode) {
+        throw new Error(aiResult.errorCode || "AI_PROVIDER_UNAVAILABLE");
+      }
+      appendValidatedQuestions(aiResult);
+
+      // A provider can return syntactically valid but clinically rejected
+      // questions. Retry once with the existing independent fallback provider;
+      // never expose the rejected batch and never loop indefinitely.
+      if (finalQuestions.length === 0) {
+        console.warn(`[AI_QUALITY_RETRY] provider=${aiResult.provider} model=${aiResult.model}`);
+        const qualityRetry = await runAI({
+          ...aiInput,
+          providerOverride: "lovable-ai",
+          modelOverride: "openai/gpt-4o",
+          benchmarkMode: true,
+          messages: [
+            ...generationMessages,
+            { role: "user", content: "O lote anterior foi rejeitado por segurança clínica. Gere um lote novo, revise nomenclatura farmacológica e não reutilize alternativas do lote anterior." },
+          ],
+        });
+        if (qualityRetry.provider !== "template" && !qualityRetry.errorCode) {
+          appendValidatedQuestions(qualityRetry);
+        }
       }
 
       if (finalQuestions.length === 0) throw new Error("AI_INVALID_RESPONSE: nenhuma questão válida");
