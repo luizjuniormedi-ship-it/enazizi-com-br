@@ -169,9 +169,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           validateFinalQuestionTopic(q, topic, subtopic)
         );
         const guardResult = guardResults.find((result) => result.allowed) ?? guardResults[0];
+        const primaryVisibleTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalizeStatement(q.topic))
+          ? q.topic
+          : q.curriculum_theme;
+        const visibleTopic = {
+          topic: primaryVisibleTopic,
+        };
+        const visibleTopicAllowed = topics.some((topic) =>
+          validateFinalQuestionTopic(visibleTopic, topic).allowed
+        );
         
-        if (!guardResult?.allowed) {
-          console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult?.reason} requested=${topics.join("|")}`);
+        if (!guardResult?.allowed || !visibleTopicAllowed) {
+          console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult?.reason} visible_topic=${primaryVisibleTopic || "missing"} requested=${topics.join("|")}`);
           continue;
         }
 
