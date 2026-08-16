@@ -25,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 const AUTH_ACTION_TIMEOUT_MS = 12000;
+const AUTH_LOCAL_CLEANUP_TIMEOUT_MS = 1500;
 
 const withAuthTimeout = async <T,>(promise: Promise<T>, message: string, timeoutMs = AUTH_ACTION_TIMEOUT_MS) =>
   Promise.race([
@@ -50,9 +51,13 @@ const getUserWithTimeout = () =>
 
 const clearLocalAuthCache = async () => {
   try {
-    await supabase.auth.signOut({ scope: "local" });
+    await withAuthTimeout(
+      supabase.auth.signOut({ scope: "local" }),
+      "Tempo limite ao limpar sessão local",
+      AUTH_LOCAL_CLEANUP_TIMEOUT_MS
+    );
   } catch {
-    // ignore local cleanup errors
+    // Cleanup must fail open so the auth bootstrap can release its loading state.
   }
 
   try {

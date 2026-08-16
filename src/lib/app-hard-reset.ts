@@ -6,6 +6,23 @@ const LOCAL_STORAGE_PREFIXES_TO_PURGE = [
   "rq-cache-",
 ];
 
+const HARD_RESET_STEP_TIMEOUT_MS = 1500;
+
+const settleWithin = async (operation: Promise<unknown>) => {
+  let timeoutId: ReturnType<typeof window.setTimeout> | undefined;
+
+  try {
+    await Promise.race([
+      operation,
+      new Promise<void>((resolve) => {
+        timeoutId = window.setTimeout(resolve, HARD_RESET_STEP_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+};
+
 export const clearStaleLocalStorage = () => {
   const keysToPurge = Object.keys(localStorage).filter((key) =>
     LOCAL_STORAGE_PREFIXES_TO_PURGE.some((prefix) => key.startsWith(prefix))
@@ -91,6 +108,9 @@ export const performHardAppReset = async (options?: {
   clearStaleLocalStorage();
   clearSessionStorage(options?.preserveSessionEntries ?? []);
 
-  await unregisterServiceWorkers();
-  await Promise.allSettled([clearAllCacheStorage(), clearIndexedDbStorage()]);
+  // Browser storage APIs can remain pending forever (notably after a PWA
+  // update). The app bootstrap must fail open so React can still mount and
+  // authentication can decide the user's route.
+  await settleWithin(unregisterServiceWorkers());
+  await settleWithin(Promise.allSettled([clearAllCacheStorage(), clearIndexedDbStorage()]));
 };
