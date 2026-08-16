@@ -12,6 +12,7 @@ import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fide
 import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 import { NVIDIA_MODEL_REGISTRY } from "../_shared/nvidia-provider.ts";
+import { ENARE_DIFFICULTY_MIX, selectByDifficultyQuota, shouldApplyEnareQuota } from "./difficulty-quota.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
@@ -145,6 +146,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     // 2. Fetch from Bank (Strict filtering)
     step = "bank_fetch";
     let finalQuestions: any[] = [];
+    let difficultyDistribution: ReturnType<typeof selectByDifficultyQuota<any>> | null = null;
     const seenHashes = new Set<string>();
     const seenNormalized = new Set<string>();
 
@@ -176,8 +178,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
 
+      const eligibleQuestions: any[] = [];
       for (const q of candidates) {
-        if (finalQuestions.length >= requestedCount) break;
         // Applying hundreds of UUIDs through PostgREST's URL-based `not.in`
         // can exceed the request-line limit and was previously misreported as
         // an empty bank. The candidate window is bounded, so enforce the same
@@ -222,7 +224,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const norm = normalizeStatement(q.statement);
         if (seenHashes.has(hash) || seenNormalized.has(norm)) continue;
         
-        finalQuestions.push({ 
+        eligibleQuestions.push({
           ...q, 
           correct: q.correct_index, 
           _source: "bank",
@@ -233,6 +235,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         
         seenHashes.add(hash);
         seenNormalized.add(norm);
+      }
+
+      if (shouldApplyEnareQuota(examBoard, difficulty)) {
+        difficultyDistribution = selectByDifficultyQuota(
+          eligibleQuestions,
+          requestedCount,
+          ENARE_DIFFICULTY_MIX,
+        );
+        finalQuestions = difficultyDistribution.questions;
+        console.log(`[SIM_DIFFICULTY_QUOTA] target=${JSON.stringify(difficultyDistribution.target)} actual=${JSON.stringify(difficultyDistribution.actual)} available=${JSON.stringify(difficultyDistribution.available)} shortage=${JSON.stringify(difficultyDistribution.shortage)} exact=${difficultyDistribution.exact}`);
+      } else {
+        finalQuestions = eligibleQuestions.slice(0, requestedCount);
       }
     }
 
@@ -381,7 +395,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         board: profile.label, 
         requested: requestedCount, 
         insufficientQuestions,
-        correlation_id: correlationId 
+        correlation_id: correlationId,
+        difficulty_distribution: difficultyDistribution
+          ? {
+              target: difficultyDistribution.target,
+              actual: difficultyDistribution.actual,
+              available: difficultyDistribution.available,
+              shortage: difficultyDistribution.shortage,
+              exact: difficultyDistribution.exact,
+              scale: "enare-corpus-relative-3-4-5-v1",
+              calibrationStatus: "experimental",
+            }
+          : null,
       }
     }).select().single();
 
@@ -430,6 +455,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       model: finalQuestions[0]?._model || null,
       correlationId,
       insufficientQuestions,
+      difficultyDistribution: difficultyDistribution
+        ? {
+            target: difficultyDistribution.target,
+            actual: difficultyDistribution.actual,
+            available: difficultyDistribution.available,
+            shortage: difficultyDistribution.shortage,
+            exact: difficultyDistribution.exact,
+            scale: "enare-corpus-relative-3-4-5-v1",
+            calibrationStatus: "experimental",
+          }
+        : null,
       message: insufficientQuestions ? `Encontramos apenas ${finalQuestions.length} questões para os filtros selecionados.` : undefined
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
