@@ -49,6 +49,7 @@ interface SimuladoSetupProps {
     difficulty: string; 
     timePerQuestion: number; 
     mode: SimuladoMode; 
+    source?: "bank" | "ai";
     specificTopic?: string; 
     selectedSubtopics?: string[];
     examBoard?: string; 
@@ -373,7 +374,8 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           count,
           difficulty: mode === "tri" ? "tri" : "prova_real",
           timePerQuestion: timePerQ,
-          mode: forceAi ? ("ai_generation" as any) : mode,
+          mode,
+          source: forceAi ? "ai" : "bank",
           examBoard: realExamBoard,
           realExamProfile: realExamBoard,
           dynamicDistribution: dynamicDistribution?.source === "curriculum_weights"
@@ -413,7 +415,8 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         count,
         difficulty,
         timePerQuestion,
-        mode: forceAi ? ("ai_generation" as any) : mode,
+        mode,
+        source: forceAi ? "ai" : "bank",
         specificTopic: specificTopic.trim() || undefined,
         selectedSubtopics: subtopicsArray,
         examBoard: resolvedExamBoard,

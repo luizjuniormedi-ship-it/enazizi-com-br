@@ -27,6 +27,14 @@ const normalizeStatement = (s: string) => {
     .replace(/[^\w]/g, "");
 };
 
+const hasUnsafeClinicalLanguage = (parts: string[]): boolean => {
+  const normalized = normalizeStatement(parts.join(" "));
+  // Known medication-name hallucination observed in production. The valid
+  // terms are "nitroglicerina" and "óxido nítrico"; this inverted hybrid is
+  // neither and must never be shown as a clinical alternative or rationale.
+  return normalized.includes("nitrogeniooxido");
+};
+
 const makeHash = (statement: string, len = 100): string => {
   const normalized = (statement || "")
     .toLowerCase()
@@ -269,6 +277,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const normalizedOptions = options.map((option: string) => normalizeStatement(option));
         if (
           !statement ||
+          hasUnsafeClinicalLanguage([statement, ...options, explanation]) ||
           options.length !== 5 ||
           new Set(normalizedOptions).size !== 5 ||
           options.some((option: string) => option.length < 2) ||

@@ -80,19 +80,13 @@ const mountApp = () => {
 };
 
 const registerProductionServiceWorker = () => {
-  let reloadingForNewSW = false;
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloadingForNewSW) return;
-      reloadingForNewSW = true;
-      window.location.reload();
-    });
-  }
-
-  const updateSW = registerSW({
+  registerSW({
     immediate: true,
     onNeedRefresh() {
-      updateSW(true);
+      // Do not activate/reload automatically while the user is studying.
+      // The new worker becomes active on the next navigation, or immediately
+      // when the user explicitly uses the existing ForceUpdateButton.
+      devLog("[PWA] Nova versão disponível; atualização automática adiada.");
     },
     onOfflineReady() {
       devLog("[PWA] App pronto para uso offline.");
@@ -108,9 +102,6 @@ const registerProductionServiceWorker = () => {
 
       const checkForUpdates = () => {
         registration.update().catch(() => {});
-        if (registration.waiting) {
-          updateSW(true);
-        }
       };
 
       checkForUpdates();
