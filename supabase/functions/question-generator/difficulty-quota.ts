@@ -200,24 +200,76 @@ export function selectByTopicAndDifficultyQuota<
 >(candidates: T[], total: number, mix: DifficultyMix, weights: TopicWeight[]): DifficultyQuotaResult<T> {
   const target = calculateDifficultyTargets(total, mix);
   const topicTarget = calculateWeightedTopicTargets(total, weights);
-  const remainingDifficulty = { ...target };
-  const selected: T[] = [];
-
-  for (const { topic } of weights) {
-    const topicCount = topicTarget[topic] || 0;
-    const topicDifficultyTarget = calculateDifficultyTargets(topicCount, remainingDifficulty);
+  const topics = weights.map(({ topic }) => topic).filter((topic) => (topicTarget[topic] || 0) > 0);
+  const pools = new Map<string, T[]>();
+  for (const topic of topics) {
     for (const bucket of BUCKETS) {
-      const pool = candidates
+      pools.set(`${topic}\u0000${bucket}`, candidates
         .filter((question) => question._topic_bucket === topic && normalizeEnareCorpusDifficulty(question.difficulty) === bucket)
         .sort((a, b) =>
           Number(Boolean(a._historical_reuse)) - Number(Boolean(b._historical_reuse)) ||
           String(a.id ?? "").localeCompare(String(b.id ?? ""))
-        );
-      const picked = pool.slice(0, topicDifficultyTarget[bucket]);
-      selected.push(...picked);
-      remainingDifficulty[bucket] = Math.max(0, remainingDifficulty[bucket] - picked.length);
+        ));
     }
   }
+
+  // Solve the topic x difficulty matrix as a small max-flow problem. The
+  // official contract fixes topic totals and the GLOBAL 30/50/20 mix; it does
+  // not require every specialty to reproduce that mix internally. A greedy
+  // per-topic allocation could therefore miss one hard item in a specialty
+  // and silently replace it with a medium item even when another specialty
+  // had enough hard questions.
+  const source = 0;
+  const topicOffset = 1;
+  const bucketOffset = topicOffset + topics.length;
+  const sink = bucketOffset + BUCKETS.length;
+  const size = sink + 1;
+  const capacity = Array.from({ length: size }, () => Array<number>(size).fill(0));
+  const original = Array.from({ length: size }, () => Array<number>(size).fill(0));
+  const addEdge = (from: number, to: number, value: number) => {
+    capacity[from][to] = value;
+    original[from][to] = value;
+  };
+
+  topics.forEach((topic, topicIndex) => {
+    addEdge(source, topicOffset + topicIndex, topicTarget[topic] || 0);
+    BUCKETS.forEach((bucket, bucketIndex) => {
+      addEdge(topicOffset + topicIndex, bucketOffset + bucketIndex, pools.get(`${topic}\u0000${bucket}`)?.length || 0);
+    });
+  });
+  BUCKETS.forEach((bucket, bucketIndex) => addEdge(bucketOffset + bucketIndex, sink, target[bucket]));
+
+  while (true) {
+    const parent = Array<number>(size).fill(-1);
+    parent[source] = source;
+    const queue = [source];
+    for (let cursor = 0; cursor < queue.length && parent[sink] === -1; cursor++) {
+      const from = queue[cursor];
+      for (let to = 0; to < size; to++) {
+        if (parent[to] === -1 && capacity[from][to] > 0) {
+          parent[to] = from;
+          queue.push(to);
+        }
+      }
+    }
+    if (parent[sink] === -1) break;
+    let amount = Number.POSITIVE_INFINITY;
+    for (let node = sink; node !== source; node = parent[node]) amount = Math.min(amount, capacity[parent[node]][node]);
+    for (let node = sink; node !== source; node = parent[node]) {
+      capacity[parent[node]][node] -= amount;
+      capacity[node][parent[node]] += amount;
+    }
+  }
+
+  const selected: T[] = [];
+  topics.forEach((topic, topicIndex) => {
+    BUCKETS.forEach((bucket, bucketIndex) => {
+      const from = topicOffset + topicIndex;
+      const to = bucketOffset + bucketIndex;
+      const allocated = original[from][to] - capacity[from][to];
+      selected.push(...(pools.get(`${topic}\u0000${bucket}`) || []).slice(0, allocated));
+    });
+  });
 
   const actual = { easy: 0, medium: 0, hard: 0 } satisfies Record<DifficultyBucket, number>;
   const topicActual = Object.fromEntries(Object.keys(topicTarget).map((topic) => [topic, 0]));

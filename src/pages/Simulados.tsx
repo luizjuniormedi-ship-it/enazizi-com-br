@@ -1062,6 +1062,13 @@ const Simulados = () => {
           }
           currentTry = 0;
 
+          if (isMontarBancoFlow && batchData.insufficientQuestions) {
+            // Never issue a complementary request that can fill a missing hard
+            // or thematic slot with a different bucket and falsely open a
+            // 100-question exam. The partial state below reports the shortage.
+            break;
+          }
+
           // Update job progress
           if (currentJobId) {
             await supabase.from("simulation_generation_jobs").update({ 
