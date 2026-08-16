@@ -19,6 +19,7 @@ import {
 import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
 import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { resolveMedicalDomain } from "../_shared/tutor/medical-ontology.ts";
+import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 
 // ─── LANGUAGE LEAK ENGINE v2 (False-Positive Elimination Sprint) ───────────
 // Apenas vazamentos INEQUÍVOCOS. Termos médicos cognatos, mnemônicos
@@ -287,8 +288,23 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       try {
         // QR Mode tem régua de qualidade própria (enum + JSON schema).
         // Bypassa Quality Lock dos 15 blocos pedagógicos do Tutor normal.
-        const qrResponse = await ai(qrAiConfig, { retries: 2, skipQualityLock: true });
-        qrRaw = qrResponse.choices?.[0]?.message?.content || "{}";
+        const qrResponse = await runAI({
+          taskType: "tutor_chat",
+          topic,
+          complexity: "high",
+          requiresReasoning: true,
+          requiresJSON: true,
+          budgetMode: "premium",
+          userId: activeUserId,
+          sessionId: sessionId || null,
+          requestId: correlationId,
+          supabase: supabaseAdmin,
+          messages: qrAiConfig.messages,
+        });
+        if (qrResponse.provider === "template" || qrResponse.errorCode) {
+          throw new Error(qrResponse.errorCode || "AI_PROVIDER_UNAVAILABLE");
+        }
+        qrRaw = qrResponse.content || "{}";
         // [TEMP DIAGNOSTIC — REMOVE AFTER FASE 1.4]
         console.log("[QR_MODE_RAW]", qrRaw?.slice?.(0, 500));
         console.log("[QR_MODE_RAW_KEYS]", (() => { try { return Object.keys(JSON.parse(qrRaw)); } catch { return "PARSE_FAIL"; } })());
