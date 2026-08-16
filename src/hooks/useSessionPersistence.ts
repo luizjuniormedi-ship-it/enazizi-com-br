@@ -98,6 +98,7 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
     // Save to localStorage as backup (offline-safe)
     const backupKey = `enazizi_session_backup_${moduleKey}_${user.id}`;
     checkpointSession(sessionData);
+    const syncStartedAt = Date.now();
 
     if (!navigator.onLine) {
       console.info("[SessionPersistence] Device offline, using local backup only.");
@@ -155,7 +156,12 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
       }
       
       // Keep the crash-safe backup unless the server actually accepted the write.
-      if (synced) localStorage.removeItem(backupKey);
+      if (synced) {
+        const currentBackup = localStorage.getItem(backupKey);
+        if (!currentBackup || JSON.parse(currentBackup).ts <= syncStartedAt) {
+          localStorage.removeItem(backupKey);
+        }
+      }
     } catch (e) {
       console.warn("[SessionPersistence] saveSession error:", e);
     }
