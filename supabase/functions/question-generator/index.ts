@@ -12,7 +12,13 @@ import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fide
 import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 import { NVIDIA_MODEL_REGISTRY } from "../_shared/nvidia-provider.ts";
-import { ENARE_DIFFICULTY_MIX, selectByDifficultyQuota, shouldApplyEnareQuota } from "./difficulty-quota.ts";
+import {
+  calculateDifficultyTargets,
+  ENARE_DIFFICULTY_MIX,
+  normalizeEnareCorpusDifficulty,
+  selectByDifficultyQuota,
+  shouldApplyEnareQuota,
+} from "./difficulty-quota.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
@@ -173,12 +179,15 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       // The eligible view is not ordered by topic relevance. A 200-row window
       // can be exhausted by rows rejected by the final integrity guard while
       // valid rows for the same board still exist later in the result set.
-      const { data } = await q.limit(Math.max(requestedCount * 10, 1000));
+      const { data } = await q.order("id", { ascending: true }).limit(Math.max(requestedCount * 10, 1000));
       candidates = data || [];
       
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
 
       const eligibleQuestions: any[] = [];
+      const enforceEnareQuota = shouldApplyEnareQuota(examBoard, difficulty);
+      const quotaTargets = calculateDifficultyTargets(requestedCount, ENARE_DIFFICULTY_MIX);
+      const quotaEligible = { easy: 0, medium: 0, hard: 0 };
       for (const q of candidates) {
         // Applying hundreds of UUIDs through PostgREST's URL-based `not.in`
         // can exceed the request-line limit and was previously misreported as
@@ -235,9 +244,21 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         
         seenHashes.add(hash);
         seenNormalized.add(norm);
+
+        if (enforceEnareQuota) {
+          const bucket = normalizeEnareCorpusDifficulty(q.difficulty);
+          if (bucket !== "unclassified") quotaEligible[bucket]++;
+          if (
+            quotaEligible.easy >= quotaTargets.easy &&
+            quotaEligible.medium >= quotaTargets.medium &&
+            quotaEligible.hard >= quotaTargets.hard
+          ) break;
+        } else if (eligibleQuestions.length >= requestedCount) {
+          break;
+        }
       }
 
-      if (shouldApplyEnareQuota(examBoard, difficulty)) {
+      if (enforceEnareQuota) {
         difficultyDistribution = selectByDifficultyQuota(
           eligibleQuestions,
           requestedCount,
