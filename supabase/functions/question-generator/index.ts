@@ -11,6 +11,7 @@ import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
 import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
 import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
+import { NVIDIA_MODEL_REGISTRY } from "../_shared/nvidia-provider.ts";
 
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
@@ -225,6 +226,9 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
       const aiResult = await runAI({
         taskType: "question_generation",
+        // Clinical questions require the reasoning-tier NVIDIA model. Provider
+        // fallback remains NVIDIA -> Cerebras -> existing safe fallbacks.
+        modelOverride: NVIDIA_MODEL_REGISTRY.reasoning.id,
         specialty: topics[0],
         topic: specificTopic || subtopics[0] || topics[0],
         complexity: difficulty === "facil" ? "medium" : "high",
@@ -237,7 +241,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         messages: [
           {
             role: "system",
-            content: `${QUESTION_MOTOR_PREMIUM}\n\n${SIMULADO_MOTOR_PREMIUM}\n\nRetorne SOMENTE JSON válido no formato {"questions":[{"statement":"...","options":["...","...","...","...","..."],"correct":0,"explanation":"...","topic":"...","subtopic":"...","difficulty":"..."}]}. correct é índice numérico de 0 a 4. Não use markdown.`,
+            content: `${QUESTION_MOTOR_PREMIUM}\n\n${SIMULADO_MOTOR_PREMIUM}\n\nSEGURANÇA CLÍNICA OBRIGATÓRIA: cada questão deve ter exatamente cinco alternativas distintas, uma única resposta inequivocamente correta e explicação que justifique a correta e descarte as demais. Não invente doses, indicações, contraindicações, achados de exame ou recomendações. Não associe tratamento a achado sem relação causal. Se não tiver segurança factual, não gere a questão. Revise internamente coerência entre caso, pergunta, resposta e explicação antes de retornar.\n\nRetorne SOMENTE JSON válido no formato {"questions":[{"statement":"...","options":["...","...","...","...","..."],"correct":0,"explanation":"...","topic":"...","subtopic":"...","difficulty":"..."}]}. correct é índice numérico de 0 a 4. Não use markdown.`,
           },
           {
             role: "user",
@@ -262,7 +266,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           : [];
         const correct = Number(raw?.correct ?? raw?.correct_index ?? raw?.correctIndex);
         const explanation = cleanQuestionText(raw?.explanation || raw?.rationale || raw?.explicacao);
-        if (!statement || options.length < 4 || !Number.isInteger(correct) || correct < 0 || correct >= options.length) continue;
+        const normalizedOptions = options.map((option: string) => normalizeStatement(option));
+        if (
+          !statement ||
+          options.length !== 5 ||
+          new Set(normalizedOptions).size !== 5 ||
+          options.some((option: string) => option.length < 2) ||
+          !explanation || explanation.length < 40 ||
+          !Number.isInteger(correct) ||
+          correct < 0 ||
+          correct >= options.length
+        ) continue;
 
         const hash = makeHash(statement);
         const norm = normalizeStatement(statement);
