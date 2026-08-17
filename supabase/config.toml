@@ -91,6 +91,10 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.drive-process-single-file]
     verify_jwt = false
+  [functions.drive-corpus-scan]
+    verify_jwt = true
+  [functions.drive-corpus-ingest]
+    verify_jwt = true
   [functions.tutor-v3-premium]
     verify_jwt = false
   [functions.compute-intelligence-index]
