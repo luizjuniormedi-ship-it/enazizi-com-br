@@ -6,6 +6,7 @@ const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8"
 const scan = read("supabase/functions/drive-corpus-scan/index.ts");
 const ingest = read("supabase/functions/drive-corpus-ingest/index.ts");
 const governance = read("supabase/functions/_shared/drive-corpus-governance.ts");
+const googleDrive = read("supabase/functions/_shared/google-drive.ts");
 const migration = read("supabase/migrations/20260817004606_harden_drive_corpus_ingestion.sql");
 const config = read("supabase/config.toml");
 
@@ -47,5 +48,12 @@ describe("Drive corpus fail-closed governance", () => {
     expect(migration).toContain("SECURITY INVOKER");
     expect(migration).toContain("REVOKE ALL ON FUNCTION public.claim_drive_corpus_jobs");
     expect(migration).toContain("FROM PUBLIC, anon, authenticated");
+  });
+
+  it("loads Google service-account credentials only from secrets", () => {
+    expect(googleDrive).toContain('Deno.env.get("GOOGLE_SA_EMAIL")');
+    expect(googleDrive).toContain('Deno.env.get("GOOGLE_SA_PRIVATE_KEY_B64")');
+    expect(googleDrive).not.toContain("MIIEvQIBADAN");
+    expect(googleDrive).not.toContain("PK body prefix");
   });
 });
