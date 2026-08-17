@@ -11779,63 +11779,130 @@ export type Database = {
       }
       drive_corpus_queue: {
         Row: {
+          answer_key_url: string | null
+          attempt_id: string | null
           chunks_count: number | null
           created_at: string
           drive_file_id: string
+          duplicate_of_queue_id: string | null
           error_message: string | null
           file_name: string
           file_size: number | null
           folder_path: string | null
           id: string
+          ingestion_review_status: string
+          ingestion_version: string
+          lease_until: string | null
+          locked_at: string | null
+          locked_by: string | null
           mime_type: string | null
+          next_retry_at: string | null
           processed_at: string | null
+          processing_phase: string | null
+          provenance: Json
           rag_document_id: string | null
           retry_count: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rights_evidence_url: string | null
+          rights_status: string
           skip_reason: string | null
+          source_checksum_sha256: string | null
+          source_kind: string
+          source_purpose: string
+          source_root_id: string | null
+          source_url: string | null
           specialty: string | null
           status: string
           tokens_used: number | null
           updated_at: string
         }
         Insert: {
+          answer_key_url?: string | null
+          attempt_id?: string | null
           chunks_count?: number | null
           created_at?: string
           drive_file_id: string
+          duplicate_of_queue_id?: string | null
           error_message?: string | null
           file_name: string
           file_size?: number | null
           folder_path?: string | null
           id?: string
+          ingestion_review_status?: string
+          ingestion_version?: string
+          lease_until?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           mime_type?: string | null
+          next_retry_at?: string | null
           processed_at?: string | null
+          processing_phase?: string | null
+          provenance?: Json
           rag_document_id?: string | null
           retry_count?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rights_evidence_url?: string | null
+          rights_status?: string
           skip_reason?: string | null
+          source_checksum_sha256?: string | null
+          source_kind?: string
+          source_purpose?: string
+          source_root_id?: string | null
+          source_url?: string | null
           specialty?: string | null
           status?: string
           tokens_used?: number | null
           updated_at?: string
         }
         Update: {
+          answer_key_url?: string | null
+          attempt_id?: string | null
           chunks_count?: number | null
           created_at?: string
           drive_file_id?: string
+          duplicate_of_queue_id?: string | null
           error_message?: string | null
           file_name?: string
           file_size?: number | null
           folder_path?: string | null
           id?: string
+          ingestion_review_status?: string
+          ingestion_version?: string
+          lease_until?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
           mime_type?: string | null
+          next_retry_at?: string | null
           processed_at?: string | null
+          processing_phase?: string | null
+          provenance?: Json
           rag_document_id?: string | null
           retry_count?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rights_evidence_url?: string | null
+          rights_status?: string
           skip_reason?: string | null
+          source_checksum_sha256?: string | null
+          source_kind?: string
+          source_purpose?: string
+          source_root_id?: string | null
+          source_url?: string | null
           specialty?: string | null
           status?: string
           tokens_used?: number | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "drive_corpus_queue_duplicate_of_queue_id_fkey"
+            columns: ["duplicate_of_queue_id"]
+            isOneToOne: false
+            referencedRelation: "drive_corpus_queue"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "drive_corpus_queue_rag_document_id_fkey"
             columns: ["rag_document_id"]
@@ -25905,8 +25972,10 @@ export type Database = {
       }
       rag_documents: {
         Row: {
+          answer_key_url: string | null
           created_at: string
           drive_file_id: string | null
+          editorial_review_status: string
           error_message: string | null
           file_name: string
           file_path: string
@@ -25916,9 +25985,14 @@ export type Database = {
           is_active: boolean | null
           is_published: boolean | null
           organization_id: string
+          provenance: Json
           published_at: string | null
           replaced_by: string | null
+          rights_status: string
+          source_checksum_sha256: string | null
+          source_purpose: string
           source_type: string
+          source_url: string | null
           specialty: string | null
           status: string
           title: string
@@ -25927,8 +26001,10 @@ export type Database = {
           version: number | null
         }
         Insert: {
+          answer_key_url?: string | null
           created_at?: string
           drive_file_id?: string | null
+          editorial_review_status?: string
           error_message?: string | null
           file_name: string
           file_path: string
@@ -25938,9 +26014,14 @@ export type Database = {
           is_active?: boolean | null
           is_published?: boolean | null
           organization_id: string
+          provenance?: Json
           published_at?: string | null
           replaced_by?: string | null
+          rights_status?: string
+          source_checksum_sha256?: string | null
+          source_purpose?: string
           source_type?: string
+          source_url?: string | null
           specialty?: string | null
           status?: string
           title: string
@@ -25949,8 +26030,10 @@ export type Database = {
           version?: number | null
         }
         Update: {
+          answer_key_url?: string | null
           created_at?: string
           drive_file_id?: string | null
+          editorial_review_status?: string
           error_message?: string | null
           file_name?: string
           file_path?: string
@@ -25960,9 +26043,14 @@ export type Database = {
           is_active?: boolean | null
           is_published?: boolean | null
           organization_id?: string
+          provenance?: Json
           published_at?: string | null
           replaced_by?: string | null
+          rights_status?: string
+          source_checksum_sha256?: string | null
+          source_purpose?: string
           source_type?: string
+          source_url?: string | null
           specialty?: string | null
           status?: string
           title?: string
@@ -35023,6 +35111,54 @@ export type Database = {
       check_function_exists: { Args: { func_name: string }; Returns: boolean }
       check_system_health: { Args: never; Returns: undefined }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
+      claim_drive_corpus_jobs: {
+        Args: { p_limit?: number; p_worker_id: string }
+        Returns: {
+          answer_key_url: string | null
+          attempt_id: string | null
+          chunks_count: number | null
+          created_at: string
+          drive_file_id: string
+          duplicate_of_queue_id: string | null
+          error_message: string | null
+          file_name: string
+          file_size: number | null
+          folder_path: string | null
+          id: string
+          ingestion_review_status: string
+          ingestion_version: string
+          lease_until: string | null
+          locked_at: string | null
+          locked_by: string | null
+          mime_type: string | null
+          next_retry_at: string | null
+          processed_at: string | null
+          processing_phase: string | null
+          provenance: Json
+          rag_document_id: string | null
+          retry_count: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rights_evidence_url: string | null
+          rights_status: string
+          skip_reason: string | null
+          source_checksum_sha256: string | null
+          source_kind: string
+          source_purpose: string
+          source_root_id: string | null
+          source_url: string | null
+          specialty: string | null
+          status: string
+          tokens_used: number | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "drive_corpus_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       classify_recovery_priority: {
         Args: { rvs_score: number }
         Returns: string
