@@ -10,7 +10,24 @@ import {
   selectByTopicAndDifficultyQuota,
 } from "../../supabase/functions/question-generator/difficulty-quota";
 
+const questionGeneratorSource = readFileSync(
+  resolve(process.cwd(), "supabase/functions/question-generator/index.ts"),
+  "utf8",
+);
+
 describe("official board governance", () => {
+  it("keeps the ENAMED preparatory freshness contract fail-closed", () => {
+    expect(questionGeneratorSource).toContain('"FRESHNESS_SHORTAGE"');
+    expect(questionGeneratorSource).toContain("ENAMED_PREPARATORY_FRESHNESS_POLICY");
+    expect(questionGeneratorSource).not.toContain(".filter(Boolean))).slice(0, 500)");
+  });
+  it("rejects a partial ENAMED preparatory blueprint", async () => {
+    const { isCanonicalGeneralBlueprint } = await import("../../supabase/functions/question-generator/difficulty-quota");
+    expect(isCanonicalGeneralBlueprint(EXAM_PROFILES.GERAL.topicWeights)).toBe(true);
+    expect(isCanonicalGeneralBlueprint(EXAM_PROFILES.GERAL.topicWeights.slice(0, 12))).toBe(false);
+    expect(isCanonicalGeneralBlueprint(EXAM_PROFILES.GERAL.topicWeights.map((item, index) =>
+      index === 0 ? { ...item, weight: 19 } : item))).toBe(false);
+  });
   it("blocks every official board until its runtime is homologated", () => {
     const officialProfiles = Object.entries(EXAM_PROFILES).filter(([key]) => key !== "GERAL");
     const enabled = officialProfiles.filter(([, profile]) => profile.canGenerate);

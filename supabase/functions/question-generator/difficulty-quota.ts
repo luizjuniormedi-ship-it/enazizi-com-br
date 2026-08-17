@@ -10,9 +10,51 @@ export interface DifficultyQuotaResult<T> {
   shortage: Record<DifficultyBucket, number>;
   exact: boolean;
   historicalReuseCount: number;
+  freshnessPolicy?: FreshnessPolicy;
+  freshnessActual?: FreshnessActual;
   topicTarget?: Record<string, number>;
   topicActual?: Record<string, number>;
   topicShortage?: Record<string, number>;
+}
+
+export interface FreshnessPolicy {
+  recentWindowDays: number;
+  maxRecentReuse: number;
+  strategy: "min-cost-topic-difficulty-v1";
+}
+
+export interface FreshnessActual {
+  freshCount: number;
+  recentReuseCount: number;
+  withinLimit: boolean;
+  complete: boolean;
+  exact: boolean;
+  blockedByReuseLimit: number;
+  minimumRecentReuse: number;
+  structuralShortage: number;
+  blockedByCap: boolean;
+}
+
+export interface QuotaSelectionOptions {
+  freshnessPolicy?: FreshnessPolicy;
+}
+
+export const ENAMED_PREPARATORY_FRESHNESS_POLICY: FreshnessPolicy = {
+  recentWindowDays: 7,
+  maxRecentReuse: 10,
+  strategy: "min-cost-topic-difficulty-v1",
+};
+
+export async function collectPaginatedRows<T>(
+  fetchPage: (from: number, to: number) => Promise<T[]>,
+  pageSize = 500,
+): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0;; from += pageSize) {
+    const page = await fetchPage(from, from + pageSize - 1);
+    rows.push(...page);
+    if (page.length < pageSize) return rows;
+  }
 }
 
 export interface TopicWeight {
@@ -26,6 +68,14 @@ const VISIBLE_TOPIC_EQUIVALENTS: Record<string, string[]> = {
   "Ginecologia e Obstetrícia": ["Ginecologia", "Obstetrícia"],
   "Medicina de Emergência": ["Emergência", "Urgência e Emergência"],
 };
+
+export function getAcceptedVisibleTopicLabels(weight: TopicWeight): string[] {
+  return Array.from(new Set([
+    weight.topic,
+    ...(weight.subtopics || []).map((subtopic) => subtopic.name),
+    ...(VISIBLE_TOPIC_EQUIVALENTS[weight.topic] || []),
+  ].filter(Boolean)));
+}
 
 const normalizeTopicLabel = (value: unknown) => String(value ?? "")
   .trim()
@@ -45,11 +95,7 @@ export function classifyVisibleTopicBucket(
   if (!visible) return null;
 
   for (const weight of weights) {
-    const acceptedLabels = [
-      weight.topic,
-      ...(weight.subtopics || []).map((subtopic) => subtopic.name),
-      ...(VISIBLE_TOPIC_EQUIVALENTS[weight.topic] || []),
-    ].map(normalizeTopicLabel);
+    const acceptedLabels = getAcceptedVisibleTopicLabels(weight).map(normalizeTopicLabel);
     if (acceptedLabels.includes(visible)) {
       return { bucket: weight.topic, visibleTopic: rawTopic };
     }
@@ -69,6 +115,24 @@ export const GENERAL_DIFFICULTY_MIX: DifficultyMix = {
   medium: 50,
   hard: 20,
 };
+
+export const GENERAL_TOPIC_WEIGHTS: Readonly<Record<string, number>> = {
+  "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12,
+  "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 10,
+  "Medicina de Emergência": 8, "Terapia Intensiva": 5, "Ortopedia": 4,
+  "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2,
+  "Otorrinolaringologia": 2,
+};
+
+export function isCanonicalGeneralBlueprint(weights: TopicWeight[]): boolean {
+  if (weights.length !== Object.keys(GENERAL_TOPIC_WEIGHTS).length) return false;
+  const seen = new Set<string>();
+  for (const item of weights) {
+    if (seen.has(item.topic) || GENERAL_TOPIC_WEIGHTS[item.topic] !== Number(item.weight)) return false;
+    seen.add(item.topic);
+  }
+  return Object.keys(GENERAL_TOPIC_WEIGHTS).every((topic) => seen.has(topic));
+}
 
 export interface CorpusDifficultyPlan {
   mix: DifficultyMix;
@@ -112,6 +176,7 @@ export function selectByDifficultyQuota<T extends { id?: unknown; difficulty?: u
   candidates: T[],
   total: number,
   mix: DifficultyMix,
+  options: QuotaSelectionOptions = {},
 ): DifficultyQuotaResult<T> {
   const target = calculateDifficultyTargets(total, mix);
   const indexed = candidates
@@ -124,10 +189,15 @@ export function selectByDifficultyQuota<T extends { id?: unknown; difficulty?: u
   const available = Object.fromEntries(BUCKETS.map((bucket) => [bucket, queues[bucket].length])) as Record<DifficultyBucket, number>;
   const selected: typeof indexed = [];
 
+  let remainingReuse = options.freshnessPolicy?.maxRecentReuse ?? Number.POSITIVE_INFINITY;
   for (const bucket of BUCKETS) {
-    for (const item of queues[bucket].slice(0, target[bucket])) {
-      selected.push(item);
-    }
+    const fresh = queues[bucket].filter((item) => !item.question._historical_reuse).slice(0, target[bucket]);
+    const missing = target[bucket] - fresh.length;
+    const historical = queues[bucket]
+      .filter((item) => item.question._historical_reuse)
+      .slice(0, Math.min(missing, remainingReuse));
+    selected.push(...fresh, ...historical);
+    remainingReuse -= historical.length;
   }
 
   const questions = selected
@@ -143,6 +213,11 @@ export function selectByDifficultyQuota<T extends { id?: unknown; difficulty?: u
     BUCKETS.map((bucket) => [bucket, Math.max(0, target[bucket] - actual[bucket])]),
   ) as Record<DifficultyBucket, number>;
 
+  const historicalReuseCount = questions.filter((question) => question._historical_reuse).length;
+  const blockedByReuseLimit = options.freshnessPolicy
+    ? Math.max(0, BUCKETS.reduce((sum, bucket) => sum + shortage[bucket], 0) -
+      BUCKETS.reduce((sum, bucket) => sum + Math.max(0, target[bucket] - available[bucket]), 0))
+    : 0;
   return {
     questions,
     target,
@@ -150,7 +225,19 @@ export function selectByDifficultyQuota<T extends { id?: unknown; difficulty?: u
     available,
     shortage,
     exact: BUCKETS.every((bucket) => actual[bucket] === target[bucket]),
-    historicalReuseCount: questions.filter((question) => question._historical_reuse).length,
+    historicalReuseCount,
+    freshnessPolicy: options.freshnessPolicy,
+    freshnessActual: options.freshnessPolicy ? {
+      freshCount: questions.length - historicalReuseCount,
+      recentReuseCount: historicalReuseCount,
+      withinLimit: historicalReuseCount <= options.freshnessPolicy.maxRecentReuse,
+      complete: questions.length === Math.max(0, Math.floor(total)),
+      exact: BUCKETS.every((bucket) => actual[bucket] === target[bucket]),
+      blockedByReuseLimit,
+      minimumRecentReuse: historicalReuseCount + blockedByReuseLimit,
+      structuralShortage: Math.max(0, total - questions.length - blockedByReuseLimit),
+      blockedByCap: blockedByReuseLimit > 0,
+    } : undefined,
   };
 }
 
@@ -197,7 +284,7 @@ export function calculateWeightedTopicTargets(total: number, weights: TopicWeigh
 
 export function selectByTopicAndDifficultyQuota<
   T extends { id?: unknown; difficulty?: unknown; _historical_reuse?: boolean; _topic_bucket?: string },
->(candidates: T[], total: number, mix: DifficultyMix, weights: TopicWeight[]): DifficultyQuotaResult<T> {
+>(candidates: T[], total: number, mix: DifficultyMix, weights: TopicWeight[], options: QuotaSelectionOptions = {}): DifficultyQuotaResult<T> {
   const target = calculateDifficultyTargets(total, mix);
   const topicTarget = calculateWeightedTopicTargets(total, weights);
   const topics = weights.map(({ topic }) => topic).filter((topic) => (topicTarget[topic] || 0) > 0);
@@ -213,63 +300,81 @@ export function selectByTopicAndDifficultyQuota<
     }
   }
 
-  // Solve the topic x difficulty matrix as a small max-flow problem. The
-  // official contract fixes topic totals and the GLOBAL 30/50/20 mix; it does
-  // not require every specialty to reproduce that mix internally. A greedy
-  // per-topic allocation could therefore miss one hard item in a specialty
-  // and silently replace it with a medium item even when another specialty
-  // had enough hard questions.
+  type Edge = { to: number; rev: number; capacity: number; cost: number; original: number };
   const source = 0;
   const topicOffset = 1;
   const bucketOffset = topicOffset + topics.length;
   const sink = bucketOffset + BUCKETS.length;
-  const size = sink + 1;
-  const capacity = Array.from({ length: size }, () => Array<number>(size).fill(0));
-  const original = Array.from({ length: size }, () => Array<number>(size).fill(0));
-  const addEdge = (from: number, to: number, value: number) => {
-    capacity[from][to] = value;
-    original[from][to] = value;
+  const graph: Edge[][] = Array.from({ length: sink + 1 }, () => []);
+  const addEdge = (from: number, to: number, capacity: number, cost: number) => {
+    const forward: Edge = { to, rev: graph[to].length, capacity, cost, original: capacity };
+    const reverse: Edge = { to: from, rev: graph[from].length, capacity: 0, cost: -cost, original: 0 };
+    graph[from].push(forward);
+    graph[to].push(reverse);
+    return forward;
   };
-
+  const cellEdges = new Map<string, { fresh: Edge; recent: Edge }>();
   topics.forEach((topic, topicIndex) => {
-    addEdge(source, topicOffset + topicIndex, topicTarget[topic] || 0);
+    addEdge(source, topicOffset + topicIndex, topicTarget[topic] || 0, 0);
     BUCKETS.forEach((bucket, bucketIndex) => {
-      addEdge(topicOffset + topicIndex, bucketOffset + bucketIndex, pools.get(`${topic}\u0000${bucket}`)?.length || 0);
+      const cell = pools.get(`${topic}\u0000${bucket}`) || [];
+      cellEdges.set(`${topic}\u0000${bucket}`, {
+        fresh: addEdge(topicOffset + topicIndex, bucketOffset + bucketIndex, cell.filter((q) => !q._historical_reuse).length, 0),
+        recent: addEdge(topicOffset + topicIndex, bucketOffset + bucketIndex, cell.filter((q) => q._historical_reuse).length, 1),
+      });
     });
   });
-  BUCKETS.forEach((bucket, bucketIndex) => addEdge(bucketOffset + bucketIndex, sink, target[bucket]));
+  BUCKETS.forEach((bucket, bucketIndex) => addEdge(bucketOffset + bucketIndex, sink, target[bucket], 0));
 
-  while (true) {
-    const parent = Array<number>(size).fill(-1);
-    parent[source] = source;
-    const queue = [source];
-    for (let cursor = 0; cursor < queue.length && parent[sink] === -1; cursor++) {
-      const from = queue[cursor];
-      for (let to = 0; to < size; to++) {
-        if (parent[to] === -1 && capacity[from][to] > 0) {
-          parent[to] = from;
-          queue.push(to);
+  const maxRecentReuse = options.freshnessPolicy?.maxRecentReuse ?? total;
+  let flow = 0;
+  let recentFlow = 0;
+  while (flow < total) {
+    const distance = Array<number>(graph.length).fill(Number.POSITIVE_INFINITY);
+    const previousNode = Array<number>(graph.length).fill(-1);
+    const previousEdge = Array<number>(graph.length).fill(-1);
+    distance[source] = 0;
+    for (let pass = 0; pass < graph.length - 1; pass++) {
+      let changed = false;
+      for (let from = 0; from < graph.length; from++) graph[from].forEach((edge, edgeIndex) => {
+        if (edge.capacity > 0 && distance[from] + edge.cost < distance[edge.to]) {
+          distance[edge.to] = distance[from] + edge.cost;
+          previousNode[edge.to] = from;
+          previousEdge[edge.to] = edgeIndex;
+          changed = true;
         }
-      }
+      });
+      if (!changed) break;
     }
-    if (parent[sink] === -1) break;
-    let amount = Number.POSITIVE_INFINITY;
-    for (let node = sink; node !== source; node = parent[node]) amount = Math.min(amount, capacity[parent[node]][node]);
-    for (let node = sink; node !== source; node = parent[node]) {
-      capacity[parent[node]][node] -= amount;
-      capacity[node][parent[node]] += amount;
+    if (previousNode[sink] === -1) break;
+    let amount = total - flow;
+    for (let node = sink; node !== source; node = previousNode[node]) {
+      amount = Math.min(amount, graph[previousNode[node]][previousEdge[node]].capacity);
     }
+    const recentCost = Math.max(0, distance[sink]);
+    if (recentCost > 0) amount = Math.min(amount, maxRecentReuse - recentFlow);
+    if (amount <= 0) break;
+    for (let node = sink; node !== source; node = previousNode[node]) {
+      const edge = graph[previousNode[node]][previousEdge[node]];
+      edge.capacity -= amount;
+      graph[node][edge.rev].capacity += amount;
+    }
+    flow += amount;
+    recentFlow += amount * distance[sink];
   }
 
-  const selected: T[] = [];
-  topics.forEach((topic, topicIndex) => {
-    BUCKETS.forEach((bucket, bucketIndex) => {
-      const from = topicOffset + topicIndex;
-      const to = bucketOffset + bucketIndex;
-      const allocated = original[from][to] - capacity[from][to];
-      selected.push(...(pools.get(`${topic}\u0000${bucket}`) || []).slice(0, allocated));
-    });
-  });
+  const freshSelected: T[] = [];
+  const historicalSelected: T[] = [];
+  topics.forEach((topic) => BUCKETS.forEach((bucket) => {
+    const cell = pools.get(`${topic}\u0000${bucket}`) || [];
+    const edges = cellEdges.get(`${topic}\u0000${bucket}`)!;
+    freshSelected.push(...cell.filter((q) => !q._historical_reuse).slice(0, edges.fresh.original - edges.fresh.capacity));
+    historicalSelected.push(...cell.filter((q) => q._historical_reuse).slice(0, edges.recent.original - edges.recent.capacity));
+  }));
+  const selected = [...freshSelected, ...historicalSelected];
+  const blockedByReuseLimit = options.freshnessPolicy && selected.length < total && recentFlow >= maxRecentReuse
+    ? total - selected.length
+    : 0;
 
   const actual = { easy: 0, medium: 0, hard: 0 } satisfies Record<DifficultyBucket, number>;
   const topicActual = Object.fromEntries(Object.keys(topicTarget).map((topic) => [topic, 0]));
@@ -282,14 +387,30 @@ export function selectByTopicAndDifficultyQuota<
   const topicShortage = Object.fromEntries(Object.entries(topicTarget).map(([topic, count]) => [topic, Math.max(0, count - topicActual[topic])]));
   const available = Object.fromEntries(BUCKETS.map((bucket) => [bucket, candidates.filter((question) => normalizeEnareCorpusDifficulty(question.difficulty) === bucket).length])) as Record<DifficultyBucket, number>;
 
+  const historicalReuseCount = historicalSelected.length;
+  const structuralShortage = Math.max(0, total - selected.length - blockedByReuseLimit);
+  const selectedIds = selected.map((question) => question.id).filter((id) => id != null);
+  const hasUniqueIds = new Set(selectedIds).size === selectedIds.length;
   return {
     questions: selected,
     target,
     actual,
     available,
     shortage,
-    exact: selected.length === total && BUCKETS.every((bucket) => actual[bucket] === target[bucket]) && Object.values(topicShortage).every((count) => count === 0),
-    historicalReuseCount: selected.filter((question) => question._historical_reuse).length,
+    exact: selected.length === total && hasUniqueIds && BUCKETS.every((bucket) => actual[bucket] === target[bucket]) && Object.values(topicShortage).every((count) => count === 0),
+    historicalReuseCount,
+    freshnessPolicy: options.freshnessPolicy,
+    freshnessActual: options.freshnessPolicy ? {
+      freshCount: freshSelected.length,
+      recentReuseCount: historicalReuseCount,
+      withinLimit: historicalReuseCount <= options.freshnessPolicy.maxRecentReuse,
+      complete: selected.length === total,
+      exact: selected.length === total && hasUniqueIds && BUCKETS.every((bucket) => actual[bucket] === target[bucket]) && Object.values(topicShortage).every((count) => count === 0),
+      blockedByReuseLimit,
+      minimumRecentReuse: historicalReuseCount + blockedByReuseLimit,
+      structuralShortage,
+      blockedByCap: blockedByReuseLimit > 0,
+    } : undefined,
     topicTarget,
     topicActual,
     topicShortage,
