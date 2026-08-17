@@ -9,7 +9,7 @@ const LOCAL_STORAGE_PREFIXES_TO_PURGE = [
 const HARD_RESET_STEP_TIMEOUT_MS = 1500;
 
 const settleWithin = async (operation: Promise<unknown>) => {
-  let timeoutId: ReturnType<typeof window.setTimeout> | undefined;
+  let timeoutId: number | undefined;
 
   try {
     await Promise.race([
