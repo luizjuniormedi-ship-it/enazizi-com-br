@@ -3,8 +3,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
-import { getGoogleAccessToken, GOOGLE_SA_EMAIL } from "../_shared/google-drive.ts";
-import { retryDelayMs, sha256Hex } from "../_shared/drive-corpus-governance.ts";
+import { extractQuestionsDirect, getGoogleAccessToken, GOOGLE_SA_EMAIL } from "../_shared/google-drive.ts";
+import {
+  isOfficialAnswerKeyUrl,
+  normalizeExamYear,
+  normalizeOfficialQuestion,
+  retryDelayMs,
+  sha256Hex,
+} from "../_shared/drive-corpus-governance.ts";
+import { sanitizeForPostgres } from "../_shared/db-utils.ts";
 
 const SYSTEM_USER_ID = "0af48797-38f2-4b77-bd16-0486fa291eba";
 const SYSTEM_ORG_ID = "00000000-0000-0000-0000-000000000001";
@@ -15,6 +22,13 @@ const CHUNK_OVERLAP = 150;
 const DRIVE_TIMEOUT_MS = 60_000;
 const AI_TIMEOUT_MS = 180_000;
 const EMBEDDING_TIMEOUT_MS = 30_000;
+const MAX_ANSWER_KEY_BYTES = 10 * 1024 * 1024;
+
+const extractionLogger = {
+  info: (tag: string, message: string, data?: unknown) => console.log(`[${tag}] ${message}`, data || ""),
+  warn: (tag: string, message: string, data?: unknown) => console.warn(`[${tag}] ${message}`, data || ""),
+  error: (tag: string, message: string, data?: unknown) => console.error(`[${tag}] ${message}`, data || ""),
+};
 
 async function requireAdmin(req: Request, supabase: any): Promise<string> {
   const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
@@ -53,6 +67,124 @@ async function downloadDrivePdf(fileId: string, token: string): Promise<Uint8Arr
   if (buffer.byteLength > MAX_PDF_BYTES) throw new Error(`PDF_TOO_LARGE_${buffer.byteLength}`);
   if (buffer.byteLength === 0) throw new Error("PDF_EMPTY");
   return new Uint8Array(buffer);
+}
+
+async function downloadOfficialAnswerKey(sourceUrl: string): Promise<Uint8Array> {
+  let url = new URL(sourceUrl);
+  let response: Response | null = null;
+  for (let redirects = 0; redirects <= 3; redirects++) {
+    if (!isOfficialAnswerKeyUrl(url.toString())) {
+      throw new Error("ANSWER_KEY_HOST_NOT_OFFICIAL");
+    }
+    response = await fetchWithTimeout(url.toString(), { redirect: "manual" }, DRIVE_TIMEOUT_MS);
+    if (![301, 302, 303, 307, 308].includes(response.status)) break;
+    const location = response.headers.get("location");
+    if (!location || redirects === 3) throw new Error("ANSWER_KEY_REDIRECT_REJECTED");
+    url = new URL(location, url);
+  }
+  if (!response) throw new Error("ANSWER_KEY_DOWNLOAD_FAILED");
+  if (!response.ok) throw new Error(`ANSWER_KEY_DL_${response.status}`);
+  const buffer = await response.arrayBuffer();
+  if (buffer.byteLength === 0 || buffer.byteLength > MAX_ANSWER_KEY_BYTES) {
+    throw new Error(`ANSWER_KEY_INVALID_SIZE_${buffer.byteLength}`);
+  }
+  const bytes = new Uint8Array(buffer);
+  if (new TextDecoder().decode(bytes.subarray(0, 4)) !== "%PDF") {
+    throw new Error("ANSWER_KEY_NOT_PDF");
+  }
+  return bytes;
+}
+
+async function stageOfficialQuestions(
+  row: any,
+  pdfBytes: Uint8Array,
+  checksum: string,
+  supabase: any,
+): Promise<string[]> {
+  if (row.source_purpose !== "official_exam" || !row.answer_key_url) {
+    throw new Error("OFFICIAL_EXAM_ANSWER_KEY_REQUIRED");
+  }
+  const answerKeyBytes = await downloadOfficialAnswerKey(row.answer_key_url);
+  const answerKeyChecksum = await sha256Hex(answerKeyBytes);
+  const raw = await extractQuestionsDirect(
+    pdfBytes,
+    row.file_name,
+    extractionLogger,
+    answerKeyBytes,
+    async (index, total) => renewLease(supabase, row, `extracting_questions_${index + 1}_of_${total}`),
+  );
+  const parsed = JSON.parse(raw);
+  const normalized = (Array.isArray(parsed?.questions) ? parsed.questions : [])
+    .map(normalizeOfficialQuestion)
+    .filter(Boolean);
+  if (normalized.length === 0) throw new Error("OFFICIAL_EXAM_ZERO_VERIFIED_QUESTIONS");
+
+  const recordsByHash = new Map<string, any>();
+  for (const question of normalized) {
+    const questionHash = await sha256Hex(new TextEncoder().encode(
+      `${question.statement}\n${question.options.join("\n")}`.normalize("NFKC").toLowerCase(),
+    ));
+    const year = normalizeExamYear(question.year, row.file_name);
+    recordsByHash.set(questionHash, sanitizeForPostgres({
+      user_id: SYSTEM_USER_ID,
+      organization_id: SYSTEM_ORG_ID,
+      source: year ? `REVALIDA INEP ${year}` : row.file_name.replace(/\.pdf$/i, ""),
+      statement: question.statement,
+      options: question.options,
+      correct_index: question.correct_index,
+      explanation: question.explanation || "Explicação pendente de revisão editorial.",
+      topic: question.topic || "Geral",
+      subtopic: question.subtopic || null,
+      difficulty: Math.min(Math.max(Number(question.difficulty) || 3, 1), 5),
+      board: "INEP",
+      institution: "INEP",
+      year,
+      is_global: true,
+      official_exam_flag: true,
+      quality_tier: "needs_upgrade",
+      review_status: "needs_review",
+      lifecycle_state: "quarantined",
+      approved_for_generation: false,
+      source_type: "official_exam_drive",
+      permission_type: "official_public",
+      source_url: row.source_url,
+      source_pdf: row.source_url,
+      ingestion_version: row.ingestion_version,
+      batch_id: row.id,
+      source_queue_id: row.id,
+      source_document_checksum: checksum,
+      source_question_hash: questionHash,
+      source_question_number: question.question_number,
+      provenance: {
+        queue_id: row.id,
+        drive_file_id: row.drive_file_id,
+        source_root_id: row.source_root_id,
+        source_url: row.source_url,
+        source_document_checksum_sha256: checksum,
+        answer_key_url: row.answer_key_url,
+        answer_key_checksum_sha256: answerKeyChecksum,
+        rights_evidence_url: row.rights_evidence_url,
+        extraction_method: "page_chunk_ai_transcription_with_official_answer_key",
+        answer_mapping_status: "pending_human_review",
+        review_pipeline: "question-review-pipeline",
+        review_pipeline_role: "enrichment_only",
+        difficulty_status: "experimental",
+      },
+    }));
+  }
+
+  const records = [...recordsByHash.values()];
+
+  const { error: insertError } = await supabase.from("questions_bank").upsert(records, {
+    onConflict: "source_document_checksum,source_question_hash,ingestion_version",
+    ignoreDuplicates: true,
+  });
+  if (insertError) throw new Error(`QUESTION_STAGE: ${insertError.message}`);
+
+  const { data: staged, error: stagedError } = await supabase.from("questions_bank")
+    .select("id").eq("source_queue_id", row.id);
+  if (stagedError) throw new Error(`QUESTION_STAGE_READBACK: ${stagedError.message}`);
+  return (staged || []).map((question: any) => question.id);
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -168,7 +300,9 @@ async function processOne(row: any, token: string, supabase: any): Promise<"stag
       .eq("locked_by", row.locked_by).eq("attempt_id", row.attempt_id);
     if (hashError) throw new Error(`CHECKSUM_UPDATE: ${hashError.message}`);
 
-    await renewLease(supabase, row, "extracting");
+    await renewLease(supabase, row, "extracting_questions");
+    const stagedQuestionIds = await stageOfficialQuestions(row, pdfBytes, checksum, supabase);
+    await renewLease(supabase, row, "extracting_rag");
     const structured = await extractAndStructureWithClaude(pdfBytes, row.specialty || "Geral", row.file_name);
     await renewLease(supabase, row, "staging_document");
     const documentPayload = {
@@ -234,6 +368,7 @@ async function processOne(row: any, token: string, supabase: any): Promise<"stag
 
     const { error: completionError } = await supabase.from("drive_corpus_queue").update({
       status: "staged", rag_document_id: documentId, chunks_count: chunks.length,
+      questions_count: stagedQuestionIds.length,
       processed_at: new Date().toISOString(), next_retry_at: null,
       locked_at: null, locked_by: null, lease_until: null,
       processing_phase: "staged", error_message: null,

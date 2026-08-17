@@ -4,11 +4,21 @@ import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 
 // Direct AI extraction with page-based chunking for large PDFs.
 // OpenAI primary (180s timeout), Gemini fallback. Bypasses ai-router/Lovable Gateway.
-async function callOpenAIOnce(base64Pdf: string, fileName: string, logger: any, timeoutMs = 180000): Promise<string | null> {
+async function callOpenAIOnce(
+  base64Pdf: string,
+  fileName: string,
+  logger: any,
+  timeoutMs = 180000,
+  answerKeyBase64?: string,
+): Promise<string | null> {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   if (!OPENAI_API_KEY) return null;
-  const systemPrompt = `Você é um especialista em medicina e extração de dados. Extraia questões médicas de provas em PDF. SEMPRE enriqueça cada questão com: board, year, institution, topic, subtopic, difficulty (1-5), explanation, clinical_case, tags.`;
-  const userPrompt = `Extraia questões deste PDF de prova médica. Formato JSON: {"questions": [{"statement": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation": "...", "topic": "...", "subtopic": "...", "board": "...", "year": 2024, "institution": "...", "difficulty": 3, "clinical_case": true, "tags": ["tag1"]}]}`;
+  const systemPrompt = answerKeyBase64
+    ? `Transcreva fielmente questões de prova médica oficial e relacione cada número ao gabarito oficial anexado. Não complete, reescreva ou adivinhe. Omita questões sem enunciado, 4-5 alternativas e resposta inequivocamente localizada no gabarito.`
+    : `Você é um especialista em medicina e extração de dados. Extraia questões médicas de provas em PDF. SEMPRE enriqueça cada questão com: board, year, institution, topic, subtopic, difficulty (1-5), explanation, clinical_case, tags.`;
+  const userPrompt = answerKeyBase64
+    ? `Retorne JSON {"questions":[{"question_number":1,"statement":"texto exato","options":["..."],"correct_index":0,"explanation":"","topic":"...","subtopic":"...","board":"INEP","year":2024,"institution":"INEP","difficulty":3,"clinical_case":true,"tags":[]}]} usando índice 0=A. O segundo PDF é o gabarito oficial. Se a correspondência não for inequívoca, omita a questão.`
+    : `Extraia questões deste PDF de prova médica. Formato JSON: {"questions": [{"statement": "...", "options": ["A","B","C","D"], "correct_index": 0, "explanation": "...", "topic": "...", "subtopic": "...", "board": "...", "year": 2024, "institution": "...", "difficulty": 3, "clinical_case": true, "tags": ["tag1"]}]}`;
   try {
     logger.info("AI_OPENAI", `Calling OpenAI gpt-4o-mini for ${fileName} (timeout ${timeoutMs}ms)`);
     const ctrl = new AbortController();
@@ -24,7 +34,12 @@ async function callOpenAIOnce(base64Pdf: string, fileName: string, logger: any, 
           role: "user",
           content: [
             { type: "input_text", text: userPrompt },
-            { type: "input_file", filename: fileName, file_data: `data:application/pdf;base64,${base64Pdf}` }
+            { type: "input_file", filename: fileName, file_data: `data:application/pdf;base64,${base64Pdf}` },
+            ...(answerKeyBase64 ? [{
+              type: "input_file",
+              filename: "gabarito-oficial.pdf",
+              file_data: `data:application/pdf;base64,${answerKeyBase64}`,
+            }] : []),
           ]
         }],
         text: { format: { type: "json_object" } },
@@ -50,11 +65,20 @@ async function callOpenAIOnce(base64Pdf: string, fileName: string, logger: any, 
   }
 }
 
-async function callGeminiOnce(base64Pdf: string, fileName: string, logger: any): Promise<string | null> {
+async function callGeminiOnce(
+  base64Pdf: string,
+  fileName: string,
+  logger: any,
+  answerKeyBase64?: string,
+): Promise<string | null> {
   const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
   if (!GEMINI_API_KEY) return null;
-  const systemPrompt = `Você é um especialista em medicina. Extraia questões médicas com board, year, institution, topic, subtopic, difficulty, explanation, clinical_case, tags.`;
-  const userPrompt = `Extraia questões. JSON: {"questions":[{"statement":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"...","topic":"...","subtopic":"...","board":"...","year":2024,"institution":"...","difficulty":3,"clinical_case":true,"tags":[]}]}`;
+  const systemPrompt = answerKeyBase64
+    ? `Transcreva fielmente questões médicas e relacione-as ao gabarito oficial. Não adivinhe; omita correspondências incertas.`
+    : `Você é um especialista em medicina. Extraia questões médicas com board, year, institution, topic, subtopic, difficulty, explanation, clinical_case, tags.`;
+  const userPrompt = answerKeyBase64
+    ? `JSON: {"questions":[{"question_number":1,"statement":"...","options":["..."],"correct_index":0,"explanation":"","topic":"...","subtopic":"...","board":"INEP","year":2024,"institution":"INEP","difficulty":3,"clinical_case":true,"tags":[]}]}. O último PDF é o gabarito oficial; índice 0=A.`
+    : `Extraia questões. JSON: {"questions":[{"statement":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"...","topic":"...","subtopic":"...","board":"...","year":2024,"institution":"...","difficulty":3,"clinical_case":true,"tags":[]}]}`;
   try {
     logger.info("AI_GEMINI", `Calling Gemini direct for ${fileName}`);
     const ctrl = new AbortController();
@@ -68,7 +92,8 @@ async function callGeminiOnce(base64Pdf: string, fileName: string, logger: any):
         body: JSON.stringify({
           contents: [{ role: "user", parts: [
             { text: `${systemPrompt}\n\n${userPrompt}` },
-            { inline_data: { mime_type: "application/pdf", data: base64Pdf } }
+            { inline_data: { mime_type: "application/pdf", data: base64Pdf } },
+            ...(answerKeyBase64 ? [{ inline_data: { mime_type: "application/pdf", data: answerKeyBase64 } }] : []),
           ]}],
           generationConfig: { response_mime_type: "application/json", maxOutputTokens: 8000 }
         })
@@ -117,9 +142,14 @@ async function splitPdfByPages(pdfBytes: Uint8Array, pagesPerChunk: number, logg
   return chunks;
 }
 
-async function extractFromChunk(base64Pdf: string, label: string, logger: any): Promise<any[]> {
-  let raw = await callOpenAIOnce(base64Pdf, label, logger, 180000);
-  if (!raw) raw = await callGeminiOnce(base64Pdf, label, logger);
+async function extractFromChunk(
+  base64Pdf: string,
+  label: string,
+  logger: any,
+  answerKeyBase64?: string,
+): Promise<any[]> {
+  let raw = await callOpenAIOnce(base64Pdf, label, logger, 180000, answerKeyBase64);
+  if (!raw) raw = await callGeminiOnce(base64Pdf, label, logger, answerKeyBase64);
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
@@ -130,7 +160,13 @@ async function extractFromChunk(base64Pdf: string, label: string, logger: any): 
   }
 }
 
-async function extractQuestionsDirect(pdfBytes: Uint8Array, fileName: string, logger: any): Promise<string> {
+export async function extractQuestionsDirect(
+  pdfBytes: Uint8Array,
+  fileName: string,
+  logger: any,
+  answerKeyBytes?: Uint8Array,
+  onChunk?: (index: number, total: number) => Promise<void>,
+): Promise<string> {
   const PAGES_PER_CHUNK = 30;
   let chunks: string[];
   try {
@@ -140,9 +176,11 @@ async function extractQuestionsDirect(pdfBytes: Uint8Array, fileName: string, lo
     chunks = [bytesToBase64(pdfBytes)];
   }
   const allQuestions: any[] = [];
+  const answerKeyBase64 = answerKeyBytes ? bytesToBase64(answerKeyBytes) : undefined;
   for (let i = 0; i < chunks.length; i++) {
+    if (onChunk) await onChunk(i, chunks.length);
     const label = chunks.length > 1 ? `${fileName}#chunk${i + 1}/${chunks.length}` : fileName;
-    const qs = await extractFromChunk(chunks[i], label, logger);
+    const qs = await extractFromChunk(chunks[i], label, logger, answerKeyBase64);
     logger.info("AI_CHUNK_OK", `${label}: ${qs.length} questions`);
     allQuestions.push(...qs);
   }
@@ -230,7 +268,7 @@ export async function getGoogleAccessToken(serviceAccount: any, logger?: any) {
     return data.access_token;
   } catch (err) {
     clearTimeout(timeoutId);
-    if (logger) logger.error("GOOGLE_AUTH_ERROR", "Google auth error", { error: err.message });
+    if (logger) logger.error("GOOGLE_AUTH_ERROR", "Google auth error", { error: (err as Error).message });
     throw err;
   }
 }
@@ -399,10 +437,10 @@ export async function processSingleDriveFile(
     return { status: "completed", savedCount, questions_found: questions.length };
 
   } catch (err) {
-    logger.error("PROCESS_FILE_ERROR", `Failed to process ${fileId}`, { error: err.message });
+    logger.error("PROCESS_FILE_ERROR", `Failed to process ${fileId}`, { error: (err as Error).message });
     await supabaseAdmin.from("drive_ingestion_log").update({
       status: 'failed',
-      error_message: err.message
+      error_message: (err as Error).message
     }).eq('file_id', fileId);
     throw err;
   }

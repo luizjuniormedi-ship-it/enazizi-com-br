@@ -3,6 +3,7 @@ import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
 import { reviewAndEnrich } from "../_shared/question-review-engine.ts";
 import { auditQuestionGovernance } from "../_shared/question-filters.ts";
 import { insertFlashcardsWithFsrs, applyQualityGate } from "../_shared/flashcard-governance.ts";
+import { preserveOfficialQuestionContent } from "../_shared/drive-corpus-governance.ts";
 
 
 Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logger, waitUntil, correlation, supabaseAdmin }) => {
@@ -49,10 +50,14 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
         const latency = Date.now() - startTime;
 
         // Update question
-        const { error: updateError } = await supabaseAdmin.from("questions_bank").update({
+        const reviewedContent = preserveOfficialQuestionContent(q, {
           statement: result.statement,
           options: result.options,
           correct_index: result.correct_index,
+          board: result.banca_style_detected || q.board,
+        });
+        const { error: updateError } = await supabaseAdmin.from("questions_bank").update({
+          ...reviewedContent,
           explanation: result.explanation,
           quality_tier: governanceAudit.allowed ? result.quality_tier : "REJECTED",
           clinical_density_score: result.scores.clinical_density_score,
@@ -62,9 +67,11 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
           board_similarity_score: result.scores.board_similarity_score,
           cognitive_complexity_score: result.scores.cognitive_complexity_score,
           realism_score: result.scores.realism_score,
-          board: result.banca_style_detected || q.board,
           guideline_reference: result.guideline_reference,
-          review_status: governanceAudit.allowed ? "reviewed" : "needs_review",
+          // Quarantined imports may be enriched by AI, but remain pending human review.
+          review_status: q.lifecycle_state === "quarantined"
+            ? "needs_review"
+            : governanceAudit.allowed ? "reviewed" : "needs_review",
           // AI review is evidence for triage, never editorial approval.
           approved_for_generation: false,
           updated_at: new Date().toISOString()
