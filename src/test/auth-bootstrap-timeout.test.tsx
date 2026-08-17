@@ -35,7 +35,7 @@ describe("AuthProvider bootstrap", () => {
     authMocks.authCallback = null;
   });
 
-  it("libera loading mesmo quando sessão e limpeza local ficam pendentes", async () => {
+  it("libera loading sem apagar credenciais quando a sessão fica pendente", async () => {
     vi.useFakeTimers();
     render(
       <AuthProvider>
@@ -47,11 +47,10 @@ describe("AuthProvider bootstrap", () => {
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(8000);
-      await vi.advanceTimersByTimeAsync(1500);
     });
 
     expect(screen.getByText("released")).toBeInTheDocument();
-    expect(authMocks.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(authMocks.signOut).not.toHaveBeenCalled();
   });
 
   it("não apaga uma sessão criada enquanto o bootstrap antigo expira", async () => {
