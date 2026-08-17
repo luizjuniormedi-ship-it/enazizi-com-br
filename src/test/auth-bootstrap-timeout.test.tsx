@@ -35,7 +35,7 @@ describe("AuthProvider bootstrap", () => {
     authMocks.authCallback = null;
   });
 
-  it("libera loading mesmo quando sessão e limpeza local ficam pendentes", async () => {
+  it("libera loading sem apagar credenciais quando a sessão fica pendente", async () => {
     vi.useFakeTimers();
     render(
       <AuthProvider>
@@ -47,11 +47,34 @@ describe("AuthProvider bootstrap", () => {
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(8000);
-      await vi.advanceTimersByTimeAsync(1500);
     });
 
     expect(screen.getByText("released")).toBeInTheDocument();
-    expect(authMocks.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(authMocks.signOut).not.toHaveBeenCalled();
+  });
+
+  it("não apaga uma sessão criada enquanto o bootstrap antigo expira", async () => {
+    vi.useFakeTimers();
+    render(
+      <AuthProvider>
+        <AuthStateProbe />
+      </AuthProvider>
+    );
+
+    const authenticatedSession = {
+      access_token: "test-access-token",
+      refresh_token: "test-refresh-token",
+      user: { id: "professor-1", created_at: new Date().toISOString() },
+    };
+
+    await act(async () => {
+      authMocks.authCallback?.("SIGNED_IN", authenticatedSession);
+      await vi.advanceTimersByTimeAsync(8000);
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+
+    expect(screen.getByText("authenticated")).toBeInTheDocument();
+    expect(authMocks.signOut).not.toHaveBeenCalled();
   });
 
   it("não apaga uma sessão criada enquanto o bootstrap antigo expira", async () => {

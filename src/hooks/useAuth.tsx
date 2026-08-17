@@ -25,7 +25,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 const AUTH_ACTION_TIMEOUT_MS = 12000;
-const AUTH_LOCAL_CLEANUP_TIMEOUT_MS = 1500;
 
 const withAuthTimeout = async <T,>(promise: Promise<T>, message: string, timeoutMs = AUTH_ACTION_TIMEOUT_MS) =>
   Promise.race([
@@ -48,26 +47,6 @@ const getUserWithTimeout = () =>
     "Tempo limite ao validar usuário",
     AUTH_BOOTSTRAP_TIMEOUT_MS
   );
-
-const clearLocalAuthCache = async () => {
-  try {
-    await withAuthTimeout(
-      supabase.auth.signOut({ scope: "local" }),
-      "Tempo limite ao limpar sessão local",
-      AUTH_LOCAL_CLEANUP_TIMEOUT_MS
-    );
-  } catch {
-    // Cleanup must fail open so the auth bootstrap can release its loading state.
-  }
-
-  try {
-    Object.keys(localStorage)
-      .filter((key) => key.startsWith("sb-") && key.includes("auth-token"))
-      .forEach((key) => localStorage.removeItem(key));
-  } catch {
-    // ignore storage errors
-  }
-};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -172,7 +151,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
         console.warn("[Auth] bootstrap failed; releasing loading state", err);
-        await clearLocalAuthCache();
+        // Never mutate persisted auth here. A timed-out bootstrap may still
+        // be holding Supabase's storage lock; scheduling signOut/cleanup can
+        // run after a successful form login and erase that new session.
+        // We release the UI as anonymous and let an explicit sign-in/sign-out
+        // own all credential mutations.
         setSession(null);
         setUser(null);
       })
