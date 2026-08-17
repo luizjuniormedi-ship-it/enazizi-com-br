@@ -579,6 +579,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
 
     let insufficientQuestions = finalQuestions.length < requestedCount;
+    const persistedSources = new Set(finalQuestions.map((question) =>
+      question._source === "generated" ? "ai" : "bank"
+    ));
+    const sessionSource = persistedSources.size > 1
+      ? "mixed"
+      : (persistedSources.values().next().value || (body.mode === "ai_generation" ? "ai" : "bank"));
     
     if (insufficientQuestions) {
       console.log(`[SIM_INSUFFICIENT_TOPIC_BANK] requested=${requestedCount} final=${finalQuestions.length}`);
@@ -619,6 +625,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       discipline: body.specialty || topics[0],
       topic: topics[0],
       difficulty: difficulty,
+      source: sessionSource,
       started_at: new Date().toISOString(),
       metadata: { 
         board: profile.label, 
@@ -681,7 +688,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       requestedCount,
       generatedCount: finalQuestions.length,
       status: finalQuestions.length >= requestedCount ? "complete" : "partial",
-      source: body.mode === "ai_generation" ? "ai" : "bank",
+      source: sessionSource,
       provider: finalQuestions[0]?._provider || null,
       model: finalQuestions[0]?._model || null,
       correlationId,
