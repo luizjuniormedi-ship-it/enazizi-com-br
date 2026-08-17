@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { clearLoginRefreshSignature } from "@/lib/force-login-refresh";
@@ -73,6 +73,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const authEventEpochRef = useRef(0);
+  const liveSessionRef = useRef<Session | null>(null);
 
   useEffect(() => {
     // Sprint 1 hardening: forceLoginRefresh now fires ONLY on a real
@@ -89,6 +91,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // a stale token when the auth /user endpoint is failing.
         return;
       }
+
+      authEventEpochRef.current += 1;
+      liveSessionRef.current = nextSession;
       
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
@@ -135,26 +140,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     let mounted = true;
+    const bootstrapEpoch = authEventEpochRef.current;
 
     // Bootstrap: only hydrate state. Do NOT trigger forceLoginRefresh here.
     // If the auth endpoint stalls/fails, never keep the app on an infinite spinner.
     getSessionWithTimeout()
       .then(async ({ data: { session: bootstrapSession } }) => {
-        if (!mounted) return;
+        if (!mounted || authEventEpochRef.current !== bootstrapEpoch) return;
         if (bootstrapSession) {
           const { data: { user: verifiedUser }, error } = await getUserWithTimeout();
+          if (!mounted || authEventEpochRef.current !== bootstrapEpoch) return;
           if (error || !verifiedUser) {
             throw error ?? new Error("Sessão local inválida");
           }
+          liveSessionRef.current = bootstrapSession;
           setSession(bootstrapSession);
           setUser(verifiedUser);
           return;
         }
+        liveSessionRef.current = bootstrapSession;
         setSession(bootstrapSession);
         setUser(bootstrapSession?.user ?? null);
       })
       .catch(async (err) => {
         if (!mounted) return;
+        // A successful sign-in may finish while the initial getSession request
+        // is still pending. Never let that stale bootstrap failure sign out the
+        // newly authenticated user.
+        if (authEventEpochRef.current !== bootstrapEpoch || liveSessionRef.current) {
+          console.info("[Auth] ignoring stale bootstrap failure after auth state change");
+          return;
+        }
         console.warn("[Auth] bootstrap failed; releasing loading state", err);
         await clearLocalAuthCache();
         setSession(null);
@@ -210,6 +226,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         "Tempo limite ao entrar. O backend demorou para responder; tente novamente em instantes."
       );
       if (!error && data.session) {
+        authEventEpochRef.current += 1;
+        liveSessionRef.current = data.session;
         setSession(data.session);
         setUser(data.session.user ?? null);
         setLoading(false);
