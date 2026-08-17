@@ -11800,6 +11800,7 @@ export type Database = {
           processed_at: string | null
           processing_phase: string | null
           provenance: Json
+          questions_count: number | null
           rag_document_id: string | null
           retry_count: number
           reviewed_at: string | null
@@ -11839,6 +11840,7 @@ export type Database = {
           processed_at?: string | null
           processing_phase?: string | null
           provenance?: Json
+          questions_count?: number | null
           rag_document_id?: string | null
           retry_count?: number
           reviewed_at?: string | null
@@ -11878,6 +11880,7 @@ export type Database = {
           processed_at?: string | null
           processing_phase?: string | null
           provenance?: Json
+          questions_count?: number | null
           rag_document_id?: string | null
           retry_count?: number
           reviewed_at?: string | null
@@ -25479,6 +25482,7 @@ export type Database = {
           original_question_id: string | null
           permission_type: string | null
           previous_version: Json | null
+          provenance: Json
           psychometric_status: string
           quality_tier: string
           question_order: number | null
@@ -25489,8 +25493,12 @@ export type Database = {
           retention_value_score: number | null
           review_status: string | null
           source: string | null
+          source_document_checksum: string | null
           source_map_id: string | null
           source_pdf: string | null
+          source_question_hash: string | null
+          source_question_number: number | null
+          source_queue_id: string | null
           source_type: string | null
           source_url: string | null
           specialty_id: string | null
@@ -25567,6 +25575,7 @@ export type Database = {
           original_question_id?: string | null
           permission_type?: string | null
           previous_version?: Json | null
+          provenance?: Json
           psychometric_status?: string
           quality_tier?: string
           question_order?: number | null
@@ -25577,8 +25586,12 @@ export type Database = {
           retention_value_score?: number | null
           review_status?: string | null
           source?: string | null
+          source_document_checksum?: string | null
           source_map_id?: string | null
           source_pdf?: string | null
+          source_question_hash?: string | null
+          source_question_number?: number | null
+          source_queue_id?: string | null
           source_type?: string | null
           source_url?: string | null
           specialty_id?: string | null
@@ -25655,6 +25668,7 @@ export type Database = {
           original_question_id?: string | null
           permission_type?: string | null
           previous_version?: Json | null
+          provenance?: Json
           psychometric_status?: string
           quality_tier?: string
           question_order?: number | null
@@ -25665,8 +25679,12 @@ export type Database = {
           retention_value_score?: number | null
           review_status?: string | null
           source?: string | null
+          source_document_checksum?: string | null
           source_map_id?: string | null
           source_pdf?: string | null
+          source_question_hash?: string | null
+          source_question_number?: number | null
+          source_queue_id?: string | null
           source_type?: string | null
           source_url?: string | null
           specialty_id?: string | null
@@ -25776,6 +25794,13 @@ export type Database = {
             columns: ["source_map_id"]
             isOneToOne: false
             referencedRelation: "mental_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_source_queue_id_fkey"
+            columns: ["source_queue_id"]
+            isOneToOne: false
+            referencedRelation: "drive_corpus_queue"
             referencedColumns: ["id"]
           },
           {
@@ -35135,6 +35160,7 @@ export type Database = {
           processed_at: string | null
           processing_phase: string | null
           provenance: Json
+          questions_count: number | null
           rag_document_id: string | null
           retry_count: number
           reviewed_at: string | null
