@@ -21,6 +21,12 @@ describe("official board governance", () => {
     expect(questionGeneratorSource).toContain("ENAMED_PREPARATORY_FRESHNESS_POLICY");
     expect(questionGeneratorSource).not.toContain(".filter(Boolean))).slice(0, 500)");
   });
+  it("persists and returns the same reconciled simulation source", () => {
+    expect(questionGeneratorSource).toContain("const sessionSource = persistedSources.size > 1");
+    expect(questionGeneratorSource).toContain("source: sessionSource,");
+    expect(questionGeneratorSource.match(/source: sessionSource,/g)).toHaveLength(2);
+    expect(questionGeneratorSource).not.toContain('source: body.mode === "ai_generation" ? "ai" : "bank"');
+  });
   it("rejects a partial ENAMED preparatory blueprint", async () => {
     const { isCanonicalGeneralBlueprint } = await import("../../supabase/functions/question-generator/difficulty-quota");
     expect(isCanonicalGeneralBlueprint(EXAM_PROFILES.GERAL.topicWeights)).toBe(true);
