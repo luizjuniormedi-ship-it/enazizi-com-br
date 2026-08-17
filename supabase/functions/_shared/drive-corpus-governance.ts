@@ -43,6 +43,36 @@ export function retryDelayMs(attempt: number): number {
   return Math.min(6 * 60 * 60 * 1000, 15 * 60 * 1000 * 2 ** Math.max(attempt - 1, 0));
 }
 
+export function isOfficialAnswerKeyUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && (url.hostname === "gov.br" || url.hostname.endsWith(".gov.br"));
+  } catch {
+    return false;
+  }
+}
+
+export function normalizeExamYear(value: unknown, fileName: string): number | null {
+  const parsed = Number(value);
+  if (Number.isInteger(parsed) && parsed >= 2011 && parsed <= 2100) return parsed;
+  const match = fileName.match(/20(?:1[1-9]|2\d)/);
+  return match ? Number(match[0]) : null;
+}
+
+export function normalizeOfficialQuestion(raw: any) {
+  const statement = typeof raw?.statement === "string" ? raw.statement.trim() : "";
+  const options = Array.isArray(raw?.options)
+    ? raw.options.map((option: unknown) => String(option).trim()).filter(Boolean).slice(0, 5)
+    : [];
+  const correctIndex = Number(raw?.correct_index);
+  const questionNumber = Number(raw?.question_number);
+  if (statement.length < 30 || ![4, 5].includes(options.length)) return null;
+  if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex >= options.length) return null;
+  if (!Number.isInteger(questionNumber) || questionNumber < 1 || questionNumber > 500) return null;
+  return { ...raw, statement, options, correct_index: correctIndex, question_number: questionNumber };
+}
+
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const copy = new Uint8Array(bytes.byteLength);
   copy.set(bytes);

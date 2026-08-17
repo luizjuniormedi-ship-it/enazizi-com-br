@@ -64,7 +64,10 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
           realism_score: result.scores.realism_score,
           board: result.banca_style_detected || q.board,
           guideline_reference: result.guideline_reference,
-          review_status: governanceAudit.allowed ? "reviewed" : "needs_review",
+          // Quarantined imports may be enriched by AI, but remain pending human review.
+          review_status: q.lifecycle_state === "quarantined"
+            ? "needs_review"
+            : governanceAudit.allowed ? "reviewed" : "needs_review",
           // AI review is evidence for triage, never editorial approval.
           approved_for_generation: false,
           updated_at: new Date().toISOString()
