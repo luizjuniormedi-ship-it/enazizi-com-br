@@ -10,7 +10,6 @@
  * derived "kind" the UI can switch on.
  */
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { isProfileComplete } from "@/lib/profileValidation";
 
@@ -74,7 +73,39 @@ function shouldFallbackProfileQuery(error: any) {
 }
 
 export function useProfileStatus(): ProfileStatus {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
+
+  const fetchProfile = async (fields: string): Promise<ProfileQueryRow | null> => {
+    if (!user || !session?.access_token) return null;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    const query = new URLSearchParams({ select: fields, user_id: `eq.${user.id}`, limit: "1" });
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?${query}`, {
+        headers: {
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        const error = new Error(payload?.message || `Falha ao carregar perfil (${response.status})`) as Error & { status?: number; code?: string; details?: string };
+        error.status = response.status;
+        error.code = payload?.code;
+        error.details = payload?.details;
+        throw error;
+      }
+      return Array.isArray(payload) ? (payload[0] ?? null) : null;
+    } catch (error) {
+      if ((error as Error)?.name === "AbortError") throw new Error("Tempo limite ao carregar perfil");
+      throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  };
 
   const query = useQuery<ProfileRow | null>({
     queryKey: ["profile-status", user?.id ?? "anon"],
@@ -85,28 +116,17 @@ export function useProfileStatus(): ProfileStatus {
     refetchOnWindowFocus: false,
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(PROFILE_FIELDS)
-        .eq("user_id", user.id)
-        .maybeSingle();
+      try {
+        return normalizeProfileRow(await fetchProfile(PROFILE_FIELDS));
+      } catch (error) {
+        if (!shouldFallbackProfileQuery(error)) throw error;
+        console.warn("[useProfileStatus] full profile query failed; retrying fallback fields", {
+          code: (error as any)?.code,
+          message: (error as Error)?.message,
+        });
+      }
 
-      if (!error) return normalizeProfileRow((data ?? null) as ProfileQueryRow | null);
-      if (!shouldFallbackProfileQuery(error)) throw error;
-
-      console.warn("[useProfileStatus] full profile query failed; retrying fallback fields", {
-        code: error.code,
-        message: error.message,
-      });
-
-      const fallback = await supabase
-        .from("profiles")
-        .select(PROFILE_FALLBACK_FIELDS)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (fallback.error) throw fallback.error;
-      return normalizeProfileRow((fallback.data ?? null) as ProfileQueryRow | null);
+      return normalizeProfileRow(await fetchProfile(PROFILE_FALLBACK_FIELDS));
     },
   });
 
