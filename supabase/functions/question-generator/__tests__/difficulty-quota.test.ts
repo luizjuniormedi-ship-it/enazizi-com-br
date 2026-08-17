@@ -1,5 +1,7 @@
 import {
   calculateDifficultyTargets,
+  collectPaginatedRows,
+  ENAMED_PREPARATORY_FRESHNESS_POLICY,
   ENARE_DIFFICULTY_MIX,
   GENERAL_DIFFICULTY_MIX,
   getCorpusDifficultyPlan,
@@ -143,6 +145,65 @@ Deno.test("seleção temática prefere corpus fresco mesmo se histórico ordenar
   const result = selectByTopicAndDifficultyQuota([...historical, ...fresh], 10, GENERAL_DIFFICULTY_MIX, weights);
   assertEquals(result.exact, true);
   assertEquals(result.historicalReuseCount, 0);
+});
+
+Deno.test("Preparatório ENAMED aceita no máximo 10 reutilizações recentes para completar 100", () => {
+  const weights = [{ topic: "Clínica Médica", weight: 100 }];
+  const fresh = [
+    ...Array.from({ length: 27 }, (_, i) => ({ id: `fe-${i}`, difficulty: 3, _topic_bucket: "Clínica Médica" })),
+    ...Array.from({ length: 45 }, (_, i) => ({ id: `fm-${i}`, difficulty: 4, _topic_bucket: "Clínica Médica" })),
+    ...Array.from({ length: 18 }, (_, i) => ({ id: `fh-${i}`, difficulty: 5, _topic_bucket: "Clínica Médica" })),
+  ];
+  const recent = [
+    ...Array.from({ length: 3 }, (_, i) => ({ id: `re-${i}`, difficulty: 3, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
+    ...Array.from({ length: 5 }, (_, i) => ({ id: `rm-${i}`, difficulty: 4, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
+    ...Array.from({ length: 2 }, (_, i) => ({ id: `rh-${i}`, difficulty: 5, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
+  ];
+  const result = selectByTopicAndDifficultyQuota([...fresh, ...recent], 100, GENERAL_DIFFICULTY_MIX, weights, {
+    freshnessPolicy: ENAMED_PREPARATORY_FRESHNESS_POLICY,
+  });
+  assertEquals(result.questions.length, 100);
+  assertEquals(result.historicalReuseCount, 10);
+  assertEquals(result.freshnessActual, {
+    freshCount: 90, recentReuseCount: 10, withinLimit: true, complete: true, exact: true,
+    blockedByReuseLimit: 0, minimumRecentReuse: 10, structuralShortage: 0, blockedByCap: false,
+  });
+  assertEquals(result.exact, true);
+});
+
+Deno.test("Preparatório ENAMED falha fechado quando a centésima questão exigiria a 11ª reutilização", () => {
+  const weights = [{ topic: "Clínica Médica", weight: 100 }];
+  const fresh = [
+    ...Array.from({ length: 26 }, (_, i) => ({ id: `fe-${i}`, difficulty: 3, _topic_bucket: "Clínica Médica" })),
+    ...Array.from({ length: 45 }, (_, i) => ({ id: `fm-${i}`, difficulty: 4, _topic_bucket: "Clínica Médica" })),
+    ...Array.from({ length: 18 }, (_, i) => ({ id: `fh-${i}`, difficulty: 5, _topic_bucket: "Clínica Médica" })),
+  ];
+  const recent = [
+    ...Array.from({ length: 4 }, (_, i) => ({ id: `re-${i}`, difficulty: 3, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
+    ...Array.from({ length: 5 }, (_, i) => ({ id: `rm-${i}`, difficulty: 4, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
+    ...Array.from({ length: 2 }, (_, i) => ({ id: `rh-${i}`, difficulty: 5, _topic_bucket: "Clínica Médica", _historical_reuse: true })),
+  ];
+  const result = selectByTopicAndDifficultyQuota([...fresh, ...recent], 100, GENERAL_DIFFICULTY_MIX, weights, {
+    freshnessPolicy: ENAMED_PREPARATORY_FRESHNESS_POLICY,
+  });
+  assertEquals(result.questions.length, 99);
+  assertEquals(result.historicalReuseCount, 10);
+  assertEquals(result.freshnessActual?.blockedByReuseLimit, 1);
+  assertEquals(result.freshnessActual?.minimumRecentReuse, 11);
+  assertEquals(result.freshnessActual?.blockedByCap, true);
+  assertEquals(result.exact, false);
+});
+
+Deno.test("histórico recente é paginado além de 500 IDs sem truncamento", async () => {
+  const source = Array.from({ length: 711 }, (_, index) => ({ question_id: `q-${index}` }));
+  const calls: Array<[number, number]> = [];
+  const rows = await collectPaginatedRows(async (from, to) => {
+    calls.push([from, to]);
+    return source.slice(from, to + 1);
+  }, 500);
+  assertEquals(rows.length, 711);
+  assertEquals(new Set(rows.map((row) => row.question_id)).size, 711);
+  assertEquals(calls, [[0, 499], [500, 999]]);
 });
 
 Deno.test("classificação temática usa o tema visível e a hierarquia explícita do blueprint", () => {

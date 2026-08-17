@@ -13,6 +13,10 @@ import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
 import { NVIDIA_MODEL_REGISTRY } from "../_shared/nvidia-provider.ts";
 import {
+  collectPaginatedRows,
+  ENAMED_PREPARATORY_FRESHNESS_POLICY,
+  getAcceptedVisibleTopicLabels,
+  isCanonicalGeneralBlueprint,
   classifyVisibleTopicBucket,
   getCorpusDifficultyPlan,
   selectByDifficultyQuota,
@@ -111,11 +115,11 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
     const isGeneralHundred = ["geral", "all"].includes(String(examBoard ?? "").trim().toLowerCase()) &&
       requestedCount === 100 && body.mode !== "ai_generation";
-    if (isGeneralHundred && requestedTopicWeights.length === 0) {
+    if (isGeneralHundred && !isCanonicalGeneralBlueprint(requestedTopicWeights)) {
       return new Response(JSON.stringify({
         success: false,
         errorCode: "TOPIC_BLUEPRINT_REQUIRED",
-        error: "O Simulado Geral de 100 questões exige o blueprint temático auditável.",
+        error: "O Preparatório ENAMED de 100 questões exige o blueprint canônico completo.",
         correlationId,
       }), {
         status: 422,
@@ -171,24 +175,33 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     // 1. Historical Dedup (Last 7 days)
     step = "historical_dedup";
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const historySnapshotAt = new Date(requestStartedAt).toISOString();
     
-    const { data: recentSessions } = await supabaseAdmin
-      .from("simulado_sessions")
-      .select("id")
-      .eq("user_id", userId)
-      .gt("started_at", sevenDaysAgo);
-      
-    const sessionIds = (recentSessions || []).map(s => s.id);
+    const recentSessions = await collectPaginatedRows<any>(async (from, to) => {
+      const { data, error } = await supabaseAdmin.from("simulado_sessions").select("id")
+        .eq("user_id", userId).gt("started_at", sevenDaysAgo).lte("started_at", historySnapshotAt).order("id").range(from, to);
+      if (error) throw error;
+      return data || [];
+    });
+    const sessionIds = recentSessions.map(s => s.id);
 
-    const { data: practiceHistory } = await supabaseAdmin
-      .from("practice_attempts")
-      .select("question_id")
-      .eq("user_id", userId)
-      .gt("created_at", sevenDaysAgo);
+    const practiceHistory = await collectPaginatedRows<any>(async (from, to) => {
+      const { data, error } = await supabaseAdmin.from("practice_attempts").select("question_id")
+        .eq("user_id", userId).gt("created_at", sevenDaysAgo).lte("created_at", historySnapshotAt).order("id").range(from, to);
+      if (error) throw error;
+      return data || [];
+    });
 
-    const { data: simuladoHistory } = sessionIds.length > 0 
-      ? await supabaseAdmin.from("simulado_questions").select("question_id").in("session_id", sessionIds)
-      : { data: [] };
+    const simuladoHistory: any[] = [];
+    for (let offset = 0; offset < sessionIds.length; offset += 100) {
+      const sessionChunk = sessionIds.slice(offset, offset + 100);
+      simuladoHistory.push(...await collectPaginatedRows<any>(async (from, to) => {
+        const { data, error } = await supabaseAdmin.from("simulado_questions").select("question_id")
+          .in("session_id", sessionChunk).order("id").range(from, to);
+        if (error) throw error;
+        return data || [];
+      }));
+    }
 
     const requestAvoidIds = Array.isArray(body.avoidIds)
       ? body.avoidIds.filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
@@ -196,7 +209,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const historicalExcludedIds = Array.from(new Set([
       ...(practiceHistory || []).map(p => p.question_id),
       ...(simuladoHistory || []).map(s => s.question_id),
-    ].filter(Boolean))).slice(0, 500);
+    ].filter(Boolean)));
     const historicalExcludedIdSet = new Set(historicalExcludedIds);
     const requestAvoidIdSet = new Set(requestAvoidIds);
 
@@ -260,7 +273,50 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         return rows;
       };
 
-      if (difficultyPlan) {
+      if (difficultyPlan && isGeneralHundred) {
+        // Fetch each canonical topic x difficulty cell independently so a
+        // dominant specialty or difficulty cannot consume another cell's
+        // bounded PostgREST window. Queries are short and concurrency-limited.
+        const bankFetchStartedAt = Date.now();
+        let bankFetchQueries = 0;
+        const fetchTopicDifficultyWindow = async (weight: TopicWeight, difficultyScore: number) => {
+          const labels = getAcceptedVisibleTopicLabels(weight);
+          const visibleTopicOr = labels.flatMap((label) => [
+            `topic.ilike.${label}`,
+            `curriculum_theme.ilike.${label}`,
+          ]).join(",");
+          const rows: any[] = [];
+          const freshTarget = Math.ceil(requestedCount * weight.weight / 100);
+          const pageSize = 100;
+          for (let from = 0, pageNumber = 0;; from += pageSize, pageNumber++) {
+            if (Date.now() - bankFetchStartedAt > 20_000) {
+              throw new Error("BALANCED_FETCH_TIMEOUT: aquisição tema x dificuldade excedeu 20s");
+            }
+            if (pageNumber >= 20) throw new Error("BALANCED_FETCH_PAGE_LIMIT: célula excedeu 2000 itens sem suficiência fresca");
+            bankFetchQueries++;
+            const { data, error } = await buildBaseQuery().or(visibleTopicOr)
+              .eq("difficulty", difficultyScore).order("id", { ascending: true })
+              .range(from, from + pageSize - 1);
+            if (error) throw error;
+            const page = data || [];
+            rows.push(...page);
+            const canonicalFresh = rows.filter((question) =>
+              !historicalExcludedIdSet.has(question.id) &&
+              classifyVisibleTopicBucket(question, [weight])?.bucket === weight.topic
+            ).length;
+            if (canonicalFresh >= freshTarget || page.length < pageSize) break;
+          }
+          return rows;
+        };
+        const cells = requestedTopicWeights.flatMap((weight) => [3, 4, 5].map((score) => ({ weight, score })));
+        for (let offset = 0; offset < cells.length; offset += 6) {
+          const chunk = cells.slice(offset, offset + 6);
+          candidates.push(...(await Promise.all(chunk.map(({ weight, score }) =>
+            fetchTopicDifficultyWindow(weight, score)))).flat());
+        }
+        candidates = Array.from(new Map(candidates.map((question) => [question.id, question])).values());
+        console.log(`[SIM_BALANCED_FETCH] queries=${bankFetchQueries} candidates=${candidates.length} duration_ms=${Date.now() - bankFetchStartedAt}`);
+      } else if (difficultyPlan) {
         const strata = await Promise.all([3, 4, 5].map(fetchDifficultyStratum));
         candidates = strata.flat();
       } else {
@@ -357,9 +413,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       }
 
       if (difficultyPlan) {
+        const quotaOptions = isGeneralHundred
+          ? { freshnessPolicy: ENAMED_PREPARATORY_FRESHNESS_POLICY }
+          : undefined;
         difficultyDistribution = requestedTopicWeights.length > 0
-          ? selectByTopicAndDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix, requestedTopicWeights)
-          : selectByDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix);
+          ? selectByTopicAndDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix, requestedTopicWeights, quotaOptions)
+          : selectByDifficultyQuota(eligibleQuestions, requestedCount, difficultyPlan.mix, quotaOptions);
         finalQuestions = difficultyDistribution.questions;
         console.log(`[SIM_DIFFICULTY_QUOTA] target=${JSON.stringify(difficultyDistribution.target)} actual=${JSON.stringify(difficultyDistribution.actual)} available=${JSON.stringify(difficultyDistribution.available)} shortage=${JSON.stringify(difficultyDistribution.shortage)} exact=${difficultyDistribution.exact}`);
         if (difficultyDistribution.topicTarget) {
@@ -368,6 +427,33 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       } else {
         finalQuestions = eligibleQuestions.slice(0, requestedCount);
       }
+    }
+
+    if (isGeneralHundred && difficultyDistribution && !difficultyDistribution.exact) {
+      const difficultyMetadata = {
+        target: difficultyDistribution.target,
+        actual: difficultyDistribution.actual,
+        shortage: difficultyDistribution.shortage,
+        topicTarget: difficultyDistribution.topicTarget,
+        topicActual: difficultyDistribution.topicActual,
+        topicShortage: difficultyDistribution.topicShortage,
+        freshnessPolicy: difficultyDistribution.freshnessPolicy,
+        freshnessActual: difficultyDistribution.freshnessActual,
+      };
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: difficultyDistribution.freshnessActual?.blockedByReuseLimit
+          ? "FRESHNESS_SHORTAGE"
+          : "QUOTA_SHORTAGE",
+        error: difficultyDistribution.freshnessActual?.blockedByReuseLimit
+          ? "O corpus recente não permite montar 100 questões dentro do limite de reutilização."
+          : "O corpus não permite montar 100 questões respeitando simultaneamente tema e dificuldade.",
+        difficultyDistribution: difficultyMetadata,
+        correlationId,
+      }), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (body.mode === "ai_generation") {
@@ -513,6 +599,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           calibrationStatus: difficultyPlan?.calibrationStatus,
           historicalReuseCount: difficultyDistribution.historicalReuseCount,
           historicalReuseIds: difficultyDistribution.questions.filter((q) => q._historical_reuse).map((q) => q.id),
+          freshnessPolicy: difficultyDistribution.freshnessPolicy,
+          freshnessActual: difficultyDistribution.freshnessActual,
           topicTarget: difficultyDistribution.topicTarget,
           topicActual: difficultyDistribution.topicActual,
           topicShortage: difficultyDistribution.topicShortage,
