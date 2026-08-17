@@ -33,6 +33,20 @@ describe("AuthProvider bootstrap", () => {
     vi.useRealTimers();
     vi.clearAllMocks();
     authMocks.authCallback = null;
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("não inicia getSession concorrente na tela de login", async () => {
+    window.history.replaceState({}, "", "/login");
+
+    render(
+      <AuthProvider>
+        <AuthStateProbe />
+      </AuthProvider>
+    );
+
+    expect(screen.getByText("released")).toBeInTheDocument();
+    expect(authMocks.getSession).not.toHaveBeenCalled();
   });
 
   it("libera loading sem apagar credenciais quando a sessão fica pendente", async () => {
