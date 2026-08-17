@@ -21,6 +21,7 @@ interface ReviewQuestion {
   source_type: string | null;
   permission_type: string | null;
   created_at: string;
+  lifecycle_state: string | null;
 }
 
 const QUALITY_COLORS: Record<string, string> = {
@@ -52,6 +53,7 @@ const AdminQuestionReviewPanel = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [qualityFilter, setQualityFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("");
+  const [lifecycleFilter, setLifecycleFilter] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
@@ -75,7 +77,7 @@ const AdminQuestionReviewPanel = () => {
   const fetchQuestions = async () => {
     setLoading(true);
     let query = supabase.from("questions_bank")
-      .select("id, statement, options, correct_index, explanation, topic, subtopic, source, review_status, quality_tier, source_type, permission_type, created_at", { count: "exact" })
+      .select("id, statement, options, correct_index, explanation, topic, subtopic, source, review_status, quality_tier, source_type, permission_type, lifecycle_state, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
@@ -91,6 +93,7 @@ const AdminQuestionReviewPanel = () => {
     if (sourceFilter.trim()) {
       query = query.ilike("source", `%${sourceFilter.trim()}%`);
     }
+    if (lifecycleFilter !== "all") query = query.eq("lifecycle_state", lifecycleFilter);
 
     const { data, count, error } = await query;
     if (!error && data) {
@@ -108,6 +111,7 @@ const AdminQuestionReviewPanel = () => {
         source_type: q.source_type,
         permission_type: q.permission_type,
         created_at: q.created_at,
+        lifecycle_state: q.lifecycle_state,
       })));
       setTotal(count || 0);
     } else if (error) {
@@ -119,17 +123,17 @@ const AdminQuestionReviewPanel = () => {
   useEffect(() => {
     const t = setTimeout(() => { fetchQuestions(); fetchCounts(); }, 250);
     return () => clearTimeout(t);
-  }, [page, statusFilter, qualityFilter, sourceFilter]);
+  }, [page, statusFilter, qualityFilter, sourceFilter, lifecycleFilter]);
 
   const handleAction = async (id: string, action: "approved" | "rejected") => {
     setActionLoading(id);
-    const { error } = await supabase.from("questions_bank")
-      .update({ review_status: action })
-      .eq("id", id);
+    const { error } = action === "approved"
+      ? await supabase.functions.invoke("question-review-pipeline", { body: { ids: [id], batch_size: 1 } })
+      : await supabase.from("questions_bank").update({ review_status: "rejected", approved_for_generation: false }).eq("id", id);
     if (error) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: action === "approved" ? "Aprovada" : "Rejeitada" });
+      toast({ title: action === "approved" ? "Enviada para auditoria" : "Rejeitada" });
       setQuestions(prev => prev.filter(q => q.id !== id));
       setTotal(prev => prev - 1);
       fetchCounts();
@@ -139,7 +143,7 @@ const AdminQuestionReviewPanel = () => {
 
   const handleBulkApprove = async () => {
     setActionLoading("bulk");
-    // Only approve questions that are NOT already approved
+    // Submit to the canonical review pipeline; never approve directly.
     const pendingQuestions = questions.filter(q => q.review_status !== "approved");
     if (pendingQuestions.length === 0) {
       toast({ title: "Nenhuma questão pendente para aprovar nesta página" });
@@ -148,14 +152,12 @@ const AdminQuestionReviewPanel = () => {
     }
     const ids = pendingQuestions.map(q => q.id);
     
-    // Process in chunks of 50 to avoid URL length limits
+    // The canonical pipeline accepts at most 20 items per batch.
     let approved = 0;
     let lastError: any = null;
-    for (let i = 0; i < ids.length; i += 50) {
-      const chunk = ids.slice(i, i + 50);
-      const { error } = await supabase.from("questions_bank")
-        .update({ review_status: "approved" })
-        .in("id", chunk);
+    for (let i = 0; i < ids.length; i += 20) {
+      const chunk = ids.slice(i, i + 20);
+      const { error } = await supabase.functions.invoke("question-review-pipeline", { body: { ids: chunk, batch_size: chunk.length } });
       if (error) {
         lastError = error;
         console.error("Bulk approve error:", error);
@@ -167,47 +169,11 @@ const AdminQuestionReviewPanel = () => {
     if (lastError) {
       toast({ title: "Erro parcial", description: lastError.message, variant: "destructive" });
     } else {
-      toast({ title: `${approved} questões aprovadas com sucesso` });
+      toast({ title: `${approved} questões enviadas para auditoria` });
     }
     fetchQuestions();
     fetchCounts();
     setActionLoading(null);
-  };
-
-  const handleApproveAllFiltered = async () => {
-    if (!window.confirm(`Deseja aprovar TODAS as ${total} questões que correspondem aos filtros atuais?`)) {
-      return;
-    }
-
-    setActionLoading("bulk-all");
-    try {
-      let query = supabase.from("questions_bank")
-        .update({ review_status: "approved" })
-        .neq("review_status", "approved");
-
-      if (statusFilter !== "all") {
-        query = query.eq("review_status", statusFilter);
-      }
-      if (qualityFilter !== "all") {
-        query = query.eq("quality_tier", qualityFilter);
-      }
-      if (sourceFilter.trim()) {
-        query = query.ilike("source", `%${sourceFilter.trim()}%`);
-      }
-
-      const { error, count } = await query;
-      
-      if (error) throw error;
-      
-      toast({ title: "Sucesso", description: "Lote completo aprovado com sucesso" });
-      fetchQuestions();
-      fetchCounts();
-    } catch (error: any) {
-      console.error("Bulk approve all error:", error);
-      toast({ title: "Erro na aprovação em lote", description: error.message, variant: "destructive" });
-    } finally {
-      setActionLoading(null);
-    }
   };
 
   const handleUpgrade = async () => {
@@ -303,6 +269,14 @@ const AdminQuestionReviewPanel = () => {
             <SelectItem value="needs_upgrade">Precisa Enriquecer</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={lifecycleFilter} onValueChange={v => { setLifecycleFilter(v); setPage(0); }}>
+          <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Ciclo: Todos</SelectItem>
+            <SelectItem value="quarantined">Quarentena</SelectItem>
+            <SelectItem value="generated">Geradas</SelectItem>
+          </SelectContent>
+        </Select>
         <div className="relative">
           <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
@@ -315,14 +289,7 @@ const AdminQuestionReviewPanel = () => {
         {isActionableStatus && questions.length > 0 && (
           <Button size="sm" variant="outline" className="text-xs h-7"
             disabled={actionLoading === "bulk"} onClick={handleBulkApprove}>
-            {actionLoading === "bulk" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Aprovar Todas"}
-          </Button>
-        )}
-        {isActionableStatus && total > PAGE_SIZE && (
-          <Button size="sm" variant="outline" className="text-xs h-7 border-emerald-500/50 text-emerald-600 hover:bg-emerald-500/10"
-            disabled={actionLoading === "bulk-all"} onClick={handleApproveAllFiltered}>
-            {actionLoading === "bulk-all" ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
-            Aprovar Lote ({total})
+            {actionLoading === "bulk" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Auditar página"}
           </Button>
         )}
         <Button size="sm" variant="outline" className="text-xs h-7 border-purple-500/30 text-purple-600 hover:bg-purple-500/10"
@@ -351,6 +318,7 @@ const AdminQuestionReviewPanel = () => {
                       {QUALITY_LABELS[q.quality_tier] || q.quality_tier}
                     </Badge>
                     {q.source_type && <Badge variant="outline" className="text-[10px] h-4">{q.source_type}</Badge>}
+                    {q.lifecycle_state && <Badge variant="outline" className="text-[10px] h-4">{q.lifecycle_state}</Badge>}
                     <span className="text-[10px] text-muted-foreground">{q.statement.length} chars</span>
                     <span className="text-[10px] text-muted-foreground">{q.options.length} alt</span>
                   </div>

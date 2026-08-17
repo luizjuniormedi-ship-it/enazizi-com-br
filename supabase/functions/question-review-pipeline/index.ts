@@ -1,6 +1,7 @@
 import { enterpriseEdgeHandler } from "../_shared/enterprise-edge/enterprise-edge-handler.ts";
 import { requireAdmin } from "../_shared/enterprise-edge/auth-guard.ts";
 import { reviewAndEnrich } from "../_shared/question-review-engine.ts";
+import { auditQuestionGovernance } from "../_shared/question-filters.ts";
 import { insertFlashcardsWithFsrs, applyQualityGate } from "../_shared/flashcard-governance.ts";
 
 
@@ -41,6 +42,10 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
       try {
         const startTime = Date.now();
         const result = await reviewAndEnrich(q, targetBanca, logger, supabaseAdmin);
+        const { data: comparisonCorpus, error: comparisonError } = await supabaseAdmin
+          .from("questions_bank").select("id, statement").eq("topic", q.topic).neq("id", q.id).limit(200);
+        if (comparisonError) throw comparisonError;
+        const governanceAudit = auditQuestionGovernance(result, comparisonCorpus || []);
         const latency = Date.now() - startTime;
 
         // Update question
@@ -49,7 +54,7 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
           options: result.options,
           correct_index: result.correct_index,
           explanation: result.explanation,
-          quality_tier: result.quality_tier,
+          quality_tier: governanceAudit.allowed ? result.quality_tier : "REJECTED",
           clinical_density_score: result.scores.clinical_density_score,
           reasoning_score: result.scores.reasoning_score,
           distractor_quality_score: result.scores.distractor_quality_score,
@@ -59,14 +64,16 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
           realism_score: result.scores.realism_score,
           board: result.banca_style_detected || q.board,
           guideline_reference: result.guideline_reference,
-          review_status: "reviewed",
+          review_status: governanceAudit.allowed ? "reviewed" : "needs_review",
+          // AI review is evidence for triage, never editorial approval.
+          approved_for_generation: false,
           updated_at: new Date().toISOString()
         }).eq("id", q.id);
 
         if (updateError) throw updateError;
 
         // Insert flashcards
-        if (result.flashcards && result.flashcards.length > 0 && result.quality_tier === "GOLD") {
+        if (governanceAudit.allowed && result.flashcards && result.flashcards.length > 0 && result.quality_tier === "GOLD") {
           const normalized = result.flashcards.map(f => ({
             question: f.question,
             answer: f.answer,
@@ -103,11 +110,14 @@ Deno.serve(enterpriseEdgeHandler("question-review-pipeline", async ({ req, logge
           model_used: "google/gemini-2.5-pro",
           latency_ms: latency,
           quality_score: result.scores.clinical_density_score,
-          status: result.quality_tier,
+          status: governanceAudit.allowed ? result.quality_tier : "blocked",
           metadata: { 
             question_id: q.id, 
             flashcards_created: result.flashcards?.length || 0,
-            correlation_id: correlation
+            correlation_id: correlation,
+            editorial_evidence: false,
+            governance_blockers: governanceAudit.blockers,
+            near_duplicate_ids: governanceAudit.nearDuplicateIds,
           }
         });
 
