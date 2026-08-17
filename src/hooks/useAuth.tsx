@@ -48,6 +48,11 @@ const getUserWithTimeout = () =>
     AUTH_BOOTSTRAP_TIMEOUT_MS
   );
 
+const isPublicAuthPath = (pathname: string) =>
+  ["/login", "/register", "/forgot-password", "/reset-password"].some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -56,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const liveSessionRef = useRef<Session | null>(null);
 
   useEffect(() => {
+    const publicAuthRoute = isPublicAuthPath(window.location.pathname);
     // Sprint 1 hardening: forceLoginRefresh now fires ONLY on a real
     // SIGNED_IN event. The bootstrap getSession() path no longer triggers
     // a refresh — that was racing against the listener and contributing to
@@ -68,6 +74,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Bootstrap below validates the cached session before trusting it.
         // Accepting INITIAL_SESSION blindly can redirect the login page using
         // a stale token when the auth /user endpoint is failing.
+        if (publicAuthRoute && nextSession) {
+          authEventEpochRef.current += 1;
+          liveSessionRef.current = nextSession;
+          setSession(nextSession);
+          setUser(nextSession.user ?? null);
+          setLoading(false);
+        }
         return;
       }
 
@@ -120,6 +133,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let mounted = true;
     const bootstrapEpoch = authEventEpochRef.current;
+
+    // Do not start getSession on the login/register screens. A stalled
+    // bootstrap keeps Supabase's storage lock alive even after Promise.race
+    // times out and can block signInWithPassword from persisting the newly
+    // created session. Public auth pages are released immediately; the auth
+    // listener and the explicit form action hydrate a valid session.
+    if (publicAuthRoute) {
+      setLoading(false);
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+      };
+    }
 
     // Bootstrap: only hydrate state. Do NOT trigger forceLoginRefresh here.
     // If the auth endpoint stalls/fails, never keep the app on an infinite spinner.
