@@ -32,9 +32,11 @@ describe("official Drive question staging contract", () => {
     expect(migration).toContain("OFFICIAL_DRIVE_PROVENANCE_REQUIRED");
   });
 
-  it("uses the canonical review pipeline only for enrichment", () => {
-    expect(ingest).toContain("/functions/v1/question-review-pipeline");
+  it("does not automatically run AI review on official transcripts", () => {
+    expect(ingest).not.toContain("/functions/v1/question-review-pipeline");
     expect(ingest).toContain('review_pipeline_role: "enrichment_only"');
+    expect(migration).toContain("OFFICIAL_DRIVE_CONTENT_IMMUTABLE");
+    expect(pipeline).toContain("preserveOfficialQuestionContent");
     expect(pipeline).toContain('q.lifecycle_state === "quarantined"');
     expect(pipeline).toContain('? "needs_review"');
     expect(pipeline).toContain("approved_for_generation: false");

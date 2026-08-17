@@ -36,6 +36,17 @@ BEGIN
     RAISE EXCEPTION 'OFFICIAL_DRIVE_SOURCE_TYPE_IMMUTABLE';
   END IF;
 
+  IF TG_OP = 'UPDATE'
+     AND OLD.source_type = 'official_exam_drive'
+     AND (
+       NEW.statement IS DISTINCT FROM OLD.statement
+       OR NEW.options IS DISTINCT FROM OLD.options
+       OR NEW.correct_index IS DISTINCT FROM OLD.correct_index
+       OR NEW.board IS DISTINCT FROM OLD.board
+     ) THEN
+    RAISE EXCEPTION 'OFFICIAL_DRIVE_CONTENT_IMMUTABLE';
+  END IF;
+
   IF NEW.source_type IS DISTINCT FROM 'official_exam_drive' THEN
     RETURN NEW;
   END IF;
@@ -88,6 +99,7 @@ DROP TRIGGER IF EXISTS enforce_official_drive_question_staging_trigger
 CREATE TRIGGER enforce_official_drive_question_staging_trigger
   BEFORE INSERT OR UPDATE OF source_type, source_queue_id, source_document_checksum,
     source_question_hash, source_url, ingestion_version, permission_type,
-    provenance, lifecycle_state, review_status, approved_for_generation
+    provenance, lifecycle_state, review_status, approved_for_generation,
+    statement, options, correct_index, board
   ON public.questions_bank
   FOR EACH ROW EXECUTE FUNCTION public.enforce_official_drive_question_staging();

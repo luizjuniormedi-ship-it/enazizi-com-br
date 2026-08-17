@@ -5,6 +5,7 @@ import {
   isOfficialAnswerKeyUrl,
   normalizeExamYear,
   normalizeOfficialQuestion,
+  preserveOfficialQuestionContent,
   policyForDriveRoot,
   retryDelayMs,
   sha256Hex,
@@ -62,5 +63,26 @@ describe("Drive corpus governance behavior", () => {
     expect(normalizeExamYear(2023, "prova.pdf")).toBe(2023);
     expect(normalizeExamYear("unknown", "REVALIDA 2021.pdf")).toBe(2021);
     expect(normalizeExamYear(1999, "sem-ano.pdf")).toBeNull();
+  });
+
+  it("keeps the official transcript, answer key and board immutable during AI enrichment", () => {
+    const official = {
+      source_type: "official_exam_drive",
+      statement: "Enunciado oficial",
+      options: ["A", "B", "C", "D"],
+      correct_index: 2,
+      board: "INEP",
+    };
+    expect(preserveOfficialQuestionContent(official, {
+      statement: "Reescrito por IA",
+      options: ["X", "Y", "Z", "W"],
+      correct_index: 0,
+      board: "Outra banca",
+    })).toEqual({
+      statement: official.statement,
+      options: official.options,
+      correct_index: official.correct_index,
+      board: official.board,
+    });
   });
 });

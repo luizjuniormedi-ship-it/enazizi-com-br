@@ -187,20 +187,6 @@ async function stageOfficialQuestions(
   return (staged || []).map((question: any) => question.id);
 }
 
-async function requestQuestionEnrichment(ids: string[]) {
-  const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !serviceKey) throw new Error("QUESTION_REVIEW_CONFIG_MISSING");
-  for (let index = 0; index < ids.length; index += 20) {
-    const response = await fetchWithTimeout(`${url}/functions/v1/question-review-pipeline`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: ids.slice(index, index + 20), batch_size: 20, background: true }),
-    }, 30_000);
-    if (!response.ok) throw new Error(`QUESTION_REVIEW_REQUEST_${response.status}`);
-  }
-}
-
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const size = 0x8000;
@@ -379,9 +365,6 @@ async function processOne(row: any, token: string, supabase: any): Promise<"stag
       });
       if (embeddingError) throw new Error(`EMB_INSERT: ${embeddingError.message}`);
     }
-
-    await renewLease(supabase, row, "requesting_question_enrichment");
-    await requestQuestionEnrichment(stagedQuestionIds);
 
     const { error: completionError } = await supabase.from("drive_corpus_queue").update({
       status: "staged", rag_document_id: documentId, chunks_count: chunks.length,

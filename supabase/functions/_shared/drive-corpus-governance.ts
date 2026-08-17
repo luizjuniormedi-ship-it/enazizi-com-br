@@ -73,6 +73,17 @@ export function normalizeOfficialQuestion(raw: any) {
   return { ...raw, statement, options, correct_index: correctIndex, question_number: questionNumber };
 }
 
+export function preserveOfficialQuestionContent(original: any, proposed: any) {
+  if (original?.source_type !== "official_exam_drive") return proposed;
+  return {
+    ...proposed,
+    statement: original.statement,
+    options: original.options,
+    correct_index: original.correct_index,
+    board: original.board,
+  };
+}
+
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const copy = new Uint8Array(bytes.byteLength);
   copy.set(bytes);
