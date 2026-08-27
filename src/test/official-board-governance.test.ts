@@ -16,6 +16,32 @@ const questionGeneratorSource = readFileSync(
 );
 
 describe("official board governance", () => {
+  it("does not expose uncalibrated psychometric claims as an actionable mode", () => {
+    const setupSource = readFileSync(
+      resolve(process.cwd(), "src/components/simulados/SimuladoSetup.tsx"),
+      "utf8",
+    );
+
+    expect(setupSource).toContain("TRI em calibração");
+    expect(setupSource).toContain("aria-disabled=\"true\"");
+    expect(setupSource).toContain("dificuldade experimental");
+    expect(setupSource).not.toContain("TRI psicométrica. Ranking real. Nota ponderada.");
+    expect(setupSource).not.toContain("Distribuição e dificuldade reais.");
+    expect(setupSource).not.toContain("modelo psicométrico real");
+    expect(setupSource).not.toContain("candidatos reais");
+    expect(setupSource).toContain("disabled={!profile.canGenerate}");
+  });
+
+  it("hides competitive approval claims without a validated profile", () => {
+    const resultSource = readFileSync(
+      resolve(process.cwd(), "src/components/simulados/SimuladoResult.tsx"),
+      "utf8",
+    );
+
+    expect(resultSource).toContain('profile?.availability === "validated"');
+    expect(resultSource).toContain("Simulado completo concluído!");
+    expect(resultSource).not.toContain("Prova Real concluída!");
+  });
   it("keeps the ENAMED preparatory freshness contract fail-closed", () => {
     expect(questionGeneratorSource).toContain('"FRESHNESS_SHORTAGE"');
     expect(questionGeneratorSource).toContain("ENAMED_PREPARATORY_FRESHNESS_POLICY");
