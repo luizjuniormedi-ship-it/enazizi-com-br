@@ -87,9 +87,6 @@ const OnboardingGate = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (kind === "incomplete") {
-    const isMedico = formUserType === "medico";
-    const isProfessor = formUserType === "professor";
-
     const handleSave = async () => {
       if (!user) return;
       const trimmedName = formName.trim();
@@ -111,12 +108,6 @@ const OnboardingGate = ({ children }: { children: React.ReactNode }) => {
           user_type: formUserType,
         };
 
-        if (isProfessor || isMedico) {
-          await supabase.from("user_roles").upsert(
-            { user_id: user.id, role: "professor" as any },
-            { onConflict: "user_id,role" }
-          );
-        }
         const { error } = await supabase
           .from("profiles")
           .update(updateData)

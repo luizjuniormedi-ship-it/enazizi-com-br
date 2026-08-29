@@ -15,6 +15,17 @@ interface UseSessionPersistenceOptions {
   intervalMs?: number;
 }
 
+export const MAX_RESUMABLE_SESSION_AGE_MS = 72 * 60 * 60 * 1000;
+
+export const isSessionExpired = (
+  updatedAt: string | number | Date,
+  now = Date.now(),
+  maxAgeMs = MAX_RESUMABLE_SESSION_AGE_MS,
+) => {
+  const timestamp = new Date(updatedAt).getTime();
+  return !Number.isFinite(timestamp) || now - timestamp > maxAgeMs;
+};
+
 export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 30000 }: UseSessionPersistenceOptions) => {
   const { user } = useAuth();
   const [pendingSession, setPendingSession] = useState<SessionData | null>(null);
@@ -61,6 +72,24 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
             status: "active"
           };
         }
+      }
+
+      if (finalData && isSessionExpired(finalData.updated_at)) {
+        console.info("[SessionPersistence] Expiring stale active session.");
+        localStorage.removeItem(backupKey);
+        if (finalData.id && !finalData.id.startsWith("temp_")) {
+          const { error: expireError } = await supabase
+            .from("module_sessions")
+            .update({ status: "abandoned" })
+            .eq("id", finalData.id)
+            .eq("user_id", user.id);
+          if (expireError) {
+            console.warn("[SessionPersistence] Failed to persist stale-session expiry:", expireError);
+          }
+        }
+        finalData = null;
+        sessionIdRef.current = null;
+        setPendingSession(null);
       }
 
       if (finalData) {

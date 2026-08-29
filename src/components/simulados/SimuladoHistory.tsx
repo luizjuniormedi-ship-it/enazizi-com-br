@@ -33,7 +33,7 @@ const buildTitle = (s: HistorySession): string => {
   if (s.discipline) parts.push(s.discipline);
   if (s.topic && s.topic !== s.discipline) parts.push(s.topic);
   const base = parts.join(" • ") || "Simulado";
-  const modeLabel = s.mode === "prova_real" ? "Prova Real" : s.mode === "tri" ? "TRI" : s.mode === "estudo" ? "Estudo" : "Adaptativo";
+  const modeLabel = s.mode === "prova_real" ? "Simulado Completo" : s.mode === "tri" ? "TRI (legado)" : s.mode === "estudo" ? "Estudo" : "Adaptativo";
   return `${base} — ${modeLabel}`;
 };
 

@@ -106,12 +106,14 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-charts': ['recharts'],
-          'vendor-pdf': ['jspdf'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-query': ['@tanstack/react-query'],
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/node_modules[\\/]react(?:-dom)?[\\/]|node_modules[\\/]react-router(?:-dom)?[\\/]/.test(id)) return "vendor-react";
+          if (id.includes("node_modules/recharts/")) return "vendor-charts";
+          if (id.includes("node_modules/jspdf/")) return "vendor-pdf";
+          if (id.includes("node_modules/@supabase/supabase-js/")) return "vendor-supabase";
+          if (id.includes("node_modules/@tanstack/react-query/")) return "vendor-query";
+          return undefined;
         },
       },
     },

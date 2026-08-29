@@ -21,6 +21,10 @@ test.describe('Simulados Module E2E', () => {
       
       // Wait for login to complete
       await expect(page).not.toHaveURL(/.*login.*/);
+      await page.evaluate(() => {
+        localStorage.setItem('enazizi_v2_welcome_seen', 'true');
+        localStorage.setItem('enazizi_v2_onboarding_done', 'true');
+      });
     } else {
       console.warn('E2E_USER_EMAIL or E2E_USER_PASSWORD not set. Skipping login step (assuming session is already active or using manual login).');
     }
@@ -55,29 +59,18 @@ test.describe('Simulados Module E2E', () => {
     expect(consoleErrors).toHaveLength(0);
   });
 
-  test('Generate 10 questions ENARE', async ({ page }) => {
+  test('ENARE official remains suspended until homologation', async ({ page }) => {
     await page.goto('/dashboard/simulados');
-    
-    // 3. Gerar 10 questões ENARE
-    // Click on the ENARE card button
-    await page.getByTestId('banca-enare-button').first().click();
-    
-    // Wait for the exam to start (loading phase)
-    await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 60000 });
-    
-    // Validate presence of question 1
-    await expect(page.getByText(/Questão 1 de 100/i).or(page.getByText(/Questão 1/i))).toBeVisible();
-    await expect(page.getByTestId('question-card')).toBeVisible();
+    const enare = page.getByTestId('banca-enare-button').first();
+    await expect(enare).toHaveAttribute('aria-disabled', 'true');
+    await expect(enare).toHaveAttribute('tabindex', '-1');
   });
 
-  test('Generate 20 questions USP-SP', async ({ page }) => {
+  test('USP-SP official remains suspended until homologation', async ({ page }) => {
     await page.goto('/dashboard/simulados');
-    
-    // 4. Gerar 20 questões USP-SP
-    await page.getByTestId('banca-usp-sp-button').first().click();
-    
-    await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 60000 });
-    await expect(page.getByTestId('question-card')).toBeVisible();
+    const usp = page.getByTestId('banca-usp-sp-button').first();
+    await expect(usp).toHaveAttribute('aria-disabled', 'true');
+    await expect(usp).toHaveAttribute('tabindex', '-1');
   });
 
   test('Create job for 50 questions and verify progress', async ({ page }) => {
@@ -144,7 +137,7 @@ test.describe('Simulados Module E2E', () => {
     
     // Confirm result screen
     await expect(page.getByTestId('result-screen')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Simulado Concluído/i).or(page.getByText(/Prova/i))).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Simulado Concluído!', exact: true })).toBeVisible();
   });
 
   test('Generation modal interaction (ESC/Close)', async ({ page }) => {

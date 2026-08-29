@@ -40,6 +40,10 @@ async function loginUI(page: Page) {
   await page.fill('input[type="password"]', E2E_PASSWORD);
   await page.click('button:has-text("Entrar"), button:has-text("ENTRAR")');
   await expect(page).not.toHaveURL(/.*login.*/, { timeout: 20000 });
+  await page.evaluate(() => {
+    localStorage.setItem('enazizi_v2_welcome_seen', 'true');
+    localStorage.setItem('enazizi_v2_onboarding_done', 'true');
+  });
 }
 
 function attachFailureGuards(page: Page, failures: string[]) {
@@ -89,7 +93,10 @@ test.describe('FSRS + TRI integrated chain', () => {
     await setup.getByTestId('mode-estudo-button').click().catch(() => {});
     await setup.getByTestId('qtd-5-button').click();
     await setup.locator('button.rounded-full').first().click().catch(() => {});
-    await setup.getByTestId('iniciar-simulado-button').click();
+    // The integrated persistence chain requires bank-backed UUID questions.
+    // AI-only questions are ephemeral and intentionally cannot satisfy the
+    // practice_attempts.question_id foreign key.
+    await setup.getByRole('button', { name: /Montar com Banco/i }).click();
 
     // ── 4. Answer questions
     await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 90000 });
