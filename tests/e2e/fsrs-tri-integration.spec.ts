@@ -40,6 +40,10 @@ async function loginUI(page: Page) {
   await page.fill('input[type="password"]', E2E_PASSWORD);
   await page.click('button:has-text("Entrar"), button:has-text("ENTRAR")');
   await expect(page).not.toHaveURL(/.*login.*/, { timeout: 20000 });
+  await page.evaluate(() => {
+    localStorage.setItem('enazizi_v2_welcome_seen', 'true');
+    localStorage.setItem('enazizi_v2_onboarding_done', 'true');
+  });
 }
 
 function attachFailureGuards(page: Page, failures: string[]) {

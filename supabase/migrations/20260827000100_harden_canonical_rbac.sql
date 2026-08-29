@@ -68,6 +68,17 @@ BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.protect_profile_privileged_fields();
 
+-- The onboarding UI updates only the authenticated user's descriptive fields.
+-- Without an UPDATE policy PostgREST returns success with zero affected rows,
+-- leaving the user trapped in the onboarding gate.
+DROP POLICY IF EXISTS "profiles_update_own" ON public.profiles;
+CREATE POLICY "profiles_update_own"
+ON public.profiles
+FOR UPDATE
+TO authenticated
+USING ((SELECT auth.uid()) = user_id)
+WITH CHECK ((SELECT auth.uid()) = user_id);
+
 -- Role writes must go through admin-actions (JWT validation, admin check and
 -- audit log) or a service-role process. Reading one's own roles remains intact.
 DROP POLICY IF EXISTS "Admins can manage roles" ON public.user_roles;

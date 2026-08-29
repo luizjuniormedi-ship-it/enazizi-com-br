@@ -98,8 +98,11 @@ export function isProfileComplete(data: {
   const nameCheck = isValidName(data.display_name || "");
   if (!nameCheck.valid) return false;
 
+  // Keep legacy persisted values compatible with the canonical PT-BR values.
+  // Older registrations stored `student`, while the onboarding gate expects
+  // `estudante`; treating both as the same role prevents an onboarding loop.
   const userType = data.user_type || "";
-  if (!["estudante", "medico", "professor"].includes(userType)) return false;
+  if (!["estudante", "student", "medico", "professor"].includes(userType)) return false;
 
   return true;
 }

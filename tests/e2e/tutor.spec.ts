@@ -17,6 +17,10 @@ test.describe('Tutor IA Module E2E', () => {
       await page.fill('input[type="password"]', password);
       await page.click('button:has-text("Entrar"), button:has-text("ENTRAR")');
       await expect(page).not.toHaveURL(/.*login.*/);
+      await page.evaluate(() => {
+        localStorage.setItem('enazizi_v2_welcome_seen', 'true');
+        localStorage.setItem('enazizi_v2_onboarding_done', 'true');
+      });
     }
   });
 

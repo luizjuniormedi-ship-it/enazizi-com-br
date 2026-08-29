@@ -21,6 +21,10 @@ test.describe('Simulados Module E2E', () => {
       
       // Wait for login to complete
       await expect(page).not.toHaveURL(/.*login.*/);
+      await page.evaluate(() => {
+        localStorage.setItem('enazizi_v2_welcome_seen', 'true');
+        localStorage.setItem('enazizi_v2_onboarding_done', 'true');
+      });
     } else {
       console.warn('E2E_USER_EMAIL or E2E_USER_PASSWORD not set. Skipping login step (assuming session is already active or using manual login).');
     }
