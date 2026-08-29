@@ -79,6 +79,15 @@ TO authenticated
 USING ((SELECT auth.uid()) = user_id)
 WITH CHECK ((SELECT auth.uid()) = user_id);
 
+-- A legacy trigger still deployed on practice_attempts calls
+-- refresh_domain_mastery(), which references the removed columns
+-- practice_attempts.topic and medical_domain_map.mastery_level. Every insert
+-- currently aborts with PostgreSQL 42703. Domain/proficiency recalculation is
+-- already handled by the canonical study-complete/impact engines, so remove
+-- the obsolete synchronous trigger instead of blocking answer persistence.
+DROP TRIGGER IF EXISTS tr_refresh_mastery_on_practice ON public.practice_attempts;
+DROP FUNCTION IF EXISTS public.refresh_domain_mastery();
+
 -- Role writes must go through admin-actions (JWT validation, admin check and
 -- audit log) or a service-role process. Reading one's own roles remains intact.
 DROP POLICY IF EXISTS "Admins can manage roles" ON public.user_roles;
