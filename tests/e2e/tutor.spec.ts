@@ -10,7 +10,7 @@ async function openTutor(page: Page) {
 }
 
 async function selectSpecialty(page: Page, specialty: string) {
-  await page.getByRole('combobox', { name: 'Especialidade' }).click();
+  await page.getByRole('combobox', { name: 'Especialidade' }).first().click();
   await page.getByRole('option', { name: specialty, exact: true }).click();
 }
 
@@ -48,10 +48,10 @@ test.describe('Tutor IA Module E2E', () => {
     test.setTimeout(180_000);
     await openTutor(page);
     await selectSpecialty(page, 'Infectologia');
-    await page.getByRole('textbox', { name: 'Tema ou assunto' }).fill('Protocolo de Sepse');
+    await page.getByRole('textbox', { name: 'Tema ou assunto' }).first().fill('Protocolo de Sepse');
 
     const startedAt = Date.now();
-    await page.getByRole('button', { name: 'Iniciar sessão de estudo' }).click();
+    await page.getByRole('button', { name: 'Iniciar sessão de estudo' }).first().click();
     await expect(page).toHaveURL(/\/dashboard\/sessao-estudo\/[0-9a-f-]+/i, { timeout: 20_000 });
 
     const response = page.getByTestId('tutor-response').last();
@@ -67,12 +67,12 @@ test.describe('Tutor IA Module E2E', () => {
 
   test('quick specialty selection preserves the mandatory context gate', async ({ page }) => {
     await openTutor(page);
-    await page.getByRole('button', { name: 'Cardiologia', exact: true }).click();
-    await expect(page.getByRole('combobox', { name: 'Especialidade' })).toContainText('Cardiologia');
+    await page.getByRole('button', { name: 'Cardiologia', exact: true }).first().click();
+    await expect(page.getByRole('combobox', { name: 'Especialidade' }).first()).toContainText('Cardiologia');
 
-    const start = page.getByRole('button', { name: 'Iniciar sessão de estudo' });
+    const start = page.getByRole('button', { name: 'Iniciar sessão de estudo' }).first();
     await expect(start).toBeDisabled();
-    await page.getByRole('textbox', { name: 'Tema ou assunto' }).fill('Síndrome coronariana aguda');
+    await page.getByRole('textbox', { name: 'Tema ou assunto' }).first().fill('Síndrome coronariana aguda');
     await expect(start).toBeEnabled();
   });
 });
