@@ -71,10 +71,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.debug(`[Auth] event: ${event}`, { userId: nextSession?.user?.id });
 
       if (event === "INITIAL_SESSION") {
-        // Bootstrap below validates the cached session before trusting it.
-        // Accepting INITIAL_SESSION blindly can redirect the login page using
-        // a stale token when the auth /user endpoint is failing.
-        if (publicAuthRoute && nextSession) {
+        // INITIAL_SESSION is Supabase's authoritative view of persisted auth
+        // state. A protected route must not discard it merely because a
+        // separate /auth/v1/user validation is slow or temporarily unavailable:
+        // doing so turns a recoverable network failure into a forced logout.
+        // Server-side calls remain JWT-verified, so this only keeps the UI on
+        // the protected route while Supabase refreshes/revalidates the token.
+        if (nextSession) {
           authEventEpochRef.current += 1;
           liveSessionRef.current = nextSession;
           setSession(nextSession);
@@ -147,20 +150,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
     }
 
-    // Bootstrap: only hydrate state. Do NOT trigger forceLoginRefresh here.
-    // If the auth endpoint stalls/fails, never keep the app on an infinite spinner.
+    // Bootstrap: hydrate a persisted session first. A remote /user check is
+    // supplementary metadata validation, not proof that the local session was
+    // signed out. Edge Functions still reject invalid JWTs server-side.
     getSessionWithTimeout()
       .then(async ({ data: { session: bootstrapSession } }) => {
         if (!mounted || authEventEpochRef.current !== bootstrapEpoch) return;
         if (bootstrapSession) {
-          const { data: { user: verifiedUser }, error } = await getUserWithTimeout();
-          if (!mounted || authEventEpochRef.current !== bootstrapEpoch) return;
-          if (error || !verifiedUser) {
-            throw error ?? new Error("Sessão local inválida");
-          }
           liveSessionRef.current = bootstrapSession;
           setSession(bootstrapSession);
-          setUser(verifiedUser);
+          setUser(bootstrapSession.user ?? null);
+
+          try {
+            const { data: { user: verifiedUser }, error } = await getUserWithTimeout();
+            if (!mounted || authEventEpochRef.current !== bootstrapEpoch) return;
+            if (!error && verifiedUser) setUser(verifiedUser);
+            else console.warn("[Auth] remote user validation unavailable; keeping persisted session", error);
+          } catch (validationError) {
+            if (mounted && authEventEpochRef.current === bootstrapEpoch) {
+              console.warn("[Auth] remote user validation timed out; keeping persisted session", validationError);
+            }
+          }
           return;
         }
         liveSessionRef.current = bootstrapSession;

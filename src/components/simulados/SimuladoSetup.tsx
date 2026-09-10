@@ -27,6 +27,9 @@ const DIFFICULTY_OPTIONS = [
   { value: "misto", label: "Misto" },
 ];
 
+const MIN_SIMULADO_QUESTIONS = 5;
+const MAX_SIMULADO_QUESTIONS = 100;
+
 const EXAM_BOARDS = [
   { value: "all", label: "Todas as bancas" },
   { value: "ENARE", label: "ENARE" },
@@ -38,6 +41,14 @@ const EXAM_BOARDS = [
   { value: "USP", label: "USP-SP" },
   { value: "UNIFESP", label: "UNIFESP" },
 ];
+
+const normalizeQuestionCount = (raw: unknown, fallback: number, max = MAX_SIMULADO_QUESTIONS): number => {
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  const n = Math.trunc(parsed);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.min(Math.max(n, MIN_SIMULADO_QUESTIONS), max);
+};
 
 
 export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
@@ -359,14 +370,15 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const handleStart = async (forceAi = false) => {
     try {
       if (mode === "adaptativo") {
-        const count = customCount ? parseInt(customCount) : questionCount;
+        const count = normalizeQuestionCount(customCount || questionCount, 20, MAX_SIMULADO_QUESTIONS);
         onStart({ topics: [], count, difficulty: "adaptativo", timePerQuestion: 3, mode: "adaptativo" });
         return;
       }
       if (mode === "prova_real" || mode === "tri") {
         const profile = selectedProfile;
         const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
-        const count = generationMethod === "custom" ? customTotalQuestions : profile.totalQuestions;
+        const profileTotal = Math.min(profile.totalQuestions, MAX_SIMULADO_QUESTIONS);
+        const count = generationMethod === "custom" ? normalizeQuestionCount(customTotalQuestions, profileTotal, profileTotal) : profileTotal;
         const timePerQ = profile.timeMinutes / count;
         
         onStart({
@@ -389,7 +401,8 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         });
         return;
       }
-      const count = customCount ? parseInt(customCount) : questionCount;
+      const count = customCount ? Number(customCount) : questionCount;
+      const normalizedCount = normalizeQuestionCount(count, questionCount, MAX_SIMULADO_QUESTIONS);
 
       // Resolve fonte de tópicos: manual > banca específica > GERAL (Todas as bancas)
       let finalTopics = selectedTopics;
@@ -412,7 +425,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
       onStart({
         topics: finalTopics,
-        count,
+        count: normalizedCount,
         difficulty,
         timePerQuestion,
         mode,
@@ -431,7 +444,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
   const totalTime = mode === "prova_real" || mode === "tri"
     ? selectedProfile.timeMinutes
-    : (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
+      : normalizeQuestionCount(customCount || questionCount, questionCount, MAX_SIMULADO_QUESTIONS) * timePerQuestion;
 
   return (
     <div className={`space-y-6 animate-fade-in max-w-3xl mx-auto ${inlineMode ? "pt-0" : ""}`}>

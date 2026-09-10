@@ -24,6 +24,22 @@ import {
   type TopicWeight,
 } from "./difficulty-quota.ts";
 
+const BANK_QUERY_TIMEOUT_MS = 8_000;
+const BALANCED_FETCH_TIMEOUT_MS = 25_000;
+const PERSISTENCE_TIMEOUT_MS = 10_000;
+
+function withDeadline<T>(promise: PromiseLike<T>, timeoutMs: number, label: string, errorCode = "BANK_FETCH_TIMEOUT"): Promise<T> {
+  let timer: number | undefined;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${errorCode}:${label}`)), timeoutMs) as unknown as number;
+    }),
+  ]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  }) as Promise<T>;
+}
+
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
  * Implementation: Strict Topic Adherence + Historical Dedup + No Silent Fallback
@@ -289,14 +305,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           const freshTarget = Math.ceil(requestedCount * weight.weight / 100);
           const pageSize = 100;
           for (let from = 0, pageNumber = 0;; from += pageSize, pageNumber++) {
-            if (Date.now() - bankFetchStartedAt > 20_000) {
-              throw new Error("BALANCED_FETCH_TIMEOUT: aquisição tema x dificuldade excedeu 20s");
+            if (Date.now() - bankFetchStartedAt > BALANCED_FETCH_TIMEOUT_MS) {
+              throw new Error("BANK_FETCH_TIMEOUT: aquisição tema x dificuldade excedeu o orçamento");
             }
             if (pageNumber >= 20) throw new Error("BALANCED_FETCH_PAGE_LIMIT: célula excedeu 2000 itens sem suficiência fresca");
             bankFetchQueries++;
-            const { data, error } = await buildBaseQuery().or(visibleTopicOr)
-              .eq("difficulty", difficultyScore).order("id", { ascending: true })
-              .range(from, from + pageSize - 1);
+            const { data, error } = await withDeadline(
+              buildBaseQuery().or(visibleTopicOr)
+                .eq("difficulty", difficultyScore).order("id", { ascending: true })
+                .range(from, from + pageSize - 1),
+              BANK_QUERY_TIMEOUT_MS,
+              `topic=${weight.topic};difficulty=${difficultyScore};page=${pageNumber}`,
+            );
             if (error) throw error;
             const page = data || [];
             rows.push(...page);
@@ -617,7 +637,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         }
       : null;
 
-    const { data: sess, error: sessionError } = await supabaseAdmin.from("simulado_sessions").insert({
+    const { data: sess, error: sessionError } = await withDeadline(supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'study',
       total_questions: finalQuestions.length,
@@ -635,7 +655,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         generation_duration_ms: generationDurationMs,
         difficulty_distribution: difficultyMetadata,
       }
-    }).select().single();
+    }).select().single(), PERSISTENCE_TIMEOUT_MS, "persist_session", "SIMULADO_PERSIST_TIMEOUT");
 
     if (sessionError || !sess) throw sessionError || new Error("Falha ao persistir sessão do simulado");
     sessionId = sess.id;
@@ -666,14 +686,19 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             guard_forensics: finalQuestions.map(q => q._guard)
           }
       }));
-    const persistenceResults = await Promise.all(persistenceTasks);
+    const persistenceResults = await withDeadline(Promise.all(persistenceTasks), PERSISTENCE_TIMEOUT_MS, "persist_questions", "SIMULADO_PERSIST_TIMEOUT");
     const persistenceError = persistenceResults.find((result) => result?.error)?.error;
     if (persistenceError) throw persistenceError;
     if (bankQuestions.length > 0) {
-      const { count: persistedCount, error: countError } = await supabaseAdmin
-        .from("simulado_questions")
-        .select("question_id", { count: "exact", head: true })
-        .eq("session_id", sessionId);
+      const { count: persistedCount, error: countError } = await withDeadline(
+        supabaseAdmin
+          .from("simulado_questions")
+          .select("question_id", { count: "exact", head: true })
+          .eq("session_id", sessionId),
+        PERSISTENCE_TIMEOUT_MS,
+        "verify_persisted_questions",
+        "SIMULADO_PERSIST_TIMEOUT",
+      );
       if (countError) throw countError;
       if (persistedCount !== bankQuestions.length) {
         throw new Error(`Persistência incompleta: ${persistedCount ?? 0}/${bankQuestions.length} questões vinculadas`);
@@ -701,6 +726,28 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     });
 
   } catch (error: any) {
+    if (String(error?.message || "").startsWith("BANK_FETCH_TIMEOUT:")) {
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: "BANK_FETCH_TIMEOUT",
+        error: "O banco demorou mais que o limite seguro para montar esta prova. Tente novamente.",
+        correlationId,
+      }), {
+        status: 504,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (String(error?.message || "").startsWith("SIMULADO_PERSIST_TIMEOUT:")) {
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: "SIMULADO_PERSIST_TIMEOUT",
+        error: "As questões foram selecionadas, mas o salvamento demorou além do limite seguro. Tente novamente.",
+        correlationId,
+      }), {
+        status: 504,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     logger.critical("SIMULADO_CRASH", error.message);
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 500,

@@ -91,16 +91,16 @@ export function EnaflixLayout({ children }: Props) {
         showTopNav ? "pt-16" : "",
         isImmersive ? "pb-0" : "pb-20 lg:pb-0"
       )}>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 10, scale: 0.99 }}
+            key={location.key || location.pathname}
+            initial={false}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 1.01 }}
-            transition={{ 
-              duration: 0.4, 
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={{
+              duration: 0.22,
               ease: [0.22, 1, 0.36, 1],
-              opacity: { duration: 0.3 }
+              opacity: { duration: 0.2 }
             }}
             className={cn(
               "w-full safe-area-bottom",

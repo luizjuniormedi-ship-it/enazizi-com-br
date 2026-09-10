@@ -91,11 +91,17 @@ async function computeRealPerformance(userId: string) {
 type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
+const MIN_SIMULADO_QUESTIONS = 5;
+const MAX_SIMULADO_QUESTIONS = 100;
 
 // The canonical AI chain may spend up to 30s on NVIDIA before falling back to
 // Cerebras and running the clinical-quality retry. Keep the UI alive for the
 // complete server-side attempt instead of abandoning a valid generation.
 const QUESTION_GENERATOR_TIMEOUT_MS = 140000;
+// Banco de questões não depende do fallback de provedores de IA. Se a Edge
+// não montar a prova dentro desse prazo, interrompemos com erro recuperável
+// em vez de manter a tela presa em 25% aguardando o timeout de IA.
+const BANK_GENERATOR_TIMEOUT_MS = 45_000;
 
 class TimeoutError extends Error {
   constructor(message: string) {
@@ -151,6 +157,18 @@ function getAccessTokenForSimulado(cachedToken?: string | null): string {
   throw new Error("AUTH_SESSION_UNAVAILABLE: entre novamente para iniciar o simulado.");
 }
 
+function normalizeRequestedCount(rawCount: unknown, fallback: number, maxCount = MAX_SIMULADO_QUESTIONS): number {
+  const parsed = Number(rawCount);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  const normalized = Math.trunc(parsed);
+  if (!Number.isFinite(normalized) || normalized <= 0) return fallback;
+
+  return Math.min(Math.max(normalized, MIN_SIMULADO_QUESTIONS), maxCount);
+}
+
 function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {
   const topicsStr = topics.join(", ");
   const perTopic = Math.ceil(count / topics.length);
@@ -200,6 +218,9 @@ async function generateBatch(
   // [SIM_UI_FILTERS_SUBMITTED]
   console.log("[SIM_UI_FILTERS_SUBMITTED] Config:", { topics, count, difficulty, examBoard, mode, selectedSubtopics });
   const startedAt = performance.now();
+  const timeoutMs = mode === "ai_generation"
+    ? QUESTION_GENERATOR_TIMEOUT_MS
+    : BANK_GENERATOR_TIMEOUT_MS;
 
   try {
     const { data, error } = await withTimeout(
@@ -227,7 +248,7 @@ async function generateBatch(
           correlationId,
         }
       }),
-      QUESTION_GENERATOR_TIMEOUT_MS,
+      timeoutMs,
       "question-generator"
     );
 
@@ -242,7 +263,7 @@ async function generateBatch(
       success: Boolean((data as any)?.success),
       duration_ms: durationMs,
       requested: count,
-      timeout_ms: QUESTION_GENERATOR_TIMEOUT_MS,
+      timeout_ms: timeoutMs,
       timeoutTriggered: false,
     });
 
@@ -622,7 +643,14 @@ const Simulados = () => {
       return;
     }
 
-    const questionCount = config.count || 10;
+    const selectedProfile = selectedExam ? EXAM_PROFILES[selectedExam as keyof typeof EXAM_PROFILES] : undefined;
+    const requestedCountLimit = isBoardMode
+      ? Math.max(5, Math.min(selectedProfile?.totalQuestions ?? MAX_SIMULADO_QUESTIONS, MAX_SIMULADO_QUESTIONS))
+      : MAX_SIMULADO_QUESTIONS;
+    const requestedTotal = normalizeRequestedCount(config.count, isBoardMode ? requestedCountLimit : 10, requestedCountLimit);
+    if (requestedTotal !== config.count) {
+      config.count = requestedTotal;
+    }
     
     // Cognitive Pressure Control
     if (cogOrch?.fatigue_index && cogOrch.fatigue_index > 80) {
@@ -679,7 +707,7 @@ const Simulados = () => {
             {
               headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
               body: {
-                target_question_count: config.count || 20,
+                target_question_count: requestedTotal,
                 performance: perf,
                 topics: config.topics && config.topics.length > 0 ? config.topics : undefined,
                 discipline: (config.topics && config.topics[0]) || undefined,
@@ -716,7 +744,7 @@ const Simulados = () => {
 
           if (data.insufficientQuestions) {
             setQuestions(adaptiveQs);
-            setPartialMessage(data.message || `Aviso: Banco insuficiente para o tema solicitado. Geradas ${adaptiveQs.length} de ${config.count || 20} questões.`);
+            setPartialMessage(data.message || `Aviso: Banco insuficiente para o tema solicitado. Geradas ${adaptiveQs.length} de ${requestedTotal} questões.`);
             setPhase("partial");
             return;
           }
@@ -731,7 +759,6 @@ const Simulados = () => {
       }
 
       // Fluxo Normal com JOB e BATCHING
-      const requestedTotal = config.count || 10;
       setTargetCount(requestedTotal);
       cancelGenerationRef.current = false;
       
@@ -845,7 +872,7 @@ const Simulados = () => {
               user_id: user?.id ?? null,
               batch: batchNum,
               count: currentBatchSize,
-              timeout_ms: QUESTION_GENERATOR_TIMEOUT_MS,
+              timeout_ms: isMontarBancoFlow ? BANK_GENERATOR_TIMEOUT_MS : QUESTION_GENERATOR_TIMEOUT_MS,
             });
             const batchQs = await generateBatch(
               config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
@@ -867,6 +894,10 @@ const Simulados = () => {
               (config as any).selectedSubtopics || [],
               correlationId,
             );
+            if (cancelGenerationRef.current) {
+              setPhase("setup");
+              return;
+            }
             batchData = { 
               success: true, 
               questions: batchQs.questions, 
