@@ -3,7 +3,9 @@ import { test, expect, type Page } from '@playwright/test';
 async function openTutor(page: Page) {
   await page.goto('/dashboard/mentor');
   await expect(page).toHaveURL(/\/dashboard\/sessao-estudo(?:\?|$)/);
-  await expect(page.getByRole('heading', { name: /Tutor IA V3/i })).toBeVisible({ timeout: 15_000 });
+  // Route transitions briefly retain the leaving page for its exit animation.
+  // Assert the active Tutor screen instead of requiring only one transient DOM node.
+  await expect(page.getByRole('heading', { name: /Tutor IA V3/i }).first()).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText(/O que vamos.*dominar hoje/i)).toBeVisible();
 }
 
