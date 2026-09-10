@@ -6,7 +6,7 @@ async function openTutor(page: Page) {
   // Route transitions briefly retain the leaving page for its exit animation.
   // Assert the active Tutor screen instead of requiring only one transient DOM node.
   await expect(page.getByRole('heading', { name: /Tutor IA V3/i }).first()).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText(/O que vamos.*dominar hoje/i)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /O que vamos.*dominar hoje/i }).first()).toBeVisible();
 }
 
 async function selectSpecialty(page: Page, specialty: string) {
