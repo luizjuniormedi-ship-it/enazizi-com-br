@@ -60,7 +60,7 @@ export function EnaflixLayout({ children }: Props) {
   }, []);
 
   // Top Nav for subpages or when sidebar is hidden
-  const isEnaflixHome = location.pathname === "/enaflix" || location.pathname === "/dashboard" || location.pathname === "/study-hub" || location.pathname === "/";
+  const isEnaflixHome = location.pathname === "/enaflix" || location.pathname === "/dashboard/enaflix" || location.pathname === "/dashboard" || location.pathname === "/study-hub" || location.pathname === "/";
   // [HOTFIX P0 UX] Em rotas imersivas (Tutor/Sessão de Estudo/Simulação/Anamnese),
   // o TopNav fixo (z-50, 64px) somava com pt-16 do <main>, empurrando o footer com
   // input do Tutor para fora da viewport — aluno via "tela preta" sem CTAs.
@@ -91,7 +91,7 @@ export function EnaflixLayout({ children }: Props) {
         showTopNav ? "pt-16" : "",
         isImmersive ? "pb-0" : "pb-20 lg:pb-0"
       )}>
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="wait">
           <motion.div
             key={location.key || location.pathname}
             initial={false}
