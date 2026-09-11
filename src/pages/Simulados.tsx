@@ -1381,6 +1381,7 @@ const Simulados = () => {
           else console.warn("[PRACTICE_ATTEMPTS_ROW_FAIL]", oneErr.message);
         }
         console.log("[PRACTICE_ATTEMPTS_INSERT_PARTIAL]", { ok, total: attemptRows.length });
+        if (ok !== attemptRows.length) persistOk = false;
       } else {
         console.log("[PRACTICE_ATTEMPTS_INSERT_OK]", { rows: attemptRows.length });
       }
@@ -1443,7 +1444,7 @@ const Simulados = () => {
     if (!persistOk) {
       toast({
         title: "Resultado salvo parcialmente",
-        description: "Algumas métricas do simulado falharam ao gravar. Veja o console para detalhes.",
+        description: "Seu resultado foi exibido, mas parte do histórico não foi registrada. Tente novamente mais tarde.",
         variant: "destructive",
       });
     }
