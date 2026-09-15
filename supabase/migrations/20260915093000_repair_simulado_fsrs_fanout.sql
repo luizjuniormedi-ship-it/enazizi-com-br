@@ -11,7 +11,9 @@
 -- Legacy synchronous mastery trigger references removed columns and can abort
 -- practice_attempts inserts. Domain/proficiency refresh is handled elsewhere.
 DROP TRIGGER IF EXISTS tr_refresh_mastery_on_practice ON public.practice_attempts;
-DROP FUNCTION IF EXISTS public.refresh_domain_mastery();
+-- Keep the obsolete function body in place for now: dropping it can abort this
+-- P0 repair if any unknown dependency still references it. Removing the trigger
+-- is the functional fix that stops practice_attempts inserts from being aborted.
 
 CREATE OR REPLACE FUNCTION public.fanout_simulado_answer()
 RETURNS TRIGGER
@@ -55,6 +57,7 @@ BEGIN
         ON CONFLICT (user_id, event_hash) WHERE event_hash IS NOT NULL DO NOTHING;
       EXCEPTION WHEN OTHERS THEN
         RAISE NOTICE '[FANOUT_PA_FAIL] analytics_id=% sqlstate=% message=%', NEW.id, SQLSTATE, SQLERRM;
+        RAISE;
       END;
     ELSE
       RAISE NOTICE '[FANOUT_PA_SKIP] analytics_id=% reason=missing_bank_question bank_question_id=%', NEW.id, NEW.bank_question_id;
