@@ -1796,7 +1796,11 @@ const Simulados = () => {
           </div>
           <div className="w-full space-y-4">
             <div className="space-y-2">
-              <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
+              <Progress
+                value={loadingPercent}
+                className="h-1.5 bg-white/5"
+                data-testid="simulation-job-status"
+              />
               <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
             </div>
             <div className="flex flex-col gap-2">
