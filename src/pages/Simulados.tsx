@@ -405,6 +405,32 @@ function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
   });
 }
 
+async function fetchDirectBankQuestions(
+  topics: string[],
+  count: number,
+  userId: string | undefined,
+  selectedSubtopics: string[] = [],
+): Promise<SimQuestion[]> {
+  const safeCount = normalizeRequestedCount(count, MIN_SIMULADO_QUESTIONS, 20);
+  const candidateLimit = Math.min(Math.max(safeCount * 12, 60), 240);
+  let query = supabase
+    .from("questions_bank")
+    .select("id, statement, options, correct_index, topic, subtopic, curriculum_theme, curriculum_subtheme, explanation, image_url, difficulty, is_global, user_id, approved_for_generation, review_status")
+    .limit(candidateLimit);
+
+  if (userId) {
+    query = query.or(`user_id.eq.${userId},is_global.eq.true`);
+  } else {
+    query = query.eq("is_global", true);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const mapped = deduplicateQuestions(mapQuestions(data || [], topics, selectedSubtopics));
+  return mapped.slice(0, safeCount);
+}
+
 const Simulados = () => {
   const { user, session: authSession, loading: authLoading } = useAuth();
   
@@ -1004,56 +1030,93 @@ const Simulados = () => {
                 isTimeout
                   ? "Banco demorou para responder. Tentando novamente..."
                   : "Banco falhou. Tentando rota alternativa..."
-              );
+                );
             }
-            
-            const { data, error } = await withTimeout(
-              supabase.functions.invoke(
-                "question-generator",
-                {
-                  headers: {
-                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-                    "x-correlation-id": correlationId,
-                  },
-                  body: {
-                    count: currentBatchSize,
-                    difficulty: config.difficulty || "misto",
-                    specialty: (config.topics && config.topics[0]) || "Clínica Médica",
-                    topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
-                    selectedSubtopics: (config as any).selectedSubtopics || [], // FIX: Ensure subtopics are passed
-                    targetExam: config.realExamProfile || config.examBoard,
-                    mode: fallbackMode,
-                    generationContext: {
-                      subtopic: config.specificTopic,
-                      topicWeights: config.topicWeights,
-                      autoDistribution: config.autoDistribution,
-                      customDistribution: config.customDistribution,
-                      includeWeakThemes: config.includeWeakThemes,
-                      includePreviousErrors: config.includePreviousErrors,
-                    },
-                    avoidStatements: avoid,
-                    avoidIds: avoidIds,
-                    jobId: currentJobId,
-                    batchNumber: batchNum,
-                    correlationId,
-                  },
-                }
-              ),
-              fallbackTimeoutMs,
-              "question-generator-fallback"
-            ).catch((timeoutErr) => {
-              console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL]", {
-                user_id: user?.id ?? null,
-                batch: batchNum,
-                stage: "fallback_invoke",
-                timeout: true,
-                error: getErrorMessage(timeoutErr),
-              });
-              return { data: null, error: timeoutErr } as any;
-            });
 
-            batchData = data;
-            batchErr = error;
+            if (canFallbackToBank && currentBatchSize <= 10) {
+              const directQuestions = await withTimeout(
+                fetchDirectBankQuestions(
+                  config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+                  currentBatchSize,
+                  user?.id,
+                  (config as any).selectedSubtopics || [],
+                ),
+                8_000,
+                "direct-bank-fallback"
+              ).catch((directErr) => {
+                console.warn("[SIMULADO_DIRECT_BANK_FALLBACK_FAIL]", {
+                  user_id: user?.id ?? null,
+                  batch: batchNum,
+                  error: getErrorMessage(directErr),
+                });
+                return [] as SimQuestion[];
+              });
+
+              if (directQuestions.length > 0) {
+                batchData = {
+                  success: true,
+                  questions: directQuestions,
+                  session_id: null,
+                  generationDurationMs: null,
+                  clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                };
+                batchErr = null;
+                console.log("[SIMULADO_DIRECT_BANK_FALLBACK_SUCCESS]", {
+                  correlation_id: correlationId,
+                  received: directQuestions.length,
+                });
+              }
+            }
+
+            if (!batchData) {
+              const { data, error } = await withTimeout(
+                supabase.functions.invoke(
+                  "question-generator",
+                  {
+                    headers: {
+                      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                      "x-correlation-id": correlationId,
+                    },
+                    body: {
+                      count: currentBatchSize,
+                      difficulty: config.difficulty || "misto",
+                      specialty: (config.topics && config.topics[0]) || "Clínica Médica",
+                      topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+                      selectedSubtopics: (config as any).selectedSubtopics || [], // FIX: Ensure subtopics are passed
+                      targetExam: config.realExamProfile || config.examBoard,
+                      mode: fallbackMode,
+                      generationContext: {
+                        subtopic: config.specificTopic,
+                        topicWeights: config.topicWeights,
+                        autoDistribution: config.autoDistribution,
+                        customDistribution: config.customDistribution,
+                        includeWeakThemes: config.includeWeakThemes,
+                        includePreviousErrors: config.includePreviousErrors,
+                      },
+                      avoidStatements: avoid,
+                      avoidIds: avoidIds,
+                      jobId: currentJobId,
+                      batchNumber: batchNum,
+                      correlationId,
+                    },
+                  }
+                ),
+                fallbackTimeoutMs,
+                "question-generator-fallback"
+              ).catch((timeoutErr) => {
+                console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL]", {
+                  user_id: user?.id ?? null,
+                  batch: batchNum,
+                  stage: "fallback_invoke",
+                  timeout: true,
+                  error: getErrorMessage(timeoutErr),
+                });
+                return { data: null, error: timeoutErr } as any;
+              });
+
+              batchData = data;
+              batchErr = error;
+            }
             if (isMontarBancoFlow) {
               setLoadingProgress("Banco respondeu. Validando retorno...");
               setLoadingPercent(50);
