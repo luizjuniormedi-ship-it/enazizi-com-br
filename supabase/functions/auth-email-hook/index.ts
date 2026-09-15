@@ -15,7 +15,7 @@ const corsHeaders = {
 }
 
 // Configuration
-const SITE_NAME = "Mentor AI Pro"
+const SITE_NAME = "ENAZIZI"
 const SENDER_DOMAIN = "notify.enazizi.com"
 const ROOT_DOMAIN = "enazizi.com"
 const FROM_DOMAIN = "notify.enazizi.com"
