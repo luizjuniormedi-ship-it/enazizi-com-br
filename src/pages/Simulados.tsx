@@ -1083,6 +1083,57 @@ const Simulados = () => {
               throw e;
             }
 
+            if (isMontarBancoFlow && !batchData) {
+              const directFallbackCount = Math.min(Math.max(currentBatchSize, MIN_SIMULADO_QUESTIONS), 10);
+              const directFallbackTopics = config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC];
+              const directFallbackSubtopics = (config as any).selectedSubtopics || [];
+
+              console.warn("[SIMULADO_DIRECT_BANK_ERROR_FALLBACK_START]", {
+                user_id: user?.id ?? null,
+                batch: batchNum,
+                count: directFallbackCount,
+                topics: directFallbackTopics,
+                selected_subtopics: directFallbackSubtopics,
+                timeout: isTimeout,
+                provider_unavailable: isProviderUnavailable,
+                error: getErrorMessage(e),
+              });
+
+              setLoadingProgress("Banco demorou para responder. Recuperando questões aprovadas diretamente...");
+              const directQuestions = await withTimeout(
+                fetchDirectBankQuestions(
+                  directFallbackTopics,
+                  directFallbackCount,
+                  user?.id,
+                  directFallbackSubtopics,
+                ),
+                8_000,
+                "direct-bank-error-fallback",
+              ).catch((directErr) => {
+                console.warn("[SIMULADO_DIRECT_BANK_ERROR_FALLBACK_FAIL]", {
+                  user_id: user?.id ?? null,
+                  batch: batchNum,
+                  error: getErrorMessage(directErr),
+                });
+                return [] as SimQuestion[];
+              });
+
+              if (directQuestions.length > 0) {
+                batchData = {
+                  success: true,
+                  questions: directQuestions,
+                  session_id: null,
+                  generationDurationMs: null,
+                  clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                };
+                batchErr = null;
+                console.log("[SIMULADO_DIRECT_BANK_ERROR_FALLBACK_SUCCESS]", {
+                  correlation_id: correlationId,
+                  received: directQuestions.length,
+                });
+              }
+            }
+
             // A segunda chamada repetia a mesma montagem enquanto a primeira
             // ainda podia estar processando no Edge, criando sessões duplicadas.
             // No fluxo de banco, propague a falha e mantenha uma única tentativa.
