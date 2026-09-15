@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { loginAs } from './helpers/auth';
 
 async function openTutor(page: Page) {
   await page.goto('/dashboard/mentor');
@@ -16,19 +17,7 @@ async function selectSpecialty(page: Page, specialty: string) {
 
 test.describe('Tutor IA Module E2E', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
-    const email = process.env.E2E_USER_EMAIL;
-    const password = process.env.E2E_USER_PASSWORD;
-    if (!email || !password) throw new Error('E2E_USER_EMAIL e E2E_USER_PASSWORD são obrigatórios');
-
-    await page.fill('input[type="email"]', email);
-    await page.fill('input[type="password"]', password);
-    await page.click('button:has-text("Entrar"), button:has-text("ENTRAR")');
-    await expect(page).not.toHaveURL(/.*login.*/);
-    await page.evaluate(() => {
-      localStorage.setItem('enazizi_v2_welcome_seen', 'true');
-      localStorage.setItem('enazizi_v2_onboarding_done', 'true');
-    });
+    await loginAs(page, 'student');
   });
 
   test('legacy Mentor route opens the canonical Tutor V3', async ({ page }) => {

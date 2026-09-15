@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getCredentials, loginAs } from './helpers/auth';
 
 /**
  * E2E — Cadeia integrada FSRS + TRI/Approval Score.
@@ -19,8 +20,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
-const E2E_EMAIL = process.env.E2E_USER_EMAIL || '';
-const E2E_PASSWORD = process.env.E2E_USER_PASSWORD || '';
+const { email: E2E_EMAIL, password: E2E_PASSWORD } = getCredentials('student');
 
 const HAS_CREDENTIALS = !!(SUPABASE_URL && SUPABASE_ANON && E2E_EMAIL && E2E_PASSWORD);
 
@@ -35,15 +35,7 @@ async function getAuthedClient(): Promise<{ client: SupabaseClient; userId: stri
 }
 
 async function loginUI(page: Page) {
-  await page.goto('/login');
-  await page.fill('input[type="email"]', E2E_EMAIL);
-  await page.fill('input[type="password"]', E2E_PASSWORD);
-  await page.click('button:has-text("Entrar"), button:has-text("ENTRAR")');
-  await expect(page).not.toHaveURL(/.*login.*/, { timeout: 20000 });
-  await page.evaluate(() => {
-    localStorage.setItem('enazizi_v2_welcome_seen', 'true');
-    localStorage.setItem('enazizi_v2_onboarding_done', 'true');
-  });
+  await loginAs(page, 'student');
 }
 
 function attachFailureGuards(page: Page, failures: string[]) {

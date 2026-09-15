@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Professor - Nova Página de Simulado', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the professor dashboard
-    await page.goto('/dashboard/professor');
+    await page.goto('/professor');
   });
 
   test('FLUXO COMPLETO: Criar rascunho, adicionar questão, público complexo e publicar', async ({ page }) => {
@@ -11,7 +11,7 @@ test.describe('Professor - Nova Página de Simulado', () => {
     const createBtn = page.getByTestId('open-create-simulado-button');
     await expect(createBtn).toBeVisible();
     await createBtn.click();
-    await expect(page).toHaveURL(/\/dashboard\/professor\/simulados\/novo/);
+    await expect(page).toHaveURL(/\/professor\/simulados\/novo/);
 
     // 2. Criar rascunho apenas com título
     const titleInput = page.locator('input[placeholder*="Título"]');
@@ -19,13 +19,13 @@ test.describe('Professor - Nova Página de Simulado', () => {
     const draftBtn = page.getByRole('button', { name: /SALVAR RASCUNHO/i });
     await draftBtn.click();
     await expect(page.getByText(/Simulado salvo com sucesso/i)).toBeVisible();
-    await expect(page).toHaveURL(/\/dashboard\/professor/);
+    await expect(page).toHaveURL(/\/professor/);
 
     // 3. Re-abrir para edição (adicionar questão e público)
     // Localizar o simulado criado e clicar em Editar
     const editBtn = page.locator('div:has-text("Simulado Auditoria Completa")').getByRole('button', { name: /EDITAR/i }).first();
     await editBtn.click();
-    await expect(page).toHaveURL(/\/dashboard\/professor\/simulados\/editar/);
+    await expect(page).toHaveURL(/\/professor\/simulados\/editar/);
 
     // 4. Adicionar questão manual
     await page.getByRole('tab', { name: /QUESTÕES/i }).click();
@@ -80,7 +80,7 @@ test.describe('Professor - Nova Página de Simulado', () => {
     
     // 9. Confirmar finalização
     await expect(page.getByText(/Simulado publicado com sucesso/i)).toBeVisible({ timeout: 10000 });
-    await expect(page).toHaveURL(/\/dashboard\/professor/);
+    await expect(page).toHaveURL(/\/professor/);
 
     // 10. Validar console e erro (implícito no runner do Playwright se configurado, ou manual)
     const logs: string[] = [];
