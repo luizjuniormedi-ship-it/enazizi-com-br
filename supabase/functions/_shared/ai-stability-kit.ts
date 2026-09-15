@@ -16,7 +16,7 @@ export interface TutorResponse {
 }
 
 export function unwrapTutorJsonEnvelope(text: string): Record<string, unknown> | null {
-  if (!/^\s*(?:resposta\s+em\s+json\s*:|<json>|```json|\{)/i.test(text)) return null;
+  if (!/(?:resposta\s+em\s+json\s*:|<json>|```json|\{)/i.test(text)) return null;
   try {
     const parsed = safeJsonExtract<Record<string, unknown>>(text);
     return typeof parsed.content === "string" && parsed.content.trim() &&
@@ -29,7 +29,7 @@ export function unwrapTutorJsonEnvelope(text: string): Record<string, unknown> |
 }
 
 function isRawStructuralTutorPayload(text: string): boolean {
-  return /^\s*(?:resposta\s+em\s+json\s*:|<json>|```json|\{|\[)/i.test(text) &&
+  return /(?:resposta\s+em\s+json\s*:|<json>|```json|\{|\[)/i.test(text) &&
     /"?(content|socraticQuestion|teachingPhase|metadata|provider|model)"?\s*:/i.test(text);
 }
 

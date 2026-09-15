@@ -55,6 +55,15 @@ export function useStreamingResponse() {
       scheduleFlush();
     };
 
+    const extractTutorText = (payload: any): string => {
+      if (!payload) return "";
+      if (typeof payload === "string") return payload;
+      if (typeof payload.content === "string") return payload.content;
+      if (typeof payload.text === "string") return payload.text;
+      const choiceContent = payload.choices?.[0]?.message?.content ?? payload.choices?.[0]?.delta?.content;
+      return typeof choiceContent === "string" ? choiceContent : "";
+    };
+
     const processSseLine = (rawLine: string): "ok" | "done" | "incomplete" => {
       let line = rawLine;
       if (line.endsWith("\r")) line = line.slice(0, -1);
@@ -103,11 +112,25 @@ export function useStreamingResponse() {
 
       textBuffer += decoder.decode();
       if (textBuffer.trim()) {
-        const remainingLines = textBuffer.split("\n");
-        for (const line of remainingLines) {
-          if (!line) continue;
-          const result = processSseLine(line);
-          if (result === "done") break;
+        const remaining = textBuffer.trim();
+        if (!remaining.includes("data:")) {
+          try {
+            const parsed = JSON.parse(remaining);
+            const content = extractTutorText(parsed);
+            if (content) {
+              accumulatorRef.current = content;
+            }
+            lastData = parsed;
+          } catch {
+            if (remaining) accumulatorRef.current += remaining;
+          }
+        } else {
+          const remainingLines = textBuffer.split("\n");
+          for (const line of remainingLines) {
+            if (!line) continue;
+            const result = processSseLine(line);
+            if (result === "done") break;
+          }
         }
       }
 
