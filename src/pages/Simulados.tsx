@@ -1023,46 +1023,55 @@ const Simulados = () => {
               if (allGenerated.length > 0) {
                 break; // Use what we have
               } else {
-                if (isMontarBancoFlow && currentBatchSize <= 10) {
-                  setLoadingProgress("Banco retornou vazio. Buscando questões aprovadas diretamente...");
-                  const directQuestions = await withTimeout(
-                    fetchDirectBankQuestions(
-                      config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC],
-                      currentBatchSize,
-                      user?.id,
-                      (config as any).selectedSubtopics || [],
-                    ),
-                    8_000,
-                    "direct-bank-empty-batch-fallback",
-                  ).catch((directErr) => {
-                    console.warn("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_FAIL]", {
-                      user_id: user?.id ?? null,
-                      batch: batchNum,
-                      error: getErrorMessage(directErr),
-                    });
-                    return [] as SimQuestion[];
-                  });
+                const directFallbackCount = Math.min(Math.max(currentBatchSize, MIN_SIMULADO_QUESTIONS), 10);
+                const directFallbackTopics = config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC];
+                const directFallbackSubtopics = (config as any).selectedSubtopics || [];
 
-                  if (directQuestions.length > 0) {
-                    batchData = {
-                      success: true,
-                      questions: directQuestions,
-                      session_id: null,
-                      generationDurationMs: null,
-                      clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
-                    };
-                    batchErr = null;
-                    console.log("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_SUCCESS]", {
-                      correlation_id: correlationId,
-                      received: directQuestions.length,
-                    });
-                  } else {
-                    const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
-                    throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
-                  }
+                console.warn("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_START]", {
+                  user_id: user?.id ?? null,
+                  batch: batchNum,
+                  count: directFallbackCount,
+                  topics: directFallbackTopics,
+                  selected_subtopics: directFallbackSubtopics,
+                  is_montar_banco_flow: isMontarBancoFlow,
+                  generator_mode: generatorMode,
+                });
+
+                setLoadingProgress("Banco retornou vazio. Buscando questões aprovadas diretamente...");
+                const directQuestions = await withTimeout(
+                  fetchDirectBankQuestions(
+                    directFallbackTopics,
+                    directFallbackCount,
+                    user?.id,
+                    directFallbackSubtopics,
+                  ),
+                  8_000,
+                  "direct-bank-empty-batch-fallback",
+                ).catch((directErr) => {
+                  console.warn("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_FAIL]", {
+                    user_id: user?.id ?? null,
+                    batch: batchNum,
+                    error: getErrorMessage(directErr),
+                  });
+                  return [] as SimQuestion[];
+                });
+
+                if (directQuestions.length > 0) {
+                  batchData = {
+                    success: true,
+                    questions: directQuestions,
+                    session_id: null,
+                    generationDurationMs: null,
+                    clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                  };
+                  batchErr = null;
+                  console.log("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_SUCCESS]", {
+                    correlation_id: correlationId,
+                    received: directQuestions.length,
+                  });
                 } else {
-                const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
-                throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
+                  const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
+                  throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
                 }
               }
             }
@@ -1077,7 +1086,7 @@ const Simulados = () => {
             // A segunda chamada repetia a mesma montagem enquanto a primeira
             // ainda podia estar processando no Edge, criando sessões duplicadas.
             // No fluxo de banco, propague a falha e mantenha uma única tentativa.
-            if (isMontarBancoFlow) throw e;
+            if (isMontarBancoFlow && !batchData) throw e;
 
             const fallbackMode = canFallbackToBank ? (config.mode || "estudo") : generatorMode;
             const fallbackTimeoutMs = canFallbackToBank ? BANK_GENERATOR_TIMEOUT_MS : QUESTION_GENERATOR_TIMEOUT_MS;
