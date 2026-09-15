@@ -68,6 +68,15 @@ export default function TutorV2Page() {
   const contextTopic = studyCtx?.topic || urlTopic;
   const contextSpecialty = studyCtx?.specialty || urlSpecialty;
 
+  useEffect(() => {
+    if (!newSpecialty && contextSpecialty) {
+      setNewSpecialty(contextSpecialty);
+    }
+    if (!newTopic && contextTopic) {
+      setNewTopic(contextTopic);
+    }
+  }, [contextSpecialty, contextTopic, newSpecialty, newTopic]);
+
   // Auto-start session if coming from study context with BOTH specialty and topic.
   // Antes o auto-start disparava só com topic → sessão criada sem specialty.
   useEffect(() => {

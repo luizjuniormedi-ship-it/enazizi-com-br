@@ -12,7 +12,7 @@
  * resolved status from useProfileStatus and renders the matching screen.
  * If status is "ready", it just renders children.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,23 @@ const OnboardingGate = ({ children }: { children: React.ReactNode }) => {
   const [formName, setFormName] = useState(profile?.display_name ?? "");
   const [formUserType, setFormUserType] = useState(profile?.user_type ?? "estudante");
   const [saving, setSaving] = useState(false);
+  const [profileErrorRetries, setProfileErrorRetries] = useState(0);
+
+  useEffect(() => {
+    if (kind !== "error" || profileErrorRetries >= 2) return;
+    const retryTimer = window.setTimeout(() => {
+      setProfileErrorRetries((count) => count + 1);
+      refresh();
+    }, 1_000);
+
+    return () => window.clearTimeout(retryTimer);
+  }, [kind, profileErrorRetries, refresh]);
+
+  useEffect(() => {
+    if (kind !== "error") {
+      setProfileErrorRetries(0);
+    }
+  }, [kind]);
 
   if (kind === "loading") {
     return (
