@@ -386,34 +386,48 @@ function questionMatchesRequestedScope(q: any, topics: string[], subtopics: stri
   ));
 }
 
+function toSimQuestion(q: any, fallbackTopic?: string): SimQuestion {
+  return {
+    id: q.id,
+    bankId: q.id,
+    statement: repairQuestionEncoding(q.statement),
+    options: Array.isArray(q.options) ? q.options.map(repairQuestionEncoding) : [],
+    correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
+    topic: repairQuestionEncoding(
+      typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
+        ? q.topic
+        : q.curriculum_theme || fallbackTopic
+    ),
+    explanation: repairQuestionEncoding(q.explanation),
+    image_url: q.image_url,
+    visibleTopic: repairQuestionEncoding(q._visible_topic || q.topic || q.curriculum_theme || fallbackTopic),
+    topicBucket: repairQuestionEncoding(q._topic_bucket || q.topicBucket),
+    difficulty: q.difficulty,
+    difficultyBucket: q._difficulty_bucket || q.difficultyBucket,
+  };
+}
+
+function isUsableQuestion(q: SimQuestion): boolean {
+  return (
+    q.options.length >= 4 &&
+    q.statement.length > 10 &&
+    !q.statement.includes("�") &&
+    !q.options.some((option) => option.includes("�")) &&
+    !q.explanation?.includes("�")
+  );
+}
+
 function mapQuestions(arr: any[], topics: string[], subtopics: string[] = []): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
     .filter((q: any) => questionMatchesRequestedScope(q, topics, subtopics))
-    .map((q: any) => ({
-      id: q.id,
-      bankId: q.id,
-      statement: repairQuestionEncoding(q.statement),
-      options: Array.isArray(q.options) ? q.options.map(repairQuestionEncoding) : [],
-      correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
-      topic: repairQuestionEncoding(
-        typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
-          ? q.topic
-          : q.curriculum_theme || topics[0]
-      ),
-      explanation: repairQuestionEncoding(q.explanation),
-      image_url: q.image_url,
-      visibleTopic: repairQuestionEncoding(q._visible_topic || q.topic || q.curriculum_theme),
-      topicBucket: repairQuestionEncoding(q._topic_bucket || q.topicBucket),
-      difficulty: q.difficulty,
-      difficultyBucket: q._difficulty_bucket || q.difficultyBucket,
-    }))
-    .filter(q =>
-      q.options.length >= 4 &&
-      q.statement.length > 10 &&
-      !q.statement.includes("�") &&
-      !q.options.some((option) => option.includes("�")) &&
-      !q.explanation?.includes("�")
-    );
+    .map((q: any) => toSimQuestion(q, topics[0]))
+    .filter(isUsableQuestion);
+}
+
+function mapQuestionsWithoutRequestedScope(arr: any[], fallbackTopic: string): SimQuestion[] {
+  return (Array.isArray(arr) ? arr : [])
+    .map((q: any) => toSimQuestion(q, fallbackTopic))
+    .filter(isUsableQuestion);
 }
 
 function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
@@ -450,7 +464,17 @@ async function fetchDirectBankQuestions(
   if (error) throw error;
 
   const mapped = deduplicateQuestions(mapQuestions(data || [], topics, selectedSubtopics));
-  return mapped.slice(0, safeCount);
+  if (mapped.length > 0) return mapped.slice(0, safeCount);
+
+  const unscopedFallback = deduplicateQuestions(mapQuestionsWithoutRequestedScope(data || [], topics[0] || DEFAULT_SIMULADO_TOPIC));
+  if (unscopedFallback.length > 0) {
+    console.warn("[SIMULADO_DIRECT_BANK_UNSCOPED_FALLBACK_SUCCESS]", {
+      requested_topics: topics,
+      selected_subtopics: selectedSubtopics,
+      received: unscopedFallback.length,
+    });
+  }
+  return unscopedFallback.slice(0, safeCount);
 }
 
 const Simulados = () => {
