@@ -43,13 +43,13 @@ import TRIResult from "@/components/simulados/TRIResult";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
 import { SimuladoProfileCard } from "@/components/enaflix/SimuladoProfileCard";
-import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { evaluateCognitivePressure } from "@/lib/pedagogical/cognitive-pressure-engine";
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 import { normalize, textContains, textEquals } from "@/lib/questionTopicMatching";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
+import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
 
 const CONTROL_TOPIC_LABELS = new Set(["Todos", "Básico", "Clínico", "Internato", "Selecionar todos", "Limpar"]);
 const DEFAULT_SIMULADO_TOPIC = "Cardiologia";
@@ -362,6 +362,24 @@ function isProviderUnavailableError(error: unknown): boolean {
   return /\bAI_PROVIDER_UNAVAILABLE\b|provedores de IA não responderam|Provider unavailable|status(?:Code)?\D*503/i.test(message);
 }
 
+function isVisibleTopicCompatibleWithRequestedTopic(q: any, topics: string[]): boolean {
+  const genericTopicLabels = new Set(["geral", "general", "clinica medica", "ciclo clinico", "internato"]);
+  const visibleSpecificTopics = [q.topic, q.subtopic]
+    .filter((value): value is string => typeof value === "string" && normalize(value).length > 0)
+    .filter((value) => !genericTopicLabels.has(normalize(value)));
+
+  if (visibleSpecificTopics.length === 0) return true;
+
+  return topics.some((topic) => {
+    const accepted = [topic, ...(SPECIALTY_SUBTOPICS[topic] || [])];
+    if (accepted.length === 1) return true;
+
+    return visibleSpecificTopics.some((candidate) =>
+      accepted.some((term) => textEquals(candidate, term) || textContains(candidate, term) || textContains(term, candidate))
+    );
+  });
+}
+
 function questionMatchesRequestedScope(
   q: any,
   topics: string[],
@@ -385,11 +403,13 @@ function questionMatchesRequestedScope(
     ? topics.some((topic) => textEquals(auditedTopicBucket, topic))
     : false;
 
-  if (options.allowAuditedBucket && subtopics.length === 0 && bucketMatches) {
+  const visibleTopicCompatible = isVisibleTopicCompatibleWithRequestedTopic(q, topics);
+
+  if (options.allowAuditedBucket && subtopics.length === 0 && bucketMatches && visibleTopicCompatible) {
     return true;
   }
 
-  if (!topicMatches) {
+  if (!topicMatches || !visibleTopicCompatible) {
     if (bucketMatches) {
       console.warn("[SIMULADO_TOPIC_SCOPE_REJECTED_BUCKET_ONLY]", {
         requested_topics: topics,
@@ -397,6 +417,7 @@ function questionMatchesRequestedScope(
         curriculum_theme: q.curriculum_theme ?? null,
         visible_topic: q._visible_topic ?? null,
         topic_bucket: auditedTopicBucket,
+        visible_topic_compatible: visibleTopicCompatible,
       });
     }
     return false;
@@ -1868,9 +1889,6 @@ const Simulados = () => {
                 subtitle={showConfigStep ? "Ajuste os temas e pesos antes de iniciar seu desafio." : "IA de estudos gera desafios reais para testar seu domínio clínico."}
               />
             </div>
-            {pendingSession && checked && !showConfigStep && (
-              <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleResumeSession} onDiscard={abandonSession} />
-            )}
           </div>
 
           {showConfigStep && configToVerify && (

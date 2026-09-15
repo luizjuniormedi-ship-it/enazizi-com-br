@@ -39,10 +39,20 @@ async function loginUI(page: Page) {
 }
 
 async function discardPendingSimuladoIfVisible(page: Page) {
-  const discard = page.getByRole('button', { name: /^Descartar$/i }).first();
-  if (await discard.isVisible({ timeout: 3_000 }).catch(() => false)) {
-    await discard.click();
-    await expect(discard).toBeHidden({ timeout: 10_000 }).catch(() => {});
+  const discardButtons = page.getByRole('button', { name: /^Descartar$/i });
+  await discardButtons.first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const count = await discardButtons.count().catch(() => 0);
+    let clicked = false;
+    for (let index = 0; index < count; index++) {
+      const discard = discardButtons.nth(index);
+      if (await discard.isVisible().catch(() => false)) {
+        await discard.click();
+        clicked = true;
+      }
+    }
+    if (!clicked) break;
+    await expect(discardButtons.first()).toBeHidden({ timeout: 10_000 }).catch(() => {});
   }
 }
 
@@ -50,8 +60,8 @@ async function selectStableBankTopic(page: Page) {
   const setup = page.getByTestId('generation-modal');
   await setup.scrollIntoViewIfNeeded();
   await setup.getByRole('button', { name: /^Limpar$/i }).click().catch(() => {});
-  await setup.getByRole('button', { name: /^Cardiologia$/i }).click();
-  await expect(setup.getByRole('button', { name: /^Cardiologia$/i })).toBeVisible();
+  await setup.getByRole('button', { name: /^Pediatria$/i }).click();
+  await expect(setup.getByRole('button', { name: /^Pediatria$/i })).toBeVisible();
   return setup;
 }
 
@@ -104,7 +114,7 @@ test.describe('FSRS + TRI integrated chain', () => {
     // The integrated persistence chain requires bank-backed UUID questions.
     // AI-only questions are ephemeral and intentionally cannot satisfy the
     // practice_attempts.question_id foreign key.
-    await setup.getByRole('button', { name: /Montar com Banco/i }).click();
+    await setup.getByTestId('montar-banco-button').click();
 
     // ── 4. Answer questions
     await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 90000 });
