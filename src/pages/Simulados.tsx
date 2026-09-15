@@ -1087,6 +1087,7 @@ const Simulados = () => {
                     session_id: null,
                     generationDurationMs: null,
                     clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                    recoveredFromDirectBank: true,
                   };
                   batchErr = null;
                   console.log("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_SUCCESS]", {
@@ -1149,6 +1150,7 @@ const Simulados = () => {
                   session_id: null,
                   generationDurationMs: null,
                   clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                  recoveredFromDirectBank: true,
                 };
                 batchErr = null;
                 console.log("[SIMULADO_DIRECT_BANK_ERROR_FALLBACK_SUCCESS]", {
@@ -1211,6 +1213,7 @@ const Simulados = () => {
                   session_id: null,
                   generationDurationMs: null,
                   clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                  recoveredFromDirectBank: true,
                 };
                 batchErr = null;
                 console.log("[SIMULADO_DIRECT_BANK_FALLBACK_SUCCESS]", {
@@ -1276,13 +1279,18 @@ const Simulados = () => {
                 userId: user?.id,
                 step: "question_generator_direct_response",
                 durationMs: Math.round(performance.now() - montarBancoStartedAt),
-                error,
-                extra: { success: Boolean(data?.success), received_questions: data?.questions?.length ?? 0, session_id: data?.session_id ?? null },
+                error: batchErr ? getErrorMessage(batchErr) : null,
+                extra: {
+                  success: Boolean(batchData?.success),
+                  received_questions: batchData?.questions?.length ?? 0,
+                  session_id: batchData?.session_id ?? null,
+                  recovered_from_direct_bank: Boolean(batchData?.recoveredFromDirectBank),
+                },
               });
             }
-            if (data?.session_id && !simuladoSessionIdRef.current) {
-              simuladoSessionIdRef.current = data.session_id;
-              console.log(`[SIMULADO_SESSION_CAPTURED] ${data.session_id}`);
+            if (batchData?.session_id && !simuladoSessionIdRef.current) {
+              simuladoSessionIdRef.current = batchData.session_id;
+              console.log(`[SIMULADO_SESSION_CAPTURED] ${batchData.session_id}`);
             }
           }
 
@@ -1308,11 +1316,13 @@ const Simulados = () => {
             ...(config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC]),
             ...(config.specificTopic ? [config.specificTopic] : []),
           ];
-          const batchQs = mapQuestions(
-            batchData.questions || [],
-            requestedScopeTopics,
-            config.selectedSubtopics || [],
-          );
+          const batchQs = batchData.recoveredFromDirectBank
+            ? deduplicateQuestions(mapQuestionsWithoutRequestedScope(batchData.questions || [], requestedScopeTopics[0] || DEFAULT_SIMULADO_TOPIC)).slice(0, currentBatchSize)
+            : mapQuestions(
+              batchData.questions || [],
+              requestedScopeTopics,
+              config.selectedSubtopics || [],
+            );
           
           if (batchQs.length === 0) {
             console.warn("[Simulados] Lote retornado vazio (após mapeamento).");
