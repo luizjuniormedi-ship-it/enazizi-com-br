@@ -367,19 +367,22 @@ function questionMatchesRequestedScope(q: any, topics: string[], subtopics: stri
     .filter((value): value is string => typeof value === "string" && normalize(value).length > 0);
 
   const auditedTopicBucket = typeof q._topic_bucket === "string" ? q._topic_bucket : q.topicBucket;
-  if (subtopics.length === 0 && typeof auditedTopicBucket === "string" && normalize(auditedTopicBucket).length > 0) {
-    return topics.some((topic) => textEquals(auditedTopicBucket, topic));
-  }
-
   const primaryTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
     ? q.topic
     : q.curriculum_theme;
-  const topicCandidates = usableCandidates([primaryTopic]);
+  const topicCandidates = usableCandidates([primaryTopic, q.curriculum_theme, q._visible_topic]);
   const effectiveTopicCandidates = topicCandidates.length > 0 ? topicCandidates : [q.specialty];
   const topicMatches = usableCandidates(effectiveTopicCandidates).some((candidate) =>
     topics.some((term) => textEquals(candidate, term) || textContains(candidate, term) || textContains(term, candidate))
   );
-  if (!topicMatches) return false;
+
+  const bucketMatches = typeof auditedTopicBucket === "string" && normalize(auditedTopicBucket).length > 0
+    ? topics.some((topic) => textEquals(auditedTopicBucket, topic))
+    : false;
+
+  if (!topicMatches && !bucketMatches) {
+    return false;
+  }
 
   if (subtopics.length === 0) return true;
   const subtopicCandidates = usableCandidates([q.subtopic, q.curriculum_subtheme]);
@@ -426,12 +429,6 @@ function mapQuestions(arr: any[], topics: string[], subtopics: string[] = []): S
     .filter(isUsableQuestion);
 }
 
-function mapQuestionsWithoutRequestedScope(arr: any[], fallbackTopic: string): SimQuestion[] {
-  return (Array.isArray(arr) ? arr : [])
-    .map((q: any) => toSimQuestion(q, fallbackTopic))
-    .filter(isUsableQuestion);
-}
-
 function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
   const seen = new Set<string>();
   return questions.filter((q) => {
@@ -468,15 +465,12 @@ async function fetchDirectBankQuestions(
   const mapped = deduplicateQuestions(mapQuestions(data || [], topics, selectedSubtopics));
   if (mapped.length > 0) return mapped.slice(0, safeCount);
 
-  const unscopedFallback = deduplicateQuestions(mapQuestionsWithoutRequestedScope(data || [], topics[0] || DEFAULT_SIMULADO_TOPIC));
-  if (unscopedFallback.length > 0) {
-    console.warn("[SIMULADO_DIRECT_BANK_UNSCOPED_FALLBACK_SUCCESS]", {
-      requested_topics: topics,
-      selected_subtopics: selectedSubtopics,
-      received: unscopedFallback.length,
-    });
-  }
-  return unscopedFallback.slice(0, safeCount);
+  console.warn("[SIMULADO_DIRECT_BANK_SCOPED_EMPTY]", {
+    requested_topics: topics,
+    selected_subtopics: selectedSubtopics,
+    inspected: Array.isArray(data) ? data.length : 0,
+  });
+  return [];
 }
 
 const Simulados = () => {
@@ -1318,13 +1312,11 @@ const Simulados = () => {
             ...(config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC]),
             ...(config.specificTopic ? [config.specificTopic] : []),
           ];
-          const batchQs = batchData.recoveredFromDirectBank
-            ? deduplicateQuestions(mapQuestionsWithoutRequestedScope(batchData.questions || [], requestedScopeTopics[0] || DEFAULT_SIMULADO_TOPIC)).slice(0, currentBatchSize)
-            : mapQuestions(
-              batchData.questions || [],
-              requestedScopeTopics,
-              config.selectedSubtopics || [],
-            );
+          const batchQs = deduplicateQuestions(mapQuestions(
+            batchData.questions || [],
+            requestedScopeTopics,
+            config.selectedSubtopics || [],
+          )).slice(0, currentBatchSize);
           
           if (batchQs.length === 0) {
             console.warn("[Simulados] Lote retornado vazio (após mapeamento).");
