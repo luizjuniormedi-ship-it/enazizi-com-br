@@ -94,10 +94,10 @@ const BATCH_SIZE = 10;
 const MIN_SIMULADO_QUESTIONS = 5;
 const MAX_SIMULADO_QUESTIONS = 100;
 
-// The canonical AI chain may spend up to 30s on NVIDIA before falling back to
-// Cerebras and running the clinical-quality retry. Keep the UI alive for the
-// complete server-side attempt instead of abandoning a valid generation.
-const QUESTION_GENERATOR_TIMEOUT_MS = 140000;
+// A geração por IA é opcional para iniciar uma prova. Se NVIDIA/Cerebras não
+// responderem rápido, a experiência correta é degradar para o banco canônico
+// em vez de deixar o aluno preso em loading.
+const QUESTION_GENERATOR_TIMEOUT_MS = 20_000;
 // Banco de questões não depende do fallback de provedores de IA. Se a Edge
 // não montar a prova dentro desse prazo, interrompemos com erro recuperável
 // em vez de manter a tela presa em 25% aguardando o timeout de IA.
@@ -973,7 +973,9 @@ const Simulados = () => {
               }
             }
 
-            if (isProviderUnavailable) {
+            const canFallbackToBank = generatorMode === "ai_generation" && config.mode !== "adaptativo";
+
+            if (isProviderUnavailable && !canFallbackToBank) {
               setLoadingProgress("Os provedores de IA estão indisponíveis agora. Tente novamente em instantes.");
               throw e;
             }
@@ -983,14 +985,21 @@ const Simulados = () => {
             // No fluxo de banco, propague a falha e mantenha uma única tentativa.
             if (isMontarBancoFlow) throw e;
 
+            const fallbackMode = canFallbackToBank ? (config.mode || "estudo") : generatorMode;
+            const fallbackTimeoutMs = canFallbackToBank ? BANK_GENERATOR_TIMEOUT_MS : QUESTION_GENERATOR_TIMEOUT_MS;
+
             console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL] Tentando rota alternativa...", {
               user_id: user?.id ?? null,
               batch: batchNum,
               timeout: isTimeout,
+              fallback_mode: fallbackMode,
               error: getErrorMessage(e),
             });
 
-            if (isMontarBancoFlow) {
+            if (canFallbackToBank) {
+              setLoadingProgress("IA demorou para responder. Montando prova com o banco de questões...");
+              setLoadingPercent((prev) => Math.max(prev, 15));
+            } else if (isMontarBancoFlow) {
               setLoadingProgress(
                 isTimeout
                   ? "Banco demorou para responder. Tentando novamente..."
@@ -1013,7 +1022,7 @@ const Simulados = () => {
                     topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
                     selectedSubtopics: (config as any).selectedSubtopics || [], // FIX: Ensure subtopics are passed
                     targetExam: config.realExamProfile || config.examBoard,
-                    mode: generatorMode,
+                    mode: fallbackMode,
                     generationContext: {
                       subtopic: config.specificTopic,
                       topicWeights: config.topicWeights,
@@ -1030,7 +1039,7 @@ const Simulados = () => {
                   },
                 }
               ),
-              QUESTION_GENERATOR_TIMEOUT_MS,
+              fallbackTimeoutMs,
               "question-generator-fallback"
             ).catch((timeoutErr) => {
               console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL]", {
