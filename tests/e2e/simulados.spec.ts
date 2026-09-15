@@ -11,6 +11,23 @@ test.describe('Simulados Module E2E', () => {
     await loginAs(page, 'student');
   });
 
+  async function discardPendingSimuladoIfVisible(page: import('@playwright/test').Page) {
+    const discard = page.getByRole('button', { name: /^Descartar$/i }).first();
+    if (await discard.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await discard.click();
+      await expect(discard).toBeHidden({ timeout: 10_000 }).catch(() => {});
+    }
+  }
+
+  async function selectStableBankTopic(page: import('@playwright/test').Page) {
+    const setupSection = page.getByTestId('generation-modal');
+    await setupSection.scrollIntoViewIfNeeded();
+    await setupSection.getByRole('button', { name: /^Limpar$/i }).click().catch(() => {});
+    await setupSection.getByRole('button', { name: /^Cardiologia$/i }).click();
+    await expect(setupSection.getByRole('button', { name: /^Cardiologia$/i })).toBeVisible();
+    return setupSection;
+  }
+
   test('Navigate to Simulados and ensure no runtime errors', async ({ page }) => {
     // Listen for console errors
     const consoleErrors: string[] = [];
@@ -56,6 +73,7 @@ test.describe('Simulados Module E2E', () => {
 
   test('Create job for 50 questions and verify progress', async ({ page }) => {
     await page.goto('/dashboard/simulados');
+    await discardPendingSimuladoIfVisible(page);
     
     // 5. Criar job de 50 questões
     // We use the setup component at the bottom
@@ -78,15 +96,11 @@ test.describe('Simulados Module E2E', () => {
   test('Complete a simulated exam flow', async ({ page }) => {
     // Generate a quick 5 questions study simulado
     await page.goto('/dashboard/simulados');
+    await discardPendingSimuladoIfVisible(page);
     
-    const setupSection = page.getByTestId('generation-modal');
-    await setupSection.scrollIntoViewIfNeeded();
+    const setupSection = await selectStableBankTopic(page);
     await setupSection.getByTestId('mode-estudo-button').click();
     await setupSection.getByTestId('qtd-5-button').click();
-    
-    // Select at least one topic if none selected
-    const firstTopic = setupSection.locator('button.rounded-full').first();
-    await firstTopic.click();
     
     // Use the canonical bank-backed path for the short E2E. The IA path is
     // covered by contract/edge tests and is intentionally more variable.
