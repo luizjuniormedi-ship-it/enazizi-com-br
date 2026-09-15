@@ -181,7 +181,7 @@ test.describe('FSRS + TRI integrated chain', () => {
 
     const { data: scores, error: scoresError } = await client
       .from('approval_scores')
-      .select('id, banca, score, created_at')
+      .select('id, score, created_at')
       .eq('user_id', userId)
       .gte('created_at', since)
       .order('created_at', { ascending: false })
@@ -192,7 +192,7 @@ test.describe('FSRS + TRI integrated chain', () => {
 
     const { data: chance, error: chanceError } = await client
       .from('chance_by_exam')
-      .select('exam, chance, updated_at')
+      .select('banca, chance_score, updated_at')
       .eq('user_id', userId);
     expect(chanceError, `chance_by_exam query failed: ${chanceError?.message}`).toBeNull();
     expect(chance, 'chance_by_exam present').not.toBeNull();
