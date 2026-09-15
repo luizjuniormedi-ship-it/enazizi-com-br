@@ -1640,7 +1640,7 @@ const Simulados = () => {
             user_id: user.id,
             question_id: questionId,
             correct: answers[idx] === q.correct,
-            event_hash: `simulado:${sessionId}:${questionId}:${idx}`,
+            event_hash: `sim:${sessionId}:${idx}`,
           };
         })
         .filter(Boolean);
