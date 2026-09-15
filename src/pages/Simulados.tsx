@@ -1023,8 +1023,47 @@ const Simulados = () => {
               if (allGenerated.length > 0) {
                 break; // Use what we have
               } else {
+                if (isMontarBancoFlow && currentBatchSize <= 10) {
+                  setLoadingProgress("Banco retornou vazio. Buscando questões aprovadas diretamente...");
+                  const directQuestions = await withTimeout(
+                    fetchDirectBankQuestions(
+                      config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC],
+                      currentBatchSize,
+                      user?.id,
+                      (config as any).selectedSubtopics || [],
+                    ),
+                    8_000,
+                    "direct-bank-empty-batch-fallback",
+                  ).catch((directErr) => {
+                    console.warn("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_FAIL]", {
+                      user_id: user?.id ?? null,
+                      batch: batchNum,
+                      error: getErrorMessage(directErr),
+                    });
+                    return [] as SimQuestion[];
+                  });
+
+                  if (directQuestions.length > 0) {
+                    batchData = {
+                      success: true,
+                      questions: directQuestions,
+                      session_id: null,
+                      generationDurationMs: null,
+                      clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                    };
+                    batchErr = null;
+                    console.log("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_SUCCESS]", {
+                      correlation_id: correlationId,
+                      received: directQuestions.length,
+                    });
+                  } else {
+                    const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
+                    throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
+                  }
+                } else {
                 const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
                 throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
+                }
               }
             }
 
