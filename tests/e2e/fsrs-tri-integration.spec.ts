@@ -164,9 +164,9 @@ test.describe('FSRS + TRI integrated chain', () => {
 
     const { data: errors, error: errorBankError } = await client
       .from('error_bank')
-      .select('id, tema, vezes_errado, ultima_vez_errado')
+      .select('id, tema, vezes_errado, updated_at')
       .eq('user_id', userId)
-      .gte('ultima_vez_errado', since);
+      .gte('updated_at', since);
     // error_bank may legitimately be empty if user got everything right; just check no crash
     expect(errorBankError, `error_bank query failed: ${errorBankError?.message}`).toBeNull();
     expect(errors, 'error_bank query OK').not.toBeNull();
