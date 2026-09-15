@@ -659,8 +659,8 @@ async function logRun(
       output_tokens: null,
       estimated_cost: null,
       quality_score: null,
-      error_code: result.errorCode || (result.success ? null : lastAttempt?.code) || null,
-      success: result.success,
+      error_code: result.errorCode || (successAttempt ? null : lastAttempt?.code) || null,
+      success: Boolean(successAttempt),
       budget_mode: input.budgetMode || "balanced",
       metadata: {
         selection_reason: selection.reason,

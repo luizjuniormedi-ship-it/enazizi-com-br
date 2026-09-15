@@ -200,7 +200,7 @@ serve(async (req) => {
   try {
     const startTime = Date.now();
     const auth = await requireAuth(req);
-    console.log("[TUTOR_V2_AUTH_STATUS]", { ok: auth.ok, userId: auth.userId, requestId });
+    console.log("[TUTOR_V2_AUTH_STATUS]", { ok: auth.ok, userId: auth.ok ? auth.userId : null, requestId });
     
     if (!auth.ok) return auth.response;
     const { userId } = auth;
