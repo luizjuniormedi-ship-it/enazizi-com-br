@@ -111,6 +111,10 @@ test.describe('FSRS + TRI integrated chain', () => {
       const finish = page.getByTestId('finish-simulado-button');
       if (await finish.isVisible().catch(() => false)) {
         await finish.click();
+        const confirmFinish = page.getByRole('button', { name: /Finalizar mesmo assim/i });
+        if (await confirmFinish.isVisible().catch(() => false)) {
+          await confirmFinish.click();
+        }
         break;
       }
     }
