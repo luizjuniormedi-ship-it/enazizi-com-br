@@ -1735,6 +1735,18 @@ const Simulados = () => {
         } else {
           console.log("[SIM_SESSION_FINISHED_OK]", { sessionId, score: finalScore, wrongCount });
           console.log("[E2E_SIMULADO_FINISHED]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, score: finalScore });
+          try {
+            const { error: approvalErr } = await supabase.functions.invoke("calculate-approval-score", {
+              body: { source: "simulado_finish", session_id: sessionId },
+            });
+            if (approvalErr) {
+              console.warn("[SIM_APPROVAL_SCORE_REFRESH_FAIL]", approvalErr.message);
+            } else {
+              console.log("[SIM_APPROVAL_SCORE_REFRESH_OK]", { sessionId });
+            }
+          } catch (approvalCatch: any) {
+            console.warn("[SIM_APPROVAL_SCORE_REFRESH_FAIL]", approvalCatch?.message || approvalCatch);
+          }
         }
       } catch (e: any) {
         console.error("[SIM_SESSION_UPDATE_FAIL]", e?.message);
