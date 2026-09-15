@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Professor Command Center — Operacional', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/dashboard/professor');
+    await page.goto('/professor');
   });
 
   test('renderiza painel sem ErrorBoundary e abre em Operacional', async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('Professor Command Center — Operacional', () => {
 
   test('viewport mobile 430px: tabs principais empilham sem overflow', async ({ page }) => {
     await page.setViewportSize({ width: 430, height: 800 });
-    await page.goto('/dashboard/professor');
+    await page.goto('/professor');
     await expect(page.getByText(/painel do professor/i)).toBeVisible({ timeout: 15000 });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(2);

@@ -15,26 +15,19 @@
  * erro fatal de console).
  */
 import { test, expect, type Page } from "@playwright/test";
+import { hasCredentials, loginAs } from "./helpers/auth";
 
 const BASE = process.env.BASE_URL || "https://enazizi-com-br.lovable.app";
-const STUDENT_EMAIL = process.env.TEST_STUDENT_EMAIL;
-const STUDENT_PASSWORD = process.env.TEST_STUDENT_PASSWORD;
-const PROF_EMAIL = process.env.TEST_PROFESSOR_EMAIL;
-const PROF_PASSWORD = process.env.TEST_PROFESSOR_PASSWORD;
 
-async function tryLogin(page: Page, email: string, password: string) {
-  await page.goto(`${BASE}/login`);
-  await page.getByPlaceholder(/email/i).fill(email);
-  await page.getByPlaceholder(/senha|password/i).fill(password);
-  await page.getByRole("button", { name: /entrar|login/i }).click();
-  await page.waitForURL("**/dashboard**", { timeout: 20000 });
+async function tryLogin(page: Page, role: "student" | "professor") {
+  await loginAs(page, role, BASE);
 }
 
 test.describe("Proficiência Guiada — Aluno", () => {
-  test.skip(!STUDENT_EMAIL || !STUDENT_PASSWORD, "TEST_STUDENT_EMAIL/PASSWORD não definidos");
+  test.skip(!hasCredentials("student"), "credenciais de aluno E2E não definidas");
 
   test("rota /dashboard/proficiencia carrega sem crash", async ({ page }) => {
-    await tryLogin(page, STUDENT_EMAIL!, STUDENT_PASSWORD!);
+    await tryLogin(page, "student");
     const consoleErrors: string[] = [];
     page.on("pageerror", (e) => consoleErrors.push(e.message));
 
@@ -50,7 +43,7 @@ test.describe("Proficiência Guiada — Aluno", () => {
   });
 
   test("aluno sem plano vê fallback (não crasha)", async ({ page }) => {
-    await tryLogin(page, STUDENT_EMAIL!, STUDENT_PASSWORD!);
+    await tryLogin(page, "student");
     await page.goto(`${BASE}/dashboard/proficiencia`);
     await page.waitForLoadState("networkidle", { timeout: 30000 });
 
@@ -61,15 +54,15 @@ test.describe("Proficiência Guiada — Aluno", () => {
 });
 
 test.describe("Proficiência Guiada — Professor", () => {
-  test.skip(!PROF_EMAIL || !PROF_PASSWORD, "TEST_PROFESSOR_EMAIL/PASSWORD não definidos");
+  test.skip(!hasCredentials("professor"), "credenciais de professor E2E não definidas");
 
   test("painel do professor exibe módulo Proficiência sem regressão", async ({ page }) => {
-    await tryLogin(page, PROF_EMAIL!, PROF_PASSWORD!);
+    await tryLogin(page, "professor");
 
     const consoleErrors: string[] = [];
     page.on("pageerror", (e) => consoleErrors.push(e.message));
 
-    await page.goto(`${BASE}/dashboard/professor`);
+    await page.goto(`${BASE}/professor`);
     await page.waitForLoadState("networkidle", { timeout: 30000 });
 
     // Procura pelo título "Proficiência Guiada" (ou similar) — soft assertion
@@ -81,8 +74,8 @@ test.describe("Proficiência Guiada — Professor", () => {
   });
 
   test("clique em 'Novo plano' abre o diálogo de criação", async ({ page }) => {
-    await tryLogin(page, PROF_EMAIL!, PROF_PASSWORD!);
-    await page.goto(`${BASE}/dashboard/professor`);
+    await tryLogin(page, "professor");
+    await page.goto(`${BASE}/professor`);
     await page.waitForLoadState("networkidle", { timeout: 30000 });
 
     const newPlanBtn = page.getByRole("button", { name: /novo plano/i }).first();

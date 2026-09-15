@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { loginAs } from './helpers/auth';
 
 /**
  * E2E tests for the Simulados module.
@@ -7,27 +8,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Simulados Module E2E', () => {
   
   test.beforeEach(async ({ page }) => {
-    // 1. Login
-    await page.goto('/login');
-    
-    // Check for E2E user credentials in environment
-    const email = process.env.E2E_USER_EMAIL;
-    const password = process.env.E2E_USER_PASSWORD;
-    
-    if (email && password) {
-      await page.fill('input[type="email"]', email);
-      await page.fill('input[type="password"]', password);
-      await page.click('button:has-text("Entrar"), button:has-text("ENTRAR")');
-      
-      // Wait for login to complete
-      await expect(page).not.toHaveURL(/.*login.*/);
-      await page.evaluate(() => {
-        localStorage.setItem('enazizi_v2_welcome_seen', 'true');
-        localStorage.setItem('enazizi_v2_onboarding_done', 'true');
-      });
-    } else {
-      console.warn('E2E_USER_EMAIL or E2E_USER_PASSWORD not set. Skipping login step (assuming session is already active or using manual login).');
-    }
+    await loginAs(page, 'student');
   });
 
   test('Navigate to Simulados and ensure no runtime errors', async ({ page }) => {
