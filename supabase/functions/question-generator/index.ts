@@ -247,6 +247,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     step = "bank_fetch";
     let finalQuestions: any[] = [];
     let difficultyDistribution: ReturnType<typeof selectByDifficultyQuota<any>> | null = null;
+    const bankDiagnostics = {
+      candidates: 0,
+      strictCandidates: 0,
+      broadTopicFallbackUsed: false,
+      eligible: 0,
+      rejectedByAvoidIds: 0,
+      rejectedByFreshness: 0,
+      rejectedByTopic: 0,
+      rejectedByTextQuality: 0,
+      rejectedByDuplicate: 0,
+      selected: 0,
+    };
     const difficultyPlan = getCorpusDifficultyPlan(examBoard, difficulty);
     const seenHashes = new Set<string>();
     const seenNormalized = new Set<string>();
@@ -257,15 +269,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board");
 
       let candidates: any[] = [];
-      // Keep topic and subtopic scopes in their canonical columns. Mixing topic
-      // terms into subtopic columns produced large false-positive candidate
-      // windows; the final guard then rejected the whole next page even when
-      // the requested board still had enough eligible questions.
-      const topicOr = [
-        ...topics.flatMap((t: string) => [`topic.ilike.%${t}%`, `curriculum_theme.ilike.%${t}%`]),
+      const buildTopicOr = (includeTopicTermsInSubtopic = false) => [
+        ...topics.flatMap((t: string) => [
+          `topic.ilike.%${t}%`,
+          `curriculum_theme.ilike.%${t}%`,
+          ...(includeTopicTermsInSubtopic ? [`subtopic.ilike.%${t}%`, `curriculum_subtheme.ilike.%${t}%`] : []),
+        ]),
         ...subtopics.flatMap((t: string) => [`subtopic.ilike.%${t}%`, `curriculum_subtheme.ilike.%${t}%`]),
       ]
         .join(",");
+      const strictTopicOr = buildTopicOr(false);
+      const broadTopicOr = buildTopicOr(true);
 
       const profileTopicCount = Object.keys(profile.specialtyWeights || {}).length;
       const isFullOfficialBlueprint = Boolean(examBoard) &&
@@ -276,8 +290,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       // Applying a 20+ clause ILIKE OR over the eligibility view is redundant
       // and can exceed the UI timeout for 100-question exams. Keep that filter
       // only for genuine topic/subtopic selections.
-      const buildScopedQuery = (difficultyScore?: number) => {
-        let query = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(topicOr);
+      const buildScopedQuery = (difficultyScore?: number, includeTopicTermsInSubtopic = false) => {
+        let query = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(includeTopicTermsInSubtopic ? broadTopicOr : strictTopicOr);
         if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
           query = query.ilike("board", String(examBoard));
         }
@@ -356,14 +370,38 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const strata = await Promise.all([3, 4, 5].map(fetchDifficultyStratum));
         candidates = strata.flat();
       } else {
-        const { data, error } = await buildScopedQuery()
-          .order("id", { ascending: true })
-          .limit(Math.max(requestedCount * 4, 200));
-        if (error) throw error;
-        candidates = data || [];
+        const fetchSimpleCandidateWindow = async (includeTopicTermsInSubtopic = false) => {
+          const rows: any[] = [];
+          const pageSize = 200;
+          const maxPages = 5;
+          for (let page = 0; page < maxPages; page++) {
+            const from = page * pageSize;
+            const { data, error } = await withDeadline(
+              buildScopedQuery(undefined, includeTopicTermsInSubtopic)
+                .order("id", { ascending: true })
+                .range(from, from + pageSize - 1),
+              BANK_QUERY_TIMEOUT_MS,
+              `simple_bank;page=${page};broad=${includeTopicTermsInSubtopic}`,
+            );
+            if (error) throw error;
+            rows.push(...(data || []));
+            if (!data || data.length < pageSize) break;
+          }
+          return rows;
+        };
+        candidates = await fetchSimpleCandidateWindow(false);
+        bankDiagnostics.strictCandidates = candidates.length;
+        if (candidates.length === 0 && subtopics.length === 0) {
+          const broadCandidates = await fetchSimpleCandidateWindow(true);
+          if (broadCandidates.length > 0) {
+            bankDiagnostics.broadTopicFallbackUsed = true;
+            candidates = broadCandidates;
+          }
+        }
       }
       
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
+      bankDiagnostics.candidates = candidates.length;
 
       const eligibleQuestions: any[] = [];
       for (const q of candidates) {
@@ -371,12 +409,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         // can exceed the request-line limit and was previously misreported as
         // an empty bank. The candidate window is bounded, so enforce the same
         // historical exclusion safely in memory.
-        if (requestAvoidIdSet.has(q.id)) continue;
+        if (requestAvoidIdSet.has(q.id)) {
+          bankDiagnostics.rejectedByAvoidIds++;
+          continue;
+        }
         const historicalReuse = historicalExcludedIdSet.has(q.id);
         // Small study sessions remain freshness-first. A 100-question quota
         // may reuse historical items only as a last resort; duplicates inside
         // the current exam are still forbidden by requestAvoidIdSet/hashes.
-        if (historicalReuse && !difficultyPlan) continue;
+        if (historicalReuse && !difficultyPlan) {
+          bankDiagnostics.rejectedByFreshness++;
+          continue;
+        }
         
         const matchResult = topicEngine.calculateScore(q, topics, subtopics);
         
@@ -390,14 +434,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         }));
         const allowedGuard = guardResults.find((entry) => entry.result.allowed) ?? guardResults[0];
         const guardResult = allowedGuard?.result;
-        const primaryVisibleTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalizeStatement(q.topic))
-          ? q.topic
-          : q.curriculum_theme;
-        const visibleTopic = {
-          topic: primaryVisibleTopic,
-        };
+        const visibleTopicCandidates = [q.topic, q.curriculum_theme, q.subtopic, q.curriculum_subtheme]
+          .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+        const matchedVisibleTopic = topics
+          .flatMap((topic) => visibleTopicCandidates.map((value) => ({ topic, value })))
+          .find(({ topic, value }) => validateFinalQuestionTopic({ topic: value }, topic).allowed);
+        const primaryVisibleTopic = matchedVisibleTopic?.value ||
+          (typeof q.topic === "string" && !["geral", "general"].includes(normalizeStatement(q.topic))
+            ? q.topic
+            : q.curriculum_theme);
         const visibleTopicAllowed = topics.some((topic) =>
-          validateFinalQuestionTopic(visibleTopic, topic).allowed
+          visibleTopicCandidates.some((value) => validateFinalQuestionTopic({ topic: value }, topic).allowed)
         );
         const visibleTopicClassification = requestedTopicWeights.length > 0
           ? classifyVisibleTopicBucket(q, requestedTopicWeights)
@@ -407,6 +454,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           : Boolean(guardResult?.allowed && visibleTopicAllowed);
         
         if (!topicAllowed) {
+          bankDiagnostics.rejectedByTopic++;
           console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult?.reason} visible_topic=${primaryVisibleTopic || "missing"} requested=${topics.join("|")}`);
           continue;
         }
@@ -416,13 +464,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           hasCorruptQuestionText(q.explanation) ||
           (Array.isArray(q.options) && q.options.some(hasCorruptQuestionText))
         ) {
+          bankDiagnostics.rejectedByTextQuality++;
           console.log(`[SIM_TEXT_QUALITY_REJECTED] question_id=${q.id} reason=invalid_encoding`);
           continue;
         }
 
         const hash = makeHash(q.statement);
         const norm = normalizeStatement(q.statement);
-        if (seenHashes.has(hash) || seenNormalized.has(norm)) continue;
+        if (seenHashes.has(hash) || seenNormalized.has(norm)) {
+          bankDiagnostics.rejectedByDuplicate++;
+          continue;
+        }
         
         eligibleQuestions.push({
           ...q, 
@@ -447,6 +499,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           break;
         }
       }
+      bankDiagnostics.eligible = eligibleQuestions.length;
 
       if (difficultyPlan) {
         const quotaOptions = isGeneralHundred
@@ -463,6 +516,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       } else {
         finalQuestions = eligibleQuestions.slice(0, requestedCount);
       }
+      bankDiagnostics.selected = finalQuestions.length;
     }
 
     if (isGeneralHundred && difficultyDistribution && !difficultyDistribution.exact) {
@@ -628,6 +682,28 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     }
 
     console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
+
+    if (finalQuestions.length === 0) {
+      const errorPayload = {
+        success: false,
+        errorCode: "BATCH_EMPTY",
+        error: "Não foi possível montar questões com os filtros selecionados.",
+        retryable: false,
+        requestedCount,
+        generatedCount: 0,
+        topics,
+        subtopics,
+        difficulty,
+        examBoard: examBoard || null,
+        diagnostics: bankDiagnostics,
+        correlationId,
+      };
+      console.warn("[SIM_BATCH_EMPTY]", errorPayload);
+      return new Response(JSON.stringify(errorPayload), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let insufficientQuestions = finalQuestions.length < requestedCount;
     const persistedSources = new Set(finalQuestions.map((question) =>
