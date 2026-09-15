@@ -55,13 +55,28 @@ export function useStreamingResponse() {
       scheduleFlush();
     };
 
+    const extractJsonEnvelopeContent = (text: string): string => {
+      if (!/(?:resposta\s+em\s+json\s*:|<json>|```json|\{)/i.test(text)) return text;
+      const jsonStart = text.indexOf("{");
+      const jsonEnd = text.lastIndexOf("}");
+      if (jsonStart === -1 || jsonEnd <= jsonStart) return text;
+      try {
+        const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
+        return typeof parsed?.content === "string" && parsed.content.trim()
+          ? parsed.content
+          : text;
+      } catch {
+        return text;
+      }
+    };
+
     const extractTutorText = (payload: any): string => {
       if (!payload) return "";
-      if (typeof payload === "string") return payload;
-      if (typeof payload.content === "string") return payload.content;
-      if (typeof payload.text === "string") return payload.text;
+      if (typeof payload === "string") return extractJsonEnvelopeContent(payload);
+      if (typeof payload.content === "string") return extractJsonEnvelopeContent(payload.content);
+      if (typeof payload.text === "string") return extractJsonEnvelopeContent(payload.text);
       const choiceContent = payload.choices?.[0]?.message?.content ?? payload.choices?.[0]?.delta?.content;
-      return typeof choiceContent === "string" ? choiceContent : "";
+      return typeof choiceContent === "string" ? extractJsonEnvelopeContent(choiceContent) : "";
     };
 
     const processSseLine = (rawLine: string): "ok" | "done" | "incomplete" => {
@@ -73,7 +88,7 @@ export function useStreamingResponse() {
       if (jsonStr === "[DONE]") return "done";
       try {
         const parsed = JSON.parse(jsonStr);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        const content = (parsed.choices?.[0]?.delta?.content as string | undefined) ?? extractTutorText(parsed);
         appendChunk(content || "", parsed);
         return "ok";
       } catch {
@@ -122,7 +137,7 @@ export function useStreamingResponse() {
             }
             lastData = parsed;
           } catch {
-            if (remaining) accumulatorRef.current += remaining;
+            if (remaining) accumulatorRef.current += extractJsonEnvelopeContent(remaining);
           }
         } else {
           const remainingLines = textBuffer.split("\n");
