@@ -179,16 +179,22 @@ test.describe('FSRS + TRI integrated chain', () => {
     expect(fsrsError, `fsrs_cards query failed: ${fsrsError?.message}`).toBeNull();
     expect(fsrs, 'fsrs_cards updated/created').not.toBeNull();
 
-    const { data: scores, error: scoresError } = await client
-      .from('approval_scores')
-      .select('id, score, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', since)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    expect(scoresError, `approval_scores query failed: ${scoresError?.message}`).toBeNull();
-    expect(scores, 'approval_scores row created').not.toBeNull();
-    expect((scores ?? []).length).toBeGreaterThan(0);
+    await expect
+      .poll(
+        async () => {
+          const { data: scores, error: scoresError } = await client
+            .from('approval_scores')
+            .select('id, score, created_at')
+            .eq('user_id', userId)
+            .gte('created_at', since)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (scoresError) throw new Error(`approval_scores query failed: ${scoresError.message}`);
+          return (scores ?? []).length;
+        },
+        { message: 'approval_scores row created', timeout: 30000 },
+      )
+      .toBeGreaterThan(0);
 
     const { data: chance, error: chanceError } = await client
       .from('chance_by_exam')
