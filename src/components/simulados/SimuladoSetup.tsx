@@ -29,6 +29,7 @@ const DIFFICULTY_OPTIONS = [
 
 const MIN_SIMULADO_QUESTIONS = 5;
 const MAX_SIMULADO_QUESTIONS = 100;
+const DEFAULT_SIMULADO_TOPIC = "Cardiologia";
 const CONTROL_TOPIC_LABELS = new Set(["Todos", "Básico", "Clínico", "Internato", "Selecionar todos", "Limpar"]);
 
 const EXAM_BOARDS = [
@@ -427,7 +428,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           finalTopics = profile.topicWeights.map((tw: any) => tw.topic);
           resolvedWeights = profile.topicWeights;
         } else {
-          finalTopics = ["Clínica Médica"];
+          finalTopics = [DEFAULT_SIMULADO_TOPIC];
         }
       }
 

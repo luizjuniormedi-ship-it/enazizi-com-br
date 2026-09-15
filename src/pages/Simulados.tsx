@@ -52,6 +52,7 @@ import { normalize, textContains, textEquals } from "@/lib/questionTopicMatching
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 
 const CONTROL_TOPIC_LABELS = new Set(["Todos", "Básico", "Clínico", "Internato", "Selecionar todos", "Limpar"]);
+const DEFAULT_SIMULADO_TOPIC = "Cardiologia";
 
 function normalizeSimuladoTopics(topics: string[] | undefined | null): string[] {
   const valid = (topics || [])
@@ -253,7 +254,7 @@ async function generateBatch(
         body: {
           count,
           difficulty,
-          specialty: topics[0] || "Clínica Médica",
+          specialty: topics[0] || DEFAULT_SIMULADO_TOPIC,
           topics,
           selectedSubtopics,
           targetExam: examBoard,
@@ -669,6 +670,11 @@ const Simulados = () => {
       config.topics = normalizeSimuladoTopics(weights.map((tw: any) => tw.topic));
       console.log("[Simulados] Tópicos recuperados da distribuição:", config.topics);
     }
+
+    if (config.topics.length === 0 && !config.specificTopic && !selectedExam) {
+      config.topics = [DEFAULT_SIMULADO_TOPIC];
+      console.log("[Simulados] Nenhum tema clínico válido selecionado; usando fallback:", config.topics);
+    }
     
     // A prova completa precisa carregar também os pesos. Enviar apenas a lista
     // de temas permite que o backend cumpra a quantidade sem cumprir as cotas.
@@ -942,7 +948,7 @@ const Simulados = () => {
               timeout_ms: isMontarBancoFlow ? BANK_GENERATOR_TIMEOUT_MS : QUESTION_GENERATOR_TIMEOUT_MS,
             });
             const batchQs = await generateBatch(
-              config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+              config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC],
               currentBatchSize,
               config.difficulty || "misto",
               accessToken,
@@ -1059,7 +1065,7 @@ const Simulados = () => {
             if (canFallbackToBank && currentBatchSize <= 10) {
               const directQuestions = await withTimeout(
                 fetchDirectBankQuestions(
-                  config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+                  config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC],
                   currentBatchSize,
                   user?.id,
                   (config as any).selectedSubtopics || [],
@@ -1103,8 +1109,8 @@ const Simulados = () => {
                     body: {
                       count: currentBatchSize,
                       difficulty: config.difficulty || "misto",
-                      specialty: (config.topics && config.topics[0]) || "Clínica Médica",
-                      topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+                      specialty: (config.topics && config.topics[0]) || DEFAULT_SIMULADO_TOPIC,
+                      topics: config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC],
                       selectedSubtopics: (config as any).selectedSubtopics || [], // FIX: Ensure subtopics are passed
                       targetExam: config.realExamProfile || config.examBoard,
                       mode: fallbackMode,
@@ -1176,7 +1182,7 @@ const Simulados = () => {
           }
 
           const requestedScopeTopics = [
-            ...(config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"]),
+            ...(config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC]),
             ...(config.specificTopic ? [config.specificTopic] : []),
           ];
           const batchQs = mapQuestions(
@@ -1693,14 +1699,14 @@ const Simulados = () => {
                     subtitle="Focado nos seus temas de menor desempenho"
                     count={20} timeMinutes={60} difficulty="misto" badge="IA Recomendou"
                     image="https://images.unsplash.com/photo-1633526543814-9718c8922b7a?q=80&w=400"
-                    onClick={() => handleStart({ topics: ["Clínica Médica"], count: 20, difficulty: "misto", mode: "adaptativo" })}
+                    onClick={() => handleStart({ topics: [DEFAULT_SIMULADO_TOPIC], count: 20, difficulty: "misto", mode: "adaptativo" })}
                   />
                   <SimuladoProfileCard
                     title="Desafio de Diagnóstico Visual"
                     subtitle="100% questões com imagem"
                     count={10} timeMinutes={20} difficulty="intermediario"
                     image="https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=400"
-                    onClick={() => handleStart({ topics: ["Clínica Médica"], count: 10, difficulty: "intermediario", mode: "estudo", imagePercent: 100 })}
+                    onClick={() => handleStart({ topics: [DEFAULT_SIMULADO_TOPIC], count: 10, difficulty: "intermediario", mode: "estudo", imagePercent: 100 })}
                   />
                 </div>
 
