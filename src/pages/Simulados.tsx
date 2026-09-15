@@ -1602,64 +1602,66 @@ const Simulados = () => {
 
           {!showConfigStep && (
             <>
-              {activeJobs.length > 0 && (
-                <EnaflixSection title="Gerações em Andamento">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeJobs.map(job => (
-                      <Card key={job.id} className="bg-card/50 border-primary/20 backdrop-blur-sm overflow-hidden">
-                        <CardContent className="p-4 space-y-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                                {job.config?.mode === 'prova_real' ? job.config?.realExamProfile : 'Simulado Personalizado'}
-                              </p>
-                              <h4 className="font-semibold text-sm line-clamp-1">
-                                {job.config?.topics?.join(', ') || 'Temas variados'}
-                              </h4>
+              <div className="min-h-[220px]">
+                {activeJobs.length > 0 && (
+                  <EnaflixSection title="Gerações em Andamento">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {activeJobs.map(job => (
+                        <Card key={job.id} className="bg-card/50 border-primary/20 backdrop-blur-sm overflow-hidden">
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                                  {job.config?.mode === 'prova_real' ? job.config?.realExamProfile : 'Simulado Personalizado'}
+                                </p>
+                                <h4 className="font-semibold text-sm line-clamp-1">
+                                  {job.config?.topics?.join(', ') || 'Temas variados'}
+                                </h4>
+                              </div>
+                              <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                                {job.status}
+                              </Badge>
                             </div>
-                            <Badge variant="outline" className="text-[10px] uppercase font-mono">
-                              {job.status}
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-1.5">
-                            <div className="flex justify-between text-[10px] font-mono uppercase text-muted-foreground">
-                              <span>Progresso</span>
-                              <span>{job.generated_questions || 0} / {job.total_questions}</span>
+                            
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-[10px] font-mono uppercase text-muted-foreground">
+                                <span>Progresso</span>
+                                <span>{job.generated_questions || 0} / {job.total_questions}</span>
+                              </div>
+                              <Progress value={((job.generated_questions || 0) / job.total_questions) * 100} className="h-1" />
                             </div>
-                            <Progress value={((job.generated_questions || 0) / job.total_questions) * 100} className="h-1" />
-                          </div>
 
-                          <div className="flex items-center justify-between gap-2 pt-1">
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
-                              <Clock className="h-3 w-3" />
-                              {new Date(job.created_at).toLocaleTimeString()}
+                            <div className="flex items-center justify-between gap-2 pt-1">
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                                <Clock className="h-3 w-3" />
+                                {new Date(job.created_at).toLocaleTimeString()}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-8 text-[10px] font-bold uppercase text-white/40 hover:text-destructive"
+                                  onClick={() => handleCancelJob(job.id)}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="secondary" 
+                                  className="h-8 text-[10px] font-bold uppercase"
+                                  onClick={() => handleResumeJob(job)}
+                                >
+                                  Retomar
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-8 text-[10px] font-bold uppercase text-white/40 hover:text-destructive"
-                                onClick={() => handleCancelJob(job.id)}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="secondary" 
-                                className="h-8 text-[10px] font-bold uppercase"
-                                onClick={() => handleResumeJob(job)}
-                              >
-                                Retomar
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </EnaflixSection>
-              )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </EnaflixSection>
+                )}
+              </div>
 
               <div className="w-full max-w-5xl mx-auto space-y-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
