@@ -35210,10 +35210,6 @@ export type Database = {
         Args: { p_context?: Json; p_module_source: string; p_user_id: string }
         Returns: string
       }
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
       detect_question_drift: {
         Args: never
         Returns: {
@@ -35228,11 +35224,6 @@ export type Database = {
       diagnose_pedagogical_integrity: {
         Args: { p_user_id: string }
         Returns: Json
-      }
-      email_queue_dispatch: { Args: never; Returns: undefined }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
-        Returns: number
       }
       enrichment_dashboard: { Args: never; Returns: Json }
       ensure_user_medical_domain_map: {
@@ -35663,15 +35654,6 @@ export type Database = {
         Args: { _day: string; _delta?: number; _field: string }
         Returns: undefined
       }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
-      }
       normalize_medical_topic: { Args: { t: string }; Returns: string }
       normalize_text: { Args: { txt: string }; Returns: string }
       ontology_observatory_snapshot: { Args: never; Returns: Json }
@@ -35690,14 +35672,6 @@ export type Database = {
       professor_owns_plan: {
         Args: { _plan_id: string; _user_id: string }
         Returns: boolean
-      }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
-        }[]
       }
       rebuild_curriculum_metrics: { Args: never; Returns: Json }
       recalculate_user_theta: {
