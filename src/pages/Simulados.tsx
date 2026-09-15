@@ -1623,9 +1623,68 @@ const Simulados = () => {
       }
     }
 
-    // `simulado_question_analytics` is the single writer for practice_attempts.
-    // The database fanout associates attempts with the session atomically, which
-    // prevents a duplicate client-side write and preserves idempotency on reload.
+    // practice_attempts — canonical evidence for FSRS/TRI.
+    // The database fanout from simulado_question_analytics remains supported, but
+    // real E2E showed connected environments where that trigger is absent/stale.
+    // Write the same canonical table with a stable event_hash so the operation is
+    // idempotent and does not create a parallel persistence path.
+    if (sessionId) {
+      const attemptRows = questions
+        .map((q, idx) => {
+          const bankQuestionId = (q as any).bankId;
+          const directQuestionId = (q as any).id;
+          const questionId = isUuid(bankQuestionId) ? bankQuestionId : isUuid(directQuestionId) ? directQuestionId : null;
+          if (!questionId) return null;
+
+          return {
+            user_id: user.id,
+            question_id: questionId,
+            correct: answers[idx] === q.correct,
+            event_hash: `simulado:${sessionId}:${questionId}:${idx}`,
+          };
+        })
+        .filter(Boolean);
+
+      if (attemptRows.length === 0) {
+        console.warn("[SIM_PRACTICE_ATTEMPTS_SKIP]", { sessionId, reason: "no_bank_question_uuid", total: questions.length });
+      } else {
+        const { error: attemptErr } = await supabase.from("practice_attempts").insert(attemptRows as any);
+        if (attemptErr) {
+          console.warn("[SIM_PRACTICE_ATTEMPTS_BATCH_FAIL]", {
+            code: (attemptErr as any).code,
+            message: attemptErr.message,
+            details: (attemptErr as any).details,
+            hint: (attemptErr as any).hint,
+          });
+
+          let ok = 0;
+          let duplicates = 0;
+          for (const row of attemptRows) {
+            const { error: oneErr } = await supabase.from("practice_attempts").insert(row as any);
+            if (!oneErr) {
+              ok++;
+              continue;
+            }
+            if ((oneErr as any).code === "23505") {
+              duplicates++;
+              continue;
+            }
+            console.warn("[SIM_PRACTICE_ATTEMPTS_ROW_FAIL]", {
+              code: (oneErr as any).code,
+              message: oneErr.message,
+              questionId: (row as any).question_id,
+            });
+          }
+
+          if (ok === 0 && duplicates === 0) {
+            persistOk = false;
+          }
+          console.log("[SIM_PRACTICE_ATTEMPTS_INSERT_PARTIAL]", { sessionId, ok, duplicates, total: attemptRows.length });
+        } else {
+          console.log("[SIM_PRACTICE_ATTEMPTS_INSERT_OK]", { sessionId, rows: attemptRows.length });
+        }
+      }
+    }
 
     // error_bank + auto-FSRS card
     let errorsLogged = 0;
