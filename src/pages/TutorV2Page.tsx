@@ -51,7 +51,7 @@ export default function TutorV2Page() {
   const { user } = useAuth();
   const studyCtx = useStudyContext();
   const [searchParams] = useSearchParams();
-  const { session, isLoading, stats } = useTutorV2Session(sessionId);
+  const { session, isLoading, error: sessionError, stats, retry: retrySession } = useTutorV2Session(sessionId);
 
   // Fallback para rotas legadas: /dashboard/mentor?specialty=X&topic=Y
   // (sem prefixo sc_*, preservado pelo RedirectWithSearch).
@@ -412,8 +412,9 @@ export default function TutorV2Page() {
 
   if (!session)
     return (
-      <div className="flex items-center justify-center h-full min-h-screen bg-slate-950 text-white">
-        Sessão não encontrada ou acesso negado.
+      <div className="flex flex-col items-center justify-center gap-4 h-full min-h-screen bg-slate-950 text-white text-center p-6">
+        <p>{sessionError ? "Não foi possível carregar a sessão agora." : "Sessão não encontrada ou acesso negado."}</p>
+        {sessionError && <Button type="button" onClick={retrySession}>Tentar novamente</Button>}
       </div>
     );
 

@@ -194,16 +194,24 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const historySnapshotAt = new Date(requestStartedAt).toISOString();
     
     const recentSessions = await collectPaginatedRows<any>(async (from, to) => {
-      const { data, error } = await supabaseAdmin.from("simulado_sessions").select("id")
-        .eq("user_id", userId).gt("started_at", sevenDaysAgo).lte("started_at", historySnapshotAt).order("id").range(from, to);
+      const { data, error } = await withDeadline(
+        supabaseAdmin.from("simulado_sessions").select("id")
+          .eq("user_id", userId).gt("started_at", sevenDaysAgo).lte("started_at", historySnapshotAt).order("id").range(from, to),
+        BANK_QUERY_TIMEOUT_MS,
+        `historical_sessions:${from}-${to}`,
+      );
       if (error) throw error;
       return data || [];
     });
     const sessionIds = recentSessions.map(s => s.id);
 
     const practiceHistory = await collectPaginatedRows<any>(async (from, to) => {
-      const { data, error } = await supabaseAdmin.from("practice_attempts").select("question_id")
-        .eq("user_id", userId).gt("created_at", sevenDaysAgo).lte("created_at", historySnapshotAt).order("id").range(from, to);
+      const { data, error } = await withDeadline(
+        supabaseAdmin.from("practice_attempts").select("question_id")
+          .eq("user_id", userId).gt("created_at", sevenDaysAgo).lte("created_at", historySnapshotAt).order("id").range(from, to),
+        BANK_QUERY_TIMEOUT_MS,
+        `historical_attempts:${from}-${to}`,
+      );
       if (error) throw error;
       return data || [];
     });
@@ -212,8 +220,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     for (let offset = 0; offset < sessionIds.length; offset += 100) {
       const sessionChunk = sessionIds.slice(offset, offset + 100);
       simuladoHistory.push(...await collectPaginatedRows<any>(async (from, to) => {
-        const { data, error } = await supabaseAdmin.from("simulado_questions").select("question_id")
-          .in("session_id", sessionChunk).order("id").range(from, to);
+        const { data, error } = await withDeadline(
+          supabaseAdmin.from("simulado_questions").select("question_id")
+            .in("session_id", sessionChunk).order("id").range(from, to),
+          BANK_QUERY_TIMEOUT_MS,
+          `historical_questions:${offset}:${from}-${to}`,
+        );
         if (error) throw error;
         return data || [];
       }));
@@ -279,9 +291,13 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const maxPages = 5;
         for (let page = 0; page < maxPages; page++) {
           const from = page * pageSize;
-          const { data, error } = await buildScopedQuery(difficultyScore)
-            .order("id", { ascending: true })
-            .range(from, from + pageSize - 1);
+          const { data, error } = await withDeadline(
+            buildScopedQuery(difficultyScore)
+              .order("id", { ascending: true })
+              .range(from, from + pageSize - 1),
+            BANK_QUERY_TIMEOUT_MS,
+            `difficulty=${difficultyScore};page=${page}`,
+          );
           if (error) throw error;
           rows.push(...(data || []));
           if (!data || data.length < pageSize) break;

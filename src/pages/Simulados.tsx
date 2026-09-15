@@ -1362,32 +1362,9 @@ const Simulados = () => {
       }
     }
 
-    // practice_attempts — needs valid UUID + existing in questions_bank
-    const attemptRows = questions
-      .map((q, idx) => {
-        const qid = (q as any).id;
-        if (!isUuid(qid)) return null;
-        return { user_id: user.id, question_id: qid, correct: answers[idx] === q.correct };
-      })
-      .filter(Boolean) as any[];
-    if (attemptRows.length > 0) {
-      const { error: paErr } = await supabase.from("practice_attempts").insert(attemptRows);
-      if (paErr) {
-        console.warn("[PRACTICE_ATTEMPTS_BATCH_FAIL]", paErr.message, "→ retrying per row");
-        let ok = 0;
-        for (const r of attemptRows) {
-          const { error: oneErr } = await supabase.from("practice_attempts").insert(r);
-          if (!oneErr) ok++;
-          else console.warn("[PRACTICE_ATTEMPTS_ROW_FAIL]", oneErr.message);
-        }
-        console.log("[PRACTICE_ATTEMPTS_INSERT_PARTIAL]", { ok, total: attemptRows.length });
-        if (ok !== attemptRows.length) persistOk = false;
-      } else {
-        console.log("[PRACTICE_ATTEMPTS_INSERT_OK]", { rows: attemptRows.length });
-      }
-    } else {
-      console.warn("[PRACTICE_ATTEMPTS_SKIP] no valid UUID question ids in batch");
-    }
+    // `simulado_question_analytics` is the single writer for practice_attempts.
+    // The database fanout associates attempts with the session atomically, which
+    // prevents a duplicate client-side write and preserves idempotency on reload.
 
     // error_bank + auto-FSRS card
     let errorsLogged = 0;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function useTutorV2Session(sessionId?: string) {
@@ -11,22 +11,29 @@ export function useTutorV2Session(sessionId?: string) {
     errors: 0
   });
 
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = useCallback(() => setReloadKey((value) => value + 1), []);
+
   useEffect(() => {
     if (!sessionId) {
       setIsLoading(false);
       return;
     }
 
+    let active = true;
     const fetchSession = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const { data, error: fetchError } = await supabase
           .from("tutor_sessions")
           .select("*")
           .eq("id", sessionId)
+          .abortSignal(AbortSignal.timeout(12_000))
           .single();
 
         if (fetchError) throw fetchError;
+        if (!active) return;
         setSession(data);
 
         // Simulated session stats for the timeline
@@ -36,9 +43,11 @@ export function useTutorV2Session(sessionId?: string) {
           errors: 2
         });
       } catch (err) {
+        if (!active) return;
+        console.warn("[TUTOR_SESSION_FETCH_FAILED]", err);
         setError(err);
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 
@@ -63,10 +72,11 @@ export function useTutorV2Session(sessionId?: string) {
       .subscribe();
 
     return () => {
+      active = false;
       supabase.removeChannel(channel);
     };
-  }, [sessionId]);
+  }, [sessionId, reloadKey]);
 
 
-  return { session, isLoading, error, stats };
+  return { session, isLoading, error, stats, retry };
 }

@@ -34,7 +34,7 @@ export default function TutorV2ChatPanel({
   onToggleSidebar 
 }: TutorV2ChatPanelProps) {
   const { user } = useAuth();
-  const { messages, isLoading, addMessage, setMessages } = useTutorV2Messages(session.id);
+  const { messages, isLoading, error: messagesError, retry: retryMessages, addMessage, setMessages } = useTutorV2Messages(session.id);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
@@ -322,6 +322,14 @@ export default function TutorV2ChatPanel({
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <MascotAvatar state="thinking" size="md" />
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recuperando histórico cognitivo...</p>
+            </div>
+          ) : messagesError ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+              <AlertCircle className="h-7 w-7 text-amber-400" />
+              <p className="text-sm text-slate-300">Não foi possível carregar o histórico desta sessão.</p>
+              <button type="button" onClick={retryMessages} className="rounded-xl border border-indigo-400/30 px-4 py-2 text-xs font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/10">
+                Tentar novamente
+              </button>
             </div>
           ) : (
             <>

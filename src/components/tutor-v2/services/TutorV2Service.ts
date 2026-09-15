@@ -20,7 +20,8 @@ export const TutorV2Service = {
     try {
       const response = await callTutorV3(payload, { 
         functionName: "tutor-v3-premium",
-        stream: false 
+        stream: false,
+        signal: AbortSignal.timeout(45_000),
       });
       
       const data = await response.json();
@@ -35,6 +36,9 @@ export const TutorV2Service = {
         return this.sendMessage(sessionId, message, pedagogicalInteraction, newTopic, currentBlock, retryCount + 1);
       }
 
+      if (err.name === "AbortError" || err.name === "TimeoutError") {
+        throw new Error("O Tutor demorou mais do que o esperado. Sua sessão foi preservada; tente novamente.");
+      }
       throw new Error(err.message || FRIENDLY_PROVIDER_ERROR);
     }
   },
