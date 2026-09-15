@@ -755,11 +755,24 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     });
 
   } catch (error: any) {
+    if (String(error?.message || "").startsWith("AI_INVALID_RESPONSE:")) {
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: "AI_INVALID_RESPONSE",
+        error: "A IA respondeu, mas o lote foi rejeitado pela validação clínica. Tente novamente com tema mais específico ou use o banco de questões.",
+        retryable: true,
+        correlationId,
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (String(error?.message || "").startsWith("BANK_FETCH_TIMEOUT:")) {
       return new Response(JSON.stringify({
         success: false,
         errorCode: "BANK_FETCH_TIMEOUT",
         error: "O banco demorou mais que o limite seguro para montar esta prova. Tente novamente.",
+        retryable: true,
         correlationId,
       }), {
         status: 504,
@@ -771,6 +784,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         success: false,
         errorCode: "SIMULADO_PERSIST_TIMEOUT",
         error: "As questões foram selecionadas, mas o salvamento demorou além do limite seguro. Tente novamente.",
+        retryable: true,
         correlationId,
       }), {
         status: 504,
@@ -778,7 +792,13 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       });
     }
     logger.critical("SIMULADO_CRASH", error.message);
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+    return new Response(JSON.stringify({
+      success: false,
+      errorCode: "SIMULADO_GENERATOR_ERROR",
+      error: "Não foi possível montar o simulado com segurança agora. Tente novamente em instantes.",
+      retryable: true,
+      correlationId,
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

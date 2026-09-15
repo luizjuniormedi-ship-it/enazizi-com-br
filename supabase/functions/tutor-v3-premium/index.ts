@@ -312,9 +312,9 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
       } catch (e: any) {
         console.error("[QR_MODE_PARSE_ERROR]", e?.message, qrRaw.slice(0, 200));
         const normalizedQrFallback = normalizeTutorResponse({
-          content: qrRaw || "Não foi possível gerar a correção agora.",
+          content: "Não foi possível gerar a correção estruturada agora. Tente reenviar a questão ou simplificar o enunciado.",
           teachingPhase: "ENSINAR",
-          socraticQuestion: "",
+          socraticQuestion: "Qual parte do raciocínio você quer revisar primeiro: diagnóstico, conduta ou justificativa da alternativa?",
         }, "fallback");
         qrParsed = { content: normalizedQrFallback.content, metadata: null };
       }

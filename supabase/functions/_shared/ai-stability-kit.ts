@@ -28,6 +28,19 @@ export function unwrapTutorJsonEnvelope(text: string): Record<string, unknown> |
   }
 }
 
+function isRawStructuralTutorPayload(text: string): boolean {
+  return /^\s*(?:resposta\s+em\s+json\s*:|<json>|```json|\{|\[)/i.test(text) &&
+    /"?(content|socraticQuestion|teachingPhase|metadata|provider|model)"?\s*:/i.test(text);
+}
+
+function safeTutorContent(content: unknown): string | null {
+  if (typeof content !== "string") return null;
+  const trimmed = content.trim();
+  if (!trimmed) return null;
+  if (isRawStructuralTutorPayload(trimmed)) return null;
+  return content;
+}
+
 // ─── CIRCUIT BREAKER ────────────────────────────────────────────────────────
 
 export type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
@@ -205,7 +218,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
   if (raw && typeof raw === 'object' && raw.content && raw.teachingPhase && raw.socraticQuestion) {
     console.log("[TUTOR_NORMALIZED_OK] Standard format detected");
     return {
-      content: raw.content,
+      content: safeTutorContent(raw.content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
       teachingPhase: raw.teachingPhase,
       socraticQuestion: raw.socraticQuestion,
       source: source,
@@ -230,7 +243,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
       };
     } catch {
       return {
-        content: content,
+        content: safeTutorContent(content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
         teachingPhase: "ENSINAR",
         socraticQuestion: "O que você achou dessa explicação?",
         source: source,
@@ -243,7 +256,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
   if (raw && raw.fallback) {
     console.log("[TUTOR_NORMALIZED_OK] Fallback format detected");
     return {
-      content: raw.content || "### 💡 Resumo de Segurança\nConteúdo técnico carregado da biblioteca local.",
+      content: safeTutorContent(raw.content) || "### 💡 Resumo de Segurança\nConteúdo técnico carregado da biblioteca local.",
       teachingPhase: raw.teachingPhase || "ENSINAR",
       socraticQuestion: raw.socraticQuestion || "Ficou clara essa explicação base?",
       source: "fallback",
@@ -256,7 +269,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
   if (raw && typeof raw === "object" && typeof raw.content === "string" && raw.content.trim()) {
     console.log("[TUTOR_NORMALIZED_OK] Provider text format detected");
     return {
-      content: raw.content,
+      content: safeTutorContent(raw.content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
       teachingPhase: raw.teachingPhase || "ENSINAR",
       socraticQuestion: raw.socraticQuestion || "O que você achou dessa explicação?",
       source,

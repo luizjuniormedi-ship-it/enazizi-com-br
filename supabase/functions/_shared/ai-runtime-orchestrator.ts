@@ -337,8 +337,15 @@ const ANTHROPIC_BASE_URL = (Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.a
 const ANTHROPIC_DEFAULT_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-latest";
 
 function extractProviderError(status: number | undefined, bodyText: string, err?: unknown) {
+  const typedErr = err as any;
   const fallbackMessage = err instanceof Error ? err.message : bodyText || "Provider unavailable";
-  let code = status ? `HTTP_${status}` : "AI_PROVIDER_ERROR";
+  const errStatus = typeof typedErr?.status === "number" ? typedErr.status
+    : typeof typedErr?.statusCode === "number" ? typedErr.statusCode
+    : undefined;
+  const effectiveStatus = status ?? errStatus;
+  let code = typeof typedErr?.code === "string" && typedErr.code
+    ? typedErr.code
+    : effectiveStatus ? `HTTP_${effectiveStatus}` : "AI_PROVIDER_ERROR";
   let message = fallbackMessage;
 
   try {
@@ -347,11 +354,13 @@ function extractProviderError(status: number | undefined, bodyText: string, err?
     code = providerError?.code || providerError?.type || code;
     message = providerError?.message || parsed?.message || message;
   } catch {
-    if (status === 401 || status === 403) code = "AI_AUTH_ERROR";
-    else if (status === 402) code = "AI_QUOTA_EXHAUSTED";
-    else if (status === 404) code = "AI_MODEL_NOT_FOUND";
-    else if (status === 429) code = "AI_RATE_LIMITED";
-    else if (status && status >= 500) code = "AI_PROVIDER_UNAVAILABLE";
+    if (!typedErr?.code) {
+      if (effectiveStatus === 401 || effectiveStatus === 403) code = "AI_AUTH_ERROR";
+      else if (effectiveStatus === 402) code = "AI_QUOTA_EXHAUSTED";
+      else if (effectiveStatus === 404) code = "AI_MODEL_NOT_FOUND";
+      else if (effectiveStatus === 429) code = "AI_RATE_LIMITED";
+      else if (effectiveStatus && effectiveStatus >= 500) code = "AI_PROVIDER_UNAVAILABLE";
+    }
   }
 
   if (err instanceof DOMException && err.name === "AbortError") {

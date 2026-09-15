@@ -53,6 +53,8 @@ import { ALL_SPECIALTIES } from "@/constants/specialties";
 
 const CONTROL_TOPIC_LABELS = new Set(["Todos", "Básico", "Clínico", "Internato", "Selecionar todos", "Limpar"]);
 const DEFAULT_SIMULADO_TOPIC = "Cardiologia";
+const ENABLE_DIRECT_PRACTICE_ATTEMPT_FALLBACK =
+  String(import.meta.env.VITE_ENABLE_DIRECT_PRACTICE_ATTEMPT_FALLBACK || "").toLowerCase() === "true";
 
 function normalizeSimuladoTopics(topics: string[] | undefined | null): string[] {
   const valid = (topics || [])
@@ -1624,11 +1626,11 @@ const Simulados = () => {
     }
 
     // practice_attempts — canonical evidence for FSRS/TRI.
-    // The database fanout from simulado_question_analytics remains supported, but
-    // real E2E showed connected environments where that trigger is absent/stale.
-    // Write the same canonical table with a stable event_hash so the operation is
-    // idempotent and does not create a parallel persistence path.
-    if (sessionId) {
+    // Canonical path is database fanout from simulado_question_analytics.
+    // Direct client write is an emergency drift fallback only. Keeping it enabled
+    // by default creates a second persistence path and masks the Supabase trigger
+    // migration that must be applied on the canonical project.
+    if (sessionId && ENABLE_DIRECT_PRACTICE_ATTEMPT_FALLBACK) {
       const attemptRows = questions
         .map((q, idx) => {
           const bankQuestionId = (q as any).bankId;
@@ -1684,6 +1686,11 @@ const Simulados = () => {
           console.log("[SIM_PRACTICE_ATTEMPTS_INSERT_OK]", { sessionId, rows: attemptRows.length });
         }
       }
+    } else if (sessionId) {
+      console.info("[SIM_PRACTICE_ATTEMPTS_DIRECT_FALLBACK_DISABLED]", {
+        sessionId,
+        canonicalPath: "simulado_question_analytics -> fanout_simulado_answer -> practice_attempts",
+      });
     }
 
     // error_bank + auto-FSRS card
