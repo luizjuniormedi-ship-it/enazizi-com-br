@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
 type Role = "student" | "professor" | "admin";
 
@@ -45,17 +45,37 @@ export async function loginAs(page: Page, role: Role = "student", baseUrl = "") 
     );
   }
 
+  await page.addInitScript(() => {
+    localStorage.setItem("enazizi_v2_welcome_seen", "true");
+    localStorage.setItem("enazizi_v2_onboarding_done", "true");
+  });
+
   await page.goto(`${baseUrl}/login`);
   await page.locator('input[type="email"], input[name="email"]').first().fill(email);
   await page.locator('input[type="password"], input[name="password"]').first().fill(password);
   await page.getByRole("button", { name: /entrar|login/i }).first().click();
 
-  await expect(page, `login ${role} não saiu de /login`).not.toHaveURL(/\/login(?:\?|$)/, {
+  const leftLogin = await page.waitForURL((url) => !/\/login(?:\?|$)/.test(url.pathname), {
     timeout: 20_000,
-  });
+  }).then(() => true).catch(() => false);
+
+  if (!leftLogin) {
+    await page.locator('input[type="password"], input[name="password"]').first().fill("").catch(() => {});
+    await page.locator('input[type="email"], input[name="email"]').first().fill("").catch(() => {});
+    throw new Error(`login ${role} não saiu de /login`);
+  }
 
   await page.evaluate(() => {
     localStorage.setItem("enazizi_v2_welcome_seen", "true");
     localStorage.setItem("enazizi_v2_onboarding_done", "true");
   });
+
+  const skipOnboarding = page.getByRole("button", { name: /Pular e ir ao Dashboard|Iniciar Configuração/i }).first();
+  if (await skipOnboarding.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await page.evaluate(() => {
+      localStorage.setItem("enazizi_v2_welcome_seen", "true");
+      localStorage.setItem("enazizi_v2_onboarding_done", "true");
+    });
+    await page.getByRole("button", { name: /Pular e ir ao Dashboard/i }).click().catch(() => {});
+  }
 }

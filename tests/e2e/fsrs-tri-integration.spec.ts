@@ -38,6 +38,23 @@ async function loginUI(page: Page) {
   await loginAs(page, 'student');
 }
 
+async function discardPendingSimuladoIfVisible(page: Page) {
+  const discard = page.getByRole('button', { name: /^Descartar$/i }).first();
+  if (await discard.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await discard.click();
+    await expect(discard).toBeHidden({ timeout: 10_000 }).catch(() => {});
+  }
+}
+
+async function selectStableBankTopic(page: Page) {
+  const setup = page.getByTestId('generation-modal');
+  await setup.scrollIntoViewIfNeeded();
+  await setup.getByRole('button', { name: /^Limpar$/i }).click().catch(() => {});
+  await setup.getByRole('button', { name: /^Cardiologia$/i }).click();
+  await expect(setup.getByRole('button', { name: /^Cardiologia$/i })).toBeVisible();
+  return setup;
+}
+
 function attachFailureGuards(page: Page, failures: string[]) {
   page.on('console', (msg) => {
     if (msg.type() === 'error') {
@@ -79,13 +96,11 @@ test.describe('FSRS + TRI integrated chain', () => {
     // ── 2-3. Open Simulados + generate short ENARE
     await page.goto('/dashboard/simulados');
     await expect(page.getByTestId('simulados-page')).toBeVisible({ timeout: 20000 });
+    await discardPendingSimuladoIfVisible(page);
 
-    const setup = page.getByTestId('generation-modal');
-    await setup.scrollIntoViewIfNeeded();
+    const setup = await selectStableBankTopic(page);
     await setup.getByTestId('mode-estudo-button').click().catch(() => {});
     await setup.getByTestId('qtd-5-button').click();
-    await setup.getByRole('button', { name: /^Limpar$/i }).click().catch(() => {});
-    await setup.getByRole('button', { name: /^Selecionar todos$/i }).click();
     // The integrated persistence chain requires bank-backed UUID questions.
     // AI-only questions are ephemeral and intentionally cannot satisfy the
     // practice_attempts.question_id foreign key.

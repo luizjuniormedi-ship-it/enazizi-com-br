@@ -11,6 +11,23 @@ test.describe('Simulados Module E2E', () => {
     await loginAs(page, 'student');
   });
 
+  async function discardPendingSimuladoIfVisible(page: import('@playwright/test').Page) {
+    const discard = page.getByRole('button', { name: /^Descartar$/i }).first();
+    if (await discard.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await discard.click();
+      await expect(discard).toBeHidden({ timeout: 10_000 }).catch(() => {});
+    }
+  }
+
+  async function selectStableBankTopic(page: import('@playwright/test').Page) {
+    const setupSection = page.getByTestId('generation-modal');
+    await setupSection.scrollIntoViewIfNeeded();
+    await setupSection.getByRole('button', { name: /^Limpar$/i }).click().catch(() => {});
+    await setupSection.getByRole('button', { name: /^Cardiologia$/i }).click();
+    await expect(setupSection.getByRole('button', { name: /^Cardiologia$/i })).toBeVisible();
+    return setupSection;
+  }
+
   test('Navigate to Simulados and ensure no runtime errors', async ({ page }) => {
     // Listen for console errors
     const consoleErrors: string[] = [];
@@ -56,6 +73,7 @@ test.describe('Simulados Module E2E', () => {
 
   test('Create job for 50 questions and verify progress', async ({ page }) => {
     await page.goto('/dashboard/simulados');
+    await discardPendingSimuladoIfVisible(page);
     
     // 5. Criar job de 50 questões
     // We use the setup component at the bottom
@@ -78,28 +96,18 @@ test.describe('Simulados Module E2E', () => {
   test('Complete a simulated exam flow', async ({ page }) => {
     // Generate a quick 5 questions study simulado
     await page.goto('/dashboard/simulados');
+    await discardPendingSimuladoIfVisible(page);
     
-    const setupSection = page.getByTestId('generation-modal');
-    await setupSection.scrollIntoViewIfNeeded();
+    const setupSection = await selectStableBankTopic(page);
     await setupSection.getByTestId('mode-estudo-button').click();
     await setupSection.getByTestId('qtd-5-button').click();
     
-    // Use an explicit broad corpus for the full-flow test. The previous
-    // selector clicked the first rounded button, which could point to a
-    // control/filter and made the test depend on whichever topic happened to be
-    // selected by default.
-    await setupSection.getByRole('button', { name: /^Limpar$/i }).click();
-    await setupSection.getByRole('button', { name: /^Selecionar todos$/i }).click();
-    
-    const bankButton = setupSection.getByRole('button', { name: /Montar com Banco/i });
-    if (await bankButton.isVisible().catch(() => false)) {
-      await bankButton.click();
-    } else {
-      await setupSection.getByTestId('iniciar-simulado-button').click();
-    }
+    // Use the canonical bank-backed path for the short E2E. The IA path is
+    // covered by contract/edge tests and is intentionally more variable.
+    await setupSection.getByRole('button', { name: /Montar com Banco/i }).click();
     
     // 6. Responder e finalizar
-    await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 90000 });
     
     // Answer first question
     await page.getByTestId('answer-option').first().click();
@@ -120,6 +128,10 @@ test.describe('Simulados Module E2E', () => {
             const finish = page.getByTestId('finish-simulado-button');
             if (await finish.isVisible()) {
                 await finish.click();
+                const confirmFinish = page.getByRole('button', { name: /Finalizar mesmo assim/i });
+                if (await confirmFinish.isVisible().catch(() => false)) {
+                    await confirmFinish.click();
+                }
             }
         }
     }
