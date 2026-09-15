@@ -54,13 +54,13 @@ interface FsrsReviewState {
 
 const FLASHCARDS_QUERY_TIMEOUT_MS = 9000;
 
-function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = FLASHCARDS_QUERY_TIMEOUT_MS): Promise<T> {
-  return new Promise((resolve, reject) => {
+function withTimeout<T>(promise: PromiseLike<T>, label: string, timeoutMs = FLASHCARDS_QUERY_TIMEOUT_MS): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error(`${label} excedeu ${Math.round(timeoutMs / 1000)}s`));
     }, timeoutMs);
 
-    promise
+    Promise.resolve(promise)
       .then((value) => {
         clearTimeout(timer);
         resolve(value);
@@ -146,7 +146,10 @@ const Flashcards = () => {
               .order("created_at", { ascending: false })
               .range(from, to)
           );
-          const { data, error } = await withTimeout(q, `flashcards:${from}-${to}`);
+          const { data, error } = await withTimeout<{ data: any[] | null; error: any }>(
+            q,
+            `flashcards:${from}-${to}`,
+          );
           if (error) throw error;
           return data || [];
         };

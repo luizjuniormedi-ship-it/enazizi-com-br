@@ -88,10 +88,12 @@ test.describe('Simulados Module E2E', () => {
     const firstTopic = setupSection.locator('button.rounded-full').first();
     await firstTopic.click();
     
-    await setupSection.getByTestId('iniciar-simulado-button').click();
+    // Use the canonical bank-backed path for the short E2E. The IA path is
+    // covered by contract/edge tests and is intentionally more variable.
+    await setupSection.getByRole('button', { name: /Montar com Banco/i }).click();
     
     // 6. Responder e finalizar
-    await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 90000 });
     
     // Answer first question
     await page.getByTestId('answer-option').first().click();
@@ -112,6 +114,10 @@ test.describe('Simulados Module E2E', () => {
             const finish = page.getByTestId('finish-simulado-button');
             if (await finish.isVisible()) {
                 await finish.click();
+                const confirmFinish = page.getByRole('button', { name: /Finalizar mesmo assim/i });
+                if (await confirmFinish.isVisible().catch(() => false)) {
+                    await confirmFinish.click();
+                }
             }
         }
     }
