@@ -7,7 +7,7 @@ import { AI_MODELS, normalizeModel } from "../_shared/ai-models.ts";
 import { validateQuestionAgainstBoard } from "../_shared/board-validator.ts";
 import { analyzeQuestionForensic } from "../_shared/forensic-board-analyzer.ts";
 import { TopicEngine } from "../_shared/topic-engine.ts";
-import { validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
+import { isVisibleTopicCompatibleWithRequest, validateFinalQuestionTopic } from "../_shared/topic-guard.ts";
 import { resolveTopicGranularity, logTopicFidelity } from "../_shared/topic-fidelity/topic-resolver.ts";
 import { recordTopicFidelity } from "../_shared/topic-fidelity/telemetry.ts";
 import { runAI } from "../_shared/ai-runtime-orchestrator.ts";
@@ -449,13 +449,16 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const visibleTopicClassification = requestedTopicWeights.length > 0
           ? classifyVisibleTopicBucket(q, requestedTopicWeights)
           : null;
+        const visibleTopicCompatible = requestedPairs.some((pair) =>
+          isVisibleTopicCompatibleWithRequest(q, pair.topic, pair.subtopic)
+        );
         const topicAllowed = requestedTopicWeights.length > 0
           ? Boolean(visibleTopicClassification)
-          : Boolean(guardResult?.allowed && visibleTopicAllowed);
+          : Boolean(guardResult?.allowed && visibleTopicAllowed && visibleTopicCompatible);
         
         if (!topicAllowed) {
           bankDiagnostics.rejectedByTopic++;
-          console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult?.reason} visible_topic=${primaryVisibleTopic || "missing"} requested=${topics.join("|")}`);
+          console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult?.reason} visible_topic=${primaryVisibleTopic || "missing"} visible_topic_compatible=${visibleTopicCompatible} requested=${topics.join("|")}`);
           continue;
         }
 

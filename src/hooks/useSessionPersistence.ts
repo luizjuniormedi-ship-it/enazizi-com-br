@@ -248,17 +248,37 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
   const abandonSession = useCallback(async () => {
     if (!sessionIdRef.current && !pendingSession) return;
     const id = sessionIdRef.current || pendingSession?.id;
-    if (!id) return;
+    const backupKey = user ? `enazizi_session_backup_${moduleKey}_${user.id}` : null;
+
+    // UI must not stay blocked by a stale resumable-session banner if the
+    // remote abandon write fails because of RLS, connectivity or a temporary
+    // local backup id. Persist the abandon best-effort after clearing local
+    // state.
+    sessionIdRef.current = null;
+    setPendingSession(null);
+    if (backupKey) localStorage.removeItem(backupKey);
+
+    if (!user || !id || id.startsWith("temp_")) return;
+
     try {
-      await supabase
+      const { error } = await supabase
         .from("module_sessions")
         .update({ status: "abandoned" })
-        .eq("id", id);
-      if (user) localStorage.removeItem(`enazizi_session_backup_${moduleKey}_${user.id}`);
-      sessionIdRef.current = null;
-      setPendingSession(null);
+        .eq("id", id)
+        .eq("user_id", user.id);
+      if (error) throw error;
     } catch (e) {
       console.warn("[SessionPersistence] abandonSession error:", e);
+      try {
+        await supabase
+          .from("module_sessions")
+          .update({ status: "abandoned" })
+          .eq("user_id", user.id)
+          .eq("module_key", moduleKey)
+          .eq("status", "active");
+      } catch (fallbackError) {
+        console.warn("[SessionPersistence] abandonSession fallback error:", fallbackError);
+      }
     }
   }, [pendingSession, user, moduleKey]);
 

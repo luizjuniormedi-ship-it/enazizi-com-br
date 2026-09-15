@@ -1266,6 +1266,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 variant="outline"
                 className="h-14 rounded-2xl font-black uppercase tracking-widest text-[13px] border-white/10 bg-white/5 hover:bg-white/10 text-white"
                 onClick={() => handleStart()}
+                data-testid="montar-banco-button"
                 disabled={mode === "estudo" && selectedTopics.length === 0 && !specificTopic && examBoard !== "all"}
               >
                 <DatabaseZap className="h-4 w-4 mr-2" />

@@ -12,10 +12,20 @@ test.describe('Simulados Module E2E', () => {
   });
 
   async function discardPendingSimuladoIfVisible(page: import('@playwright/test').Page) {
-    const discard = page.getByRole('button', { name: /^Descartar$/i }).first();
-    if (await discard.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await discard.click();
-      await expect(discard).toBeHidden({ timeout: 10_000 }).catch(() => {});
+    const discardButtons = page.getByRole('button', { name: /^Descartar$/i });
+    await discardButtons.first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const count = await discardButtons.count().catch(() => 0);
+      let clicked = false;
+      for (let index = 0; index < count; index++) {
+        const discard = discardButtons.nth(index);
+        if (await discard.isVisible().catch(() => false)) {
+          await discard.click();
+          clicked = true;
+        }
+      }
+      if (!clicked) break;
+      await expect(discardButtons.first()).toBeHidden({ timeout: 10_000 }).catch(() => {});
     }
   }
 
@@ -23,8 +33,8 @@ test.describe('Simulados Module E2E', () => {
     const setupSection = page.getByTestId('generation-modal');
     await setupSection.scrollIntoViewIfNeeded();
     await setupSection.getByRole('button', { name: /^Limpar$/i }).click().catch(() => {});
-    await setupSection.getByRole('button', { name: /^Cardiologia$/i }).click();
-    await expect(setupSection.getByRole('button', { name: /^Cardiologia$/i })).toBeVisible();
+    await setupSection.getByRole('button', { name: /^Pediatria$/i }).click();
+    await expect(setupSection.getByRole('button', { name: /^Pediatria$/i })).toBeVisible();
     return setupSection;
   }
 
@@ -104,7 +114,7 @@ test.describe('Simulados Module E2E', () => {
     
     // Use the canonical bank-backed path for the short E2E. The IA path is
     // covered by contract/edge tests and is intentionally more variable.
-    await setupSection.getByRole('button', { name: /Montar com Banco/i }).click();
+    await setupSection.getByTestId('montar-banco-button').click();
     
     // 6. Responder e finalizar
     await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 90000 });
