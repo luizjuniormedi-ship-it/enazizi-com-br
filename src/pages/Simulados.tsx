@@ -430,6 +430,42 @@ function toSimQuestion(q: any, fallbackTopic?: string): SimQuestion {
   };
 }
 
+function simQuestionMatchesRequestedScope(
+  question: SimQuestion,
+  topics: string[],
+  subtopics: string[] = [],
+  options: { allowAuditedBucket?: boolean } = {},
+): boolean {
+  const requestedTopics = topics.filter((topic) => normalize(topic).length > 0);
+  if (requestedTopics.length === 0) return true;
+
+  const visibleCandidates = [question.topic, question.visibleTopic]
+    .filter((value): value is string => typeof value === "string" && normalize(value).length > 0);
+
+  const visibleTopicMatches = visibleCandidates.some((candidate) =>
+    requestedTopics.some((term) => textEquals(candidate, term) || textContains(candidate, term) || textContains(term, candidate))
+  );
+
+  if (visibleTopicMatches) return true;
+
+  const bucketMatches = typeof question.topicBucket === "string" && normalize(question.topicBucket).length > 0
+    ? requestedTopics.some((term) => textEquals(question.topicBucket, term))
+    : false;
+
+  if (options.allowAuditedBucket && subtopics.length === 0 && bucketMatches) {
+    return true;
+  }
+
+  console.warn("[SIMULADO_FINAL_VISIBLE_SCOPE_REJECTED]", {
+    requested_topics: requestedTopics,
+    question_topic: question.topic ?? null,
+    visible_topic: question.visibleTopic ?? null,
+    topic_bucket: question.topicBucket ?? null,
+  });
+
+  return false;
+}
+
 function isUsableQuestion(q: SimQuestion): boolean {
   return (
     q.options.length >= 4 &&
@@ -449,6 +485,7 @@ function mapQuestions(
   return (Array.isArray(arr) ? arr : [])
     .filter((q: any) => questionMatchesRequestedScope(q, topics, subtopics, options))
     .map((q: any) => toSimQuestion(q, topics[0]))
+    .filter((q: SimQuestion) => simQuestionMatchesRequestedScope(q, topics, subtopics, options))
     .filter(isUsableQuestion);
 }
 
