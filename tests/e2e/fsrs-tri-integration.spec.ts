@@ -84,7 +84,8 @@ test.describe('FSRS + TRI integrated chain', () => {
     await setup.scrollIntoViewIfNeeded();
     await setup.getByTestId('mode-estudo-button').click().catch(() => {});
     await setup.getByTestId('qtd-5-button').click();
-    await setup.locator('button.rounded-full').first().click().catch(() => {});
+    await setup.getByRole('button', { name: /^Limpar$/i }).click().catch(() => {});
+    await setup.getByRole('button', { name: /^Selecionar todos$/i }).click();
     // The integrated persistence chain requires bank-backed UUID questions.
     // AI-only questions are ephemeral and intentionally cannot satisfy the
     // practice_attempts.question_id foreign key.
