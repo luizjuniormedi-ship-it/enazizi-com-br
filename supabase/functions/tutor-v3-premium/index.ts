@@ -305,12 +305,16 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           throw new Error(qrResponse.errorCode || "AI_PROVIDER_UNAVAILABLE");
         }
         qrRaw = qrResponse.content || "{}";
-        // [TEMP DIAGNOSTIC — REMOVE AFTER FASE 1.4]
-        console.log("[QR_MODE_RAW]", qrRaw?.slice?.(0, 500));
-        console.log("[QR_MODE_RAW_KEYS]", (() => { try { return Object.keys(JSON.parse(qrRaw)); } catch { return "PARSE_FAIL"; } })());
         qrParsed = unwrapTutorJsonEnvelope(qrRaw) ?? JSON.parse(qrRaw);
+        const normalizedQr = normalizeTutorResponse(qrParsed, "ai");
+        qrParsed = {
+          ...qrParsed,
+          content: normalizedQr.content,
+          teachingPhase: normalizedQr.teachingPhase,
+          socraticQuestion: normalizedQr.socraticQuestion,
+        };
       } catch (e: any) {
-        console.error("[QR_MODE_PARSE_ERROR]", e?.message, qrRaw.slice(0, 200));
+        console.error("[QR_MODE_PARSE_ERROR]", e?.message, { raw_length: qrRaw.length });
         const normalizedQrFallback = normalizeTutorResponse({
           content: "Não foi possível gerar a correção estruturada agora. Tente reenviar a questão ou simplificar o enunciado.",
           teachingPhase: "ENSINAR",

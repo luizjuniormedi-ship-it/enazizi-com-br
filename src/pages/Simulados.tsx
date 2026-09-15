@@ -113,7 +113,7 @@ const MAX_SIMULADO_QUESTIONS = 100;
 // A geração por IA é opcional para iniciar uma prova. Se NVIDIA/Cerebras não
 // responderem rápido, a experiência correta é degradar para o banco canônico
 // em vez de deixar o aluno preso em loading.
-const QUESTION_GENERATOR_TIMEOUT_MS = 20_000;
+const QUESTION_GENERATOR_TIMEOUT_MS = 40_000;
 // Banco de questões não depende do fallback de provedores de IA. Se a Edge
 // não montar a prova dentro desse prazo, interrompemos com erro recuperável
 // em vez de manter a tela presa em 25% aguardando o timeout de IA.

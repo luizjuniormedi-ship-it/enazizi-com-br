@@ -534,6 +534,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         // NVIDIA/Cerebras providers. Lovable/Gemini rejects this payload.
         allowedProviders: ["nvidia", "cerebras"],
         timeoutMs: 18_000,
+        totalTimeoutMs: 35_000,
         messages: generationMessages,
       };
 
@@ -612,6 +613,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           providerOverride: "cerebras",
           modelOverride: "gpt-oss-120b",
           benchmarkMode: true,
+          totalTimeoutMs: 18_000,
           messages: [
             ...generationMessages,
             { role: "user", content: "O lote anterior foi rejeitado por segurança clínica. Gere um lote novo, revise nomenclatura farmacológica e não reutilize alternativas do lote anterior." },
@@ -715,9 +717,31 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             guard_forensics: finalQuestions.map(q => q._guard)
           }
       }));
+    const markSessionFailed = async (reason: string) => {
+      if (!sessionId) return;
+      await supabaseAdmin
+        .from("simulado_sessions")
+        .update({
+          status: "failed",
+          metadata: {
+            board: profile.label,
+            requested: requestedCount,
+            insufficientQuestions,
+            correlation_id: correlationId,
+            generation_duration_ms: generationDurationMs,
+            difficulty_distribution: difficultyMetadata,
+            failure_reason: reason,
+          },
+        })
+        .eq("id", sessionId);
+    };
+
     const persistenceResults = await withDeadline(Promise.all(persistenceTasks), PERSISTENCE_TIMEOUT_MS, "persist_questions", "SIMULADO_PERSIST_TIMEOUT");
     const persistenceError = persistenceResults.find((result) => result?.error)?.error;
-    if (persistenceError) throw persistenceError;
+    if (persistenceError) {
+      await markSessionFailed(persistenceError.message || "persist_questions_failed");
+      throw persistenceError;
+    }
     if (bankQuestions.length > 0) {
       const { count: persistedCount, error: countError } = await withDeadline(
         supabaseAdmin
@@ -728,8 +752,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         "verify_persisted_questions",
         "SIMULADO_PERSIST_TIMEOUT",
       );
-      if (countError) throw countError;
+      if (countError) {
+        await markSessionFailed(countError.message || "verify_persisted_questions_failed");
+        throw countError;
+      }
       if (persistedCount !== bankQuestions.length) {
+        await markSessionFailed(`persisted_questions_mismatch:${persistedCount ?? 0}/${bankQuestions.length}`);
         throw new Error(`Persistência incompleta: ${persistedCount ?? 0}/${bankQuestions.length} questões vinculadas`);
       }
     }

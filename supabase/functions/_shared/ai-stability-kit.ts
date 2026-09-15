@@ -132,7 +132,7 @@ export function normalizeAIResponse(data: any): any {
       if (typeof content === "string") {
         const parsed = JSON.parse(content);
         return {
-          content: parsed.content || content,
+          content: safeTutorContent(parsed.content) || safeTutorContent(content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
           socraticQuestion: parsed.socraticQuestion || "",
           teachingMode: parsed.teachingMode || "PRECEPTOR",
           interactionMode: parsed.interactionMode || "BALANCED_SOCRATIC",
@@ -234,7 +234,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
     try {
       const parsed = unwrapTutorJsonEnvelope(content) ?? JSON.parse(content);
       return {
-        content: parsed.content || content,
+        content: safeTutorContent(parsed.content) || safeTutorContent(content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
         teachingPhase: parsed.teachingPhase || "ENSINAR",
         socraticQuestion: parsed.socraticQuestion || "",
         source: source,
