@@ -29,18 +29,8 @@ export function usePresenceHeartbeat() {
         { onConflict: "user_id" }
       );
 
-      // Metria de Cluster (Fase Enterprise+)
-      // Registra que um usuário está ativo no "cluster" para o Auto Scaling saber a carga real
-      try {
-        await supabase.from("cme_cluster_metrics").insert({
-          active_workers: 0, // Apenas para trigger de análise de carga de usuários
-          queued_jobs: 0,
-          vram_utilization: 0,
-          cpu_utilization: 0
-        });
-      } catch (e) {
-        // Silencioso se falhar, não é crítico para o usuário
-      }
+      // Cluster metrics are infrastructure telemetry and must be written only
+      // by trusted backend workers, never by an authenticated student.
     };
 
     sendHeartbeat();

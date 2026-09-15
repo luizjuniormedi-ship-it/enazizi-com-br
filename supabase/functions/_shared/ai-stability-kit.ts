@@ -4,6 +4,7 @@
  */
 
 import { generateSHA256 } from "./crypto-utils.ts";
+import { safeJsonExtract } from "./json-extractor.ts";
 
 export interface TutorResponse {
   content: string;
@@ -12,6 +13,19 @@ export interface TutorResponse {
   source: "nvidia" | "cerebras" | "openai" | "claude" | "lovable" | "fallback" | "safe_mode" | "cache";
   confidence: number;
   metadata?: any;
+}
+
+function unwrapTutorJsonEnvelope(text: string): Record<string, unknown> | null {
+  if (!/^\s*(?:resposta\s+em\s+json\s*:|<json>|```json|\{)/i.test(text)) return null;
+  try {
+    const parsed = safeJsonExtract<Record<string, unknown>>(text);
+    return typeof parsed.content === "string" && parsed.content.trim() &&
+      (typeof parsed.socraticQuestion === "string" || typeof parsed.teachingPhase === "string")
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 // ─── CIRCUIT BREAKER ────────────────────────────────────────────────────────
@@ -181,6 +195,11 @@ export const MEDICAL_STATIC_FALLBACKS: Record<string, any> = {
 
 export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]): TutorResponse {
   console.log(`[TUTOR_RESPONSE_NORMALIZER] source=${source}`);
+
+  if (raw && typeof raw === "object" && typeof raw.content === "string") {
+    const envelope = unwrapTutorJsonEnvelope(raw.content);
+    if (envelope) raw = { ...raw, ...envelope };
+  }
 
   // 1. If it's already a normalized response, return it
   if (raw && typeof raw === 'object' && raw.content && raw.teachingPhase && raw.socraticQuestion) {

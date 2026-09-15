@@ -148,39 +148,58 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         if (error) throw error;
         synced = true;
       } else {
-        // Hardened Insert: Uses single row guarantee
-        const { data, error } = await supabase
+        const { data: activeSession, error: activeSessionError } = await supabase
           .from("module_sessions")
-          .upsert({
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("module_key", moduleKey)
+          .eq("status", "active")
+          .maybeSingle();
+        if (activeSessionError) throw activeSessionError;
+
+        if (activeSession) {
+          const { error } = await supabase
+            .from("module_sessions")
+            .update({ session_data: sessionData as any, updated_at: new Date().toISOString() })
+            .eq("id", activeSession.id);
+          if (error) throw error;
+          sessionIdRef.current = activeSession.id;
+          synced = true;
+        } else {
+          const { data, error } = await supabase
+            .from("module_sessions")
+            .insert({
             user_id: user.id,
             module_key: moduleKey,
             session_data: sessionData as any,
             status: "active",
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'user_id,module_key,status' }) // Assume unique constraint exists or use ID if available
-          .select("id")
-          .single();
-        
-        if (error) {
-           // Fallback to simple insert if unique constraint doesn't exist
-           const { data: retryData, error: retryError } = await supabase
-            .from("module_sessions")
-            .insert({
-              user_id: user.id,
-              module_key: moduleKey,
-              session_data: sessionData as any,
-              status: "active",
-            })
+            updated_at: new Date().toISOString(),
+          })
             .select("id")
             .single();
-           if (retryError) throw retryError;
-           if (retryData) {
-             sessionIdRef.current = retryData.id;
-             synced = true;
-           }
-        } else if (data) {
-          sessionIdRef.current = data.id;
-          synced = true;
+          if (!error && data) {
+            sessionIdRef.current = data.id;
+            synced = true;
+          } else if ((error as any)?.code === "23505") {
+            // Another tab created the active row between our read and insert.
+            const { data: concurrentSession, error: concurrentError } = await supabase
+              .from("module_sessions")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("module_key", moduleKey)
+              .eq("status", "active")
+              .single();
+            if (concurrentError || !concurrentSession) throw concurrentError || error;
+            const { error: updateError } = await supabase
+              .from("module_sessions")
+              .update({ session_data: sessionData as any, updated_at: new Date().toISOString() })
+              .eq("id", concurrentSession.id);
+            if (updateError) throw updateError;
+            sessionIdRef.current = concurrentSession.id;
+            synced = true;
+          } else {
+            throw error;
+          }
         }
       }
       

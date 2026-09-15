@@ -90,6 +90,10 @@ export interface AIRunInput extends AISelectInput {
   modelOverride?: string;
   /** Override the provider. */
   providerOverride?: "lovable-ai" | "openai" | "eu-ai" | "anthropic" | "nvidia" | "cerebras";
+  /** Restrict a task to providers compatible with its response contract. */
+  allowedProviders?: Array<ModelRef["provider"]>;
+  /** Per-provider request deadline for latency-sensitive flows. */
+  timeoutMs?: number;
 }
 
 export interface AIRunResult {
@@ -373,6 +377,7 @@ async function callOnce(
   apiKey: string,
   messages: Array<{ role: string; content: string }>,
   maxTokens: number = AI_MAX_TOKENS,
+  timeoutMs: number = AI_TIMEOUT_MS,
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   const traceId = crypto.randomUUID();
@@ -380,7 +385,7 @@ async function callOnce(
 
   try {
     if (ref.provider === "nvidia") {
-      const result = await callNvidia({ model: ref.model, messages: messages as any, maxTokens, apiKey });
+      const result = await callNvidia({ model: ref.model, messages: messages as any, maxTokens, apiKey, timeoutMs });
       return {
         content: result.content,
         usage: { prompt_tokens: result.usage.inputTokens, completion_tokens: result.usage.outputTokens },
@@ -389,7 +394,7 @@ async function callOnce(
     }
 
     if (ref.provider === "cerebras") {
-      const result = await callCerebras({ model: ref.model, messages: messages as any, maxTokens, apiKey });
+      const result = await callCerebras({ model: ref.model, messages: messages as any, maxTokens, apiKey, timeoutMs });
       return {
         content: result.content,
         usage: { prompt_tokens: result.usage.inputTokens, completion_tokens: result.usage.outputTokens },
@@ -415,7 +420,7 @@ async function callOnce(
           },
           body: JSON.stringify(body),
         },
-        AI_TIMEOUT_MS,
+        timeoutMs,
       );
       const latency_ms = Date.now() - start;
       const responseText = await res.text();
@@ -509,7 +514,7 @@ async function callOnce(
         },
         body: JSON.stringify(body),
       },
-      AI_TIMEOUT_MS,
+        timeoutMs,
     );
     const latency_ms = Date.now() - start;
     const responseText = await res.text();
@@ -815,6 +820,10 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
     }
   }
 
+  if (input.allowedProviders?.length) {
+    fullChain = fullChain.filter((ref) => input.allowedProviders!.includes(ref.provider));
+  }
+
   // Health-aware filtering: pula modelos com falha recente conhecida.
   const healthChain = await filterByHealth(input.supabase, fullChain);
 
@@ -850,7 +859,7 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
       continue;
     }
 
-    const r = await callOnce(ref, apiKey, input.messages, maxTokens);
+    const r = await callOnce(ref, apiKey, input.messages, maxTokens, input.timeoutMs ?? AI_TIMEOUT_MS);
     attempts.push(r.attempt);
 
     if (r.attempt.success && r.content) {

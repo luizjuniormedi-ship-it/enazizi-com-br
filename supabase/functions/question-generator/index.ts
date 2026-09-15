@@ -530,6 +530,10 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         userId,
         requestId: correlationId,
         supabase: supabaseAdmin,
+        // The question JSON contract is supported only by the configured
+        // NVIDIA/Cerebras providers. Lovable/Gemini rejects this payload.
+        allowedProviders: ["nvidia", "cerebras"],
+        timeoutMs: 18_000,
         messages: generationMessages,
       };
 
@@ -584,7 +588,16 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
       const aiResult = await runAI(aiInput);
       if (aiResult.provider === "template" || aiResult.errorCode) {
-        throw new Error(aiResult.errorCode || "AI_PROVIDER_UNAVAILABLE");
+        return new Response(JSON.stringify({
+          success: false,
+          errorCode: "AI_PROVIDER_UNAVAILABLE",
+          error: "Os provedores de IA não responderam dentro do limite seguro. Tente novamente.",
+          correlationId,
+          attempts: aiResult.attempts.map(({ provider, model, code }) => ({ provider, model, code })),
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       appendValidatedQuestions(aiResult);
 
