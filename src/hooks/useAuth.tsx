@@ -53,6 +53,24 @@ const isPublicAuthPath = (pathname: string) =>
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   );
 
+const hasLikelyPersistedSession = () => {
+  try {
+    const recentLogin = Number(localStorage.getItem("enazizi_last_login_ts") || "0");
+    if (recentLogin && Date.now() - recentLogin < 24 * 60 * 60 * 1000) return true;
+
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i) || "";
+      if (key.startsWith("sb-") && key.endsWith("-auth-token")) return true;
+    }
+  } catch {
+    // If storage is temporarily unavailable, fail closed into retry instead of
+    // converting an uncertain protected-route bootstrap into a forced logout.
+    return true;
+  }
+
+  return false;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -136,6 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let mounted = true;
     const bootstrapEpoch = authEventEpochRef.current;
+    let keepLoadingForBootstrapRetry = false;
 
     // Do not start getSession on the login/register screens. A stalled
     // bootstrap keeps Supabase's storage lock alive even after Promise.race
@@ -186,7 +205,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.info("[Auth] ignoring stale bootstrap failure after auth state change");
           return;
         }
-        console.warn("[Auth] bootstrap failed; releasing loading state", err);
+        const protectedRouteHasLikelySession = !publicAuthRoute && hasLikelyPersistedSession();
+        console.warn("[Auth] bootstrap failed", {
+          err,
+          protectedRouteHasLikelySession,
+        });
+        if (protectedRouteHasLikelySession) {
+          keepLoadingForBootstrapRetry = true;
+          window.setTimeout(() => {
+            if (mounted && authEventEpochRef.current === bootstrapEpoch) {
+              window.location.reload();
+            }
+          }, 1200);
+          return;
+        }
         // Never mutate persisted auth here. A timed-out bootstrap may still
         // be holding Supabase's storage lock; scheduling signOut/cleanup can
         // run after a successful form login and erase that new session.
@@ -196,7 +228,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
       })
       .finally(() => {
-        if (mounted) setLoading(false);
+        if (mounted && !keepLoadingForBootstrapRetry) setLoading(false);
       });
 
     return () => {
