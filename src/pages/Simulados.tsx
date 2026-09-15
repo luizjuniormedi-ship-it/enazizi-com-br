@@ -362,24 +362,45 @@ function isProviderUnavailableError(error: unknown): boolean {
   return /\bAI_PROVIDER_UNAVAILABLE\b|provedores de IA não responderam|Provider unavailable|status(?:Code)?\D*503/i.test(message);
 }
 
-function questionMatchesRequestedScope(q: any, topics: string[], subtopics: string[]): boolean {
+function questionMatchesRequestedScope(
+  q: any,
+  topics: string[],
+  subtopics: string[],
+  options: { allowAuditedBucket?: boolean } = {},
+): boolean {
   const usableCandidates = (candidates: unknown[]) => candidates
     .filter((value): value is string => typeof value === "string" && normalize(value).length > 0);
 
   const auditedTopicBucket = typeof q._topic_bucket === "string" ? q._topic_bucket : q.topicBucket;
-  if (subtopics.length === 0 && typeof auditedTopicBucket === "string" && normalize(auditedTopicBucket).length > 0) {
-    return topics.some((topic) => textEquals(auditedTopicBucket, topic));
-  }
-
   const primaryTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
     ? q.topic
     : q.curriculum_theme;
-  const topicCandidates = usableCandidates([primaryTopic]);
+  const topicCandidates = usableCandidates([primaryTopic, q.curriculum_theme, q._visible_topic]);
   const effectiveTopicCandidates = topicCandidates.length > 0 ? topicCandidates : [q.specialty];
   const topicMatches = usableCandidates(effectiveTopicCandidates).some((candidate) =>
     topics.some((term) => textEquals(candidate, term) || textContains(candidate, term) || textContains(term, candidate))
   );
-  if (!topicMatches) return false;
+
+  const bucketMatches = typeof auditedTopicBucket === "string" && normalize(auditedTopicBucket).length > 0
+    ? topics.some((topic) => textEquals(auditedTopicBucket, topic))
+    : false;
+
+  if (options.allowAuditedBucket && subtopics.length === 0 && bucketMatches) {
+    return true;
+  }
+
+  if (!topicMatches) {
+    if (bucketMatches) {
+      console.warn("[SIMULADO_TOPIC_SCOPE_REJECTED_BUCKET_ONLY]", {
+        requested_topics: topics,
+        topic: q.topic ?? null,
+        curriculum_theme: q.curriculum_theme ?? null,
+        visible_topic: q._visible_topic ?? null,
+        topic_bucket: auditedTopicBucket,
+      });
+    }
+    return false;
+  }
 
   if (subtopics.length === 0) return true;
   const subtopicCandidates = usableCandidates([q.subtopic, q.curriculum_subtheme]);
@@ -419,16 +440,15 @@ function isUsableQuestion(q: SimQuestion): boolean {
   );
 }
 
-function mapQuestions(arr: any[], topics: string[], subtopics: string[] = []): SimQuestion[] {
+function mapQuestions(
+  arr: any[],
+  topics: string[],
+  subtopics: string[] = [],
+  options: { allowAuditedBucket?: boolean } = {},
+): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
-    .filter((q: any) => questionMatchesRequestedScope(q, topics, subtopics))
+    .filter((q: any) => questionMatchesRequestedScope(q, topics, subtopics, options))
     .map((q: any) => toSimQuestion(q, topics[0]))
-    .filter(isUsableQuestion);
-}
-
-function mapQuestionsWithoutRequestedScope(arr: any[], fallbackTopic: string): SimQuestion[] {
-  return (Array.isArray(arr) ? arr : [])
-    .map((q: any) => toSimQuestion(q, fallbackTopic))
     .filter(isUsableQuestion);
 }
 
@@ -468,15 +488,12 @@ async function fetchDirectBankQuestions(
   const mapped = deduplicateQuestions(mapQuestions(data || [], topics, selectedSubtopics));
   if (mapped.length > 0) return mapped.slice(0, safeCount);
 
-  const unscopedFallback = deduplicateQuestions(mapQuestionsWithoutRequestedScope(data || [], topics[0] || DEFAULT_SIMULADO_TOPIC));
-  if (unscopedFallback.length > 0) {
-    console.warn("[SIMULADO_DIRECT_BANK_UNSCOPED_FALLBACK_SUCCESS]", {
-      requested_topics: topics,
-      selected_subtopics: selectedSubtopics,
-      received: unscopedFallback.length,
-    });
-  }
-  return unscopedFallback.slice(0, safeCount);
+  console.warn("[SIMULADO_DIRECT_BANK_SCOPED_EMPTY]", {
+    requested_topics: topics,
+    selected_subtopics: selectedSubtopics,
+    inspected: Array.isArray(data) ? data.length : 0,
+  });
+  return [];
 }
 
 const Simulados = () => {
@@ -1318,13 +1335,12 @@ const Simulados = () => {
             ...(config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC]),
             ...(config.specificTopic ? [config.specificTopic] : []),
           ];
-          const batchQs = batchData.recoveredFromDirectBank
-            ? deduplicateQuestions(mapQuestionsWithoutRequestedScope(batchData.questions || [], requestedScopeTopics[0] || DEFAULT_SIMULADO_TOPIC)).slice(0, currentBatchSize)
-            : mapQuestions(
-              batchData.questions || [],
-              requestedScopeTopics,
-              config.selectedSubtopics || [],
-            );
+          const batchQs = deduplicateQuestions(mapQuestions(
+            batchData.questions || [],
+            requestedScopeTopics,
+            config.selectedSubtopics || [],
+            { allowAuditedBucket: Boolean(config.topicWeights?.length) },
+          )).slice(0, currentBatchSize);
           
           if (batchQs.length === 0) {
             console.warn("[Simulados] Lote retornado vazio (após mapeamento).");
