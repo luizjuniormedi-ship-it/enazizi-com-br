@@ -147,13 +147,21 @@ function logMontarBancoEvent(
   });
 }
 
-function getAccessTokenForSimulado(cachedToken?: string | null): string {
+async function getAccessTokenForSimulado(cachedToken?: string | null): Promise<string> {
   if (cachedToken) return cachedToken;
 
   // AuthProvider is the single owner of session bootstrap. Starting another
-  // getSession() here can wait on the same Web Lock indefinitely; the
-  // Functions client then never issues the HTTP request. Fail before loading
-  // instead of presenting a false 140-second generator timeout.
+  // getSession() here used to wait on the same Web Lock indefinitely. Keep a
+  // short bounded fallback for freshly restored E2E/browser sessions, then
+  // fail before loading instead of presenting a false generator timeout.
+  const sessionResult = await withTimeout(
+    supabase.auth.getSession(),
+    3_000,
+    "simulado-auth-session"
+  ).catch(() => null);
+  const recoveredToken = sessionResult?.data?.session?.access_token;
+  if (recoveredToken) return recoveredToken;
+
   throw new Error("AUTH_SESSION_UNAVAILABLE: entre novamente para iniciar o simulado.");
 }
 
