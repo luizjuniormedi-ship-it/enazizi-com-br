@@ -461,6 +461,7 @@ const Simulados = () => {
   useEffect(() => {
     if (user && phase === "setup") {
       console.log("[Simulados] Buscando jobs ativos para o usuário:", user.id);
+      const staleCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
       supabase
         .from("simulation_generation_jobs")
         .select("*")
@@ -474,8 +475,20 @@ const Simulados = () => {
             return;
           }
           if (data) {
-            console.log("[Simulados] Jobs ativos encontrados:", data.length);
-            setActiveJobs(data);
+            const staleJobs = data.filter((job) =>
+              ["processing", "pending"].includes(job.status) &&
+              !job.generated_questions &&
+              job.created_at < staleCutoff
+            );
+            if (staleJobs.length > 0) {
+              void supabase
+                .from("simulation_generation_jobs")
+                .update({ status: "failed", error_message: "stale_zero_progress_timeout" })
+                .in("id", staleJobs.map((job) => job.id));
+            }
+            const active = data.filter((job) => !staleJobs.some((stale) => stale.id === job.id));
+            console.log("[Simulados] Jobs ativos encontrados:", active.length);
+            setActiveJobs(active);
           }
         });
     }

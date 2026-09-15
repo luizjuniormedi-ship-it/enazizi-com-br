@@ -404,18 +404,18 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       const count = customCount ? Number(customCount) : questionCount;
       const normalizedCount = normalizeQuestionCount(count, questionCount, MAX_SIMULADO_QUESTIONS);
 
-      // Resolve fonte de tópicos: manual > banca específica > GERAL (Todas as bancas)
+      // Resolve fonte de tópicos: manual > banca específica > padrão curto.
+      // "Todas as bancas" é estilo, não perfil oficial completo; não deve
+      // transformar um treino de 5 questões em Preparatório GERAL de 100.
       let finalTopics = selectedTopics;
       let resolvedWeights: any[] | undefined;
       let resolvedExamBoard: string | undefined = examBoard !== "all" ? examBoard : undefined;
 
       if (finalTopics.length === 0) {
-        const profileKey = examBoard !== "all" ? examBoard : "GERAL";
-        const profile = EXAM_PROFILES[profileKey] || EXAM_PROFILES.GERAL;
+        const profile = examBoard !== "all" ? EXAM_PROFILES[examBoard] : undefined;
         if (profile?.topicWeights?.length) {
           finalTopics = profile.topicWeights.map((tw: any) => tw.topic);
           resolvedWeights = profile.topicWeights;
-          if (examBoard === "all") resolvedExamBoard = "GERAL";
         } else {
           finalTopics = ["Clínica Médica"];
         }
@@ -1255,7 +1255,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 variant="outline"
                 className="h-14 rounded-2xl font-black uppercase tracking-widest text-[13px] border-white/10 bg-white/5 hover:bg-white/10 text-white"
                 onClick={() => handleStart()}
-                disabled={mode === "estudo" && selectedTopics.length === 0 && !specificTopic && !examBoard}
+                disabled={mode === "estudo" && selectedTopics.length === 0 && !specificTopic && examBoard !== "all"}
               >
                 <DatabaseZap className="h-4 w-4 mr-2" />
                 Montar com Banco
