@@ -15,7 +15,7 @@ export interface TutorResponse {
   metadata?: any;
 }
 
-function unwrapTutorJsonEnvelope(text: string): Record<string, unknown> | null {
+export function unwrapTutorJsonEnvelope(text: string): Record<string, unknown> | null {
   if (!/^\s*(?:resposta\s+em\s+json\s*:|<json>|```json|\{)/i.test(text)) return null;
   try {
     const parsed = safeJsonExtract<Record<string, unknown>>(text);
@@ -219,7 +219,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
     console.log("[TUTOR_NORMALIZED_OK] AI Choice format detected");
     const content = raw.choices[0].message.content;
     try {
-      const parsed = JSON.parse(content);
+      const parsed = unwrapTutorJsonEnvelope(content) ?? JSON.parse(content);
       return {
         content: parsed.content || content,
         teachingPhase: parsed.teachingPhase || "ENSINAR",

@@ -357,6 +357,8 @@ const App = () => (
                   <Route path="coach" element={<MotivationalCoach />} />
                   <Route path="rankings" element={<Rankings />} />
                   <Route path="revisor" element={<MedicalReviewer />} />
+                  <Route path="discursivas" element={<MedicalReviewer />} />
+                  <Route path="conquistas" element={<Achievements />} />
                   <Route path="entrevista" element={<InterviewSimulator />} />
                   <Route path="perfil" element={<Profile />} />
                   <Route path="resultados-oficiais" element={<ResultadosOficiais />} />

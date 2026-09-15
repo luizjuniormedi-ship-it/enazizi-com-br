@@ -333,6 +333,11 @@ function repairQuestionEncoding(value: unknown): string {
   }
 }
 
+function isProviderUnavailableError(error: unknown): boolean {
+  const message = getErrorMessage(error);
+  return /\bAI_PROVIDER_UNAVAILABLE\b|provedores de IA não responderam|Provider unavailable|status(?:Code)?\D*503/i.test(message);
+}
+
 function questionMatchesRequestedScope(q: any, topics: string[], subtopics: string[]): boolean {
   const usableCandidates = (candidates: unknown[]) => candidates
     .filter((value): value is string => typeof value === "string" && normalize(value).length > 0);
@@ -941,6 +946,7 @@ const Simulados = () => {
           } catch (e) {
             const isTimeout = e instanceof TimeoutError || /TIMEOUT/.test(getErrorMessage(e));
             const isBatchEmpty = getErrorMessage(e).includes("BATCH_EMPTY");
+            const isProviderUnavailable = isProviderUnavailableError(e);
 
             console.error("[Simulados] generateBatch falhou:", e);
             
@@ -952,6 +958,11 @@ const Simulados = () => {
                 const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
                 throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
               }
+            }
+
+            if (isProviderUnavailable) {
+              setLoadingProgress("Os provedores de IA estão indisponíveis agora. Tente novamente em instantes.");
+              throw e;
             }
 
             // A segunda chamada repetia a mesma montagem enquanto a primeira
@@ -1119,6 +1130,9 @@ const Simulados = () => {
             });
           }
           if (currentTry < 1) {
+            if (isProviderUnavailableError(batchError)) {
+              throw batchError;
+            }
             currentTry++;
             setLoadingProgress(`Re-tentando lote ${batchNum}...`);
             await new Promise(r => setTimeout(r, 2000));
