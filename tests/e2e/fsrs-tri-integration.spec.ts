@@ -124,6 +124,18 @@ test.describe('FSRS + TRI integrated chain', () => {
     // ── 6. DB validations
     const since = startedAt;
 
+    const { data: analytics, error: analyticsError } = await client
+      .from('simulado_question_analytics')
+      .select('id, simulado_session_id, question_index, bank_question_id, created_at')
+      .eq('user_id', userId)
+      .gte('created_at', since);
+
+    expect(analyticsError, `simulado_question_analytics query failed: ${analyticsError?.message}`).toBeNull();
+    expect(analytics, 'simulado_question_analytics rows created').not.toBeNull();
+    expect((analytics ?? []).length, 'simulado_question_analytics rows created').toBeGreaterThan(0);
+
+    const bankBackedAnalytics = (analytics ?? []).filter((row: any) => row.bank_question_id);
+
     const { data: attempts } = await client
       .from('practice_attempts')
       .select('id, event_hash, created_at')
@@ -131,6 +143,17 @@ test.describe('FSRS + TRI integrated chain', () => {
       .gte('created_at', since);
 
     expect(attempts, 'practice_attempts created').not.toBeNull();
+    if ((attempts ?? []).length === 0) {
+      throw new Error(
+        [
+          'practice_attempts stayed empty after simulado completion.',
+          `analytics_rows=${analytics?.length ?? 0}`,
+          `bank_backed_analytics_rows=${bankBackedAnalytics.length}`,
+          'This indicates the canonical DB fanout did not persist attempts.',
+          'Check Supabase qszsyskumcmuknumwxtk for trg_fanout_simulado_answer and remove the legacy tr_refresh_mastery_on_practice trigger.',
+        ].join(' '),
+      );
+    }
     expect((attempts ?? []).length).toBeGreaterThan(0);
     const hashes = (attempts ?? []).map((a: any) => a.event_hash).filter(Boolean);
     expect(new Set(hashes).size, 'no duplicate event_hash in practice_attempts').toBe(hashes.length);
