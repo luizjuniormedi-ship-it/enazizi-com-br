@@ -29,6 +29,7 @@ const DIFFICULTY_OPTIONS = [
 
 const MIN_SIMULADO_QUESTIONS = 5;
 const MAX_SIMULADO_QUESTIONS = 100;
+const CONTROL_TOPIC_LABELS = new Set(["Todos", "Básico", "Clínico", "Internato", "Selecionar todos", "Limpar"]);
 
 const EXAM_BOARDS = [
   { value: "all", label: "Todas as bancas" },
@@ -50,6 +51,15 @@ const normalizeQuestionCount = (raw: unknown, fallback: number, max = MAX_SIMULA
   return Math.min(Math.max(n, MIN_SIMULADO_QUESTIONS), max);
 };
 
+const normalizeSelectedTopics = (topics: string[]): string[] => {
+  const valid = topics
+    .map((topic) => topic.trim())
+    .filter((topic) => topic.length > 0)
+    .filter((topic) => !CONTROL_TOPIC_LABELS.has(topic))
+    .filter((topic) => ALL_TOPICS.includes(topic));
+
+  return Array.from(new Set(valid));
+};
 
 export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
 
@@ -407,7 +417,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       // Resolve fonte de tópicos: manual > banca específica > padrão curto.
       // "Todas as bancas" é estilo, não perfil oficial completo; não deve
       // transformar um treino de 5 questões em Preparatório GERAL de 100.
-      let finalTopics = selectedTopics;
+      let finalTopics = normalizeSelectedTopics(selectedTopics);
       let resolvedWeights: any[] | undefined;
       let resolvedExamBoard: string | undefined = examBoard !== "all" ? examBoard : undefined;
 

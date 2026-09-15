@@ -49,6 +49,19 @@ import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { evaluateCognitivePressure } from "@/lib/pedagogical/cognitive-pressure-engine";
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 import { normalize, textContains, textEquals } from "@/lib/questionTopicMatching";
+import { ALL_SPECIALTIES } from "@/constants/specialties";
+
+const CONTROL_TOPIC_LABELS = new Set(["Todos", "Básico", "Clínico", "Internato", "Selecionar todos", "Limpar"]);
+
+function normalizeSimuladoTopics(topics: string[] | undefined | null): string[] {
+  const valid = (topics || [])
+    .map((topic) => String(topic || "").trim())
+    .filter(Boolean)
+    .filter((topic) => !CONTROL_TOPIC_LABELS.has(topic))
+    .filter((topic) => ALL_SPECIALTIES.includes(topic));
+
+  return Array.from(new Set(valid));
+}
 
 async function computeRealPerformance(userId: string) {
   const { data: rows } = await supabase
@@ -639,6 +652,8 @@ const Simulados = () => {
     const selectedExam = config.realExamProfile || config.examBoard;
     const boardBlockReason = getOfficialBoardBlockReason(selectedExam, config.mode);
 
+    config.topics = normalizeSimuladoTopics(config.topics);
+
     if (boardBlockReason) {
       toast({
         title: "Banca indisponível",
@@ -649,9 +664,9 @@ const Simulados = () => {
       return;
     }
 
-    if (!hasManualTopics && (hasAutoDistribution || hasCustomDistribution)) {
+    if (config.topics.length === 0 && (hasAutoDistribution || hasCustomDistribution)) {
       const weights = config.customDistribution || config.topicWeights;
-      config.topics = weights.map((tw: any) => tw.topic);
+      config.topics = normalizeSimuladoTopics(weights.map((tw: any) => tw.topic));
       console.log("[Simulados] Tópicos recuperados da distribuição:", config.topics);
     }
     
