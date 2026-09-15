@@ -13,6 +13,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { isProfileComplete } from "@/lib/profileValidation";
 
+const SUPABASE_REST_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 export type ProfileStatusKind =
   | "loading"
   | "anon"
@@ -84,7 +87,7 @@ export function useProfileStatus(): ProfileStatus {
     try {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?${query}`, {
         headers: {
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: SUPABASE_REST_KEY,
           Authorization: `Bearer ${session.access_token}`,
           Accept: "application/json",
         },

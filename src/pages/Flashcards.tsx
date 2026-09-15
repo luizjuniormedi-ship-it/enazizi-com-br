@@ -52,6 +52,26 @@ interface FsrsReviewState {
   state: number;
 }
 
+const FLASHCARDS_QUERY_TIMEOUT_MS = 9000;
+
+function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = FLASHCARDS_QUERY_TIMEOUT_MS): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} excedeu ${Math.round(timeoutMs / 1000)}s`));
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
 const Flashcards = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -112,7 +132,8 @@ const Flashcards = () => {
     setLoadError(null);
     try {
       // Paginated fetch to bypass PostgREST default 1000-row cap.
-      // Cap elevado para 20.000 globais para refletir o banco real (16k+).
+      // UX rule: the module must render a usable subset quickly. A hanging
+      // PostgREST page cannot keep the student in an infinite loading state.
       const PAGE = 1000;
       const fetchPaged = async (filter: (q: any) => any, maxRows: number) => {
         const out: any[] = [];
@@ -125,7 +146,7 @@ const Flashcards = () => {
               .order("created_at", { ascending: false })
               .range(from, to)
           );
-          const { data, error } = await q;
+          const { data, error } = await withTimeout(q, `flashcards:${from}-${to}`);
           if (error) throw error;
           return data || [];
         };
@@ -146,13 +167,34 @@ const Flashcards = () => {
         return out;
       };
 
-      const [ownCards, globalCards, fsrsRes] = await Promise.all([
+      const [ownCardsResult, globalCardsResult, fsrsResult] = await Promise.allSettled([
         fetchPaged((q) => q.eq("user_id", user.id), 5000),
-        fetchPaged((q) => q.eq("is_global", true).neq("user_id", user.id), 20000),
-        supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
+        fetchPaged((q) => q.eq("is_global", true).neq("user_id", user.id), 4000),
+        withTimeout(
+          supabase.from("fsrs_cards").select("card_ref_id, due, stability, state").eq("user_id", user.id).eq("card_type", "flashcard"),
+          "fsrs_cards:flashcard",
+        ),
       ]);
 
-      if (fsrsRes.error) throw fsrsRes.error;
+      if (ownCardsResult.status === "rejected" && globalCardsResult.status === "rejected") {
+        throw new Error(`Flashcards indisponíveis: ${ownCardsResult.reason?.message || ownCardsResult.reason}`);
+      }
+
+      const ownCards = ownCardsResult.status === "fulfilled" ? ownCardsResult.value : [];
+      const globalCards = globalCardsResult.status === "fulfilled" ? globalCardsResult.value : [];
+      if (ownCardsResult.status === "rejected" || globalCardsResult.status === "rejected") {
+        console.warn("[FLASHCARDS_PARTIAL_LOAD]", {
+          ownCards: ownCards.length,
+          globalCards: globalCards.length,
+          ownError: ownCardsResult.status === "rejected" ? String(ownCardsResult.reason?.message || ownCardsResult.reason) : null,
+          globalError: globalCardsResult.status === "rejected" ? String(globalCardsResult.reason?.message || globalCardsResult.reason) : null,
+        });
+      }
+
+      const fsrsRows = fsrsResult.status === "fulfilled" && !fsrsResult.value.error ? (fsrsResult.value.data || []) : [];
+      if (fsrsResult.status === "rejected" || (fsrsResult.status === "fulfilled" && fsrsResult.value.error)) {
+        console.warn("[FLASHCARDS_FSRS_LOAD_FAIL]", fsrsResult.status === "rejected" ? fsrsResult.reason : fsrsResult.value.error);
+      }
 
       const ownIds = new Set(ownCards.map((c: any) => c.id));
       const merged = [...ownCards, ...globalCards.filter((c: any) => !ownIds.has(c.id))]
@@ -160,7 +202,7 @@ const Flashcards = () => {
       setAllCards(merged);
 
       const stateMap = new Map<string, FsrsReviewState>();
-      (fsrsRes.data || []).forEach((r: any) => stateMap.set(r.card_ref_id, { due: r.due, stability: r.stability, state: r.state }));
+      fsrsRows.forEach((r: any) => stateMap.set(r.card_ref_id, { due: r.due, stability: r.stability, state: r.state }));
       setFsrsStates(stateMap);
 
       const now = new Date().toISOString();

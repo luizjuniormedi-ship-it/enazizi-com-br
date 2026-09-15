@@ -27,6 +27,11 @@ const DIFFICULTY_OPTIONS = [
   { value: "misto", label: "Misto" },
 ];
 
+const MIN_SIMULADO_QUESTIONS = 5;
+const MAX_SIMULADO_QUESTIONS = 100;
+const DEFAULT_SIMULADO_TOPIC = "Cardiologia";
+const CONTROL_TOPIC_LABELS = new Set(["Todos", "Básico", "Clínico", "Internato", "Selecionar todos", "Limpar"]);
+
 const EXAM_BOARDS = [
   { value: "all", label: "Todas as bancas" },
   { value: "ENARE", label: "ENARE" },
@@ -39,6 +44,23 @@ const EXAM_BOARDS = [
   { value: "UNIFESP", label: "UNIFESP" },
 ];
 
+const normalizeQuestionCount = (raw: unknown, fallback: number, max = MAX_SIMULADO_QUESTIONS): number => {
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  const n = Math.trunc(parsed);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.min(Math.max(n, MIN_SIMULADO_QUESTIONS), max);
+};
+
+const normalizeSelectedTopics = (topics: string[]): string[] => {
+  const valid = topics
+    .map((topic) => topic.trim())
+    .filter((topic) => topic.length > 0)
+    .filter((topic) => !CONTROL_TOPIC_LABELS.has(topic))
+    .filter((topic) => ALL_TOPICS.includes(topic));
+
+  return Array.from(new Set(valid));
+};
 
 export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
 
@@ -359,14 +381,15 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const handleStart = async (forceAi = false) => {
     try {
       if (mode === "adaptativo") {
-        const count = customCount ? parseInt(customCount) : questionCount;
+        const count = normalizeQuestionCount(customCount || questionCount, 20, MAX_SIMULADO_QUESTIONS);
         onStart({ topics: [], count, difficulty: "adaptativo", timePerQuestion: 3, mode: "adaptativo" });
         return;
       }
       if (mode === "prova_real" || mode === "tri") {
         const profile = selectedProfile;
         const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
-        const count = generationMethod === "custom" ? customTotalQuestions : profile.totalQuestions;
+        const profileTotal = Math.min(profile.totalQuestions, MAX_SIMULADO_QUESTIONS);
+        const count = generationMethod === "custom" ? normalizeQuestionCount(customTotalQuestions, profileTotal, profileTotal) : profileTotal;
         const timePerQ = profile.timeMinutes / count;
         
         onStart({
@@ -389,22 +412,23 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         });
         return;
       }
-      const count = customCount ? parseInt(customCount) : questionCount;
+      const count = customCount ? Number(customCount) : questionCount;
+      const normalizedCount = normalizeQuestionCount(count, questionCount, MAX_SIMULADO_QUESTIONS);
 
-      // Resolve fonte de tópicos: manual > banca específica > GERAL (Todas as bancas)
-      let finalTopics = selectedTopics;
+      // Resolve fonte de tópicos: manual > banca específica > padrão curto.
+      // "Todas as bancas" é estilo, não perfil oficial completo; não deve
+      // transformar um treino de 5 questões em Preparatório GERAL de 100.
+      let finalTopics = normalizeSelectedTopics(selectedTopics);
       let resolvedWeights: any[] | undefined;
       let resolvedExamBoard: string | undefined = examBoard !== "all" ? examBoard : undefined;
 
       if (finalTopics.length === 0) {
-        const profileKey = examBoard !== "all" ? examBoard : "GERAL";
-        const profile = EXAM_PROFILES[profileKey] || EXAM_PROFILES.GERAL;
+        const profile = examBoard !== "all" ? EXAM_PROFILES[examBoard] : undefined;
         if (profile?.topicWeights?.length) {
           finalTopics = profile.topicWeights.map((tw: any) => tw.topic);
           resolvedWeights = profile.topicWeights;
-          if (examBoard === "all") resolvedExamBoard = "GERAL";
         } else {
-          finalTopics = ["Clínica Médica"];
+          finalTopics = [DEFAULT_SIMULADO_TOPIC];
         }
       }
 
@@ -412,7 +436,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
       onStart({
         topics: finalTopics,
-        count,
+        count: normalizedCount,
         difficulty,
         timePerQuestion,
         mode,
@@ -431,7 +455,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
   const totalTime = mode === "prova_real" || mode === "tri"
     ? selectedProfile.timeMinutes
-    : (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
+      : normalizeQuestionCount(customCount || questionCount, questionCount, MAX_SIMULADO_QUESTIONS) * timePerQuestion;
 
   return (
     <div className={`space-y-6 animate-fade-in max-w-3xl mx-auto ${inlineMode ? "pt-0" : ""}`}>
@@ -450,7 +474,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             module="simulado"
             eyebrow={<><Swords className="h-3.5 w-3.5" /> Arena mental · Preparação de elite</>}
             title="Simulados"
-            subtitle="Configure dificuldade, banca e cronômetro. Modo Estudo para feedback imediato, Modo Prova para tensão real, Prova Real e TRI para preparação cirúrgica."
+            subtitle="Configure dificuldade, temas e cronômetro. Os perfis completos usam distribuição auditável; a dificuldade permanece experimental."
             actions={
               <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
                 "Escolha entre Modo Estudo (feedback imediato) ou Modo Prova (cronômetro)",
@@ -458,7 +482,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
                 "No Modo Estudo: veja explicação após cada resposta e aprenda em tempo real",
                 "No Modo Prova: cronômetro, sem feedback, resultado completo no final",
-                "No Modo Prova Real: simula uma prova de residência completa com distribuição real de temas",
+                "No modo Prova Completa: treine com matriz temática auditável, sem alegação de prova oficial",
                 "Marque questões com a flag para revisão posterior em ambos os modos",
               ]} />
             }
@@ -556,25 +580,25 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Trophy className="h-5 w-5 text-amber-500" />
-                  <span className="font-semibold text-sm">Prova Real</span>
+                  <span className="font-semibold text-sm">Prova Completa</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Simula prova de residência. Distribuição e dificuldade reais.</p>
+                <p className="text-xs text-muted-foreground">Treino completo com matriz temática auditável e dificuldade experimental.</p>
               </button>
               <button
-                onClick={() => {
-                  setMode("tri");
-                }}
+                disabled
+                aria-disabled="true"
+                title="Indisponível até calibração psicométrica e homologação do corpus"
                 className={`p-4 rounded-xl border-2 transition-all text-left ${
                   mode === "tri"
                     ? "border-violet-500 bg-violet-500/10"
-                    : "border-border bg-secondary/30 hover:border-violet-500/30"
+                    : "border-border bg-secondary/20 opacity-60 cursor-not-allowed"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <Brain className="h-5 w-5 text-violet-500" />
-                  <span className="font-semibold text-sm">Nível ENARE/USP</span>
+                  <span className="font-semibold text-sm">TRI em calibração</span>
                 </div>
-                <p className="text-xs text-muted-foreground">TRI psicométrica. Ranking real. Nota ponderada.</p>
+                <p className="text-xs text-muted-foreground">Indisponível até calibração psicométrica e homologação.</p>
               </button>
               <button
                 onClick={() => {
@@ -689,11 +713,11 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             <>
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-semibold text-amber-600 flex items-center gap-2">
-                  <Trophy className="h-4 w-4" /> Simulado Prova Real
+                  <Trophy className="h-4 w-4" /> Simulado Completo Experimental
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>• <strong>{selectedProfile.totalQuestions} questões</strong> com distribuição de temas idêntica à prova real</li>
-                  <li>• Dificuldade mista: {selectedProfile.difficultyMix.easy}% fácil, {selectedProfile.difficultyMix.medium}% médio, {selectedProfile.difficultyMix.hard}% difícil</li>
+                  <li>• <strong>{selectedProfile.totalQuestions} questões</strong> com matriz temática auditável do preparatório</li>
+                  <li>• Dificuldade experimental: {selectedProfile.difficultyMix.easy}% fácil, {selectedProfile.difficultyMix.medium}% médio, {selectedProfile.difficultyMix.hard}% difícil</li>
                   <li>• Cronômetro: <strong>{selectedProfile.timeMinutes} minutos</strong> ({Math.round(selectedProfile.timeMinutes / 60)}h)</li>
                   <li>• Nota de corte estimada: <strong>{selectedProfile.cutoffEstimate}%</strong></li>
                   <li>• Resultado com percentil estimado e análise competitiva</li>
@@ -720,7 +744,14 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(EXAM_PROFILES).map(([key, profile]) => (
-                      <SelectItem key={key} value={key} data-testid={`banca-${key.toLowerCase()}-option`}>{profile.name}</SelectItem>
+                      <SelectItem
+                        key={key}
+                        value={key}
+                        disabled={!profile.canGenerate}
+                        data-testid={`banca-${key.toLowerCase()}-option`}
+                      >
+                        {profile.name}{profile.canGenerate ? "" : " — indisponível"}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -745,10 +776,9 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   <Brain className="h-4 w-4" /> Simulado Nível ENARE/USP — TRI
                 </p>
                 <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>• Usa <strong>Teoria de Resposta ao Item (TRI)</strong> — modelo psicométrico real</li>
-                  <li>• Cada questão tem parâmetros de discriminação, dificuldade e chute</li>
-                  <li>• Nota ponderada: questões difíceis valem mais se você acertar</li>
-                  <li>• <strong>Ranking estimado</strong> entre candidatos reais</li>
+                  <li>• Modo indisponível enquanto os parâmetros psicométricos não forem calibrados</li>
+                  <li>• Não gera ranking, percentil ou nota oficial</li>
+                  <li>• A liberação exigirá corpus homologado e amostra de respostas suficiente</li>
                   <li>• Distribuição: {selectedProfile.difficultyMix.easy}% fácil, {selectedProfile.difficultyMix.medium}% médio, {selectedProfile.difficultyMix.hard}% difícil</li>
                   <li>• Cronômetro: <strong>{selectedProfile.timeMinutes} minutos</strong></li>
                 </ul>
@@ -1236,7 +1266,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 variant="outline"
                 className="h-14 rounded-2xl font-black uppercase tracking-widest text-[13px] border-white/10 bg-white/5 hover:bg-white/10 text-white"
                 onClick={() => handleStart()}
-                disabled={mode === "estudo" && selectedTopics.length === 0 && !specificTopic && !examBoard}
+                disabled={mode === "estudo" && selectedTopics.length === 0 && !specificTopic && examBoard !== "all"}
               >
                 <DatabaseZap className="h-4 w-4 mr-2" />
                 Montar com Banco

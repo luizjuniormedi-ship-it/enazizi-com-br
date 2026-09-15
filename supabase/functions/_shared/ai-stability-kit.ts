@@ -4,6 +4,7 @@
  */
 
 import { generateSHA256 } from "./crypto-utils.ts";
+import { safeJsonExtract } from "./json-extractor.ts";
 
 export interface TutorResponse {
   content: string;
@@ -12,6 +13,32 @@ export interface TutorResponse {
   source: "nvidia" | "cerebras" | "openai" | "claude" | "lovable" | "fallback" | "safe_mode" | "cache";
   confidence: number;
   metadata?: any;
+}
+
+export function unwrapTutorJsonEnvelope(text: string): Record<string, unknown> | null {
+  if (!/^\s*(?:resposta\s+em\s+json\s*:|<json>|```json|\{)/i.test(text)) return null;
+  try {
+    const parsed = safeJsonExtract<Record<string, unknown>>(text);
+    return typeof parsed.content === "string" && parsed.content.trim() &&
+      (typeof parsed.socraticQuestion === "string" || typeof parsed.teachingPhase === "string")
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function isRawStructuralTutorPayload(text: string): boolean {
+  return /^\s*(?:resposta\s+em\s+json\s*:|<json>|```json|\{|\[)/i.test(text) &&
+    /"?(content|socraticQuestion|teachingPhase|metadata|provider|model)"?\s*:/i.test(text);
+}
+
+function safeTutorContent(content: unknown): string | null {
+  if (typeof content !== "string") return null;
+  const trimmed = content.trim();
+  if (!trimmed) return null;
+  if (isRawStructuralTutorPayload(trimmed)) return null;
+  return content;
 }
 
 // ─── CIRCUIT BREAKER ────────────────────────────────────────────────────────
@@ -105,7 +132,7 @@ export function normalizeAIResponse(data: any): any {
       if (typeof content === "string") {
         const parsed = JSON.parse(content);
         return {
-          content: parsed.content || content,
+          content: safeTutorContent(parsed.content) || safeTutorContent(content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
           socraticQuestion: parsed.socraticQuestion || "",
           teachingMode: parsed.teachingMode || "PRECEPTOR",
           interactionMode: parsed.interactionMode || "BALANCED_SOCRATIC",
@@ -182,11 +209,16 @@ export const MEDICAL_STATIC_FALLBACKS: Record<string, any> = {
 export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]): TutorResponse {
   console.log(`[TUTOR_RESPONSE_NORMALIZER] source=${source}`);
 
+  if (raw && typeof raw === "object" && typeof raw.content === "string") {
+    const envelope = unwrapTutorJsonEnvelope(raw.content);
+    if (envelope) raw = { ...raw, ...envelope };
+  }
+
   // 1. If it's already a normalized response, return it
   if (raw && typeof raw === 'object' && raw.content && raw.teachingPhase && raw.socraticQuestion) {
     console.log("[TUTOR_NORMALIZED_OK] Standard format detected");
     return {
-      content: raw.content,
+      content: safeTutorContent(raw.content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
       teachingPhase: raw.teachingPhase,
       socraticQuestion: raw.socraticQuestion,
       source: source,
@@ -200,9 +232,9 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
     console.log("[TUTOR_NORMALIZED_OK] AI Choice format detected");
     const content = raw.choices[0].message.content;
     try {
-      const parsed = JSON.parse(content);
+      const parsed = unwrapTutorJsonEnvelope(content) ?? JSON.parse(content);
       return {
-        content: parsed.content || content,
+        content: safeTutorContent(parsed.content) || safeTutorContent(content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
         teachingPhase: parsed.teachingPhase || "ENSINAR",
         socraticQuestion: parsed.socraticQuestion || "",
         source: source,
@@ -211,7 +243,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
       };
     } catch {
       return {
-        content: content,
+        content: safeTutorContent(content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
         teachingPhase: "ENSINAR",
         socraticQuestion: "O que você achou dessa explicação?",
         source: source,
@@ -224,7 +256,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
   if (raw && raw.fallback) {
     console.log("[TUTOR_NORMALIZED_OK] Fallback format detected");
     return {
-      content: raw.content || "### 💡 Resumo de Segurança\nConteúdo técnico carregado da biblioteca local.",
+      content: safeTutorContent(raw.content) || "### 💡 Resumo de Segurança\nConteúdo técnico carregado da biblioteca local.",
       teachingPhase: raw.teachingPhase || "ENSINAR",
       socraticQuestion: raw.socraticQuestion || "Ficou clara essa explicação base?",
       source: "fallback",
@@ -237,7 +269,7 @@ export function normalizeTutorResponse(raw: any, source: TutorResponse["source"]
   if (raw && typeof raw === "object" && typeof raw.content === "string" && raw.content.trim()) {
     console.log("[TUTOR_NORMALIZED_OK] Provider text format detected");
     return {
-      content: raw.content,
+      content: safeTutorContent(raw.content) || "Não foi possível exibir a resposta pedagógica com segurança. Tente gerar novamente.",
       teachingPhase: raw.teachingPhase || "ENSINAR",
       socraticQuestion: raw.socraticQuestion || "O que você achou dessa explicação?",
       source,

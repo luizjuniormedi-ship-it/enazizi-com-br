@@ -49,6 +49,22 @@ import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import { evaluateCognitivePressure } from "@/lib/pedagogical/cognitive-pressure-engine";
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 import { normalize, textContains, textEquals } from "@/lib/questionTopicMatching";
+import { ALL_SPECIALTIES } from "@/constants/specialties";
+
+const CONTROL_TOPIC_LABELS = new Set(["Todos", "Básico", "Clínico", "Internato", "Selecionar todos", "Limpar"]);
+const DEFAULT_SIMULADO_TOPIC = "Cardiologia";
+const ENABLE_DIRECT_PRACTICE_ATTEMPT_FALLBACK =
+  String(import.meta.env.VITE_ENABLE_DIRECT_PRACTICE_ATTEMPT_FALLBACK || "").toLowerCase() === "true";
+
+function normalizeSimuladoTopics(topics: string[] | undefined | null): string[] {
+  const valid = (topics || [])
+    .map((topic) => String(topic || "").trim())
+    .filter(Boolean)
+    .filter((topic) => !CONTROL_TOPIC_LABELS.has(topic))
+    .filter((topic) => ALL_SPECIALTIES.includes(topic));
+
+  return Array.from(new Set(valid));
+}
 
 async function computeRealPerformance(userId: string) {
   const { data: rows } = await supabase
@@ -91,11 +107,17 @@ async function computeRealPerformance(userId: string) {
 type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 10;
+const MIN_SIMULADO_QUESTIONS = 5;
+const MAX_SIMULADO_QUESTIONS = 100;
 
-// The canonical AI chain may spend up to 30s on NVIDIA before falling back to
-// Cerebras and running the clinical-quality retry. Keep the UI alive for the
-// complete server-side attempt instead of abandoning a valid generation.
-const QUESTION_GENERATOR_TIMEOUT_MS = 140000;
+// A geração por IA é opcional para iniciar uma prova. Se NVIDIA/Cerebras não
+// responderem rápido, a experiência correta é degradar para o banco canônico
+// em vez de deixar o aluno preso em loading.
+const QUESTION_GENERATOR_TIMEOUT_MS = 40_000;
+// Banco de questões não depende do fallback de provedores de IA. Se a Edge
+// não montar a prova dentro desse prazo, interrompemos com erro recuperável
+// em vez de manter a tela presa em 25% aguardando o timeout de IA.
+const BANK_GENERATOR_TIMEOUT_MS = 45_000;
 
 class TimeoutError extends Error {
   constructor(message: string) {
@@ -141,14 +163,34 @@ function logMontarBancoEvent(
   });
 }
 
-function getAccessTokenForSimulado(cachedToken?: string | null): string {
+async function getAccessTokenForSimulado(cachedToken?: string | null): Promise<string> {
   if (cachedToken) return cachedToken;
 
   // AuthProvider is the single owner of session bootstrap. Starting another
-  // getSession() here can wait on the same Web Lock indefinitely; the
-  // Functions client then never issues the HTTP request. Fail before loading
-  // instead of presenting a false 140-second generator timeout.
+  // getSession() here used to wait on the same Web Lock indefinitely. Keep a
+  // short bounded fallback for freshly restored E2E/browser sessions, then
+  // fail before loading instead of presenting a false generator timeout.
+  const sessionResult = await withTimeout(
+    supabase.auth.getSession(),
+    3_000,
+    "simulado-auth-session"
+  ).catch(() => null);
+  const recoveredToken = sessionResult?.data?.session?.access_token;
+  if (recoveredToken) return recoveredToken;
+
   throw new Error("AUTH_SESSION_UNAVAILABLE: entre novamente para iniciar o simulado.");
+}
+
+function normalizeRequestedCount(rawCount: unknown, fallback: number, maxCount = MAX_SIMULADO_QUESTIONS): number {
+  const parsed = Number(rawCount);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  const normalized = Math.trunc(parsed);
+  if (!Number.isFinite(normalized) || normalized <= 0) return fallback;
+
+  return Math.min(Math.max(normalized, MIN_SIMULADO_QUESTIONS), maxCount);
 }
 
 function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {
@@ -200,6 +242,9 @@ async function generateBatch(
   // [SIM_UI_FILTERS_SUBMITTED]
   console.log("[SIM_UI_FILTERS_SUBMITTED] Config:", { topics, count, difficulty, examBoard, mode, selectedSubtopics });
   const startedAt = performance.now();
+  const timeoutMs = mode === "ai_generation"
+    ? QUESTION_GENERATOR_TIMEOUT_MS
+    : BANK_GENERATOR_TIMEOUT_MS;
 
   try {
     const { data, error } = await withTimeout(
@@ -211,7 +256,7 @@ async function generateBatch(
         body: {
           count,
           difficulty,
-          specialty: topics[0] || "Clínica Médica",
+          specialty: topics[0] || DEFAULT_SIMULADO_TOPIC,
           topics,
           selectedSubtopics,
           targetExam: examBoard,
@@ -227,7 +272,7 @@ async function generateBatch(
           correlationId,
         }
       }),
-      QUESTION_GENERATOR_TIMEOUT_MS,
+      timeoutMs,
       "question-generator"
     );
 
@@ -242,7 +287,7 @@ async function generateBatch(
       success: Boolean((data as any)?.success),
       duration_ms: durationMs,
       requested: count,
-      timeout_ms: QUESTION_GENERATOR_TIMEOUT_MS,
+      timeout_ms: timeoutMs,
       timeoutTriggered: false,
     });
 
@@ -312,6 +357,11 @@ function repairQuestionEncoding(value: unknown): string {
   }
 }
 
+function isProviderUnavailableError(error: unknown): boolean {
+  const message = getErrorMessage(error);
+  return /\bAI_PROVIDER_UNAVAILABLE\b|provedores de IA não responderam|Provider unavailable|status(?:Code)?\D*503/i.test(message);
+}
+
 function questionMatchesRequestedScope(q: any, topics: string[], subtopics: string[]): boolean {
   const usableCandidates = (candidates: unknown[]) => candidates
     .filter((value): value is string => typeof value === "string" && normalize(value).length > 0);
@@ -338,34 +388,48 @@ function questionMatchesRequestedScope(q: any, topics: string[], subtopics: stri
   ));
 }
 
+function toSimQuestion(q: any, fallbackTopic?: string): SimQuestion {
+  return {
+    id: q.id,
+    bankId: q.id,
+    statement: repairQuestionEncoding(q.statement),
+    options: Array.isArray(q.options) ? q.options.map(repairQuestionEncoding) : [],
+    correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
+    topic: repairQuestionEncoding(
+      typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
+        ? q.topic
+        : q.curriculum_theme || fallbackTopic
+    ),
+    explanation: repairQuestionEncoding(q.explanation),
+    image_url: q.image_url,
+    visibleTopic: repairQuestionEncoding(q._visible_topic || q.topic || q.curriculum_theme || fallbackTopic),
+    topicBucket: repairQuestionEncoding(q._topic_bucket || q.topicBucket),
+    difficulty: q.difficulty,
+    difficultyBucket: q._difficulty_bucket || q.difficultyBucket,
+  };
+}
+
+function isUsableQuestion(q: SimQuestion): boolean {
+  return (
+    q.options.length >= 4 &&
+    q.statement.length > 10 &&
+    !q.statement.includes("�") &&
+    !q.options.some((option) => option.includes("�")) &&
+    !q.explanation?.includes("�")
+  );
+}
+
 function mapQuestions(arr: any[], topics: string[], subtopics: string[] = []): SimQuestion[] {
   return (Array.isArray(arr) ? arr : [])
     .filter((q: any) => questionMatchesRequestedScope(q, topics, subtopics))
-    .map((q: any) => ({
-      id: q.id,
-      bankId: q.id,
-      statement: repairQuestionEncoding(q.statement),
-      options: Array.isArray(q.options) ? q.options.map(repairQuestionEncoding) : [],
-      correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
-      topic: repairQuestionEncoding(
-        typeof q.topic === "string" && !["geral", "general"].includes(normalize(q.topic))
-          ? q.topic
-          : q.curriculum_theme || topics[0]
-      ),
-      explanation: repairQuestionEncoding(q.explanation),
-      image_url: q.image_url,
-      visibleTopic: repairQuestionEncoding(q._visible_topic || q.topic || q.curriculum_theme),
-      topicBucket: repairQuestionEncoding(q._topic_bucket || q.topicBucket),
-      difficulty: q.difficulty,
-      difficultyBucket: q._difficulty_bucket || q.difficultyBucket,
-    }))
-    .filter(q =>
-      q.options.length >= 4 &&
-      q.statement.length > 10 &&
-      !q.statement.includes("�") &&
-      !q.options.some((option) => option.includes("�")) &&
-      !q.explanation?.includes("�")
-    );
+    .map((q: any) => toSimQuestion(q, topics[0]))
+    .filter(isUsableQuestion);
+}
+
+function mapQuestionsWithoutRequestedScope(arr: any[], fallbackTopic: string): SimQuestion[] {
+  return (Array.isArray(arr) ? arr : [])
+    .map((q: any) => toSimQuestion(q, fallbackTopic))
+    .filter(isUsableQuestion);
 }
 
 function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
@@ -377,6 +441,42 @@ function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
     seen.add(key);
     return true;
   });
+}
+
+async function fetchDirectBankQuestions(
+  topics: string[],
+  count: number,
+  userId: string | undefined,
+  selectedSubtopics: string[] = [],
+): Promise<SimQuestion[]> {
+  const safeCount = normalizeRequestedCount(count, MIN_SIMULADO_QUESTIONS, 20);
+  const candidateLimit = Math.min(Math.max(safeCount * 12, 60), 240);
+  let query = supabase
+    .from("questions_bank")
+    .select("id, statement, options, correct_index, topic, subtopic, curriculum_theme, curriculum_subtheme, explanation, image_url, difficulty, is_global, user_id, approved_for_generation, review_status")
+    .limit(candidateLimit);
+
+  if (userId) {
+    query = query.or(`user_id.eq.${userId},is_global.eq.true`);
+  } else {
+    query = query.eq("is_global", true);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const mapped = deduplicateQuestions(mapQuestions(data || [], topics, selectedSubtopics));
+  if (mapped.length > 0) return mapped.slice(0, safeCount);
+
+  const unscopedFallback = deduplicateQuestions(mapQuestionsWithoutRequestedScope(data || [], topics[0] || DEFAULT_SIMULADO_TOPIC));
+  if (unscopedFallback.length > 0) {
+    console.warn("[SIMULADO_DIRECT_BANK_UNSCOPED_FALLBACK_SUCCESS]", {
+      requested_topics: topics,
+      selected_subtopics: selectedSubtopics,
+      received: unscopedFallback.length,
+    });
+  }
+  return unscopedFallback.slice(0, safeCount);
 }
 
 const Simulados = () => {
@@ -435,6 +535,7 @@ const Simulados = () => {
   useEffect(() => {
     if (user && phase === "setup") {
       console.log("[Simulados] Buscando jobs ativos para o usuário:", user.id);
+      const staleCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
       supabase
         .from("simulation_generation_jobs")
         .select("*")
@@ -448,8 +549,20 @@ const Simulados = () => {
             return;
           }
           if (data) {
-            console.log("[Simulados] Jobs ativos encontrados:", data.length);
-            setActiveJobs(data);
+            const staleJobs = data.filter((job) =>
+              ["processing", "pending"].includes(job.status) &&
+              !job.generated_questions &&
+              job.created_at < staleCutoff
+            );
+            if (staleJobs.length > 0) {
+              void supabase
+                .from("simulation_generation_jobs")
+                .update({ status: "failed", error_message: "stale_zero_progress_timeout" })
+                .in("id", staleJobs.map((job) => job.id));
+            }
+            const active = data.filter((job) => !staleJobs.some((stale) => stale.id === job.id));
+            console.log("[Simulados] Jobs ativos encontrados:", active.length);
+            setActiveJobs(active);
           }
         });
     }
@@ -566,6 +679,8 @@ const Simulados = () => {
     const selectedExam = config.realExamProfile || config.examBoard;
     const boardBlockReason = getOfficialBoardBlockReason(selectedExam, config.mode);
 
+    config.topics = normalizeSimuladoTopics(config.topics);
+
     if (boardBlockReason) {
       toast({
         title: "Banca indisponível",
@@ -576,10 +691,15 @@ const Simulados = () => {
       return;
     }
 
-    if (!hasManualTopics && (hasAutoDistribution || hasCustomDistribution)) {
+    if (config.topics.length === 0 && (hasAutoDistribution || hasCustomDistribution)) {
       const weights = config.customDistribution || config.topicWeights;
-      config.topics = weights.map((tw: any) => tw.topic);
+      config.topics = normalizeSimuladoTopics(weights.map((tw: any) => tw.topic));
       console.log("[Simulados] Tópicos recuperados da distribuição:", config.topics);
+    }
+
+    if (config.topics.length === 0 && !config.specificTopic && !selectedExam) {
+      config.topics = [DEFAULT_SIMULADO_TOPIC];
+      console.log("[Simulados] Nenhum tema clínico válido selecionado; usando fallback:", config.topics);
     }
     
     // A prova completa precisa carregar também os pesos. Enviar apenas a lista
@@ -622,7 +742,14 @@ const Simulados = () => {
       return;
     }
 
-    const questionCount = config.count || 10;
+    const selectedProfile = selectedExam ? EXAM_PROFILES[selectedExam as keyof typeof EXAM_PROFILES] : undefined;
+    const requestedCountLimit = isBoardMode
+      ? Math.max(5, Math.min(selectedProfile?.totalQuestions ?? MAX_SIMULADO_QUESTIONS, MAX_SIMULADO_QUESTIONS))
+      : MAX_SIMULADO_QUESTIONS;
+    const requestedTotal = normalizeRequestedCount(config.count, isBoardMode ? requestedCountLimit : 10, requestedCountLimit);
+    if (requestedTotal !== config.count) {
+      config.count = requestedTotal;
+    }
     
     // Cognitive Pressure Control
     if (cogOrch?.fatigue_index && cogOrch.fatigue_index > 80) {
@@ -679,7 +806,7 @@ const Simulados = () => {
             {
               headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
               body: {
-                target_question_count: config.count || 20,
+                target_question_count: requestedTotal,
                 performance: perf,
                 topics: config.topics && config.topics.length > 0 ? config.topics : undefined,
                 discipline: (config.topics && config.topics[0]) || undefined,
@@ -716,7 +843,7 @@ const Simulados = () => {
 
           if (data.insufficientQuestions) {
             setQuestions(adaptiveQs);
-            setPartialMessage(data.message || `Aviso: Banco insuficiente para o tema solicitado. Geradas ${adaptiveQs.length} de ${config.count || 20} questões.`);
+            setPartialMessage(data.message || `Aviso: Banco insuficiente para o tema solicitado. Geradas ${adaptiveQs.length} de ${requestedTotal} questões.`);
             setPhase("partial");
             return;
           }
@@ -731,7 +858,6 @@ const Simulados = () => {
       }
 
       // Fluxo Normal com JOB e BATCHING
-      const requestedTotal = config.count || 10;
       setTargetCount(requestedTotal);
       cancelGenerationRef.current = false;
       
@@ -845,10 +971,10 @@ const Simulados = () => {
               user_id: user?.id ?? null,
               batch: batchNum,
               count: currentBatchSize,
-              timeout_ms: QUESTION_GENERATOR_TIMEOUT_MS,
+              timeout_ms: isMontarBancoFlow ? BANK_GENERATOR_TIMEOUT_MS : QUESTION_GENERATOR_TIMEOUT_MS,
             });
             const batchQs = await generateBatch(
-              config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
+              config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC],
               currentBatchSize,
               config.difficulty || "misto",
               accessToken,
@@ -867,6 +993,10 @@ const Simulados = () => {
               (config as any).selectedSubtopics || [],
               correlationId,
             );
+            if (cancelGenerationRef.current) {
+              setPhase("setup");
+              return;
+            }
             batchData = { 
               success: true, 
               questions: batchQs.questions, 
@@ -910,6 +1040,7 @@ const Simulados = () => {
           } catch (e) {
             const isTimeout = e instanceof TimeoutError || /TIMEOUT/.test(getErrorMessage(e));
             const isBatchEmpty = getErrorMessage(e).includes("BATCH_EMPTY");
+            const isProviderUnavailable = isProviderUnavailableError(e);
 
             console.error("[Simulados] generateBatch falhou:", e);
             
@@ -918,78 +1049,231 @@ const Simulados = () => {
               if (allGenerated.length > 0) {
                 break; // Use what we have
               } else {
-                const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
-                throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
+                const directFallbackCount = Math.min(Math.max(currentBatchSize, MIN_SIMULADO_QUESTIONS), 10);
+                const directFallbackTopics = config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC];
+                const directFallbackSubtopics = (config as any).selectedSubtopics || [];
+
+                console.warn("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_START]", {
+                  user_id: user?.id ?? null,
+                  batch: batchNum,
+                  count: directFallbackCount,
+                  topics: directFallbackTopics,
+                  selected_subtopics: directFallbackSubtopics,
+                  is_montar_banco_flow: isMontarBancoFlow,
+                  generator_mode: generatorMode,
+                });
+
+                setLoadingProgress("Banco retornou vazio. Buscando questões aprovadas diretamente...");
+                const directQuestions = await withTimeout(
+                  fetchDirectBankQuestions(
+                    directFallbackTopics,
+                    directFallbackCount,
+                    user?.id,
+                    directFallbackSubtopics,
+                  ),
+                  8_000,
+                  "direct-bank-empty-batch-fallback",
+                ).catch((directErr) => {
+                  console.warn("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_FAIL]", {
+                    user_id: user?.id ?? null,
+                    batch: batchNum,
+                    error: getErrorMessage(directErr),
+                  });
+                  return [] as SimQuestion[];
+                });
+
+                if (directQuestions.length > 0) {
+                  batchData = {
+                    success: true,
+                    questions: directQuestions,
+                    session_id: null,
+                    generationDurationMs: null,
+                    clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                    recoveredFromDirectBank: true,
+                  };
+                  batchErr = null;
+                  console.log("[SIMULADO_DIRECT_BANK_EMPTY_BATCH_FALLBACK_SUCCESS]", {
+                    correlation_id: correlationId,
+                    received: directQuestions.length,
+                  });
+                } else {
+                  const generatorMessage = getErrorMessage(e).replace(/^BATCH_EMPTY:\s*/, "").trim();
+                  throw new Error(generatorMessage || "Não encontramos questões que correspondam exatamente ao foco temático solicitado. Tente um tema mais abrangente.");
+                }
+              }
+            }
+
+            const canFallbackToBank = generatorMode === "ai_generation" && config.mode !== "adaptativo";
+
+            if (isProviderUnavailable && !canFallbackToBank) {
+              setLoadingProgress("Os provedores de IA estão indisponíveis agora. Tente novamente em instantes.");
+              throw e;
+            }
+
+            if (isMontarBancoFlow && !batchData) {
+              const directFallbackCount = Math.min(Math.max(currentBatchSize, MIN_SIMULADO_QUESTIONS), 10);
+              const directFallbackTopics = config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC];
+              const directFallbackSubtopics = (config as any).selectedSubtopics || [];
+
+              console.warn("[SIMULADO_DIRECT_BANK_ERROR_FALLBACK_START]", {
+                user_id: user?.id ?? null,
+                batch: batchNum,
+                count: directFallbackCount,
+                topics: directFallbackTopics,
+                selected_subtopics: directFallbackSubtopics,
+                timeout: isTimeout,
+                provider_unavailable: isProviderUnavailable,
+                error: getErrorMessage(e),
+              });
+
+              setLoadingProgress("Banco demorou para responder. Recuperando questões aprovadas diretamente...");
+              const directQuestions = await withTimeout(
+                fetchDirectBankQuestions(
+                  directFallbackTopics,
+                  directFallbackCount,
+                  user?.id,
+                  directFallbackSubtopics,
+                ),
+                8_000,
+                "direct-bank-error-fallback",
+              ).catch((directErr) => {
+                console.warn("[SIMULADO_DIRECT_BANK_ERROR_FALLBACK_FAIL]", {
+                  user_id: user?.id ?? null,
+                  batch: batchNum,
+                  error: getErrorMessage(directErr),
+                });
+                return [] as SimQuestion[];
+              });
+
+              if (directQuestions.length > 0) {
+                batchData = {
+                  success: true,
+                  questions: directQuestions,
+                  session_id: null,
+                  generationDurationMs: null,
+                  clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                  recoveredFromDirectBank: true,
+                };
+                batchErr = null;
+                console.log("[SIMULADO_DIRECT_BANK_ERROR_FALLBACK_SUCCESS]", {
+                  correlation_id: correlationId,
+                  received: directQuestions.length,
+                });
               }
             }
 
             // A segunda chamada repetia a mesma montagem enquanto a primeira
             // ainda podia estar processando no Edge, criando sessões duplicadas.
             // No fluxo de banco, propague a falha e mantenha uma única tentativa.
-            if (isMontarBancoFlow) throw e;
+            if (isMontarBancoFlow && !batchData) throw e;
+
+            const fallbackMode = canFallbackToBank ? (config.mode || "estudo") : generatorMode;
+            const fallbackTimeoutMs = canFallbackToBank ? BANK_GENERATOR_TIMEOUT_MS : QUESTION_GENERATOR_TIMEOUT_MS;
 
             console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL] Tentando rota alternativa...", {
               user_id: user?.id ?? null,
               batch: batchNum,
               timeout: isTimeout,
+              fallback_mode: fallbackMode,
               error: getErrorMessage(e),
             });
 
-            if (isMontarBancoFlow) {
+            if (canFallbackToBank) {
+              setLoadingProgress("IA demorou para responder. Montando prova com o banco de questões...");
+              setLoadingPercent((prev) => Math.max(prev, 15));
+            } else if (isMontarBancoFlow) {
               setLoadingProgress(
                 isTimeout
                   ? "Banco demorou para responder. Tentando novamente..."
                   : "Banco falhou. Tentando rota alternativa..."
-              );
+                );
             }
-            
-            const { data, error } = await withTimeout(
-              supabase.functions.invoke(
-                "question-generator",
-                {
-                  headers: {
-                    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-                    "x-correlation-id": correlationId,
-                  },
-                  body: {
-                    count: currentBatchSize,
-                    difficulty: config.difficulty || "misto",
-                    specialty: (config.topics && config.topics[0]) || "Clínica Médica",
-                    topics: config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"],
-                    selectedSubtopics: (config as any).selectedSubtopics || [], // FIX: Ensure subtopics are passed
-                    targetExam: config.realExamProfile || config.examBoard,
-                    mode: generatorMode,
-                    generationContext: {
-                      subtopic: config.specificTopic,
-                      topicWeights: config.topicWeights,
-                      autoDistribution: config.autoDistribution,
-                      customDistribution: config.customDistribution,
-                      includeWeakThemes: config.includeWeakThemes,
-                      includePreviousErrors: config.includePreviousErrors,
-                    },
-                    avoidStatements: avoid,
-                    avoidIds: avoidIds,
-                    jobId: currentJobId,
-                    batchNumber: batchNum,
-                    correlationId,
-                  },
-                }
-              ),
-              QUESTION_GENERATOR_TIMEOUT_MS,
-              "question-generator-fallback"
-            ).catch((timeoutErr) => {
-              console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL]", {
-                user_id: user?.id ?? null,
-                batch: batchNum,
-                stage: "fallback_invoke",
-                timeout: true,
-                error: getErrorMessage(timeoutErr),
-              });
-              return { data: null, error: timeoutErr } as any;
-            });
 
-            batchData = data;
-            batchErr = error;
+            if (canFallbackToBank && currentBatchSize <= 10) {
+              const directQuestions = await withTimeout(
+                fetchDirectBankQuestions(
+                  config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC],
+                  currentBatchSize,
+                  user?.id,
+                  (config as any).selectedSubtopics || [],
+                ),
+                8_000,
+                "direct-bank-fallback"
+              ).catch((directErr) => {
+                console.warn("[SIMULADO_DIRECT_BANK_FALLBACK_FAIL]", {
+                  user_id: user?.id ?? null,
+                  batch: batchNum,
+                  error: getErrorMessage(directErr),
+                });
+                return [] as SimQuestion[];
+              });
+
+              if (directQuestions.length > 0) {
+                batchData = {
+                  success: true,
+                  questions: directQuestions,
+                  session_id: null,
+                  generationDurationMs: null,
+                  clientDurationMs: Math.round(performance.now() - montarBancoStartedAt),
+                  recoveredFromDirectBank: true,
+                };
+                batchErr = null;
+                console.log("[SIMULADO_DIRECT_BANK_FALLBACK_SUCCESS]", {
+                  correlation_id: correlationId,
+                  received: directQuestions.length,
+                });
+              }
+            }
+
+            if (!batchData) {
+              const { data, error } = await withTimeout(
+                supabase.functions.invoke(
+                  "question-generator",
+                  {
+                    headers: {
+                      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                      "x-correlation-id": correlationId,
+                    },
+                    body: {
+                      count: currentBatchSize,
+                      difficulty: config.difficulty || "misto",
+                      specialty: (config.topics && config.topics[0]) || DEFAULT_SIMULADO_TOPIC,
+                      topics: config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC],
+                      selectedSubtopics: (config as any).selectedSubtopics || [], // FIX: Ensure subtopics are passed
+                      targetExam: config.realExamProfile || config.examBoard,
+                      mode: fallbackMode,
+                      generationContext: {
+                        subtopic: config.specificTopic,
+                        topicWeights: config.topicWeights,
+                        autoDistribution: config.autoDistribution,
+                        customDistribution: config.customDistribution,
+                        includeWeakThemes: config.includeWeakThemes,
+                        includePreviousErrors: config.includePreviousErrors,
+                      },
+                      avoidStatements: avoid,
+                      avoidIds: avoidIds,
+                      jobId: currentJobId,
+                      batchNumber: batchNum,
+                      correlationId,
+                    },
+                  }
+                ),
+                fallbackTimeoutMs,
+                "question-generator-fallback"
+              ).catch((timeoutErr) => {
+                console.warn("[MONTAR_BANCO_QUESTION_FETCH_FAIL]", {
+                  user_id: user?.id ?? null,
+                  batch: batchNum,
+                  stage: "fallback_invoke",
+                  timeout: true,
+                  error: getErrorMessage(timeoutErr),
+                });
+                return { data: null, error: timeoutErr } as any;
+              });
+
+              batchData = data;
+              batchErr = error;
+            }
             if (isMontarBancoFlow) {
               setLoadingProgress("Banco respondeu. Validando retorno...");
               setLoadingPercent(50);
@@ -997,13 +1281,18 @@ const Simulados = () => {
                 userId: user?.id,
                 step: "question_generator_direct_response",
                 durationMs: Math.round(performance.now() - montarBancoStartedAt),
-                error,
-                extra: { success: Boolean(data?.success), received_questions: data?.questions?.length ?? 0, session_id: data?.session_id ?? null },
+                error: batchErr ? getErrorMessage(batchErr) : null,
+                extra: {
+                  success: Boolean(batchData?.success),
+                  received_questions: batchData?.questions?.length ?? 0,
+                  session_id: batchData?.session_id ?? null,
+                  recovered_from_direct_bank: Boolean(batchData?.recoveredFromDirectBank),
+                },
               });
             }
-            if (data?.session_id && !simuladoSessionIdRef.current) {
-              simuladoSessionIdRef.current = data.session_id;
-              console.log(`[SIMULADO_SESSION_CAPTURED] ${data.session_id}`);
+            if (batchData?.session_id && !simuladoSessionIdRef.current) {
+              simuladoSessionIdRef.current = batchData.session_id;
+              console.log(`[SIMULADO_SESSION_CAPTURED] ${batchData.session_id}`);
             }
           }
 
@@ -1026,14 +1315,16 @@ const Simulados = () => {
           }
 
           const requestedScopeTopics = [
-            ...(config.topics && config.topics.length > 0 ? config.topics : ["Clínica Médica"]),
+            ...(config.topics && config.topics.length > 0 ? config.topics : [DEFAULT_SIMULADO_TOPIC]),
             ...(config.specificTopic ? [config.specificTopic] : []),
           ];
-          const batchQs = mapQuestions(
-            batchData.questions || [],
-            requestedScopeTopics,
-            config.selectedSubtopics || [],
-          );
+          const batchQs = batchData.recoveredFromDirectBank
+            ? deduplicateQuestions(mapQuestionsWithoutRequestedScope(batchData.questions || [], requestedScopeTopics[0] || DEFAULT_SIMULADO_TOPIC)).slice(0, currentBatchSize)
+            : mapQuestions(
+              batchData.questions || [],
+              requestedScopeTopics,
+              config.selectedSubtopics || [],
+            );
           
           if (batchQs.length === 0) {
             console.warn("[Simulados] Lote retornado vazio (após mapeamento).");
@@ -1088,6 +1379,9 @@ const Simulados = () => {
             });
           }
           if (currentTry < 1) {
+            if (isProviderUnavailableError(batchError)) {
+              throw batchError;
+            }
             currentTry++;
             setLoadingProgress(`Re-tentando lote ${batchNum}...`);
             await new Promise(r => setTimeout(r, 2000));
@@ -1331,30 +1625,72 @@ const Simulados = () => {
       }
     }
 
-    // practice_attempts — needs valid UUID + existing in questions_bank
-    const attemptRows = questions
-      .map((q, idx) => {
-        const qid = (q as any).id;
-        if (!isUuid(qid)) return null;
-        return { user_id: user.id, question_id: qid, correct: answers[idx] === q.correct };
-      })
-      .filter(Boolean) as any[];
-    if (attemptRows.length > 0) {
-      const { error: paErr } = await supabase.from("practice_attempts").insert(attemptRows);
-      if (paErr) {
-        console.warn("[PRACTICE_ATTEMPTS_BATCH_FAIL]", paErr.message, "→ retrying per row");
-        let ok = 0;
-        for (const r of attemptRows) {
-          const { error: oneErr } = await supabase.from("practice_attempts").insert(r);
-          if (!oneErr) ok++;
-          else console.warn("[PRACTICE_ATTEMPTS_ROW_FAIL]", oneErr.message);
-        }
-        console.log("[PRACTICE_ATTEMPTS_INSERT_PARTIAL]", { ok, total: attemptRows.length });
+    // practice_attempts — canonical evidence for FSRS/TRI.
+    // Canonical path is database fanout from simulado_question_analytics.
+    // Direct client write is an emergency drift fallback only. Keeping it enabled
+    // by default creates a second persistence path and masks the Supabase trigger
+    // migration that must be applied on the canonical project.
+    if (sessionId && ENABLE_DIRECT_PRACTICE_ATTEMPT_FALLBACK) {
+      const attemptRows = questions
+        .map((q, idx) => {
+          const bankQuestionId = (q as any).bankId;
+          const directQuestionId = (q as any).id;
+          const questionId = isUuid(bankQuestionId) ? bankQuestionId : isUuid(directQuestionId) ? directQuestionId : null;
+          if (!questionId) return null;
+
+          return {
+            user_id: user.id,
+            question_id: questionId,
+            correct: answers[idx] === q.correct,
+            event_hash: `sim:${sessionId}:${idx}`,
+          };
+        })
+        .filter(Boolean);
+
+      if (attemptRows.length === 0) {
+        console.warn("[SIM_PRACTICE_ATTEMPTS_SKIP]", { sessionId, reason: "no_bank_question_uuid", total: questions.length });
       } else {
-        console.log("[PRACTICE_ATTEMPTS_INSERT_OK]", { rows: attemptRows.length });
+        const { error: attemptErr } = await supabase.from("practice_attempts").insert(attemptRows as any);
+        if (attemptErr) {
+          console.warn("[SIM_PRACTICE_ATTEMPTS_BATCH_FAIL]", {
+            code: (attemptErr as any).code,
+            message: attemptErr.message,
+            details: (attemptErr as any).details,
+            hint: (attemptErr as any).hint,
+          });
+
+          let ok = 0;
+          let duplicates = 0;
+          for (const row of attemptRows) {
+            const { error: oneErr } = await supabase.from("practice_attempts").insert(row as any);
+            if (!oneErr) {
+              ok++;
+              continue;
+            }
+            if ((oneErr as any).code === "23505") {
+              duplicates++;
+              continue;
+            }
+            console.warn("[SIM_PRACTICE_ATTEMPTS_ROW_FAIL]", {
+              code: (oneErr as any).code,
+              message: oneErr.message,
+              questionId: (row as any).question_id,
+            });
+          }
+
+          if (ok === 0 && duplicates === 0) {
+            persistOk = false;
+          }
+          console.log("[SIM_PRACTICE_ATTEMPTS_INSERT_PARTIAL]", { sessionId, ok, duplicates, total: attemptRows.length });
+        } else {
+          console.log("[SIM_PRACTICE_ATTEMPTS_INSERT_OK]", { sessionId, rows: attemptRows.length });
+        }
       }
-    } else {
-      console.warn("[PRACTICE_ATTEMPTS_SKIP] no valid UUID question ids in batch");
+    } else if (sessionId) {
+      console.info("[SIM_PRACTICE_ATTEMPTS_DIRECT_FALLBACK_DISABLED]", {
+        sessionId,
+        canonicalPath: "simulado_question_analytics -> fanout_simulado_answer -> practice_attempts",
+      });
     }
 
     // error_bank + auto-FSRS card
@@ -1399,6 +1735,18 @@ const Simulados = () => {
         } else {
           console.log("[SIM_SESSION_FINISHED_OK]", { sessionId, score: finalScore, wrongCount });
           console.log("[E2E_SIMULADO_FINISHED]", { correlation_id: e2eCorrelationIdRef.current, session_id: sessionId, score: finalScore });
+          try {
+            const { error: approvalErr } = await supabase.functions.invoke("calculate-approval-score", {
+              body: { source: "simulado_finish", session_id: sessionId },
+            });
+            if (approvalErr) {
+              console.warn("[SIM_APPROVAL_SCORE_REFRESH_FAIL]", approvalErr.message);
+            } else {
+              console.log("[SIM_APPROVAL_SCORE_REFRESH_OK]", { sessionId });
+            }
+          } catch (approvalCatch: any) {
+            console.warn("[SIM_APPROVAL_SCORE_REFRESH_FAIL]", approvalCatch?.message || approvalCatch);
+          }
         }
       } catch (e: any) {
         console.error("[SIM_SESSION_UPDATE_FAIL]", e?.message);
@@ -1412,7 +1760,7 @@ const Simulados = () => {
     if (!persistOk) {
       toast({
         title: "Resultado salvo parcialmente",
-        description: "Algumas métricas do simulado falharam ao gravar. Veja o console para detalhes.",
+        description: "Seu resultado foi exibido, mas parte do histórico não foi registrada. Tente novamente mais tarde.",
         variant: "destructive",
       });
     }
@@ -1494,64 +1842,66 @@ const Simulados = () => {
 
           {!showConfigStep && (
             <>
-              {activeJobs.length > 0 && (
-                <EnaflixSection title="Gerações em Andamento">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeJobs.map(job => (
-                      <Card key={job.id} className="bg-card/50 border-primary/20 backdrop-blur-sm overflow-hidden">
-                        <CardContent className="p-4 space-y-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                                {job.config?.mode === 'prova_real' ? job.config?.realExamProfile : 'Simulado Personalizado'}
-                              </p>
-                              <h4 className="font-semibold text-sm line-clamp-1">
-                                {job.config?.topics?.join(', ') || 'Temas variados'}
-                              </h4>
+              <div className="min-h-[220px]">
+                {activeJobs.length > 0 && (
+                  <EnaflixSection title="Gerações em Andamento">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {activeJobs.map(job => (
+                        <Card key={job.id} className="bg-card/50 border-primary/20 backdrop-blur-sm overflow-hidden">
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                                  {job.config?.mode === 'prova_real' ? job.config?.realExamProfile : 'Simulado Personalizado'}
+                                </p>
+                                <h4 className="font-semibold text-sm line-clamp-1">
+                                  {job.config?.topics?.join(', ') || 'Temas variados'}
+                                </h4>
+                              </div>
+                              <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                                {job.status}
+                              </Badge>
                             </div>
-                            <Badge variant="outline" className="text-[10px] uppercase font-mono">
-                              {job.status}
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-1.5">
-                            <div className="flex justify-between text-[10px] font-mono uppercase text-muted-foreground">
-                              <span>Progresso</span>
-                              <span>{job.generated_questions || 0} / {job.total_questions}</span>
+                            
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-[10px] font-mono uppercase text-muted-foreground">
+                                <span>Progresso</span>
+                                <span>{job.generated_questions || 0} / {job.total_questions}</span>
+                              </div>
+                              <Progress value={((job.generated_questions || 0) / job.total_questions) * 100} className="h-1" />
                             </div>
-                            <Progress value={((job.generated_questions || 0) / job.total_questions) * 100} className="h-1" />
-                          </div>
 
-                          <div className="flex items-center justify-between gap-2 pt-1">
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
-                              <Clock className="h-3 w-3" />
-                              {new Date(job.created_at).toLocaleTimeString()}
+                            <div className="flex items-center justify-between gap-2 pt-1">
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                                <Clock className="h-3 w-3" />
+                                {new Date(job.created_at).toLocaleTimeString()}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-8 text-[10px] font-bold uppercase text-white/40 hover:text-destructive"
+                                  onClick={() => handleCancelJob(job.id)}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="secondary" 
+                                  className="h-8 text-[10px] font-bold uppercase"
+                                  onClick={() => handleResumeJob(job)}
+                                >
+                                  Retomar
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="h-8 text-[10px] font-bold uppercase text-white/40 hover:text-destructive"
-                                onClick={() => handleCancelJob(job.id)}
-                              >
-                                Cancelar
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="secondary" 
-                                className="h-8 text-[10px] font-bold uppercase"
-                                onClick={() => handleResumeJob(job)}
-                              >
-                                Retomar
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </EnaflixSection>
-              )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </EnaflixSection>
+                )}
+              </div>
 
               <div className="w-full max-w-5xl mx-auto space-y-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1560,14 +1910,14 @@ const Simulados = () => {
                     subtitle="Focado nos seus temas de menor desempenho"
                     count={20} timeMinutes={60} difficulty="misto" badge="IA Recomendou"
                     image="https://images.unsplash.com/photo-1633526543814-9718c8922b7a?q=80&w=400"
-                    onClick={() => handleStart({ topics: ["Clínica Médica"], count: 20, difficulty: "misto", mode: "adaptativo" })}
+                    onClick={() => handleStart({ topics: [DEFAULT_SIMULADO_TOPIC], count: 20, difficulty: "misto", mode: "adaptativo" })}
                   />
                   <SimuladoProfileCard
                     title="Desafio de Diagnóstico Visual"
                     subtitle="100% questões com imagem"
                     count={10} timeMinutes={20} difficulty="intermediario"
                     image="https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=400"
-                    onClick={() => handleStart({ topics: ["Clínica Médica"], count: 10, difficulty: "intermediario", mode: "estudo", imagePercent: 100 })}
+                    onClick={() => handleStart({ topics: [DEFAULT_SIMULADO_TOPIC], count: 10, difficulty: "intermediario", mode: "estudo", imagePercent: 100 })}
                   />
                 </div>
 
@@ -1663,7 +2013,11 @@ const Simulados = () => {
           </div>
           <div className="w-full space-y-4">
             <div className="space-y-2">
-              <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
+              <Progress
+                value={loadingPercent}
+                className="h-1.5 bg-white/5"
+                data-testid="simulation-job-status"
+              />
               <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
             </div>
             <div className="flex flex-col gap-2">

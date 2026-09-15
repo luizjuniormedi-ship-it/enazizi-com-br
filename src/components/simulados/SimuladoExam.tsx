@@ -125,7 +125,9 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
     const question = questions[questionIdx];
     const isCorrect = optionIdx === question.correct;
     
-    setSelectedAnswers(prev => ({ ...prev, [questionIdx]: optionIdx }));
+    const nextAnswers = { ...selectedAnswersRef.current, [questionIdx]: optionIdx };
+    selectedAnswersRef.current = nextAnswers;
+    setSelectedAnswers(nextAnswers);
     if (isStudyMode) {
       setRevealedQuestions(prev => new Set(prev).add(questionIdx));
     }
@@ -168,6 +170,22 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
     clearInterval(timerRef.current);
     onFinishRef.current(selectedAnswersRef.current, Array.from(flaggedQuestionsRef.current));
   }, []);
+
+  useEffect(() => {
+    if (!isStudyMode || finishedRef.current || questions.length === 0) return;
+    if (current !== questions.length - 1) return;
+
+    const allQuestionsAnswered = questions.every((_, idx) => selectedAnswers[idx] !== undefined);
+    if (!allQuestionsAnswered) return;
+
+    const finishTimer = window.setTimeout(() => {
+      if (!finishedRef.current) {
+        handleFinish();
+      }
+    }, 1200);
+
+    return () => window.clearTimeout(finishTimer);
+  }, [current, handleFinish, isStudyMode, questions, selectedAnswers]);
 
   const handleStudyWithTutor = (q: SimQuestion) => {
     navigate("/dashboard/mentor", {

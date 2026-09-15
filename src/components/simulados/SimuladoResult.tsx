@@ -69,8 +69,9 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
   const isProvaReal = mode === "prova_real" && realExamProfile;
   const profile = isProvaReal ? (EXAM_PROFILES[realExamProfile] || EXAM_PROFILES.GERAL) : null;
   const cutoff = profile?.cutoffEstimate || 60;
-  const percentile = profile ? estimatePercentile(pct, cutoff) : null;
-  const gradeInfo = profile ? estimateGrade(pct, cutoff) : null;
+  const hasValidatedCompetitiveReference = profile?.availability === "validated";
+  const percentile = profile && hasValidatedCompetitiveReference ? estimatePercentile(pct, cutoff) : null;
+  const gradeInfo = profile && hasValidatedCompetitiveReference ? estimateGrade(pct, cutoff) : null;
 
   const getDiagnosis = (areaPct: number) => {
     if (areaPct >= 80) return { label: "Dominado", color: "text-green-500", bg: "bg-green-500" };
@@ -143,7 +144,7 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
           <Award className="h-16 w-16 text-primary mx-auto mb-4" />
         )}
         <h1 className="text-3xl font-bold mb-2">
-          {isProvaReal ? `Prova Real ${profile?.name} Concluída!` : isExtremo ? "Prova Extrema Concluída!" : "Simulado Concluído!"}
+          {isProvaReal ? `Simulado Completo ${profile?.name} concluído!` : isExtremo ? "Prova Extrema Concluída!" : "Simulado Concluído!"}
         </h1>
         <div className={`text-5xl font-black ${
           isProvaReal ? (gradeInfo?.approved ? "text-green-500" : "text-destructive") :
@@ -265,7 +266,7 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
         )}
       </div>
 
-      {/* ── Prova Real: Competitive Analysis ── */}
+      {/* Competitive analysis is shown only for a formally validated profile. */}
       {isProvaReal && profile && percentile !== null && gradeInfo && (
         <div className="glass-card p-6 border-amber-500/20">
           <h3 className="font-semibold mb-4 flex items-center gap-2">
@@ -595,8 +596,8 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
       </Suspense>
 
       <TaskCompletionCard
-        title={isProvaReal ? "Prova Real concluída!" : "Simulado concluído!"}
-        subtitle={`Você acertou ${correctCount} de ${questions.length} questões (${pct}%). ${isProvaReal && gradeInfo ? (gradeInfo.approved ? "Parabéns, aprovado!" : "Continue estudando!") : "Seu progresso foi atualizado."}`}
+        title={isProvaReal ? "Simulado completo concluído!" : "Simulado concluído!"}
+        subtitle={`Você acertou ${correctCount} de ${questions.length} questões (${pct}%). Seu progresso foi atualizado.`}
         secondaryLabel="Novo Simulado"
         onSecondary={onNewSimulado}
         tertiaryLabel="Refazer erros"

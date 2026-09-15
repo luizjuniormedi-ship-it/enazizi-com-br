@@ -54,6 +54,7 @@ const ErrorBank = lazyWithRetry(() => import("./pages/ErrorBank"), "ErrorBank");
 const MedicalDomainMap = lazyWithRetry(() => import("./pages/MedicalDomainMap"), "MedicalDomainMap");
 const ProfessorDashboard = lazyWithRetry(() => import("./pages/ProfessorDashboard"), "ProfessorDashboard");
 const NewProfessorSimuladoPage = lazyWithRetry(() => import("./pages/NewProfessorSimuladoPage"), "NewProfessorSimuladoPage");
+const ProficiencyPilotPage = lazyWithRetry(() => import("./pages/ProficiencyPilotPage"), "ProficiencyPilotPage");
 const StudentSimulados = lazyWithRetry(() => import("./pages/StudentSimulados"), "StudentSimulados");
 const DiscursiveQuestions = lazyWithRetry(() => import("./pages/DiscursiveQuestions"), "DiscursiveQuestions");
 const ClinicalSimulation = lazyWithRetry(() => import("./pages/ClinicalSimulation"), "ClinicalSimulation");
@@ -357,6 +358,8 @@ const App = () => (
                   <Route path="coach" element={<MotivationalCoach />} />
                   <Route path="rankings" element={<Rankings />} />
                   <Route path="revisor" element={<MedicalReviewer />} />
+                  <Route path="discursivas" element={<MedicalReviewer />} />
+                  <Route path="conquistas" element={<Achievements />} />
                   <Route path="entrevista" element={<InterviewSimulator />} />
                   <Route path="perfil" element={<Profile />} />
                   <Route path="resultados-oficiais" element={<ResultadosOficiais />} />
@@ -374,6 +377,7 @@ const App = () => (
                   <Route path="video-lessons" element={<Navigate to="/dashboard/videoaulas" replace />} />
                   <Route path="fsrs" element={<Navigate to="/dashboard/flashcards" replace />} />
                   <Route path="revisao" element={<Navigate to="/dashboard/flashcards" replace />} />
+                  <Route path="revisao-fsrs" element={<Navigate to="/dashboard/flashcards" replace />} />
                   <Route path="mnemonicos" element={<Navigate to="/dashboard/mnemonico" replace />} />
                   <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                   <Route path="plano-estudos" element={<Navigate to="/dashboard/planner" replace />} />
@@ -391,9 +395,7 @@ const App = () => (
                   <Route path="missao-do-dia" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="mnemonic-studio" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
                   <Route path="mnemonic-studio-v2" element={<RedirectWithSearch to="/dashboard/mnemonico" />} />
-                  <Route path="mapas-mentais" element={<Navigate to="/dashboard/mapas-mentais" replace />} />
                   <Route path="minha-jornada" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
-                  <Route path="radar-trajetoria" element={<Navigate to="/dashboard/radar-trajetoria" replace />} />
                   <Route path="mission" element={<RedirectWithSearch to="/dashboard/sessao-estudo" />} />
                   <Route path="daily-plan" element={<Navigate to="/dashboard/plano-dia" replace />} />
                   <Route path="plano-dia" element={<DailyPlan />} />
@@ -402,6 +404,8 @@ const App = () => (
                   <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
                   <Route path="exam-simulator" element={<ExamSimulator />} />
                   <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
+                  <Route path="precos" element={<Navigate to="/#pricing" replace />} />
+                  <Route path="suporte" element={<Navigate to="/support" replace />} />
                 </Route>
               </Route>
 
@@ -491,6 +495,7 @@ const App = () => (
                 <Route path="relatorios" element={<ProfessorDashboard initialTab="turmas" />} />
                 <Route path="questoes" element={<ProfessorDashboard initialTab="simulados" />} />
                 <Route path="materiais" element={<ProfessorDashboard initialTab="mentoria" />} />
+                <Route path="proficiencia/piloto" element={<ProficiencyPilotPage />} />
                 <Route path="simulados/novo" element={<NewProfessorSimuladoPage />} />
                 <Route path="simulados/editar/:id" element={<NewProfessorSimuladoPage />} />
               </Route>

@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { pedagogicalEventBus } from "@/lib/pedagogicalEventBus";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
-import { isMedicalQuestion } from "@/lib/medicalValidation";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -75,6 +74,8 @@ const QuestionsBank = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [discardedCount, setDiscardedCount] = useState(0);
 
   // Stats
   const [topicStats, setTopicStats] = useState<TopicStat[]>([]);
@@ -138,15 +139,23 @@ const QuestionsBank = () => {
     if (!user) return;
     if (pageNum === 0) setLoading(true);
     else setLoadingMore(true);
+    if (pageNum === 0) {
+      setLoadError(null);
+      setDiscardedCount(0);
+    }
 
     const from = pageNum * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
     const { data, error, count } = await supabase
       .from("questions_bank")
-      .select("*", { count: "exact" })
+      .select("id, statement, options, correct_index, explanation, topic, subtopic, source, created_at, image_url, review_status, approved_for_generation, lifecycle_state, quality_tier", { count: "exact" })
       .or(`user_id.eq.${user.id},is_global.eq.true`)
       .eq("review_status", "approved")
+      .eq("approved_for_generation", true)
+      .not("lifecycle_state", "in", '("archived","out_of_scope","purged","quarantined","suspended")')
+      .not("quality_tier", "in", '("needs_upgrade","rejected")')
+      .order("created_at", { ascending: false })
       .range(from, to);
 
     if (data) {
@@ -157,10 +166,12 @@ const QuestionsBank = () => {
       }));
       const IMAGE_REF = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir|vide imagem|conforme a imagem|conforme a figura)\b/i;
       const filtered = mapped.filter(q => {
-        if (!isMedicalQuestion(q) || q.options.length < 4 || q.options.length > 5) return false;
+        if (!q.statement?.trim() || q.options.length < 4 || q.options.length > 5) return false;
         if (IMAGE_REF.test(q.statement) && !q.image_url) return false;
         return true;
       });
+      const discarded = mapped.length - filtered.length;
+      setDiscardedCount(prev => append ? prev + discarded : discarded);
       // Sort: real exam sources first, then by date
       const prioritized = filtered.sort((a, b) => {
         const srcA = a.source === "web-scrape" || a.source === "real-exam-ai" ? 0 : a.source === "ai-exam-style" ? 1 : 2;
@@ -172,7 +183,10 @@ const QuestionsBank = () => {
       setTotalCount(count ?? 0);
       setHasMore((from + data.length) < (count ?? 0));
     }
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (error) {
+      setLoadError(error.message);
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
     setLoading(false);
     setLoadingMore(false);
   }, [user, toast]);
@@ -483,8 +497,19 @@ const QuestionsBank = () => {
         <EnaflixSectionTitle
           kicker="Banco Global"
           title="Arena de Questões"
-          subtitle={`${totalCount} questões disponíveis para o seu treinamento.`}
+          subtitle={`${filtered.length} questões utilizáveis nesta página • ${totalCount} elegíveis pelo banco.`}
         />
+        {(loadError || discardedCount > 0 || (!loading && totalCount === 0)) && (
+          <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            {loadError ? (
+              <>Falha ao carregar o Banco de Questões: {loadError}</>
+            ) : totalCount === 0 ? (
+              <>Nenhuma questão elegível foi liberada pela governança/RLS para esta conta. Verifique `review_status`, `approved_for_generation`, `lifecycle_state`, `quality_tier` e permissões.</>
+            ) : (
+              <>{discardedCount} questão(ões) foram ocultadas por estrutura incompleta, alternativas inválidas ou imagem referenciada sem arquivo.</>
+            )}
+          </div>
+        )}
       </div>
       <div className="px-4 sm:px-8 lg:px-14">
         <div className="flex gap-2 flex-wrap">
@@ -636,7 +661,7 @@ const QuestionsBank = () => {
           <Database className="h-16 w-16 mx-auto text-white/10 mb-6" />
           <p className="text-white/40 font-medium">
             {questions.length === 0
-              ? "Nenhuma questão salva. Use o Gerador de Questões para criar e salvar questões."
+              ? "Nenhuma questão elegível carregada para esta conta. Se o banco tiver corpus, o bloqueio está em RLS/governança editorial ou nos metadados de aprovação."
               : "Nenhuma questão encontrada com os filtros atuais."}
           </p>
         </div>

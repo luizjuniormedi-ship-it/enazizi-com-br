@@ -40,6 +40,10 @@ async function loginUI(page: Page) {
   await page.fill('input[type="password"]', E2E_PASSWORD);
   await page.click('button:has-text("Entrar"), button:has-text("ENTRAR")');
   await expect(page).not.toHaveURL(/.*login.*/, { timeout: 20000 });
+  await page.evaluate(() => {
+    localStorage.setItem('enazizi_v2_welcome_seen', 'true');
+    localStorage.setItem('enazizi_v2_onboarding_done', 'true');
+  });
 }
 
 function attachFailureGuards(page: Page, failures: string[]) {
@@ -89,7 +93,10 @@ test.describe('FSRS + TRI integrated chain', () => {
     await setup.getByTestId('mode-estudo-button').click().catch(() => {});
     await setup.getByTestId('qtd-5-button').click();
     await setup.locator('button.rounded-full').first().click().catch(() => {});
-    await setup.getByTestId('iniciar-simulado-button').click();
+    // The integrated persistence chain requires bank-backed UUID questions.
+    // AI-only questions are ephemeral and intentionally cannot satisfy the
+    // practice_attempts.question_id foreign key.
+    await setup.getByRole('button', { name: /Montar com Banco/i }).click();
 
     // ── 4. Answer questions
     await expect(page.getByTestId('question-card')).toBeVisible({ timeout: 90000 });
@@ -104,6 +111,10 @@ test.describe('FSRS + TRI integrated chain', () => {
       const finish = page.getByTestId('finish-simulado-button');
       if (await finish.isVisible().catch(() => false)) {
         await finish.click();
+        const confirmFinish = page.getByRole('button', { name: /Finalizar mesmo assim/i });
+        if (await confirmFinish.isVisible().catch(() => false)) {
+          await confirmFinish.click();
+        }
         break;
       }
     }
@@ -117,6 +128,18 @@ test.describe('FSRS + TRI integrated chain', () => {
     // ── 6. DB validations
     const since = startedAt;
 
+    const { data: analytics, error: analyticsError } = await client
+      .from('simulado_question_analytics')
+      .select('id, simulado_session_id, question_index, bank_question_id, created_at')
+      .eq('user_id', userId)
+      .gte('created_at', since);
+
+    expect(analyticsError, `simulado_question_analytics query failed: ${analyticsError?.message}`).toBeNull();
+    expect(analytics, 'simulado_question_analytics rows created').not.toBeNull();
+    expect((analytics ?? []).length, 'simulado_question_analytics rows created').toBeGreaterThan(0);
+
+    const bankBackedAnalytics = (analytics ?? []).filter((row: any) => row.bank_question_id);
+
     const { data: attempts } = await client
       .from('practice_attempts')
       .select('id, event_hash, created_at')
@@ -124,46 +147,68 @@ test.describe('FSRS + TRI integrated chain', () => {
       .gte('created_at', since);
 
     expect(attempts, 'practice_attempts created').not.toBeNull();
+    if ((attempts ?? []).length === 0) {
+      throw new Error(
+        [
+          'practice_attempts stayed empty after simulado completion.',
+          `analytics_rows=${analytics?.length ?? 0}`,
+          `bank_backed_analytics_rows=${bankBackedAnalytics.length}`,
+          'This indicates the canonical DB fanout did not persist attempts.',
+          'Check Supabase qszsyskumcmuknumwxtk for trg_fanout_simulado_answer and remove the legacy tr_refresh_mastery_on_practice trigger.',
+        ].join(' '),
+      );
+    }
     expect((attempts ?? []).length).toBeGreaterThan(0);
     const hashes = (attempts ?? []).map((a: any) => a.event_hash).filter(Boolean);
     expect(new Set(hashes).size, 'no duplicate event_hash in practice_attempts').toBe(hashes.length);
 
-    const { data: errors } = await client
+    const { data: errors, error: errorBankError } = await client
       .from('error_bank')
-      .select('id, tema, vezes_errado, ultima_vez_errado')
+      .select('id, tema, vezes_errado, updated_at')
       .eq('user_id', userId)
-      .gte('ultima_vez_errado', since);
+      .gte('updated_at', since);
     // error_bank may legitimately be empty if user got everything right; just check no crash
+    expect(errorBankError, `error_bank query failed: ${errorBankError?.message}`).toBeNull();
     expect(errors, 'error_bank query OK').not.toBeNull();
 
-    const { data: fsrs } = await client
+    const { data: fsrs, error: fsrsError } = await client
       .from('fsrs_cards')
       .select('id, due, updated_at')
       .eq('user_id', userId)
       .gte('updated_at', since);
+    expect(fsrsError, `fsrs_cards query failed: ${fsrsError?.message}`).toBeNull();
     expect(fsrs, 'fsrs_cards updated/created').not.toBeNull();
 
-    const { data: scores } = await client
-      .from('approval_scores')
-      .select('id, banca, score, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', since)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    expect(scores, 'approval_scores row created').not.toBeNull();
-    expect((scores ?? []).length).toBeGreaterThan(0);
+    await expect
+      .poll(
+        async () => {
+          const { data: scores, error: scoresError } = await client
+            .from('approval_scores')
+            .select('id, score, created_at')
+            .eq('user_id', userId)
+            .gte('created_at', since)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (scoresError) throw new Error(`approval_scores query failed: ${scoresError.message}`);
+          return (scores ?? []).length;
+        },
+        { message: 'approval_scores row created', timeout: 30000 },
+      )
+      .toBeGreaterThan(0);
 
-    const { data: chance } = await client
+    const { data: chance, error: chanceError } = await client
       .from('chance_by_exam')
-      .select('exam, chance, updated_at')
+      .select('banca, chance_score, updated_at')
       .eq('user_id', userId);
+    expect(chanceError, `chance_by_exam query failed: ${chanceError?.message}`).toBeNull();
     expect(chance, 'chance_by_exam present').not.toBeNull();
 
-    const { data: decisions } = await client
+    const { data: decisions, error: decisionsError } = await client
       .from('assistant_decisions')
       .select('id, event_hash, created_at')
       .eq('user_id', userId)
       .gte('created_at', since);
+    expect(decisionsError, `assistant_decisions query failed: ${decisionsError?.message}`).toBeNull();
     const decHashes = (decisions ?? []).map((d: any) => d.event_hash).filter(Boolean);
     expect(new Set(decHashes).size, 'no duplicate event_hash in assistant_decisions').toBe(
       decHashes.length,

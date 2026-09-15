@@ -90,6 +90,12 @@ export interface AIRunInput extends AISelectInput {
   modelOverride?: string;
   /** Override the provider. */
   providerOverride?: "lovable-ai" | "openai" | "eu-ai" | "anthropic" | "nvidia" | "cerebras";
+  /** Restrict a task to providers compatible with its response contract. */
+  allowedProviders?: Array<ModelRef["provider"]>;
+  /** Per-provider request deadline for latency-sensitive flows. */
+  timeoutMs?: number;
+  /** Total deadline for the complete provider chain. */
+  totalTimeoutMs?: number;
 }
 
 export interface AIRunResult {
@@ -333,8 +339,15 @@ const ANTHROPIC_BASE_URL = (Deno.env.get("ANTHROPIC_BASE_URL") || "https://api.a
 const ANTHROPIC_DEFAULT_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-sonnet-latest";
 
 function extractProviderError(status: number | undefined, bodyText: string, err?: unknown) {
+  const typedErr = err as any;
   const fallbackMessage = err instanceof Error ? err.message : bodyText || "Provider unavailable";
-  let code = status ? `HTTP_${status}` : "AI_PROVIDER_ERROR";
+  const errStatus = typeof typedErr?.status === "number" ? typedErr.status
+    : typeof typedErr?.statusCode === "number" ? typedErr.statusCode
+    : undefined;
+  const effectiveStatus = status ?? errStatus;
+  let code = typeof typedErr?.code === "string" && typedErr.code
+    ? typedErr.code
+    : effectiveStatus ? `HTTP_${effectiveStatus}` : "AI_PROVIDER_ERROR";
   let message = fallbackMessage;
 
   try {
@@ -343,11 +356,13 @@ function extractProviderError(status: number | undefined, bodyText: string, err?
     code = providerError?.code || providerError?.type || code;
     message = providerError?.message || parsed?.message || message;
   } catch {
-    if (status === 401 || status === 403) code = "AI_AUTH_ERROR";
-    else if (status === 402) code = "AI_QUOTA_EXHAUSTED";
-    else if (status === 404) code = "AI_MODEL_NOT_FOUND";
-    else if (status === 429) code = "AI_RATE_LIMITED";
-    else if (status && status >= 500) code = "AI_PROVIDER_UNAVAILABLE";
+    if (!typedErr?.code) {
+      if (effectiveStatus === 401 || effectiveStatus === 403) code = "AI_AUTH_ERROR";
+      else if (effectiveStatus === 402) code = "AI_QUOTA_EXHAUSTED";
+      else if (effectiveStatus === 404) code = "AI_MODEL_NOT_FOUND";
+      else if (effectiveStatus === 429) code = "AI_RATE_LIMITED";
+      else if (effectiveStatus && effectiveStatus >= 500) code = "AI_PROVIDER_UNAVAILABLE";
+    }
   }
 
   if (err instanceof DOMException && err.name === "AbortError") {
@@ -373,6 +388,7 @@ async function callOnce(
   apiKey: string,
   messages: Array<{ role: string; content: string }>,
   maxTokens: number = AI_MAX_TOKENS,
+  timeoutMs: number = AI_TIMEOUT_MS,
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   const traceId = crypto.randomUUID();
@@ -380,7 +396,7 @@ async function callOnce(
 
   try {
     if (ref.provider === "nvidia") {
-      const result = await callNvidia({ model: ref.model, messages: messages as any, maxTokens, apiKey });
+      const result = await callNvidia({ model: ref.model, messages: messages as any, maxTokens, apiKey, timeoutMs });
       return {
         content: result.content,
         usage: { prompt_tokens: result.usage.inputTokens, completion_tokens: result.usage.outputTokens },
@@ -389,7 +405,7 @@ async function callOnce(
     }
 
     if (ref.provider === "cerebras") {
-      const result = await callCerebras({ model: ref.model, messages: messages as any, maxTokens, apiKey });
+      const result = await callCerebras({ model: ref.model, messages: messages as any, maxTokens, apiKey, timeoutMs });
       return {
         content: result.content,
         usage: { prompt_tokens: result.usage.inputTokens, completion_tokens: result.usage.outputTokens },
@@ -415,7 +431,7 @@ async function callOnce(
           },
           body: JSON.stringify(body),
         },
-        AI_TIMEOUT_MS,
+        timeoutMs,
       );
       const latency_ms = Date.now() - start;
       const responseText = await res.text();
@@ -509,7 +525,7 @@ async function callOnce(
         },
         body: JSON.stringify(body),
       },
-      AI_TIMEOUT_MS,
+        timeoutMs,
     );
     const latency_ms = Date.now() - start;
     const responseText = await res.text();
@@ -770,6 +786,8 @@ async function recordCostMetric(
 export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   const selection = selectAIModel(input);
   const totalStart = Date.now();
+  const totalTimeoutMs = Math.max(1_000, input.totalTimeoutMs ?? Math.max(input.timeoutMs ?? AI_TIMEOUT_MS, AI_TIMEOUT_MS));
+  const deadlineAt = totalStart + totalTimeoutMs;
   const attempts: AIAttempt[] = [];
   const reqTag = input.requestId || "-";
 
@@ -815,6 +833,10 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
     }
   }
 
+  if (input.allowedProviders?.length) {
+    fullChain = fullChain.filter((ref) => input.allowedProviders!.includes(ref.provider));
+  }
+
   // Health-aware filtering: pula modelos com falha recente conhecida.
   const healthChain = await filterByHealth(input.supabase, fullChain);
 
@@ -832,10 +854,26 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
   }
   if (chain.length === 0) {
     console.warn(`[AI_RUNTIME_FAIL] req=${reqTag} reason=ALL_PROVIDERS_IN_COOLDOWN`);
-    chain.push(...healthChain); // fallback: tenta de qualquer forma
+    const result: AIRunResult = {
+      content: input.emergencyTemplate || defaultEmergency(input),
+      provider: "template",
+      model: "emergency_template_response",
+      fallbackUsed: true,
+      attempts,
+      latencyMs: Date.now() - totalStart,
+      selection,
+      errorCode: "ALL_PROVIDERS_IN_COOLDOWN",
+    };
+    await logRun(input.supabase, input, selection, { ...result, success: false } as any);
+    return result;
   }
 
   for (let i = 0; i < chain.length; i++) {
+    const remainingMs = deadlineAt - Date.now();
+    if (remainingMs <= 0) {
+      attempts.push({ ...chain[i], success: false, code: "AI_TOTAL_TIMEOUT", message: "Total AI runtime deadline exceeded", latency_ms: 0 });
+      break;
+    }
     const ref = chain[i];
     const needsDeep = (input.taskType === "tutor_chat" && input.complexity === "high") ||
                       input.taskType === "clinical_reasoning" ||
@@ -850,7 +888,8 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
       continue;
     }
 
-    const r = await callOnce(ref, apiKey, input.messages, maxTokens);
+    const perAttemptTimeoutMs = Math.max(1_000, Math.min(input.timeoutMs ?? AI_TIMEOUT_MS, remainingMs));
+    const r = await callOnce(ref, apiKey, input.messages, maxTokens, perAttemptTimeoutMs);
     attempts.push(r.attempt);
 
     if (r.attempt.success && r.content) {

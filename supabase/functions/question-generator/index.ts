@@ -24,6 +24,22 @@ import {
   type TopicWeight,
 } from "./difficulty-quota.ts";
 
+const BANK_QUERY_TIMEOUT_MS = 8_000;
+const BALANCED_FETCH_TIMEOUT_MS = 25_000;
+const PERSISTENCE_TIMEOUT_MS = 10_000;
+
+function withDeadline<T>(promise: PromiseLike<T>, timeoutMs: number, label: string, errorCode = "BANK_FETCH_TIMEOUT"): Promise<T> {
+  let timer: number | undefined;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${errorCode}:${label}`)), timeoutMs) as unknown as number;
+    }),
+  ]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  }) as Promise<T>;
+}
+
 /**
  * ENAZIZI — HOTFIX P0 SIMULADO GENERATOR
  * Implementation: Strict Topic Adherence + Historical Dedup + No Silent Fallback
@@ -178,16 +194,24 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     const historySnapshotAt = new Date(requestStartedAt).toISOString();
     
     const recentSessions = await collectPaginatedRows<any>(async (from, to) => {
-      const { data, error } = await supabaseAdmin.from("simulado_sessions").select("id")
-        .eq("user_id", userId).gt("started_at", sevenDaysAgo).lte("started_at", historySnapshotAt).order("id").range(from, to);
+      const { data, error } = await withDeadline(
+        supabaseAdmin.from("simulado_sessions").select("id")
+          .eq("user_id", userId).gt("started_at", sevenDaysAgo).lte("started_at", historySnapshotAt).order("id").range(from, to),
+        BANK_QUERY_TIMEOUT_MS,
+        `historical_sessions:${from}-${to}`,
+      );
       if (error) throw error;
       return data || [];
     });
     const sessionIds = recentSessions.map(s => s.id);
 
     const practiceHistory = await collectPaginatedRows<any>(async (from, to) => {
-      const { data, error } = await supabaseAdmin.from("practice_attempts").select("question_id")
-        .eq("user_id", userId).gt("created_at", sevenDaysAgo).lte("created_at", historySnapshotAt).order("id").range(from, to);
+      const { data, error } = await withDeadline(
+        supabaseAdmin.from("practice_attempts").select("question_id")
+          .eq("user_id", userId).gt("created_at", sevenDaysAgo).lte("created_at", historySnapshotAt).order("id").range(from, to),
+        BANK_QUERY_TIMEOUT_MS,
+        `historical_attempts:${from}-${to}`,
+      );
       if (error) throw error;
       return data || [];
     });
@@ -196,8 +220,12 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     for (let offset = 0; offset < sessionIds.length; offset += 100) {
       const sessionChunk = sessionIds.slice(offset, offset + 100);
       simuladoHistory.push(...await collectPaginatedRows<any>(async (from, to) => {
-        const { data, error } = await supabaseAdmin.from("simulado_questions").select("question_id")
-          .in("session_id", sessionChunk).order("id").range(from, to);
+        const { data, error } = await withDeadline(
+          supabaseAdmin.from("simulado_questions").select("question_id")
+            .in("session_id", sessionChunk).order("id").range(from, to),
+          BANK_QUERY_TIMEOUT_MS,
+          `historical_questions:${offset}:${from}-${to}`,
+        );
         if (error) throw error;
         return data || [];
       }));
@@ -219,6 +247,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     step = "bank_fetch";
     let finalQuestions: any[] = [];
     let difficultyDistribution: ReturnType<typeof selectByDifficultyQuota<any>> | null = null;
+    const bankDiagnostics = {
+      candidates: 0,
+      strictCandidates: 0,
+      broadTopicFallbackUsed: false,
+      eligible: 0,
+      rejectedByAvoidIds: 0,
+      rejectedByFreshness: 0,
+      rejectedByTopic: 0,
+      rejectedByTextQuality: 0,
+      rejectedByDuplicate: 0,
+      selected: 0,
+    };
     const difficultyPlan = getCorpusDifficultyPlan(examBoard, difficulty);
     const seenHashes = new Set<string>();
     const seenNormalized = new Set<string>();
@@ -229,15 +269,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         .select("id, statement, options, correct_index, explanation, topic, subtopic, curriculum_theme, curriculum_subtheme, difficulty, board");
 
       let candidates: any[] = [];
-      // Keep topic and subtopic scopes in their canonical columns. Mixing topic
-      // terms into subtopic columns produced large false-positive candidate
-      // windows; the final guard then rejected the whole next page even when
-      // the requested board still had enough eligible questions.
-      const topicOr = [
-        ...topics.flatMap((t: string) => [`topic.ilike.%${t}%`, `curriculum_theme.ilike.%${t}%`]),
+      const buildTopicOr = (includeTopicTermsInSubtopic = false) => [
+        ...topics.flatMap((t: string) => [
+          `topic.ilike.%${t}%`,
+          `curriculum_theme.ilike.%${t}%`,
+          ...(includeTopicTermsInSubtopic ? [`subtopic.ilike.%${t}%`, `curriculum_subtheme.ilike.%${t}%`] : []),
+        ]),
         ...subtopics.flatMap((t: string) => [`subtopic.ilike.%${t}%`, `curriculum_subtheme.ilike.%${t}%`]),
       ]
         .join(",");
+      const strictTopicOr = buildTopicOr(false);
+      const broadTopicOr = buildTopicOr(true);
 
       const profileTopicCount = Object.keys(profile.specialtyWeights || {}).length;
       const isFullOfficialBlueprint = Boolean(examBoard) &&
@@ -248,8 +290,8 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       // Applying a 20+ clause ILIKE OR over the eligibility view is redundant
       // and can exceed the UI timeout for 100-question exams. Keep that filter
       // only for genuine topic/subtopic selections.
-      const buildScopedQuery = (difficultyScore?: number) => {
-        let query = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(topicOr);
+      const buildScopedQuery = (difficultyScore?: number, includeTopicTermsInSubtopic = false) => {
+        let query = isFullOfficialBlueprint ? buildBaseQuery() : buildBaseQuery().or(includeTopicTermsInSubtopic ? broadTopicOr : strictTopicOr);
         if (examBoard && !["all", "geral"].includes(String(examBoard).toLowerCase())) {
           query = query.ilike("board", String(examBoard));
         }
@@ -263,9 +305,13 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const maxPages = 5;
         for (let page = 0; page < maxPages; page++) {
           const from = page * pageSize;
-          const { data, error } = await buildScopedQuery(difficultyScore)
-            .order("id", { ascending: true })
-            .range(from, from + pageSize - 1);
+          const { data, error } = await withDeadline(
+            buildScopedQuery(difficultyScore)
+              .order("id", { ascending: true })
+              .range(from, from + pageSize - 1),
+            BANK_QUERY_TIMEOUT_MS,
+            `difficulty=${difficultyScore};page=${page}`,
+          );
           if (error) throw error;
           rows.push(...(data || []));
           if (!data || data.length < pageSize) break;
@@ -289,14 +335,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           const freshTarget = Math.ceil(requestedCount * weight.weight / 100);
           const pageSize = 100;
           for (let from = 0, pageNumber = 0;; from += pageSize, pageNumber++) {
-            if (Date.now() - bankFetchStartedAt > 20_000) {
-              throw new Error("BALANCED_FETCH_TIMEOUT: aquisição tema x dificuldade excedeu 20s");
+            if (Date.now() - bankFetchStartedAt > BALANCED_FETCH_TIMEOUT_MS) {
+              throw new Error("BANK_FETCH_TIMEOUT: aquisição tema x dificuldade excedeu o orçamento");
             }
             if (pageNumber >= 20) throw new Error("BALANCED_FETCH_PAGE_LIMIT: célula excedeu 2000 itens sem suficiência fresca");
             bankFetchQueries++;
-            const { data, error } = await buildBaseQuery().or(visibleTopicOr)
-              .eq("difficulty", difficultyScore).order("id", { ascending: true })
-              .range(from, from + pageSize - 1);
+            const { data, error } = await withDeadline(
+              buildBaseQuery().or(visibleTopicOr)
+                .eq("difficulty", difficultyScore).order("id", { ascending: true })
+                .range(from, from + pageSize - 1),
+              BANK_QUERY_TIMEOUT_MS,
+              `topic=${weight.topic};difficulty=${difficultyScore};page=${pageNumber}`,
+            );
             if (error) throw error;
             const page = data || [];
             rows.push(...page);
@@ -320,14 +370,38 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         const strata = await Promise.all([3, 4, 5].map(fetchDifficultyStratum));
         candidates = strata.flat();
       } else {
-        const { data, error } = await buildScopedQuery()
-          .order("id", { ascending: true })
-          .limit(Math.max(requestedCount * 4, 200));
-        if (error) throw error;
-        candidates = data || [];
+        const fetchSimpleCandidateWindow = async (includeTopicTermsInSubtopic = false) => {
+          const rows: any[] = [];
+          const pageSize = 200;
+          const maxPages = 5;
+          for (let page = 0; page < maxPages; page++) {
+            const from = page * pageSize;
+            const { data, error } = await withDeadline(
+              buildScopedQuery(undefined, includeTopicTermsInSubtopic)
+                .order("id", { ascending: true })
+                .range(from, from + pageSize - 1),
+              BANK_QUERY_TIMEOUT_MS,
+              `simple_bank;page=${page};broad=${includeTopicTermsInSubtopic}`,
+            );
+            if (error) throw error;
+            rows.push(...(data || []));
+            if (!data || data.length < pageSize) break;
+          }
+          return rows;
+        };
+        candidates = await fetchSimpleCandidateWindow(false);
+        bankDiagnostics.strictCandidates = candidates.length;
+        if (candidates.length === 0 && subtopics.length === 0) {
+          const broadCandidates = await fetchSimpleCandidateWindow(true);
+          if (broadCandidates.length > 0) {
+            bankDiagnostics.broadTopicFallbackUsed = true;
+            candidates = broadCandidates;
+          }
+        }
       }
       
       console.log(`[SIM_GENERATOR_CANDIDATES_FOUND] count=${candidates.length}`);
+      bankDiagnostics.candidates = candidates.length;
 
       const eligibleQuestions: any[] = [];
       for (const q of candidates) {
@@ -335,12 +409,18 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         // can exceed the request-line limit and was previously misreported as
         // an empty bank. The candidate window is bounded, so enforce the same
         // historical exclusion safely in memory.
-        if (requestAvoidIdSet.has(q.id)) continue;
+        if (requestAvoidIdSet.has(q.id)) {
+          bankDiagnostics.rejectedByAvoidIds++;
+          continue;
+        }
         const historicalReuse = historicalExcludedIdSet.has(q.id);
         // Small study sessions remain freshness-first. A 100-question quota
         // may reuse historical items only as a last resort; duplicates inside
         // the current exam are still forbidden by requestAvoidIdSet/hashes.
-        if (historicalReuse && !difficultyPlan) continue;
+        if (historicalReuse && !difficultyPlan) {
+          bankDiagnostics.rejectedByFreshness++;
+          continue;
+        }
         
         const matchResult = topicEngine.calculateScore(q, topics, subtopics);
         
@@ -354,14 +434,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         }));
         const allowedGuard = guardResults.find((entry) => entry.result.allowed) ?? guardResults[0];
         const guardResult = allowedGuard?.result;
-        const primaryVisibleTopic = typeof q.topic === "string" && !["geral", "general"].includes(normalizeStatement(q.topic))
-          ? q.topic
-          : q.curriculum_theme;
-        const visibleTopic = {
-          topic: primaryVisibleTopic,
-        };
+        const visibleTopicCandidates = [q.topic, q.curriculum_theme, q.subtopic, q.curriculum_subtheme]
+          .filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+        const matchedVisibleTopic = topics
+          .flatMap((topic) => visibleTopicCandidates.map((value) => ({ topic, value })))
+          .find(({ topic, value }) => validateFinalQuestionTopic({ topic: value }, topic).allowed);
+        const primaryVisibleTopic = matchedVisibleTopic?.value ||
+          (typeof q.topic === "string" && !["geral", "general"].includes(normalizeStatement(q.topic))
+            ? q.topic
+            : q.curriculum_theme);
         const visibleTopicAllowed = topics.some((topic) =>
-          validateFinalQuestionTopic(visibleTopic, topic).allowed
+          visibleTopicCandidates.some((value) => validateFinalQuestionTopic({ topic: value }, topic).allowed)
         );
         const visibleTopicClassification = requestedTopicWeights.length > 0
           ? classifyVisibleTopicBucket(q, requestedTopicWeights)
@@ -371,6 +454,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           : Boolean(guardResult?.allowed && visibleTopicAllowed);
         
         if (!topicAllowed) {
+          bankDiagnostics.rejectedByTopic++;
           console.log(`[SIM_TOPIC_GUARD_REJECTED] question_id=${q.id} reason=${guardResult?.reason} visible_topic=${primaryVisibleTopic || "missing"} requested=${topics.join("|")}`);
           continue;
         }
@@ -380,13 +464,17 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           hasCorruptQuestionText(q.explanation) ||
           (Array.isArray(q.options) && q.options.some(hasCorruptQuestionText))
         ) {
+          bankDiagnostics.rejectedByTextQuality++;
           console.log(`[SIM_TEXT_QUALITY_REJECTED] question_id=${q.id} reason=invalid_encoding`);
           continue;
         }
 
         const hash = makeHash(q.statement);
         const norm = normalizeStatement(q.statement);
-        if (seenHashes.has(hash) || seenNormalized.has(norm)) continue;
+        if (seenHashes.has(hash) || seenNormalized.has(norm)) {
+          bankDiagnostics.rejectedByDuplicate++;
+          continue;
+        }
         
         eligibleQuestions.push({
           ...q, 
@@ -411,6 +499,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           break;
         }
       }
+      bankDiagnostics.eligible = eligibleQuestions.length;
 
       if (difficultyPlan) {
         const quotaOptions = isGeneralHundred
@@ -427,6 +516,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
       } else {
         finalQuestions = eligibleQuestions.slice(0, requestedCount);
       }
+      bankDiagnostics.selected = finalQuestions.length;
     }
 
     if (isGeneralHundred && difficultyDistribution && !difficultyDistribution.exact) {
@@ -494,6 +584,11 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         userId,
         requestId: correlationId,
         supabase: supabaseAdmin,
+        // The question JSON contract is supported only by the configured
+        // NVIDIA/Cerebras providers. Lovable/Gemini rejects this payload.
+        allowedProviders: ["nvidia", "cerebras"],
+        timeoutMs: 18_000,
+        totalTimeoutMs: 35_000,
         messages: generationMessages,
       };
 
@@ -548,7 +643,16 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
 
       const aiResult = await runAI(aiInput);
       if (aiResult.provider === "template" || aiResult.errorCode) {
-        throw new Error(aiResult.errorCode || "AI_PROVIDER_UNAVAILABLE");
+        return new Response(JSON.stringify({
+          success: false,
+          errorCode: "AI_PROVIDER_UNAVAILABLE",
+          error: "Os provedores de IA não responderam dentro do limite seguro. Tente novamente.",
+          correlationId,
+          attempts: aiResult.attempts.map(({ provider, model, code }) => ({ provider, model, code })),
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       appendValidatedQuestions(aiResult);
 
@@ -563,6 +667,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
           providerOverride: "cerebras",
           modelOverride: "gpt-oss-120b",
           benchmarkMode: true,
+          totalTimeoutMs: 18_000,
           messages: [
             ...generationMessages,
             { role: "user", content: "O lote anterior foi rejeitado por segurança clínica. Gere um lote novo, revise nomenclatura farmacológica e não reutilize alternativas do lote anterior." },
@@ -577,6 +682,28 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     }
 
     console.log(`[SIM_GENERATOR_DEDUP_APPLIED] after_bank=${finalQuestions.length}`);
+
+    if (finalQuestions.length === 0) {
+      const errorPayload = {
+        success: false,
+        errorCode: "BATCH_EMPTY",
+        error: "Não foi possível montar questões com os filtros selecionados.",
+        retryable: false,
+        requestedCount,
+        generatedCount: 0,
+        topics,
+        subtopics,
+        difficulty,
+        examBoard: examBoard || null,
+        diagnostics: bankDiagnostics,
+        correlationId,
+      };
+      console.warn("[SIM_BATCH_EMPTY]", errorPayload);
+      return new Response(JSON.stringify(errorPayload), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let insufficientQuestions = finalQuestions.length < requestedCount;
     const persistedSources = new Set(finalQuestions.map((question) =>
@@ -617,7 +744,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         }
       : null;
 
-    const { data: sess, error: sessionError } = await supabaseAdmin.from("simulado_sessions").insert({
+    const { data: sess, error: sessionError } = await withDeadline(supabaseAdmin.from("simulado_sessions").insert({
       user_id: userId,
       mode: body.mode || 'study',
       total_questions: finalQuestions.length,
@@ -635,7 +762,7 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
         generation_duration_ms: generationDurationMs,
         difficulty_distribution: difficultyMetadata,
       }
-    }).select().single();
+    }).select().single(), PERSISTENCE_TIMEOUT_MS, "persist_session", "SIMULADO_PERSIST_TIMEOUT");
 
     if (sessionError || !sess) throw sessionError || new Error("Falha ao persistir sessão do simulado");
     sessionId = sess.id;
@@ -666,16 +793,47 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
             guard_forensics: finalQuestions.map(q => q._guard)
           }
       }));
-    const persistenceResults = await Promise.all(persistenceTasks);
+    const markSessionFailed = async (reason: string) => {
+      if (!sessionId) return;
+      await supabaseAdmin
+        .from("simulado_sessions")
+        .update({
+          status: "failed",
+          metadata: {
+            board: profile.label,
+            requested: requestedCount,
+            insufficientQuestions,
+            correlation_id: correlationId,
+            generation_duration_ms: generationDurationMs,
+            difficulty_distribution: difficultyMetadata,
+            failure_reason: reason,
+          },
+        })
+        .eq("id", sessionId);
+    };
+
+    const persistenceResults = await withDeadline(Promise.all(persistenceTasks), PERSISTENCE_TIMEOUT_MS, "persist_questions", "SIMULADO_PERSIST_TIMEOUT");
     const persistenceError = persistenceResults.find((result) => result?.error)?.error;
-    if (persistenceError) throw persistenceError;
+    if (persistenceError) {
+      await markSessionFailed(persistenceError.message || "persist_questions_failed");
+      throw persistenceError;
+    }
     if (bankQuestions.length > 0) {
-      const { count: persistedCount, error: countError } = await supabaseAdmin
-        .from("simulado_questions")
-        .select("question_id", { count: "exact", head: true })
-        .eq("session_id", sessionId);
-      if (countError) throw countError;
+      const { count: persistedCount, error: countError } = await withDeadline(
+        supabaseAdmin
+          .from("simulado_questions")
+          .select("question_id", { count: "exact", head: true })
+          .eq("session_id", sessionId),
+        PERSISTENCE_TIMEOUT_MS,
+        "verify_persisted_questions",
+        "SIMULADO_PERSIST_TIMEOUT",
+      );
+      if (countError) {
+        await markSessionFailed(countError.message || "verify_persisted_questions_failed");
+        throw countError;
+      }
       if (persistedCount !== bankQuestions.length) {
+        await markSessionFailed(`persisted_questions_mismatch:${persistedCount ?? 0}/${bankQuestions.length}`);
         throw new Error(`Persistência incompleta: ${persistedCount ?? 0}/${bankQuestions.length} questões vinculadas`);
       }
     }
@@ -701,8 +859,50 @@ Deno.serve(enterpriseEdgeHandler("question-generator", async (enterpriseContext)
     });
 
   } catch (error: any) {
+    if (String(error?.message || "").startsWith("AI_INVALID_RESPONSE:")) {
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: "AI_INVALID_RESPONSE",
+        error: "A IA respondeu, mas o lote foi rejeitado pela validação clínica. Tente novamente com tema mais específico ou use o banco de questões.",
+        retryable: true,
+        correlationId,
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (String(error?.message || "").startsWith("BANK_FETCH_TIMEOUT:")) {
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: "BANK_FETCH_TIMEOUT",
+        error: "O banco demorou mais que o limite seguro para montar esta prova. Tente novamente.",
+        retryable: true,
+        correlationId,
+      }), {
+        status: 504,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (String(error?.message || "").startsWith("SIMULADO_PERSIST_TIMEOUT:")) {
+      return new Response(JSON.stringify({
+        success: false,
+        errorCode: "SIMULADO_PERSIST_TIMEOUT",
+        error: "As questões foram selecionadas, mas o salvamento demorou além do limite seguro. Tente novamente.",
+        retryable: true,
+        correlationId,
+      }), {
+        status: 504,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     logger.critical("SIMULADO_CRASH", error.message);
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+    return new Response(JSON.stringify({
+      success: false,
+      errorCode: "SIMULADO_GENERATOR_ERROR",
+      error: "Não foi possível montar o simulado com segurança agora. Tente novamente em instantes.",
+      retryable: true,
+      correlationId,
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });

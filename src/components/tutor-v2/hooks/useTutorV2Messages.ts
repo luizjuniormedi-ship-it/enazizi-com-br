@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export function useTutorV2Messages(sessionId?: string) {
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = useCallback(() => setReloadKey((value) => value + 1), []);
 
   useEffect(() => {
     if (!sessionId) {
@@ -11,16 +14,27 @@ export function useTutorV2Messages(sessionId?: string) {
       return;
     }
 
+    let active = true;
     const fetchMessages = async () => {
       setIsLoading(true);
-      const { data } = await supabase
-        .from("tutor_messages")
-        .select("*")
-        .eq("tutor_session_id", sessionId)
-        .order("created_at", { ascending: true });
+      setError(null);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from("tutor_messages")
+          .select("*")
+          .eq("tutor_session_id", sessionId)
+          .order("created_at", { ascending: true })
+          .abortSignal(AbortSignal.timeout(12_000));
 
-      if (data) setMessages(data);
-      setIsLoading(false);
+        if (fetchError) throw fetchError;
+        if (active && data) setMessages(data);
+      } catch (err) {
+        if (!active) return;
+        console.warn("[TUTOR_MESSAGES_FETCH_FAILED]", err);
+        setError(err);
+      } finally {
+        if (active) setIsLoading(false);
+      }
     };
 
     fetchMessages();
@@ -59,9 +73,10 @@ export function useTutorV2Messages(sessionId?: string) {
       .subscribe();
 
     return () => {
+      active = false;
       supabase.removeChannel(channel);
     };
-  }, [sessionId]);
+  }, [sessionId, reloadKey]);
 
   const addMessage = async (userId: string, role: string, content: string) => {
     const { data, error } = await supabase
@@ -78,5 +93,5 @@ export function useTutorV2Messages(sessionId?: string) {
     return { data, error };
   };
 
-  return { messages, isLoading, addMessage, setMessages };
+  return { messages, isLoading, error, retry, addMessage, setMessages };
 }

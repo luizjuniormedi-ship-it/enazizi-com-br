@@ -92,8 +92,8 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
         }}
       />
 
-      <div className="relative flex items-center justify-between px-4 sm:px-8 lg:px-14 h-16">
-        <div className="flex items-center gap-3 sm:gap-6 min-w-0">
+      <div className="relative flex items-center justify-between gap-3 px-4 sm:px-8 lg:px-10 xl:px-14 h-16 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1 overflow-hidden">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -137,7 +137,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               aria-label={isAdmin ? "Ir para Painel Admin" : "Sair do modo ENAFLIX"}
               data-testid="nav-special-panel-button"
               className={cn(
-                "inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest",
+                "hidden md:inline-flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest shrink-0",
                 "text-white/70 hover:text-white transition-all duration-300",
                 "rounded-full px-3 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03] border border-white/5",
               )}
@@ -154,7 +154,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               aria-label="Meu Perfil"
               data-testid="nav-profile-button"
               className={cn(
-                "inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest",
+                "hidden md:inline-flex items-center gap-1.5 text-[10px] xl:text-xs font-black uppercase tracking-widest shrink-0",
                 "text-white/70 hover:text-white transition-all duration-300",
                 "rounded-full px-3 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03] border border-white/5",
               )}
@@ -164,7 +164,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             </button>
           )}
 
-          <div className="flex items-center gap-2 min-w-0 group cursor-pointer" onClick={() => navigate("/enaflix")}>
+          <div className="flex items-center gap-2 min-w-0 shrink-0 group cursor-pointer" onClick={() => navigate("/enaflix")}>
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="absolute inset-0 rounded-full bg-red-500/60 animate-ping" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.85)]" />
@@ -172,7 +172,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
 
             <span
               className={cn(
-                "relative font-black text-lg sm:text-xl tracking-[0.25em] select-none",
+                "relative font-black text-base sm:text-lg xl:text-xl tracking-[0.18em] xl:tracking-[0.25em] select-none",
                 "bg-clip-text text-transparent",
               )}
               style={{
@@ -188,7 +188,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             </span>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-6 ml-4">
+          <nav className="hidden 2xl:flex items-center gap-6 ml-4 min-w-0">
             {[
               { label: "Dashboard", path: "/dashboard" },
               { label: "ENAFLIX", path: "/dashboard/enaflix" },
@@ -216,7 +216,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={onSearchClick}

@@ -5,7 +5,7 @@ import { classifyStudentIntent, decideTutorStep, PEDAGOGICAL_BLOCKS, TutorBlockI
 import { lookupTutorMemory, lookupRagSemantic, markMemoryReused, saveTutorMemory, estimateQualityScore } from "../_shared/tutor-memory.ts";
 import { decideMemoryAction } from "../_shared/memory-orchestrator.ts";
 import { detectQuestionReview, buildQRInstruction, REASONING_ERROR_ENUM } from "../_shared/tutor/question-review-detector.ts";
-import { normalizeTutorResponse, TutorResponse, getStaticFallback, getContextualFallback, buildTutorEnvelope } from "../_shared/ai-stability-kit.ts";
+import { normalizeTutorResponse, TutorResponse, getStaticFallback, getContextualFallback, buildTutorEnvelope, unwrapTutorJsonEnvelope } from "../_shared/ai-stability-kit.ts";
 import { callClaudeV3, isClaudeV3Enabled } from "../_shared/eu-ai-v3-client.ts";
 import {
   callNvidia,
@@ -305,13 +305,22 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           throw new Error(qrResponse.errorCode || "AI_PROVIDER_UNAVAILABLE");
         }
         qrRaw = qrResponse.content || "{}";
-        // [TEMP DIAGNOSTIC — REMOVE AFTER FASE 1.4]
-        console.log("[QR_MODE_RAW]", qrRaw?.slice?.(0, 500));
-        console.log("[QR_MODE_RAW_KEYS]", (() => { try { return Object.keys(JSON.parse(qrRaw)); } catch { return "PARSE_FAIL"; } })());
-        qrParsed = JSON.parse(qrRaw);
+        qrParsed = unwrapTutorJsonEnvelope(qrRaw) ?? JSON.parse(qrRaw);
+        const normalizedQr = normalizeTutorResponse(qrParsed, "ai");
+        qrParsed = {
+          ...qrParsed,
+          content: normalizedQr.content,
+          teachingPhase: normalizedQr.teachingPhase,
+          socraticQuestion: normalizedQr.socraticQuestion,
+        };
       } catch (e: any) {
-        console.error("[QR_MODE_PARSE_ERROR]", e?.message, qrRaw.slice(0, 200));
-        qrParsed = { content: qrRaw || "Não foi possível gerar a correção agora.", metadata: null };
+        console.error("[QR_MODE_PARSE_ERROR]", e?.message, { raw_length: qrRaw.length });
+        const normalizedQrFallback = normalizeTutorResponse({
+          content: "Não foi possível gerar a correção estruturada agora. Tente reenviar a questão ou simplificar o enunciado.",
+          teachingPhase: "ENSINAR",
+          socraticQuestion: "Qual parte do raciocínio você quer revisar primeiro: diagnóstico, conduta ou justificativa da alternativa?",
+        }, "fallback");
+        qrParsed = { content: normalizedQrFallback.content, metadata: null };
       }
 
       // Sanitização defensiva do enum
@@ -589,12 +598,21 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
           console.warn("[LOG_CACHE_SAVINGS_FAIL]", (e as any)?.message);
         }
 
+        // FIX: memoryHit usa shape {answer, question, ...}; adapta para o normalizer
+        const normalized = normalizeTutorResponse({
+          content: memoryHit.answer,
+          teachingPhase: "ENSINAR",
+          socraticQuestion: (memoryHit as any).socraticQuestion || `O que ficou mais claro para você sobre ${topic}?`,
+          confidence: memoryHit.qualityScore ?? 0.9,
+          metadata: { fromMemory: true, memoryId: memoryHit.id },
+        }, "cache");
+
         if (sessionId && activeUserId) {
           await supabaseAdmin.from("tutor_messages").insert({
             tutor_session_id: sessionId,
             user_id: activeUserId,
             role: "assistant",
-            content: memoryHit!.answer,
+            content: normalized.content,
             metadata: {
               request_id: requestId,
               correlation_id: correlationId,
@@ -610,14 +628,6 @@ Deno.serve(enterpriseEdgeHandler("tutor-v3-premium", async ({ req, logger, supab
         }
       })());
 
-      // FIX: memoryHit usa shape {answer, question, ...}; adapta para o normalizer
-      const normalized = normalizeTutorResponse({
-        content: memoryHit.answer,
-        teachingPhase: "ENSINAR",
-        socraticQuestion: (memoryHit as any).socraticQuestion || `O que ficou mais claro para você sobre ${topic}?`,
-        confidence: memoryHit.qualityScore ?? 0.9,
-        metadata: { fromMemory: true, memoryId: memoryHit.id },
-      }, "cache");
       console.log(`[TUTOR_CACHE_HIT] memoryId=${memoryHit.id}`);
 
       return corsResponse(buildTutorEnvelope(normalized, {

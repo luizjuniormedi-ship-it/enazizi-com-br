@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 
 const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(() => new Promise(() => {})),
+  getUser: vi.fn(() => new Promise(() => {})),
   signOut: vi.fn(() => new Promise(() => {})),
   unsubscribe: vi.fn(),
   authCallback: null as null | ((event: string, session: any) => void),
@@ -13,7 +14,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
       getSession: authMocks.getSession,
-      getUser: vi.fn(),
+      getUser: authMocks.getUser,
       onAuthStateChange: vi.fn((callback) => {
         authMocks.authCallback = callback;
         return { data: { subscription: { unsubscribe: authMocks.unsubscribe } } };
@@ -67,7 +68,7 @@ describe("AuthProvider bootstrap", () => {
     expect(authMocks.signOut).not.toHaveBeenCalled();
   });
 
-  it("não apaga uma sessão criada enquanto o bootstrap antigo expira", async () => {
+  it("mantém rota privada autenticada quando INITIAL_SESSION existe e a validação remota demora", async () => {
     vi.useFakeTimers();
     render(
       <AuthProvider>
@@ -75,16 +76,13 @@ describe("AuthProvider bootstrap", () => {
       </AuthProvider>
     );
 
-    const authenticatedSession = {
-      access_token: "test-access-token",
-      refresh_token: "test-refresh-token",
-      user: { id: "professor-1", created_at: new Date().toISOString() },
-    };
-
     await act(async () => {
-      authMocks.authCallback?.("SIGNED_IN", authenticatedSession);
-      await vi.advanceTimersByTimeAsync(8000);
-      await vi.advanceTimersByTimeAsync(1500);
+      authMocks.authCallback?.("INITIAL_SESSION", {
+        access_token: "cached-access-token",
+        refresh_token: "cached-refresh-token",
+        user: { id: "student-1", created_at: new Date().toISOString() },
+      });
+      await vi.advanceTimersByTimeAsync(8_000);
     });
 
     expect(screen.getByText("authenticated")).toBeInTheDocument();
@@ -114,4 +112,5 @@ describe("AuthProvider bootstrap", () => {
     expect(screen.getByText("authenticated")).toBeInTheDocument();
     expect(authMocks.signOut).not.toHaveBeenCalled();
   });
+
 });

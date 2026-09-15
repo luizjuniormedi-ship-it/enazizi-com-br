@@ -79,6 +79,7 @@ const CognitiveGovernanceDashboard = lazy(() => import("@/components/admin/cogni
 const GoldCuration = lazy(() => import("@/pages/admin/GoldCuration"));
 const ClassificationBackfill = lazy(() => import("@/pages/admin/ClassificationBackfill"));
 const CurriculumEvidenceDashboard = lazy(() => import("@/components/admin/CurriculumEvidenceDashboard").then(m => ({ default: m.CurriculumEvidenceDashboard })));
+const CMEIncidentsPage = lazy(() => import("@/pages/admin/CMEIncidents"));
 
 
 
@@ -516,7 +517,12 @@ const Admin = ({ initialTab }: AdminProps) => {
             {/* Support/Quick Links */}
             <div className="p-6 rounded-[32px] bg-gradient-to-br from-primary/10 to-transparent border border-white/5 space-y-3">
                <p className="text-[9px] font-black uppercase text-white/40 tracking-widest">Suporte Interno</p>
-               <Enaflix3DButton variant="ghost" size="sm" className="w-full justify-start gap-3">
+               <Enaflix3DButton
+                 variant="ghost"
+                 size="sm"
+                 className="w-full justify-start gap-3"
+                 onClick={() => handleTabChange("incidents")}
+               >
                   <Bug className="h-4 w-4" /> Incidentes
                </Enaflix3DButton>
             </div>
@@ -667,6 +673,7 @@ const Admin = ({ initialTab }: AdminProps) => {
                   {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
                   { activeSection === "tutor-qa" && <Suspense fallback={<PanelLoader />}><TutorQAPanel /></Suspense> }
                   { activeSection === "curriculum-evidence" && <Suspense fallback={<PanelLoader />}><CurriculumEvidenceDashboard /></Suspense> }
+                  { activeSection === "incidents" && <Suspense fallback={<PanelLoader />}><CMEIncidentsPage /></Suspense> }
 
 
 
